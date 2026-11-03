@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+from deploy import install_addon_update
 from deploy.install_addon_update import install
 from tools.package_addon import package, render_entries
 
@@ -28,6 +30,17 @@ class AddonUpdateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"product"):
                 install(*args)
             (game / ".flavor.info").write_text("Product Flavor!STRING:0\nwow\n")
+            original_replace = install_addon_update.replace
+            def concurrent_edit(path, data):
+                original_replace(path, data)
+                if path.name == "Collectors.lua":
+                    (addon / "Core.lua").write_text("concurrent user edit")
+            with patch.object(install_addon_update, "replace", concurrent_edit):
+                with self.assertRaisesRegex(ValueError,"during update"):
+                    install(*args)
+            self.assertEqual((addon / "Core.lua").read_text(), "concurrent user edit")
+            self.assertEqual((addon / "AzerothOperator.toc").read_bytes(),old_entries["AzerothOperator.toc"])
+            (addon / "Core.lua").write_bytes(old_entries["Core.lua"])
             result = install(*args)
             self.assertEqual(result["verified_files"],4)
             backup = Path(result["backup"])

@@ -22,13 +22,13 @@ def replace(path, data):
 
 
 def install(client, old_manifest, new_manifest, backups):
-    client = ordinary(Path(client).resolve(strict=True))
+    client = ordinary(Path(client).absolute()).resolve(strict=True)
     old = json.loads(Path(old_manifest).read_text())
     new = json.loads(Path(new_manifest).read_text())
     if any(old[key] != new[key] for key in ("family", "variant", "interface")):
         raise ValueError("Client identity changed; fresh qualification required")
     product = {"retail":"wow", "forever":"wowf"}.get(new["family"])
-    if not product or (client / ".flavor.info").read_text().splitlines() != ["Product Flavor!STRING:0", product]:
+    if not product or ordinary(client / ".flavor.info").read_text().splitlines() != ["Product Flavor!STRING:0", product]:
         raise ValueError("Client product mismatch or unsupported discovery")
     entries = render_entries(new["family"], new["variant"], new["interface"], new["version"])
     if Path(new["archive"]).name != new["archive"]:
@@ -45,22 +45,27 @@ def install(client, old_manifest, new_manifest, backups):
     previous = {name:ordinary(target / name).read_bytes() for name in entries}
     if any(sha(data) != old["files"][name] for name,data in previous.items()):
         raise ValueError("Installed addon changed; refusing overwrite")
-    backups = ordinary(Path(backups).resolve())
+    backups = ordinary(Path(backups).absolute())
     backups.mkdir(parents=True, exist_ok=True)
     backup = Path(tempfile.mkdtemp(prefix="addon-update-", dir=backups))
     for name,data in previous.items():
         (backup / name).write_bytes(data)
     (backup / "manifest.json").write_text(json.dumps(old, indent=2))
+    written = []
     try:
         for name,data in entries.items():
             if (target / name).read_bytes() != previous[name]:
                 raise ValueError("Installed file changed during update")
             replace(target / name, data)
+            written.append(name)
         if any(sha((target / name).read_bytes()) != new["files"][name] for name in entries):
             raise ValueError("Installed file readback mismatch")
     except Exception:
-        for name,data in previous.items():
-            replace(target / name, data)
+        # Roll back only our own surviving writes; preserve concurrent user edits.
+        for name in written:
+            path = ordinary(target / name)
+            if path.read_bytes() == entries[name]:
+                replace(path, previous[name])
         raise
     return {"version":new["version"],"family":new["family"],"verified_files":len(entries),
             "backup":str(backup),"live_qualified":False,"requires_client_reload_or_restart":True}
