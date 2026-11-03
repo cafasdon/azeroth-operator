@@ -40,6 +40,13 @@ struct Summary {
     snapshot_id: String,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct EquipmentReview {
+    snapshot_id: String,
+    selections: Vec<azeroth_operator::planning::EquipmentSelection>,
+}
+
 #[tool_router]
 impl Operator {
     #[tool(
@@ -51,7 +58,33 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection"],"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "Review player-selected equipment from exact exported locations. Returns a JSON draft; does not equip, optimise, validate game legality or generate a game import.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn review_equipment_selection(
+        &self,
+        Parameters(args): Parameters<EquipmentReview>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            let mut review =
+                azeroth_operator::planning::equipment_review(&snapshot, &args.selections)?;
+            review["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            Ok::<_, anyhow::Error>(review)
+        })();
+        match result {
+            Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Equipment review rejected: snapshot/locations unavailable, mismatched, duplicated or invalid",
+            )]),
+        }
     }
     #[tool(
         description = "Compare same-character same-client snapshots; bounded changed JSON paths only",

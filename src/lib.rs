@@ -1,6 +1,7 @@
 //! Data-only client contracts and snapshot storage. No game execution.
 pub mod analysis;
 pub mod import;
+pub mod planning;
 mod schema;
 pub mod sync;
 pub mod upload;

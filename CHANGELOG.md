@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add read-only equipment-selection review drafts bound to exact snapshot locations and expected item IDs. Reject duplicate targets/sources and unavailable observations; expose swaps/vacancies without claiming gameplay legality or performance gains.
+
 - Add a bounded saved-export sync runner, Windows process-tree timeout cleanup, atomic status and an isolated current-user scheduled-task installer. Synthetic upload/readback succeeded; unchanged pass measured 0.21s versus 5.30s for upload.
 
 - Add incremental sync with durable hash receipts, destination configuration binding, retry after failure and explicit missing-export status. Cached acknowledgements do not claim live remote state.

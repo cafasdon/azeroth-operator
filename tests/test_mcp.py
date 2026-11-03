@@ -13,7 +13,9 @@ from test_snapshots import fixture
 class MCPTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_stdio_server(self):
         with tempfile.TemporaryDirectory() as folder:
-            key = SnapshotStore(Path(folder)).ingest(fixture())
+            sample = fixture()
+            sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            key = SnapshotStore(Path(folder)).ingest(sample)
             rust_binary = os.environ.get("AZEROTH_TEST_BINARY")
             params = StdioServerParameters(command=rust_binary or sys.executable,
                 args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
@@ -24,7 +26,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})
@@ -35,6 +37,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})
                         self.assertFalse(json.loads(summary.content[0].text)["live"])
+                        observed = sample["sections"]["equipment"]
+                        slot, item = next(iter(observed.items()))
+                        review = await session.call_tool("review_equipment_selection", {
+                            "snapshot_id": key, "selections": [{"target_slot": int(slot),
+                            "source": {"kind": "equipment", "slot": int(slot)}, "expected_item_id": item["item_id"]}]})
+                        self.assertFalse(review.isError)
+                        draft = json.loads(review.content[0].text)
+                        self.assertEqual(draft["snapshot_id"], key)
+                        self.assertFalse(draft["game_execution"])
+                        self.assertEqual(draft["changes"][0]["status"], "already_selected")
+                        rejected_review = await session.call_tool("review_equipment_selection", {
+                            "snapshot_id": key, "selections": [{"target_slot": int(slot),
+                            "source": {"kind": "equipment", "slot": int(slot)}, "expected_item_id": 4294967295}]})
+                        self.assertTrue(rejected_review.isError)
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key})
                     self.assertFalse(result.isError)
                     payload = json.loads(result.content[0].text)

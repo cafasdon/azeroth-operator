@@ -16,7 +16,7 @@ async def smoke(snapshot=None):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
             tools = await session.list_tools()
-            assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary"}
+            assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection"}
             if snapshot:
                 result = await session.call_tool("inspect_snapshot", {"snapshot_id": snapshot, "section": "equipment"})
                 assert not result.isError
@@ -26,10 +26,17 @@ async def smoke(snapshot=None):
                 result = await session.call_tool("character_summary", {"snapshot_id": snapshot})
                 assert not result.isError
                 assert json.loads(result.content[0].text)["equipped_slots_observed"] == 1
+                result = await session.call_tool("review_equipment_selection", {"snapshot_id": snapshot,
+                    "selections": [{"target_slot": 16, "source": {"kind": "equipment", "slot": 16}, "expected_item_id": 123}]})
+                assert not result.isError
+                review = json.loads(result.content[0].text)
+                assert review["snapshot_id"] == snapshot and review["game_execution"] is False
+                assert review["changes"][0]["status"] == "already_selected"
+                assert review["checks"]["performance_improvement"] == "unknown"
             else:
                 result = await session.call_tool("list_snapshots", {"family": "retail"})
                 assert not result.isError
-            print(json.dumps({"public_tls": True, "tools": 5, "fixture_readback": bool(snapshot)}))
+            print(json.dumps({"public_tls": True, "tools": 6, "fixture_readback": bool(snapshot)}))
 
 
 if __name__ == "__main__":

@@ -52,6 +52,17 @@ Import a JSON snapshot or the addon's narrow SavedVariables export with `target/
 
 Analysis tools: `character_summary` reports observed counts and unknowns; `compare_snapshots` requires the same character and exact client/build, rejects reversed capture order, and returns at most 100 changed JSON paths per section with truncation metadata. Missing sections are not treated as empty inventories. These are snapshot observations, not recommendations about optimal equipment.
 
+`review_equipment_selection` creates a player-review JSON draft bound to one
+`snapshot_id`. Supply 1–19 `selections`, each with `target_slot`, `expected_item_id`
+and a `source`: either `{"kind":"bag","bag":0,"slot":1}` or
+`{"kind":"equipment","slot":16}`. IDs must match the exact observed locations;
+duplicate targets and reused locations are rejected. The draft shows previous
+items, selected items and equipment slots that would be vacated. It does not
+apply changes, emit a game import or claim compatible/optimal gear. Game legality,
+requirements, capacity and current ownership remain unknown. Schema version 1
+does not identify item GUIDs, account or region. This tool requires the six-tool
+server release; see the dated verification log for deployed qualification.
+
 Synthetic performance baseline: `cargo run --release --locked --example benchmark` measures warm-cache listing and inspection over 200 generated snapshots. It uses no account data.
 
 The Python prototype is retained temporarily as a reference and independent protocol test harness. Install its test dependencies with `python -m pip install -r requirements.txt`. Set `AZEROTH_TEST_BINARY` to the Rust executable to test that server instead of the prototype.
