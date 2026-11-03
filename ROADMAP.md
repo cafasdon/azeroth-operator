@@ -4,6 +4,7 @@
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.
+- Listing optimisation deployed with unchanged per-file validation. Four paired synthetic Windows benchmark runs measured 24.4% lower listing median and 12.7% lower inspection median; hosted Linux speedup is not measured.
 - Read-only MCP discovery and snapshot inspection; real stdio integration test.
 - Rust CLI import of bounded JSON or strict hex-encoded SavedVariables; code-bearing files rejected.
 - Family-filtered MCP snapshot listing with pagination and corrupt-file count.

@@ -49,9 +49,9 @@ Six read-only snapshot/analysis tools are exposed, including equipment review.
 The service override and network policy are owned by cafasdon/Proxmox (PR197/199).
 CT150 isolation covers 8823 alongside 8765–8821, with 8822/8824 excluded.
 
-Reader image after the equipment-review release:
-`sha256:823a4a9111ab8814febf8b3646768398f110dfe004ae5bfe9f58937e4a87a163`,
-Rust source `b008768febf79ece1f1917b7a18a1fae0d6959e8`.
+Reader image after the listing-performance release:
+`sha256:834f91f19b2af009232c04dc54ca64757c01f6eb544ed70ead05cc37a4272a22`,
+Rust source `8785b905fcddfc27f4b1e3db52875c9255537012`.
 The restricted upload receiver retains its separately pinned importer image.
 
 `deploy/upgrade_gateway.py --expected-image <current-id> --image <candidate-id>`

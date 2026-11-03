@@ -18,6 +18,10 @@ async def smoke(snapshot=None):
             tools = await session.list_tools()
             assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection"}
             if snapshot:
+                result = await session.call_tool("list_snapshots", {"family": "retail", "limit": 100})
+                assert not result.isError
+                listing = json.loads(result.content[0].text)
+                assert snapshot in {row["snapshot_id"] for row in listing["snapshots"]}
                 result = await session.call_tool("inspect_snapshot", {"snapshot_id": snapshot, "section": "equipment"})
                 assert not result.isError
                 value = json.loads(result.content[0].text)
