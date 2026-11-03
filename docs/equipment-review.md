@@ -1,0 +1,50 @@
+# Equipment review contract
+
+`review_equipment_selection` returns a JSON document for a player to inspect.
+It is an analysis operation. It has no game command, macro, addon import or
+execution path. All three client families use the same snapshot contract;
+fixture tests do not establish compatibility with any live game build.
+
+Example MCP arguments (replace the hash and locations with an inspected snapshot):
+
+```json
+{
+  "snapshot_id": "<stored snapshot SHA256>",
+  "selections": [
+    {
+      "target_slot": 11,
+      "source": {"kind": "bag", "bag": 0, "slot": 3},
+      "expected_item_id": 123
+    }
+  ]
+}
+```
+
+Every selected location must exist in that snapshot and contain the expected
+item ID. A source location cannot be selected twice. Target slots cannot repeat.
+Different locations containing the same item ID remain distinct observations;
+this does not prove that both can legally be equipped. Equipment and carried-bag
+sources are supported. Bank, mail and unobserved items are not inferred.
+
+The response has format `azeroth_operator.equipment_review.v1`, the exact
+`snapshot_id`, client/character/capture identity, changes sorted by target slot,
+and equipment source slots left vacant by the requested selection. Swaps have
+no vacated slots. Selecting an item in its existing slot reports
+`already_selected`. All source items are resolved against the original snapshot,
+never against a partially changed inventory.
+
+`selected_item_observed` and `previous_item_observed` preserve the available
+exported data. A null previous observation is not proof that the live slot is
+empty. A displaced item has no assigned destination. The review does not infer
+an executable ordering or claim sufficient bag space.
+
+The status remains `draft_unverified_compatibility`, with `game_execution:false`
+and `requires_player_review:true`. Compatibility, class/level requirements,
+unique-equipped restrictions, weapon pairing, inventory capacity, current
+ownership and performance are explicitly unknown. Snapshot schema 1 has no
+item GUID, account or region identity. The player must check current items and
+requirements in the appropriate client before making changes manually.
+
+An equipment optimiser and legal game import format remain separate, unfinished
+features. They require richer item metadata, operation-specific policy evidence
+and live client verification; this draft must not be presented as their substitute.

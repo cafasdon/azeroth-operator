@@ -10,6 +10,7 @@
 - Initial Lua exporter for equipment, bags and basic stats; Lua 5.1 fixture roundtrip tested. Retail development package installed; not live-qualified.
 - Expanded collectors and unavailable reasons tested with fixtures; local deterministic development ZIPs verified. Retail development addon installed with matching hashes; live qualification still pending.
 - Snapshot comparisons with client/character/capture-order gates and bounded differences; basic observed character summaries.
+- Read-only equipment-selection JSON reviews with exact observed-location/item matching, duplicate rejection and swap/vacancy accounting. These are unverified selection drafts, not optimal builds or game imports; see docs/equipment-review.md.
 - Hosted read-only MCP and restricted authenticated upload on personal pylon CT290, verified with synthetic upload and public SDK readback. No live game snapshot yet.
 - Incremental hash acknowledgements and bounded local sync runner; missing exports, retries, concurrency and Windows timeout cleanup tested. Current-user scheduled task installed; first real scheduled run completed with result 0 and waiting statuses for Retail/Forever.
 
