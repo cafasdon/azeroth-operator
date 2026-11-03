@@ -23,6 +23,9 @@ def qualify(image):
         for extended in (False, True):
             if extended:
                 snapshot["sections"]["operation_receipts"] = {"a" * 64: {"status":"outcome_unknown", "kind":"move"}}
+                snapshot["sections"]["operation_receipts"]["b" * 64] = {"status":"already_selected", "kind":"set_binding"}
+                snapshot["sections"]["binding_state"] = {"binding_set":2,"coverage":"bound_keys_only"}
+                snapshot["sections"]["bindings"] = {"1":{"command":"ACTIONBUTTON1","key1":"CTRL-1","context":0}}
                 snapshot["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                     "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                     "spec_id":263,"serialization_version":2,"staged_changes":False}}

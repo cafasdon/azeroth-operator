@@ -25,6 +25,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='binding' then return {kind='set_binding',character='Test',realm='Realm',family='retail',variant='live',build='123',key='CTRL-1',context=0,binding_set=2,expected='',desired='ACTIONBUTTON1'} end
             assert(text=='valid')
             return {kind='delete',character='Test',realm='Realm',family='retail',variant='live',build='123',source_scope='account',expected={name='Test',icon=1,body='/say test'}}
         end
@@ -47,6 +48,10 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(applies==1 and not apply.enabled)
         review.scripts.OnClick(); panel.scripts.OnHide(); assert(not apply.enabled)
         assert(invalidations>=5)
+        input:SetText('binding'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Unbound (checked on Apply)',1,true))
+        assert(frames[5].text:find('Binding set: Character',1,true))
+        assert(frames[5].text:find('Desired action: ACTIONBUTTON1',1,true))
     "#,
     )
     .exec()
