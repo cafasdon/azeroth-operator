@@ -28,24 +28,57 @@ function AO.ApplyBagOperation(op)
     local info=C_Container.GetContainerItemInfo(op.bag,op.slot)
     assert(info and not info.isLocked and info.itemID==op.item_id and info.stackCount==op.count, "Source changed or locked")
     assert(C_Item.GetItemGUID(source)==op.source_guid and emptyTarget(), "Item locations changed")
+    local observedLink=info.hyperlink
     -- Caller must checkpoint uncertainty before entry. Never clear or retry a cursor.
     local function sourceAfterPickup()
         if not splitting then return not C_Item.GetItemGUID(source) end
         local remaining=C_Container.GetContainerItemInfo(op.bag,op.slot)
         return C_Item.GetItemGUID(source)==op.source_guid and remaining and remaining.itemID==op.item_id
-            and remaining.hyperlink==info.hyperlink and remaining.stackCount==op.count-op.amount
+            and remaining.hyperlink==observedLink and remaining.stackCount==op.count-op.amount
+    end
+    -- Pickup may leave the original slot observable until placement/server update.
+    -- Accept only the original exact preimage or the expected post-pickup state.
+    local function sourceDuringPickup()
+        if sourceAfterPickup() then return true end
+        local retained=C_Container.GetContainerItemInfo(op.bag,op.slot)
+        return C_Item.GetItemGUID(source)==op.source_guid and retained
+            and retained.itemID==op.item_id and retained.stackCount==op.count
+            and retained.hyperlink==observedLink
     end
     if splitting then C_Container.SplitContainerItem(op.bag,op.slot,op.amount)
     else C_Container.PickupContainerItem(op.bag,op.slot) end
     local kind,id,link=GetCursorInfo()
-    assert(kind=="item" and id==op.item_id and link==info.hyperlink, "Source pickup unconfirmed")
-    assert(sourceAfterPickup() and emptyTarget(), "Locations changed after pickup; cursor retained")
+    assert(kind=="item" and id==op.item_id and link==observedLink, "Source pickup unconfirmed")
+    assert(sourceDuringPickup() and emptyTarget(), "Locations changed after pickup; cursor retained")
     C_Container.PickupContainerItem(op.target_bag,op.target_slot)
+    -- Keep the link observed before the write, never a later mutable slot table.
+    op.observed_link=observedLink
+    return {status=AO.VerifyBagOperation(op) and "applied" or "outcome_unknown",kind=op.kind}
+end
+
+-- Observation only. Called immediately and, for a bounded window, during export.
+function AO.VerifyBagOperation(op)
+    if GetCursorInfo()~=nil or AO.family~="retail" then return false end
+    local _,build,_,interface=GetBuildInfo()
+    if interface~=AO.interface then return false end
+    if op.build and (tostring(build)~=op.build or op.variant~=AO.variant
+        or op.character~=UnitName("player") or op.realm~=GetRealmName()) then return false end
+    if type(op.observed_link)~="string" then return false end
+    local source=ItemLocation:CreateFromBagAndSlot(op.bag,op.slot)
+    local target=ItemLocation:CreateFromBagAndSlot(op.target_bag,op.target_slot)
+    local remaining=C_Container.GetContainerItemInfo(op.bag,op.slot)
     local moved=C_Container.GetContainerItemInfo(op.target_bag,op.target_slot)
     local targetGUID=C_Item.GetItemGUID(target)
+    local splitting=op.kind=="split_bag_item"
+    local sourceOK=not remaining and not C_Item.GetItemGUID(source)
     local identityOK=targetGUID==op.source_guid
-    if splitting then identityOK=type(targetGUID)=="string" and #targetGUID>0 and targetGUID~=op.source_guid end
-    assert(GetCursorInfo()==nil and sourceAfterPickup() and identityOK and moved and moved.itemID==op.item_id
-        and moved.hyperlink==info.hyperlink and moved.stackCount==(splitting and op.amount or op.count), "Bag change unconfirmed")
-    return {status="applied",kind=op.kind}
+    if splitting then
+        sourceOK=remaining and not remaining.isLocked and C_Item.GetItemGUID(source)==op.source_guid
+            and remaining.itemID==op.item_id and remaining.hyperlink==op.observed_link
+            and remaining.stackCount==op.count-op.amount
+        identityOK=type(targetGUID)=="string" and #targetGUID>0 and targetGUID~=op.source_guid
+    end
+    return not not (sourceOK and identityOK and moved and not moved.isLocked
+        and moved.itemID==op.item_id and moved.hyperlink==op.observed_link
+        and moved.stackCount==(splitting and op.amount or op.count))
 end

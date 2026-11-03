@@ -24,19 +24,19 @@ local function saveReceipts(receipts)
     end
     AzerothOperatorOperations=table.concat(rows)
 end
-local pendingTalents={}
+local pendingObservations={}
 function AO.ReadMacroReceipts()
     local receipts,count=readReceipts()
     local changed=false
-    for id,pending in pairs(pendingTalents) do
-        if GetTime()>pending.deadline then pendingTalents[id]=nil
+    for id,pending in pairs(pendingObservations) do
+        if GetTime()>pending.deadline then pendingObservations[id]=nil
         elseif receipts[id] and receipts[id].status=="outcome_unknown" then
-            local ok,verified=pcall(AO.VerifyTalentOperation,pending.operation)
+            local ok,verified=pcall(pending.verify,pending.operation)
             if ok and verified then
-                receipts[id]={kind="load_talent_config",status="applied"}
-                pendingTalents[id]=nil; changed=true
+                receipts[id]={kind=pending.operation.kind,status="applied"}
+                pendingObservations[id]=nil; changed=true
             end
-        else pendingTalents[id]=nil end
+        else pendingObservations[id]=nil end
     end
     if changed then saveReceipts(receipts) end
     return receipts,count
@@ -133,8 +133,10 @@ function AO.ApplyImportedMacro(text)
     local ok,result=pcall(executor,operation)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
-    if operation.kind=="load_talent_config" and ok and result.status=="outcome_unknown" then
-        pendingTalents[operation.id]={operation=operation,deadline=GetTime()+60}
+    local verify=operation.kind=="load_talent_config" and AO.VerifyTalentOperation
+        or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.VerifyBagOperation
+    if verify and ok and result.status=="outcome_unknown" then
+        pendingObservations[operation.id]={operation=operation,verify=verify,deadline=GetTime()+60}
     end
     -- SavedVariables are persisted only at reload/logout; never promise crash durability.
     return receipts[operation.id],ok,not ok and type(result)=="string" and result or nil

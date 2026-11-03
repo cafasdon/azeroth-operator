@@ -67,7 +67,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(frames[5].text:find('loadout-specific bars may change',1,true))
         function AO.ApplyReviewedMacro() return {kind='load_talent_config',status='outcome_unknown'},true end
         apply.scripts.OnClick()
-        assert(not apply.enabled and fonts[2].text:find('Talent load unconfirmed',1,true))
+        assert(not apply.enabled and fonts[2].text:find('Operation unconfirmed',1,true))
 
         function AO.ApplyReviewedMacro() return {status='outcome_unknown'},false,'Source |Hbad|h changed\ncheck' end
         apply.scripts.OnClick()

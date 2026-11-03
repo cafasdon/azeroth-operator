@@ -25,3 +25,13 @@ The distinct-GUID and synchronous-readback behaviour are fixture expectations, n
 Release candidate 0.6.1-dev includes bounded Apply diagnostics. ZIP SHA256 7268c23ab78e85263e9f1b05db8164a6a038d54a78095607b588004478afe5c0; staged package checks and complete source gate (31 Python tests plus Rust suites) passed. This supersedes 0.6.0-dev for release preparation but is not installed.
 
 Advisory claims review: Jev 1.14.0, request 4213d021af318ee18ea6fdba334ee1a8f63e95f8dfd69c204f0620173966dc46, 873 input/116 output tokens, 0.34 seconds, insufficient_evidence (reported confidence 0.34). Not a review pass. Fixture evidence supports development source behaviour only; split GUID lifecycle and live timing still require game verification.
+
+## Inventory observation timing — 2026-11-04
+
+Source change following the unresolved live bag attempt: accept either the exact original source GUID/item/count/link or the expected post-pickup state between pickup and placement. Requiring immediate source disappearance was an unnecessary synchronous assumption. This is a modelled failure mode, not a proven diagnosis of the player's unknown receipt.
+
+Final readback still requires an empty cursor, unlocked target, exact target identity/content/count and source vacancy (move) or quantity conservation with a distinct target GUID (split). If that readback is not yet conclusive, return outcome_unknown. The receipt reader can observe the same operation for up to 60 seconds during export and promote to applied only when every condition matches. It never performs game writes. Expiry or reload leaves the saved unknown receipt intact; no retry or cursor clearing is added. An earlier unknown operation is never enrolled in this new in-memory reconciliation.
+
+Fixtures cover retained source during pickup, delayed full-move and split updates, wrong destination GUID/count, locked destination, changed character, expiry, occupied destination races, rejected placement and duplicate-operation refusal. Full source gate passed (Rust, Clippy, format/build, 31 Python tests); additional delayed split fixture passed separately. This code is not yet packaged or installed. In-game qualification remains deferred by the player.
+
+Advisory Jev review: request d102834defcc0a7305c92c8ef57f9e2dd8438f07fe652b40ec1cfe57b50c3515, jev-1.14.0, 952 input/135 output tokens, 0.309 seconds, insufficient_evidence (reported confidence 0.77), not a pass. Tests establish the stated fixture behaviours, not live API semantics. Configured adversarial-review file is absent; that workflow was not run.

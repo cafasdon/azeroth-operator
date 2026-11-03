@@ -39,7 +39,7 @@ fn full_stack_move_guards_and_partial_effects() -> mlua::Result<()> {
         assert(writes==2 and slots[1]==nil and slots[2].stackCount==20 and cursor==nil)
         assert(not pcall(AO.ApplyBagOperation,op) and writes==2)
         slots[1],slots[2]=slots[2],nil; reject=true
-        assert(not pcall(AO.ApplyBagOperation,op))
+        assert(AO.ApplyBagOperation(op).status=='outcome_unknown')
         assert(writes==4 and cursor.guid=='stack' and slots[1]==nil and slots[2]==nil)
         slots[1],cursor=cursor,nil; reject=false; race=true
         assert(not pcall(AO.ApplyBagOperation,op))
