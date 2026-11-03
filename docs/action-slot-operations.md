@@ -11,3 +11,11 @@ Cursor identity assumptions need further qualification before enabling: spell ID
 Tests execute the real Lua module with move-to-empty and spell/macro swap, changed macro, missing slot, combat, occupied cursor, rejected placement and secret values. Full source gate passed: format/build, Rust tests, Clippy and31Python tests. No live action was attempted.
 
 Jev advisory: request fdda146351c1f79062b0d5c88f02802f26857296fa43b9b7e32924048fe5c7c5, jev-1.14.0,941input/116output tokens,0.291seconds; insufficient_evidence (reported confidence0.77), not a pass. Configured adversarial-review file absent; workflow not run. Live tests remain deferred by the user.
+
+## Compiler and decoder — 2026-11-04
+
+Source-only ActionRequest compiler and ActionImport decoder now bind two explicitly observed slots, source/target contents and macro preimages to snapshot/client/character identity. AO-ACTION-1 has23colon-separated fields with hex text and SHA256 operation ID; total size is bounded at8192bytes. Empty target is accepted only from an explicit empty observation. Missing target/source, identical locations, unsupported kinds, missing macro contents and oversized data are refused. Macro body changes produce a different operation ID. Empty-string subtype is refused as ambiguous with the absent subtype transport representation.
+
+Rust-to-Lua tests preserve newline/colon/pipe text and distinguish move from swap; malformed fields and missing preimages are rejected. Full source gate passed including31Python tests. No MCP registration, dispatcher/UI integration or deployment yet. Executor cursor assumptions remain unqualified.
+
+Jev advisory request c20e1a8ef52410679718bfd12f2fb9dc7f4b528ddfcb97c5566b251937a752f5, jev-1.14.0,886input/116output tokens,0.288seconds: insufficient_evidence (reported confidence0.42), not a pass. Deterministic checks establish transport behaviour only.
