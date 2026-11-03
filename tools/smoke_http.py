@@ -33,6 +33,16 @@ async def smoke(snapshot=None):
                 assert review["snapshot_id"] == snapshot and review["game_execution"] is False
                 assert review["changes"][0]["status"] == "already_selected"
                 assert review["checks"]["performance_improvement"] == "unknown"
+                result = await session.call_tool("review_equipment_selection", {"snapshot_id": snapshot,
+                    "selections": [{"target_slot": 17, "source": {"kind": "equipment", "slot": 16}, "expected_item_id": 123}]})
+                assert not result.isError
+                changed = json.loads(result.content[0].text)
+                assert changed["vacated_equipment_slots"] == [16]
+                assert changed["changes"][0]["status"] == "requested_change"
+                assert changed["checks"]["slot_compatibility"] == "unknown"
+                result = await session.call_tool("review_equipment_selection", {"snapshot_id": snapshot,
+                    "selections": [{"target_slot": 17, "source": {"kind": "equipment", "slot": 16}, "expected_item_id": 999}]})
+                assert result.isError
             else:
                 result = await session.call_tool("list_snapshots", {"family": "retail"})
                 assert not result.isError
