@@ -8,6 +8,18 @@ Required capture: complete bounded catalogue with stable set ID/name/icon, ignor
 
 Required operations: use captured set; create from reviewed current equipment; save existing set with exact previous/current preimages; rename/icon; delete with exact identity; assign/unassign spec with side effects shown. Do not combine these into an opaque batch.
 
+## Use review and receipt checkpoint — 2026-11-04
+
+The shared source dispatcher now recognises `AO-SET-USE-1`, maps only `use_equipment_set` to `ApplyEquipmentSetUse`, and registers its read-only verifier. Review lists every slot's previous and desired identity, labels ignored slots Preserve, and makes empty preconditions explicit. It warns that partial swaps remain unconfirmed. Displayed identities pass through the existing control/pipe sanitiser. No native call occurs during decoding or review.
+
+Lua checkpoints and both Rust receipt validators now recognise the operation kind. The existing uncertainty-before-execution, exact reviewed bytes, duplicate-ID refusal and bounded 60-second read-only observation machinery apply. Reload discards only pending in-memory observation; the persisted unknown receipt remains and refuses replay. This does not make SavedVariables crash-durable or establish semantic exactly-once execution across newly prepared operation IDs.
+
+Actual compiled transport → Lua decoder → review → executor → Core export → Rust import tests pass, including the receipt existing before native Use, missing review, changed bytes, replay refusal, delayed completion without another write, expiry and simulated shared-module reload. Widget fixtures assert slot 16's exact replacement, slot 19's ignored empty preservation, sanitisation and the partial-swap warning. Full `python -m tools.verify_source` passed format, build, all Rust/Lua tests, Clippy with warnings denied and 32 Python tests.
+
+The new executor is still excluded from packaged TOCs. Preparation continues to report execution disabled until package support/versioning is added. Installed 0.10.0-dev and hosted services are unchanged; no in-game test occurred.
+
+Advisory Jev review of the actual dispatch/UI/validator diff: `jev-1.14.0`, request `0ae15c0c025ff1a6d8b9143e6e346f88e7a4100d11797a3f4502e3f7d118f39c`, 2533 input/131 output tokens, 0.301 seconds; `no_material_issue` with reported confidence 0.10. Advisory only; native compatibility remains unqualified. Configured OCR skill and adversarial-review rule files were checked and remain absent.
+
 ## Use preparation and transport checkpoint — 2026-11-04
 
 The source `prepare_equipment_set_operation` now accepts `operation: use`, a captured `set_id`, and `expect_empty_slots` (unique integers 1–19). The equipment collector omits uncaptured/empty slots, so preparation requires explicit empty preconditions for every absent position; it never silently interprets absence as empty. Conflicting captured occupancy, missing GUIDs, unresolved set slots, locked observed items, lost items and duplicate desired identities are refused. Empty preconditions must later be verified by the executor's normal existence/GUID reads. They are not assertions that a saved capture proved emptiness.
