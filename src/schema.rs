@@ -147,6 +147,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                                 | "equip_bag_item"
                                 | "move_bag_item"
                                 | "split_bag_item"
+                                | "load_talent_config"
                         )
                     ),
                     "Invalid receipt kind"

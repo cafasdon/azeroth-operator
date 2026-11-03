@@ -40,6 +40,32 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
         8
     );
     assert!(!decoded.get::<bool>("uses_shared_action_bars").unwrap());
+    lua.globals().set("AO", ao.clone()).unwrap();
+    lua.globals().set("code", code).unwrap();
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao))
+        .unwrap();
+    lua.load(r#"
+        AO.family='retail'; AO.variant='live'; now=0; writes=0; verified=false
+        function GetTime() return now end
+        function GetBuildInfo() return '', '70688', '',120105 end
+        function UnitName() return 'Test' end; function GetRealmName() return 'Test' end
+        function InCombatLockdown() return false end
+        function AO.ApplyTalentOperation(op) writes=writes+1; return {kind=op.kind,status='outcome_unknown'} end
+        function AO.VerifyTalentOperation() return verified end
+        AO.ReviewMacroImport(code)
+        local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.status=='outcome_unknown' and writes==1)
+        local id=AO.DecodeTalentOperation(code).id
+        assert(AO.ReadMacroReceipts()[id].status=='outcome_unknown')
+        verified=true; now=10
+        assert(AO.ReadMacroReceipts()[id].status=='applied' and writes==1)
+        local late=code:gsub('AO%-TALENT%-1:[0-9a-f]+:','AO-TALENT-1:'..string.rep('f',64)..':',1)
+        verified=false; AO.ReviewMacroImport(late); AO.ApplyReviewedMacro(late)
+        now=71; verified=true
+        assert(AO.ReadMacroReceipts()[string.rep('f',64)].status=='outcome_unknown' and writes==2)
+        AO.ReviewMacroImport(late); assert(not pcall(AO.ApplyReviewedMacro,late) and writes==2)
+    "#).exec().unwrap();
     for (field, bad) in [(14, "7c"), (16, "2"), (9, "0263"), (17, "-1")] {
         let mut fields: Vec<_> = code.split(':').collect();
         fields[field] = bad;

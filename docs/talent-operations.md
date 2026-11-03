@@ -1,6 +1,6 @@
 # Talent operation design — 2026-11-04
 
-Status: API/UI source investigation complete for the initial saved-loadout switching path. No talent mutation implemented or deployed.
+Status: API/UI source investigation complete for the initial saved-loadout switching path. Talent compiler, decoder and executor are under source development; none are deployed.
 
 Primary implementation evidence (Blizzard UI source mirror, live branch, read 2026-11-04):
 - https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/ClassTalentsDocumentation.lua
@@ -25,3 +25,10 @@ Shared-action-bar metadata is now captured as required uses_shared_action_bars o
 Talent preparation compiler added in source. It binds the working config, selected saved ID, current committed import string, desired saved contents/name, spec, serialization version and shared-action-bar flag. Staged/unavailable current talents, absent targets, mismatched spec/version and transport over 8192 bytes are refused. AO-TALENT-1 has eighteen fields; no Lua decoder/executor or MCP exposure yet. Tests verify binding, changed target content producing a different operation ID and uncertainty refusals. Fixture capture timestamp uses UTC, not the local calendar date. Targeted tests and Clippy passed.
 
 AO-TALENT-1 Lua decoding is now implemented and tested against the Rust compiler. The roundtrip preserves committed/desired build contents, selected config ID and shared-action-bar flag. Malformed build alphabet, noncanonical numeric fields and invalid boolean values are rejected. Targeted tests and Clippy pass. Decoder is not packaged or connected to Apply yet; no talent write is possible from this change.
+
+
+Source executor now checks client/character/spec, active and selected configuration preconditions, current and target contents, staged edits and edit permission before one LoadConfig request. A separate observation-only verifier requires committed desired contents and unchanged target metadata. Pending loads remain outcome_unknown; tests prove polling does not issue additional writes and staged content cannot count as complete. This currently verifies talent contents only: native selected-loadout bookkeeping and action-bar result reconciliation remain outstanding before exposing it as complete saved-loadout switching. The executor is not packaged or reachable from Apply. Pending receipt reconciliation and shared UI/MCP integration are next.
+
+Completion now additionally requires the selected saved ID to equal the requested loadout. The shared dispatcher decodes/routes talent operations and retains a bounded in-memory pending observation for 60 seconds. Receipt reads (including player export) may mark applied only after the read-only verifier succeeds. No timer, event or receipt read issues a game write. Expiry/reload preserves outcome_unknown; replay remains refused. Tests cover delayed confirmation, expiry, no repeated writes and selection mismatch. Native selection bookkeeping may therefore keep a request unknown even when talent contents match; resolving that correctly remains necessary before live release. UI-specific review, packaging and MCP exposure are still pending.
+
+Talent review UI is implemented in source and fixture-tested. It displays saved name/ID, expected selection, spec, action-bar side effects and the observation window. A returned outcome_unknown remains explicitly unconfirmed even when the API request itself returned normally. Targeted UI/import/executor tests pass. No package or deployment has occurred.
