@@ -5,3 +5,4 @@ __pycache__/
 _secrets/
 local-data/
 *.log
+target/

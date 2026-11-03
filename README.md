@@ -13,7 +13,9 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
-Install dependencies with `python -m pip install -r requirements.txt`, then run `python server.py` for stdio MCP. Set `AZEROTH_DATA_DIR` to the snapshot directory, or use the default ignored `local-data/snapshots`. Tools: `capabilities`, `inspect_snapshot`. Snapshot ingestion currently uses the Python `SnapshotStore` interface; addon ingestion is still pending.
+The companion is Rust; in-game adapters will use Lua. Build with `cargo build --locked`. Run `target/debug/azeroth-operator.exe` for stdio MCP. Set `AZEROTH_DATA_DIR` to an absolute snapshot directory; the default is `local-data/snapshots` relative to the process working directory. Tools: `capabilities`, `inspect_snapshot`. Addon and CLI ingestion are pending.
+
+The Python prototype is retained temporarily as a reference and independent protocol test harness. Install its test dependencies with `python -m pip install -r requirements.txt`. Set `AZEROTH_TEST_BINARY` to the Rust executable to test that server instead of the prototype.
 
 ## Boundaries
 
@@ -23,4 +25,4 @@ No character data, account identifiers, credentials or local exports belong in G
 
 ## Verification
 
-Run `python -m unittest discover -s tests -v` from the project root. Structural checks do not establish runtime game compatibility.
+Run `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. Set `AZEROTH_TEST_BINARY` as above for Rust protocol verification. These checks do not establish runtime game compatibility.

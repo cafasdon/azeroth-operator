@@ -1,0 +1,225 @@
+//! Data-only client contracts and snapshot storage. No game execution.
+use anyhow::{Result, ensure};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+};
+
+pub const MAX_BYTES: u64 = 4 * 1024 * 1024;
+const SECTIONS: &[&str] = &[
+    "equipment",
+    "bags",
+    "talents",
+    "stats",
+    "professions",
+    "quests",
+    "currencies",
+    "achievements",
+    "macros",
+    "bindings",
+    "action_bars",
+];
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Family {
+    Retail,
+    Classic,
+    Forever,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ClientIdentity {
+    pub family: Family,
+    pub variant: String,
+    pub build: String,
+    pub interface: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Character {
+    pub name: String,
+    pub realm: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Source {
+    Addon,
+    OfficialApi,
+    Fixture,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Snapshot {
+    pub schema_version: u32,
+    pub source: Source,
+    pub captured_at: DateTime<Utc>,
+    pub client: ClientIdentity,
+    pub character: Character,
+    pub sections: BTreeMap<String, Value>,
+}
+
+impl Snapshot {
+    pub fn validate(&self) -> Result<()> {
+        ensure!(self.schema_version == 1, "Unsupported schema version");
+        ensure!(self.client.interface > 0, "Missing interface version");
+        for text in [
+            &self.client.variant,
+            &self.client.build,
+            &self.character.name,
+            &self.character.realm,
+        ] {
+            ensure!(
+                !text.trim().is_empty() && text.len() <= 128,
+                "Invalid identity field"
+            );
+        }
+        ensure!(
+            self.captured_at <= Utc::now(),
+            "Capture timestamp is in the future"
+        );
+        for (name, value) in &self.sections {
+            ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");
+            ensure!(
+                value.is_array() || value.is_object(),
+                "Section must be an array or object"
+            );
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Store {
+    pub root: PathBuf,
+}
+
+impl Store {
+    pub fn ingest(&self, snapshot: &Snapshot) -> Result<String> {
+        snapshot.validate()?;
+        let raw = serde_json::to_vec(snapshot)?;
+        ensure!(raw.len() as u64 <= MAX_BYTES, "Snapshot exceeds size limit");
+        let id = format!("{:x}", Sha256::digest(&raw));
+        std::fs::create_dir_all(&self.root)?;
+        let path = self.root.join(format!("{id}.json"));
+        if path.exists() {
+            self.read(&id)?;
+            return Ok(id);
+        }
+        let mut pending = tempfile::NamedTempFile::new_in(&self.root)?;
+        pending.write_all(&raw)?;
+        pending.as_file().sync_all()?;
+        match pending.persist_noclobber(&path) {
+            Ok(_) => (),
+            Err(e) if e.error.kind() == std::io::ErrorKind::AlreadyExists => {
+                self.read(&id)?;
+            }
+            Err(e) => return Err(e.error.into()),
+        }
+        Ok(id)
+    }
+
+    pub fn read(&self, id: &str) -> Result<Snapshot> {
+        ensure!(
+            id.len() == 64
+                && id
+                    .bytes()
+                    .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)),
+            "Invalid snapshot id"
+        );
+        let root = self.root.canonicalize()?;
+        let path = root.join(format!("{id}.json")).canonicalize()?;
+        ensure!(
+            path.parent() == Some(root.as_path()),
+            "Snapshot path escaped store"
+        );
+        let mut raw = Vec::new();
+        File::open(path)?
+            .take(MAX_BYTES + 1)
+            .read_to_end(&mut raw)?;
+        ensure!(raw.len() as u64 <= MAX_BYTES, "Snapshot exceeds size limit");
+        ensure!(
+            format!("{:x}", Sha256::digest(&raw)) == id,
+            "Snapshot content hash mismatch"
+        );
+        let snapshot: Snapshot = serde_json::from_slice(&raw)?;
+        snapshot.validate()?;
+        Ok(snapshot)
+    }
+
+    pub fn inspect(&self, id: &str, section: Option<&str>) -> Result<Value> {
+        let s = self.read(id)?;
+        let mut result = json!({"snapshot_id": id, "client": s.client, "character": s.character,
+            "source": s.source, "captured_at": s.captured_at, "age_seconds": (Utc::now()-s.captured_at).num_seconds(), "live": false});
+        if let Some(name) = section {
+            ensure!(SECTIONS.contains(&name), "Unknown section");
+            result["available"] = json!(s.sections.contains_key(name));
+            result["data"] = s.sections.get(name).cloned().unwrap_or(Value::Null);
+        } else {
+            result["available_sections"] = json!(s.sections.keys().collect::<Vec<_>>());
+        }
+        Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn fixture() -> Snapshot {
+        serde_json::from_value(json!({"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":[]}})).unwrap()
+    }
+    #[test]
+    fn roundtrip_and_integrity() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store {
+            root: dir.path().into(),
+        };
+        let id = store.ingest(&fixture()).unwrap();
+        assert_eq!(id, store.ingest(&fixture()).unwrap());
+        assert_eq!(store.inspect(&id, None).unwrap()["live"], false);
+        assert!(store.read("../secret").is_err());
+        std::fs::write(dir.path().join(format!("{id}.json")), "{}").unwrap();
+        assert!(store.read(&id).is_err());
+    }
+    #[test]
+    fn invalid_envelope() {
+        let mut s = fixture();
+        s.client.interface = 0;
+        assert!(s.validate().is_err());
+        let mut s = fixture();
+        s.sections.insert("execute".into(), json!({}));
+        assert!(s.validate().is_err());
+        let mut s = fixture();
+        s.captured_at = Utc::now() + chrono::Duration::days(1);
+        assert!(s.validate().is_err());
+        let mut v = serde_json::to_value(fixture()).unwrap();
+        v["client"]["family"] = json!("unknown");
+        assert!(serde_json::from_value::<Snapshot>(v).is_err());
+    }
+    #[test]
+    fn concurrent_publication() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store {
+            root: dir.path().into(),
+        };
+        let jobs: Vec<_> = (0..8)
+            .map(|_| {
+                let store = store.clone();
+                std::thread::spawn(move || store.ingest(&fixture()).unwrap())
+            })
+            .collect();
+        let ids: Vec<_> = jobs.into_iter().map(|j| j.join().unwrap()).collect();
+        assert!(ids.iter().all(|id| id == &ids[0]));
+        assert!(store.read(&ids[0]).is_ok());
+    }
+}

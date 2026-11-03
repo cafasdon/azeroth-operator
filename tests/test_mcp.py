@@ -14,8 +14,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_stdio_server(self):
         with tempfile.TemporaryDirectory() as folder:
             key = SnapshotStore(Path(folder)).ingest(fixture())
-            params = StdioServerParameters(command=sys.executable,
-                args=[str(Path(__file__).resolve().parents[1] / "server.py")],
+            rust_binary = os.environ.get("AZEROTH_TEST_BINARY")
+            params = StdioServerParameters(command=rust_binary or sys.executable,
+                args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
                 env={**os.environ, "AZEROTH_DATA_DIR": folder})
             async with stdio_client(params) as (read, write):
                 async with ClientSession(read, write) as session:
