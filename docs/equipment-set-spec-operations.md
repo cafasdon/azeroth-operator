@@ -25,3 +25,13 @@ Rust validates contiguous indices, unique positive 32-bit IDs and assigned-index
 Full source gate passed format/build/Rust tests/Clippy and 33 Python tests. Advisory Jev: `jev-1.14.0`, request `f06fc44d9dc610551374c6f97fa18f249fa829e9dbc544498972f73c5a8325cf`, 990 input/131 output tokens, 0.274 seconds; `no_material_issue`, reported confidence 0.46. Advisory only, not native qualification. Configured OCR/adversarial rule paths remain absent.
 
 No new package or installation was made. Existing hosted/local importers need this schema update before an addon exporting the optional field is installed. Preparation, decoder, player review and receipt integration for association writes remain pending.
+
+## Source preparation checkpoint
+
+`prepare_equipment_set_operation` now accepts `assign_spec` with `set_id` and `spec_index`, or `unassign_spec` with only `set_id`. Both require captured specialisation identities and reject ambiguous ownership, absent target sets, metadata replacements and equipment empty-slot preconditions. Other operation kinds reject an unexpected spec index.
+
+The result is explicitly a draft (`preparation_status: draft_transport_pending`, `import_code: null`, `addon_execution_enabled: false`). It binds the client, character, snapshot, entire expected catalogue and full spec-ID map, reports a displaced set, computes the desired catalogue, and warns that future specialisation equipment selection may change. Its SHA256 covers these fields; it is not authentication or a live-state guarantee. Draft size is capped at 512 KiB. The association executor now checks the entire captured spec-ID map, including for unassignment, rather than only the requested index/ID.
+
+Direct compiler tests prove deterministic identity, changed identity when an unrelated captured spec ID changes, displacement, no-op detection, unassignment isolation and refusal of missing/invalid/conflicting inputs. Real stdio MCP tests cover both draft operations, no import code/execution, absent spec capture, invalid target index and unchanged snapshot files. The added third fixture initially exposed a stale two-snapshot listing assertion; the assertion now covers all three independent fixtures. Full source gate subsequently passed format/build/Rust tests/Clippy and 33 Python tests.
+
+Jev advisory `jev-1.14.0`, request `4b496ee5d6826b607739cbf6471d7f1362d4fa6a84e9284ff27ff0d47dcf7397`, 1026 input/135 output tokens, 0.341 seconds: `insufficient_evidence`, confidence 0.46. Not a passing review or native qualification. Configured OCR/adversarial paths remain absent. No deployment or game action occurred. Bounded wire format, strict decoder, review/receipts and packaging remain required before drafts can become player-applied operations.

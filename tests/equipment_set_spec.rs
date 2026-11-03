@@ -20,7 +20,8 @@ fn associations_bind_catalogue_and_spec_identity_without_multi_call_repair() -> 
                 ['1']={name='Displaced',icon=123,assigned_spec=2,slots=copy(slots)},
                 ['2']={name='Untouched',icon=123,assigned_spec=3,slots=copy(slots)}}
             op={kind='assign_equipment_set_spec',family='retail',variant='live',build='70688',interface=120105,
-                character='Fixture',realm='Fixture',set_id=0,spec_index=2,spec_id=102,expected_catalogue=copy(sets)}
+                character='Fixture',realm='Fixture',set_id=0,spec_index=2,spec_id=102,expected_catalogue=copy(sets),
+                expected_specializations={['1']=101,['2']=102,['3']=103}}
             C_EquipmentSet={GetEquipmentSetForSpec=function(spec)
                 for id,set in pairs(sets) do if set.assigned_spec==spec then return tonumber(id) end end end,
                 AssignSpecToEquipmentSet=function(id,spec)
@@ -73,6 +74,8 @@ fn associations_bind_catalogue_and_spec_identity_without_multi_call_repair() -> 
             function() C_EquipmentSet.AssignSpecToEquipmentSet=nil end,
             function() op.kind='unassign_equipment_set_spec'; op.spec_index=nil; op.spec_id=nil; C_EquipmentSet.UnassignEquipmentSetSpec=nil end,
             function() op.expected_catalogue['2'].assigned_spec=2 end,
+            function() op.expected_specializations['3']=999 end,
+            function() op.expected_specializations['3']=nil end,
         }
         for i,f in ipairs(refusals) do reset(); f(); assert(not pcall(AO.ApplyEquipmentSetSpec,op) and writes==0,'guard '..i) end
         reset(); issecretvalue=function(v) return v=='Target' end

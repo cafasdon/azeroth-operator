@@ -27,6 +27,7 @@ fn set_transport_binds_all_metadata_slots_and_observed_identities()
         name: Some("New name".into()),
         icon: Some(134400),
         expect_empty_slots: vec![],
+        spec_index: None,
     };
     let compiled = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(compiled["addon_execution_enabled"], true);

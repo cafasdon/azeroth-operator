@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP drafts for equipment-set spec assignment/unassignment, binding the full catalogue and all spec IDs and reporting displaced associations. Drafts have no import code or execution support; strengthen executor checks for all captured spec identities.
+
 - Capture optional complete specialisation index-to-ID maps alongside equipment sets, with repeated native reads and strict Rust validation. Missing/restricted/changing data remains unavailable; source only, importer deployment required before installation.
 
 - Add a source-only equipment-set specialisation association executor with full-catalogue preimages, target spec identity checks, one native assign/unassign call and whole-catalogue readback. Failure fixtures verified; not prepared, packaged or deployed.
