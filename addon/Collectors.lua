@@ -122,6 +122,28 @@ local function loadoutExport(configID)
         spec_id=specID, serialization_version=version, staged_changes=false}
 end
 
+local function savedLoadouts()
+    assert(AO.family=="retail", "Unsupported client")
+    local specID=C_SpecializationInfo.GetSpecializationInfo(C_SpecializationInfo.GetSpecialization())
+    assert(type(specID)=="number" and specID>0,"No spec")
+    local ids=C_ClassTalents.GetConfigIDsBySpecID(specID)
+    assert(type(ids)=="table" and #ids<=128,"Invalid loadout list")
+    local selected=C_ClassTalents.GetLastSelectedSavedConfigID(specID)
+    assert(selected==nil or (type(selected)=="number" and selected>0 and selected%1==0),"Invalid selected loadout")
+    local result={spec_id=specID,selected_config_id=selected,entries={}}
+    for _,id in ipairs(ids) do
+        assert(type(id)=="number" and id>0 and id%1==0,"Invalid loadout ID")
+        local key=tostring(id); assert(not result.entries[key],"Duplicate loadout ID")
+        local info=C_Traits.GetConfigInfo(id)
+        assert(info and type(info.name)=="string" and type(info.usesSharedActionBars)=="boolean","Missing loadout metadata")
+        local exported=loadoutExport(id)
+        assert(exported.status=="available","Saved loadout content unavailable")
+        result.entries[key]={name=info.name,uses_shared_action_bars=info.usesSharedActionBars,import_string=exported.import_string,
+            serialization_version=exported.serialization_version}
+    end
+    return result
+end
+
 AO.collectors.talents = function()
     assert(C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetTreeNodes and C_Traits.GetNodeInfo, "Trait API unavailable")
     local configID = C_ClassTalents.GetActiveConfigID()
@@ -140,6 +162,8 @@ AO.collectors.talents = function()
     local result = {config_id=configID, name=config.name, nodes=nodes}
     local exported, loadout = pcall(loadoutExport,configID)
     result.loadout_export = exported and loadout or {status="unavailable", reason="restricted_or_failed"}
+    local catalogOK,catalog=pcall(savedLoadouts)
+    if catalogOK then result.saved_loadouts=catalog end
     if C_ClassTalents.HasUnspentTalentPoints then
         local has, class, spec = C_ClassTalents.HasUnspentTalentPoints()
         result.has_unspent=has; result.unspent_class=class; result.unspent_spec=spec
