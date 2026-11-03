@@ -103,6 +103,13 @@ fn compiled_operation_applies_once_and_rejects_wrong_target() -> anyhow::Result<
         assert(ok and receipt.status=='applied' and writes==1)
         assert(not pcall(AO.ApplyImportedMacro,code))
         assert(writes==1)
+        assert(type(AzerothOperatorOperations)=='string')
+        local checkpoint=AzerothOperatorOperations
+        local receipts,count=AO.ReadMacroReceipts()
+        assert(count==1 and receipts[decoded.id].status=='applied')
+        AzerothOperatorOperations=checkpoint..checkpoint
+        assert(not pcall(AO.ReadMacroReceipts))
+        AzerothOperatorOperations=checkpoint
         assert(not pcall(AO.DecodeMacroOperation,code..'|extra'))
         assert(not pcall(AO.DecodeMacroOperation,'return os.execute("bad")'))
     "#,

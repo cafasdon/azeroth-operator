@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Persist macro attempt receipts as bounded data strings and accept both SavedVariables assignments in the Rust companion without executing Lua. Reject duplicate IDs, unsupported statuses, extra assignments and executable input; retain legacy single-export support. Source verification passes; receipt inspection through hosted snapshots remains to implement.
+
 - Package the three macro modules and add a hash-checked four-to-seven-file addon upgrade with rollback of newly added files. Development package verified in Lua5.1. Installation remains pending importer support for the additional receipt SavedVariable.
 
 - Add local MCP `prepare_macro_operation`, strict data import and `/aomacros` review/apply UI source. Protocol tests cover all four macro operation types; Lua fixtures cover target checks, replay refusal and review invalidation. Not yet packaged, deployed or live-qualified.

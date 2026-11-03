@@ -1,5 +1,30 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
+local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true}
+local kinds={create=true,edit=true,delete=true,move=true}
+local function readReceipts()
+    local saved=AzerothOperatorOperations or ""
+    assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
+    local receipts,count={},0
+    for row in saved:gmatch("[^;]+") do
+        local id,status,kind=row:match("^([0-9a-f]+):([a-z_]+):([a-z]+)$")
+        assert(id and #id==64 and statuses[status] and kinds[kind] and not receipts[id], "Invalid receipt entry")
+        receipts[id]={status=status,kind=kind}; count=count+1
+    end
+    assert(count<=128 and (saved=="" or (saved:sub(-1)==";" and not saved:find(";;") and saved:sub(1,1)~=";")), "Invalid receipt checkpoint")
+    return receipts,count
+end
+local function saveReceipts(receipts)
+    local ids,rows={},{}
+    for id in pairs(receipts) do ids[#ids+1]=id end
+    table.sort(ids)
+    for _,id in ipairs(ids) do
+        local r=receipts[id]
+        rows[#rows+1]=id..":"..r.status..":"..r.kind..";"
+    end
+    AzerothOperatorOperations=table.concat(rows)
+end
+AO.ReadMacroReceipts=readReceipts
 local function unhex(value)
     if value=="-" then return "" end
     assert(#value%2==0 and not value:find("[^0-9a-f]"), "Invalid encoded text")
@@ -62,15 +87,14 @@ function AO.ApplyImportedMacro(text)
         and operation.interface==interface, "Operation targets a different client")
     assert(operation.character==UnitName("player") and operation.realm==GetRealmName(), "Operation targets a different character")
     assert(not InCombatLockdown(), "Macro changes unavailable in combat")
-    AzerothOperatorOperations=AzerothOperatorOperations or {}
-    local receipts=AzerothOperatorOperations
+    local receipts,count=readReceipts()
     assert(not receipts[operation.id], "Operation already attempted; reconcile before retry")
-    local count=0
-    for _ in pairs(receipts) do count=count+1 end
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
+    saveReceipts(receipts)
     local ok,result=pcall(AO.ApplyMacroOperation,operation)
     if ok then receipts[operation.id]=result end
+    saveReceipts(receipts)
     -- SavedVariables are persisted only at reload/logout; never promise crash durability.
     return receipts[operation.id],ok
 end
