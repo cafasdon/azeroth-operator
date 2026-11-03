@@ -1,6 +1,6 @@
 # Talent operation design — 2026-11-04
 
-Status: API/UI source investigation complete for the initial saved-loadout switching path. Talent compiler, decoder and executor are under source development; none are deployed.
+Current status: development release 0.7.0-dev is deployed; see talent-deployment-2026-11-04.md. Native UI/talent switching remains unqualified. The chronological notes below describe earlier implementation states.
 
 Primary implementation evidence (Blizzard UI source mirror, live branch, read 2026-11-04):
 - https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/ClassTalentsDocumentation.lua
