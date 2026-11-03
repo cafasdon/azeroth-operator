@@ -123,3 +123,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Added snapshot-bound bag-move compiler and AO-BAG-1 decoder; Rust-to-Lua tests preserve GUID/count and reject missing identity, occupied destination and implicit emptiness.
 
 - Connected bag movement to MCP preparation, shared review/receipts and the thirteen-file 0.5.0-dev package. Source/protocol/package checks pass; deployment and live qualification remain pending.
+
+- Bag development release deployed to hosted MCP/importer, Windows companion and Retail addon 0.5.0-dev. Public discovery and thirteen-file integrity passed; player move test pending.
