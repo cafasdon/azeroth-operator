@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect action-slot source decoder, player review, executor and receipts. End-to-end compiler-to-Lua-to-export/import tests pass, with replay refusal and macro review details. Installed addon remains unchanged.
+
 - Deploy Retail0.8.0-dev partial action observations with matching hosted importer/reader and Windows companion. Public endpoint verifies13tools; action-bar execution remains disabled.
 
 - Expose source MCP action-slot preparation with explicit execution-disabled output and real stdio tests. Align reference-store section recognition and importer qualification fixture. Thirteen-tool release not deployed.

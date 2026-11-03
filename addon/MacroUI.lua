@@ -68,6 +68,21 @@ local function open()
             lines[#lines+1]="Open your Talents panel before Apply. Current and saved build contents are checked again."
             lines[#lines+1]="Completion requires committed talents and matching saved selection."
             lines[#lines+1]="After the game finishes, run /aoexport within 60 seconds, then /reload. Do not repeat Apply while uncertain."
+        elseif op.kind=="move_action_slot" then
+            lines[#lines+1]="Source action slot: "..op.source_slot
+            lines[#lines+1]="Target action slot: "..op.target_slot
+            lines[#lines+1]=op.target.empty and "Move to captured empty slot." or "Swap the two captured actions."
+            for _,entry in ipairs({{"Source",op.source},{"Target",op.target}}) do
+                local action=entry[2]
+                lines[#lines+1]=entry[1]..": "..(action.empty and "Empty" or (action.kind.." / "..action.id))
+                if action.macro then
+                    lines[#lines+1]="Macro name: "..action.macro.name
+                    lines[#lines+1]="Macro icon: "..action.macro.icon
+                    lines[#lines+1]="Macro body:\n"..action.macro.body
+                end
+            end
+            lines[#lines+1]="Both slots and macro contents are checked again. No action body is executed."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. On failure inspect the cursor; do not retry."
         elseif op.kind=="move_bag_item" or op.kind=="split_bag_item" then
             lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
             lines[#lines+1]="Target bag/slot: "..op.target_bag.." / "..op.target_slot

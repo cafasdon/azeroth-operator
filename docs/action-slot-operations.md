@@ -31,3 +31,13 @@ Jev advisory request9bf990ca41800e6c3cd3a0e92ff00734b794c82f84dd6830bc902a590f7b
 Primary cursor evidence follow-up (2026-11-04): Blizzard_ClickBindingUI/Blizzard_ClickBindingUI.lua, AddFromCursorInfo, reads GetCursorInfo's fourth result as spellID and second as macroID. Source: https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_ClickBindingUI/Blizzard_ClickBindingUI.lua. This supports the executor's spell/macro tuple mapping; item identity and actual action-pickup/taint behaviour still require qualification. No ClearCursor or click-binding writes from that reference were adopted.
 
 Observation and MCP preparation deployed in0.8.0-dev; see action-observation-deployment-2026-11-04.md. Action executor and decoder remain outside package/dispatcher.
+
+## Review/apply/receipt source integration — 2026-11-04
+
+AO-ACTION-1 now routes through the source reviewed-byte dispatcher to ActionOperations. The shared pre-effect checkpoint records move_action_slot/outcome_unknown, duplicate IDs are refused, and a returned unknown can use existing bounded read-only observation reconciliation. Rust accepts the new receipt kind in both checkpoint and snapshot validation. UI displays source/target slots, move versus swap and exact macro name/icon/body.
+
+End-to-end offline fixture runs the Rust compiler, real Lua decoder, review dispatcher, executor, AO.Capture and Rust importer. It confirms slot swap, empty cursor, persisted applied receipt and duplicate Apply refusal. UI fixture verifies displayed slot/macro details. A first test incorrectly assumed companion import merges the operations checkpoint into an old export; actual implementation intentionally requires AO.Capture, and the test now exercises that path. Full source gate passed, including31Python tests.
+
+Not packaged or deployed. Installed0.8.0-dev still has no action decoder/executor; hosted preparation continues reporting addon_execution_enabled=false. Actual item cursor contract and protected/taint behaviour remain open. No in-game testing requested or performed.
+
+Jev advisory b677ae70c8fe252529383add0fb3d23d71ade5f1fb82afe90dd8de594f2ca8a0, jev-1.14.0,871input/116output tokens,0.295seconds: insufficient_evidence (reported confidence0.40), not a pass. Configured adversarial-review file absent; workflow not run.
