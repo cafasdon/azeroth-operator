@@ -200,6 +200,48 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("context", "uint", false),
             ],
         )?,
+        "action_bar_observation" => {
+            object(
+                value,
+                &[
+                    ("coverage", "loaded_builtin_buttons_only", true),
+                    ("slots", "map", true),
+                    ("observed_buttons", "positive", true),
+                    ("missing_buttons", "uint", true),
+                ],
+            )?;
+            let observed = value["observed_buttons"].as_u64().unwrap();
+            let missing = value["missing_buttons"].as_u64().unwrap();
+            ensure!(observed + missing <= 2048, "Too many action buttons");
+            let slots = value["slots"].as_object().unwrap();
+            ensure!(
+                !slots.is_empty() && slots.len() as u64 <= observed,
+                "Invalid action coverage"
+            );
+            for (slot, entry) in slots {
+                index(slot, 1, 4096)?;
+                object(
+                    entry,
+                    &[
+                        ("empty", "bool", true),
+                        ("kind", "text", false),
+                        ("id", "positive", false),
+                        ("sub_type", "text", false),
+                    ],
+                )?;
+                if entry["empty"] == true {
+                    ensure!(
+                        entry.as_object().unwrap().len() == 1,
+                        "Empty action contains data"
+                    );
+                } else {
+                    ensure!(
+                        entry["kind"].as_str().is_some_and(|s| !s.is_empty()),
+                        "Missing action kind"
+                    );
+                }
+            }
+        }
         "action_bars" => entries(
             value,
             &[

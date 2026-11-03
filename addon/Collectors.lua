@@ -97,6 +97,43 @@ AO.collectors.action_bars = function()
     return result
 end
 
+-- Partial observations of Blizzard's loaded player action-button frames.
+-- Other pages, addon replacement bars and special pet/stance bars are not covered.
+AO.collectors.action_bar_observation = function()
+    assert(AO.family=="retail" and GetActionInfo and ActionButtonUtil
+        and type(ActionButtonUtil.ActionBarButtonNames)=="table", "Action button catalogue unavailable")
+    assert(type(NUM_ACTIONBAR_BUTTONS)=="number" and NUM_ACTIONBAR_BUTTONS%1==0
+        and NUM_ACTIONBAR_BUTTONS>=1 and NUM_ACTIONBAR_BUTTONS<=64, "Invalid button bound")
+    local names=ActionButtonUtil.ActionBarButtonNames
+    assert(#names>=1 and #names<=32, "Invalid action bar catalogue")
+    local result={coverage="loaded_builtin_buttons_only",slots={},observed_buttons=0,missing_buttons=0}
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted action observation")
+        return value
+    end
+    for _,prefix in ipairs(names) do
+        assert(type(prefix)=="string" and #prefix<=128, "Invalid button prefix")
+        for i=1,NUM_ACTIONBAR_BUTTONS do
+            local button=_G[prefix..i]
+            local slot=button and readable(button.action)
+            if slot==nil then result.missing_buttons=result.missing_buttons+1
+            else
+                assert(type(slot)=="number" and slot%1==0 and slot>=1 and slot<=4096, "Invalid action slot")
+                result.observed_buttons=result.observed_buttons+1
+                local key=tostring(slot)
+                if not result.slots[key] then
+                    local kind,id,subType=GetActionInfo(slot)
+                    kind,id,subType=readable(kind),readable(id),readable(subType)
+                    if kind then result.slots[key]={empty=false,kind=kind,id=id,sub_type=subType}
+                    else result.slots[key]={empty=true} end
+                end
+            end
+        end
+    end
+    assert(result.observed_buttons>0, "No loaded action buttons")
+    return result
+end
+
 local function loadoutExport(configID)
     if AO.family ~= "retail" then return {status="unavailable", reason="client_not_supported"} end
     local spec = C_SpecializationInfo

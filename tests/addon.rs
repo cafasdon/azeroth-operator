@@ -67,6 +67,8 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     lua.load(r#"
         combat=false
         MAX_ACCOUNT_MACROS=120; MAX_ACTION_BUTTONS=180
+        NUM_ACTIONBAR_BUTTONS=2; ActionButtonUtil={ActionBarButtonNames={'ActionButton'}}
+        ActionButton1={action=1}; ActionButton2={action=2}
         function GetNumMacros() return 1,1 end
         function GetMacroInfo(index) return "Macro"..index,123,"/cast Test" end
         function GetNumBindings() return 1 end
@@ -86,7 +88,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let full_hex: String = lua.globals().get("AzerothOperatorExport")?;
     let full = decode(format!("AzerothOperatorExport = \"{full_hex}\"").as_bytes())?;
     assert!(full.unavailable.is_empty());
-    assert_eq!(full.sections.len(), 13);
+    assert_eq!(full.sections.len(), 14);
     assert_eq!(full.sections["binding_state"]["binding_set"], 2);
     assert_eq!(full.sections["bindings"]["1"]["context"], 0);
     assert_eq!(
@@ -96,6 +98,46 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     assert_eq!(full.sections["macros"]["121"]["scope"], "character");
     assert_eq!(full.sections["bindings"]["1"]["key1"], "1");
     assert_eq!(full.sections["action_bars"]["1"]["id"], 123);
+    assert_eq!(
+        full.sections["action_bar_observation"]["coverage"],
+        "loaded_builtin_buttons_only"
+    );
+    assert_eq!(
+        full.sections["action_bar_observation"]["slots"]["2"]["empty"],
+        true
+    );
+    for (pointer, value) in [
+        ("/coverage", serde_json::json!("complete")),
+        ("/observed_buttons", serde_json::json!(1)),
+        ("/missing_buttons", serde_json::json!(2048)),
+        ("/slots/1/empty", serde_json::json!(true)),
+        ("/slots/1/kind", serde_json::json!("")),
+    ] {
+        let mut malformed = full.clone();
+        *malformed
+            .sections
+            .get_mut("action_bar_observation")
+            .unwrap()
+            .pointer_mut(pointer)
+            .unwrap() = value;
+        assert!(malformed.validate().is_err());
+    }
+    lua.load(r#"
+        MAX_ACTION_BUTTONS=nil; ActionButton2=nil
+        local partial=AO.collectors.action_bar_observation()
+        assert(partial.observed_buttons==1 and partial.missing_buttons==1 and partial.slots['2']==nil)
+        ActionButton2={action=1}
+        local duplicated=AO.collectors.action_bar_observation()
+        assert(duplicated.observed_buttons==2 and duplicated.slots['1'] and duplicated.slots['2']==nil)
+        ActionButton2={action=2}
+        issecretvalue=function(value) return value==123 end
+        assert(not pcall(AO.collectors.action_bar_observation)); issecretvalue=nil
+        AO.family='forever'; assert(not pcall(AO.collectors.action_bar_observation)); AO.family='retail'
+        ActionButton1=nil; ActionButton2=nil
+        assert(not pcall(AO.collectors.action_bar_observation))
+        ActionButton1={action=1}; ActionButton2={action=2}; MAX_ACTION_BUTTONS=180
+    "#).exec()?;
+
     assert_eq!(full.sections["talents"]["nodes"]["10"]["rank"], 2);
     assert_eq!(full.sections["professions"]["3"]["rank"], 10);
     assert_eq!(full.sections["quests"]["42"]["title"], "Test quest");
@@ -249,7 +291,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         assert!(!partial.sections.contains_key(name));
         assert_eq!(partial.unavailable[name], "api_unavailable_or_failed");
         assert_eq!(partial.sections["quests"]["42"]["title"], "Test quest");
-        assert_eq!(partial.sections.len(), 12);
+        assert_eq!(partial.sections.len(), 13);
         lua.load(restore).exec()?;
     }
     lua.load("saved=C_Container; C_Container=nil; AO.Capture()")

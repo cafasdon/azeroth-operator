@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only, explicitly partial Retail action-button observations with occupied/empty slots and coverage counts. Actual Lua-to-Rust roundtrip and malformed-coverage tests pass; no action mutations or deployment.
+
 - Install Retail 0.7.1-dev bag observation fixes after packaged Lua verification; fifteen installed files match the manifest. Refresh operational capability status; live qualification remains deferred.
 
 - Handle retained source observations during bag pickup and delayed final move/split readback. Export-time reconciliation is bounded and read-only; unknown operations are never replayed. New failure/timing fixtures pass; live behaviour remains unqualified.
