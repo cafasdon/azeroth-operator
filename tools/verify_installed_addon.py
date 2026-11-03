@@ -9,6 +9,7 @@ from tools.inspect_client import read_metadata
 from tools.sync_exports import ordinary, absolute
 
 FILES = {"Adapter.lua", "Collectors.lua", "Core.lua", "AzerothOperator.toc"}
+OPERATION_FILES = FILES | {"MacroOperations.lua", "MacroImport.lua", "MacroUI.lua"}
 MAX_FILE = 1024 * 1024
 
 
@@ -17,7 +18,8 @@ def verify(client, manifest):
     receipt = json.loads(read_metadata(ordinary(absolute(manifest)), 16384))
     if not isinstance(receipt, dict) or not isinstance(receipt.get("files"), dict):
         raise ValueError("Invalid manifest")
-    if set(receipt["files"]) != FILES or any(
+    files = set(receipt["files"])
+    if files not in (FILES, OPERATION_FILES) or any(
         not isinstance(value, str) or not re.fullmatch("[a-f0-9]{64}", value)
         for value in receipt["files"].values()
     ):
@@ -36,11 +38,11 @@ def verify(client, manifest):
     observed = set()
     for path in target.iterdir():
         observed.add(path.name)
-        if len(observed) > len(FILES):
+        if len(observed) > len(files):
             break
-    if observed - FILES:
+    if observed - files:
         problems.append({"reason": "unexpected_entries"})
-    for name in sorted(FILES):
+    for name in sorted(files):
         path = ordinary(target / name)
         try:
             info = path.stat()

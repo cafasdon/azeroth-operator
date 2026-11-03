@@ -7,6 +7,7 @@ import tempfile
 from tools.package_addon import render_entries
 from tools.package_bigwigs import sha, verified_contents
 from tools.sync_exports import ordinary
+from tools.verify_installed_addon import FILES, OPERATION_FILES
 
 
 def replace(path, data):
@@ -37,12 +38,13 @@ def install(client, old_manifest, new_manifest, backups):
     if sha(archive.read_bytes()) != new["sha256"]:
         raise ValueError("Archive hash mismatch")
     verified_contents(archive, entries)
-    if new["files"] != {name:sha(data) for name,data in entries.items()} or set(old["files"]) != set(entries):
+    old_files = set(old["files"])
+    if new["files"] != {name:sha(data) for name,data in entries.items()} or old_files not in (FILES, OPERATION_FILES) or not old_files <= set(entries):
         raise ValueError("File manifest mismatch")
     target = ordinary(client / "Interface" / "AddOns" / "AzerothOperator")
-    if {path.name for path in target.iterdir()} != set(entries):
+    if {path.name for path in target.iterdir()} != old_files:
         raise ValueError("Unexpected installed files; preserve and reconcile")
-    previous = {name:ordinary(target / name).read_bytes() for name in entries}
+    previous = {name:ordinary(target / name).read_bytes() for name in old_files}
     if any(sha(data) != old["files"][name] for name,data in previous.items()):
         raise ValueError("Installed addon changed; refusing overwrite")
     backups = ordinary(Path(backups).absolute())
@@ -53,9 +55,13 @@ def install(client, old_manifest, new_manifest, backups):
     (backup / "manifest.json").write_text(json.dumps(old, indent=2))
     written = []
     try:
-        for name,data in entries.items():
-            if (target / name).read_bytes() != previous[name]:
+        # Publish the TOC last so newly referenced modules already exist.
+        for name in sorted(entries, key=lambda n: (n == "AzerothOperator.toc", n)):
+            data = entries[name]
+            if name in previous and ordinary(target / name).read_bytes() != previous[name]:
                 raise ValueError("Installed file changed during update")
+            if name not in previous and (target / name).exists():
+                raise ValueError("New file appeared during update")
             replace(target / name, data)
             written.append(name)
         if any(sha((target / name).read_bytes()) != new["files"][name] for name in entries):
@@ -65,7 +71,10 @@ def install(client, old_manifest, new_manifest, backups):
         for name in written:
             path = ordinary(target / name)
             if path.read_bytes() == entries[name]:
-                replace(path, previous[name])
+                if name in previous:
+                    replace(path, previous[name])
+                else:
+                    path.unlink()
         raise
     return {"version":new["version"],"family":new["family"],"verified_files":len(entries),
             "backup":str(backup),"live_qualified":False,"requires_client_reload_or_restart":True}

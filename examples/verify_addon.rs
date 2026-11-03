@@ -31,7 +31,14 @@ fn main() -> anyhow::Result<()> {
     let result = (|| -> mlua::Result<String> {
         lua.load(fixture).exec()?;
         let namespace: mlua::Table = lua.globals().get("AO")?;
-        for name in ["Adapter.lua", "Collectors.lua", "Core.lua"] {
+        for name in [
+            "Adapter.lua",
+            "Collectors.lua",
+            "Core.lua",
+            "MacroOperations.lua",
+            "MacroImport.lua",
+            "MacroUI.lua",
+        ] {
             let source = std::fs::read_to_string(Path::new(&args[0]).join(name))
                 .map_err(mlua::Error::external)?;
             lua.load(&source)

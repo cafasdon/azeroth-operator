@@ -20,16 +20,19 @@ def render_entries(family, variant, interface, version):
     adapter = f'local _, AO = ...\nAO.family = "{family}"\nAO.variant = "{variant}"\nAO.interface = {interface}\n'
     toc = f"""## Interface: {interface}
 ## Title: Azeroth Operator
-## Notes: Read-only character export; development build, not live-qualified
+## Notes: Character export and player-applied macros; development build, not live-qualified
 ## Author: cafasdon
 ## Version: {version}
-## SavedVariables: AzerothOperatorExport
+## SavedVariables: AzerothOperatorExport, AzerothOperatorOperations
 Adapter.lua
 Collectors.lua
 Core.lua
+MacroOperations.lua
+MacroImport.lua
+MacroUI.lua
 """
     entries = {"Adapter.lua": adapter.encode(), "AzerothOperator.toc": toc.encode()}
-    for name in ("Collectors.lua", "Core.lua"):
+    for name in ("Collectors.lua", "Core.lua", "MacroOperations.lua", "MacroImport.lua", "MacroUI.lua"):
         entries[name] = (ROOT / "addon" / name).read_text(encoding="utf-8").replace("\r\n", "\n").encode()
     return entries
 
