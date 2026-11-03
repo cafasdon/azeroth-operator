@@ -17,6 +17,7 @@ TALENT_FILES = BAG_FILES | {"TalentOperations.lua", "TalentImport.lua"}
 ACTION_FILES = TALENT_FILES | {"ActionOperations.lua", "ActionImport.lua"}
 EQUIPMENT_SET_FILES = ACTION_FILES | {"EquipmentSetOperations.lua", "EquipmentSetImport.lua"}
 EQUIPMENT_SET_USE_FILES = EQUIPMENT_SET_FILES | {"EquipmentSetUse.lua"}
+EQUIPMENT_SET_SPEC_FILES = EQUIPMENT_SET_USE_FILES | {"EquipmentSetSpec.lua", "EquipmentSetSpecImport.lua"}
 MAX_FILE = 1024 * 1024
 
 
@@ -26,7 +27,7 @@ def verify(client, manifest):
     if not isinstance(receipt, dict) or not isinstance(receipt.get("files"), dict):
         raise ValueError("Invalid manifest")
     files = set(receipt["files"])
-    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES) or any(
+    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES) or any(
         not isinstance(value, str) or not re.fullmatch("[a-f0-9]{64}", value)
         for value in receipt["files"].values()
     ):

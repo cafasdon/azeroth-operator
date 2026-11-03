@@ -1,4 +1,4 @@
--- Source-only association executor. Not packaged; caller must checkpoint uncertainty.
+-- Player-applied association executor. Shared caller checkpoints uncertainty.
 local _, AO = ...
 local function read(v)
     assert(not issecretvalue or not issecretvalue(v), "Restricted equipment set state")
