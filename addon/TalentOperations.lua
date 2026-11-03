@@ -37,9 +37,14 @@ function AO.ApplyTalentOperation(op)
     assert(found and targetMatches(op),"Saved loadout changed or unavailable")
     local allowed,reason=C_ClassTalents.CanEditTalents()
     assert(allowed,reason or "Talent editing unavailable")
-    -- The shared caller must checkpoint uncertainty before this one request.
-    local result,detail=C_ClassTalents.LoadConfig(op.target_config_id,true)
-    assert(result~=Enum.LoadConfigResult.Error,detail or "Talent load refused")
+    local frame=PlayerSpellsFrame and PlayerSpellsFrame.TalentsFrame
+    assert(frame and frame.IsShown and frame:IsShown() and frame.SetSelectedSavedConfigID,
+        "Open the Talents panel before applying")
+    assert(not frame:IsInspecting() and not frame:IsCommitInProgress() and frame:GetConfigID()==active,
+        "Talent panel is inspecting, busy or showing another config")
+    -- Use the same UI path as native saved-loadout selection. Blizzard owns its
+    -- asynchronous commit and selected-loadout bookkeeping; no fallback writes.
+    frame:SetSelectedSavedConfigID(op.target_config_id,true)
     -- Ready/LoadInProgress are not completion. No CommitConfig or automatic retry.
     local ok,verified=pcall(AO.VerifyTalentOperation,op)
     return {kind=op.kind,status=ok and verified and "applied" or "outcome_unknown"}

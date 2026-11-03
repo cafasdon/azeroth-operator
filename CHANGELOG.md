@@ -139,3 +139,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Added snapshot-bound saved-talent operation preparation in source, including current/desired build contents and action-bar setting. Addon transport/execution and deployment remain pending.
 
 - Added source-only talent executor and bounded observation-only receipt reconciliation. Completion requires committed contents and matching saved selection; expiry remains uncertain. Targeted failure/dispatch tests pass; not deployed.
+
+- Talent application now delegates saved-loadout selection/commit bookkeeping to the visible native Talents panel, with config/inspection/busy checks and no direct-API fallback. Source tests pass; live UI qualification pending.

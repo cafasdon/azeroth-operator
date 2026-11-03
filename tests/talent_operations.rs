@@ -17,6 +17,9 @@ fn talent_request_requires_preimages_and_committed_readback() -> mlua::Result<()
  C_ClassTalents={GetActiveConfigID=function() return 7 end,GetLastSelectedSavedConfigID=function() return selected end,
  GetConfigIDsBySpecID=function() return {8,9} end,CanEditTalents=function() return true end,
  LoadConfig=function(id,apply) assert(id==9 and apply); writes=writes+1; if mode=='instant' then current='new'; selected=9; return 1 end; return 2 end}
+ PlayerSpellsFrame={TalentsFrame={IsShown=function() return true end,IsInspecting=function() return false end,
+ IsCommitInProgress=function() return false end,GetConfigID=function() return 7 end,
+ SetSelectedSavedConfigID=function(_,id,apply) return C_ClassTalents.LoadConfig(id,apply) end}}
  op={kind='load_talent_config',interface=120105,build='70688',character='Test',realm='Test',spec_id=263,
  serialization_version=2,expected_active_config_id=7,expected_selected_config_id=8,target_config_id=9,
  desired_name='Build',uses_shared_action_bars=true,expected_import_string='old',desired_import_string='new'}
@@ -29,6 +32,11 @@ fn talent_request_requires_preimages_and_committed_readback() -> mlua::Result<()
  staged=true; assert(not pcall(AO.ApplyTalentOperation,op)); staged=false
  current='changed'; assert(not pcall(AO.ApplyTalentOperation,op)); current='old'
  op.desired_name='renamed'; assert(not pcall(AO.ApplyTalentOperation,op)); op.desired_name='Build'
+ local frame=PlayerSpellsFrame.TalentsFrame
+ frame.IsShown=function() return false end; assert(not pcall(AO.ApplyTalentOperation,op))
+ frame.IsShown=function() return true end
+ frame.IsCommitInProgress=function() return true end; assert(not pcall(AO.ApplyTalentOperation,op))
+ frame.IsCommitInProgress=function() return false end
  assert(writes==0)
  assert(AO.ApplyTalentOperation(op).status=='outcome_unknown' and writes==1)
  assert(not AO.VerifyTalentOperation(op) and writes==1)

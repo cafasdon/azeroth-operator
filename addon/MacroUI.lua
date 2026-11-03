@@ -65,7 +65,7 @@ local function open()
             lines[#lines+1]="Saved loadout: "..reason(op.desired_name).." ("..op.target_config_id..")"
             lines[#lines+1]="Expected selected loadout: "..op.expected_selected_config_id
             lines[#lines+1]="Shared action bars: "..(op.uses_shared_action_bars and "Yes" or "No — loadout-specific bars may change")
-            lines[#lines+1]="Current and saved build contents are checked on Apply."
+            lines[#lines+1]="Open your Talents panel before Apply. Current and saved build contents are checked again."
             lines[#lines+1]="Completion requires committed talents and matching saved selection."
             lines[#lines+1]="After the game finishes, run /aoexport within 60 seconds, then /reload. Do not repeat Apply while uncertain."
         elseif op.kind=="move_bag_item" or op.kind=="split_bag_item" then
