@@ -24,6 +24,15 @@ fn association_drafts_bind_all_identities_and_report_displacement()
         serde_json::from_value(json!({"operation":"assign_spec","set_id":0,"spec_index":2}))?;
     let sid = "a".repeat(64);
     let draft = compile(&snapshot, &sid, &request)?;
+    let mut large = snapshot.clone();
+    for id in 2..32 {
+        let mut extra = entry.clone();
+        extra.as_object_mut().unwrap().remove("assigned_spec");
+        extra["name"] = json!(format!("Set {id} {}", "x".repeat(200)));
+        large.sections.get_mut("equipment_sets").unwrap()["entries"][id.to_string()] = extra;
+    }
+    let large_op = compile(&large, &sid, &request)?;
+    assert!(large_op["import_code"].as_str().unwrap().len() > 8192);
     assert_eq!(draft["displaced_set"]["set_id"], 1);
     assert_eq!(draft["expected_catalogue"]["0"]["assigned_spec"], 1);
     assert_eq!(draft["desired_catalogue"]["0"]["assigned_spec"], 2);
@@ -40,6 +49,8 @@ fn association_drafts_bind_all_identities_and_report_displacement()
             .starts_with("AO-SETSPEC-1:")
     );
     let lua = mlua::Lua::new();
+    lua.globals()
+        .set("largeCode", large_op["import_code"].as_str().unwrap())?;
     let ao = lua.create_table()?;
     lua.globals().set("AO", ao.clone())?;
     for source in [
@@ -76,6 +87,76 @@ fn association_drafts_bind_all_identities_and_report_displacement()
         roundtrip.sections["equipment_sets"],
         snapshot.sections["equipment_sets"]
     );
+    lua.load(r#"
+        function copy(t) local r={} for k,v in pairs(t) do r[k]=type(v)=='table' and copy(v) or v end return r end
+        sets=copy(op.expected_catalogue); specMap=op.expected_specializations
+        writes=0; now=0; delayed=false
+        function GetTime() return now end; function GetCursorInfo() end
+        function UnitCastingInfo() end; function UnitChannelInfo() end
+        function GetNumSpecializations() return 3 end
+        C_SpecializationInfo={GetSpecializationInfo=function(i) return specMap[tostring(i)] end}
+        AO.collectors.equipment_sets=function() return {coverage='native_catalogue_raw_slots',can_use=true,entries=copy(sets),specializations=specMap} end
+        function finish(id,spec)
+            for _,entry in pairs(sets) do if entry.assigned_spec==spec then entry.assigned_spec=nil end end
+            sets[tostring(id)].assigned_spec=spec
+        end
+        C_EquipmentSet={GetEquipmentSetForSpec=function(spec) for id,entry in pairs(sets) do if entry.assigned_spec==spec then return tonumber(id) end end end,
+            AssignSpecToEquipmentSet=function(id,spec)
+                assert(AzerothOperatorOperations:find(op.id..':outcome_unknown:assign_equipment_set_spec;',1,true))
+                writes=writes+1; if not delayed then finish(id,spec) end
+            end,
+            UnassignEquipmentSetSpec=function(id)
+                assert(AzerothOperatorOperations:find(':outcome_unknown:unassign_equipment_set_spec;',1,true))
+                writes=writes+1; sets[tostring(id)].assigned_spec=nil
+            end}
+    "#).exec()?;
+    for source in [
+        include_str!("../addon/EquipmentSetSpec.lua"),
+        include_str!("../addon/MacroImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.load(r#"
+        assert(AO.ReviewMacroImport(largeCode).expected_catalogue['31'] and writes==0); AO.InvalidateMacroReview()
+        AO.collectors.operation_receipts=function() return AO.ReadMacroReceipts() end
+        assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..':-') and writes==0)
+        AO.ReviewMacroImport(code); local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.status=='applied' and writes==1 and sets['0'].assigned_spec==2 and sets['1'].assigned_spec==nil)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        AO.Capture()
+    "#).exec()?;
+    let raw: String = lua.globals().get("AzerothOperatorExport")?;
+    let applied =
+        azeroth_operator::import::decode(format!("AzerothOperatorExport = \"{raw}\"").as_bytes())?;
+    assert_eq!(
+        applied.sections["operation_receipts"][draft["operation_id"].as_str().unwrap()]["status"],
+        "applied"
+    );
+    lua.load(r#"
+        -- New independent fixture attempt; never clear real receipts.
+        AzerothOperatorOperations=''; sets=copy(op.expected_catalogue); delayed=true
+        AO.ReviewMacroImport(code); local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.status=='outcome_unknown' and writes==2)
+        finish(0,2); assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==2)
+        AzerothOperatorOperations=''; sets=copy(op.expected_catalogue)
+        AO.ReviewMacroImport(code); receipt,ok=AO.ApplyReviewedMacro(code)
+        now=61; finish(0,2); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==3)
+        assert(not pcall(AO.ReviewMacroImport,'AO-MACRO-1:'..string.rep('a',8193)))
+    "#).exec()?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown'); AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==3)").exec()?;
+    lua.load(r#"
+        AzerothOperatorOperations=''; sets=copy(op.expected_catalogue); delayed=false
+        local native=C_EquipmentSet.AssignSpecToEquipmentSet
+        C_EquipmentSet.AssignSpecToEquipmentSet=function(...) native(...); error('after native effect') end
+        AO.ReviewMacroImport(code); local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(not ok and receipt.status=='outcome_unknown' and writes==4 and sets['0'].assigned_spec==2)
+        assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==4)
+    "#).exec()?;
     let decoder: mlua::Function = ao.get("DecodeEquipmentSetSpec")?;
     for (index, value) in [
         (0, "AO-SET-1"),
@@ -120,6 +201,20 @@ fn association_drafts_bind_all_identities_and_report_displacement()
     lua.globals()
         .set("unassignCode", unassign["import_code"].as_str().unwrap())?;
     lua.load("local u=AO.DecodeEquipmentSetSpec(unassignCode); assert(u.kind=='unassign_equipment_set_spec' and u.spec_index==nil and u.spec_id==nil)").exec()?;
+    lua.load(r#"
+        local u=AO.DecodeEquipmentSetSpec(unassignCode); sets=copy(u.expected_catalogue); specMap=u.expected_specializations
+        AO.ReviewMacroImport(unassignCode); local receipt,ok=AO.ApplyReviewedMacro(unassignCode)
+        assert(ok and receipt.kind=='unassign_equipment_set_spec' and receipt.status=='applied' and writes==5)
+        assert(sets['0'].assigned_spec==nil and sets['1'].assigned_spec==2)
+        AO.Capture()
+    "#).exec()?;
+    let raw: String = lua.globals().get("AzerothOperatorExport")?;
+    let applied =
+        azeroth_operator::import::decode(format!("AzerothOperatorExport = \"{raw}\"").as_bytes())?;
+    assert_eq!(
+        applied.sections["operation_receipts"][unassign["operation_id"].as_str().unwrap()]["kind"],
+        "unassign_equipment_set_spec"
+    );
     assert!(
         unassign["desired_catalogue"]["0"]
             .get("assigned_spec")

@@ -16,6 +16,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
             function w:CreateFontString() local f=widget(); fonts[#fonts+1]=f; return f end
             function w:CreateTexture() return widget() end
             function w:SetHeight(height) self.height=height end
+            function w:SetMaxLetters(n) self.maxLetters=n end
             function w:EnableMouse(enabled) self.mouse=enabled end
             function w:SetFocus() self.focused=true end
             return w
@@ -25,6 +26,13 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='spec_assign' or text=='spec_unassign' then
+                return {kind=text=='spec_assign' and 'assign_equipment_set_spec' or 'unassign_equipment_set_spec',
+                    character='Test',realm='Realm',family='retail',variant='live',build='123',set_id=1,
+                    spec_index=text=='spec_assign' and 2 or nil,spec_id=text=='spec_assign' and 262 or nil,
+                    displaced_set_id=text=='spec_assign' and 0 or nil,
+                    expected_catalogue={['1']={name='Target',assigned_spec=3},['0']={name='Other|Set',assigned_spec=2}}}
+            end
             if text=='set_use' then
                 local slots,before={},{}
                 for i=1,19 do slots[tostring(i)]={ignored=true}; before[tostring(i)]='' end
@@ -51,6 +59,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         SlashCmdList.AZEROTHOPERATORMACROS()
         local panel,input,review,apply=frames[1],frames[3],frames[6],frames[7]
         assert(input.height==105 and input.mouse and input.focused)
+        assert(input.maxLetters==524288)
         assert(not apply.enabled and applies==0)
         input:SetText('bad'); review.scripts.OnClick(); assert(not apply.enabled)
         input:SetText('valid'); review.scripts.OnClick(); assert(apply.enabled and applies==0)
@@ -89,6 +98,13 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(frames[5].text:find('Slot 19 / Preserve: Empty (checked on Apply) -> Empty',1,true))
         assert(frames[5].text:find('A partial swap remains unconfirmed.',1,true))
         assert(not frames[5].text:find('DELETE this saved',1,true))
+        input:SetText('spec_assign'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Assign to specialisation index 2 / ID 262',1,true))
+        assert(frames[5].text:find('Remove this association from: Other/Set (ID 0)',1,true))
+        assert(frames[5].text:find('Future specialisation changes may select different equipment.',1,true))
+        input:SetText('spec_unassign'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find("Remove this set's specialisation association.",1,true))
+        assert(not frames[5].text:find('Remove this association from:',1,true))
         input:SetText('talent'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('Saved loadout: Saved Build (9)',1,true))
         assert(frames[5].text:find('loadout-specific bars may change',1,true))
