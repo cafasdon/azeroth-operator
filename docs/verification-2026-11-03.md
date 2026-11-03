@@ -209,3 +209,12 @@ Actual CLI calls identified Retail product wow/build 12.1.5.70688 and Forever pr
 
 Jev plan advisory: jev-1.14.0, request 3253aa3d3e27884bed4d2469d3b5b98a869bf8b416be5a18479a8f191d33ed22, 832 input/116 output tokens, 0.318s. Returned insufficient_evidence (choice confidence 0.28; probability 0.52), material_issue 0.70, evidence_sufficient 0.31 and overstatement concern 0.40. This is not approval. Actual metadata output and deterministic tests supply the implementation evidence; runtime compatibility remains explicitly unverified. Required bdr-ocr-review and adversarial-review files remain absent, so those workflows did not run.
 `python -m unittest discover -s tests -q`: all 27 Python tests passed; git diff --check clean.
+
+
+## Installed addon drift verification
+
+Added tools/verify_installed_addon.py. Read-only, fixed four-name manifest allowlist, 16KiB manifest/1MiB file limits, link/reparse rejection, bounded directory enumeration, exact product-family check. Nonzero for absent or drifted installs; no automatic repairs. Caller-supplied manifest trust and live_qualified=false are explicit. Observation is not a lock against concurrent edits or a signed provenance claim.
+
+Actual Retail 0.1.1-dev invocation returned matches_manifest, verified_files=4, problems=[] against dist/bigwigs-0.1.1/AzerothOperator-0.1.1-dev-retail-live.manifest.json. Test verifies edited content is preserved, missing/extra/oversized files reported and traversal manifest names refused. Full Python suite: 28 tests passed; git diff --check clean. No addon, game, sync or hosted deployment changes.
+
+Jev claims advisory: jev-1.14.0, request 7d73ec87f26e36bc56928951fab702e15d1c914adbcc701183981240cc02a4e3, 933 input/112 output tokens, 0.309s. claim_supported=0.78, evidence_sufficient=0.73, no_material_issue choice confidence=0.73 (probability=0.82); concern_1=0.96 answered the positive question whether the result justifies only point-in-time manifest integrity, without authenticity/live compatibility. Advisory does not replace actual readback/tests. Required bdr-ocr-review and adversarial-review files remain absent; those workflows were not run.

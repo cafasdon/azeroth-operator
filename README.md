@@ -102,3 +102,12 @@ python -m tools.inspect_client --client 'T:\Games\World of Warcraft\_retail_' --
 ```
 
 The probe reads only `.flavor.info` and the parent `.build.info`, with byte limits and link/reparse rejection. Conflicting active versions are reported rather than selected. Family is checked against the product code; variant remains caller-supplied, interface remains unknown and installation metadata does not qualify live APIs. Classic accepts `wow_classic` and `wow_classic_era` products with an explicit variant; unknown products fail closed. Missing directories report `not_installed`; malformed or unreadable metadata exits non-zero. No account data is read.
+
+
+Check installed addon integrity against a retained package manifest:
+
+```powershell
+python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_retail_' --manifest 'T:\Projects\Azeroth Operator\dist\bigwigs-0.1.1\AzerothOperator-0.1.1-dev-retail-live.manifest.json'
+```
+
+Exit zero means the four installed files matched the supplied manifest during this read. Missing, changed, extra or oversized files produce nonzero without repairs. The manifest is caller-trusted, not signed authentication; concurrent edits can invalidate the observation. Retail and Forever product checks are supported; Classic installation verification remains unavailable. No live API compatibility is implied.

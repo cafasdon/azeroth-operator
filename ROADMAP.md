@@ -26,7 +26,7 @@
 - Deeper character/equipment analysis beyond observed counts; comparison and discovery implemented.
 - Player-reviewed build/configuration proposals and export formats; no autonomous game writes.
 - Policy evidence for every proposed action; unknown permission means disabled.
-- Source distribution on cafasdon GitHub, isolated installation, reproducible dependency setup.
+- Source distribution on cafasdon GitHub, isolated installation, reproducible dependency setup. Read-only installed-addon manifest verification implemented for Retail/Forever; Classic installation qualification remains pending.
 - Benchmarks with fixed fixtures, bounded outputs, measured improvements and regression tests.
 - Live Retail export verification with the user's reload; independently qualify Classic and Forever when available. Never label fixture success as live compatibility.
 
