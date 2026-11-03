@@ -1,6 +1,6 @@
 # ADR 004: separate SSH upload credential
 
-Date: 2026-11-03. Status: implementation candidate; not provisioned or live-tested.
+Date: 2026-11-03. Status: deployed; upload/retry/public readback and command/remote-forward refusal verified.
 
 The read-only MCP bearer must not acquire upload authority. Use a dedicated SSH
 key whose server-side authorised-key entry has `restrict` and a fixed forced
@@ -28,7 +28,9 @@ No client path, command, account or image selection is accepted. Image configura
 must be root-owned, non-writable by group/others and not a symlink. The reader MCP
 keeps its read-only mount. This single-owner channel does not claim multi-user support.
 
-Before activation: refresh the Linux image to include import-stdin, provision the
-restricted key and pinned alias without exposing private material, verify denied
-commands/forwarding, upload/retry a fixture, verify via public MCP and remove it.
+Activation used a pinned importer image, restricted key and independently pinned
+CT290 host identity. Fixture upload, retry, public MCP readback and exact-hash
+cleanup passed. Remote command and remote port forwarding attempts were refused.
+Agent and X11 restrictions are configured through `restrict`, but separate active
+probes for them have not been performed; do not claim universal SSH qualification.
 No HTTP upload endpoint, game input or in-game command channel is introduced.

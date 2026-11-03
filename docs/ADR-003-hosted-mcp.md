@@ -1,16 +1,15 @@
 # ADR 003: hosted MCP and local export bridge
 
-Date: 2026-11-03. Status: accepted direction; implementation and deployment pending.
+Date: 2026-11-03. Status: deployed and synthetic roundtrip verified; live game export pending.
 
 User authorised hosting on mcp.cafas.com.br and a separate repository if needed.
 Keep one repository initially, with independently packaged Lua addon and Rust
 companion/server. Their shared snapshot contract benefits from atomic changes.
 
-Target the personal pylon CT290 gateway with a dedicated Azeroth scope. Proposed
-route: /scopes/azeroth/mcp. It is not provisioned or verified. Inspect the live
-configuration and owning source before allocating ports or modifying routing.
-Gateway runbooks describe scope workers and principal policies, but are not
-evidence of current runtime state.
+The personal pylon CT290 gateway hosts the dedicated /scopes/azeroth/mcp route.
+Public TLS discovery and fixture reads, missing/wrong-token refusal and network
+isolation were verified; the dated verification log records the probes and image
+identities. Inspect current live state and owning source before changing routing.
 
 The server cannot read Windows WoW files directly. A local bridge must upload
 explicitly exported snapshots through authenticated transport. Separate upload

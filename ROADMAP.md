@@ -11,12 +11,12 @@
 - Expanded collectors and unavailable reasons tested with fixtures; local deterministic development ZIPs verified. Retail development addon installed with matching hashes; live qualification still pending.
 - Snapshot comparisons with client/character/capture-order gates and bounded differences; basic observed character summaries.
 - Hosted read-only MCP and restricted authenticated upload on personal pylon CT290, verified with synthetic upload and public SDK readback. No live game snapshot yet.
-- Incremental hash acknowledgements and bounded local sync runner; missing exports, retries, concurrency and Windows timeout cleanup tested. Scheduled deployment qualification recorded in the dated verification log.
+- Incremental hash acknowledgements and bounded local sync runner; missing exports, retries, concurrency and Windows timeout cleanup tested. Current-user scheduled task installed; first real scheduled run completed with result 0 and waiting statuses for Retail/Forever.
 
 ## Required before completion
 
 - All eleven current section shapes have nested validation and malformed-input coverage. Live API compatibility and semantic constraints remain unverified. Bag indices 0..64 and slots 1..1024 are ingestion bounds, not claims about available game slots.
-- Maintain hosted MCP and authenticated local snapshot transfer; complete automatic-sync and live-export qualification. ADRs 003 and 004 record the boundary.
+- Maintain hosted MCP and authenticated local snapshot transfer; complete live-export qualification. ADRs 003–005 record the boundaries. Scheduled missing-export and manual synthetic runner paths are proven; actual new game-export delivery remains pending.
 - Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented.
 - Installed-client identification, capability inventory and per-client tests.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.
