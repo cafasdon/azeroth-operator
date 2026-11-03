@@ -14,7 +14,7 @@ class PackagingTests(unittest.TestCase):
             self.assertEqual(raw, a.read_bytes())
             self.assertEqual(receipt["qualification"], "development_only")
             with zipfile.ZipFile(a) as archive:
-                self.assertEqual(len(archive.namelist()), 13)
+                self.assertEqual(len(archive.namelist()), 15)
                 toc = archive.read("AzerothOperator/AzerothOperator.toc").decode()
                 for line in toc.splitlines():
                     if line and not line.startswith("#"):

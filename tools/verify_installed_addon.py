@@ -13,6 +13,7 @@ OPERATION_FILES = FILES | {"MacroOperations.lua", "MacroImport.lua", "MacroUI.lu
 BINDING_FILES = OPERATION_FILES | {"BindingOperations.lua", "BindingImport.lua"}
 EQUIPMENT_FILES = BINDING_FILES | {"EquipmentOperations.lua", "EquipmentImport.lua"}
 BAG_FILES = EQUIPMENT_FILES | {"BagOperations.lua", "BagImport.lua"}
+TALENT_FILES = BAG_FILES | {"TalentOperations.lua", "TalentImport.lua"}
 MAX_FILE = 1024 * 1024
 
 
@@ -22,7 +23,7 @@ def verify(client, manifest):
     if not isinstance(receipt, dict) or not isinstance(receipt.get("files"), dict):
         raise ValueError("Invalid manifest")
     files = set(receipt["files"])
-    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES) or any(
+    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES) or any(
         not isinstance(value, str) or not re.fullmatch("[a-f0-9]{64}", value)
         for value in receipt["files"].values()
     ):

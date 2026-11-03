@@ -141,3 +141,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Added source-only talent executor and bounded observation-only receipt reconciliation. Completion requires committed contents and matching saved selection; expiry remains uncertain. Targeted failure/dispatch tests pass; not deployed.
 
 - Talent application now delegates saved-loadout selection/commit bookkeeping to the visible native Talents panel, with config/inspection/busy checks and no direct-API fallback. Source tests pass; live UI qualification pending.
+
+- Connected talent preparation to MCP and included the decoder/executor in the fifteen-file 0.7.0-dev package. Protocol and package checks pass; not deployed or live-qualified.
