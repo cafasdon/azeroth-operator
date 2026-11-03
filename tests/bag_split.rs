@@ -34,9 +34,19 @@ fn split_requires_quantity_conservation_and_distinct_identity() -> mlua::Result<
  assert(AO.ApplyBagOperation(op).status=='applied')
  assert(writes==2 and slots[1].stackCount==15 and slots[2].stackCount==5 and cursor==nil)
  reset(); reject=true
- assert(not pcall(AO.ApplyBagOperation,op))
+ assert(AO.ApplyBagOperation(op).status=='outcome_unknown')
  assert(writes==4 and slots[1].stackCount==15 and cursor.stackCount==5)
  reset(); reject=false; wrongCount=true
- assert(not pcall(AO.ApplyBagOperation,op) and writes==6)
+ assert(AO.ApplyBagOperation(op).status=='outcome_unknown' and writes==6)
+ reset(); wrongCount=false
+ C_Container.SplitContainerItem=function(_,slot,amount)
+  writes=writes+1; cursor={guid='new',itemID=123,stackCount=amount,hyperlink='link'}
+ end
+ assert(AO.ApplyBagOperation(op).status=='outcome_unknown' and writes==8)
+ assert(slots[1].stackCount==20 and slots[2].stackCount==5)
+ assert(not AO.VerifyBagOperation(op))
+ slots[1].stackCount=15
+ assert(AO.VerifyBagOperation(op) and writes==8)
+ slots[2].guid='original'; assert(not AO.VerifyBagOperation(op))
  "#).exec()
 }

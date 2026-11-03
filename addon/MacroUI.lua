@@ -107,7 +107,7 @@ local function open()
         local ok,receipt,applied,detail=pcall(AO.ApplyReviewedMacro,input:GetText())
         if not ok then status:SetText("Refused: "..reason(receipt))
         elseif not applied then status:SetText("Outcome unknown: "..reason(detail).." Inspect current state before retrying.")
-        elseif receipt.kind=="load_talent_config" and receipt.status=="outcome_unknown" then status:SetText("Talent load unconfirmed. After it finishes, /aoexport within 60 seconds, then /reload. Do not retry.")
+        elseif receipt.status=="outcome_unknown" then status:SetText("Operation unconfirmed. After it finishes, /aoexport within 60 seconds, then /reload. Do not retry.")
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)
     panel:SetScript("OnHide",function() AO.InvalidateMacroReview(); apply:Disable() end)

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Handle retained source observations during bag pickup and delayed final move/split readback. Export-time reconciliation is bounded and read-only; unknown operations are never replayed. New failure/timing fixtures pass; live behaviour remains unqualified.
+
 - Deploy saved-talent preparation and stack-split development support: hosted importer/reader, Windows companion and Retail addon 0.7.0-dev. Public discovery verifies 12 tools; installed addon matches all 15 files. In-game qualification is deferred by the player. Bag test persists outcome_unknown with the exact item still observed at its source; no replay.
 
 - Add source-only exact-instance Retail equipment swap executor with GUID, cursor and slot checks, displaced-item readback and failure tests. Two-handed/multi-slot handling remains incomplete; no live gear changes.
