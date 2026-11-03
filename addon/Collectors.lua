@@ -1,6 +1,39 @@
 local _, AO = ...
 AO.collectors = {}
 
+AO.collectors.equipment = function()
+    local equipment = {}
+    for slot = 1, 19 do
+        local id = GetInventoryItemID("player", slot)
+        if id then
+            equipment[tostring(slot)] = { item_id = id, link = GetInventoryItemLink("player", slot) }
+        end
+    end
+    return equipment
+end
+
+AO.collectors.bags = function()
+    local bags = {}
+    if C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemInfo then
+        for bag = 0, (NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4) do
+            local slots = {}
+            for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                local info = C_Container.GetContainerItemInfo(bag, slot)
+                if info then slots[tostring(slot)] = { item_id = info.itemID, count = info.stackCount, link = info.hyperlink } end
+            end
+            bags[tostring(bag)] = slots
+        end
+        return bags
+    end
+    error("Container API unavailable")
+end
+
+AO.collectors.stats = function()
+    local version = GetBuildInfo()
+    return { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }
+end
+
+
 AO.collectors.macros = function()
     assert(GetNumMacros and GetMacroInfo, "API missing")
     local account, character = GetNumMacros()

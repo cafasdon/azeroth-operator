@@ -33,29 +33,8 @@ function AO.Capture()
     assert(AO.family and AO.variant, "Client adapter missing")
     assert(not AO.interface or AO.interface == interface, "Client interface changed; rebuild package")
     local sections = {}
-    local equipment = {}
-    for slot = 1, 19 do
-        local id = GetInventoryItemID("player", slot)
-        if id then
-            equipment[tostring(slot)] = { item_id = id, link = GetInventoryItemLink("player", slot) }
-        end
-    end
-    sections.equipment = equipment
-    local bags = {}
-    if C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemInfo then
-        for bag = 0, (NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4) do
-            local slots = {}
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info then slots[tostring(slot)] = { item_id = info.itemID, count = info.stackCount, link = info.hyperlink } end
-            end
-            bags[tostring(bag)] = slots
-        end
-        sections.bags = bags
-    end
-    sections.stats = { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }
     local unavailable = {}
-    for _, name in ipairs({"talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements"}) do
+    for _, name in ipairs({"equipment", "bags", "stats", "talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements"}) do
         local collector = AO.collectors and AO.collectors[name]
         if collector then
             local ok, data = pcall(collector)
@@ -65,7 +44,6 @@ function AO.Capture()
             else unavailable[name] = "api_unavailable_or_failed" end
         else unavailable[name] = "collector_not_implemented" end
     end
-    if not sections.bags then unavailable.bags = "container_api_unavailable" end
     local snapshot = {
         schema_version = 1, source = "addon",
         captured_at = date("!%Y-%m-%dT%H:%M:%SZ", GetServerTime()),

@@ -218,3 +218,12 @@ Added tools/verify_installed_addon.py. Read-only, fixed four-name manifest allow
 Actual Retail 0.1.1-dev invocation returned matches_manifest, verified_files=4, problems=[] against dist/bigwigs-0.1.1/AzerothOperator-0.1.1-dev-retail-live.manifest.json. Test verifies edited content is preserved, missing/extra/oversized files reported and traversal manifest names refused. Full Python suite: 28 tests passed; git diff --check clean. No addon, game, sync or hosted deployment changes.
 
 Jev claims advisory: jev-1.14.0, request 7d73ec87f26e36bc56928951fab702e15d1c914adbcc701183981240cc02a4e3, 933 input/112 output tokens, 0.309s. claim_supported=0.78, evidence_sufficient=0.73, no_material_issue choice confidence=0.73 (probability=0.82); concern_1=0.96 answered the positive question whether the result justifies only point-in-time manifest integrity, without authenticity/live compatibility. Advisory does not replace actual readback/tests. Required bdr-ocr-review and adversarial-review files remain absent; those workflows were not run.
+
+
+## Primary collector failure isolation
+
+Moved existing equipment, bags and stats reads into the same protected collector path as the other eight sections. A thrown API error or unserialisable result now omits that section and records unavailable; it does not publish an empty inventory or discard unrelated observations. Identity/build/interface and combat failures remain fatal and preserve the prior snapshot. No new API, schema field or game write.
+
+Real Lua5.1 producer-to-Rust-decoder tests inject errors in each primary section and assert ten surviving sections, missing failed section, explicit unavailable reason and retained quest observation. Missing C_Container is covered separately. Full Windows suite: 20 Rust tests and 28 Python tests passed. Pinned network-isolated BigWigs Retail 0.1.2-dev package SHA256 7cbfdd58252fe33ce8d5c04237ff73e9153331eb61a9bdf56fad008f2b1c3461; actual packaged Lua roundtrip and interface-change refusal passed. Live compatibility remains unverified.
+
+Jev advisory jev-1.14.0, request d6910fa5058cdc39268fcdcb4ce4bb4bc7d9fbb27e1017676531b18b864e555c, 895 input/112 output tokens, 0.568s: material_issue 0.23, evidence_sufficient 0.36, false-empty concern 0.20; next-step no_material_issue confidence 0.13 with probability tied at 0.42 against insufficient_evidence. Treat this as inconclusive, not approval; deterministic producer/decoder tests establish the narrow claim. Required diagnosing-bugs and adversarial-review files were absent; those workflows were not run.

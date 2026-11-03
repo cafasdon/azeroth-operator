@@ -170,6 +170,41 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
                 .is_none()
         );
     }
+    // A failed primary collector must not discard unrelated character data.
+    for (name, setup, restore) in [
+        (
+            "equipment",
+            "saved=GetInventoryItemID; GetInventoryItemID=function() error('restricted') end",
+            "GetInventoryItemID=saved",
+        ),
+        (
+            "bags",
+            "saved=C_Container.GetContainerItemInfo; C_Container.GetContainerItemInfo=function() error('restricted') end",
+            "C_Container.GetContainerItemInfo=saved",
+        ),
+        (
+            "stats",
+            "saved=UnitLevel; UnitLevel=function() error('restricted') end",
+            "UnitLevel=saved",
+        ),
+    ] {
+        lua.load(setup).exec()?;
+        lua.load("AO.Capture()").exec()?;
+        let hex: String = lua.globals().get("AzerothOperatorExport")?;
+        let partial = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+        assert!(!partial.sections.contains_key(name));
+        assert_eq!(partial.unavailable[name], "api_unavailable_or_failed");
+        assert_eq!(partial.sections["quests"]["42"]["title"], "Test quest");
+        assert_eq!(partial.sections.len(), 10);
+        lua.load(restore).exec()?;
+    }
+    lua.load("saved=C_Container; C_Container=nil; AO.Capture()")
+        .exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let missing = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+    assert!(!missing.sections.contains_key("bags"));
+    assert_eq!(missing.unavailable["bags"], "api_unavailable_or_failed");
+    lua.load("C_Container=saved; AO.Capture()").exec()?;
     let last_hex: String = lua.globals().get("AzerothOperatorExport")?;
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;

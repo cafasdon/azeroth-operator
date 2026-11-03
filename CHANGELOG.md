@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Isolate equipment, bags and stats collector failures so readable sections still export; failed sections are unavailable rather than empty. Preserve fatal combat/interface and identity guards.
+
 - Add bounded read-only installed addon verification against explicit manifests, reporting drift without overwriting local changes.
 
 - Add bounded read-only installed-client metadata inspection with product/family checks, ambiguous-build reporting and explicit unknown live compatibility. No interface or independently verified variant is inferred.
