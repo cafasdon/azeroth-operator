@@ -25,10 +25,18 @@ async fn exchange(
 
 pub async fn upload(snapshot: &Snapshot) -> Result<String> {
     snapshot.validate()?;
+    let config = std::env::var_os("AZEROTH_UPLOAD_SSH_CONFIG")
+        .ok_or_else(|| anyhow::anyhow!("Dedicated upload SSH configuration is not configured"))?;
+    ensure!(
+        std::path::Path::new(&config).is_absolute(),
+        "Upload SSH configuration must be absolute"
+    );
     let payload = serde_json::to_vec(snapshot)?;
     ensure!(payload.len() as u64 <= MAX_BYTES, "Snapshot too large");
     let expected = format!("{:x}", Sha256::digest(&payload));
     let mut child = tokio::process::Command::new("ssh")
+        .arg("-F")
+        .arg(config)
         .args([
             "-T",
             "-o",

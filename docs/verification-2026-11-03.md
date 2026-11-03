@@ -108,3 +108,15 @@ Added Rust upload CLI with local validation, canonical JSON, fixed SSH alias and
 Receiver candidate rejects remote commands/TTY, pins CT290/store/image, bounds stdin and process execution, and cleans only its uniquely named import container. Unit tests verify fixed argv and reject mutable/injected image/container identifiers. These are source tests, not forced-key qualification. No key provisioned, no upload alias configured, no receiver installed, no updated image deployed. ADR004 records the required activation tests.
 
 PR199 remains open with gateway scripts and Rust router checks pending; other checks passed at this checkpoint.
+
+## Upload identity isolation and build cache candidate
+
+Rust upload now requires an absolute AZEROTH_UPLOAD_SSH_CONFIG and invokes ssh -F, preventing normal administrator identities from becoming fallbacks. Generated a dedicated Ed25519 key in the ignored ACL-restricted _secrets directory and a dedicated config under the Codex state directory. ssh -G verifies exactly one IdentityFile, IdentityAgent none, IdentitiesOnly yes, strict host checking and forwarding cleared. Before registration, an actual authentication attempt was refused (publickey), confirming no broad identity fallback. The public key has not yet been authorised remotely.
+
+Thirteen Rust tests and Clippy pass. Receiver tests now explicitly reject SSH commands and TTY before host access. First-time receiver provisioning source validates root-owned authorised_keys, appends only a restricted forced-command key under flock, and refuses existing receiver directories. Runtime grant and prohibited-operation probes remain pending.
+
+Jev advisory jev-1.14.0, request 12d8d63769a8c502cff7c0a0546f39d1ae8492af24d347e31a717aa5a8e5d6cc, tokens984/135, elapsed1.113s: insufficient evidence0.74, live qualification concern0.92. Not a pass. Direct key-isolation evidence above narrows but does not complete qualification.
+
+Docker build now uses persistent build-stage Cargo caches and a single release profile for tests/build. First Linux build is in progress; no speedup measured or claimed. The running public reader is unchanged.
+
+PR199's first full CI passed, but concurrent PR198 also fixed the same static assertions. Merged origin/main into the isolated branch, retaining the extra 8824 behavioural check, and reran static tests successfully. Exact merged-head CI is rerunning before merge.

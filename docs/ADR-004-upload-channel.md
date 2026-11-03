@@ -16,6 +16,12 @@ deadline owns the SSH process; errors/timeouts are unknown outcomes, never succe
 Only an exact matching SHA256 receipt plus successful process exit confirms upload.
 Identical retries deduplicate via the existing content-addressed store.
 
+The alias lives in a dedicated config supplied by the absolute local
+AZEROTH_UPLOAD_SSH_CONFIG path. The client uses `ssh -F` so ordinary administrator
+identities cannot become a fallback. Configure only the upload IdentityFile,
+IdentitiesOnly=yes and IdentityAgent=none, with the existing verified known-hosts
+file. Missing configuration fails before launching SSH.
+
 On personal pylon, the forced receiver reads at most 4 MiB with a read deadline,
 then invokes one pinned CT290 container with no network and a fixed owner store.
 No client path, command, account or image selection is accepted. Image configuration

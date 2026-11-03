@@ -6,10 +6,13 @@ COPY src ./src
 COPY tests ./tests
 COPY addon ./addon
 COPY clients ./clients
-RUN cargo test --locked && cargo build --release --locked
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/build/target \
+    cargo test --release --locked && cargo build --release --locked && \
+    cp target/release/azeroth-operator /azeroth-operator
 
 FROM debian:bookworm-slim@sha256:f3034a6ec3c1205360777c4aae76234998866ad18806ae62b63a3f84ccad782b
-COPY --from=build /build/target/release/azeroth-operator /usr/local/bin/azeroth-operator
+COPY --from=build /azeroth-operator /usr/local/bin/azeroth-operator
 RUN mkdir /data && chown 10006:10006 /data
 USER 10006:10006
 ENV AZEROTH_DATA_DIR=/data
