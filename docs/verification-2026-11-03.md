@@ -240,3 +240,5 @@ Fixed benchmark examples/benchmark_addon.rs runs four alternating pairs of separ
 Producer regression test passes including reused-table mutation between captures and unsupported-value rejection. Clippy all-targets clean. Pinned BigWigs 0.1.3-dev package SHA256 98e0a34323ca5d88a49befce00d80a49daee068edd93728be078e136dc0422e6 passed packaged Lua roundtrip and interface guard. Schema unchanged.
 
 Jev claims advisory jev-1.14.0, request d11b91d76045f03e55339e9eb05d0ff6d6c6e1224caefe3035a2a188a2ce670c, 1002 input/116 output tokens, 0.437s: insufficient_evidence confidence0.43/probability0.62, claim_supported0.42, evidence_sufficient0.26, positively phrased bounded-claim concern0.69. Not approval. The recorded samples and equality assertions support only the narrow fixture result. Required bdr-performance and adversarial-review files absent; those workflows did not run.
+
+Installed Retail 0.1.3-dev after observing no Wow.exe process; backup local-data/addon-backups/addon-update-u82fltcv. Four files verified both by updater and independent read-only manifest check. Source e3eacc6. Hosted service and companion unchanged; no game input performed.
