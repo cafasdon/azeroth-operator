@@ -76,6 +76,12 @@ The Python prototype is retained temporarily as a reference and independent prot
 
 For a local development addon ZIP: `python tools/package_addon.py --family retail --variant live --interface 120105 --version 0.1.0-dev`. Explicit client metadata is required. Generated `dist/` files are ignored; manifests include per-file and archive hashes. These packages are development artifacts, not certified compatibility claims.
 
+For the pinned upstream packaging path, run `python3 -m tools.package_bigwigs`
+with the same client/version arguments in Linux/WSL. It uses isolated staging,
+disabled networking during packaging and exact output-file checks. See
+[addon packaging](docs/addon-packaging.md) for prerequisites and the packaged Lua
+fixture verifier. No release is published automatically.
+
 ## Boundaries
 
 Read ordinary addon exports and official API data; analyse and prepare player-reviewed imports. No autonomous gameplay, computer use, memory access, injection, packet interception, protected-action bypasses or arbitrary Lua execution. In-game writes remain disabled pending operation-specific policy review and client verification. A callable API is not proof of Blizzard authorisation.

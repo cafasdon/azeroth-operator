@@ -1,6 +1,6 @@
 # ADR 002: shared addon source, explicit client packages
 
-Date: 2026-11-03. Status: accepted direction; package implementation and manager qualification pending.
+Date: 2026-11-03. Status: pinned packaging implemented and locally tested; live client and manager qualification pending.
 
 ## Evidence
 
@@ -30,4 +30,4 @@ Forever adapter's hardcoded beta variant is provisional, not inferred truth from
 
 ## Qualification gaps
 
-Local installation metadata shows Retail 12.1.5.70688 and Forever 1.60.1.70755. No Classic directory was observed in the named WoW installation. No packages or manager installation tested yet. No source-only ZIP advertised as installable, no release publication performed by this decision.
+Local installation metadata shows Retail 12.1.5.70688 and Forever 1.60.1.70755; `.flavor.info` confirms wow and wowf. No Classic directory was observed. Pinned BigWigs commit0f24d2169de3ceb3b79a981311b2ebab4c6160c7 produced separate Retail/Forever/Classic-fixture packages, with strict source-byte checks and actual packaged Lua fixture tests. Retail's installed files match the verified archive. See docs/addon-packaging.md. No live client or addon-manager qualification or release publication is claimed.

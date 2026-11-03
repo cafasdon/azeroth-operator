@@ -10,6 +10,7 @@
 - Family-filtered MCP snapshot listing with pagination and corrupt-file count.
 - Initial Lua exporter for equipment, bags and basic stats; Lua 5.1 fixture roundtrip tested. Retail development package installed; not live-qualified.
 - Expanded collectors and unavailable reasons tested with fixtures; local deterministic development ZIPs verified. Retail development addon installed with matching hashes; live qualification still pending.
+- Pinned BigWigs packaging runs in isolated staging without network/upload access; packaged Retail/Forever/Classic-fixture Lua roundtrips verified and Retail rebuild byte identity confirmed. Manager and live-client qualification remain pending.
 - Snapshot comparisons with client/character/capture-order gates and bounded differences; basic observed character summaries.
 - Read-only equipment-selection JSON reviews with exact observed-location/item matching, duplicate rejection and swap/vacancy accounting. Deployed six-tool public MCP and verified synthetic changed/no-change reviews and wrong-item refusal. These are unverified selection drafts, not optimal builds or game imports; see docs/equipment-review.md.
 - Hosted read-only MCP and restricted authenticated upload on personal pylon CT290, verified with synthetic upload and public SDK readback. No live game snapshot yet.

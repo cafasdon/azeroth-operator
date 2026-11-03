@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def package(family, variant, interface, version, destination):
+def render_entries(family, variant, interface, version):
     if family not in {"retail", "classic", "forever"}:
         raise ValueError("Unknown family")
     for value in (variant, version):
@@ -31,6 +31,11 @@ Core.lua
     entries = {"Adapter.lua": adapter.encode(), "AzerothOperator.toc": toc.encode()}
     for name in ("Collectors.lua", "Core.lua"):
         entries[name] = (ROOT / "addon" / name).read_text(encoding="utf-8").replace("\r\n", "\n").encode()
+    return entries
+
+
+def package(family, variant, interface, version, destination):
+    entries = render_entries(family, variant, interface, version)
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     archive = destination / f"AzerothOperator-{version}-{family}-{variant}.zip"
