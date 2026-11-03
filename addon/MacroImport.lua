@@ -103,7 +103,7 @@ function AO.ApplyImportedMacro(text)
     assert(operation.family==AO.family and operation.variant==AO.variant and operation.build==tostring(build)
         and operation.interface==interface, "Operation targets a different client")
     assert(operation.character==UnitName("player") and operation.realm==GetRealmName(), "Operation targets a different character")
-    assert(not InCombatLockdown(), "Macro changes unavailable in combat")
+    assert(not InCombatLockdown(), "Operation unavailable in combat")
     local receipts,count=readReceipts()
     assert(not receipts[operation.id], "Operation already attempted; reconcile before retry")
     assert(count<128, "Operation receipt limit reached")
@@ -114,5 +114,5 @@ function AO.ApplyImportedMacro(text)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
     -- SavedVariables are persisted only at reload/logout; never promise crash durability.
-    return receipts[operation.id],ok
+    return receipts[operation.id],ok,not ok and type(result)=="string" and result or nil
 end

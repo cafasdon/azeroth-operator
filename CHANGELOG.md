@@ -129,3 +129,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Added source-only stack-split executor checks and quantity-conservation/failure fixtures. Split transport and deployment are pending; the installed bag-move test build is unchanged.
 
 - Split preparation, review/receipt integration and 0.6.0-dev package verified in fixtures. Review displays both split amount and source remainder. Not deployed.
+
+- Apply diagnostics now show a bounded plain-text refusal/error reason while retaining outcome_unknown for executor errors. Tests verify the reason survives dispatch and WoW markup/control characters cannot alter its display. This source change is not installed; the previously recorded 0.6.0-dev ZIP predates it and must be rebuilt before release.

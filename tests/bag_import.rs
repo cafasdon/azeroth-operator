@@ -63,8 +63,9 @@ fn full_stack_transport_requires_explicit_empty_target() -> anyhow::Result<()> {
         local failing=code:gsub('AO%-BAG%-1:[0-9a-f]+:', 'AO-BAG-1:'..string.rep('f',64)..':',1)
         function AO.ApplyBagOperation() calls=calls+1; error('partial placement') end
         AO.ReviewMacroImport(failing)
-        local uncertain,success=AO.ApplyReviewedMacro(failing)
+        local uncertain,success,detail=AO.ApplyReviewedMacro(failing)
         assert(not success and uncertain.status=='outcome_unknown' and calls==2)
+        assert(detail:find('partial placement',1,true))
         assert(AzerothOperatorOperations:find('outcome_unknown:move_bag_item',1,true))
         AO.ReviewMacroImport(failing)
         assert(not pcall(AO.ApplyReviewedMacro,failing) and calls==2)

@@ -1,5 +1,10 @@
 local _, AO = ...
 local panel
+local function reason(value)
+    if type(value)~="string" then return "No additional detail." end
+    -- Render diagnostics as bounded text, never WoW links or colour escapes.
+    return value:gsub("[%c]"," "):gsub("|","/"):sub(1,240)
+end
 local function open()
     if panel then panel:Show(); return end
     panel=CreateFrame("Frame", "AzerothOperatorMacroPanel", UIParent, "BasicFrameTemplateWithInset")
@@ -91,9 +96,9 @@ local function open()
     end)
     apply:SetScript("OnClick",function()
         apply:Disable()
-        local ok,receipt,applied=pcall(AO.ApplyReviewedMacro,input:GetText())
-        if not ok then status:SetText("Refused. Check character, client, combat and previous attempts.")
-        elseif not applied then status:SetText("Outcome unknown. Inspect current state before preparing another operation.")
+        local ok,receipt,applied,detail=pcall(AO.ApplyReviewedMacro,input:GetText())
+        if not ok then status:SetText("Refused: "..reason(receipt))
+        elseif not applied then status:SetText("Outcome unknown: "..reason(detail).." Inspect current state before retrying.")
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)
     panel:SetScript("OnHide",function() AO.InvalidateMacroReview(); apply:Disable() end)
