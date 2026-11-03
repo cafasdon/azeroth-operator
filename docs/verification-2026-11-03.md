@@ -242,3 +242,11 @@ Producer regression test passes including reused-table mutation between captures
 Jev claims advisory jev-1.14.0, request d11b91d76045f03e55339e9eb05d0ff6d6c6e1224caefe3035a2a188a2ce670c, 1002 input/116 output tokens, 0.437s: insufficient_evidence confidence0.43/probability0.62, claim_supported0.42, evidence_sufficient0.26, positively phrased bounded-claim concern0.69. Not approval. The recorded samples and equality assertions support only the narrow fixture result. Required bdr-performance and adversarial-review files absent; those workflows did not run.
 
 Installed Retail 0.1.3-dev after observing no Wow.exe process; backup local-data/addon-backups/addon-update-u82fltcv. Four files verified both by updater and independent read-only manifest check. Source e3eacc6. Hosted service and companion unchanged; no game input performed.
+
+
+## Operation scope evidence record
+
+Added docs/operation-policy.md to cover the user's explicit request for action boundaries before control. Read official Kaivax addon-policy opening post; excluded community replies. Official EULA indexed clauses retrieved, but direct en-US and en-GB page fetches returned403. Therefore no complete regional/account legal review or express MCP authorisation is claimed. Matrix distinguishes implemented observations, manual review, missing features and disabled/excluded game actions for all families. Source inspection confirms seven read tools and no addon command intake; no runtime boundary changed.
+
+Jev claims advisory jev-1.14.0, request b5745a94df056b88ff97f5ef2fb1c5c855bd06ba6bded3efcad07913eba18e22, 873 input/116 output tokens, 0.556s: insufficient_evidence confidence0.70/probability0.80, claim_supported0.68, evidence_sufficient0.53, accidental-approval concern0.13. This does not approve the bridge; incomplete policy evidence remains an explicit outstanding requirement. Documentation-only update.
+Authenticated public HTTPS smoke passed with seven tools. No fixture or live character readback claimed in this check.

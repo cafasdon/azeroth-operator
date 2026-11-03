@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Record Retail/Classic/Forever operation scope with official policy sources, explicit evidence gaps and disabled execution boundaries. No newly enabled actions.
+
 - Reuse validated section JSON within each synchronous capture, avoiding duplicate serialisation. Four paired synthetic Lua runs measured 23.5% lower median capture time with identical export bytes; no in-game performance claim.
 
 - Isolate equipment, bags and stats collector failures so readable sections still export; failed sections are unavailable rather than empty. Preserve fatal combat/interface and identity guards.
