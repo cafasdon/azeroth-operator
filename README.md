@@ -94,7 +94,7 @@ Run `python -m tools.verify_source` for the local source gate after installing r
 
 Run `cargo build --locked`, `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. The Python suite always exercises the Rust stdio server from target/debug (or the explicit AZEROTH_TEST_BINARY override), with a separate Python-reference test. Missing Rust binaries fail the test rather than silently using the reference implementation. These checks do not establish runtime game compatibility.
 
-Retail development addon 0.2.0-dev and the compatible local companion are installed. The hosted eight-tool MCP includes `prepare_macro_operation` for create/edit/delete/scope-move data, applied through player review in `/aomacros`. Execution remains pending live qualification. Macro capture is live-verified; action bars remain unavailable. See [deployment evidence](docs/macro-deployment-2026-11-03.md) and [captured loadouts](docs/captured-loadouts.md).
+Retail development addon 0.3.0-dev and the compatible local companion are installed. The hosted nine-tool MCP includes `prepare_macro_operation` and `prepare_binding_operation`, applied through player review in `/aoapply` (`/aomacros` also works). Macro creation is live-verified; binding execution remains pending live qualification. Action-bar capture remains unavailable. See [macro evidence](docs/macro-deployment-2026-11-03.md), [binding deployment](docs/binding-deployment-2026-11-03.md) and [captured loadouts](docs/captured-loadouts.md).
 
 
 Inspect an explicit installation without launching the game:

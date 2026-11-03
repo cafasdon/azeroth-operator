@@ -65,7 +65,7 @@ async def smoke(snapshot=None, expect_loadout=False, expect_bags=False):
             else:
                 result = await session.call_tool("list_snapshots", {"family": "retail"})
                 assert not result.isError
-            print(json.dumps({"public_tls": True, "tools": 7, "fixture_readback": bool(snapshot)}))
+            print(json.dumps({"public_tls": True, "tools": len(tools.tools), "fixture_readback": bool(snapshot)}))
 
 
 if __name__ == "__main__":
