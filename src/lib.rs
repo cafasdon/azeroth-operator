@@ -1,6 +1,7 @@
 //! Data-only client contracts and snapshot storage. No game execution.
 pub mod analysis;
 pub mod binding_operation;
+pub mod equipment_operation;
 pub mod import;
 pub mod macro_operation;
 pub mod planning;

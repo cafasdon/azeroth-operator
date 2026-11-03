@@ -41,5 +41,28 @@ fn exact_equipment_swap_and_precondition_refusals() -> mlua::Result<()> {
         C_PaperDollInfo.CanCursorCanGoInSlot=function() return false end
         assert(not pcall(AO.ApplyEquipmentOperation,op))
         assert(writes==4 and cursor.guid=='new' and gear.guid=='old')
+        -- A server-side equip refusal must retain the source on the cursor.
+        bag={guid='new',id=1,link='newlink'}; cursor=nil
+        C_PaperDollInfo.CanCursorCanGoInSlot=function() return true end
+        local originalEquip=PickupInventoryItem
+        PickupInventoryItem=function() writes=writes+1 end
+        assert(not pcall(AO.ApplyEquipmentOperation,op))
+        assert(writes==6 and cursor.guid=='new' and gear.guid=='old' and bag==nil)
+        -- A failed displaced-item return must not claim completion or clear it.
+        bag={guid='new',id=1,link='newlink'}; cursor=nil
+        PickupInventoryItem=originalEquip
+        local originalBag=C_Container.PickupContainerItem
+        C_Container.PickupContainerItem=function()
+            if cursor then writes=writes+1 else originalBag() end
+        end
+        assert(not pcall(AO.ApplyEquipmentOperation,op))
+        assert(writes==9 and cursor.guid=='old' and gear.guid=='new' and bag==nil)
+        -- Explicit empty destination uses only pickup and equip.
+        C_Container.PickupContainerItem=originalBag
+        bag={guid='new',id=1,link='newlink'}; cursor=nil; gear=nil
+        op.target_guid=''
+        assert(AO.ApplyEquipmentOperation(op).status=='applied')
+        assert(writes==11 and cursor==nil and gear.guid=='new' and bag==nil)
+
     "#).exec()
 }

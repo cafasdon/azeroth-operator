@@ -106,3 +106,9 @@
 - Add Rust upload command with bounded fixed SSH transport and exact hash receipts, plus a restricted receiver candidate. Provisioning and live upload qualification remain pending.
 
 - Qualify dedicated CT290 upload key, command/remote-forwarding refusal, hash-matched duplicate uploads and public MCP readback. Private key and token stay out of source.
+
+## Equipment integration — development, 2026-11-03
+
+- Added snapshot-bound equipment preparation to MCP and shared review/receipt dispatch.
+- Packaged both equipment modules; maintained legacy installation manifest support.
+- Verified eleven-file package and shared dispatcher replay refusal. Not deployed or live-qualified.

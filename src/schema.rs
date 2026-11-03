@@ -138,7 +138,14 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ensure!(
                     matches!(
                         receipt["kind"].as_str(),
-                        Some("create" | "edit" | "delete" | "move" | "set_binding")
+                        Some(
+                            "create"
+                                | "edit"
+                                | "delete"
+                                | "move"
+                                | "set_binding"
+                                | "equip_bag_item"
+                        )
                     ),
                     "Invalid receipt kind"
                 );

@@ -65,7 +65,12 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "already_selected"
                             ) && matches!(
                                 fields[2],
-                                "create" | "edit" | "delete" | "move" | "set_binding"
+                                "create"
+                                    | "edit"
+                                    | "delete"
+                                    | "move"
+                                    | "set_binding"
+                                    | "equip_bag_item"
                             ),
                             "Invalid receipt result"
                         );
