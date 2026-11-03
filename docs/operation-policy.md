@@ -1,6 +1,6 @@
 # Operation scope and evidence
 
-Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; player-applied mutations remain pending live qualification. ADR006 supersedes the original blanket read-only implementation target.
+Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; macro creation is live-qualified; other player-applied mutations have separate qualification gaps. ADR006 supersedes the original blanket read-only implementation target.
 
 ## Published sources
 
@@ -23,10 +23,12 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Compare observations and review equipment selections | Implemented | Schema supported | Schema supported | Draft JSON only; no gear legality, optimality or live ownership guarantee |
 | Return original captured talent import string | Development support | Disabled | Disabled | Retail only; staged changes refused; player reviews/imports manually; game acceptance unverified |
 | Generate optimised builds or new game import formats | Not implemented | Not implemented | Not implemented | Needs client-specific metadata, format verification and policy evidence |
-| Create/edit/delete/move macro scope | Development implementation installed | Disabled | Disabled | MCP prepares bounded data; player reviews/applies through ordinary addon APIs; live mutation qualification pending |
-| Change keybindings | Executor source tested | Disabled | Disabled | One explicit key and context; expected binding/set checks; transport, UI and deployment pending |
-| Equip gear, switch talents or apply action bars | Not implemented | Not implemented | Not implemented | In scope for player-applied operations; no autonomous gameplay or protected-action bypass |
-| Sort/move/split items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | No inventory mutation or destructive operation exposed |
+| Create/edit/delete/move macro scope | Development implementation installed | Disabled | Disabled | MCP prepares bounded data; player reviews/applies through ordinary addon APIs; creation verified; edit/delete/scope-move remain unqualified |
+| Change keybindings | Deployed; no-op verified | Disabled | Disabled | One explicit key and context; actual SetBinding/SaveBindings still unqualified |
+| Equip gear | Development implementation deployed | Disabled | Disabled | Single GUID-bound bag-to-equipment swap; awaiting live export and swap verification |
+| Switch talents or apply action bars | Not implemented | Not implemented | Not implemented | In scope for player-applied operations; no protected-action bypass |
+| Move carried items | Executor source tested | Disabled | Disabled | Full-stack move to explicit empty slot; transport and deployment pending |
+| Sort/split items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
 | Auction bids/listings, purchases, crafting, trade or chat sends | Disabled | Disabled | Disabled | No transaction or messaging tools |
 | Graphics/CVar configuration proposals | Not implemented | Not implemented | Not implemented | Requires exact client settings, hardware evidence and bounded file-change workflow |
 | Combat, movement, targeting, quests, queues, farming, anti-AFK | Excluded | Excluded | Excluded | User's rules-only scope; no autonomous gameplay or input automation |
