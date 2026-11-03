@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a source-only native equipment-set use executor with exact equipped GUID preimages/readback, ignored-slot preservation, unresolved-slot refusal and one native call. Offline failure fixtures pass; no transport, receipt registration, packaging or live qualification yet.
+
 - Deploy Retail 0.10.0-dev equipment-set development support with compatible hosted importer/reader and Windows companion. Public fourteen-tool discovery/preparation checks and nineteen installed hashes pass. No live set mutation or in-game test occurred.
 
 - Build nineteen-file Retail 0.10.0-dev equipment-set package with legacy upgrade support and actual staged Lua review/Apply/receipt verification. Require 0.10.0-dev for set operations; candidate verified offline, not installed.
