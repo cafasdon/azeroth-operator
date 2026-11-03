@@ -1,0 +1,3 @@
+local _, AO = ...
+AO.family = "retail"
+AO.variant = "live"

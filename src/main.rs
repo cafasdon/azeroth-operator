@@ -1,4 +1,4 @@
-use azeroth_operator::Store;
+use azeroth_operator::{Family, Store};
 use rmcp::model::{CallToolResult, ContentBlock};
 use rmcp::{
     ServerHandler, ServiceExt,
@@ -21,6 +21,14 @@ struct Inspect {
     section: Option<String>,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct List {
+    family: String,
+    offset: Option<usize>,
+    limit: Option<usize>,
+}
+
 #[tool_router]
 impl Operator {
     #[tool(
@@ -32,7 +40,32 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots"],"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "List snapshots for an explicit client family, newest capture first",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn list_snapshots(&self, Parameters(args): Parameters<List>) -> CallToolResult {
+        let family = match args.family.as_str() {
+            "retail" => Family::Retail,
+            "classic" => Family::Classic,
+            "forever" => Family::Forever,
+            _ => return CallToolResult::error(vec![ContentBlock::text("Unknown family")]),
+        };
+        match self
+            .store
+            .list(family, args.offset.unwrap_or(0), args.limit.unwrap_or(20))
+        {
+            Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Snapshot listing failed or limit invalid",
+            )]),
+        }
     }
     #[tool(
         description = "Read a stored snapshot by hash, with capture age; never live state",
@@ -63,6 +96,16 @@ async fn main() -> anyhow::Result<()> {
     let root = std::env::var_os("AZEROTH_DATA_DIR")
         .map(Into::into)
         .unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if !args.is_empty() {
+        anyhow::ensure!(
+            args.len() == 2 && args[0] == "import",
+            "Usage: azeroth-operator [import <export-file>]"
+        );
+        let snapshot = azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?;
+        println!("{}", Store { root }.ingest(&snapshot)?);
+        return Ok(());
+    }
     let service = Operator {
         store: Store { root },
         tool_router: Operator::tool_router(),

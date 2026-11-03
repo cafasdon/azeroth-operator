@@ -1,4 +1,5 @@
 //! Data-only client contracts and snapshot storage. No game execution.
+pub mod import;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -105,6 +106,41 @@ pub struct Store {
 }
 
 impl Store {
+    pub fn list(&self, family: Family, offset: usize, limit: usize) -> Result<Value> {
+        ensure!((1..=100).contains(&limit), "Limit must be 1..100");
+        if !self.root.exists() {
+            return Ok(json!({"snapshots":[],"has_more":false,"invalid_count":0}));
+        }
+        let mut paths = Vec::new();
+        for entry in std::fs::read_dir(&self.root)? {
+            let path = entry?.path();
+            if path.extension().is_some_and(|x| x == "json") {
+                paths.push(path);
+            }
+            ensure!(
+                paths.len() <= 10000,
+                "Store scan limit reached; archive older snapshots"
+            );
+        }
+        paths.sort();
+        let mut rows = Vec::new();
+        let mut invalid = 0;
+        for path in paths {
+            let Some(id) = path.file_stem().and_then(|s| s.to_str()) else {
+                invalid += 1;
+                continue;
+            };
+            match self.read(id) {
+                Ok(s) if s.client.family == family => rows.push((s.captured_at, id.to_owned(), s)),
+                Ok(_) => (),
+                Err(_) => invalid += 1,
+            }
+        }
+        rows.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+        let has_more = rows.len().saturating_sub(offset) > limit;
+        let snapshots:Vec<_>=rows.into_iter().skip(offset).take(limit).map(|(_,id,s)|json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source})).collect();
+        Ok(json!({"snapshots":snapshots,"has_more":has_more,"invalid_count":invalid}))
+    }
     pub fn ingest(&self, snapshot: &Snapshot) -> Result<String> {
         snapshot.validate()?;
         let raw = serde_json::to_vec(snapshot)?;

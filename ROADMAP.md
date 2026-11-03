@@ -5,14 +5,17 @@
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.
 - Read-only MCP discovery and snapshot inspection; real stdio integration test.
+- Rust CLI import of bounded JSON or strict hex-encoded SavedVariables; code-bearing files rejected.
+- Family-filtered MCP snapshot listing with pagination and corrupt-file count.
+- Initial Lua exporter for equipment, bags and basic stats; Lua 5.1 fixture roundtrip tested. Not installed/live-qualified.
 
 ## Required before completion
 
 - Strict versioned snapshot schema and malformed-input coverage.
-- Addon export adapters and data-only SavedVariables ingestion.
+- Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented.
 - Installed-client identification, capability inventory and per-client tests.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.
-- Snapshot discovery, comparison and character analysis tools.
+- Snapshot comparison and character analysis tools; discovery implemented (performance benchmarking pending).
 - Player-reviewed build/configuration proposals and export formats; no autonomous game writes.
 - Policy evidence for every proposed action; unknown permission means disabled.
 - Source distribution on cafasdon GitHub, isolated installation, reproducible dependency setup.

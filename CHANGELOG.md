@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add strict data-only SavedVariables/JSON import CLI and family-filtered MCP snapshot discovery.
+- Add read-only Lua equipment/bag/basic-stat exporter and Lua 5.1 roundtrip harness.
+
 - Port snapshot foundation and MCP tools to Rust using the official rmcp SDK.
 - Verify Rust protocol interoperability with the independent Python SDK client.
 - Add typed envelope validation and concurrent publication regression test.

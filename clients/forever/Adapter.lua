@@ -1,0 +1,3 @@
+local _, AO = ...
+AO.family = "forever"
+AO.variant = "beta"
