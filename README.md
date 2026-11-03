@@ -115,3 +115,6 @@ python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_ret
 Exit zero means the four installed files matched the supplied manifest during this read. Missing, changed, extra or oversized files produce nonzero without repairs. The manifest is caller-trusted, not signed authentication; concurrent edits can invalidate the observation. Retail and Forever product checks are supported; Classic installation verification remains unavailable. No live API compatibility is implied.
 
 Operation-by-operation scope, client subdivisions and policy evidence limits are recorded in [operation policy](docs/operation-policy.md). This is a project boundary, not Blizzard certification.
+
+
+Source candidate: `character_summary.carried_item_review` reports observed carried quantities and repeated item IDs, with up to20 groups and20 locations per group. Totals cover the whole exported bag section even when details are truncated. Locations retain exported bag/slot keys. Different variants can share an ID: this is not item identity, stack compatibility, a move plan or an optimiser. Missing bag data remains null; an observed empty bag map reports zero. Hosted rollout of this additive summary field is pending.

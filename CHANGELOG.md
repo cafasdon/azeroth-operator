@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add bounded carried-item review to character summaries: observed quantities, distinct/repeated IDs and exact exported locations, with truncation and unknown stack compatibility. Source verified; hosted rollout pending.
+
 - Isolate per-family export discovery errors, report retryable failure in fresh sync status and continue processing other families.
 
 - Extend independent container protocol smoke to verify capability claims, missing-snapshot rejection across all read/review tools and rejection of unknown mutation tools.

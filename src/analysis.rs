@@ -2,7 +2,45 @@
 use crate::Snapshot;
 use anyhow::{Result, ensure};
 use serde_json::{Value, json};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+
+fn carried_items(snapshot: &Snapshot) -> Option<Value> {
+    let bags = snapshot.sections.get("bags")?.as_object()?;
+    let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();
+    let mut total = 0u64;
+    for (bag, slots) in bags {
+        for (slot, item) in slots.as_object()? {
+            let id = item.get("item_id")?.as_u64()?;
+            let count = item.get("count")?.as_u64()?;
+            total = total.checked_add(count)?;
+            let group = groups.entry(id).or_default();
+            group.0 = group.0.checked_add(count)?;
+            group.1 += 1;
+            if group.2.len() < 20 {
+                group.2.push(json!({"bag":bag,"slot":slot,"count":count}));
+            }
+        }
+    }
+    let repeated_count = groups.values().filter(|group| group.1 > 1).count();
+    let repeated: Vec<_> = groups
+        .iter()
+        .filter(|(_, group)| group.1 > 1)
+        .take(20)
+        .map(|(id, group)| {
+            json!({"item_id":id,"quantity_observed":group.0,
+            "occupied_slots_observed":group.1,"locations":group.2,
+            "locations_truncated":group.1>group.2.len()})
+        })
+        .collect();
+    Some(
+        json!({"quantity_observed":total,"distinct_item_ids_observed":groups.len(),
+        "repeated_item_id_count":repeated_count,"repeated_item_ids":repeated,
+        "groups_truncated":repeated_count>repeated.len(),
+        "grouping":"item_id_only_not_item_identity",
+        "stack_compatibility":"unknown","free_slots":"not_captured",
+        "game_execution":false}),
+    )
+}
 
 pub fn compare(before: &Snapshot, after: &Snapshot) -> Result<Value> {
     ensure!(before.client == after.client, "Client/build mismatch");
@@ -82,6 +120,7 @@ pub fn summary(s: &Snapshot) -> Value {
         .and_then(Value::as_bool);
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
       "equipped_slots_observed":occupied,"carried_item_slots_observed":bag_slots,
+      "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})
 }
@@ -142,5 +181,54 @@ mod tests {
         assert!(summary(&a)["carried_item_slots_observed"].is_null());
         a.sections.insert("bags".into(), json!({"0": {}}));
         assert_eq!(summary(&a)["carried_item_slots_observed"], 0);
+    }
+
+    #[test]
+    fn carried_review_counts_locations_without_claiming_stack_compatibility() {
+        let mut s = fixture();
+        assert!(summary(&s)["carried_item_review"].is_null());
+        s.sections.insert(
+            "bags".into(),
+            json!({"0":{"1":{"item_id":5,"count":3,"link":"variant-a"}},
+            "1":{"2":{"item_id":5,"count":7,"link":"variant-b"},"3":{"item_id":6,"count":1}}}),
+        );
+        s.validate().unwrap();
+        let review = summary(&s)["carried_item_review"].clone();
+        assert_eq!(review["quantity_observed"], 11);
+        assert_eq!(review["distinct_item_ids_observed"], 2);
+        assert_eq!(review["repeated_item_ids"][0]["quantity_observed"], 10);
+        assert_eq!(
+            review["repeated_item_ids"][0]["locations"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(review["stack_compatibility"], "unknown");
+        assert_eq!(review["game_execution"], false);
+        s.sections.insert("bags".into(), json!({"0":{}}));
+        assert_eq!(summary(&s)["carried_item_review"]["quantity_observed"], 0);
+        s.sections
+            .insert("bags".into(), json!({"0":{"1":{"item_id":1}}}));
+        assert!(summary(&s)["carried_item_review"].is_null());
+        let mut slots = serde_json::Map::new();
+        for slot in 1..=462 {
+            slots.insert(slot.to_string(), json!({"item_id":(slot-1)/22+1,"count":1}));
+        }
+        s.sections.insert("bags".into(), json!({"0":slots}));
+        s.validate().unwrap();
+        let bounded = summary(&s)["carried_item_review"].clone();
+        assert_eq!(bounded["quantity_observed"], 462);
+        assert_eq!(bounded["repeated_item_id_count"], 21);
+        assert_eq!(bounded["repeated_item_ids"].as_array().unwrap().len(), 20);
+        assert_eq!(bounded["groups_truncated"], true);
+        assert_eq!(
+            bounded["repeated_item_ids"][0]["locations"]
+                .as_array()
+                .unwrap()
+                .len(),
+            20
+        );
+        assert_eq!(bounded["repeated_item_ids"][0]["locations_truncated"], true);
     }
 }

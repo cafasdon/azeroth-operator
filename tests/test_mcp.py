@@ -27,6 +27,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
             sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 2},
+                                                     "2": {"item_id": 123, "count": 3}}}
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
@@ -61,6 +63,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})
                         self.assertFalse(json.loads(summary.content[0].text)["live"])
+                        carried = json.loads(summary.content[0].text)["carried_item_review"]
+                        self.assertEqual(carried["quantity_observed"], 5)
+                        self.assertEqual(carried["repeated_item_ids"][0]["occupied_slots_observed"], 2)
+                        self.assertEqual(carried["stack_compatibility"], "unknown")
                         observed = sample["sections"]["equipment"]
                         slot, item = next(iter(observed.items()))
                         review = await session.call_tool("review_equipment_selection", {
