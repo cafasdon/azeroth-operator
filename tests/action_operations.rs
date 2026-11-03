@@ -55,6 +55,11 @@ fn action_moves_swaps_and_refusals_preserve_cursor() -> mlua::Result<()> {
  reset(); slots[2]=nil
  issecretvalue=function(v) return v==123 end
  assert(not pcall(AO.ApplyActionOperation,op) and writes==0); issecretvalue=nil
+ reset(); slots[2]=nil
+ local cursorInfo=GetCursorInfo
+ GetCursorInfo=function() if cursor then return 'spell',123,nil,nil end end
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==1 and cursor.id==123 and slots[2]==nil)
+ GetCursorInfo=cursorInfo
  "#,
     )
     .exec()
