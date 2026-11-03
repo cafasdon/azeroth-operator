@@ -42,6 +42,8 @@ fn action_moves_swaps_and_refusals_preserve_cursor() -> mlua::Result<()> {
  macroBody='changed'; assert(not pcall(AO.ApplyActionOperation,op)); macroBody='/cast Test'
  coverage['2']=nil; assert(not pcall(AO.ApplyActionOperation,op)); coverage['2']={}
  cursor={kind='item',id=4}; assert(not pcall(AO.ApplyActionOperation,op)); cursor=nil
+ local place=PlaceAction; PlaceAction=nil
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==0); PlaceAction=place
  assert(writes==0)
  assert(AO.ApplyActionOperation(op).status=='applied' and writes==3)
  assert(slots[1].kind=='macro' and slots[2].id==123 and cursor==nil)

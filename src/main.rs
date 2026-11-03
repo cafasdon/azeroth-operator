@@ -88,7 +88,7 @@ struct ActionOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Prepare a Retail action-slot move/swap from two explicitly observed slots, including exact macro contents. Data only: the addon execution path is not enabled yet. Does not change action bars.",
+        description = "Prepare a Retail action-slot move/swap from two explicitly observed slots, including exact macro contents. Data only; player review and Apply requires addon 0.9.0-dev or later. Live execution remains unqualified. Does not change action bars.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

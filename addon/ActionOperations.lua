@@ -46,6 +46,7 @@ end
 function AO.ApplyActionOperation(op)
     assert(type(op)=="table" and op.kind=="move_action_slot" and sameClient(op), "Action client mismatch")
     assert(not InCombatLockdown() and not UnitCastingInfo("player") and not UnitChannelInfo("player"), "Action changes unavailable")
+    assert(type(PickupAction)=="function" and type(PlaceAction)=="function", "Action placement APIs unavailable")
     assert(GetCursorInfo()==nil, "Cursor already occupied")
     validateAction(op.source); validateAction(op.target)
     assert(not op.source.empty and op.source_slot~=op.target_slot, "Invalid action move")

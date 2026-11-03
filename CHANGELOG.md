@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare seventeen-file Retail0.9.0-dev action-operation package with legacy upgrade support, delayed-receipt/expiry tests and pre-write API availability checks. Candidate verified offline; not installed.
+
 - Connect action-slot source decoder, player review, executor and receipts. End-to-end compiler-to-Lua-to-export/import tests pass, with replay refusal and macro review details. Installed addon remains unchanged.
 
 - Deploy Retail0.8.0-dev partial action observations with matching hosted importer/reader and Windows companion. Public endpoint verifies13tools; action-bar execution remains disabled.

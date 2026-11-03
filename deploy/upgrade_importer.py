@@ -37,6 +37,7 @@ def qualify(image):
                 snapshot["sections"]["operation_receipts"]["f" * 64] = {"status":"outcome_unknown", "kind":"load_talent_config"}
                 snapshot["sections"]["talents"]["saved_loadouts"] = {"spec_id":263,"selected_config_id":8,"entries":{
                     "9":{"name":"Synthetic saved build","import_string":"RUZHSA==","serialization_version":2,"uses_shared_action_bars":False}}}
+                snapshot["sections"]["operation_receipts"]["1" * 64] = {"status":"outcome_unknown", "kind":"move_action_slot"}
                 snapshot["sections"]["action_bar_observation"]={"coverage":"loaded_builtin_buttons_only",
                     "observed_buttons":2,"missing_buttons":1,"slots":{"1":{"empty":False,"kind":"spell","id":123},"2":{"empty":True}}}
             name = "azeroth-import-test-" + uuid.uuid4().hex

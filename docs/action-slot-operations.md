@@ -41,3 +41,13 @@ End-to-end offline fixture runs the Rust compiler, real Lua decoder, review disp
 Not packaged or deployed. Installed0.8.0-dev still has no action decoder/executor; hosted preparation continues reporting addon_execution_enabled=false. Actual item cursor contract and protected/taint behaviour remain open. No in-game testing requested or performed.
 
 Jev advisory b677ae70c8fe252529383add0fb3d23d71ade5f1fb82afe90dd8de594f2ca8a0, jev-1.14.0,871input/116output tokens,0.295seconds: insufficient_evidence (reported confidence0.40), not a pass. Configured adversarial-review file absent; workflow not run.
+
+## Development package candidate — 2026-11-04
+
+Retail0.9.0-dev now packages seventeen files, adding ActionOperations and ActionImport before the dispatcher. Upgrade/installed-file validators retain all earlier manifest shapes. Compiler metadata requires addon0.9.0-dev and distinguishes execution support from live_qualified=false. Importer qualification includes move_action_slot receipts. No installation occurred; importer/reader/companion upgrade must precede addon installation.
+
+Full source gate passed after package/schema integration (31Python tests). Additional targeted tests then passed for delayed final placement, read-only receipt promotion, expiry with unknown retained, replay refusal and unavailable placement API before any pickup. Packaged Lua5.1 loading/export and interface-change rejection passed. Final ZIP SHA256307c3d3e7baf0f00fd62abdea83009e7084542d2f1b9475a69ea747c0284785a (earlier candidate db821604 was superseded before deployment).
+
+Independent implementation evidence for item cursor mapping: https://github.com/kemayo/wow-bankstack/blob/master/core.lua reads cursor type/item ID from the first/second GetCursorInfo results. Read2026-11-04. This supports tuple interpretation, not Blizzard authorisation or this executor's live behaviour. BankStack's retries/automatic cursor handling were not adopted. Native spell/macro tuple references are recorded above. Taint/protected-function behaviour remains unqualified and will not be bypassed.
+
+Jev advisory90b4990ba27129135dd2e5f018b0c610e6422b07b7ca0e7a2a0ca3772897cc7c, jev-1.14.0,900input/115output tokens,0.298seconds: investigate_supported_issue (reported confidence0.66), not a pass and no specific source finding supplied. Follow-up inspection added a pre-write PickupAction/PlaceAction availability guard and zero-write refusal test. Deterministic evidence supports a development candidate only; no live-success claim.
