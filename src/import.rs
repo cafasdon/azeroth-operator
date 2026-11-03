@@ -13,16 +13,16 @@ fn export_assignment(text: &str) -> Result<&str> {
             .trim_start()
             .split_once('=')
             .ok_or_else(|| anyhow::anyhow!("Expected assignment"))?;
-        if name.trim() == "AzerothOperatorOperations" {
-            if let Some(tail) = rest.trim_start().strip_prefix("nil") {
-                ensure!(
-                    !receipts_seen && (tail.is_empty() || tail.starts_with(char::is_whitespace)),
-                    "Invalid empty receipt checkpoint"
-                );
-                receipts_seen = true;
-                remaining = tail;
-                continue;
-            }
+        if name.trim() == "AzerothOperatorOperations"
+            && let Some(tail) = rest.trim_start().strip_prefix("nil")
+        {
+            ensure!(
+                !receipts_seen && (tail.is_empty() || tail.starts_with(char::is_whitespace)),
+                "Invalid empty receipt checkpoint"
+            );
+            receipts_seen = true;
+            remaining = tail;
+            continue;
         }
         let rest = rest
             .trim_start()

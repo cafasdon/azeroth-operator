@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only binding compiler and strict Lua data decoder, with Rust-to-Lua tests for context preservation and uncaptured-key refusal. No binding transport is enabled in the deployed addon yet.
+
 - Capture Retail binding contexts and active binding-set metadata for player-applied binding plans. Additive schema and Lua producer roundtrip verified; not yet deployed.
 
 - Begin context-aware Retail keybinding execution: source-only single-key set/unbind with preimage, active-set, combat and registered-action checks. Lua fixture passed; MCP transport and deployment remain pending.
