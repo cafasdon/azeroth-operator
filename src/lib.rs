@@ -2,6 +2,7 @@
 pub mod analysis;
 pub mod import;
 mod schema;
+pub mod sync;
 pub mod upload;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};

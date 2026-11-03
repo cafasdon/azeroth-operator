@@ -20,6 +20,14 @@ bearer token. A separate restricted SSH credential supports the Rust CLI
 SSH configuration is never used as a fallback. Uploaded bytes are validated and
 confirmed by matching content hashes. Automated file monitoring is not installed.
 
+For repeatable incremental uploads, use `azeroth-operator sync <retail|classic|forever> <export-file> <receipt-dir>`.
+Missing exports report `waiting_for_export`. Matching local acknowledgements skip
+SSH connections; failed transfers remain retryable. Receipts bind the snapshot to
+the dedicated SSH configuration contents. Keep that configuration self-contained
+and use a different receipt directory if its destination changes indirectly.
+A skipped upload does not recheck remote storage. Use `upload` to resend after
+remote deletion or restoration. This command does not capture live game state.
+
 The companion is Rust; in-game adapters use Lua. Build with `cargo build --locked`. Run `target/debug/azeroth-operator.exe` for stdio MCP. Set `AZEROTH_DATA_DIR` to an absolute snapshot directory; the default is `local-data/snapshots` relative to the process working directory. Tools: `capabilities`, `inspect_snapshot`, `list_snapshots` (explicit family, optional offset/limit).
 
 Import a JSON snapshot or the addon's narrow SavedVariables export with `target/debug/azeroth-operator.exe import <export-file>`. Import is a local CLI operation, not an arbitrary-path MCP tool. It reads data only; never executes Lua. See `addon/README.md` for the export workflow and outstanding live-client qualification.

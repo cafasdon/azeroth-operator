@@ -148,6 +148,24 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if !args.is_empty() {
+        if args.len() == 4 && args[0] == "sync" {
+            let family = match args[1].to_str() {
+                Some("retail") => Family::Retail,
+                Some("classic") => Family::Classic,
+                Some("forever") => Family::Forever,
+                _ => anyhow::bail!("Unknown sync family"),
+            };
+            println!(
+                "{}",
+                azeroth_operator::sync::sync_file(
+                    std::path::Path::new(&args[2]),
+                    family,
+                    std::path::Path::new(&args[3])
+                )
+                .await?
+            );
+            return Ok(());
+        }
         if args.len() == 2 && args[0] == "upload" {
             let snapshot = azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?;
             println!("{}", azeroth_operator::upload::upload(&snapshot).await?);
@@ -159,7 +177,7 @@ async fn main() -> anyhow::Result<()> {
             azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?
         } else {
             anyhow::bail!(
-                "Usage: azeroth-operator [import <export-file> | import-stdin | upload <export-file>]"
+                "Usage: azeroth-operator [import <file> | import-stdin | upload <file> | sync <family> <file> <receipt-dir>]"
             );
         };
         println!("{}", Store { root }.ingest(&snapshot)?);

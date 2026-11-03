@@ -1,6 +1,23 @@
 use std::process::Command;
 use std::{io::Write, process::Stdio};
 
+#[test]
+fn sync_missing_export_does_not_require_transport() {
+    let dir = tempfile::tempdir().unwrap();
+    let state = dir.path().join("receipts");
+    let output = Command::new(env!("CARGO_BIN_EXE_azeroth-operator"))
+        .env_remove("AZEROTH_UPLOAD_SSH_CONFIG")
+        .args(["sync", "retail"])
+        .arg(dir.path().join("missing.lua"))
+        .arg(&state)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["status"], "waiting_for_export");
+    assert!(!state.exists());
+}
+
 fn stdin_import(root: &std::path::Path, input: &[u8]) -> std::process::Output {
     let mut child = Command::new(env!("CARGO_BIN_EXE_azeroth-operator"))
         .env("AZEROTH_DATA_DIR", root)

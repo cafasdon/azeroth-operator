@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add incremental sync with durable hash receipts, destination configuration binding, retry after failure and explicit missing-export status. Cached acknowledgements do not claim live remote state.
+
 - Add bounded `import-stdin` for snapshot transfer, with subprocess tests for retry deduplication and empty, malformed, code-bearing and oversized rejection.
 
 - Add digest-pinned Linux container build with Rust/Lua tests and non-root runtime, plus an independent stdio protocol smoke tool.
