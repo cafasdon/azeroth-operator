@@ -35,3 +35,5 @@ Tests extend the actual producer/import roundtrip with same-ID worn and bagged i
 
 Advisory review: `jev-1.14.0`, request `e2befe707491b73b040ce37196bb440080fba847cd321eca786079f23f083cf2`, 1203 input/131 output tokens, 0.300 seconds; `no_material_issue` with reported confidence 0.38. Advisory only; direct source/fixture checks remain the evidence. No game action, new addon installation or hosted deployment is included.
 `python -m tools.verify_source` passed for the identity changes: format, locked build, all Rust tests, Clippy with warnings denied and 31 Python tests. The configured adversarial-review file is still absent; no such workflow is claimed.
+
+Metadata executor progress is recorded in [equipment-set-operations.md](equipment-set-operations.md). Name/icon modification and deletion now have source-only executors and failure fixtures; compiler, review, receipts and packaging remain pending. Native use/create/save/spec assignment are still unimplemented.

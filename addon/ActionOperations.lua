@@ -31,7 +31,8 @@ local function cursorMatches(action)
     kind,id,spellID=readable(kind),readable(id),readable(spellID)
     if action.empty then return kind==nil end
     if kind~=action.kind then return false end
-    return (kind=="spell" and spellID or id)==action.id
+    if kind=="spell" then return spellID==action.id end
+    return id==action.id
 end
 local function sameClient(op)
     local _,build,_,interface=GetBuildInfo()
