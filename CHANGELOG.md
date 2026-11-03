@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy Retail0.8.0-dev partial action observations with matching hosted importer/reader and Windows companion. Public endpoint verifies13tools; action-bar execution remains disabled.
+
 - Expose source MCP action-slot preparation with explicit execution-disabled output and real stdio tests. Align reference-store section recognition and importer qualification fixture. Thirteen-tool release not deployed.
 
 - Add source-only action-slot compiler and strict Lua decoder, binding explicit slot and macro preimages with bounded transport. Roundtrip/refusal tests pass; MCP/UI integration remains pending.
