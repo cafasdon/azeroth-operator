@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy Retail 0.11.0-dev equipment-set use support with compatible hosted importers/reader and Windows companion. Public synthetic preparation and twenty installed hashes verified; native switching remains unqualified and no game input occurred.
+
 - Package Retail 0.11.0-dev native equipment-set use with twenty files, versioned preparation support, 19→20-file upgrade checks and staged Lua capture/compile/review/Apply/receipt verification. Candidate verified offline; not installed or live-qualified.
 
 - Connect source equipment-set use to player review/Apply, exact per-slot review and persisted receipt validation. Offline end-to-end tests cover pre-write uncertainty, delayed completion, expiry and replay refusal across reload. Not packaged or deployed.

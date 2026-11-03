@@ -27,6 +27,7 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Change keybindings | Deployed; no-op verified | Disabled | Disabled | One explicit key and context; actual SetBinding/SaveBindings still unqualified |
 | Equip gear | Development implementation deployed | Disabled | Disabled | Single GUID-bound bag-to-equipment swap; exact item GUID export verified; swap unqualified |
 | Rename/change icon/delete native equipment sets | Development implementation deployed | Disabled | Disabled | Exact captured set preimage; explicit player review/Apply; no live set mutation |
+| Use native equipment sets | Development implementation deployed | Disabled | Disabled | Exact GUID preimages/readback, ignored-slot preservation, explicit empty current-slot preconditions; unresolved target slots refused; player Apply; live unqualified |
 | Switch saved talent builds | Development implementation deployed | Disabled | Disabled | Exact captured build and current-state checks; native player-triggered talent UI path; live switch unqualified |
 | Move/swap captured action slots | Development implementation deployed | Disabled | Disabled | Exact source/target and macro-content preimages; player review/Apply; live unqualified |
 | Create/edit talent builds or add new action-bar entries | Not implemented | Not implemented | Not implemented | Remains in scope; no protected-action bypass |

@@ -1,0 +1,13 @@
+# Equipment-set use deployment — 2026-11-04
+
+Build source `89f76f3bfc80b5eb746632ef07e5a869a5facbb8`. Personal pylon/CT290 `mcp-gateway` identities and the prior importer image were checked; 31 GiB was free. Installed Retail 0.10.0-dev matched all nineteen previous manifest files before replacement. No unrelated profile or scheduled task changed.
+
+Linux release tests/build passed. Hosted importer and reader now use `sha256:116da8df32036b85788c9d5d95a4633cad2ba28f70f6adfb700e14ce6168cf1a`. Legacy and extended isolated import fixtures passed, including `use_equipment_set` unknown receipts. Dedicated reader profile/read-only mount and loopback authentication/protocol checks passed. Reader rollback evidence: `/var/tmp/azeroth-reader-upgrade-9gibwkep`; source staging `/var/tmp/azeroth-source-89f76f3`.
+
+Public TLS SDK checks discovered fourteen tools and prepared modify/delete/use from synthetic snapshot `e577868726fd8f9a7099894aee655edf1a404e015941a1a15aa93cdd4ab11a2e` (`EquipmentSetUseReleaseFixture`). Preparation reports the required 0.11.0-dev version for use, no game execution and no live qualification. Uncaptured set refusal and unchanged captured set data passed. The snapshot contains a synthetic unknown use receipt, demonstrating upload/import compatibility. No prepared operation was applied in game. Local evidence: `local-data/equipment-set-use-public-check.json`.
+
+Windows companion SHA256 `24ba89186194121ba4fd62c1a493ba770d72db1b02d759785737b224e6b20925` is installed in its content-addressed runtime folder and selected in sync config. Backup config: `local-data/sync/config-before-equipment-set-use.json`. Sync at `2026-11-03T23:39:07.781710Z` reported Retail unchanged at `184cd8a9ffd714eb7a5f33f4b661ba15e542c117fd483acef5b65e041b15f3c8`, with `remote_rechecked:false`, and Forever waiting for export. Cached acknowledgement is not fresh remote verification.
+
+Retail addon 0.11.0-dev installed after importer/reader and companion qualification. All twenty files independently match the manifest. ZIP SHA256 `68a0b4c84a10177b2c015b3a3343dd55eec565fc6e5f16186ca1f7346b32d684`; previous addon backup `local-data/addon-backups/addon-update-fazkbvuq`. A running game may still have the earlier addon loaded; no reload or input was triggered.
+
+Native equipment-set switching remains unqualified. Unknown/empty native set sentinels are still refused; explicit empty current-equipment preconditions are checked on player Apply. Create/save/spec assignment and broader operations remain incomplete. The earlier uncertain Cutlass operation was not replayed. No live game testing occurred, as requested.
