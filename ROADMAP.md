@@ -33,3 +33,7 @@
 No computer use. No game-memory access, input automation, injection or protected-action bypass.
 
 - Captured-loadout release deployed to reader, importer and local companion before installing Retail 0.1.1-dev. Public synthetic readback passed; real character and game-import acceptance remain unverified.
+
+## Expanded operational goal (2026-11-03)
+
+The active goal is maximum supported game operation within the established policy boundaries. Read-only coverage is a foundation, not the end state. ADR006 defines player-applied operations. Macro create/edit/delete/scope-move executor is source-tested; transport, review/apply, receipts, deployment and live qualification remain required. Gear, talents, inventory organisation, bindings/action bars, settings and other permitted families remain in scope; unavailable/unknown APIs must be reported explicitly.

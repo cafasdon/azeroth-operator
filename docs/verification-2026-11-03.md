@@ -332,3 +332,10 @@ Direct sync at20:43:01Z still reported unchanged for Retail and waiting_for_expo
 ## Macro fix live verification
 
 After the player's second reload/export confirmation, direct sync uploaded a new Retail source=addon snapshot captured2026-11-03T20:47:04Z. Public authenticated character_summary and inspect_snapshot(macros) succeeded. Ten sections are now available; macros are present and action_bars is the sole unavailable section. This verifies the namespaced macro-boundary fix on build70688/interface120105. It does not qualify action-bar enumeration, macro execution or any game mutation. Private receipt and observed macro count are retained only at local-data/live-qualification/macro-fix.json; no macro names/bodies or snapshot identity committed. Player input remains manual. Remaining scope is incomplete.
+
+
+## Operational goal: macro executor
+
+User replaced the prior goal with maximum policy-compliant operational coverage. Added uninstalled MacroOperations.lua plus Lua5.1 fake-API test for create/edit/delete/move, stale expectations, duplicate destination, combat, family refusal and copy-success/delete-failure. Targeted cargo test --locked --test macro_operations passed; no real macro changed. This is execution-layer progress, not a completed MCP feature.
+
+Jev plan advisory b4c017fabcf824b5e1b788c970cf61d2923c74c393c04725de2ecf9cf6e646e3,jev-1.14.0,958/116tokens,0.303s: insufficient_evidence confidence0.55/probability0.70, material_issue0.88,evidence_sufficient0.36. Incomplete caller/receipt/live qualification remains explicit in ADR006; this is not approval to expose executor. Required adversarial-review file absent. Existing installed addon and hosted service unchanged.

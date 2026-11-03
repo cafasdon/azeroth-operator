@@ -1,0 +1,13 @@
+# ADR006: Player-applied game operations
+
+Status: implementation in progress,2026-11-03. Supersedes the project's blanket read-only implementation target, not the existing prohibitions on input automation, protected-action bypass, autonomous gameplay or arbitrary Lua execution. User explicitly requested the fullest policy-compliant operational coverage.
+
+The MCP must produce concrete, versioned operations; the addon must execute supported game APIs following player review/apply where required. Draft generation alone is not completion. First delivery is macro create/edit/delete and account/character scope moves. Action-bar placement is a separate operation and is not implied by moving a macro between scopes.
+
+Transport starts with a bounded data import through an addon text box. No loadstring or executable external Lua. A review displays operation, source scope/expected fields, destination and requested fields before a player applies one operation. Bind client family/build/interface and character/realm to the operation and check again at apply. The addon records an operation ID and outcome; no timer/login execution, automatic combat retry or ambiguous-write replay. Persisted SavedVariables are a reload/logout checkpoint, not crash-durable transactional storage; UI must not promise exactly-once execution across crashes.
+
+MacroOperations.lua is an uninstalled execution module. It uses CreateMacro/EditMacro/DeleteMacro and readback, never RunMacro. Combat/interface/family, exact preimage and scope capacity checks precede writes. Scope move is copy then delete after destination verification; it may leave two copies, explicitly reported. Macro indices may renumber; resolve source again after creation. A failure after an API attempt is outcome-unknown until reconciled, never automatic retry. Current fixtures use fake APIs and do not prove live compatibility.
+
+API evidence: Blizzard's mirrored [MacroIconSelector source](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_MacroUI/Blizzard_MacroIconSelector.lua) uses CreateMacro and EditMacro from its OkayButton handler. This confirms the API usage pattern; it is not approval for autonomous remote game control.
+
+Remaining before enabling: MCP schema/compiler, client+character binding, strict data decoder, review/apply UI, durable-checkpoint receipt design and repeat-operation reconciliation, packaging update, failure-path integration tests, then bounded live qualification. Do not label the executor alone as working MCP macro management. Other operation families remain in the overall goal and must receive concrete implementations with client-specific limits.
