@@ -15,8 +15,9 @@ The importer requires a separate writable invocation; do not grant write access
 to the read-only discovery service merely to simplify ingestion.
 
 `python tools/smoke_mcp.py -- <command> [arguments]` exercises real stdio MCP
-initialisation, exact tool discovery, read-only annotations, all three family
-listings and traversal refusal. It requires an empty snapshot store and the
+initialisation, exact tool discovery and capability inventory, read-only/non-destructive
+annotations, all three family listings, traversal refusal, missing-snapshot
+rejection by all five snapshot-consuming tools and unknown mutation-tool refusal. It requires an empty snapshot store and the
 development Python MCP dependency. It can launch SSH plus a remote container.
 
 This container is a stdio gateway backend. The separately deployed Docker MCP

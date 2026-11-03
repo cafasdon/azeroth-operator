@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extend independent container protocol smoke to verify capability claims, missing-snapshot rejection across all read/review tools and rejection of unknown mutation tools.
+
 - Add one bounded source-verification command binding protocol tests to the freshly built Rust target, with fail-fast checks and timeout cleanup.
 
 - Make the seven-tool Rust MCP protocol test mandatory in the default Python suite; retain the two-tool Python reference test separately. Verify disabled execution, annotations, capability inventory and unknown mutation-tool rejection.
