@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Resolve optional equipment-set item observations to worn/carried locations, item GUIDs and lock flags, with repeated identity checks and strict validation. Unsupported or uncertain identities remain absent. Source only; native set swaps are not yet implemented.
+
 - Add source-only Retail native equipment-set observations with raw slot values, missing-value preservation, bounded catalogue checks and Lua-to-Rust failure fixtures. No equipment-set mutations or deployment.
 
 - Deploy Retail0.9.0-dev player-applied action-slot operations after importer/reader qualification and companion upgrade. Public13-tool endpoint and17installed files verified; no live action attempted.

@@ -26,7 +26,51 @@ AO.collectors.equipment = function()
 end
 
 -- Raw native set observations only. A missing ID/location is unknown, not empty.
--- Packed locations are deliberately not interpreted as exact item identities.
+-- Optional observed_item describes a current location, not the set's internal GUID.
+local function setItemIdentity(data)
+    if data.ignored==true or not data.raw_item_id or data.raw_item_id<=0
+        or not data.raw_location or data.raw_location<0 then return nil end
+    if not (EquipmentManager_GetLocationData and ItemLocation and C_Item
+        and C_Item.GetItemID and C_Item.GetItemGUID and C_Item.IsLocked) then return nil end
+    local function readable(v)
+        assert(not issecretvalue or not issecretvalue(v), "Restricted set item identity")
+        return v
+    end
+    local function integer(v,lo,hi)
+        v=readable(v)
+        assert(type(v)=="number" and v%1==0 and v>=lo and v<=hi, "Invalid set item location")
+        return v
+    end
+    local decoded=readable(EquipmentManager_GetLocationData(data.raw_location))
+    assert(type(decoded)=="table", "Missing decoded location")
+    -- Bank, unknown and non-player locations remain raw observations only.
+    local player,bank,bags=readable(decoded.isPlayer),readable(decoded.isBank),readable(decoded.isBags)
+    if player~=true or bank~=false or type(bags)~="boolean" then return nil end
+    local result,location
+    if bags then
+        local maximum=integer(NUM_TOTAL_EQUIPPED_BAG_SLOTS,0,64)
+        local bag=integer(decoded.bag,0,maximum)
+        assert(C_Container and C_Container.GetContainerNumSlots, "Bag bounds unavailable")
+        local size=integer(C_Container.GetContainerNumSlots(bag),0,1024)
+        local slot=integer(decoded.slot,1,size)
+        result={kind="bag",bag=bag,slot=slot}
+        location=ItemLocation:CreateFromBagAndSlot(bag,slot)
+    else
+        local slot=integer(decoded.slot,1,19)
+        result={kind="equipment",slot=slot}
+        location=ItemLocation:CreateFromEquipmentSlot(slot)
+    end
+    local id=readable(C_Item.GetItemID(location))
+    local guid=readable(C_Item.GetItemGUID(location))
+    local locked=readable(C_Item.IsLocked(location))
+    assert(id==data.raw_item_id and type(guid)=="string" and #guid>0 and #guid<=128
+        and not guid:find("[%z\1-\31\127]") and type(locked)=="boolean", "Set item identity unavailable")
+    assert(readable(C_Item.GetItemID(location))==id and readable(C_Item.GetItemGUID(location))==guid,
+        "Set item changed during capture")
+    result.item_id=id; result.guid=guid; result.locked=locked
+    return result
+end
+
 AO.collectors.equipment_sets = function()
     local api=C_EquipmentSet
     assert(AO.family=="retail" and api and api.GetEquipmentSetIDs and api.GetNumEquipmentSets
@@ -82,6 +126,8 @@ AO.collectors.equipment_sets = function()
             if flag~=nil then data.ignored=boolean(flag) end
             if item~=nil then data.raw_item_id=number(item,-2147483648,4294967295) end
             if location~=nil then data.raw_location=number(location,-2147483648,4294967295) end
+            local resolved,identity=pcall(setItemIdentity,data)
+            if resolved then data.observed_item=identity end
             entry.slots[tostring(slot)]=data
         end
         result.entries[key]=entry

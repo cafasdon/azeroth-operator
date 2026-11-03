@@ -6,7 +6,7 @@
 - Installed Retail addon: 0.9.0-dev, seventeen files verified. This includes full-stack moves, splits, saved-talent switches, observation-only completion handling and explicitly partial action-bar capture. Action-slot preparation and player-applied execution are deployed as development support; no live operation qualified. Installation is not proof the running client loaded this version.
 - Live-qualified mutations: blank test macro creation only. Binding no-op verified. Item identity capture verified. Bag move receipt is outcome_unknown with the original item still observed at source; no replay. Equipment swaps, actual binding changes, other macro mutations, splits and talent switches remain unqualified.
 - User deferred further in-game tests until tomorrow. Continue offline development; no additional game-test prompts today.
-- Next implementation work: equipment-set exact identity resolution and operations (raw catalogue capture implemented in source only); talent creation/import/editing; further action-bar operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
+- Next implementation work: equipment-set operations (raw catalogue and optional current-location GUID observations implemented in source only); talent creation/import/editing; further action-bar operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
 
 ## Implemented
 
