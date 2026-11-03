@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy saved-talent preparation and stack-split development support: hosted importer/reader, Windows companion and Retail addon 0.7.0-dev. Public discovery verifies 12 tools; installed addon matches all 15 files. In-game qualification is deferred by the player. Bag test persists outcome_unknown with the exact item still observed at its source; no replay.
+
 - Add source-only exact-instance Retail equipment swap executor with GUID, cursor and slot checks, displaced-item readback and failure tests. Two-handed/multi-slot handling remains incomplete; no live gear changes.
 
 - Add optional Retail item GUID capture to equipment/bag observations, preserving unknown identity when unavailable. Lua producer and Rust validation tested; undeployed groundwork for exact-instance equipment operations.
@@ -143,3 +145,4 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Talent application now delegates saved-loadout selection/commit bookkeeping to the visible native Talents panel, with config/inspection/busy checks and no direct-API fallback. Source tests pass; live UI qualification pending.
 
 - Connected talent preparation to MCP and included the decoder/executor in the fifteen-file 0.7.0-dev package. Protocol and package checks pass; not deployed or live-qualified.
+
