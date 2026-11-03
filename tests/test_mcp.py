@@ -47,7 +47,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         for tool in tools.tools:
@@ -61,6 +61,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         equip=await session.call_tool("prepare_equipment_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_slot":16}})
                         self.assertFalse(equip.isError)
                         self.assertTrue(json.loads(equip.content[0].text)["import_code"].startswith("AO-EQUIP-1:"))
+                        bag=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_bag":0,"target_slot":3,"expect_empty_target":True}})
+                        self.assertFalse(bag.isError)
+                        self.assertTrue(json.loads(bag.content[0].text)["import_code"].startswith("AO-BAG-1:"))
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)
