@@ -85,8 +85,42 @@ struct ActionOperation {
     operation: azeroth_operator::action_operation::ActionRequest,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct EquipmentSetOperation {
+    snapshot_id: String,
+    operation: azeroth_operator::equipment_set_operation::EquipmentSetRequest,
+}
+
 #[tool_router]
 impl Operator {
+    #[tool(
+        description = "Prepare a Retail saved equipment-set rename/icon change or deletion from exact captured contents. Data only: does not equip gear, delete items or modify a set. Player review/Apply support exists in source but is not yet packaged; addon execution remains disabled. Does not repair external references.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn prepare_equipment_set_operation(
+        &self,
+        Parameters(args): Parameters<EquipmentSetOperation>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            azeroth_operator::equipment_set_operation::compile(
+                &snapshot,
+                &args.snapshot_id,
+                &args.operation,
+            )
+        })();
+        match result {
+            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Equipment set operation rejected: captured set or requested metadata unavailable or invalid",
+            )]),
+        }
+    }
     #[tool(
         description = "Prepare a Retail action-slot move/swap from two explicitly observed slots, including exact macro contents. Data only; player review and Apply requires addon 0.9.0-dev or later. Live execution remains unqualified. Does not change action bars.",
         annotations(
@@ -225,7 +259,7 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
     }
     #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",

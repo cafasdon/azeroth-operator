@@ -10,6 +10,7 @@ from mcp.client.stdio import stdio_client
 from mcp.shared.exceptions import McpError
 from shared.snapshots import SnapshotStore
 from test_snapshots import fixture
+from tools.gateway_profile import TOOLS
 
 
 class MCPTests(unittest.IsolatedAsyncioTestCase):
@@ -41,6 +42,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             sample["sections"]["action_bar_observation"]={"coverage":"loaded_builtin_buttons_only","observed_buttons":2,"missing_buttons":0,
                 "slots":{"1":{"empty":False,"kind":"macro","id":1},"2":{"empty":True}}}
             key = SnapshotStore(Path(folder)).ingest(sample)
+            sample["sections"]["equipment_sets"]={"coverage":"native_catalogue_raw_slots","can_use":True,"entries":{"0":{
+                "name":"Fixture set","icon":134400,"is_equipped":False,"num_items":1,"num_equipped":0,
+                "num_in_inventory":1,"num_lost":0,"num_ignored":0,"assigned_spec":2,
+                "slots":{str(i):{} for i in range(1,20)}}}}
+            sample["sections"]["equipment_sets"]["entries"]["0"]["slots"]["16"]={"ignored":False,"raw_item_id":123,"raw_location":999,
+                "observed_item":{"kind":"bag","bag":0,"slot":1,"item_id":123,"guid":"Item-New","locked":False}}
+            set_key=SnapshotStore(Path(folder)).ingest(sample)
             params = StdioServerParameters(command=rust_binary or sys.executable,
                 args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
                 env={**os.environ, "AZEROTH_DATA_DIR": folder})
@@ -50,8 +58,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
+                    if rust_binary:
+                        self.assertEqual(set(TOOLS), expected)
                     if rust_binary:
                         for tool in tools.tools:
                             self.assertTrue(tool.annotations.readOnlyHint)
@@ -61,6 +71,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(contract["game_execution"])
                         self.assertEqual(set(contract["implemented"]), expected)
                         self.assertEqual(contract["live_client_qualified"], [])
+                        before_files={p.name:p.read_bytes() for p in Path(folder).glob("*.json")}
+                        prepared_set=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":set_key,
+                            "operation":{"operation":"modify","set_id":0,"name":"Renamed set","icon":123}})
+                        self.assertFalse(prepared_set.isError)
+                        set_data=json.loads(prepared_set.content[0].text)
+                        self.assertTrue(set_data["import_code"].startswith("AO-SET-1:"))
+                        self.assertEqual(set_data["expected"]["slots"]["16"]["observed_item"]["guid"],"Item-New")
+                        self.assertFalse(set_data["addon_execution_enabled"])
+                        self.assertFalse(set_data["game_execution"])
+                        deletion=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":set_key,
+                            "operation":{"operation":"delete","set_id":0}})
+                        self.assertFalse(deletion.isError)
+                        self.assertTrue(json.loads(deletion.content[0].text)["deletes_saved_set"])
+                        for sid,operation in [(key,{"operation":"delete","set_id":0}),
+                            (set_key,{"operation":"delete","set_id":99}),
+                            (set_key,{"operation":"delete","set_id":0,"name":"unexpected"})]:
+                            refused=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":sid,"operation":operation})
+                            self.assertTrue(refused.isError)
+                        self.assertEqual(before_files,{p.name:p.read_bytes() for p in Path(folder).glob("*.json")})
                         equip=await session.call_tool("prepare_equipment_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_slot":16}})
                         self.assertFalse(equip.isError)
                         self.assertTrue(json.loads(equip.content[0].text)["import_code"].startswith("AO-EQUIP-1:"))
@@ -98,7 +127,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         with self.assertRaisesRegex(McpError, "tool not found"):
                             await session.call_tool("equip_item", {"slot":16,"item_id":123})
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})
-                        self.assertEqual(json.loads(listing.content[0].text)["snapshots"][0]["snapshot_id"], key)
+                        self.assertEqual({row["snapshot_id"] for row in json.loads(listing.content[0].text)["snapshots"]}, {key,set_key})
                         other = await session.call_tool("list_snapshots", {"family": "forever"})
                         self.assertEqual(json.loads(other.content[0].text)["snapshots"], [])
                         comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
