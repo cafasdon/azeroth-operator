@@ -1,0 +1,18 @@
+[Unit]
+Description=Azeroth Operator dedicated MCP
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/azeroth-operator/gateway.env
+Environment=MCP_GATEWAY_DOCKER_BIND_ALLOWED_PATHS=/var/lib/azeroth-operator/rodrigo/snapshots
+ExecStartPre=/usr/bin/python3 /opt/azeroth-operator/check_gateway_auth.py
+ExecStart=/usr/bin/docker mcp gateway run --transport streaming --host 127.0.0.1 --port 8823 --profile azeroth-operator --long-lived --log-calls=false
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

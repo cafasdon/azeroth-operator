@@ -69,3 +69,9 @@ Added import-stdin using the same bounded reader and schema validation as file i
 The source generator tools/gateway_profile.py creates only the standalone azeroth-operator profile: immutable image ID, five read tools, one fixed Rodrigo store mounted read-only. It does not export or modify homelab. The actual Docker MCP importer on CT290 rejected an absent version and version 2; version 1 was accepted. This illustrates why source fixtures are not deployment proof. Imported candidate pins the previously qualified c13e769 image, not the newer stdin-import source. No gateway process or public route was started. Store mounting/authentication are still unqualified.
 
 Eleven Python tests pass, including immutable-reference rejection and profile allowlist/mount assertions. Infrastructure integration worktree is T:/Projects/Proxmox/.worktrees/azeroth-mcp, branch feat/azeroth-mcp from origin/main 1b01f436; unrelated active checkout preserved. No infrastructure source changes made there yet.
+
+## Gateway launch qualification and loopback candidate
+
+The imported profile was exercised through actual Docker MCP stdio. Initial launch refused the bind mount as outside allowed roots. Retest with MCP_GATEWAY_DOCKER_BIND_ALLOWED_PATHS set to the exact owner snapshot directory passed exact tool discovery, capabilities, three family listings and traversal denial. The mount remained read-only. No aggregate catalogue changes.
+
+Added a loopback-only systemd candidate, dedicated 256-bit token file validation and first-install-only installer. Authentication unit tests reject missing, wrong, malformed and extra token configuration. Candidate is not yet installed or authenticated-HTTP-qualified. It does not enable the service on boot or publish a route. Existing installations are refused to avoid overwriting state.

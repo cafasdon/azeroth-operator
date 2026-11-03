@@ -31,3 +31,5 @@
 - Record conservative policy boundary; runtime features remain unqualified.
 
 - Add standalone gateway-profile generation with immutable image pin, explicit read-tool allowlist and read-only owner store; validate format using CT290 Docker MCP importer.
+
+- Qualify dedicated Docker MCP profile with the exact read-only bind allowance; add loopback service and dedicated token validation candidates.
