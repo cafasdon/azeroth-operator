@@ -197,29 +197,7 @@ pub fn compile(
             .map(|n| n.to_string())
             .unwrap_or_else(|| "-".into()),
     ];
-    for key in [
-        "name",
-        "icon",
-        "is_equipped",
-        "num_items",
-        "num_equipped",
-        "num_in_inventory",
-        "num_lost",
-        "num_ignored",
-        "assigned_spec",
-    ] {
-        f.push(scalar(&expected[key]));
-    }
-    for slot in 1..=19 {
-        let s = &expected["slots"][slot.to_string()];
-        for key in ["ignored", "raw_item_id", "raw_location"] {
-            f.push(scalar(&s[key]));
-        }
-        let observed = &s["observed_item"];
-        for key in ["kind", "slot", "bag", "item_id", "guid", "locked"] {
-            f.push(scalar(&observed[key]));
-        }
-    }
+    f.extend(entry_fields(expected));
     if is_use {
         for slot in 1..=19 {
             f.push(scalar(&equipment_before[&slot.to_string()]));
@@ -320,6 +298,66 @@ fn association_draft(
         bytes.len() <= 512 * 1024,
         "Association draft exceeds size limit"
     );
-    draft["operation_id"] = json!(format!("{:x}", Sha256::digest(bytes)));
+    let mut fields = vec![
+        "AO-SETSPEC-1".into(),
+        String::new(),
+        snapshot_id.into(),
+        "retail".into(),
+        hex(&snapshot.client.variant),
+        hex(&snapshot.client.build),
+        snapshot.client.interface.to_string(),
+        hex(&snapshot.character.name),
+        hex(&snapshot.character.realm),
+        draft["kind"].as_str().unwrap().into(),
+        request.set_id.to_string(),
+        scalar(&draft["spec_index"]),
+        scalar(&draft["spec_id"]),
+        specs.len().to_string(),
+    ];
+    for index in 1..=specs.len() {
+        fields.push(scalar(&specs[&index.to_string()]));
+    }
+    fields.push(entries.len().to_string());
+    for (id, entry) in entries {
+        fields.push(id.clone());
+        fields.extend(entry_fields(entry));
+    }
+    fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
+    let code = fields.join(":");
+    ensure!(
+        code.len() <= 512 * 1024,
+        "Association import exceeds size limit"
+    );
+    draft["operation_id"] = json!(fields[1]);
+    draft["import_code"] = json!(code);
+    draft["preparation_status"] = json!("review_integration_pending");
     Ok(draft)
+}
+
+fn entry_fields(expected: &Value) -> Vec<String> {
+    let mut f = Vec::new();
+    for key in [
+        "name",
+        "icon",
+        "is_equipped",
+        "num_items",
+        "num_equipped",
+        "num_in_inventory",
+        "num_lost",
+        "num_ignored",
+        "assigned_spec",
+    ] {
+        f.push(scalar(&expected[key]));
+    }
+    for slot in 1..=19 {
+        let s = &expected["slots"][slot.to_string()];
+        for key in ["ignored", "raw_item_id", "raw_location"] {
+            f.push(scalar(&s[key]));
+        }
+        let observed = &s["observed_item"];
+        for key in ["kind", "slot", "bag", "item_id", "guid", "locked"] {
+            f.push(scalar(&observed[key]));
+        }
+    }
+    f
 }

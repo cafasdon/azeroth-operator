@@ -29,6 +29,34 @@ function AO.DecodeEquipmentSetOperation(text)
         assert(#op.name>0 and #op.name<=64 and not op.name:find("[%z\1-\31\127|]")
             and not op.name:match("^%s") and not op.name:match("%s$"), "Invalid set name")
     else assert(f[12]=="-" and f[13]=="-", "Unexpected replacement metadata") end
+    local expected=AO.DecodeEquipmentSetPreimage(f,14)
+    op.expected=expected
+    if use then
+        assert(expected.num_lost==0, "Equipment set has missing items")
+        op.equipment_before={}
+        local seen={}
+        for slot=1,19 do
+            local key=tostring(slot)
+            local guid=unhex(f[193+slot])
+            assert(#guid<=128 and not guid:find("[%z\1-\31\127]"), "Invalid equipped identity")
+            op.equipment_before[key]=guid
+            local target=expected.slots[key]
+            if target.ignored~=true then
+                assert(target.ignored==false and target.observed_item and target.observed_item.locked==false,
+                    "Unresolved equipment set slot")
+                guid=target.observed_item.guid
+            end
+            assert(guid=="" or not seen[guid], "Duplicate target identity")
+            if guid~="" then seen[guid]=true end
+        end
+    end
+    return op
+end
+
+-- Shared fixed 180-field record; no operation dispatch or live API reads.
+function AO.DecodeEquipmentSetPreimage(fields,start)
+    local f={}
+    for i=14,193 do f[i]=fields[start+i-14]; assert(type(f[i])=="string", "Truncated set record") end
     local expected={name=unhex(f[14]),icon=number(f[15],0,4294967295),is_equipped=boolean(f[16]),slots={}}
     assert(#expected.name>0 and #expected.name<=1024, "Invalid expected name")
     for i,key in ipairs({"num_items","num_equipped","num_in_inventory","num_lost","num_ignored"}) do
@@ -55,25 +83,5 @@ function AO.DecodeEquipmentSetOperation(text)
         end
         expected.slots[tostring(slot)]=s
     end
-    op.expected=expected
-    if use then
-        assert(expected.num_lost==0, "Equipment set has missing items")
-        op.equipment_before={}
-        local seen={}
-        for slot=1,19 do
-            local key=tostring(slot)
-            local guid=unhex(f[193+slot])
-            assert(#guid<=128 and not guid:find("[%z\1-\31\127]"), "Invalid equipped identity")
-            op.equipment_before[key]=guid
-            local target=expected.slots[key]
-            if target.ignored~=true then
-                assert(target.ignored==false and target.observed_item and target.observed_item.locked==false,
-                    "Unresolved equipment set slot")
-                guid=target.observed_item.guid
-            end
-            assert(guid=="" or not seen[guid], "Duplicate target identity")
-            if guid~="" then seen[guid]=true end
-        end
-    end
-    return op
+    return expected
 end

@@ -105,7 +105,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(result.isError)
                             draft=json.loads(result.content[0].text)
                             self.assertFalse(draft["addon_execution_enabled"])
-                            self.assertIsNone(draft["import_code"])
+                            self.assertTrue(draft["import_code"].startswith("AO-SETSPEC-1:"))
                             self.assertEqual(draft["expected_catalogue"]["0"]["assigned_spec"],2)
                             if action=="assign_spec":
                                 self.assertEqual(draft["spec_id"],261)
