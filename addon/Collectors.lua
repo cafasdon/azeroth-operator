@@ -43,8 +43,10 @@ AO.collectors.macros = function()
         if name then result[tostring(index)] = {name=name, icon=icon, body=body, scope=scope} end
     end
     for index=1,account do read(index,"account") end
-    assert(MAX_ACCOUNT_MACROS, "Macro boundary unavailable")
-    for index=1,character do read(MAX_ACCOUNT_MACROS+index,"character") end
+    local macroConsts = Constants and Constants.MacroConsts
+    local accountLimit = (macroConsts and macroConsts.MAX_ACCOUNT_MACROS) or MAX_ACCOUNT_MACROS
+    assert(type(accountLimit)=="number" and accountLimit>0 and accountLimit<=1024, "Macro boundary unavailable")
+    for index=1,character do read(accountLimit+index,"character") end
     return result
 end
 

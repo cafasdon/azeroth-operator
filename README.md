@@ -94,7 +94,7 @@ Run `python -m tools.verify_source` for the local source gate after installing r
 
 Run `cargo build --locked`, `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. The Python suite always exercises the Rust stdio server from target/debug (or the explicit AZEROTH_TEST_BINARY override), with a separate Python-reference test. Missing Rust binaries fail the test rather than silently using the reference implementation. These checks do not establish runtime game compatibility.
 
-Retail development addon 0.1.4-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).
+Retail development addon 0.1.5-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. A first Retail export and hosted readback succeeded; macros/action bars require further qualification. See [captured loadouts](docs/captured-loadouts.md).
 
 
 Inspect an explicit installation without launching the game:
@@ -109,7 +109,7 @@ The probe reads only `.flavor.info` and the parent `.build.info`, with byte limi
 Check installed addon integrity against a retained package manifest:
 
 ```powershell
-python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_retail_' --manifest 'T:\Projects\Azeroth Operator\dist\bigwigs-0.1.4\AzerothOperator-0.1.4-dev-retail-live.manifest.json'
+python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_retail_' --manifest 'T:\Projects\Azeroth Operator\dist\bigwigs-0.1.5\AzerothOperator-0.1.5-dev-retail-live.manifest.json'
 ```
 
 Exit zero means the four installed files matched the supplied manifest during this read. Missing, changed, extra or oversized files produce nonzero without repairs. The manifest is caller-trusted, not signed authentication; concurrent edits can invalidate the observation. Retail and Forever product checks are supported; Classic installation verification remains unavailable. No live API compatibility is implied.

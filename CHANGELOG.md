@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Verify first Retail export through the hosted MCP; support namespaced Constants.MacroConsts.MAX_ACCOUNT_MACROS after a live macro-collector failure. Action-bar qualification remains open.
+
 - Add bounded carried-item review to character summaries: observed quantities, distinct/repeated IDs and exact exported locations, with truncation and unknown stack compatibility. Source verified; hosted readback qualified with synthetic inventory.
 
 - Isolate per-family export discovery errors, report retryable failure in fresh sync status and continue processing other families.

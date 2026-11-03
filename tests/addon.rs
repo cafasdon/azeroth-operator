@@ -258,6 +258,14 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     );
     lua.load("AO.collectors.macros=saved_macro; AO.Capture()")
         .exec()?;
+    lua.load(
+        "Constants={MacroConsts={MAX_ACCOUNT_MACROS=120}}; MAX_ACCOUNT_MACROS=nil; AO.Capture()",
+    )
+    .exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let namespaced = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+    assert_eq!(namespaced.sections["macros"]["121"]["scope"], "character");
+    assert!(!namespaced.unavailable.contains_key("macros"));
     let last_hex: String = lua.globals().get("AzerothOperatorExport")?;
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;
