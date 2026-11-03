@@ -51,3 +51,11 @@ All eleven emitted section shapes now reject unsupported root shapes and unknown
 The Lua producer fixture imports successfully. Twenty-two root mutations (array and unknown field per section) and six nested numeric type mutations are rejected by the real decoder. Ten Rust tests, nine Python tests and warnings-denied Clippy pass. The Python MCP test invokes the rebuilt Rust binary.
 
 Jev advisory: jev-1.14.0; request 33c47c319add1a9cfb727295f61a9d0145eb6d56f9452cfe6e0b362704a6f5a0; 899/135 tokens; 0.524s elapsed. Returned insufficient_evidence 0.49, claim_supported 0.62. Not a pass or live qualification. Disposition: commit directly tested contract checks; keep broader delivery and live verification open.
+
+## Linux container qualification
+
+Built on personal pylon CT290 with digest-pinned official Rust 1.98.1 and Debian bookworm bases. Ten Rust/Lua/CLI tests passed inside Linux before release compilation. Image ID sha256:d5d5135b1a8ffec089b58fd09030afe7f5b0b3f3167966dee37a6ecf97ba2501, size 80,666,033 bytes, configured user 10006:10006. Build archive SHA256 5c432ab2a28939826c1685be5214b619a00485a0892908a5f55f89f4d28d34bc; includes fc88b88 source plus the committed Docker packaging files.
+
+Independent Python MCP client passed against the Windows executable and the remote container over SSH/lxc-attach. Remote run used --network none --read-only --cap-drop ALL --security-opt no-new-privileges. Exact five-tool discovery, read-only annotations, capabilities, empty listings for three families and traversal denial passed. Two initial remote launch attempts closed at initialise; a raw initialise probe succeeded, and the final runner preserving the local process environment and using one quoted remote command passed. Do not interpret those initial failures as a proven server defect or claim a single isolated cause.
+
+No gateway profile, public route, service or credentials changed. The qualification image/build cache and source staging are on CT290; no persistent runtime container was launched. Public TLS/authentication, populated-store mount and Windows upload path remain unqualified. No Retail SavedVariables export was found at the known installation path during this increment.

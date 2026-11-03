@@ -1,0 +1,12 @@
+**
+!Dockerfile
+!Cargo.toml
+!Cargo.lock
+!src/
+!src/**
+!tests/
+!tests/*.rs
+!addon/
+!addon/*.lua
+!clients/
+!clients/**

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add digest-pinned Linux container build with Rust/Lua tests and non-root runtime, plus an independent stdio protocol smoke tool.
+
 - Validate all eleven current export sections, including nested talents/currencies, required fields and partial-coverage markers. Exercise malformed variants of actual Lua fixture output through the importer.
 
 - Validate equipment and carried-bag slot maps, positive item IDs/stack counts, bounded links and unknown item fields before storage and reads. Legacy array inventory fixtures are no longer accepted by Rust.
