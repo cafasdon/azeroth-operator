@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only action-slot compiler and strict Lua decoder, binding explicit slot and macro preimages with bounded transport. Roundtrip/refusal tests pass; MCP/UI integration remains pending.
+
 - Add source-only action-slot move/swap executor and failure fixtures, including macro-content preimages. Not packaged, registered or MCP-enabled; cursor contracts and live protection behaviour remain unqualified.
 
 - Add source-only, explicitly partial Retail action-button observations with occupied/empty slots and coverage counts. Actual Lua-to-Rust roundtrip and malformed-coverage tests pass; no action mutations or deployment.
