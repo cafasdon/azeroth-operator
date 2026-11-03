@@ -166,11 +166,38 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("coverage", "native_catalogue_raw_slots", true),
                     ("can_use", "bool", true),
                     ("entries", "map", true),
+                    ("specializations", "map", false),
                 ],
             )?;
+            if let Some(specs) = value.get("specializations") {
+                let specs = specs.as_object().unwrap();
+                ensure!(
+                    !specs.is_empty() && specs.len() <= 64,
+                    "Invalid specialisation catalogue size"
+                );
+                let mut ids = std::collections::BTreeSet::new();
+                for i in 1..=specs.len() {
+                    let id = specs
+                        .get(&i.to_string())
+                        .and_then(Value::as_u64)
+                        .ok_or_else(|| anyhow::anyhow!("Incomplete specialisation catalogue"))?;
+                    ensure!(
+                        id > 0 && id <= u32::MAX as u64 && ids.insert(id),
+                        "Invalid or duplicate specialisation ID"
+                    );
+                }
+            }
             let sets = value["entries"].as_object().unwrap();
             ensure!(sets.len() <= 128, "Too many equipment sets");
             for (id, entry) in sets {
+                if let (Some(specs), Some(index)) =
+                    (value.get("specializations"), entry.get("assigned_spec"))
+                {
+                    ensure!(
+                        specs.get(index.to_string()).is_some(),
+                        "Assigned specialisation not captured"
+                    );
+                }
                 index(id, 0, u32::MAX)?;
                 object(
                     entry,

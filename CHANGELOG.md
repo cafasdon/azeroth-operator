@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture optional complete specialisation index-to-ID maps alongside equipment sets, with repeated native reads and strict Rust validation. Missing/restricted/changing data remains unavailable; source only, importer deployment required before installation.
+
 - Add a source-only equipment-set specialisation association executor with full-catalogue preimages, target spec identity checks, one native assign/unassign call and whole-catalogue readback. Failure fixtures verified; not prepared, packaged or deployed.
 
 - Deploy Retail 0.11.0-dev equipment-set use support with compatible hosted importers/reader and Windows companion. Public synthetic preparation and twenty installed hashes verified; native switching remains unqualified and no game input occurred.

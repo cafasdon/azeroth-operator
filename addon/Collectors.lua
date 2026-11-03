@@ -135,6 +135,28 @@ AO.collectors.equipment_sets = function()
     local after,afterCount=catalogue()
     assert(count==afterCount, "Equipment set catalogue changed")
     for key in pairs(ids) do assert(after[key]~=nil, "Equipment set catalogue changed") end
+    -- Optional complete index-to-ID map for later association preparation.
+    -- Failure omits this field; it never guesses IDs from menu positions.
+    local specOK,specializations=pcall(function()
+        assert(type(GetNumSpecializations)=="function" and C_SpecializationInfo
+            and type(C_SpecializationInfo.GetSpecializationInfo)=="function", "Specialisations unavailable")
+        local size=number(GetNumSpecializations(),1,64)
+        local map,seen={},{}
+        for i=1,size do
+            local id=number(C_SpecializationInfo.GetSpecializationInfo(i),1,4294967295)
+            assert(not seen[id], "Duplicate specialisation ID")
+            seen[id]=true; map[tostring(i)]=id
+        end
+        assert(number(GetNumSpecializations(),1,64)==size, "Specialisations changed")
+        for i=1,size do
+            assert(number(C_SpecializationInfo.GetSpecializationInfo(i),1,4294967295)==map[tostring(i)], "Specialisation identity changed")
+        end
+        for _,entry in pairs(result.entries) do
+            assert(entry.assigned_spec==nil or map[tostring(entry.assigned_spec)], "Assigned specialisation unavailable")
+        end
+        return map
+    end)
+    if specOK then result.specializations=specializations end
     return result
 end
 

@@ -42,6 +42,56 @@ fn native_set_catalogue_preserves_unknowns_and_refuses_partial_capture()
     assert_eq!(sets["entries"]["0"]["num_lost"], 1);
     assert!(sets["entries"]["0"].get("assigned_spec").is_none());
     assert_eq!(sets["entries"]["7"]["assigned_spec"], 2);
+    lua.load(
+        r#"
+        function GetNumSpecializations() return 3 end
+        C_SpecializationInfo={GetSpecializationInfo=function(i) return 260+i end}
+        AO.Capture()
+    "#,
+    )
+    .exec()?;
+    let spec_export: String = lua.globals().get("AzerothOperatorExport")?;
+    let with_specs = decode(format!("AzerothOperatorExport = \"{spec_export}\"").as_bytes())?;
+    assert_eq!(
+        with_specs.sections["equipment_sets"]["specializations"],
+        serde_json::json!({"1":261,"2":262,"3":263})
+    );
+    for bad in [
+        serde_json::json!({}),
+        serde_json::json!({"1":261,"3":263}),
+        serde_json::json!({"1":261,"2":261}),
+        serde_json::json!({"1":0,"2":262}),
+        serde_json::json!({"1":261}),
+        serde_json::json!({"1":261,"2":4294967296u64}),
+    ] {
+        let mut malformed = with_specs.clone();
+        malformed.sections.get_mut("equipment_sets").unwrap()["specializations"] = bad;
+        assert!(malformed.validate().is_err());
+    }
+    for mutation in [
+        "C_SpecializationInfo=nil",
+        "C_SpecializationInfo.GetSpecializationInfo=function() return 261 end",
+        "C_SpecializationInfo.GetSpecializationInfo=function() return nil end",
+        "GetNumSpecializations=function() return 1 end",
+        "local n=0; GetNumSpecializations=function() n=n+1; return n==1 and 3 or 2 end",
+        "local n=0; C_SpecializationInfo.GetSpecializationInfo=function(i) n=n+1; return 260+i+(n>3 and 10 or 0) end",
+        "issecretvalue=function(v) return v==262 end",
+    ] {
+        lua.load("function GetNumSpecializations() return 3 end; C_SpecializationInfo={GetSpecializationInfo=function(i) return 260+i end}; issecretvalue=nil").exec()?;
+        lua.load(mutation).exec()?;
+        lua.load("AO.Capture()").exec()?;
+        let raw: String = lua.globals().get("AzerothOperatorExport")?;
+        let observed = decode(format!("AzerothOperatorExport = \"{raw}\"").as_bytes())?;
+        assert!(
+            observed.sections["equipment_sets"]
+                .get("specializations")
+                .is_none(),
+            "{mutation}"
+        );
+        assert!(observed.sections["equipment_sets"]["entries"]["7"].is_object());
+    }
+    lua.load("GetNumSpecializations=nil; C_SpecializationInfo=nil; issecretvalue=nil")
+        .exec()?;
     let slots = &sets["entries"]["0"]["slots"];
     assert_eq!(slots["1"]["ignored"], true);
     assert_eq!(slots["16"]["ignored"], false);
