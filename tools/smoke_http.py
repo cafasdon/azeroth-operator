@@ -10,7 +10,7 @@ from mcp.client.streamable_http import streamablehttp_client
 URL = "https://mcp.cafas.com.br/scopes/azeroth/mcp"
 
 
-async def smoke(snapshot=None, expect_loadout=False):
+async def smoke(snapshot=None, expect_loadout=False, expect_bags=False):
     token = os.environ["AZEROTH_MCP_TOKEN"]
     async with streamablehttp_client(URL, headers={"Authorization": "Bearer " + token}, timeout=20, sse_read_timeout=30) as (reader, writer, _):
         async with ClientSession(reader, writer) as session:
@@ -30,6 +30,12 @@ async def smoke(snapshot=None, expect_loadout=False):
                 result = await session.call_tool("character_summary", {"snapshot_id": snapshot})
                 assert not result.isError
                 assert json.loads(result.content[0].text)["equipped_slots_observed"] == 1
+                if expect_bags:
+                    carried = json.loads(result.content[0].text)["carried_item_review"]
+                    assert carried["quantity_observed"] == 5
+                    assert carried["repeated_item_ids"][0]["occupied_slots_observed"] == 2
+                    assert carried["stack_compatibility"] == "unknown"
+                    assert carried["game_execution"] is False
                 result = await session.call_tool("review_equipment_selection", {"snapshot_id": snapshot,
                     "selections": [{"target_slot": 16, "source": {"kind": "equipment", "slot": 16}, "expected_item_id": 123}]})
                 assert not result.isError
@@ -66,9 +72,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot")
     parser.add_argument("--expect-loadout", action="store_true")
+    parser.add_argument("--expect-bags", action="store_true")
     args = parser.parse_args()
     if args.snapshot and not re.fullmatch("[a-f0-9]{64}", args.snapshot):
         parser.error("Invalid snapshot ID")
-    if args.expect_loadout and not args.snapshot:
+    if (args.expect_loadout or args.expect_bags) and not args.snapshot:
         parser.error("Expected snapshot for loadout qualification")
-    asyncio.run(asyncio.wait_for(smoke(args.snapshot, args.expect_loadout), timeout=60))
+    asyncio.run(asyncio.wait_for(smoke(args.snapshot, args.expect_loadout, args.expect_bags), timeout=60))
