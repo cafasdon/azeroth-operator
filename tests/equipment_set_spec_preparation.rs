@@ -41,7 +41,7 @@ fn association_drafts_bind_all_identities_and_report_displacement()
             .get("assigned_spec")
             .is_none()
     );
-    assert_eq!(draft["addon_execution_enabled"], false);
+    assert_eq!(draft["addon_execution_enabled"], true);
     assert!(
         draft["import_code"]
             .as_str()

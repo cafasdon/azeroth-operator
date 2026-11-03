@@ -291,7 +291,7 @@ fn association_draft(
         "displaced_set":displaced.map(|id|json!({"set_id":id.parse::<u32>().unwrap(),"name":entries[id]["name"],"previous_spec":entries[id]["assigned_spec"]})),
         "future_specialisation_equipment_selection_may_change":true,
         "already_matches":entries==&desired,"import_code":null,"requires_player_apply":true,
-        "addon_execution_enabled":false,"game_execution":false,"live_qualified":false,
+        "addon_execution_enabled":true,"requires_addon_version":"0.12.0-dev","game_execution":false,"live_qualified":false,
         "preparation_status":"draft_transport_pending"});
     let bytes = serde_json::to_vec(&draft)?;
     ensure!(
@@ -330,7 +330,7 @@ fn association_draft(
     );
     draft["operation_id"] = json!(fields[1]);
     draft["import_code"] = json!(code);
-    draft["preparation_status"] = json!("review_integration_pending");
+    draft["preparation_status"] = json!("requires_player_review");
     Ok(draft)
 }
 

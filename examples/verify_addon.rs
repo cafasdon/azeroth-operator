@@ -61,6 +61,8 @@ fn main() -> anyhow::Result<()> {
             "EquipmentSetOperations.lua",
             "EquipmentSetUse.lua",
             "EquipmentSetImport.lua",
+            "EquipmentSetSpec.lua",
+            "EquipmentSetSpecImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
         ] {
@@ -184,11 +186,78 @@ fn main() -> anyhow::Result<()> {
                 == "applied",
             "Packaged set use receipt missing"
         );
+        lua.load(r#"
+                association=nil; associationWrites=0
+                function GetNumSpecializations() return 3 end
+                C_SpecializationInfo={GetSpecializationInfo=function(i) return 100+i end}
+                C_EquipmentSet.GetEquipmentSetAssignedSpec=function() return association end
+                C_EquipmentSet.GetEquipmentSetForSpec=function(spec) if association==spec then return 0 end end
+                C_EquipmentSet.AssignSpecToEquipmentSet=function(id,spec)
+                    assert(id==0 and AzerothOperatorOperations:find(':outcome_unknown:assign_equipment_set_spec;',1,true))
+                    associationWrites=associationWrites+1; association=spec
+                end
+                C_EquipmentSet.UnassignEquipmentSetSpec=function(id)
+                    assert(id==0 and AzerothOperatorOperations:find(':outcome_unknown:unassign_equipment_set_spec;',1,true))
+                    associationWrites=associationWrites+1; association=nil
+                end
+            "#).exec().map_err(|e|anyhow::anyhow!(e.to_string()))?;
+        for assigning in [true, false] {
+            let captured = (|| -> mlua::Result<String> {
+                lua.load("AO.Capture()").exec()?;
+                lua.globals().get("AzerothOperatorExport")
+            })()
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let snap = decode(format!("AzerothOperatorExport = \"{captured}\"").as_bytes())?;
+            let request = azeroth_operator::equipment_set_operation::EquipmentSetRequest {
+                operation: if assigning {
+                    azeroth_operator::equipment_set_operation::EquipmentSetAction::AssignSpec
+                } else {
+                    azeroth_operator::equipment_set_operation::EquipmentSetAction::UnassignSpec
+                },
+                set_id: 0,
+                name: None,
+                icon: None,
+                expect_empty_slots: vec![],
+                spec_index: assigning.then_some(1),
+            };
+            let prepared = azeroth_operator::equipment_set_operation::compile(
+                &snap,
+                &"c".repeat(64),
+                &request,
+            )?;
+            let exported=(|| -> mlua::Result<String> {
+                lua.globals().set("associationCode",prepared["import_code"].as_str().unwrap())?;
+                lua.load(r#"
+                    local before=associationWrites
+                    AO.ReviewMacroImport(associationCode)
+                    local receipt,ok=AO.ApplyReviewedMacro(associationCode)
+                    assert(ok and receipt.status=='applied' and associationWrites==before+1)
+                    AO.ReviewMacroImport(associationCode)
+                    assert(not pcall(AO.ApplyReviewedMacro,associationCode) and associationWrites==before+1)
+                    AO.Capture()
+                "#).exec()?;
+                lua.globals().get("AzerothOperatorExport")
+            })().map_err(|e|anyhow::anyhow!(e.to_string()))?;
+            let verified = decode(format!("AzerothOperatorExport = \"{exported}\"").as_bytes())?;
+            anyhow::ensure!(
+                verified.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]
+                    ["status"]
+                    == "applied",
+                "Packaged association receipt missing"
+            );
+            anyhow::ensure!(
+                verified.sections["equipment_sets"]["entries"]["0"]
+                    .get("assigned_spec")
+                    .and_then(serde_json::Value::as_u64)
+                    == assigning.then_some(1),
+                "Packaged association state mismatch"
+            );
+        }
     }
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }

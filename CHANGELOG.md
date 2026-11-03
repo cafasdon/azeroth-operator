@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package Retail 0.12.0-dev association operations and spec identity capture with twenty-two files. Staged assign/unassign receipts and 20→22 upgrades verified offline; hosted qualification fixture extended. Not installed or deployed.
+
 - Connect equipment-set associations to source player review/Apply and persisted receipts, showing displaced ownership and future spec-selection consequences. Test delayed/expired/reloaded and post-effect-error outcomes; packaging remains pending.
 
 - Add bounded association import transport and strict Lua decoding for full equipment-set/spec catalogues, sharing the existing preimage record codec. Roundtrip/malformed-input and legacy-format tests pass; execution remains disabled pending review integration.
