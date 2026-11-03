@@ -40,6 +40,14 @@ def qualify(image):
                 snapshot["sections"]["operation_receipts"]["1" * 64] = {"status":"outcome_unknown", "kind":"move_action_slot"}
                 snapshot["sections"]["action_bar_observation"]={"coverage":"loaded_builtin_buttons_only",
                     "observed_buttons":2,"missing_buttons":1,"slots":{"1":{"empty":False,"kind":"spell","id":123},"2":{"empty":True}}}
+                snapshot["sections"]["equipment_sets"]={"coverage":"native_catalogue_raw_slots","can_use":True,"entries":{"0":{
+                    "name":"Synthetic set","icon":134400,"is_equipped":False,"num_items":1,"num_equipped":0,
+                    "num_in_inventory":1,"num_lost":0,"num_ignored":0,"assigned_spec":2,
+                    "slots":{str(i):{} for i in range(1,20)}}}}
+                snapshot["sections"]["equipment_sets"]["entries"]["0"]["slots"]["16"]={"ignored":False,"raw_item_id":123,"raw_location":999,
+                    "observed_item":{"kind":"bag","bag":0,"slot":1,"item_id":123,"guid":"Item-Carried","locked":False}}
+                snapshot["sections"]["operation_receipts"]["2" * 64]={"status":"applied","kind":"modify_equipment_set"}
+                snapshot["sections"]["operation_receipts"]["3" * 64]={"status":"outcome_unknown","kind":"delete_equipment_set"}
             name = "azeroth-import-test-" + uuid.uuid4().hex
             try:
                 result = subprocess.run(["docker","run","--rm","-i","--name",name,"--network","none",

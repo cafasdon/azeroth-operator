@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose source MCP equipment-set metadata preparation as the fourteenth read-only tool. Real protocol tests verify preparation/refusals and unchanged snapshot files; gateway allowlists and importer qualification fixtures are aligned. Not deployed.
+
 - Connect equipment-set metadata operations to source player review/Apply, persisted receipt validation and bounded read-only completion checks. Prevent missing executors falling through and invalid results erasing uncertainty checkpoints. Not packaged or deployed.
 
 - Add source-only equipment-set metadata compiler and strict 193-field Lua transport, preserving the complete captured set preimage and observed identities. Compiler-to-decoder-to-export roundtrip and executor fixtures pass; MCP/review/receipt integration remains pending.

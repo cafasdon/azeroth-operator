@@ -46,7 +46,7 @@ if __name__ == "__main__":
     assert code in (200, 202, 204)
     code, result, session = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, token, session)
     assert code == 200 and {t["name"] for t in result["result"]["tools"]} == {
-        "capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation"}
+        "capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"}
     tool_count=len(result["result"]["tools"])
     code, result, _ = request({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                               "params": {"name": "list_snapshots", "arguments": {"family": "retail"}}}, token, session)
