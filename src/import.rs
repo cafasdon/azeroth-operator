@@ -57,7 +57,7 @@ pub fn decode(raw: &[u8]) -> Result<Snapshot> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const FIXTURE: &str = r#"{"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":[]}}"#;
+    const FIXTURE: &str = r#"{"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":{}}}"#;
     #[test]
     fn json_and_saved_variables_agree() {
         let hex: String = FIXTURE.bytes().map(|b| format!("{b:02x}")).collect();

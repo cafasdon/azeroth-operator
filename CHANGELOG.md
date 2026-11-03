@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Validate equipment and carried-bag slot maps, positive item IDs/stack counts, bounded links and unknown item fields before storage and reads. Legacy array inventory fixtures are no longer accepted by Rust.
+
 - Add bounded snapshot comparisons and character summaries, preserving unknown/missing data.
 - Add repeatable synthetic release-mode storage benchmark.
 

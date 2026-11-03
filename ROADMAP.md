@@ -14,6 +14,8 @@
 ## Required before completion
 
 - Strict versioned snapshot schema and malformed-input coverage.
+- Equipment/bag nested validation is implemented; remaining section schemas still need validation. Bag indices 0..64 and slots 1..1024 are ingestion bounds, not claims about available game slots.
+- Hosted MCP on the personal gateway and authenticated local snapshot transfer; ADR 003 records the boundary. Neither is deployed yet.
 - Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented.
 - Installed-client identification, capability inventory and per-client tests.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.

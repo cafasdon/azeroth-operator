@@ -1,6 +1,7 @@
 //! Data-only client contracts and snapshot storage. No game execution.
 pub mod analysis;
 pub mod import;
+mod schema;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -93,6 +94,7 @@ impl Snapshot {
             "Capture timestamp is in the future"
         );
         for (name, value) in &self.sections {
+            schema::validate(name, value)?;
             ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");
             ensure!(
                 value.is_array() || value.is_object(),
@@ -236,7 +238,7 @@ impl Store {
 mod tests {
     use super::*;
     fn fixture() -> Snapshot {
-        serde_json::from_value(json!({"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":[]}})).unwrap()
+        serde_json::from_value(json!({"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":{}}})).unwrap()
     }
     #[test]
     fn roundtrip_and_integrity() {

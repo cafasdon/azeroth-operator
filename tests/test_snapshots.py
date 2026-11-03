@@ -8,7 +8,7 @@ from shared.snapshots import SnapshotStore
 def fixture():
     return {"schema_version": 1, "source": "fixture", "captured_at": "2025-01-01T00:00:00Z",
             "client": {"family": "retail", "variant": "live", "build": "123", "interface": 120105},
-            "character": {"name": "Example", "realm": "Test"}, "sections": {"equipment": []}}
+            "character": {"name": "Example", "realm": "Test"}, "sections": {"equipment": {}}}
 
 
 class SnapshotTests(unittest.TestCase):
