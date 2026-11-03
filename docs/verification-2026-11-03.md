@@ -320,3 +320,10 @@ Current Blizzard-generated MacroConstantsDocumentation.lua, read from https://ra
 Pinned BigWigs0.1.5-dev SHA256e2ab0397300603125f0cfe988cba8ee227819dfedb0a59f120491b03bcdb4e90 passed actual packaged Lua checks. Guarded install verified four files, backup local-data/addon-backups/addon-update-rzwdx_vs; independent manifest readback matches. Game was not controlled or reloaded. Player must reload to activate new code then export/reload again to verify macro capture. Saved old live snapshot retained. No hosted schema upgrade needed.
 
 Public Armory fallback: ordinary HTTPS request returned200 and embedded profile data; browser/search fetch had failed. HTML retained only in ignored local-data/armory; no public-profile observations were imported into addon snapshots or used as live-game evidence.
+
+
+## Real-export equipment review qualification
+
+Using the first source=addon Retail snapshot through the public authenticated MCP, inspected equipment and submitted every observed equipped location back to review_equipment_selection with its exact expected item ID. All returned already_selected, no vacated slots, correct snapshot binding and game_execution=false. Self-comparison reported equipment unchanged; unavailable action_bars remained not_comparable. Character summary carried-item review was retrieved in the same session. Detailed receipt is ignored local-data/live-qualification/equipment-review.json, not in source control. No gear changed and no optimality/legality claim made.
+
+Direct sync at20:43:01Z still reported unchanged for Retail and waiting_for_export for Forever. Therefore macro-fix live qualification remains pending; do not infer reload or new capture from the user's earlier completion message. This turn qualified real-data no-change review and comparison contracts, not all requested inventory/build operations.

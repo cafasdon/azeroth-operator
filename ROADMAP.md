@@ -23,7 +23,7 @@
 - Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented. Retail action-bar slot enumeration remains unresolved; see docs/action-bar-qualification.md. The synthetic MAX_ACTION_BUTTONS fixture is not a live API contract.
 - Explicit-root installed-client metadata identification and per-family fixture tests implemented; live capability inventory and independent variant/interface qualification remain pending.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.
-- Deeper character/equipment analysis beyond observed counts; comparison and discovery implemented.
+- Deeper character/equipment analysis beyond observed counts; comparison and discovery implemented. Carried-item review deployed; all-observed-equipment no-change review and self-comparison verified using the first real Retail export. Optimisation remains unfinished.
 - Player-reviewed build/configuration proposals and export formats; no autonomous game writes. Saved graphics/hardware baseline recorded in docs/graphics-baseline-2026-11-03.md; runtime display/FPS qualification remains pending.
 - Operation scope/evidence matrix recorded in docs/operation-policy.md. Full current applicable terms and operation-specific authorisation remain unverified; unknown permission means disabled.
 - Source distribution on cafasdon GitHub, isolated installation, reproducible dependency setup. Read-only installed-addon manifest verification implemented for Retail/Forever; Classic installation qualification remains pending.
