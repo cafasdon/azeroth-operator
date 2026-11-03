@@ -35,7 +35,7 @@ local function open()
         return box
     end
     local input=textbox(-42,105)
-    input:SetMaxLetters(8192)
+    input:SetMaxLetters(524288)
     local hint=panel:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT",18,-28)
     hint:SetText("Click the dark box below and paste the operation code (Ctrl+V).")
@@ -60,7 +60,22 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="modify_equipment_set" or op.kind=="delete_equipment_set" or op.kind=="use_equipment_set" then
+        if op.kind=="assign_equipment_set_spec" or op.kind=="unassign_equipment_set_spec" then
+            local target=op.expected_catalogue[tostring(op.set_id)]
+            lines[#lines+1]="Equipment set: "..reason(target.name).." (ID "..op.set_id..")"
+            lines[#lines+1]="Previous specialisation index: "..(target.assigned_spec or "None")
+            if op.spec_index then
+                lines[#lines+1]="Assign to specialisation index "..op.spec_index.." / ID "..op.spec_id
+                if op.displaced_set_id~=nil then
+                    local displaced=op.expected_catalogue[tostring(op.displaced_set_id)]
+                    lines[#lines+1]="Remove this association from: "..reason(displaced.name).." (ID "..op.displaced_set_id..")"
+                else lines[#lines+1]="No other set association is displaced." end
+            else lines[#lines+1]="Remove this set's specialisation association." end
+            lines[#lines+1]="Future specialisation changes may select different equipment."
+            lines[#lines+1]="No specialisation switch or equipment-use call is requested now."
+            lines[#lines+1]="All captured sets and specialisation identities are checked again."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="modify_equipment_set" or op.kind=="delete_equipment_set" or op.kind=="use_equipment_set" then
             lines[#lines+1]="Equipment set: "..reason(op.expected.name).." (ID "..op.set_id..")"
             lines[#lines+1]="Current icon: "..op.expected.icon
             lines[#lines+1]="Assigned specialisation index: "..(op.expected.assigned_spec or "None")

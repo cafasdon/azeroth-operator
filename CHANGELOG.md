@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect equipment-set associations to source player review/Apply and persisted receipts, showing displaced ownership and future spec-selection consequences. Test delayed/expired/reloaded and post-effect-error outcomes; packaging remains pending.
+
 - Add bounded association import transport and strict Lua decoding for full equipment-set/spec catalogues, sharing the existing preimage record codec. Roundtrip/malformed-input and legacy-format tests pass; execution remains disabled pending review integration.
 
 - Add source MCP drafts for equipment-set spec assignment/unassignment, binding the full catalogue and all spec IDs and reporting displaced associations. Drafts have no import code or execution support; strengthen executor checks for all captured spec identities.
