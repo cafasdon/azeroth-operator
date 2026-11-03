@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose source MCP action-slot preparation with explicit execution-disabled output and real stdio tests. Align reference-store section recognition and importer qualification fixture. Thirteen-tool release not deployed.
+
 - Add source-only action-slot compiler and strict Lua decoder, binding explicit slot and macro preimages with bounded transport. Roundtrip/refusal tests pass; MCP/UI integration remains pending.
 
 - Add source-only action-slot move/swap executor and failure fixtures, including macro-content preimages. Not packaged, registered or MCP-enabled; cursor contracts and live protection behaviour remain unqualified.
