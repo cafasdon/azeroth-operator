@@ -25,6 +25,13 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='set_use' then
+                local slots,before={},{}
+                for i=1,19 do slots[tostring(i)]={ignored=true}; before[tostring(i)]='' end
+                slots['16']={ignored=false,observed_item={guid='Item|target'}}; before['16']='Item-old'
+                return {kind='use_equipment_set',character='Test',realm='Realm',family='retail',variant='live',build='123',
+                    set_id=0,equipment_before=before,expected={name='Equip set',icon=123,num_items=1,num_lost=0,num_ignored=18,slots=slots}}
+            end
             if text=='set_modify' or text=='set_delete' then return {kind=text=='set_modify' and 'modify_equipment_set' or 'delete_equipment_set',character='Test',realm='Realm',family='retail',variant='live',build='123',set_id=0,name='New Set',icon=123,expected={name='Old|Set',icon=134400,assigned_spec=2,num_items=18,num_lost=1,num_ignored=1}} end
             if text=='binding' then return {kind='set_binding',character='Test',realm='Realm',family='retail',variant='live',build='123',key='CTRL-1',context=0,binding_set=2,expected='',desired='ACTIONBUTTON1'} end
             if text=='bag' or text=='split' then return {kind=text=='split' and 'split_bag_item' or 'move_bag_item',character='Test',realm='Realm',family='retail',variant='live',build='123',bag=0,slot=1,target_bag=2,target_slot=3,item_id=123,count=20,amount=text=='split' and 5 or nil,source_guid='Item-Source'} end
@@ -76,6 +83,12 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(apply.enabled and frames[5].text:find('DELETE this saved equipment set',1,true))
         assert(frames[5].text:find('This does not delete the items.',1,true))
         assert(frames[5].text:find('External references are not repaired.',1,true))
+        input:SetText('set_use'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Equip this saved set.',1,true))
+        assert(frames[5].text:find('Slot 16 / Equip: Item-old -> Item/target',1,true))
+        assert(frames[5].text:find('Slot 19 / Preserve: Empty (checked on Apply) -> Empty',1,true))
+        assert(frames[5].text:find('A partial swap remains unconfirmed.',1,true))
+        assert(not frames[5].text:find('DELETE this saved',1,true))
         input:SetText('talent'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('Saved loadout: Saved Build (9)',1,true))
         assert(frames[5].text:find('loadout-specific bars may change',1,true))

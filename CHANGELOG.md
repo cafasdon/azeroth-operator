@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect source equipment-set use to player review/Apply, exact per-slot review and persisted receipt validation. Offline end-to-end tests cover pre-write uncertainty, delayed completion, expiry and replay refusal across reload. Not packaged or deployed.
+
 - Add source MCP equipment-set use preparation and strict 212-field decoder with all nineteen equipped preimages and explicit empty-slot preconditions. Execution remains disabled pending review/receipt/package integration; no deployment or game test.
 
 - Add a source-only native equipment-set use executor with exact equipped GUID preimages/readback, ignored-slot preservation, unresolved-slot refusal and one native call. Offline failure fixtures pass; no transport, receipt registration, packaging or live qualification yet.

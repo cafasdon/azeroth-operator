@@ -52,6 +52,82 @@ fn use_transport_requires_explicit_empty_slots_and_preserves_exact_preimages()
     "#,
     )
     .exec()?;
+    lua.load(r#"
+        function copy(t) local out={} for k,v in pairs(t) do out[k]=type(v)=='table' and copy(v) or v end return out end
+        AO.family='retail'; AO.variant='live'; AO.interface=120105
+        SlashCmdList={}; now=0; writes=0; delayed=false
+        worn=copy(op.equipment_before); sets={['0']=copy(op.expected)}
+        AO.collectors={equipment_sets=function() return {coverage='native_catalogue_raw_slots',can_use=true,entries=copy(sets)} end}
+        function GetBuildInfo() return '', '70688', '', 120105 end
+        function UnitName() return 'Fixture' end; function GetRealmName() return 'Fixture' end
+        function InCombatLockdown() return false end
+        function UnitCastingInfo() end; function UnitChannelInfo() end; function GetCursorInfo() end
+        function GetTime() return now end
+        function GetServerTime() return 0 end; function date() return '2025-01-01T00:00:00Z' end
+        function IsInventoryItemLocked() return false end
+        ItemLocation={CreateFromEquipmentSlot=function(_,i) return tostring(i) end}
+        C_Item={DoesItemExist=function(i) return worn[i]~='' end,
+            GetItemGUID=function(i) if worn[i]~='' then return worn[i] end end}
+        C_EquipmentSet={EquipmentSetContainsLockedItems=function() return false end,
+            UseEquipmentSet=function(id)
+                assert(id==0 and AzerothOperatorOperations:find(op.id..':outcome_unknown:use_equipment_set;',1,true))
+                writes=writes+1; if not delayed then worn['16']='Item-target' end
+            end}
+    "#).exec()?;
+    for source in [
+        include_str!("../addon/EquipmentSetUse.lua"),
+        include_str!("../addon/Core.lua"),
+        include_str!("../addon/MacroImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.load(
+        r#"
+        AO.collectors.operation_receipts=function() return AO.ReadMacroReceipts() end
+        assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..'x') and writes==0)
+        AO.ReviewMacroImport(code)
+        local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.status=='applied' and writes==1)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        AO.Capture()
+    "#,
+    )
+    .exec()?;
+    let export: String = lua.globals().get("AzerothOperatorExport")?;
+    let imported = azeroth_operator::import::decode(
+        format!("AzerothOperatorExport = \"{export}\"").as_bytes(),
+    )?;
+    assert_eq!(
+        imported.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]["kind"],
+        "use_equipment_set"
+    );
+    assert_eq!(
+        imported.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]["status"],
+        "applied"
+    );
+    lua.load(r#"
+        -- Independent fixture attempts; production receipts are never cleared.
+        AzerothOperatorOperations=''; worn=copy(op.equipment_before); delayed=true
+        AO.ReviewMacroImport(code); local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.status=='outcome_unknown' and writes==2)
+        worn['16']='Item-target'; assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==2)
+        AzerothOperatorOperations=''; worn=copy(op.equipment_before)
+        AO.ReviewMacroImport(code); receipt,ok=AO.ApplyReviewedMacro(code)
+        now=61; worn['16']='Item-target'
+        assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==3)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==3)
+    "#).exec()?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(
+        r#"
+        assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==3)
+    "#,
+    )
+    .exec()?;
     let decoder: mlua::Function = ao.get("DecodeEquipmentSetOperation")?;
     for (index, replacement) in [
         (0, "AO-SET-1"),
