@@ -101,6 +101,7 @@ fn main() -> anyhow::Result<()> {
                 set_id: 0,
                 name: Some("Verified package".into()),
                 icon: Some(123),
+                expect_empty_slots: vec![],
             },
         )?;
         let receipt_export=(|| -> mlua::Result<String> {
