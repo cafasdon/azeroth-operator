@@ -48,6 +48,7 @@ def qualify(image):
                     "observed_item":{"kind":"bag","bag":0,"slot":1,"item_id":123,"guid":"Item-Carried","locked":False}}
                 snapshot["sections"]["operation_receipts"]["2" * 64]={"status":"applied","kind":"modify_equipment_set"}
                 snapshot["sections"]["operation_receipts"]["3" * 64]={"status":"outcome_unknown","kind":"delete_equipment_set"}
+                snapshot["sections"]["operation_receipts"]["4" * 64]={"status":"outcome_unknown","kind":"use_equipment_set"}
             name = "azeroth-import-test-" + uuid.uuid4().hex
             try:
                 result = subprocess.run(["docker","run","--rm","-i","--name",name,"--network","none",
