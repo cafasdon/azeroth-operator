@@ -131,3 +131,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Split preparation, review/receipt integration and 0.6.0-dev package verified in fixtures. Review displays both split amount and source remainder. Not deployed.
 
 - Apply diagnostics now show a bounded plain-text refusal/error reason while retaining outcome_unknown for executor errors. Tests verify the reason survives dispatch and WoW markup/control characters cannot alter its display. This source change is not installed; the previously recorded 0.6.0-dev ZIP predates it and must be rebuilt before release.
+
+- Investigated saved talent-loadout switching: active working config differs from saved selection, and LoadInProgress requires completion observation. Recorded catalogue capture and asynchronous receipt requirements in docs/talent-operations.md before implementing talent writes.
