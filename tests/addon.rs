@@ -9,6 +9,9 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         AO = {}; SlashCmdList = {}; combat = false
         function GetCurrentBindingSet() return 2 end
         C_KeyBindings={GetBindingContextForAction=function() return 0 end}
+        ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end,
+            CreateFromEquipmentSlot=function(_,slot) return {slot=slot} end}
+        C_Item={GetItemGUID=function(location) return location.bag~=nil and 'Item-Bag-Instance' or 'Item-Equipment-Instance' end}
         function InCombatLockdown() return combat end
         function GetBuildInfo() return "12.1.5", "70688", "", 120105 end
         function GetInventoryItemID(_,slot) if slot==16 then return 123 end end
@@ -43,7 +46,16 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let hex: String = lua.globals().get("AzerothOperatorExport")?;
     let snapshot = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
     assert_eq!(snapshot.sections["equipment"]["16"]["item_id"], 123);
+    assert_eq!(
+        snapshot.sections["equipment"]["16"]["guid"],
+        "Item-Equipment-Instance"
+    );
+    assert_eq!(
+        snapshot.sections["bags"]["0"]["1"]["guid"],
+        "Item-Bag-Instance"
+    );
     assert_eq!(snapshot.sections["bags"]["0"]["1"]["count"], 2);
+    lua.load("local original=C_Item.GetItemGUID; C_Item.GetItemGUID=function() error('unavailable') end; assert(AO.collectors.equipment()['16'].guid==nil); assert(AO.collectors.bags()['0']['1'].guid==nil); C_Item.GetItemGUID=original").exec()?;
     assert_eq!(snapshot.unavailable["talents"], "api_unavailable_or_failed");
     assert_eq!(
         snapshot.sections["equipment"]["16"]["link"],

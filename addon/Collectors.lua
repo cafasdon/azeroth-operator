@@ -1,5 +1,14 @@
 local _, AO = ...
 AO.collectors = {}
+local function itemGUID(bag,slot)
+    if AO.family~="retail" or not (C_Item and C_Item.GetItemGUID and ItemLocation) then return nil end
+    local ok,guid=pcall(function()
+        local location=bag~=nil and ItemLocation:CreateFromBagAndSlot(bag,slot) or ItemLocation:CreateFromEquipmentSlot(slot)
+        return C_Item.GetItemGUID(location)
+    end)
+    if not ok or (issecretvalue and issecretvalue(guid)) then return nil end
+    if type(guid)=="string" and #guid>0 and #guid<=128 then return guid end
+end
 AO.collectors.operation_receipts = function()
     assert(AO.ReadMacroReceipts, "Receipt reader unavailable")
     return AO.ReadMacroReceipts()
@@ -10,7 +19,7 @@ AO.collectors.equipment = function()
     for slot = 1, 19 do
         local id = GetInventoryItemID("player", slot)
         if id then
-            equipment[tostring(slot)] = { item_id = id, link = GetInventoryItemLink("player", slot) }
+            equipment[tostring(slot)] = { item_id = id, link = GetInventoryItemLink("player", slot), guid=itemGUID(nil,slot) }
         end
     end
     return equipment
@@ -23,7 +32,7 @@ AO.collectors.bags = function()
             local slots = {}
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
                 local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info then slots[tostring(slot)] = { item_id = info.itemID, count = info.stackCount, link = info.hyperlink } end
+                if info then slots[tostring(slot)] = { item_id = info.itemID, count = info.stackCount, link = info.hyperlink, guid=itemGUID(bag,slot) } end
             end
             bags[tostring(bag)] = slots
         end

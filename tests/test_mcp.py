@@ -26,14 +26,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
     async def check_stdio_server(self, rust_binary):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
-            sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            sample["sections"]["equipment"] = {"16": {"item_id": 123,"guid":"Item-Old"}}
             sample["sections"]["bindings"] = {"1":{"command":"ACTIONBUTTON1","key1":"CTRL-1","context":0}}
             sample["sections"]["binding_state"] = {"binding_set":2,"coverage":"bound_keys_only"}
             sample["sections"]["operation_receipts"] = {"a" * 64: {"status":"outcome_unknown", "kind":"move"}}
             sample["sections"]["macros"] = {"1": {"name":"AO Test", "icon":134400,
                 "body":"/say test", "scope":"account"}}
-            sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 2},
-                                                     "2": {"item_id": 123, "count": 3}}}
+            sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 1,"guid":"Item-New"},
+                                                     "2": {"item_id": 123, "count": 4}}}
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
@@ -47,7 +47,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         for tool in tools.tools:
@@ -58,6 +58,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(contract["game_execution"])
                         self.assertEqual(set(contract["implemented"]), expected)
                         self.assertEqual(contract["live_client_qualified"], [])
+                        equip=await session.call_tool("prepare_equipment_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_slot":16}})
+                        self.assertFalse(equip.isError)
+                        self.assertTrue(json.loads(equip.content[0].text)["import_code"].startswith("AO-EQUIP-1:"))
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add source-only exact-instance Retail equipment swap executor with GUID, cursor and slot checks, displaced-item readback and failure tests. Two-handed/multi-slot handling remains incomplete; no live gear changes.
+
+- Add optional Retail item GUID capture to equipment/bag observations, preserving unknown identity when unavailable. Lua producer and Rust validation tested; undeployed groundwork for exact-instance equipment operations.
+- Verify live binding no-op through player review, persisted already_selected receipt and public MCP readback; actual binding writes remain unqualified.
+
 - Permit assigning uncaptured keys with an explicit unbound precondition, checked live before mutation and labelled separately from observed state. Compiler, Lua executor and protocol coverage added; no live key changes.
 
 - Connect binding preparation to the local MCP, player review/apply dispatcher and persisted receipts; package binding modules and add `/aoapply`. Protocol and compiler-to-Lua execution tests pass. Not yet deployed or live-qualified.
@@ -101,3 +106,9 @@
 - Add Rust upload command with bounded fixed SSH transport and exact hash receipts, plus a restricted receiver candidate. Provisioning and live upload qualification remain pending.
 
 - Qualify dedicated CT290 upload key, command/remote-forwarding refusal, hash-matched duplicate uploads and public MCP readback. Private key and token stay out of source.
+
+## Equipment integration — development, 2026-11-03
+
+- Added snapshot-bound equipment preparation to MCP and shared review/receipt dispatch.
+- Packaged both equipment modules; maintained legacy installation manifest support.
+- Verified eleven-file package and shared dispatcher replay refusal. Not deployed or live-qualified.

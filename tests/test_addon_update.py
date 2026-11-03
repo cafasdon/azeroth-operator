@@ -20,7 +20,7 @@ class AddonUpdateTests(unittest.TestCase):
             new_archive, new = package("retail","live",120105,"new-dev",root / "packages")
             old_entries = render_entries("retail","live",120105,"old-dev")
             # Model the installed exporter-only release, before macro modules existed.
-            for name in ("MacroOperations.lua", "MacroImport.lua", "MacroUI.lua", "BindingOperations.lua", "BindingImport.lua"):
+            for name in ("MacroOperations.lua", "MacroImport.lua", "MacroUI.lua", "BindingOperations.lua", "BindingImport.lua", "EquipmentOperations.lua", "EquipmentImport.lua"):
                 del old_entries[name]
                 del old["files"][name]
             old_archive.with_suffix(".manifest.json").write_text(json.dumps(old))
@@ -57,7 +57,7 @@ class AddonUpdateTests(unittest.TestCase):
             for name, data in old_entries.items():
                 self.assertEqual((addon / name).read_bytes(), data)
             result = install(*args)
-            self.assertEqual(result["verified_files"],9)
+            self.assertEqual(result["verified_files"],11)
             backup = Path(result["backup"])
             self.assertEqual((backup / "AzerothOperator.toc").read_bytes(),old_entries["AzerothOperator.toc"])
             self.assertEqual(json.loads((backup / "manifest.json").read_text()),old)

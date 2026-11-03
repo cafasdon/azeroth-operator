@@ -55,7 +55,14 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="set_binding" then
+        if op.kind=="equip_bag_item" then
+            lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
+            lines[#lines+1]="Target equipment slot: "..op.target_slot
+            lines[#lines+1]="Item ID: "..op.item_id
+            lines[#lines+1]="Source instance: "..op.source_guid
+            lines[#lines+1]="Expected target: "..(op.target_guid~="" and op.target_guid or "Empty (checked on Apply)")
+            lines[#lines+1]="Displaced item returns to the source bag slot. On failure, inspect the cursor before any retry."
+        elseif op.kind=="set_binding" then
             lines[#lines+1]="Key: "..op.key.." / Context: "..op.context
             lines[#lines+1]="Binding set: "..(op.binding_set==1 and "Account" or "Character")
             lines[#lines+1]="Expected action: "..(op.expected~="" and op.expected or "Unbound (checked on Apply)")
