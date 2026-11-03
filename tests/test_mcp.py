@@ -67,6 +67,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         rejected_binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":1,"desired":"ACTIONBUTTON2"}})
                         self.assertTrue(rejected_binding.isError)
+                        new_binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
+                            "operation":{"key":"CTRL-2","context":0,"desired":"ACTIONBUTTON2","expect_unbound":True}})
+                        self.assertFalse(new_binding.isError)
+                        self.assertEqual(json.loads(new_binding.content[0].text)["precondition_basis"],
+                            "explicit_unbound_precondition_not_observed")
                         with self.assertRaisesRegex(McpError, "tool not found"):
                             await session.call_tool("equip_item", {"slot":16,"item_id":123})
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})

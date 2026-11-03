@@ -63,7 +63,7 @@ struct BindingOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Compile a captured Retail keybinding change for explicit player review/application. Requires context and current binding set observations. Empty desired action means unbind. Does not press keys or invoke actions.",
+        description = "Compile a Retail keybinding change for explicit player review/application. Requires context and current binding set observations. For uncaptured keys, expect_unbound=true supplies a precondition checked live, not an observed fact. Empty desired action means unbind. Does not press keys or invoke actions.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

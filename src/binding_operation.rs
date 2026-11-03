@@ -12,6 +12,10 @@ pub struct BindingRequest {
     pub key: String,
     pub context: u32,
     pub desired: String,
+    /// Explicit precondition for a key not present in the captured bound-key list.
+    /// This is checked live; it is not evidence the snapshot observed an empty key.
+    #[serde(default)]
+    pub expect_unbound: bool,
 }
 fn hex(value: &str) -> String {
     if value.is_empty() {
@@ -69,13 +73,22 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BindingRequest)
                     || b["key2"].as_str() == Some(&request.key))
         })
         .collect();
-    ensure!(
-        matches.len() == 1,
-        "Key/context must have one captured binding; uncaptured keys are unknown"
-    );
-    let expected = matches[0]["command"]
-        .as_str()
-        .ok_or_else(|| anyhow::anyhow!("Missing action"))?;
+    ensure!(matches.len() <= 1, "Ambiguous key/context");
+    let (expected, basis) = if let Some(binding) = matches.first() {
+        ensure!(!request.expect_unbound, "Captured key is already bound");
+        (
+            binding["command"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Missing action"))?,
+            "captured_binding",
+        )
+    } else {
+        ensure!(
+            request.expect_unbound,
+            "Uncaptured key requires explicit expect_unbound precondition"
+        );
+        ("", "explicit_unbound_precondition_not_observed")
+    };
     ensure!(
         expected.len() <= 256 && !expected.chars().any(char::is_control),
         "Invalid captured action"
@@ -98,6 +111,6 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BindingRequest)
     ];
     fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
     Ok(
-        json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"set_binding","key":request.key,"context":request.context,"binding_set":set,"expected":expected,"desired":request.desired,"import_code":fields.join(":"),"requires_player_apply":true,"game_execution":false,"live_qualified":false}),
+        json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"set_binding","key":request.key,"context":request.context,"binding_set":set,"expected":expected,"precondition_basis":basis,"desired":request.desired,"import_code":fields.join(":"),"requires_player_apply":true,"game_execution":false,"live_qualified":false}),
     )
 }

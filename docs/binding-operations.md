@@ -1,5 +1,7 @@
 # Player-applied keybindings
 
+Current precondition contract: assigning an uncaptured key is supported only with explicit `expect_unbound=true`. This is a requested condition, not an inferred observation. Captured occupied keys reject that flag; live GetBindingAction must still return empty before SetBinding. The UI labels this as checked on Apply, and compiler output distinguishes `explicit_unbound_precondition_not_observed` from `captured_binding`. Tests cover unbound assignment, a key becoming occupied, and contradiction with captured state.
+
 Source-only executor; not packaged, exposed through MCP or live-qualified. Retail is explicit; Classic and Forever remain unimplemented. A binding change configures a key and never invokes its action.
 
 Blizzard's [shared keybinding UI source](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_Settings_Shared/Blizzard_Keybindings.lua) uses the action's binding context with SetBinding/GetBindingAction and commits through SaveBindings(GetCurrentBindingSet()). [Generated documentation](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/KeyBindingsDocumentation.lua) defines binding sets and contexts. Retrieved 2026-11-03. Context must be preserved, including housing modes; never infer that a key has one global meaning.

@@ -26,6 +26,7 @@ fn compiled_bindings_preserve_context_and_reject_unknown_keys() -> anyhow::Resul
                 key: "CTRL-1".into(),
                 context,
                 desired: String::new(),
+                expect_unbound: false,
             },
         )?;
         let decoded: mlua::Table = decoder
@@ -84,11 +85,29 @@ fn compiled_bindings_preserve_context_and_reject_unknown_keys() -> anyhow::Resul
             &BindingRequest {
                 key: "CTRL-2".into(),
                 context: 0,
-                desired: "ACTIONBUTTON2".into()
+                desired: "ACTIONBUTTON2".into(),
+                expect_unbound: false,
             }
         )
         .is_err()
     );
     assert!(decoder.call::<mlua::Table>("AO-BIND-1:bad").is_err());
+    let new_key = BindingRequest {
+        key: "CTRL-2".into(),
+        context: 0,
+        desired: "ACTIONBUTTON2".into(),
+        expect_unbound: true,
+    };
+    let prepared = compile(&snapshot, &"a".repeat(64), &new_key)?;
+    assert_eq!(prepared["expected"], "");
+    assert_eq!(
+        prepared["precondition_basis"],
+        "explicit_unbound_precondition_not_observed"
+    );
+    let occupied = BindingRequest {
+        key: "CTRL-1".into(),
+        ..new_key
+    };
+    assert!(compile(&snapshot, &"a".repeat(64), &occupied).is_err());
     Ok(())
 }

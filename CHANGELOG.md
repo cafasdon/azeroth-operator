@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Permit assigning uncaptured keys with an explicit unbound precondition, checked live before mutation and labelled separately from observed state. Compiler, Lua executor and protocol coverage added; no live key changes.
+
 - Connect binding preparation to the local MCP, player review/apply dispatcher and persisted receipts; package binding modules and add `/aoapply`. Protocol and compiler-to-Lua execution tests pass. Not yet deployed or live-qualified.
 
 - Add source-only binding compiler and strict Lua data decoder, with Rust-to-Lua tests for context preservation and uncaptured-key refusal. No binding transport is enabled in the deployed addon yet.

@@ -31,5 +31,9 @@ fn context_and_preimage_checked_before_binding_changes() -> mlua::Result<()> {
         assert(binding=='' and writes==2 and saves==2)
         op.expected=''; assert(AO.ApplyBindingOperation(op).status=='already_selected')
         assert(writes==2 and saves==2)
+        op.desired='ACTIONBUTTON2'; assert(AO.ApplyBindingOperation(op).status=='applied')
+        assert(binding=='ACTIONBUTTON2' and writes==3 and saves==3)
+        assert(not pcall(AO.ApplyBindingOperation,op))
+        assert(writes==3 and saves==3)
     "#).exec()
 }

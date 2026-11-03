@@ -58,7 +58,7 @@ local function open()
         if op.kind=="set_binding" then
             lines[#lines+1]="Key: "..op.key.." / Context: "..op.context
             lines[#lines+1]="Binding set: "..(op.binding_set==1 and "Account" or "Character")
-            lines[#lines+1]="Expected action: "..op.expected
+            lines[#lines+1]="Expected action: "..(op.expected~="" and op.expected or "Unbound (checked on Apply)")
             lines[#lines+1]="Desired action: "..(op.desired~="" and op.desired or "Unbound")
         else
         for _,entry in ipairs({{"Expected",op.expected},{"Desired",op.desired}}) do
