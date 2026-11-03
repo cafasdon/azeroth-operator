@@ -17,9 +17,10 @@ end
 function AO.DecodeEquipmentSetOperation(text)
     assert(type(text)=="string" and #text<=8192, "Invalid set data size")
     local f={}; for field in (text..":"):gmatch("([^:]*):") do f[#f+1]=field end
-    assert(#f==193 and f[1]=="AO-SET-1" and f[4]=="retail", "Invalid set format")
+    local use=f[1]=="AO-SET-USE-1"
+    assert(((use and #f==212) or (not use and #f==193 and f[1]=="AO-SET-1")) and f[4]=="retail", "Invalid set format")
     for _,i in ipairs({2,3}) do assert(#f[i]==64 and not f[i]:find("[^0-9a-f]"), "Invalid set identity") end
-    assert(f[10]=="modify_equipment_set" or f[10]=="delete_equipment_set", "Invalid set operation")
+    assert((use and f[10]=="use_equipment_set") or (not use and (f[10]=="modify_equipment_set" or f[10]=="delete_equipment_set")), "Invalid set operation")
     local op={id=f[2],snapshot_id=f[3],family=f[4],variant=unhex(f[5]),build=unhex(f[6]),
         interface=number(f[7],1,4294967295),character=unhex(f[8]),realm=unhex(f[9]),
         kind=f[10],set_id=number(f[11],0,4294967295)}
@@ -55,5 +56,24 @@ function AO.DecodeEquipmentSetOperation(text)
         expected.slots[tostring(slot)]=s
     end
     op.expected=expected
+    if use then
+        assert(expected.num_lost==0, "Equipment set has missing items")
+        op.equipment_before={}
+        local seen={}
+        for slot=1,19 do
+            local key=tostring(slot)
+            local guid=unhex(f[193+slot])
+            assert(#guid<=128 and not guid:find("[%z\1-\31\127]"), "Invalid equipped identity")
+            op.equipment_before[key]=guid
+            local target=expected.slots[key]
+            if target.ignored~=true then
+                assert(target.ignored==false and target.observed_item and target.observed_item.locked==false,
+                    "Unresolved equipment set slot")
+                guid=target.observed_item.guid
+            end
+            assert(guid=="" or not seen[guid], "Duplicate target identity")
+            if guid~="" then seen[guid]=true end
+        end
+    end
     return op
 end

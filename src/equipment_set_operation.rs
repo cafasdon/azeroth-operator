@@ -10,6 +10,7 @@ use sha2::{Digest, Sha256};
 pub enum EquipmentSetAction {
     Modify,
     Delete,
+    Use,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -18,6 +19,8 @@ pub struct EquipmentSetRequest {
     pub set_id: u32,
     pub name: Option<String>,
     pub icon: Option<u32>,
+    #[serde(default)]
+    pub expect_empty_slots: Vec<u32>,
 }
 fn hex(s: &str) -> String {
     if s.is_empty() {
@@ -60,6 +63,13 @@ pub fn compile(
     let expected = entries
         .get(&request.set_id.to_string())
         .ok_or_else(|| anyhow::anyhow!("Equipment set not captured"))?;
+    let is_use = matches!(request.operation, EquipmentSetAction::Use);
+    ensure!(
+        is_use || request.expect_empty_slots.is_empty(),
+        "Empty-slot preconditions only apply to use"
+    );
+    let mut equipment_before = serde_json::Map::new();
+    let mut desired_equipment = serde_json::Map::new();
     let kind = match request.operation {
         EquipmentSetAction::Modify => {
             let name = request
@@ -93,9 +103,66 @@ pub fn compile(
             );
             "delete_equipment_set"
         }
+        EquipmentSetAction::Use => {
+            ensure!(
+                request.name.is_none() && request.icon.is_none(),
+                "Use must not contain replacement metadata"
+            );
+            ensure!(expected["num_lost"] == 0, "Equipment set has missing items");
+            let equipment = snapshot
+                .sections
+                .get("equipment")
+                .and_then(Value::as_object)
+                .ok_or_else(|| anyhow::anyhow!("Equipment unavailable"))?;
+            let empty: std::collections::BTreeSet<_> =
+                request.expect_empty_slots.iter().copied().collect();
+            ensure!(
+                empty.len() == request.expect_empty_slots.len()
+                    && empty.iter().all(|s| (1..=19).contains(s)),
+                "Invalid empty-slot preconditions"
+            );
+            let mut identities = std::collections::BTreeSet::new();
+            for slot in 1..=19 {
+                let key = slot.to_string();
+                let before = if let Some(item) = equipment.get(&key) {
+                    ensure!(
+                        !empty.contains(&slot),
+                        "Empty precondition conflicts with captured equipment"
+                    );
+                    item["guid"]
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("Equipment GUID unavailable"))?
+                } else {
+                    ensure!(
+                        empty.contains(&slot),
+                        "Uncaptured equipment requires explicit empty precondition"
+                    );
+                    ""
+                };
+                equipment_before.insert(key.clone(), json!(before));
+                let target = &expected["slots"][&key];
+                let desired = if target["ignored"] == true {
+                    before
+                } else {
+                    ensure!(
+                        target["ignored"] == false && target["observed_item"]["locked"] == false,
+                        "Unresolved or locked equipment set slot"
+                    );
+                    target["observed_item"]["guid"]
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("Target GUID unavailable"))?
+                };
+                ensure!(
+                    desired.is_empty() || identities.insert(desired),
+                    "Duplicate target identity"
+                );
+                desired_equipment.insert(key, json!(desired));
+            }
+            "use_equipment_set"
+        }
     };
     let mut f = vec![
-        "AO-SET-1".into(),
+        if is_use { "AO-SET-USE-1" } else { "AO-SET-1" }.into(),
         String::new(),
         snapshot_id.into(),
         "retail".into(),
@@ -139,6 +206,11 @@ pub fn compile(
             f.push(scalar(&observed[key]));
         }
     }
+    if is_use {
+        for slot in 1..=19 {
+            f.push(scalar(&equipment_before[&slot.to_string()]));
+        }
+    }
     f[1] = format!("{:x}", Sha256::digest(f.join(":").as_bytes()));
     let code = f.join(":");
     ensure!(
@@ -148,7 +220,10 @@ pub fn compile(
     Ok(
         json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":kind,"set_id":request.set_id,
         "expected":expected,"name":request.name,"icon":request.icon,"import_code":code,
-        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":true,"requires_addon_version":"0.10.0-dev","live_qualified":false,
+        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":!is_use,"requires_addon_version":if is_use { None } else { Some("0.10.0-dev") },"live_qualified":false,
+        "equipment_before":if is_use { Some(&equipment_before) } else { None },
+        "desired_equipment":if is_use { Some(&desired_equipment) } else { None },
+        "explicit_empty_preconditions":request.expect_empty_slots,
         "deletes_saved_set":matches!(request.operation,EquipmentSetAction::Delete),
         "assigned_spec":expected.get("assigned_spec"),"external_references_repaired":false}),
     )

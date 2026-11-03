@@ -44,8 +44,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             key = SnapshotStore(Path(folder)).ingest(sample)
             sample["sections"]["equipment_sets"]={"coverage":"native_catalogue_raw_slots","can_use":True,"entries":{"0":{
                 "name":"Fixture set","icon":134400,"is_equipped":False,"num_items":1,"num_equipped":0,
-                "num_in_inventory":1,"num_lost":0,"num_ignored":0,"assigned_spec":2,
-                "slots":{str(i):{} for i in range(1,20)}}}}
+                "num_in_inventory":1,"num_lost":0,"num_ignored":18,"assigned_spec":2,
+                "slots":{str(i):{"ignored":True} for i in range(1,20)}}}}
             sample["sections"]["equipment_sets"]["entries"]["0"]["slots"]["16"]={"ignored":False,"raw_item_id":123,"raw_location":999,
                 "observed_item":{"kind":"bag","bag":0,"slot":1,"item_id":123,"guid":"Item-New","locked":False}}
             set_key=SnapshotStore(Path(folder)).ingest(sample)
@@ -85,7 +85,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "operation":{"operation":"delete","set_id":0}})
                         self.assertFalse(deletion.isError)
                         self.assertTrue(json.loads(deletion.content[0].text)["deletes_saved_set"])
+                        use=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":set_key,
+                            "operation":{"operation":"use","set_id":0,"expect_empty_slots":[i for i in range(1,20) if i!=16]}})
+                        self.assertFalse(use.isError)
+                        use_data=json.loads(use.content[0].text)
+                        self.assertFalse(use_data["addon_execution_enabled"])
+                        self.assertTrue(use_data["import_code"].startswith("AO-SET-USE-1:"))
+                        self.assertEqual(use_data["equipment_before"]["16"],"Item-Old")
+                        self.assertEqual(use_data["desired_equipment"]["16"],"Item-New")
                         for sid,operation in [(key,{"operation":"delete","set_id":0}),
+                            (set_key,{"operation":"use","set_id":0}),
                             (set_key,{"operation":"delete","set_id":99}),
                             (set_key,{"operation":"delete","set_id":0,"name":"unexpected"})]:
                             refused=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":sid,"operation":operation})
