@@ -65,9 +65,35 @@ struct EquipmentOperation {
     snapshot_id: String,
     operation: azeroth_operator::equipment_operation::EquipmentRequest,
 }
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct BagOperation {
+    snapshot_id: String,
+    operation: azeroth_operator::bag_operation::BagRequest,
+}
 
 #[tool_router]
 impl Operator {
+    #[tool(
+        description = "Prepare one full-stack Retail carried-bag move to an explicitly empty slot. Binds captured GUID and count; player review and Apply required. Does not move items.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn prepare_bag_operation(&self, Parameters(args): Parameters<BagOperation>) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            azeroth_operator::bag_operation::compile(&snapshot, &args.snapshot_id, &args.operation)
+        })();
+        match result {
+            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Bag operation rejected: source identity or empty destination precondition unavailable",
+            )]),
+        }
+    }
     #[tool(
         description = "Prepare one exact-GUID Retail bag-to-equipment swap for player review. Requires item instance observations. Empty targets require explicit precondition. Does not equip anything; multi-slot handling remains unsupported.",
         annotations(
@@ -131,7 +157,7 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
     }
     #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",

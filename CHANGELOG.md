@@ -114,3 +114,12 @@
 - Verified eleven-file package and shared dispatcher replay refusal. Not deployed or live-qualified.
 
 Equipment development deployment: hosted importer/reader and local companion upgraded; Retail 0.4.0-dev installed with eleven-file integrity verification. Public MCP exposes ten tools. Live GUID export and gear swap qualification remain pending. See docs/equipment-deployment-2026-11-03.md.
+
+## Bag movement executor — development
+
+- Added guarded full-stack carried-slot movement and partial-effect fixtures. Transport, UI and deployment remain pending.
+- Updated the operation matrix to distinguish live macro creation, binding no-op and deployed equipment development support.
+
+- Added snapshot-bound bag-move compiler and AO-BAG-1 decoder; Rust-to-Lua tests preserve GUID/count and reject missing identity, occupied destination and implicit emptiness.
+
+- Connected bag movement to MCP preparation, shared review/receipts and the thirteen-file 0.5.0-dev package. Source/protocol/package checks pass; deployment and live qualification remain pending.

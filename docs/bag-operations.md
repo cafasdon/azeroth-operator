@@ -1,0 +1,15 @@
+# Player-applied bag operations
+
+Development source, 2026-11-03. The executor moves a complete stack from one carried bag slot to an explicitly empty carried slot. Source GUID, item ID and count must match; both locations are checked before pickup and again before placement. Combat, casting, occupied cursor, locks, invalid carried locations and identical locations are refused. No automatic retry or cursor clearing occurs after a partial effect.
+
+Verified Lua fixtures cover success, stale count/GUID, combat, occupied destination, replay against changed locations, failed placement and a destination becoming occupied between pickup and placement. Runtime asynchronous updates and specialised bag acceptance remain unqualified; a refused placement retains the cursor item and fails readback.
+
+API reference checked 2026-11-03: https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/ContainerDocumentation.lua — PickupContainerItem takes bag and slot; SplitContainerItem additionally takes amount. This is API evidence, not blanket policy approval.
+
+The Rust snapshot-bound compiler and AO-BAG-1 Lua decoder are implemented and roundtrip-tested. The format carries sixteen colon-separated fields: magic, operation ID, snapshot ID, family, variant hex, build hex, interface, character hex, realm hex, source bag, source slot, target bag, target slot, item ID, GUID hex and full-stack count. Destination emptiness is an explicit request precondition, rechecked at execution. Missing GUIDs and captured occupied destinations are refused.
+
+Shared review/receipt dispatch, MCP preparation and packaging are implemented in source. The protocol test calls prepare_bag_operation; Lua dispatch tests require review, verify the pre-execution uncertainty receipt and refuse replay. Full source gate and 31 Python tests pass. Retail 0.5.0-dev (thirteen files) passed staged Lua 5.1 loading/export and changed-interface refusal. ZIP SHA256: 683a0d255198bf0fdd59f7d7b80d97338c1b4d183f89c696bdfeac5c9fd19da5.
+
+Pending: deployment and live tests. No bag mutation is deployed yet. Swaps, merging, splitting, sorting and bank transfers remain subsequent work within the full operational goal.
+
+The dispatcher error-path fixture also verifies that an executor exception preserves outcome_unknown and blocks replay. Advisory claims review: Jev 1.14.0, request 65b9ff671d0495ed95cd33b857e9d39ab2dc5b695efb39c139de3cd2ddfb988d, 836 input/116 output tokens, 0.304 seconds. Result insufficient_evidence (reported confidence 0.42), not a review pass. Deterministic fixture results support only source behaviour; live qualification is outstanding. The configured adversarial-review file is absent; that workflow was not run.

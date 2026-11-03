@@ -71,6 +71,7 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "move"
                                     | "set_binding"
                                     | "equip_bag_item"
+                                    | "move_bag_item"
                             ),
                             "Invalid receipt result"
                         );

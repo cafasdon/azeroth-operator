@@ -40,6 +40,8 @@ fn main() -> anyhow::Result<()> {
             "BindingImport.lua",
             "EquipmentOperations.lua",
             "EquipmentImport.lua",
+            "BagOperations.lua",
+            "BagImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
         ] {

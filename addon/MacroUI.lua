@@ -55,7 +55,14 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="equip_bag_item" then
+        if op.kind=="move_bag_item" then
+            lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
+            lines[#lines+1]="Target bag/slot: "..op.target_bag.." / "..op.target_slot
+            lines[#lines+1]="Item ID: "..op.item_id.." / Count: "..op.count
+            lines[#lines+1]="Source instance: "..op.source_guid
+            lines[#lines+1]="Expected destination: empty (checked on Apply)"
+            lines[#lines+1]="Moves the full stack. On failure, inspect the cursor before retrying."
+        elseif op.kind=="equip_bag_item" then
             lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
             lines[#lines+1]="Target equipment slot: "..op.target_slot
             lines[#lines+1]="Item ID: "..op.item_id
