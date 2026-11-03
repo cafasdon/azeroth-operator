@@ -126,3 +126,13 @@ PR199's first full CI passed, but concurrent PR198 also fixed the same static as
 The Linux candidate built successfully with thirteen release-mode tests; image sha256:800b73ab19f052f983022bc479dc8e666fe45c0b6448d17ff728849e88d5831c. Build source was 779a2a9 plus the cached Dockerfile; the later dedicated-config client hardening is in the Windows client, not this image. Receiver uses only import-stdin. Build compile/test step took 290.2 seconds with an empty Cargo cache; no performance improvement claimed.
 
 Inspection found pylon root authorised_keys is a cluster-shared symlink. Receiver provisioning now targets personal CT290 directly, where no root authorised_keys existed; no key was added to pylon or cluster shared storage. Fixed receiver command invokes local Docker, checks hostname mcp-gateway and preserves the same fixed owner store. Updated receiver tests pass. Provisioning and end-to-end checks still pending at this commit.
+
+## Restricted upload channel qualified
+
+Provisioned source d3068a5 inside personal CT290, not the cluster-shared pylon key file. The new public key has restrict plus the fixed timeout/receiver command. Private key remains in the local ignored ACL-restricted directory. Dedicated SSH config pins CT290's host key obtained through the existing trusted pylon administrative channel; normal identities/agent are excluded.
+
+Actual tests: command `id` was refused by the authenticated receiver; a remote forwarding request was denied by SSH; Windows Rust upload sent GatewayFixture and received the exact expected hash; an identical retry returned that same hash. The remote store contained exactly one snapshot. Independent local SDK read the equipment and summary through the public TLS MCP. Exact-hash cleanup removed the fixture and the public auth/empty-store probe passed again.
+
+Importer image is sha256:800b73ab19f052f983022bc479dc8e666fe45c0b6448d17ff728849e88d5831c (779a2a9 plus cached Docker build recipe). Reader image remains c13e769-derived d5d5135b..., unchanged and compatible with the uploaded schema. This qualifies explicit CLI upload, not a watcher/scheduled sync or a live WoW export. Agent/X11 forwarding restrictions are configured by restrict but were not separately exercised.
+
+PR199 merged-head gateway CI passed; Rust router CI still running at this checkpoint. Do not claim all checks passed for the merged head yet.

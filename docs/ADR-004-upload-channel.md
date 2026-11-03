@@ -22,8 +22,8 @@ identities cannot become a fallback. Configure only the upload IdentityFile,
 IdentitiesOnly=yes and IdentityAgent=none, with the existing verified known-hosts
 file. Missing configuration fails before launching SSH.
 
-On personal pylon, the forced receiver reads at most 4 MiB with a read deadline,
-then invokes one pinned CT290 container with no network and a fixed owner store.
+Inside personal pylon CT290, the forced receiver reads at most 4 MiB with a read deadline,
+then invokes one pinned local container with no network and a fixed owner store.
 No client path, command, account or image selection is accepted. Image configuration
 must be root-owned, non-writable by group/others and not a symlink. The reader MCP
 keeps its read-only mount. This single-owner channel does not claim multi-user support.
