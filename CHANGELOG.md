@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a source-only equipment-set specialisation association executor with full-catalogue preimages, target spec identity checks, one native assign/unassign call and whole-catalogue readback. Failure fixtures verified; not prepared, packaged or deployed.
+
 - Deploy Retail 0.11.0-dev equipment-set use support with compatible hosted importers/reader and Windows companion. Public synthetic preparation and twenty installed hashes verified; native switching remains unqualified and no game input occurred.
 
 - Package Retail 0.11.0-dev native equipment-set use with twenty files, versioned preparation support, 19→20-file upgrade checks and staged Lua capture/compile/review/Apply/receipt verification. Candidate verified offline; not installed or live-qualified.
