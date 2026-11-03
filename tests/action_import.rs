@@ -106,6 +106,28 @@ fn compiler_decoder_bind_slots_and_macro_contents() -> Result<(), Box<dyn std::e
         },
     )?;
     assert_eq!(moved["mode"], "move");
+    lua.globals()
+        .set("moveCode", moved["import_code"].as_str().unwrap())?;
+    lua.load(r#"
+        now=0; function GetTime() return now end
+        slots={[1]={kind='spell',id=123}}; cursor=nil; writes=0
+        AO.collectors.action_bar_observation=function() return {slots={['1']={},['3']={}}} end
+        function PlaceAction(slot) writes=writes+1; pending=cursor; cursor=nil end
+        AO.ReviewMacroImport(moveCode)
+        local receipt,ok=AO.ApplyReviewedMacro(moveCode)
+        local id=AO.DecodeActionOperation(moveCode).id
+        assert(ok and receipt.status=='outcome_unknown' and writes==2)
+        assert(AO.ReadMacroReceipts()[id].status=='outcome_unknown')
+        slots[3]=pending; now=10
+        assert(AO.ReadMacroReceipts()[id].status=='applied' and writes==2)
+        local late=moveCode:gsub('AO%-ACTION%-1:[0-9a-f]+:','AO-ACTION-1:'..string.rep('f',64)..':',1)
+        slots={[1]={kind='spell',id=123}}; now=20
+        AO.ReviewMacroImport(late); AO.ApplyReviewedMacro(late)
+        slots[3]=pending; now=81
+        assert(AO.ReadMacroReceipts()[string.rep('f',64)].status=='outcome_unknown' and writes==4)
+        AO.ReviewMacroImport(late); assert(not pcall(AO.ApplyReviewedMacro,late) and writes==4)
+    "#).exec()?;
+
     let op: mlua::Table = decoder.call(moved["import_code"].as_str().unwrap())?;
     assert!(op.get::<mlua::Table>("target")?.get::<bool>("empty")?);
     assert!(
