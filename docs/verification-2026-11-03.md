@@ -81,3 +81,14 @@ Added a loopback-only systemd candidate, dedicated 256-bit token file validation
 Installed committed 4613fa4 service/checker on personal pylon CT290 using first-install-only source. Dedicated token was generated remotely into a root-owned mode-0600 file; no token was printed or copied locally. Authenticated HTTP probe verified missing token 401, wrong token 401, correct-token initialise, exact five-tool discovery and a successful empty Retail listing. Service active and enabled; listener remains 127.0.0.1:8823. Installed unit SHA256 106e14240e363b0f2c63e66cb5d31c7a7700c78d78df3f632bdb5c54880c18b7 and checker 4c0c6748c829783c7ec90c932c15fe21fbf958a36e4cf54c8d03d7a12d737317 match local committed files. No reboot test performed.
 
 Source review found CT150 edge isolation covers ports 8765-8821, excluding new 8823. Before publishing, extend that isolation and qualify denial of relayed/host-originated connections, plus guest firewall proxy-only ingress and public TLS bearer checks. No proxy or firewall edits were performed. Mounted populated-data readback and current-source image refresh remain pending; running backend image remains the previously qualified c13e769 build.
+
+## Public route verified
+
+Infrastructure publication ea3d294b (cafasdon/Proxmox PR197) exposed the dedicated
+scope at https://mcp.cafas.com.br/scopes/azeroth/mcp after extending CT150 isolation
+and guest proxy-only ingress to port 8823. Actual public TLS probe from CT290
+verified missing/wrong-token 401, authenticated initialise, exact five-tool
+catalogue and empty Retail listing. No token copied to this workstation.
+Direct port attempts from pylon and CT150 host failed; CT150 reject counter
+increased. Explicit untrusted bridge and populated store probes remain pending.
+The profile still pins the c13e769 image; newer stdin ingestion is not deployed.

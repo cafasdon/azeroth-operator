@@ -1,5 +1,6 @@
 """Probe loopback auth and MCP without disclosing the dedicated token."""
 import json
+import argparse
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -29,6 +30,11 @@ def request(payload, token=None, session=None):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--public", action="store_true")
+    args = parser.parse_args()
+    if args.public:
+        URL = "https://mcp.cafas.com.br/scopes/azeroth/mcp"
     token = Path("/etc/azeroth-operator/gateway.env").read_text().strip().split("=", 1)[1]
     initialise = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
         "protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "azeroth-probe", "version": "1"}}}

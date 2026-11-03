@@ -48,3 +48,8 @@ and authenticated on CT290 loopback port 8823. The HTTP probe checks missing/wro
 token refusal and authenticated discovery/listing. The public route is not live.
 Before publication, CT150 isolation must cover 8823 as well as the existing
 8765-8821 range; allowing CT150 as a guest-firewall source alone is insufficient.
+
+Public route verified 2026-11-03: https://mcp.cafas.com.br/scopes/azeroth/mcp.
+Dedicated bearer authentication is required; no credential is stored in source.
+Only snapshot reads are exposed. The service override and network policy are
+owned by cafasdon/Proxmox (PR197). This supersedes the earlier loopback-only state.
