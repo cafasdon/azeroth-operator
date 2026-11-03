@@ -33,3 +33,5 @@
 - Add standalone gateway-profile generation with immutable image pin, explicit read-tool allowlist and read-only owner store; validate format using CT290 Docker MCP importer.
 
 - Qualify dedicated Docker MCP profile with the exact read-only bind allowance; add loopback service and dedicated token validation candidates.
+
+- Verify hosted populated-snapshot readback using the independent SDK, and add exact-hash synthetic fixture cleanup tooling.

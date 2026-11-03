@@ -1,0 +1,41 @@
+"""Independent hosted MCP qualification; token only from the process environment."""
+import argparse
+import asyncio
+import json
+import os
+import re
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+URL = "https://mcp.cafas.com.br/scopes/azeroth/mcp"
+
+
+async def smoke(snapshot=None):
+    token = os.environ["AZEROTH_MCP_TOKEN"]
+    async with streamablehttp_client(URL, headers={"Authorization": "Bearer " + token}, timeout=20, sse_read_timeout=30) as (reader, writer, _):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary"}
+            if snapshot:
+                result = await session.call_tool("inspect_snapshot", {"snapshot_id": snapshot, "section": "equipment"})
+                assert not result.isError
+                value = json.loads(result.content[0].text)
+                assert value["source"] == "fixture" and value["character"]["name"] == "GatewayFixture"
+                assert value["data"]["16"]["item_id"] == 123 and value["live"] is False
+                result = await session.call_tool("character_summary", {"snapshot_id": snapshot})
+                assert not result.isError
+                assert json.loads(result.content[0].text)["equipped_slots_observed"] == 1
+            else:
+                result = await session.call_tool("list_snapshots", {"family": "retail"})
+                assert not result.isError
+            print(json.dumps({"public_tls": True, "tools": 5, "fixture_readback": bool(snapshot)}))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--snapshot")
+    args = parser.parse_args()
+    if args.snapshot and not re.fullmatch("[a-f0-9]{64}", args.snapshot):
+        parser.error("Invalid snapshot ID")
+    asyncio.run(asyncio.wait_for(smoke(args.snapshot), timeout=60))

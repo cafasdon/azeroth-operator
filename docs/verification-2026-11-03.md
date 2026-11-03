@@ -92,3 +92,11 @@ catalogue and empty Retail listing. No token copied to this workstation.
 Direct port attempts from pylon and CT150 host failed; CT150 reject counter
 increased. Explicit untrusted bridge and populated store probes remain pending.
 The profile still pins the c13e769 image; newer stdin ingestion is not deployed.
+
+## Local client and populated hosted readback
+
+Configured Codex MCP entry azeroth with the public URL and bearer_token_env_var=AZEROTH_MCP_TOKEN. Dedicated token transferred without displaying it and stored in the Windows user environment. It is not in source or command arguments. Existing desktop processes may require restart to inherit it; current-chat tool discovery is not claimed. Parsed configuration verified URL/env reference.
+
+Independent Python SDK on ICARUS successfully initialised the public TLS MCP. A synthetic GatewayFixture/Synthetic snapshot (source=fixture) was imported through the existing image CLI into the owner's store, hash ef93cc06b211e8e3c728f4d927ddada4133b6b78aae4ebe050a9a6968fa3006c. The local SDK read equipment item 123 and one equipped slot through public MCP. Cleanup checked the exact file hash and fixture identity before removing it; subsequent public probe verified the empty store and auth checks again. This is mounted-data readback, not live WoW evidence or an automated upload pipeline.
+
+PR197 checks: seven reported passing, gateway-scripts and Rust-router jobs still pending at this checkpoint. No CI success for the full suite claimed.
