@@ -89,6 +89,36 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "operation_receipts" => {
+            let receipts = value
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Expected receipt map"))?;
+            ensure!(receipts.len() <= 128, "Too many receipts");
+            for (id, receipt) in receipts {
+                ensure!(
+                    id.len() == 64
+                        && id
+                            .bytes()
+                            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+                    "Invalid operation ID"
+                );
+                object(receipt, &[("status", "text", true), ("kind", "text", true)])?;
+                ensure!(
+                    matches!(
+                        receipt["status"].as_str(),
+                        Some("applied" | "outcome_unknown" | "copied_source_removal_unconfirmed")
+                    ),
+                    "Invalid receipt status"
+                );
+                ensure!(
+                    matches!(
+                        receipt["kind"].as_str(),
+                        Some("create" | "edit" | "delete" | "move")
+                    ),
+                    "Invalid receipt kind"
+                );
+            }
+        }
         "equipment" => items(value, true)?,
         "bags" => {
             let bags = value

@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars"})
+SECTIONS = frozenset({"equipment", "bags", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts"})
 
 
 def validate_snapshot(value):

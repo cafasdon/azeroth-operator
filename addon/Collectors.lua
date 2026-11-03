@@ -1,5 +1,9 @@
 local _, AO = ...
 AO.collectors = {}
+AO.collectors.operation_receipts = function()
+    assert(AO.ReadMacroReceipts, "Receipt reader unavailable")
+    return AO.ReadMacroReceipts()
+end
 
 AO.collectors.equipment = function()
     local equipment = {}

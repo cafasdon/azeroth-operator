@@ -31,6 +31,7 @@ const SECTIONS: &[&str] = &[
     "macros",
     "bindings",
     "action_bars",
+    "operation_receipts",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

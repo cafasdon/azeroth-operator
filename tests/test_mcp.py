@@ -27,6 +27,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
             sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            sample["sections"]["operation_receipts"] = {"a" * 64: {"status":"outcome_unknown", "kind":"move"}}
             sample["sections"]["macros"] = {"1": {"name":"AO Test", "icon":134400,
                 "body":"/say test", "scope":"account"}}
             sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 2},
@@ -108,6 +109,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "snapshot_id":key,"operation":{"kind":"delete","source_index":999}})
                         self.assertTrue(rejected.isError)
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key})
+                    receipts = await session.call_tool("inspect_snapshot", {"snapshot_id":key,"section":"operation_receipts"})
+                    self.assertFalse(receipts.isError)
+                    self.assertEqual(json.loads(receipts.content[0].text)["data"]["a" * 64]["status"], "outcome_unknown")
                     self.assertFalse(result.isError)
                     payload = json.loads(result.content[0].text)
                     self.assertFalse(payload["live"])

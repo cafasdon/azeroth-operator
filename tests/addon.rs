@@ -30,7 +30,13 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     lua.load(include_str!("../addon/Collectors.lua"))
         .call::<()>(("AzerothOperator", namespace.clone()))?;
     lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", namespace.clone()))?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
         .call::<()>(("AzerothOperator", namespace))?;
+    lua.globals().set(
+        "AzerothOperatorOperations",
+        format!("{}:outcome_unknown:move;", "a".repeat(64)),
+    )?;
     lua.load("AO.Capture()").exec()?;
     let hex: String = lua.globals().get("AzerothOperatorExport")?;
     let snapshot = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
@@ -66,7 +72,11 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let full_hex: String = lua.globals().get("AzerothOperatorExport")?;
     let full = decode(format!("AzerothOperatorExport = \"{full_hex}\"").as_bytes())?;
     assert!(full.unavailable.is_empty());
-    assert_eq!(full.sections.len(), 11);
+    assert_eq!(full.sections.len(), 12);
+    assert_eq!(
+        full.sections["operation_receipts"]["a".repeat(64)]["status"],
+        "outcome_unknown"
+    );
     assert_eq!(full.sections["macros"]["121"]["scope"], "character");
     assert_eq!(full.sections["bindings"]["1"]["key1"], "1");
     assert_eq!(full.sections["action_bars"]["1"]["id"], 123);
@@ -195,7 +205,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         assert!(!partial.sections.contains_key(name));
         assert_eq!(partial.unavailable[name], "api_unavailable_or_failed");
         assert_eq!(partial.sections["quests"]["42"]["title"], "Test quest");
-        assert_eq!(partial.sections.len(), 10);
+        assert_eq!(partial.sections.len(), 11);
         lua.load(restore).exec()?;
     }
     lua.load("saved=C_Container; C_Container=nil; AO.Capture()")
