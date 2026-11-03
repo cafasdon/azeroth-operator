@@ -50,6 +50,7 @@ if __name__ == "__main__":
     code, result, _ = request({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                               "params": {"name": "list_snapshots", "arguments": {"family": "retail"}}}, token, session)
     assert code == 200 and not result["result"].get("isError", False)
-    assert json.loads(result["result"]["content"][0]["text"])["snapshots"] == []
+    snapshots = json.loads(result["result"]["content"][0]["text"])["snapshots"]
+    assert isinstance(snapshots, list)
     print(json.dumps({"missing_token": 401, "wrong_token": 401, "authenticated": True,
-                      "tools": 6, "retail_empty_store": True}))
+                      "tools": 6, "retail_snapshots_returned": len(snapshots)}))

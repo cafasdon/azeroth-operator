@@ -4,9 +4,11 @@ import json
 import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.gateway_profile import profile, STORE
@@ -27,6 +29,18 @@ def check_current(value, expected):
         raise ValueError("Unexpected store mount")
     if server["env"] != [{"name": "AZEROTH_DATA_DIR", "value": "/data"}]:
         raise ValueError("Unexpected server environment")
+
+
+def wait_ready():
+    deadline = time.monotonic() + 30
+    while True:
+        try:
+            with socket.create_connection(("127.0.0.1", 8823), timeout=1):
+                return
+        except OSError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Dedicated reader did not listen") from None
+            time.sleep(0.2)
 
 
 if __name__ == "__main__":
@@ -55,6 +69,7 @@ if __name__ == "__main__":
             raise ValueError("Tool allowlist mismatch")
         run("systemctl", "restart", "azeroth-mcp.service")
         run("systemctl", "is-active", "--quiet", "azeroth-mcp.service")
+        wait_ready()
         run("python3", str(Path(__file__).with_name("probe_gateway.py")))
     except BaseException:
         run("docker", "mcp", "profile", "import", str(before))
