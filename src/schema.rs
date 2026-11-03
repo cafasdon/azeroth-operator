@@ -10,6 +10,7 @@ struct Item<'a> {
     #[serde(borrow)]
     link: Option<&'a str>,
     count: Option<u32>,
+    guid: Option<&'a str>,
 }
 
 fn index(key: &str, minimum: u32, maximum: u32) -> Result<()> {
@@ -29,6 +30,12 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
         ensure!(item.item_id > 0, "Invalid item ID");
+        ensure!(
+            item.guid.is_none_or(|s| !s.is_empty()
+                && s.len() <= 128
+                && !s.chars().any(char::is_control)),
+            "Invalid item GUID"
+        );
         ensure!(
             item.link.as_ref().is_none_or(|s| s.len() <= 4096),
             "Item link too long"

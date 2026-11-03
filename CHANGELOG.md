@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add optional Retail item GUID capture to equipment/bag observations, preserving unknown identity when unavailable. Lua producer and Rust validation tested; undeployed groundwork for exact-instance equipment operations.
+- Verify live binding no-op through player review, persisted already_selected receipt and public MCP readback; actual binding writes remain unqualified.
+
 - Permit assigning uncaptured keys with an explicit unbound precondition, checked live before mutation and labelled separately from observed state. Compiler, Lua executor and protocol coverage added; no live key changes.
 
 - Connect binding preparation to the local MCP, player review/apply dispatcher and persisted receipts; package binding modules and add `/aoapply`. Protocol and compiler-to-Lua execution tests pass. Not yet deployed or live-qualified.

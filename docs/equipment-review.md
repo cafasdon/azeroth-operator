@@ -1,5 +1,7 @@
 # Equipment review contract
 
+Operational groundwork (source only): Retail equipment and carried-bag captures can now include an optional item `guid`, obtained with C_Item.GetItemGUID and Blizzard's [ItemLocation constructors](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_ObjectAPI/Mainline/ItemLocation.lua). Missing, failing or secret GUIDs remain absent, so current readers still support older observations. Lua producer tests preserve separate bag/equipment instance identities and omit unavailable GUIDs; Rust bounds and validates the optional field. Full source verification passed. This schema extension is not deployed and does not yet equip items. The future executor must bind GUID plus exact source/target locations and account for the cursor and displaced item, following the ordinary [equipment manager flow](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_FrameXML/Mainline/EquipmentManager.lua).
+
 `review_equipment_selection` returns a JSON document for a player to inspect.
 It is an analysis operation. It has no game command, macro, addon import or
 execution path. All three client families use the same snapshot contract;
