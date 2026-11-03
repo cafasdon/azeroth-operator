@@ -29,3 +29,5 @@
 - Establish Retail, Classic and Forever subdivisions with shared MCP and contracts.
 - Require explicit client family, variant, build and interface; reject cross-client imports.
 - Record conservative policy boundary; runtime features remain unqualified.
+
+- Add standalone gateway-profile generation with immutable image pin, explicit read-tool allowlist and read-only owner store; validate format using CT290 Docker MCP importer.

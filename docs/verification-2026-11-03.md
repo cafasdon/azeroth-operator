@@ -63,3 +63,9 @@ No gateway profile, public route, service or credentials changed. The qualificat
 ## Bounded stdin ingestion primitive
 
 Added import-stdin using the same bounded reader and schema validation as file import. The real CLI test sends a valid snapshot twice, observes identical receipts and exactly one stored file, then rejects empty/malformed/code-bearing and oversized inputs without a success receipt or extra stored files. Eleven Rust tests and warnings-denied Clippy pass. This is a local transport primitive only: no new public endpoint, authentication or per-owner routing is claimed. Slow sender deadlines belong to the transport wrapper and remain required for remote deployment.
+
+## Dedicated gateway profile
+
+The source generator tools/gateway_profile.py creates only the standalone azeroth-operator profile: immutable image ID, five read tools, one fixed Rodrigo store mounted read-only. It does not export or modify homelab. The actual Docker MCP importer on CT290 rejected an absent version and version 2; version 1 was accepted. This illustrates why source fixtures are not deployment proof. Imported candidate pins the previously qualified c13e769 image, not the newer stdin-import source. No gateway process or public route was started. Store mounting/authentication are still unqualified.
+
+Eleven Python tests pass, including immutable-reference rejection and profile allowlist/mount assertions. Infrastructure integration worktree is T:/Projects/Proxmox/.worktrees/azeroth-mcp, branch feat/azeroth-mcp from origin/main 1b01f436; unrelated active checkout preserved. No infrastructure source changes made there yet.

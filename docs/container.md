@@ -37,3 +37,8 @@ outside the payload, impose a wall-clock deadline, and provide a writable mount
 only to the importer. The producer must close stdin after sending one export.
 The read-only MCP worker must see that same owner's data through a read-only
 mount. Do not use a shared writable store across principals.
+
+The standalone profile generator is tools/gateway_profile.py. Its version-one
+output was accepted by CT290 Docker MCP. It selects only Azeroth tools and a
+fixed read-only Rodrigo store; it neither reads nor modifies the homelab profile.
+Acceptance does not verify container mounts, authentication or public routing.
