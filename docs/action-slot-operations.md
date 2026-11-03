@@ -27,3 +27,7 @@ prepare_action_operation is now exposed by source Rust MCP (thirteenth tool). It
 The protocol fixture caught that the Python reference store omitted the new observation section; its section allowlist is now aligned. This reference store remains a structural validator; Rust owns detailed nested validation. Full source gate subsequently passed (including31Python tests). Source only, not deployed. Existing installed addon does not accept AO-ACTION-1.
 
 Jev advisory request9bf990ca41800e6c3cd3a0e92ff00734b794c82f84dd6830bc902a590f7b39f9, jev-1.14.0,817input/116output tokens,0.293seconds: insufficient_evidence (reported confidence0.43), not a pass. No claim of live or deployed action-bar control.
+
+Primary cursor evidence follow-up (2026-11-04): Blizzard_ClickBindingUI/Blizzard_ClickBindingUI.lua, AddFromCursorInfo, reads GetCursorInfo's fourth result as spellID and second as macroID. Source: https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_ClickBindingUI/Blizzard_ClickBindingUI.lua. This supports the executor's spell/macro tuple mapping; item identity and actual action-pickup/taint behaviour still require qualification. No ClearCursor or click-binding writes from that reference were adopted.
+
+Observation and MCP preparation deployed in0.8.0-dev; see action-observation-deployment-2026-11-04.md. Action executor and decoder remain outside package/dispatcher.
