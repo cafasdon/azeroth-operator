@@ -1,0 +1,168 @@
+{
+  "binary_sha256": {
+    "baseline": "99e4c72f8c9d4e66027723a6dbbcb9c4d1de7d2876fe5da9e6a7895bbe2720b4",
+    "candidate": "68f7320552d12926693b47dede2442d010c4bc949ff1366735cd13b288068057"
+  },
+  "run_order": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline",
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline"
+  ],
+  "runs": {
+    "baseline": [
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.5074,
+          "p95": 0.9290999999999999
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 110.99810000000001,
+          "p95": 127.71959999999999
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.442,
+          "p95": 0.6488
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 97.2538,
+          "p95": 104.7544
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.4862,
+          "p95": 0.8241
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 85.9516,
+          "p95": 100.58250000000001
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.3258,
+          "p95": 0.4758
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 65.6007,
+          "p95": 74.0344
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      }
+    ],
+    "candidate": [
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.4087,
+          "p95": 0.7077
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 74.68130000000001,
+          "p95": 99.01790000000001
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.4013,
+          "p95": 0.6012
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 68.905,
+          "p95": 117.0158
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.4237,
+          "p95": 0.8381000000000001
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 69.542,
+          "p95": 76.7279
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      },
+      {
+        "cache": "warm",
+        "inspect_ms": {
+          "median": 0.3251,
+          "p95": 0.4849
+        },
+        "inspect_runs": 200,
+        "items_per_snapshot": 180,
+        "list_ms": {
+          "median": 57.8166,
+          "p95": 67.7286
+        },
+        "list_runs": 20,
+        "profile": "release",
+        "snapshots": 200
+      }
+    ]
+  },
+  "median_of_run_medians": {
+    "baseline": {
+      "list_ms": 91.6027,
+      "inspect_ms": 0.4641
+    },
+    "candidate": {
+      "list_ms": 69.2235,
+      "inspect_ms": 0.405
+    }
+  },
+  "reduction_percent": {
+    "list_ms": 24.430720928531578,
+    "inspect_ms": 12.73432449903038
+  },
+  "limitations": [
+    "Synthetic warm-cache Windows/local filesystem workload",
+    "Different temporary store per invocation; no claim about hosted Linux latency"
+  ]
+}

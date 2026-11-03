@@ -14,7 +14,7 @@ use std::{
     collections::BTreeMap,
     fs::File,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 pub const MAX_BYTES: u64 = 4 * 1024 * 1024;
@@ -129,8 +129,10 @@ impl Store {
         if !self.root.exists() {
             return Ok(json!({"snapshots":[],"has_more":false,"invalid_count":0}));
         }
+        // Resolve once per scan; every file still gets containment/hash/schema checks.
+        let root = self.root.canonicalize()?;
         let mut paths = Vec::new();
-        for entry in std::fs::read_dir(&self.root)? {
+        for entry in std::fs::read_dir(&root)? {
             let path = entry?.path();
             if path.extension().is_some_and(|x| x == "json") {
                 paths.push(path);
@@ -148,7 +150,7 @@ impl Store {
                 invalid += 1;
                 continue;
             };
-            match self.read(id) {
+            match Self::read_in_root(&root, id) {
                 Ok(s) if s.client.family == family => {
                     // Retain metadata only: listing must not hold every inventory payload.
                     let summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
@@ -193,6 +195,11 @@ impl Store {
     }
 
     pub fn read(&self, id: &str) -> Result<Snapshot> {
+        let root = self.root.canonicalize()?;
+        Self::read_in_root(&root, id)
+    }
+
+    fn read_in_root(root: &Path, id: &str) -> Result<Snapshot> {
         ensure!(
             id.len() == 64
                 && id
@@ -200,12 +207,8 @@ impl Store {
                     .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)),
             "Invalid snapshot id"
         );
-        let root = self.root.canonicalize()?;
         let path = root.join(format!("{id}.json")).canonicalize()?;
-        ensure!(
-            path.parent() == Some(root.as_path()),
-            "Snapshot path escaped store"
-        );
+        ensure!(path.parent() == Some(root), "Snapshot path escaped store");
         let mut raw = Vec::new();
         File::open(path)?
             .take(MAX_BYTES + 1)
@@ -286,5 +289,70 @@ mod tests {
         let ids: Vec<_> = jobs.into_iter().map(|j| j.join().unwrap()).collect();
         assert!(ids.iter().all(|id| id == &ids[0]));
         assert!(store.read(&ids[0]).is_ok());
+    }
+
+    #[test]
+    fn listing_preserves_validation_family_order_and_pages() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store {
+            root: dir.path().into(),
+        };
+        let mut expected = Vec::new();
+        for name in ["A", "B", "C"] {
+            let mut snapshot = fixture();
+            snapshot.character.name = name.into();
+            expected.push(store.ingest(&snapshot).unwrap());
+        }
+        expected.sort(); // Equal capture times use ascending content ID.
+        let mut other = fixture();
+        other.client.family = Family::Forever;
+        store.ingest(&other).unwrap();
+        let mut invalid = serde_json::to_value(fixture()).unwrap();
+        invalid["sections"]["equipment"] = json!({"16":{"item_id":0}});
+        let raw = serde_json::to_vec(&invalid).unwrap();
+        let id = format!("{:x}", Sha256::digest(&raw));
+        std::fs::write(dir.path().join(format!("{id}.json")), raw).unwrap();
+        std::fs::write(dir.path().join(format!("{}.json", "a".repeat(64))), "{}").unwrap();
+        let first = store.list(Family::Retail, 0, 2).unwrap();
+        let last = store.list(Family::Retail, 2, 2).unwrap();
+        assert_eq!(first["invalid_count"], 2);
+        assert_eq!(first["has_more"], true);
+        assert_eq!(last["has_more"], false);
+        assert_eq!(first["snapshots"][0]["snapshot_id"], expected[0]);
+        assert_eq!(first["snapshots"][1]["snapshot_id"], expected[1]);
+        assert_eq!(last["snapshots"][0]["snapshot_id"], expected[2]);
+        assert_eq!(
+            store.list(Family::Forever, 0, 2).unwrap()["snapshots"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            store.list(Family::Retail, usize::MAX, 2).unwrap()["snapshots"],
+            json!([])
+        );
+        std::fs::write(dir.path().join(format!("{}.json", expected[0])), "{}").unwrap();
+        let fresh = store.list(Family::Retail, 0, 100).unwrap();
+        assert_eq!(fresh["invalid_count"], 3);
+        assert_eq!(fresh["snapshots"].as_array().unwrap().len(), 2);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn listing_rejects_hash_valid_symlink_outside_store() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("store");
+        std::fs::create_dir(&root).unwrap();
+        let raw = serde_json::to_vec(&fixture()).unwrap();
+        let id = format!("{:x}", Sha256::digest(&raw));
+        let outside = dir.path().join("outside.json");
+        std::fs::write(&outside, raw).unwrap();
+        std::os::unix::fs::symlink(&outside, root.join(format!("{id}.json"))).unwrap();
+        let store = Store { root };
+        assert!(store.read(&id).is_err());
+        let listing = store.list(Family::Retail, 0, 20).unwrap();
+        assert_eq!(listing["snapshots"], json!([]));
+        assert_eq!(listing["invalid_count"], 1);
     }
 }

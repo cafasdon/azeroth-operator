@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reduce repeated item allocations and store-root resolution without caching snapshot validity. Four alternating Windows benchmark pairs measured 24.4% lower listing median and 12.7% lower inspection median on 200 synthetic snapshots; preserve hash/schema/containment and pagination checks.
+
 - Add read-only equipment-selection review drafts bound to exact snapshot locations and expected item IDs. Reject duplicate targets/sources and unavailable observations; expose swaps/vacancies without claiming gameplay legality or performance gains.
 
 - Add a bounded saved-export sync runner, Windows process-tree timeout cleanup, atomic status and an isolated current-user scheduled-task installer. Synthetic upload/readback succeeded; unchanged pass measured 0.21s versus 5.30s for upload.

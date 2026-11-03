@@ -5,9 +5,10 @@ use serde_json::Value;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Item {
+struct Item<'a> {
     item_id: u32,
-    link: Option<String>,
+    #[serde(borrow)]
+    link: Option<&'a str>,
     count: Option<u32>,
 }
 
@@ -26,7 +27,7 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
         .ok_or_else(|| anyhow::anyhow!("Slots must be an object"))?;
     for (slot, value) in slots {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
-        let item: Item = serde_json::from_value(value.clone())?;
+        let item = Item::deserialize(value)?;
         ensure!(item.item_id > 0, "Invalid item ID");
         ensure!(
             item.link.as_ref().is_none_or(|s| s.len() <= 4096),

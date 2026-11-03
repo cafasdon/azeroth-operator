@@ -65,6 +65,13 @@ server release; see the dated verification log for deployed qualification.
 
 Synthetic performance baseline: `cargo run --release --locked --example benchmark` measures warm-cache listing and inspection over 200 generated snapshots. It uses no account data.
 
+The 2026-11-03 paired Windows benchmark measured listing medians of 91.6ms before
+and 69.2ms after borrowing item fields during validation and resolving the store
+root once per listing. Each snapshot still receives path-containment, SHA256 and
+schema checks on every call; no metadata freshness cache is used. Four alternating
+pairs and all samples are recorded in `docs/benchmarks/listing-2026-11-03.json`.
+This is a synthetic local result, not a claim about hosted Linux request latency.
+
 The Python prototype is retained temporarily as a reference and independent protocol test harness. Install its test dependencies with `python -m pip install -r requirements.txt`. Set `AZEROTH_TEST_BINARY` to the Rust executable to test that server instead of the prototype.
 
 For a local development addon ZIP: `python tools/package_addon.py --family retail --variant live --interface 120105 --version 0.1.0-dev`. Explicit client metadata is required. Generated `dist/` files are ignored; manifests include per-file and archive hashes. These packages are development artifacts, not certified compatibility claims.
