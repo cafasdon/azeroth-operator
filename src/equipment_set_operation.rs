@@ -148,7 +148,7 @@ pub fn compile(
     Ok(
         json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":kind,"set_id":request.set_id,
         "expected":expected,"name":request.name,"icon":request.icon,"import_code":code,
-        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":false,"live_qualified":false,
+        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":true,"requires_addon_version":"0.10.0-dev","live_qualified":false,
         "deletes_saved_set":matches!(request.operation,EquipmentSetAction::Delete),
         "assigned_spec":expected.get("assigned_spec"),"external_references_repaired":false}),
     )

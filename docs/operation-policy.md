@@ -26,7 +26,7 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Create/edit/delete/move macro scope | Development implementation installed | Disabled | Disabled | MCP prepares bounded data; player reviews/applies through ordinary addon APIs; creation verified; edit/delete/scope-move remain unqualified |
 | Change keybindings | Deployed; no-op verified | Disabled | Disabled | One explicit key and context; actual SetBinding/SaveBindings still unqualified |
 | Equip gear | Development implementation deployed | Disabled | Disabled | Single GUID-bound bag-to-equipment swap; exact item GUID export verified; swap unqualified |
-| Rename/change icon/delete native equipment sets | Source MCP and review/Apply implementation | Disabled | Disabled | Exact captured set preimage; packaging/deployment pending; no live set mutation |
+| Rename/change icon/delete native equipment sets | Packaged development candidate | Disabled | Disabled | Exact captured set preimage; deployment pending; no live set mutation |
 | Switch saved talent builds | Development implementation deployed | Disabled | Disabled | Exact captured build and current-state checks; native player-triggered talent UI path; live switch unqualified |
 | Move/swap captured action slots | Development implementation deployed | Disabled | Disabled | Exact source/target and macro-content preimages; player review/Apply; live unqualified |
 | Create/edit talent builds or add new action-bar entries | Not implemented | Not implemented | Not implemented | Remains in scope; no protected-action bypass |

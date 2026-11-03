@@ -78,7 +78,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         set_data=json.loads(prepared_set.content[0].text)
                         self.assertTrue(set_data["import_code"].startswith("AO-SET-1:"))
                         self.assertEqual(set_data["expected"]["slots"]["16"]["observed_item"]["guid"],"Item-New")
-                        self.assertFalse(set_data["addon_execution_enabled"])
+                        self.assertTrue(set_data["addon_execution_enabled"])
+                        self.assertEqual(set_data["requires_addon_version"],"0.10.0-dev")
                         self.assertFalse(set_data["game_execution"])
                         deletion=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":set_key,
                             "operation":{"operation":"delete","set_id":0}})
