@@ -42,3 +42,9 @@ The standalone profile generator is tools/gateway_profile.py. Its version-one
 output was accepted by CT290 Docker MCP. It selects only Azeroth tools and a
 fixed read-only Rodrigo store; it neither reads nor modifies the homelab profile.
 Acceptance does not verify container mounts, authentication or public routing.
+
+Current qualification (2026-11-03): the dedicated service is installed, enabled
+and authenticated on CT290 loopback port 8823. The HTTP probe checks missing/wrong
+token refusal and authenticated discovery/listing. The public route is not live.
+Before publication, CT150 isolation must cover 8823 as well as the existing
+8765-8821 range; allowing CT150 as a guest-firewall source alone is insufficient.
