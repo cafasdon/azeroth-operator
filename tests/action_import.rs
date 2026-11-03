@@ -24,6 +24,70 @@ fn compiler_decoder_bind_slots_and_macro_contents() -> Result<(), Box<dyn std::e
         .call::<()>(("AzerothOperator", ao.clone()))?;
     let decoder: mlua::Function = ao.get("DecodeActionOperation")?;
     let code = prepared["import_code"].as_str().unwrap();
+    lua.globals().set("AO", ao.clone())?;
+    lua.globals().set("code", code)?;
+    lua.globals().set(
+        "macroBody",
+        snapshot.sections["macros"]["121"]["body"].as_str().unwrap(),
+    )?;
+    lua.load(
+        r#"
+        AO.family='retail'; AO.variant='live'; AO.interface=120105; writes=0
+        slots={[1]={kind='spell',id=123},[2]={kind='macro',id=121}}
+        function GetBuildInfo() return '', '70688', '',120105 end
+        function UnitName() return 'Test' end; function GetRealmName() return 'Test' end
+        function InCombatLockdown() return false end
+        function UnitCastingInfo() end; function UnitChannelInfo() end
+        function GetActionInfo(slot) local a=slots[slot]; if a then return a.kind,a.id end end
+        function GetMacroInfo() return 'Macro',134400,macroBody end
+        function GetCursorInfo() if cursor then return cursor.kind,cursor.id,nil,cursor.id end end
+        AO.collectors={action_bar_observation=function() return {slots={['1']={},['2']={}}} end}
+        function PickupAction(slot) writes=writes+1; cursor=slots[slot]; slots[slot]=nil end
+        function PlaceAction(slot) writes=writes+1; slots[slot],cursor=cursor,slots[slot] end
+    "#,
+    )
+    .exec()?;
+    for source in [
+        include_str!("../addon/ActionOperations.lua"),
+        include_str!("../addon/MacroImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.load(
+        r#"
+        assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code)
+        local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.kind=='move_action_slot' and receipt.status=='applied' and writes==3)
+        assert(slots[1].id==121 and slots[2].id==123 and cursor==nil)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==3)
+    "#,
+    )
+    .exec()?;
+    let checkpoint: String = lua.globals().get("AzerothOperatorOperations")?;
+    lua.load(
+        r#"
+        SlashCmdList={}
+        function GetServerTime() return 1735689600 end
+        function date() return '2025-01-01T00:00:00Z' end
+        AO.collectors.action_bar_observation=nil
+        AO.collectors.operation_receipts=AO.ReadMacroReceipts
+    "#,
+    )
+    .exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("AO.Capture()").exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let imported = azeroth_operator::import::decode(
+        format!("AzerothOperatorExport = \"{hex}\"\nAzerothOperatorOperations = \"{checkpoint}\"")
+            .as_bytes(),
+    )?;
+    assert_eq!(
+        imported.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]["status"],
+        "applied"
+    );
     let op: mlua::Table = decoder.call(code)?;
     assert_eq!(op.get::<u32>("source_slot")?, 1);
     let target: mlua::Table = op.get("target")?;

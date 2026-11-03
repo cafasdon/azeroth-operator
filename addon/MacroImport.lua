@@ -1,7 +1,7 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
 local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
-local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true,move_action_slot=true}
 local function readReceipts()
     local saved=AzerothOperatorOperations or ""
     assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
@@ -83,6 +83,10 @@ end
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
 local function decodeOperation(text)
+    if type(text)=="string" and text:sub(1,12)=="AO-ACTION-1:" then
+        assert(AO.DecodeActionOperation,"Action import unavailable")
+        return AO.DecodeActionOperation(text)
+    end
     if type(text)=="string" and text:sub(1,12)=="AO-TALENT-1:" then
         assert(AO.DecodeTalentOperation,"Talent import unavailable")
         return AO.DecodeTalentOperation(text)
@@ -129,11 +133,11 @@ function AO.ApplyImportedMacro(text)
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
     saveReceipts(receipts)
-    local executor=operation.kind=="load_talent_config" and AO.ApplyTalentOperation or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
+    local executor=operation.kind=="move_action_slot" and AO.ApplyActionOperation or operation.kind=="load_talent_config" and AO.ApplyTalentOperation or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
     local ok,result=pcall(executor,operation)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
-    local verify=operation.kind=="load_talent_config" and AO.VerifyTalentOperation
+    local verify=operation.kind=="move_action_slot" and AO.VerifyActionOperation or operation.kind=="load_talent_config" and AO.VerifyTalentOperation
         or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.VerifyBagOperation
     if verify and ok and result.status=="outcome_unknown" then
         pendingObservations[operation.id]={operation=operation,verify=verify,deadline=GetTime()+60}
