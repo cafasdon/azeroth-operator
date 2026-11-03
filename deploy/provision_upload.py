@@ -1,4 +1,4 @@
-"""First-time forced-key receiver provisioning on personal pylon; no private key input."""
+"""First-time forced-key receiver provisioning on personal pylon CT290; no private key input."""
 import fcntl
 import os
 from pathlib import Path
@@ -9,8 +9,8 @@ import sys
 
 
 if __name__ == "__main__":
-    if os.geteuid() != 0 or Path("/etc/hostname").read_text().strip() != "pylon":
-        raise SystemExit("Expected personal pylon root")
+    if os.geteuid() != 0 or Path("/etc/hostname").read_text().strip() != "mcp-gateway":
+        raise SystemExit("Expected personal CT290 root")
     image, public_path = sys.argv[1:]
     if not re.fullmatch("sha256:[a-f0-9]{64}", image):
         raise SystemExit("Immutable image required")
@@ -21,7 +21,8 @@ if __name__ == "__main__":
     if destination.exists() or config.exists():
         raise SystemExit("Existing receiver: reconcile rather than overwrite")
     authorised = Path("/root/.ssh/authorized_keys")
-    descriptor = os.open(authorised, os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW)
+    authorised.parent.mkdir(mode=0o700, exist_ok=True)
+    descriptor = os.open(authorised, os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW | os.O_CREAT, 0o600)
     try:
         info = os.fstat(descriptor)
         if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) & 0o022:

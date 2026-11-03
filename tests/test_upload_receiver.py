@@ -12,7 +12,7 @@ class ReceiverTests(unittest.TestCase):
                     receive()
     def test_fixed_command_and_store(self):
         argv = command("sha256:" + "a" * 64, "azeroth-upload-" + "b" * 32)
-        self.assertEqual(argv[:5], ["lxc-attach", "-n", "290", "--", "docker"])
+        self.assertEqual(argv[:2], ["docker", "run"])
         self.assertEqual(argv[-1], "import-stdin")
         self.assertIn(STORE + ":/data", argv)
         self.assertIn("none", argv)

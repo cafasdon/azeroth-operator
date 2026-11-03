@@ -120,3 +120,9 @@ Jev advisory jev-1.14.0, request 12d8d63769a8c502cff7c0a0546f39d1ae8492af24d347e
 Docker build now uses persistent build-stage Cargo caches and a single release profile for tests/build. First Linux build is in progress; no speedup measured or claimed. The running public reader is unchanged.
 
 PR199's first full CI passed, but concurrent PR198 also fixed the same static assertions. Merged origin/main into the isolated branch, retaining the extra 8824 behavioural check, and reran static tests successfully. Exact merged-head CI is rerunning before merge.
+
+## Receiver location correction and Linux image
+
+The Linux candidate built successfully with thirteen release-mode tests; image sha256:800b73ab19f052f983022bc479dc8e666fe45c0b6448d17ff728849e88d5831c. Build source was 779a2a9 plus the cached Dockerfile; the later dedicated-config client hardening is in the Windows client, not this image. Receiver uses only import-stdin. Build compile/test step took 290.2 seconds with an empty Cargo cache; no performance improvement claimed.
+
+Inspection found pylon root authorised_keys is a cluster-shared symlink. Receiver provisioning now targets personal CT290 directly, where no root authorised_keys existed; no key was added to pylon or cluster shared storage. Fixed receiver command invokes local Docker, checks hostname mcp-gateway and preserves the same fixed owner store. Updated receiver tests pass. Provisioning and end-to-end checks still pending at this commit.

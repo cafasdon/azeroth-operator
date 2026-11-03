@@ -1,4 +1,4 @@
-"""Forced SSH command on personal pylon. No paths, commands or destinations from client."""
+"""Forced SSH command on personal pylon CT290. No paths, commands or destinations from client."""
 import os
 from pathlib import Path
 import re
@@ -14,7 +14,7 @@ STORE = "/var/lib/azeroth-operator/rodrigo/snapshots"
 def command(image, name):
     if not re.fullmatch("sha256:[a-f0-9]{64}", image) or not re.fullmatch("azeroth-upload-[a-f0-9]{32}", name):
         raise ValueError("Invalid receiver configuration")
-    return ["lxc-attach", "-n", "290", "--", "docker", "run", "--rm", "-i",
+    return ["docker", "run", "--rm", "-i",
             "--name", name, "--network", "none", "--read-only", "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges", "--memory", "128m", "--cpus", "1",
             "-v", STORE + ":/data", image, "import-stdin"]
@@ -23,7 +23,7 @@ def command(image, name):
 def receive():
     if os.environ.get("SSH_ORIGINAL_COMMAND") or os.environ.get("SSH_TTY"):
         raise ValueError("Only snapshot upload is permitted")
-    if Path("/etc/hostname").read_text().strip() != "pylon":
+    if Path("/etc/hostname").read_text().strip() != "mcp-gateway":
         raise ValueError("Wrong receiver host")
     descriptor = os.open("/etc/azeroth-upload/image", os.O_RDONLY | os.O_NOFOLLOW)
     try:
@@ -48,7 +48,7 @@ def receive():
             raise ValueError("Snapshot import failed")
         sys.stdout.buffer.write(result.stdout)
     finally:
-        subprocess.run(["pct", "exec", "290", "--", "docker", "rm", "-f", name],
+        subprocess.run(["docker", "rm", "-f", name],
                        capture_output=True, timeout=10, check=False)
 
 
