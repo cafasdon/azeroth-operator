@@ -10,7 +10,7 @@ local function open()
     panel:RegisterForDrag("LeftButton")
     panel:SetScript("OnDragStart",panel.StartMoving)
     panel:SetScript("OnDragStop",panel.StopMovingOrSizing)
-    panel.TitleText:SetText("Azeroth Operator — macro operation")
+    panel.TitleText:SetText("Azeroth Operator — review operation")
     local function textbox(y,height)
         local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate")
         scroll:SetPoint("TOPLEFT",18,y)
@@ -55,6 +55,12 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
+        if op.kind=="set_binding" then
+            lines[#lines+1]="Key: "..op.key.." / Context: "..op.context
+            lines[#lines+1]="Binding set: "..(op.binding_set==1 and "Account" or "Character")
+            lines[#lines+1]="Expected action: "..op.expected
+            lines[#lines+1]="Desired action: "..(op.desired~="" and op.desired or "Unbound")
+        else
         for _,entry in ipairs({{"Expected",op.expected},{"Desired",op.desired}}) do
             if entry[2] then
                 lines[#lines+1]=entry[1].." name: "..entry[2].name
@@ -63,15 +69,16 @@ local function open()
             end
         end
         lines[#lines+1]="Action-bar references are not relocated."
+        end
         details:SetText(table.concat(lines,"\n")); details:ClearFocus()
-        status:SetText("Check the operation above. Apply changes this character's macros.")
+        status:SetText("Check the operation and scope above before applying.")
         apply:Enable()
     end)
     apply:SetScript("OnClick",function()
         apply:Disable()
         local ok,receipt,applied=pcall(AO.ApplyReviewedMacro,input:GetText())
         if not ok then status:SetText("Refused. Check character, client, combat and previous attempts.")
-        elseif not applied then status:SetText("Outcome unknown. Inspect macros before preparing another operation.")
+        elseif not applied then status:SetText("Outcome unknown. Inspect current state before preparing another operation.")
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)
     panel:SetScript("OnHide",function() AO.InvalidateMacroReview(); apply:Disable() end)
@@ -79,3 +86,4 @@ local function open()
 end
 SLASH_AZEROTHOPERATORMACROS1="/aomacros"
 SlashCmdList.AZEROTHOPERATORMACROS=open
+SLASH_AZEROTHOPERATORMACROS2="/aoapply"

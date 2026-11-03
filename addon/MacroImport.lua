@@ -1,13 +1,13 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
-local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true}
-local kinds={create=true,edit=true,delete=true,move=true}
+local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true}
 local function readReceipts()
     local saved=AzerothOperatorOperations or ""
     assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
     local receipts,count={},0
     for row in saved:gmatch("[^;]+") do
-        local id,status,kind=row:match("^([0-9a-f]+):([a-z_]+):([a-z]+)$")
+        local id,status,kind=row:match("^([0-9a-f]+):([a-z_]+):([a-z_]+)$")
         assert(id and #id==64 and statuses[status] and kinds[kind] and not receipts[id], "Invalid receipt entry")
         receipts[id]={status=status,kind=kind}; count=count+1
     end
@@ -66,12 +66,19 @@ end
 -- Keep the exact reviewed bytes private to this module. Editing the input invalidates
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
+local function decodeOperation(text)
+    if type(text)=="string" and text:sub(1,10)=="AO-BIND-1:" then
+        assert(AO.DecodeBindingOperation, "Binding import unavailable")
+        return AO.DecodeBindingOperation(text)
+    end
+    return AO.DecodeMacroOperation(text)
+end
 function AO.InvalidateMacroReview()
     reviewedText=nil
 end
 function AO.ReviewMacroImport(text)
     reviewedText=nil
-    local operation=AO.DecodeMacroOperation(text)
+    local operation=decodeOperation(text)
     reviewedText=text
     return operation
 end
@@ -83,7 +90,7 @@ end
 
 -- The review UI must call this only from the player's explicit Apply action.
 function AO.ApplyImportedMacro(text)
-    local operation=AO.DecodeMacroOperation(text)
+    local operation=decodeOperation(text)
     local _,build,_,interface=GetBuildInfo()
     assert(operation.family==AO.family and operation.variant==AO.variant and operation.build==tostring(build)
         and operation.interface==interface, "Operation targets a different client")
@@ -94,7 +101,8 @@ function AO.ApplyImportedMacro(text)
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
     saveReceipts(receipts)
-    local ok,result=pcall(AO.ApplyMacroOperation,operation)
+    local executor=operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation
+    local ok,result=pcall(executor,operation)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
     -- SavedVariables are persisted only at reload/logout; never promise crash durability.

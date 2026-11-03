@@ -53,9 +53,42 @@ struct MacroOperation {
     snapshot_id: String,
     operation: azeroth_operator::macro_operation::MacroRequest,
 }
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct BindingOperation {
+    snapshot_id: String,
+    operation: azeroth_operator::binding_operation::BindingRequest,
+}
 
 #[tool_router]
 impl Operator {
+    #[tool(
+        description = "Compile a captured Retail keybinding change for explicit player review/application. Requires context and current binding set observations. Empty desired action means unbind. Does not press keys or invoke actions.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn prepare_binding_operation(
+        &self,
+        Parameters(args): Parameters<BindingOperation>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            azeroth_operator::binding_operation::compile(
+                &snapshot,
+                &args.snapshot_id,
+                &args.operation,
+            )
+        })();
+        match result {
+            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Binding operation rejected: missing, ambiguous or invalid captured key/context/set",
+            )]),
+        }
+    }
     #[tool(
         description = "Report implemented capabilities, not Blizzard approval",
         annotations(
@@ -65,7 +98,7 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
     }
     #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",

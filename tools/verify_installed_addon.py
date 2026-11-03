@@ -10,6 +10,7 @@ from tools.sync_exports import ordinary, absolute
 
 FILES = {"Adapter.lua", "Collectors.lua", "Core.lua", "AzerothOperator.toc"}
 OPERATION_FILES = FILES | {"MacroOperations.lua", "MacroImport.lua", "MacroUI.lua"}
+BINDING_FILES = OPERATION_FILES | {"BindingOperations.lua", "BindingImport.lua"}
 MAX_FILE = 1024 * 1024
 
 
@@ -19,7 +20,7 @@ def verify(client, manifest):
     if not isinstance(receipt, dict) or not isinstance(receipt.get("files"), dict):
         raise ValueError("Invalid manifest")
     files = set(receipt["files"])
-    if files not in (FILES, OPERATION_FILES) or any(
+    if files not in (FILES, OPERATION_FILES, BINDING_FILES) or any(
         not isinstance(value, str) or not re.fullmatch("[a-f0-9]{64}", value)
         for value in receipt["files"].values()
     ):

@@ -119,14 +119,19 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ensure!(
                     matches!(
                         receipt["status"].as_str(),
-                        Some("applied" | "outcome_unknown" | "copied_source_removal_unconfirmed")
+                        Some(
+                            "applied"
+                                | "outcome_unknown"
+                                | "copied_source_removal_unconfirmed"
+                                | "already_selected"
+                        )
                     ),
                     "Invalid receipt status"
                 );
                 ensure!(
                     matches!(
                         receipt["kind"].as_str(),
-                        Some("create" | "edit" | "delete" | "move")
+                        Some("create" | "edit" | "delete" | "move" | "set_binding")
                     ),
                     "Invalid receipt kind"
                 );

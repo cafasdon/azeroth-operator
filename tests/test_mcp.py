@@ -27,6 +27,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
             sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            sample["sections"]["bindings"] = {"1":{"command":"ACTIONBUTTON1","key1":"CTRL-1","context":0}}
+            sample["sections"]["binding_state"] = {"binding_set":2,"coverage":"bound_keys_only"}
             sample["sections"]["operation_receipts"] = {"a" * 64: {"status":"outcome_unknown", "kind":"move"}}
             sample["sections"]["macros"] = {"1": {"name":"AO Test", "icon":134400,
                 "body":"/say test", "scope":"account"}}
@@ -45,7 +47,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         for tool in tools.tools:
@@ -56,6 +58,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(contract["game_execution"])
                         self.assertEqual(set(contract["implemented"]), expected)
                         self.assertEqual(contract["live_client_qualified"], [])
+                        binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
+                            "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
+                        self.assertFalse(binding.isError)
+                        prepared_binding=json.loads(binding.content[0].text)
+                        self.assertEqual(prepared_binding["expected"],"ACTIONBUTTON1")
+                        self.assertTrue(prepared_binding["import_code"].startswith("AO-BIND-1:"))
+                        rejected_binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
+                            "operation":{"key":"CTRL-1","context":1,"desired":"ACTIONBUTTON2"}})
+                        self.assertTrue(rejected_binding.isError)
                         with self.assertRaisesRegex(McpError, "tool not found"):
                             await session.call_tool("equip_item", {"slot":16,"item_id":123})
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})

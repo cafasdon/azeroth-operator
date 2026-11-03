@@ -59,8 +59,14 @@ fn export_assignment(text: &str) -> Result<&str> {
                         ensure!(
                             matches!(
                                 fields[1],
-                                "applied" | "outcome_unknown" | "copied_source_removal_unconfirmed"
-                            ) && matches!(fields[2], "create" | "edit" | "delete" | "move"),
+                                "applied"
+                                    | "outcome_unknown"
+                                    | "copied_source_removal_unconfirmed"
+                                    | "already_selected"
+                            ) && matches!(
+                                fields[2],
+                                "create" | "edit" | "delete" | "move" | "set_binding"
+                            ),
                             "Invalid receipt result"
                         );
                         ensure!(ids.len() <= 128, "Too many receipts");

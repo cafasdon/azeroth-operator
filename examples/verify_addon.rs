@@ -36,6 +36,8 @@ fn main() -> anyhow::Result<()> {
             "Collectors.lua",
             "Core.lua",
             "MacroOperations.lua",
+            "BindingOperations.lua",
+            "BindingImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
         ] {

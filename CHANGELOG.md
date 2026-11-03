@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect binding preparation to the local MCP, player review/apply dispatcher and persisted receipts; package binding modules and add `/aoapply`. Protocol and compiler-to-Lua execution tests pass. Not yet deployed or live-qualified.
+
 - Add source-only binding compiler and strict Lua data decoder, with Rust-to-Lua tests for context preservation and uncaptured-key refusal. No binding transport is enabled in the deployed addon yet.
 
 - Capture Retail binding contexts and active binding-set metadata for player-applied binding plans. Additive schema and Lua producer roundtrip verified; not yet deployed.
