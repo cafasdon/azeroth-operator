@@ -1,5 +1,13 @@
 # Delivery and verification ledger
 
+## Current operational checkpoint — 2026-11-04
+
+- Public MCP: twelve tools; importer and reader support macro, binding, equipment, bag and saved-talent operation data. Preparation is external; execution requires player review and Apply in the addon.
+- Installed Retail addon: 0.7.1-dev, fifteen files verified. This includes full-stack moves, splits, saved-talent switches and observation-only completion handling. Installation is not proof the running client loaded this version.
+- Live-qualified mutations: blank test macro creation only. Binding no-op verified. Item identity capture verified. Bag move receipt is outcome_unknown with the original item still observed at source; no replay. Equipment swaps, actual binding changes, other macro mutations, splits and talent switches remain unqualified.
+- User deferred further in-game tests until tomorrow. Continue offline development; no additional game-test prompts today.
+- Next implementation work: action-bar observation with explicit coverage, then exact preimage-bound placement; talent creation/import/editing; equipment-set operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
+
 ## Implemented
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.

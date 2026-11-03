@@ -25,10 +25,12 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Generate optimised builds or new game import formats | Not implemented | Not implemented | Not implemented | Needs client-specific metadata, format verification and policy evidence |
 | Create/edit/delete/move macro scope | Development implementation installed | Disabled | Disabled | MCP prepares bounded data; player reviews/applies through ordinary addon APIs; creation verified; edit/delete/scope-move remain unqualified |
 | Change keybindings | Deployed; no-op verified | Disabled | Disabled | One explicit key and context; actual SetBinding/SaveBindings still unqualified |
-| Equip gear | Development implementation deployed | Disabled | Disabled | Single GUID-bound bag-to-equipment swap; awaiting live export and swap verification |
-| Switch talents or apply action bars | Not implemented | Not implemented | Not implemented | In scope for player-applied operations; no protected-action bypass |
-| Move carried items | Executor source tested | Disabled | Disabled | Full-stack move to explicit empty slot; transport and deployment pending |
-| Sort/split items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
+| Equip gear | Development implementation deployed | Disabled | Disabled | Single GUID-bound bag-to-equipment swap; exact item GUID export verified; swap unqualified |
+| Switch saved talent builds | Development implementation deployed | Disabled | Disabled | Exact captured build and current-state checks; native player-triggered talent UI path; live switch unqualified |
+| Create/edit talent builds or apply action bars | Not implemented | Not implemented | Not implemented | Remains in scope; no protected-action bypass |
+| Move carried items | Development implementation deployed | Disabled | Disabled | Exact-instance move to explicit empty slot; first live attempt outcome_unknown, no replay; timing fixes fixture-tested |
+| Split carried stacks | Development implementation deployed | Disabled | Disabled | Explicit amount, empty destination, source conservation and distinct destination identity; live unqualified |
+| Sort/merge/swap items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
 | Auction bids/listings, purchases, crafting, trade or chat sends | Disabled | Disabled | Disabled | No transaction or messaging tools |
 | Graphics/CVar configuration proposals | Not implemented | Not implemented | Not implemented | Requires exact client settings, hardware evidence and bounded file-change workflow |
 | Combat, movement, targeting, quests, queues, farming, anti-AFK | Excluded | Excluded | Excluded | User's rules-only scope; no autonomous gameplay or input automation |
@@ -38,6 +40,6 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 
 Record the exact operation, client family/variant/build/interface, official policy/API evidence, player interaction required, combat/protected/secret-value restrictions, data prerequisites and observed result. Unknown evidence must remain explicit. A working fixture or successful API call is not enough to enable execution. Preserve original scope: supporting a review draft does not fulfil an equip/build/item-management request.
 
-Actual enforcement today is structural: eight MCP tools operating on captured data, a reader container with a read-only owner store, and a separate bounded importer. The macro compiler returns data; the installed addon accepts an explicit player paste/review/apply and checks client/character/combat/preimage before ordinary macro API calls. It does not evaluate imported Lua, simulate input or execute macro bodies. Inspect `src/main.rs`, `addon/MacroImport.lua`, `addon/MacroOperations.lua`, `addon/MacroUI.lua` and the deployed profile. Annotations and this document alone are not enforcement.
+Actual enforcement today is structural: twelve MCP tools operating on captured data, a reader container with a read-only owner store, and a separate bounded importer. The macro compiler returns data; the installed addon accepts an explicit player paste/review/apply and checks client/character/combat/preimage before ordinary macro API calls. It does not evaluate imported Lua, simulate input or execute macro bodies. Inspect `src/main.rs`, `addon/MacroImport.lua`, `addon/MacroOperations.lua`, `addon/MacroUI.lua` and the deployed profile. Annotations and this document alone are not enforcement.
 
 No game action is newly enabled by this record. Live qualification, operation-specific policy evidence and feature implementation remain outstanding in ROADMAP.md.
