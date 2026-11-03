@@ -4,10 +4,12 @@ use anyhow::{Result, ensure};
 use std::{fs::File, io::Read, path::Path};
 
 pub fn import_file(path: &Path) -> Result<Snapshot> {
+    import_reader(File::open(path)?)
+}
+
+pub fn import_reader(reader: impl Read) -> Result<Snapshot> {
     let mut raw = Vec::new();
-    File::open(path)?
-        .take(MAX_BYTES * 2 + 256)
-        .read_to_end(&mut raw)?;
+    reader.take(MAX_BYTES * 2 + 256).read_to_end(&mut raw)?;
     decode(&raw)
 }
 

@@ -148,11 +148,13 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if !args.is_empty() {
-        anyhow::ensure!(
-            args.len() == 2 && args[0] == "import",
-            "Usage: azeroth-operator [import <export-file>]"
-        );
-        let snapshot = azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?;
+        let snapshot = if args.len() == 1 && args[0] == "import-stdin" {
+            azeroth_operator::import::import_reader(std::io::stdin().lock())?
+        } else if args.len() == 2 && args[0] == "import" {
+            azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?
+        } else {
+            anyhow::bail!("Usage: azeroth-operator [import <export-file> | import-stdin]");
+        };
         println!("{}", Store { root }.ingest(&snapshot)?);
         return Ok(());
     }

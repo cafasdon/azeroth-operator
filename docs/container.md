@@ -22,3 +22,18 @@ development Python MCP dependency. It can launch SSH plus a remote container.
 This container is a gateway backend, not a public HTTP server. Scope routing,
 authentication, owner-isolated storage and authenticated Windows uploads still
 need integration and qualification. No public endpoint is claimed by this build.
+
+## Upload primitive
+
+`azeroth-operator import-stdin` reads one bounded JSON or SavedVariables export,
+validates it and atomically publishes it to the configured data directory. It
+prints the content hash only after successful publication. Repeating identical
+input returns the same hash without creating another snapshot. Invalid input
+returns a non-zero status and no success receipt.
+
+This is a CLI primitive, not a remotely exposed MCP tool or an authenticated
+endpoint by itself. A deployment must authenticate the sender, assign its store
+outside the payload, impose a wall-clock deadline, and provide a writable mount
+only to the importer. The producer must close stdin after sending one export.
+The read-only MCP worker must see that same owner's data through a read-only
+mount. Do not use a shared writable store across principals.

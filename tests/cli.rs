@@ -1,4 +1,47 @@
 use std::process::Command;
+use std::{io::Write, process::Stdio};
+
+fn stdin_import(root: &std::path::Path, input: &[u8]) -> std::process::Output {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_azeroth-operator"))
+        .env("AZEROTH_DATA_DIR", root)
+        .arg("import-stdin")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    // Oversized input may cause the bounded reader to close early.
+    if let Err(error) = stdin.write_all(input) {
+        assert!(matches!(error.kind(), std::io::ErrorKind::BrokenPipe));
+    }
+    drop(stdin);
+    child.wait_with_output().unwrap()
+}
+
+#[test]
+fn stdin_import_retries_and_rejections() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("snapshots");
+    let valid = br#"{"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":{}}}"#;
+    let first = stdin_import(&root, valid);
+    assert!(first.status.success());
+    let retry = stdin_import(&root, valid);
+    assert!(retry.status.success());
+    assert_eq!(first.stdout, retry.stdout);
+    for invalid in [
+        b"{}".as_slice(),
+        b"AzerothOperatorExport = os.execute('bad')",
+        b"",
+    ] {
+        let result = stdin_import(&root, invalid);
+        assert!(!result.status.success());
+        assert!(result.stdout.is_empty());
+    }
+    let oversized = vec![b' '; (azeroth_operator::MAX_BYTES * 2 + 257) as usize];
+    assert!(!stdin_import(&root, &oversized).status.success());
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+}
 
 #[test]
 fn actual_import_cli_and_discovery() {
