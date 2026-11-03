@@ -103,7 +103,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(data["kind"], operation["kind"])
                             self.assertEqual(data["snapshot_id"], key)
                             self.assertTrue(data["requires_player_apply"])
-                            self.assertTrue(data["import_code"].startswith("AO-MACRO-1|"))
+                            self.assertTrue(data["import_code"].startswith("AO-MACRO-1:"))
                             self.assertFalse(data["game_execution"])
                         rejected = await session.call_tool("prepare_macro_operation", {
                             "snapshot_id":key,"operation":{"kind":"delete","source_index":999}})

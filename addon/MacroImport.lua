@@ -39,7 +39,9 @@ end
 function AO.DecodeMacroOperation(text)
     assert(type(text)=="string" and #text<=8192, "Operation too large")
     local fields={}
-    for field in (text.."|"):gmatch("([^|]*)|") do fields[#fields+1]=field end
+    local separator=text:sub(1,11)=="AO-MACRO-1:" and ":" or "|"
+    local pattern=separator==":" and "([^:]*):" or "([^|]*)|"
+    for field in (text..separator):gmatch(pattern) do fields[#fields+1]=field end
     assert(#fields==18 and fields[1]=="AO-MACRO-1", "Invalid operation format")
     for _,index in ipairs({2,3}) do
         assert(#fields[index]==64 and not fields[index]:find("[^0-9a-f]"), "Invalid operation identity")
