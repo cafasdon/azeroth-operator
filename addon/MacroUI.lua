@@ -60,7 +60,22 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="load_talent_config" then
+        if op.kind=="modify_equipment_set" or op.kind=="delete_equipment_set" then
+            lines[#lines+1]="Equipment set: "..reason(op.expected.name).." (ID "..op.set_id..")"
+            lines[#lines+1]="Current icon: "..op.expected.icon
+            lines[#lines+1]="Assigned specialisation index: "..(op.expected.assigned_spec or "None")
+            lines[#lines+1]="Saved items: "..op.expected.num_items.." / Missing: "..op.expected.num_lost.." / Ignored slots: "..op.expected.num_ignored
+            if op.kind=="modify_equipment_set" then
+                lines[#lines+1]="New name: "..reason(op.name)
+                lines[#lines+1]="New icon: "..op.icon
+                lines[#lines+1]="Changes the saved set name/icon only; no gear is equipped or saved."
+            else
+                lines[#lines+1]="DELETE this saved equipment set and its specialisation association."
+                lines[#lines+1]="This does not delete the items. References to the set may stop working."
+            end
+            lines[#lines+1]="Exact captured set contents are checked again. External references are not repaired."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="load_talent_config" then
             lines[#lines+1]="Specialisation ID: "..op.spec_id
             lines[#lines+1]="Saved loadout: "..reason(op.desired_name).." ("..op.target_config_id..")"
             lines[#lines+1]="Expected selected loadout: "..op.expected_selected_config_id

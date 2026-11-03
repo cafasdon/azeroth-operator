@@ -1,7 +1,14 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
 local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
-local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true,move_action_slot=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true,move_action_slot=true,modify_equipment_set=true,delete_equipment_set=true}
+local executors={create="ApplyMacroOperation",edit="ApplyMacroOperation",delete="ApplyMacroOperation",move="ApplyMacroOperation",
+    set_binding="ApplyBindingOperation",equip_bag_item="ApplyEquipmentOperation",move_bag_item="ApplyBagOperation",split_bag_item="ApplyBagOperation",
+    load_talent_config="ApplyTalentOperation",move_action_slot="ApplyActionOperation",
+    modify_equipment_set="ApplyEquipmentSetOperation",delete_equipment_set="ApplyEquipmentSetOperation"}
+local verifiers={load_talent_config="VerifyTalentOperation",move_action_slot="VerifyActionOperation",
+    move_bag_item="VerifyBagOperation",split_bag_item="VerifyBagOperation",
+    modify_equipment_set="VerifyEquipmentSetOperation",delete_equipment_set="VerifyEquipmentSetOperation"}
 local function readReceipts()
     local saved=AzerothOperatorOperations or ""
     assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
@@ -83,6 +90,10 @@ end
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
 local function decodeOperation(text)
+    if type(text)=="string" and text:sub(1,9)=="AO-SET-1:" then
+        assert(AO.DecodeEquipmentSetOperation,"Equipment set import unavailable")
+        return AO.DecodeEquipmentSetOperation(text)
+    end
     if type(text)=="string" and text:sub(1,12)=="AO-ACTION-1:" then
         assert(AO.DecodeActionOperation,"Action import unavailable")
         return AO.DecodeActionOperation(text)
@@ -133,12 +144,14 @@ function AO.ApplyImportedMacro(text)
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
     saveReceipts(receipts)
-    local executor=operation.kind=="move_action_slot" and AO.ApplyActionOperation or operation.kind=="load_talent_config" and AO.ApplyTalentOperation or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
+    local executor=AO[executors[operation.kind]]
     local ok,result=pcall(executor,operation)
+    if ok and (type(result)~="table" or result.kind~=operation.kind or not statuses[result.status]) then
+        ok=false; result="Invalid operation result; outcome remains unknown"
+    end
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
-    local verify=operation.kind=="move_action_slot" and AO.VerifyActionOperation or operation.kind=="load_talent_config" and AO.VerifyTalentOperation
-        or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.VerifyBagOperation
+    local verify=verifiers[operation.kind] and AO[verifiers[operation.kind]]
     if verify and ok and result.status=="outcome_unknown" then
         pendingObservations[operation.id]={operation=operation,verify=verify,deadline=GetTime()+60}
     end

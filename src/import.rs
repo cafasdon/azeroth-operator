@@ -75,6 +75,8 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "split_bag_item"
                                     | "load_talent_config"
                                     | "move_action_slot"
+                                    | "modify_equipment_set"
+                                    | "delete_equipment_set"
                             ),
                             "Invalid receipt result"
                         );
