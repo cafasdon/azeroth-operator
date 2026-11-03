@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a bounded saved-export sync runner, Windows process-tree timeout cleanup, atomic status and an isolated current-user scheduled-task installer. Synthetic upload/readback succeeded; unchanged pass measured 0.21s versus 5.30s for upload.
+
 - Add incremental sync with durable hash receipts, destination configuration binding, retry after failure and explicit missing-export status. Cached acknowledgements do not claim live remote state.
 
 - Add bounded `import-stdin` for snapshot transfer, with subprocess tests for retry deduplication and empty, malformed, code-bearing and oversized rejection.

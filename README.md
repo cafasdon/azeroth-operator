@@ -18,7 +18,7 @@ bearer token. A separate restricted SSH credential supports the Rust CLI
 `azeroth-operator upload <export-file>`. Configure the absolute
 `AZEROTH_UPLOAD_SSH_CONFIG` path to its dedicated SSH config; normal administrator
 SSH configuration is never used as a fallback. Uploaded bytes are validated and
-confirmed by matching content hashes. Automated file monitoring is not installed.
+confirmed by matching content hashes.
 
 For repeatable incremental uploads, use `azeroth-operator sync <retail|classic|forever> <export-file> <receipt-dir>`.
 Missing exports report `waiting_for_export`. Matching local acknowledgements skip
@@ -27,6 +27,24 @@ the dedicated SSH configuration contents. Keep that configuration self-contained
 and use a different receipt directory if its destination changes indirectly.
 A skipped upload does not recheck remote storage. Use `upload` to resend after
 remote deletion or restoration. This command does not capture live game state.
+
+`tools/sync_exports.py --config <absolute-json-path>` performs one bounded pass
+over explicit account roots. Configuration contains absolute `binary`,
+`ssh_config` and `state` paths, plus `clients` entries with `family` and `accounts`
+(the client's `WTF/Account` directory). Only `SavedVariables/AzerothOperator.lua`
+is read from each account. Linked paths are rejected. At most eight exports are
+processed, with a process lock and per-transfer timeout. The latest result is
+written atomically to `state/status.json`; it contains no account names or paths.
+
+On Windows, `deploy/install_sync_task.ps1 -Config <path> -PythonWindowless <pythonw.exe>`
+installs a current-user, limited-privilege task every five minutes and at logon.
+The runner is copied to a hash-named local runtime directory. Pin the Rust binary
+to a separate installed copy before scheduling; do not point production tasks at
+an executable being rebuilt. The task runs only while the user is logged on,
+does not wake the computer, rejects overlapping runs and has a ten-minute limit.
+It never triggers exports or reloads: run `/aoexport` and reload/log out in WoW
+to persist a new snapshot. Remove the task with
+`Unregister-ScheduledTask -TaskName AzerothOperator-ExportSync -Confirm:$false`.
 
 The companion is Rust; in-game adapters use Lua. Build with `cargo build --locked`. Run `target/debug/azeroth-operator.exe` for stdio MCP. Set `AZEROTH_DATA_DIR` to an absolute snapshot directory; the default is `local-data/snapshots` relative to the process working directory. Tools: `capabilities`, `inspect_snapshot`, `list_snapshots` (explicit family, optional offset/limit).
 
