@@ -28,8 +28,8 @@ fn use_transport_requires_explicit_empty_slots_and_preserves_exact_preimages()
     assert!(compile(&snapshot, &sid, &request).is_err());
     request.expect_empty_slots = (1..=19).filter(|i| *i != 16).collect();
     let prepared = compile(&snapshot, &sid, &request)?;
-    assert_eq!(prepared["addon_execution_enabled"], false);
-    assert_eq!(prepared["requires_addon_version"], Value::Null);
+    assert_eq!(prepared["addon_execution_enabled"], true);
+    assert_eq!(prepared["requires_addon_version"], "0.11.0-dev");
     assert_eq!(prepared["equipment_before"]["16"], "Item-old");
     assert_eq!(prepared["equipment_before"]["17"], "");
     assert_eq!(prepared["desired_equipment"]["16"], "Item-target");

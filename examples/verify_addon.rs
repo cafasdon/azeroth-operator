@@ -59,6 +59,7 @@ fn main() -> anyhow::Result<()> {
             "ActionOperations.lua",
             "ActionImport.lua",
             "EquipmentSetOperations.lua",
+            "EquipmentSetUse.lua",
             "EquipmentSetImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
@@ -123,11 +124,69 @@ fn main() -> anyhow::Result<()> {
                 == "applied",
             "Packaged set receipt missing"
         );
+        let use_capture = (|| -> mlua::Result<String> {
+            lua.load(r#"
+                wornGUID='Item-old'; useWrites=0; NUM_TOTAL_EQUIPPED_BAG_SLOTS=0
+                ItemLocation={CreateFromEquipmentSlot=function(_,slot) return {slot=slot} end,
+                    CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end}
+                C_Item={GetItemGUID=function(loc) if loc.bag~=nil then return 'Item-target' end if loc.slot==16 then return wornGUID end end,
+                    GetItemID=function(loc) if loc.bag~=nil or loc.slot==16 then return 123 end end,
+                    IsLocked=function() return false end,
+                    DoesItemExist=function(loc) return loc.slot==16 end}
+                C_Container={GetContainerNumSlots=function() return 1 end}
+                function IsInventoryItemLocked() return false end
+                function EquipmentManager_GetLocationData()
+                    return {isPlayer=true,isBank=false,isBags=true,bag=0,slot=1}
+                end
+                C_EquipmentSet.GetEquipmentSetInfo=function(id) return setName,setIcon,id,false,1,0,1,0,18 end
+                C_EquipmentSet.GetIgnoredSlots=function()
+                    local result={} for i=1,19 do result[i]=i~=16 end return result
+                end
+                C_EquipmentSet.GetItemIDs=function() return {[16]=123} end
+                C_EquipmentSet.GetItemLocations=function() return {[16]=100} end
+                C_EquipmentSet.EquipmentSetContainsLockedItems=function() return false end
+                C_EquipmentSet.UseEquipmentSet=function(id)
+                    assert(id==0 and AzerothOperatorOperations:find(':outcome_unknown:use_equipment_set;',1,true))
+                    useWrites=useWrites+1; wornGUID='Item-target'
+                end
+                AO.Capture()
+            "#).exec()?;
+            lua.globals().get("AzerothOperatorExport")
+        })().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let use_snapshot = decode(format!("AzerothOperatorExport = \"{use_capture}\"").as_bytes())?;
+        let use_op = azeroth_operator::equipment_set_operation::compile(
+            &use_snapshot,
+            &"b".repeat(64),
+            &azeroth_operator::equipment_set_operation::EquipmentSetRequest {
+                operation: azeroth_operator::equipment_set_operation::EquipmentSetAction::Use,
+                set_id: 0,
+                name: None,
+                icon: None,
+                expect_empty_slots: (1..=19).filter(|i| *i != 16).collect(),
+            },
+        )?;
+        let use_export=(|| -> mlua::Result<String> {
+            lua.globals().set("useCode",use_op["import_code"].as_str().unwrap())?;
+            lua.load(r#"
+                AO.ReviewMacroImport(useCode)
+                local receipt,ok=AO.ApplyReviewedMacro(useCode)
+                assert(ok and receipt.status=='applied' and useWrites==1 and wornGUID=='Item-target')
+                AO.ReviewMacroImport(useCode); assert(not pcall(AO.ApplyReviewedMacro,useCode) and useWrites==1)
+                AO.Capture()
+            "#).exec()?;
+            lua.globals().get("AzerothOperatorExport")
+        })().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let use_verified = decode(format!("AzerothOperatorExport = \"{use_export}\"").as_bytes())?;
+        anyhow::ensure!(
+            use_verified.sections["operation_receipts"][use_op["operation_id"].as_str().unwrap()]["status"]
+                == "applied",
+            "Packaged set use receipt missing"
+        );
     }
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }

@@ -1,4 +1,4 @@
--- Source-only: not packaged or dispatched. Caller must checkpoint uncertainty.
+-- Player-applied native set use. Shared caller checkpoints uncertainty before entry.
 local _, AO = ...
 local function read(v)
     assert(not issecretvalue or not issecretvalue(v), "Restricted equipment state")

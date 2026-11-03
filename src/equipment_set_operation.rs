@@ -220,7 +220,7 @@ pub fn compile(
     Ok(
         json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":kind,"set_id":request.set_id,
         "expected":expected,"name":request.name,"icon":request.icon,"import_code":code,
-        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":!is_use,"requires_addon_version":if is_use { None } else { Some("0.10.0-dev") },"live_qualified":false,
+        "requires_player_apply":true,"game_execution":false,"addon_execution_enabled":true,"requires_addon_version":if is_use { "0.11.0-dev" } else { "0.10.0-dev" },"live_qualified":false,
         "equipment_before":if is_use { Some(&equipment_before) } else { None },
         "desired_equipment":if is_use { Some(&desired_equipment) } else { None },
         "explicit_empty_preconditions":request.expect_empty_slots,

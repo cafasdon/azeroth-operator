@@ -8,6 +8,18 @@ Required capture: complete bounded catalogue with stable set ID/name/icon, ignor
 
 Required operations: use captured set; create from reviewed current equipment; save existing set with exact previous/current preimages; rename/icon; delete with exact identity; assign/unassign spec with side effects shown. Do not combine these into an opaque batch.
 
+## Use package checkpoint — 2026-11-04
+
+Retail 0.11.0-dev packages twenty files, loading `EquipmentSetUse.lua` before shared dispatch. The compiler now reports `addon_execution_enabled: true` for use only with `requires_addon_version: 0.11.0-dev`; metadata operations retain their 0.10.0-dev requirement. This is a package capability, not evidence that the installed/running addon supports it. Classic and Forever use remains refused by the executor/compiler.
+
+Candidate: `dist/equipment-set-use-release/AzerothOperator-0.11.0-dev-retail-live.zip`, SHA-256 `68a0b4c84a10177b2c015b3a3343dd55eec565fc6e5f16186ca1f7346b32d684`. Matching manifest records all twenty hashes. Installed-addon verification and guarded upgrade tooling accept previous nineteen-file and new twenty-file layouts. Fixtures prove 19→20 and 17→20 upgrades with old TOC backups, plus the existing exporter-only upgrade, rollback and concurrent-edit preservation checks.
+
+The staged package verifier loads the actual archive files under Lua 5.1. It exercises the real collector with synthetic item identity APIs, imports the result, compiles use in Rust, performs review/Apply with the packaged executor, asserts the uncertainty receipt precedes one native-call fixture, verifies exact equipped GUID change and replay refusal, then exports/imports the applied receipt. Metadata review and changed-interface refusal still pass. Full source gate passed format/build/Rust tests/Clippy and 33 Python tests. Native API behaviour, server timing and game restrictions remain unqualified.
+
+No installation, companion switch or hosted deployment occurred. Deployment must first update both hosted and local importers to accept `use_equipment_set` receipts, then install/verify the package. In-game testing remains deferred, and the earlier unknown Cutlass move must not be replayed.
+
+Advisory Jev review: `jev-1.14.0`, request `aa47711295b8f1ebf2363d8229dec16eb7f301b4f50999533ea99dd89adaa017`, 925 input/116 output tokens, 0.266 seconds; `insufficient_evidence` (reported confidence 0.31). Not a passing review or native qualification. The configured OCR/adversarial files were checked and remain absent.
+
 ## Use review and receipt checkpoint — 2026-11-04
 
 The shared source dispatcher now recognises `AO-SET-USE-1`, maps only `use_equipment_set` to `ApplyEquipmentSetUse`, and registers its read-only verifier. Review lists every slot's previous and desired identity, labels ignored slots Preserve, and makes empty preconditions explicit. It warns that partial swaps remain unconfirmed. Displayed identities pass through the existing control/pipe sanitiser. No native call occurs during decoding or review.

@@ -39,12 +39,13 @@ TalentImport.lua
 ActionOperations.lua
 ActionImport.lua
 EquipmentSetOperations.lua
+EquipmentSetUse.lua
 EquipmentSetImport.lua
 MacroImport.lua
 MacroUI.lua
 """
     entries = {"Adapter.lua": adapter.encode(), "AzerothOperator.toc": toc.encode()}
-    for name in ("Collectors.lua", "Core.lua", "MacroOperations.lua", "BindingOperations.lua", "BindingImport.lua", "EquipmentOperations.lua", "EquipmentImport.lua", "BagOperations.lua", "BagImport.lua", "TalentOperations.lua", "TalentImport.lua", "ActionOperations.lua", "ActionImport.lua", "EquipmentSetOperations.lua", "EquipmentSetImport.lua", "MacroImport.lua", "MacroUI.lua"):
+    for name in ("Collectors.lua", "Core.lua", "MacroOperations.lua", "BindingOperations.lua", "BindingImport.lua", "EquipmentOperations.lua", "EquipmentImport.lua", "BagOperations.lua", "BagImport.lua", "TalentOperations.lua", "TalentImport.lua", "ActionOperations.lua", "ActionImport.lua", "EquipmentSetOperations.lua", "EquipmentSetUse.lua", "EquipmentSetImport.lua", "MacroImport.lua", "MacroUI.lua"):
         entries[name] = (ROOT / "addon" / name).read_text(encoding="utf-8").replace("\r\n", "\n").encode()
     return entries
 

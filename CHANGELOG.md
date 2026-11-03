@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package Retail 0.11.0-dev native equipment-set use with twenty files, versioned preparation support, 19→20-file upgrade checks and staged Lua capture/compile/review/Apply/receipt verification. Candidate verified offline; not installed or live-qualified.
+
 - Connect source equipment-set use to player review/Apply, exact per-slot review and persisted receipt validation. Offline end-to-end tests cover pre-write uncertainty, delayed completion, expiry and replay refusal across reload. Not packaged or deployed.
 
 - Add source MCP equipment-set use preparation and strict 212-field decoder with all nineteen equipped preimages and explicit empty-slot preconditions. Execution remains disabled pending review/receipt/package integration; no deployment or game test.
