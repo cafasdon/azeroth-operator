@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Accept WoW's initial `AzerothOperatorOperations = nil` checkpoint without evaluating Lua. Regression checks reject invalid nil suffixes and duplicate assignments; updated companion imported the real SavedVariables file and uploaded successfully.
+- Live macro creation qualified: player Apply, saved receipt and exact character macro contents verified through the public MCP. Other macro mutations remain pending live checks.
+
 - Replace macro import transport pipes with colons to avoid WoW text-format escape handling observed during live paste. Decoder accepts both; canonical operation IDs remain unchanged. Full source gate passed. Retail 0.2.2-dev installed and the existing local test code re-encoded; hosted compiler image update still pending.
 
 - Fix the macro paste field after the first live UI report: give the empty edit box an explicit height, mouse interaction, initial focus, dark background and paste instructions. Regression fixture checks its clickable dimensions and focus. Retail 0.2.1-dev installed with seven matching files; player confirmation pending.

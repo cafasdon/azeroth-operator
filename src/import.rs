@@ -13,6 +13,17 @@ fn export_assignment(text: &str) -> Result<&str> {
             .trim_start()
             .split_once('=')
             .ok_or_else(|| anyhow::anyhow!("Expected assignment"))?;
+        if name.trim() == "AzerothOperatorOperations" {
+            if let Some(tail) = rest.trim_start().strip_prefix("nil") {
+                ensure!(
+                    !receipts_seen && (tail.is_empty() || tail.starts_with(char::is_whitespace)),
+                    "Invalid empty receipt checkpoint"
+                );
+                receipts_seen = true;
+                remaining = tail;
+                continue;
+            }
+        }
         let rest = rest
             .trim_start()
             .strip_prefix('"')
@@ -117,6 +128,17 @@ mod tests {
         assert!(decode(format!("{lua}; print('injected')").as_bytes()).is_err());
         assert!(decode(b"AzerothOperatorExport = os.execute('bad')").is_err());
         assert!(decode(b"AzerothOperatorExport = \"abc\"").is_err());
+        assert!(decode(format!("{lua}\nAzerothOperatorOperations = nil\n").as_bytes()).is_ok());
+        assert!(
+            decode(format!("{lua}\nAzerothOperatorOperations = nilpotent\n").as_bytes()).is_err()
+        );
+        assert!(
+            decode(
+                format!("{lua}\nAzerothOperatorOperations = nil\nAzerothOperatorOperations = nil")
+                    .as_bytes()
+            )
+            .is_err()
+        );
         let receipt = format!("{}:applied:create;", "a".repeat(64));
         for combined in [
             format!("{lua}\nAzerothOperatorOperations = \"{receipt}\"\n"),
