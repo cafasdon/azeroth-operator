@@ -112,3 +112,5 @@
 - Added snapshot-bound equipment preparation to MCP and shared review/receipt dispatch.
 - Packaged both equipment modules; maintained legacy installation manifest support.
 - Verified eleven-file package and shared dispatcher replay refusal. Not deployed or live-qualified.
+
+Equipment development deployment: hosted importer/reader and local companion upgraded; Retail 0.4.0-dev installed with eleven-file integrity verification. Public MCP exposes ten tools. Live GUID export and gear swap qualification remain pending. See docs/equipment-deployment-2026-11-03.md.
