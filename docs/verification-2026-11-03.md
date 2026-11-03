@@ -100,3 +100,11 @@ Configured Codex MCP entry azeroth with the public URL and bearer_token_env_var=
 Independent Python SDK on ICARUS successfully initialised the public TLS MCP. A synthetic GatewayFixture/Synthetic snapshot (source=fixture) was imported through the existing image CLI into the owner's store, hash ef93cc06b211e8e3c728f4d927ddada4133b6b78aae4ebe050a9a6968fa3006c. The local SDK read equipment item 123 and one equipped slot through public MCP. Cleanup checked the exact file hash and fixture identity before removing it; subsequent public probe verified the empty store and auth checks again. This is mounted-data readback, not live WoW evidence or an automated upload pipeline.
 
 PR197 checks: seven reported passing, gateway-scripts and Rust-router jobs still pending at this checkpoint. No CI success for the full suite claimed.
+
+## Upload channel implementation candidate
+
+Added Rust upload CLI with local validation, canonical JSON, fixed SSH alias and strict host-key/batch options. It accepts only the exact content-hash receipt and successful process exit; timeout/error remains unknown outcome. Duplex tests verify payload/receipt exchange, mismatch refusal and cancellation of a stalled peer. Thirteen Rust tests, fourteen Python tests and locked Clippy pass. Cargo.lock gained signal-hook-registry 1.4.8 for Tokio process support.
+
+Receiver candidate rejects remote commands/TTY, pins CT290/store/image, bounds stdin and process execution, and cleans only its uniquely named import container. Unit tests verify fixed argv and reject mutable/injected image/container identifiers. These are source tests, not forced-key qualification. No key provisioned, no upload alias configured, no receiver installed, no updated image deployed. ADR004 records the required activation tests.
+
+PR199 remains open with gateway scripts and Rust router checks pending; other checks passed at this checkpoint.

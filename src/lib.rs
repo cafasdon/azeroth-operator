@@ -2,6 +2,7 @@
 pub mod analysis;
 pub mod import;
 mod schema;
+pub mod upload;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
