@@ -45,14 +45,14 @@ Acceptance does not verify container mounts, authentication or public routing.
 
 Public route verified 2026-11-03: https://mcp.cafas.com.br/scopes/azeroth/mcp.
 Dedicated bearer authentication is required; no credential is stored in source.
-Six read-only snapshot/analysis tools are exposed, including equipment review.
+Seven read-only snapshot/analysis tools are exposed, including equipment review and captured talent loadouts.
 The service override and network policy are owned by cafasdon/Proxmox (PR197/199).
 CT150 isolation covers 8823 alongside 8765–8821, with 8822/8824 excluded.
 
-Reader image after the listing-performance release:
-`sha256:834f91f19b2af009232c04dc54ca64757c01f6eb544ed70ead05cc37a4272a22`,
-Rust source `8785b905fcddfc27f4b1e3db52875c9255537012`.
-The restricted upload receiver retains its separately pinned importer image.
+Reader and restricted importer image after the captured-loadout release:
+`sha256:5a3467d27b7c238a00d9113e0273881106bcfab0d6e8c81e68f27767c02ce02c`,
+Rust source `c61d065712d8e05efad49a33c2cd7c88f6dd109f`.
+The restricted upload receiver pins this image independently from the reader profile.
 
 `deploy/upgrade_gateway.py --expected-image <current-id> --image <candidate-id>`
 checks the dedicated profile identity, exact old image, fixed read-only store and

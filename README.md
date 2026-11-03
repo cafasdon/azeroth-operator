@@ -60,7 +60,7 @@ duplicate targets and reused locations are rejected. The draft shows previous
 items, selected items and equipment slots that would be vacated. It does not
 apply changes, emit a game import or claim compatible/optimal gear. Game legality,
 requirements, capacity and current ownership remain unknown. Schema version 1
-does not identify item GUIDs, account or region. This tool requires the six-tool
+does not identify item GUIDs, account or region. This tool is included in the deployed seven-tool
 server release; see the dated verification log for deployed qualification.
 
 Synthetic performance baseline: `cargo run --release --locked --example benchmark` measures warm-cache listing and inspection over 200 generated snapshots. It uses no account data.
@@ -91,3 +91,5 @@ No character data, account identifiers, credentials or local exports belong in G
 ## Verification
 
 Run `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. Set `AZEROTH_TEST_BINARY` as above for Rust protocol verification. These checks do not establish runtime game compatibility.
+
+Retail development addon 0.1.1-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).

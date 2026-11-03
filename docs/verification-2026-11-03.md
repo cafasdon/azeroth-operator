@@ -184,3 +184,18 @@ Strict archive checks require exactly4expected payload paths and byte-identical 
 The new Rust verify_addon example loaded each actual packaged Adapter/Collectors/Core under Lua5.1, captured/decoded an equipment fixture and verified family/variant/interface. All3 rejected a changed mock interface and preserved the previous export. All reported live_qualified=false. The4installed Retail addon files match the verified BigWigs package hashes; no game files were changed by this work. Full Python suite24passes; Clippyall-targetsclean. Existing Rust runtime code was unchanged; the new example was built and invoked against all3packages.
 
 Jev code advisory jev-1.14.0, request92910364933dc99bebf0e1e762a1fbbbfe66507045c95f24fef3cd16183e60a0,1180input/131output tokens,0.334s; next-step no_material_issue0.60, insufficient_evidence0.33. Advisory only; actual output verification and packaged runtime tests above provide the evidence. OCR skill/adversarial-review paths remain absent; direct review covered the packaging/refactor/verification helpers and tests. All outputs retain development_only; no manager or live-client qualification, publication, remote gateway change or Classic installation is claimed. ADR002 and addon-packaging.md describe remaining gates.
+
+
+## Captured-loadout deployment, 20:05 UTC
+
+Reconciled the interrupted deployment by reading the actual dedicated Docker MCP profile, importer image pin and active service. Both use `sha256:5a3467d27b7c238a00d9113e0273881106bcfab0d6e8c81e68f27767c02ce02c`, built from `c61d065712d8e05efad49a33c2cd7c88f6dd109f`; seven tools are allowlisted. No mutation was blindly replayed.
+
+Uploaded synthetic snapshot `e979f4b91ba6ff84962f92da3e078d93cb3087cbc49a66deec9489755bf3dac8` through the restricted receiver. Public TLS smoke passed all seven-tool assertions including exact captured string `QUJDRA==`, unverified compatibility and no game execution. This is a synthetic base64 string, not a valid talent build. The first local fixture omitted required talent fields and was rejected before upload; adding config_id and nodes produced the qualified fixture. Exact-fixture cleanup succeeded; subsequent authenticated public discovery passed.
+
+Installed Windows companion SHA256 `d79cd255c8d8b235cf2d0be1eb3e6c136a8f4822605b07d6c4bbb6c8b51dc05a` in the hash-addressed local runtime and updated sync configuration with a prior-config backup. Direct task trigger returned LastTaskResult=0; fresh 20:05:53 UTC status reports Retail and Forever waiting_for_export.
+
+Only after all three schema consumers were upgraded, installed Retail addon 0.1.1-dev using the guarded updater. No Wow.exe process was observed. All four files verified; exact backup is local-data/addon-backups/addon-update-hy6nzoyk. ZIP SHA256 `b7dc6b3eadf6f0d3a667ae3b8aaa239f3dd11608c6c9715427bb1094409df59c`. No game launch, reload or input was performed. Forever installation unchanged; Classic absent.
+
+Verification: 25 Python tests passed. Earlier source qualification passed 20 Windows and 21 Linux Rust tests and packaged Lua checks. Rollback test preserves concurrent edits. Required adversarial-review.md remains unavailable; no claim that its workflow ran.
+
+Prior Jev plan advisory (jev-1.14.0, request f40a702dfc76faea3c586b4b1ffd20fa6130ff5af4a7f67dcd300447729b27d4, 1121 input/135 output tokens, 0.36 s) returned insufficient_evidence 0.57 and material_issue 0.79, with schema-order and optimisation-confusion concerns. It was not a pass. Ordered deployment and public readback now provide direct schema compatibility evidence; live API acceptance and optimisation remain explicitly unverified.
