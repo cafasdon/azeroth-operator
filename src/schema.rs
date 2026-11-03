@@ -218,12 +218,48 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ensure!(
                         fields.keys().all(|k| matches!(
                             k.as_str(),
-                            "ignored" | "raw_item_id" | "raw_location"
+                            "ignored" | "raw_item_id" | "raw_location" | "observed_item"
                         )),
                         "Unknown set slot field"
                     );
                     for (key, field) in fields {
                         let valid = match key.as_str() {
+                            "observed_item" => {
+                                object(
+                                    field,
+                                    &[
+                                        ("kind", "text", true),
+                                        ("slot", "positive", true),
+                                        ("bag", "uint", false),
+                                        ("item_id", "positive", true),
+                                        ("guid", "text", true),
+                                        ("locked", "bool", true),
+                                    ],
+                                )?;
+                                ensure!(
+                                    data["ignored"] != true
+                                        && data["raw_item_id"] == field["item_id"]
+                                        && data["raw_location"].as_i64().is_some_and(|n| n >= 0),
+                                    "Unbound set item observation"
+                                );
+                                ensure!(
+                                    field["guid"].as_str().is_some_and(|s| !s.is_empty()
+                                        && s.len() <= 128
+                                        && !s.chars().any(char::is_control)),
+                                    "Invalid set item GUID"
+                                );
+                                match field["kind"].as_str() {
+                                    Some("equipment") => {
+                                        field.get("bag").is_none()
+                                            && field["slot"].as_u64().unwrap() <= 19
+                                    }
+                                    Some("bag") => {
+                                        field["bag"].as_u64().is_some_and(|n| n <= 64)
+                                            && field["slot"].as_u64().unwrap() <= 1024
+                                    }
+                                    _ => false,
+                                }
+                            }
                             "ignored" => field.is_boolean(),
                             "raw_item_id" => field
                                 .as_i64()
