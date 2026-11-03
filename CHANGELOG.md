@@ -135,3 +135,5 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Investigated saved talent-loadout switching: active working config differs from saved selection, and LoadInProgress requires completion observation. Recorded catalogue capture and asynchronous receipt requirements in docs/talent-operations.md before implementing talent writes.
 
 - Added source-only saved talent-loadout catalogue capture and nested validation, with real Lua producer roundtrip fixtures. Not deployed.
+
+- Added snapshot-bound saved-talent operation preparation in source, including current/desired build contents and action-bar setting. Addon transport/execution and deployment remain pending.
