@@ -1,7 +1,7 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
 local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
-local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true}
 local function readReceipts()
     local saved=AzerothOperatorOperations or ""
     assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
@@ -24,7 +24,23 @@ local function saveReceipts(receipts)
     end
     AzerothOperatorOperations=table.concat(rows)
 end
-AO.ReadMacroReceipts=readReceipts
+local pendingTalents={}
+function AO.ReadMacroReceipts()
+    local receipts,count=readReceipts()
+    local changed=false
+    for id,pending in pairs(pendingTalents) do
+        if GetTime()>pending.deadline then pendingTalents[id]=nil
+        elseif receipts[id] and receipts[id].status=="outcome_unknown" then
+            local ok,verified=pcall(AO.VerifyTalentOperation,pending.operation)
+            if ok and verified then
+                receipts[id]={kind="load_talent_config",status="applied"}
+                pendingTalents[id]=nil; changed=true
+            end
+        else pendingTalents[id]=nil end
+    end
+    if changed then saveReceipts(receipts) end
+    return receipts,count
+end
 local function unhex(value)
     if value=="-" then return "" end
     assert(#value%2==0 and not value:find("[^0-9a-f]"), "Invalid encoded text")
@@ -67,6 +83,10 @@ end
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
 local function decodeOperation(text)
+    if type(text)=="string" and text:sub(1,12)=="AO-TALENT-1:" then
+        assert(AO.DecodeTalentOperation,"Talent import unavailable")
+        return AO.DecodeTalentOperation(text)
+    end
     if type(text)=="string" and (text:sub(1,9)=="AO-BAG-1:" or text:sub(1,11)=="AO-SPLIT-1:") then
         assert(AO.DecodeBagOperation,"Bag import unavailable")
         return AO.DecodeBagOperation(text)
@@ -109,10 +129,13 @@ function AO.ApplyImportedMacro(text)
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
     saveReceipts(receipts)
-    local executor=(operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
+    local executor=operation.kind=="load_talent_config" and AO.ApplyTalentOperation or (operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
     local ok,result=pcall(executor,operation)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)
+    if operation.kind=="load_talent_config" and ok and result.status=="outcome_unknown" then
+        pendingTalents[operation.id]={operation=operation,deadline=GetTime()+60}
+    end
     -- SavedVariables are persisted only at reload/logout; never promise crash durability.
     return receipts[operation.id],ok,not ok and type(result)=="string" and result or nil
 end

@@ -147,6 +147,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                                 | "equip_bag_item"
                                 | "move_bag_item"
                                 | "split_bag_item"
+                                | "load_talent_config"
                         )
                     ),
                     "Invalid receipt kind"
@@ -248,6 +249,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("unspent_class", "uint", false),
                     ("unspent_spec", "uint", false),
                     ("loadout_export", "map", false),
+                    ("saved_loadouts", "map", false),
                 ],
             )?;
             entries(
@@ -258,6 +260,38 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("tree_id", "positive", true),
                 ],
             )?;
+            if let Some(catalog) = value.get("saved_loadouts") {
+                object(
+                    catalog,
+                    &[
+                        ("spec_id", "positive", true),
+                        ("selected_config_id", "positive", false),
+                        ("entries", "map", true),
+                    ],
+                )?;
+                let loadouts = catalog["entries"].as_object().unwrap();
+                ensure!(loadouts.len() <= 128, "Too many saved loadouts");
+                for (id, loadout) in loadouts {
+                    index(id, 1, u32::MAX)?;
+                    object(
+                        loadout,
+                        &[
+                            ("name", "text", true),
+                            ("import_string", "text", true),
+                            ("serialization_version", "uint", true),
+                            ("uses_shared_action_bars", "bool", true),
+                        ],
+                    )?;
+                    let text = loadout["import_string"].as_str().unwrap();
+                    ensure!(
+                        !text.is_empty()
+                            && text
+                                .bytes()
+                                .all(|c| c.is_ascii_alphanumeric() || b"+/=".contains(&c)),
+                        "Invalid saved loadout string"
+                    );
+                }
+            }
             if let Some(export) = value.get("loadout_export") {
                 if export["status"] == "available" {
                     object(

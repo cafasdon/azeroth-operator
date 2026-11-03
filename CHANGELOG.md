@@ -131,3 +131,15 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Split preparation, review/receipt integration and 0.6.0-dev package verified in fixtures. Review displays both split amount and source remainder. Not deployed.
 
 - Apply diagnostics now show a bounded plain-text refusal/error reason while retaining outcome_unknown for executor errors. Tests verify the reason survives dispatch and WoW markup/control characters cannot alter its display. This source change is not installed; the previously recorded 0.6.0-dev ZIP predates it and must be rebuilt before release.
+
+- Investigated saved talent-loadout switching: active working config differs from saved selection, and LoadInProgress requires completion observation. Recorded catalogue capture and asynchronous receipt requirements in docs/talent-operations.md before implementing talent writes.
+
+- Added source-only saved talent-loadout catalogue capture and nested validation, with real Lua producer roundtrip fixtures. Not deployed.
+
+- Added snapshot-bound saved-talent operation preparation in source, including current/desired build contents and action-bar setting. Addon transport/execution and deployment remain pending.
+
+- Added source-only talent executor and bounded observation-only receipt reconciliation. Completion requires committed contents and matching saved selection; expiry remains uncertain. Targeted failure/dispatch tests pass; not deployed.
+
+- Talent application now delegates saved-loadout selection/commit bookkeeping to the visible native Talents panel, with config/inspection/busy checks and no direct-API fallback. Source tests pass; live UI qualification pending.
+
+- Connected talent preparation to MCP and included the decoder/executor in the fifteen-file 0.7.0-dev package. Protocol and package checks pass; not deployed or live-qualified.

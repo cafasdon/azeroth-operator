@@ -73,7 +73,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         function GetBinding() return "ACTIONBUTTON1","Action Bar","1",nil end
         function GetActionInfo(slot) if slot==1 then return "spell",123,nil end end
         C_ClassTalents={GetActiveConfigID=function() return 7 end,HasUnspentTalentPoints=function() return true,1,2 end}
-        C_Traits={GetConfigInfo=function() return {name="Build",treeIDs={5}} end,
+        C_Traits={GetConfigInfo=function() return {name="Build",treeIDs={5},usesSharedActionBars=true} end,
           GetTreeNodes=function() return {10} end,
           GetNodeInfo=function() return {activeEntry={entryID=11,rank=2}} end}
         function GetProfessions() return 1,nil,3 end
@@ -163,6 +163,34 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         loadout.sections["talents"]["loadout_export"]["spec_id"],
         263
     );
+    lua.load(
+        r#"
+        C_ClassTalents.GetConfigIDsBySpecID=function(spec) assert(spec==263); return {8,9} end
+        C_ClassTalents.GetLastSelectedSavedConfigID=function() return 8 end
+        C_Traits.GenerateImportString=function(id) return id==8 and 'QUJDRA==' or 'RUZHSA==' end
+        AO.Capture()
+    "#,
+    )
+    .exec()?;
+    let captured: String = lua.globals().get("AzerothOperatorExport")?;
+    let catalog = decode(format!("AzerothOperatorExport = \"{captured}\"").as_bytes())?;
+    assert_eq!(
+        catalog.sections["talents"]["saved_loadouts"]["selected_config_id"],
+        8
+    );
+    assert_eq!(
+        catalog.sections["talents"]["saved_loadouts"]["entries"]["9"]["import_string"],
+        "RUZHSA=="
+    );
+    assert_eq!(
+        catalog.sections["talents"]["saved_loadouts"]["entries"]["9"]["uses_shared_action_bars"],
+        true
+    );
+    let mut malformed = catalog.clone();
+    malformed.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]["9"]["import_string"] =
+        serde_json::json!("bad|code");
+    assert!(malformed.validate().is_err());
+    lua.load("C_ClassTalents.GetConfigIDsBySpecID=function() return {8,8} end; assert(AO.collectors.talents().saved_loadouts==nil); C_ClassTalents.GetConfigIDsBySpecID=nil; C_Traits.GenerateImportString=function() return 'QUJDRA==' end").exec()?;
     for (setup, reason) in [
         (
             "C_Traits.ConfigHasStagedChanges=function() return true end",

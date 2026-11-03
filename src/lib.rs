@@ -8,6 +8,7 @@ pub mod macro_operation;
 pub mod planning;
 mod schema;
 pub mod sync;
+pub mod talent_operation;
 pub mod upload;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};

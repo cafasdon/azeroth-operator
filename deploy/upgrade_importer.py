@@ -34,6 +34,9 @@ def qualify(image):
                 snapshot["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                     "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                     "spec_id":263,"serialization_version":2,"staged_changes":False}}
+                snapshot["sections"]["operation_receipts"]["f" * 64] = {"status":"outcome_unknown", "kind":"load_talent_config"}
+                snapshot["sections"]["talents"]["saved_loadouts"] = {"spec_id":263,"selected_config_id":8,"entries":{
+                    "9":{"name":"Synthetic saved build","import_string":"RUZHSA==","serialization_version":2,"uses_shared_action_bars":False}}}
             name = "azeroth-import-test-" + uuid.uuid4().hex
             try:
                 result = subprocess.run(["docker","run","--rm","-i","--name",name,"--network","none",

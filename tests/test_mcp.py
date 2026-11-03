@@ -37,6 +37,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
+            sample["sections"]["talents"]["saved_loadouts"]={"spec_id":263,"selected_config_id":8,"entries":{"9":{"name":"Build","import_string":"RUZHSA==","serialization_version":2,"uses_shared_action_bars":True}}}
             key = SnapshotStore(Path(folder)).ingest(sample)
             params = StdioServerParameters(command=rust_binary or sys.executable,
                 args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
@@ -47,7 +48,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         for tool in tools.tools:
@@ -67,6 +68,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         split=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":2,"target_bag":0,"target_slot":3,"expect_empty_target":True,"amount":2}})
                         self.assertFalse(split.isError)
                         self.assertEqual(json.loads(split.content[0].text)["kind"],"split_bag_item")
+                        talent=await session.call_tool("prepare_talent_operation",{"snapshot_id":key,"operation":{"target_config_id":9}})
+                        self.assertFalse(talent.isError)
+                        self.assertTrue(json.loads(talent.content[0].text)["import_code"].startswith("AO-TALENT-1:"))
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)

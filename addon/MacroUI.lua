@@ -60,7 +60,15 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="move_bag_item" or op.kind=="split_bag_item" then
+        if op.kind=="load_talent_config" then
+            lines[#lines+1]="Specialisation ID: "..op.spec_id
+            lines[#lines+1]="Saved loadout: "..reason(op.desired_name).." ("..op.target_config_id..")"
+            lines[#lines+1]="Expected selected loadout: "..op.expected_selected_config_id
+            lines[#lines+1]="Shared action bars: "..(op.uses_shared_action_bars and "Yes" or "No — loadout-specific bars may change")
+            lines[#lines+1]="Open your Talents panel before Apply. Current and saved build contents are checked again."
+            lines[#lines+1]="Completion requires committed talents and matching saved selection."
+            lines[#lines+1]="After the game finishes, run /aoexport within 60 seconds, then /reload. Do not repeat Apply while uncertain."
+        elseif op.kind=="move_bag_item" or op.kind=="split_bag_item" then
             lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
             lines[#lines+1]="Target bag/slot: "..op.target_bag.." / "..op.target_slot
             lines[#lines+1]="Item ID: "..op.item_id.." / Count: "..op.count
@@ -99,6 +107,7 @@ local function open()
         local ok,receipt,applied,detail=pcall(AO.ApplyReviewedMacro,input:GetText())
         if not ok then status:SetText("Refused: "..reason(receipt))
         elseif not applied then status:SetText("Outcome unknown: "..reason(detail).." Inspect current state before retrying.")
+        elseif receipt.kind=="load_talent_config" and receipt.status=="outcome_unknown" then status:SetText("Talent load unconfirmed. After it finishes, /aoexport within 60 seconds, then /reload. Do not retry.")
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)
     panel:SetScript("OnHide",function() AO.InvalidateMacroReview(); apply:Disable() end)
