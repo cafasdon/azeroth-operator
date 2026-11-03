@@ -26,6 +26,16 @@ local function validate(op)
         and type(op.expected_catalogue[tostring(op.set_id)])=="table", "Equipment set catalogue required")
     local count=read(GetNumSpecializations())
     assert(integer(count,1,64), "Specialisations unavailable")
+    assert(type(op.expected_specializations)=="table" and C_SpecializationInfo
+        and type(C_SpecializationInfo.GetSpecializationInfo)=="function", "Specialisation identities required")
+    local specCount,seen=0,{}
+    for key,id in pairs(op.expected_specializations) do
+        assert(type(key)=="string" and integer(tonumber(key),1,count) and tostring(tonumber(key))==key
+            and integer(id,1,4294967295) and not seen[id], "Invalid specialisation catalogue")
+        seen[id]=true; specCount=specCount+1
+        assert(read(C_SpecializationInfo.GetSpecializationInfo(tonumber(key)))==id, "Specialisation identities changed")
+    end
+    assert(specCount==count, "Specialisation catalogue changed")
     local owners,n={},0
     for id,entry in pairs(op.expected_catalogue) do
         assert(type(id)=="string" and integer(tonumber(id),0,4294967295) and tostring(tonumber(id))==id

@@ -11,6 +11,8 @@ pub enum EquipmentSetAction {
     Modify,
     Delete,
     Use,
+    AssignSpec,
+    UnassignSpec,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -21,6 +23,7 @@ pub struct EquipmentSetRequest {
     pub icon: Option<u32>,
     #[serde(default)]
     pub expect_empty_slots: Vec<u32>,
+    pub spec_index: Option<u32>,
 }
 fn hex(s: &str) -> String {
     if s.is_empty() {
@@ -63,6 +66,16 @@ pub fn compile(
     let expected = entries
         .get(&request.set_id.to_string())
         .ok_or_else(|| anyhow::anyhow!("Equipment set not captured"))?;
+    if matches!(
+        request.operation,
+        EquipmentSetAction::AssignSpec | EquipmentSetAction::UnassignSpec
+    ) {
+        return association_draft(snapshot, snapshot_id, request, catalogue);
+    }
+    ensure!(
+        request.spec_index.is_none(),
+        "Unexpected specialisation target"
+    );
     let is_use = matches!(request.operation, EquipmentSetAction::Use);
     ensure!(
         is_use || request.expect_empty_slots.is_empty(),
@@ -160,6 +173,7 @@ pub fn compile(
             }
             "use_equipment_set"
         }
+        EquipmentSetAction::AssignSpec | EquipmentSetAction::UnassignSpec => unreachable!(),
     };
     let mut f = vec![
         if is_use { "AO-SET-USE-1" } else { "AO-SET-1" }.into(),
@@ -227,4 +241,85 @@ pub fn compile(
         "deletes_saved_set":matches!(request.operation,EquipmentSetAction::Delete),
         "assigned_spec":expected.get("assigned_spec"),"external_references_repaired":false}),
     )
+}
+
+fn association_draft(
+    snapshot: &Snapshot,
+    snapshot_id: &str,
+    request: &EquipmentSetRequest,
+    catalogue: &Value,
+) -> Result<Value> {
+    ensure!(
+        request.name.is_none() && request.icon.is_none() && request.expect_empty_slots.is_empty(),
+        "Association must not contain gear or metadata replacements"
+    );
+    let specs = catalogue
+        .get("specializations")
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow::anyhow!("Specialisation identities unavailable"))?;
+    let entries = catalogue["entries"].as_object().unwrap();
+    let mut owners = std::collections::BTreeMap::new();
+    for (id, entry) in entries {
+        if let Some(spec) = entry.get("assigned_spec").and_then(Value::as_u64) {
+            ensure!(
+                owners.insert(spec, id).is_none(),
+                "Ambiguous specialisation associations"
+            );
+        }
+    }
+    let assigning = matches!(request.operation, EquipmentSetAction::AssignSpec);
+    let spec_id = if assigning {
+        let index = request
+            .spec_index
+            .ok_or_else(|| anyhow::anyhow!("Specialisation index required"))?;
+        Some(
+            specs
+                .get(&index.to_string())
+                .ok_or_else(|| anyhow::anyhow!("Specialisation not captured"))?
+                .clone(),
+        )
+    } else {
+        ensure!(
+            request.spec_index.is_none(),
+            "Unassign must not contain target specialisation"
+        );
+        None
+    };
+    let key = request.set_id.to_string();
+    let displaced = request
+        .spec_index
+        .and_then(|spec| owners.get(&(spec as u64)).copied())
+        .filter(|id| **id != key);
+    let mut desired = entries.clone();
+    if let Some(id) = displaced {
+        desired
+            .get_mut(id)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .remove("assigned_spec");
+    }
+    let target = desired.get_mut(&key).unwrap().as_object_mut().unwrap();
+    if let Some(index) = request.spec_index {
+        target.insert("assigned_spec".into(), json!(index));
+    } else {
+        target.remove("assigned_spec");
+    }
+    let mut draft = json!({"format":"equipment_set_association_draft_v1","snapshot_id":snapshot_id,
+        "kind":if assigning {"assign_equipment_set_spec"} else {"unassign_equipment_set_spec"},
+        "client":snapshot.client,"character":snapshot.character,"set_id":request.set_id,
+        "spec_index":request.spec_index,"spec_id":spec_id,"expected_specializations":specs,
+        "expected_catalogue":entries,"desired_catalogue":desired,
+        "displaced_set":displaced.map(|id|json!({"set_id":id.parse::<u32>().unwrap(),"name":entries[id]["name"],"previous_spec":entries[id]["assigned_spec"]})),
+        "future_specialisation_equipment_selection_may_change":true,
+        "already_matches":entries==&desired,"import_code":null,"requires_player_apply":true,
+        "addon_execution_enabled":false,"game_execution":false,"live_qualified":false,
+        "preparation_status":"draft_transport_pending"});
+    let bytes = serde_json::to_vec(&draft)?;
+    ensure!(
+        bytes.len() <= 512 * 1024,
+        "Association draft exceeds size limit"
+    );
+    draft["operation_id"] = json!(format!("{:x}", Sha256::digest(bytes)));
+    Ok(draft)
 }

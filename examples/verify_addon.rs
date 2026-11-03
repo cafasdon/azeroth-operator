@@ -103,6 +103,7 @@ fn main() -> anyhow::Result<()> {
                 name: Some("Verified package".into()),
                 icon: Some(123),
                 expect_empty_slots: vec![],
+                spec_index: None,
             },
         )?;
         let receipt_export=(|| -> mlua::Result<String> {
@@ -163,6 +164,7 @@ fn main() -> anyhow::Result<()> {
                 name: None,
                 icon: None,
                 expect_empty_slots: (1..=19).filter(|i| *i != 16).collect(),
+                spec_index: None,
             },
         )?;
         let use_export=(|| -> mlua::Result<String> {

@@ -49,6 +49,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             sample["sections"]["equipment_sets"]["entries"]["0"]["slots"]["16"]={"ignored":False,"raw_item_id":123,"raw_location":999,
                 "observed_item":{"kind":"bag","bag":0,"slot":1,"item_id":123,"guid":"Item-New","locked":False}}
             set_key=SnapshotStore(Path(folder)).ingest(sample)
+            sample["sections"]["equipment_sets"]["specializations"]={"1":261,"2":262,"3":263}
+            sample["sections"]["equipment_sets"]["entries"]["1"]=json.loads(json.dumps(sample["sections"]["equipment_sets"]["entries"]["0"]))
+            sample["sections"]["equipment_sets"]["entries"]["1"].update({"name":"Displaced","assigned_spec":1})
+            spec_key=SnapshotStore(Path(folder)).ingest(sample)
             params = StdioServerParameters(command=rust_binary or sys.executable,
                 args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
                 env={**os.environ, "AZEROTH_DATA_DIR": folder})
@@ -94,7 +98,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(use_data["import_code"].startswith("AO-SET-USE-1:"))
                         self.assertEqual(use_data["equipment_before"]["16"],"Item-Old")
                         self.assertEqual(use_data["desired_equipment"]["16"],"Item-New")
+                        for action in ["assign_spec","unassign_spec"]:
+                            operation={"operation":action,"set_id":0}
+                            if action=="assign_spec": operation["spec_index"]=1
+                            result=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":spec_key,"operation":operation})
+                            self.assertFalse(result.isError)
+                            draft=json.loads(result.content[0].text)
+                            self.assertFalse(draft["addon_execution_enabled"])
+                            self.assertIsNone(draft["import_code"])
+                            self.assertEqual(draft["expected_catalogue"]["0"]["assigned_spec"],2)
+                            if action=="assign_spec":
+                                self.assertEqual(draft["spec_id"],261)
+                                self.assertEqual(draft["displaced_set"]["set_id"],1)
+                                self.assertNotIn("assigned_spec",draft["desired_catalogue"]["1"])
+                            else: self.assertNotIn("assigned_spec",draft["desired_catalogue"]["0"])
                         for sid,operation in [(key,{"operation":"delete","set_id":0}),
+                            (set_key,{"operation":"assign_spec","set_id":0,"spec_index":1}),
+                            (spec_key,{"operation":"assign_spec","set_id":0,"spec_index":99}),
+                            (spec_key,{"operation":"unassign_spec","set_id":0,"spec_index":1}),
                             (set_key,{"operation":"use","set_id":0}),
                             (set_key,{"operation":"delete","set_id":99}),
                             (set_key,{"operation":"delete","set_id":0,"name":"unexpected"})]:
@@ -138,7 +159,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         with self.assertRaisesRegex(McpError, "tool not found"):
                             await session.call_tool("equip_item", {"slot":16,"item_id":123})
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})
-                        self.assertEqual({row["snapshot_id"] for row in json.loads(listing.content[0].text)["snapshots"]}, {key,set_key})
+                        self.assertEqual({row["snapshot_id"] for row in json.loads(listing.content[0].text)["snapshots"]}, {key,set_key,spec_key})
                         other = await session.call_tool("list_snapshots", {"family": "forever"})
                         self.assertEqual(json.loads(other.content[0].text)["snapshots"], [])
                         comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
