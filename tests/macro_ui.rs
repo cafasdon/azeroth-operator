@@ -14,6 +14,10 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
             function w:Disable() self.enabled=false end
             function w:Enable() self.enabled=true end
             function w:CreateFontString() return widget() end
+            function w:CreateTexture() return widget() end
+            function w:SetHeight(height) self.height=height end
+            function w:EnableMouse(enabled) self.mouse=enabled end
+            function w:SetFocus() self.focused=true end
             return w
         end
         function CreateFrame(kind,name)
@@ -34,6 +38,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(#frames==0)
         SlashCmdList.AZEROTHOPERATORMACROS()
         local panel,input,review,apply=frames[1],frames[3],frames[6],frames[7]
+        assert(input.height==105 and input.mouse and input.focused)
         assert(not apply.enabled and applies==0)
         input:SetText('bad'); review.scripts.OnClick(); assert(not apply.enabled)
         input:SetText('valid'); review.scripts.OnClick(); assert(apply.enabled and applies==0)

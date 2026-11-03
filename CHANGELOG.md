@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Begin context-aware Retail keybinding execution: source-only single-key set/unbind with preimage, active-set, combat and registered-action checks. Lua fixture passed; MCP transport and deployment remain pending.
+- Fix the macro paste field after the first live UI report: give the empty edit box an explicit height, mouse interaction, initial focus, dark background and paste instructions. Regression fixture checks its clickable dimensions and focus. Retail 0.2.1-dev installed with seven matching files; player confirmation pending.
 
 - Export bounded macro operation receipts as `operation_receipts`, validated by Rust and readable with `inspect_snapshot`. Lua-to-snapshot and actual MCP protocol tests preserve unknown outcomes. Hosted reader/importer upgrades remain required before addon installation.
 
