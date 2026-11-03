@@ -156,6 +156,88 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             }
         }
         "equipment" => items(value, true)?,
+        "equipment_sets" => {
+            object(
+                value,
+                &[
+                    ("coverage", "native_catalogue_raw_slots", true),
+                    ("can_use", "bool", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let sets = value["entries"].as_object().unwrap();
+            ensure!(sets.len() <= 128, "Too many equipment sets");
+            for (id, entry) in sets {
+                index(id, 0, u32::MAX)?;
+                object(
+                    entry,
+                    &[
+                        ("name", "text", true),
+                        ("icon", "uint", true),
+                        ("is_equipped", "bool", true),
+                        ("num_items", "uint", true),
+                        ("num_equipped", "uint", true),
+                        ("num_in_inventory", "uint", true),
+                        ("num_lost", "uint", true),
+                        ("num_ignored", "uint", true),
+                        ("assigned_spec", "positive", false),
+                        ("slots", "map", true),
+                    ],
+                )?;
+                ensure!(
+                    entry["name"]
+                        .as_str()
+                        .is_some_and(|s| !s.is_empty() && s.len() <= 1024),
+                    "Invalid set name"
+                );
+                for key in [
+                    "num_items",
+                    "num_equipped",
+                    "num_in_inventory",
+                    "num_lost",
+                    "num_ignored",
+                ] {
+                    ensure!(
+                        entry[key].as_u64().unwrap() <= 19,
+                        "Invalid equipment set count"
+                    );
+                }
+                ensure!(
+                    entry
+                        .get("assigned_spec")
+                        .is_none_or(|s| s.as_u64().is_some_and(|n| (1..=64).contains(&n))),
+                    "Invalid assigned spec"
+                );
+                let slots = entry["slots"].as_object().unwrap();
+                ensure!(slots.len() == 19, "Incomplete equipment set slots");
+                for (slot, data) in slots {
+                    index(slot, 1, 19)?;
+                    let fields = data
+                        .as_object()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid set slot"))?;
+                    ensure!(
+                        fields.keys().all(|k| matches!(
+                            k.as_str(),
+                            "ignored" | "raw_item_id" | "raw_location"
+                        )),
+                        "Unknown set slot field"
+                    );
+                    for (key, field) in fields {
+                        let valid = match key.as_str() {
+                            "ignored" => field.is_boolean(),
+                            "raw_item_id" => field
+                                .as_i64()
+                                .is_some_and(|n| (-2147483648..=4294967295).contains(&n)),
+                            "raw_location" => field
+                                .as_i64()
+                                .is_some_and(|n| (-2147483648..=4294967295).contains(&n)),
+                            _ => false,
+                        };
+                        ensure!(valid, "Invalid raw set slot field");
+                    }
+                }
+            }
+        }
         "bags" => {
             let bags = value
                 .as_object()

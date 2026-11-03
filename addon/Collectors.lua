@@ -25,6 +25,73 @@ AO.collectors.equipment = function()
     return equipment
 end
 
+-- Raw native set observations only. A missing ID/location is unknown, not empty.
+-- Packed locations are deliberately not interpreted as exact item identities.
+AO.collectors.equipment_sets = function()
+    local api=C_EquipmentSet
+    assert(AO.family=="retail" and api and api.GetEquipmentSetIDs and api.GetNumEquipmentSets
+        and api.GetEquipmentSetInfo and api.GetIgnoredSlots and api.GetItemIDs
+        and api.GetItemLocations and api.GetEquipmentSetAssignedSpec and api.CanUseEquipmentSets,
+        "Equipment set API unavailable")
+    local function readable(v)
+        assert(not issecretvalue or not issecretvalue(v), "Restricted equipment set observation")
+        return v
+    end
+    local function number(v,low,high)
+        v=readable(v)
+        assert(type(v)=="number" and v%1==0 and v>=low and v<=high, "Invalid equipment set number")
+        return v
+    end
+    local function boolean(v)
+        v=readable(v); assert(type(v)=="boolean", "Invalid equipment set flag"); return v
+    end
+    local function catalogue()
+        local count=number(api.GetNumEquipmentSets(),0,128)
+        local ids=readable(api.GetEquipmentSetIDs())
+        assert(type(ids)=="table", "Missing equipment set catalogue")
+        local result,n={},0
+        for key,id in pairs(ids) do
+            number(key,1,128); id=number(id,0,4294967295)
+            assert(not result[tostring(id)], "Duplicate equipment set ID")
+            result[tostring(id)]=id; n=n+1
+        end
+        assert(n==count, "Incomplete equipment set catalogue")
+        return result,count
+    end
+    local ids,count=catalogue()
+    local result={coverage="native_catalogue_raw_slots",can_use=boolean(api.CanUseEquipmentSets()),entries={}}
+    for key,id in pairs(ids) do
+        local name,icon,returnedID,equipped,total,worn,inventory,lost,ignored=api.GetEquipmentSetInfo(id)
+        name=readable(name)
+        assert(type(name)=="string" and #name>0 and #name<=1024, "Missing equipment set name")
+        assert(number(returnedID,0,4294967295)==id, "Equipment set identity changed")
+        local entry={name=name,icon=number(icon,0,4294967295),is_equipped=boolean(equipped),
+            num_items=number(total,0,19),num_equipped=number(worn,0,19),
+            num_in_inventory=number(inventory,0,19),num_lost=number(lost,0,19),
+            num_ignored=number(ignored,0,19),slots={}}
+        local spec=readable(api.GetEquipmentSetAssignedSpec(id))
+        if spec~=nil then entry.assigned_spec=number(spec,1,64) end
+        local ignoreMap,itemMap,locationMap=readable(api.GetIgnoredSlots(id)),readable(api.GetItemIDs(id)),readable(api.GetItemLocations(id))
+        assert(type(ignoreMap)=="table" and type(itemMap)=="table" and type(locationMap)=="table", "Missing equipment set slot map")
+        for _,map in ipairs({ignoreMap,itemMap,locationMap}) do
+            for slot in pairs(map) do number(slot,1,19) end
+        end
+        for slot=1,19 do
+            local data={}
+            local flag,item,location=readable(ignoreMap[slot]),readable(itemMap[slot]),readable(locationMap[slot])
+            if flag~=nil then data.ignored=boolean(flag) end
+            if item~=nil then data.raw_item_id=number(item,-2147483648,4294967295) end
+            if location~=nil then data.raw_location=number(location,-2147483648,4294967295) end
+            entry.slots[tostring(slot)]=data
+        end
+        result.entries[key]=entry
+    end
+    local after,afterCount=catalogue()
+    assert(count==afterCount, "Equipment set catalogue changed")
+    for key in pairs(ids) do assert(after[key]~=nil, "Equipment set catalogue changed") end
+    return result
+end
+
 AO.collectors.bags = function()
     local bags = {}
     if C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemInfo then

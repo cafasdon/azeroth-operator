@@ -26,6 +26,7 @@ use std::{
 pub const MAX_BYTES: u64 = 4 * 1024 * 1024;
 const SECTIONS: &[&str] = &[
     "equipment",
+    "equipment_sets",
     "bags",
     "talents",
     "stats",

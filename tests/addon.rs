@@ -87,7 +87,8 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     "#).exec()?;
     let full_hex: String = lua.globals().get("AzerothOperatorExport")?;
     let full = decode(format!("AzerothOperatorExport = \"{full_hex}\"").as_bytes())?;
-    assert!(full.unavailable.is_empty());
+    assert_eq!(full.unavailable.len(), 1);
+    assert!(full.unavailable.contains_key("equipment_sets"));
     assert_eq!(full.sections.len(), 14);
     assert_eq!(full.sections["binding_state"]["binding_set"], 2);
     assert_eq!(full.sections["bindings"]["1"]["context"], 0);

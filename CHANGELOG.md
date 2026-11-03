@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only Retail native equipment-set observations with raw slot values, missing-value preservation, bounded catalogue checks and Lua-to-Rust failure fixtures. No equipment-set mutations or deployment.
+
 - Deploy Retail0.9.0-dev player-applied action-slot operations after importer/reader qualification and companion upgrade. Public13-tool endpoint and17installed files verified; no live action attempted.
 
 - Prepare seventeen-file Retail0.9.0-dev action-operation package with legacy upgrade support, delayed-receipt/expiry tests and pre-write API availability checks. Candidate verified offline; not installed.
