@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make the seven-tool Rust MCP protocol test mandatory in the default Python suite; retain the two-tool Python reference test separately. Verify disabled execution, annotations, capability inventory and unknown mutation-tool rejection.
+
 - Replace per-byte hex formatting with a fixed256-entry lookup. Four paired Lua fixtures measured58.4% lower capture median versus0.1.3-dev, with identical output; no in-game FPS claim.
 
 - Record Retail/Classic/Forever operation scope with official policy sources, explicit evidence gaps and disabled execution boundaries. No newly enabled actions.

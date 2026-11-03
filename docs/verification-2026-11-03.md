@@ -261,3 +261,10 @@ Fixed benchmark examples/benchmark_addon.rs, baseline Core.lua at888d162, curren
 Jev claims advisory jev-1.14.0 request4eaacc7e19f62ed247c4e4e9d4efc8e3183bf2d8beab44483b21194002a810f2,975input/112output tokens,0.297s: claim_supported0.80, evidence_sufficient0.64, unsupported-claim concern0.31, no_material_issue choice confidence0.33/probability0.55. Advisory only; measured samples and output equality supply the narrow evidence. Required bdr-performance and adversarial-review files absent; those workflows did not run.
 
 Installed Retail0.1.4-dev after no Wow.exe process was observed. Backup local-data/addon-backups/addon-update-vn3f8zgq. All four installed files matched via updater and independent verifier; source96c8fc2. No companion/hosted upgrade needed; schema unchanged.
+
+
+## Default protocol-test coverage corrected
+
+The previous default Python suite selected the two-tool Python reference server unless AZEROTH_TEST_BINARY was set. Its 28-test count did not by itself establish Rust protocol coverage. Existing separately recorded Rust/public probes remain valid. Now distinct tests always exercise both servers: default Rust binary target/debug/azeroth-operator (platform suffix), explicit override permitted, missing binary fails with build instructions. Each session has a60-second timeout.
+
+Built current Rust server with cargo build --locked. Independent Python SDK test exercises all seven Rust tools, exact capability inventory, read-only/non-destructive annotations, game_execution=false and empty live-qualified list. Added unknown equip_item refusal: actual server returns protocol McpError tool not found, not a successful call result; corrected the test to assert that observed contract. Full suite29 passed before timeout wrapper addition; targeted protocol tests rerun after it. No production/source runtime behaviour changed. Required adversarial-review file absent; its workflow not run. Deterministic checks only; no advisory model judgement used as proof.
