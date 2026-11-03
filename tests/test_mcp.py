@@ -1,0 +1,30 @@
+import os
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from shared.snapshots import SnapshotStore
+from test_snapshots import fixture
+
+
+class MCPTests(unittest.IsolatedAsyncioTestCase):
+    async def test_real_stdio_server(self):
+        with tempfile.TemporaryDirectory() as folder:
+            key = SnapshotStore(Path(folder)).ingest(fixture())
+            params = StdioServerParameters(command=sys.executable,
+                args=[str(Path(__file__).resolve().parents[1] / "server.py")],
+                env={**os.environ, "AZEROTH_DATA_DIR": folder})
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    tools = await session.list_tools()
+                    self.assertEqual({t.name for t in tools.tools}, {"capabilities", "inspect_snapshot"})
+                    result = await session.call_tool("inspect_snapshot", {"snapshot_id": key})
+                    self.assertFalse(result.isError)
+                    payload = json.loads(result.content[0].text)
+                    self.assertFalse(payload["live"])
+                    rejected = await session.call_tool("inspect_snapshot", {"snapshot_id": "../secret"})
+                    self.assertTrue(rejected.isError)

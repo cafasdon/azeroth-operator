@@ -11,7 +11,9 @@ Local character analysis and player-operated configuration tools for World of Wa
 - `mcp/`: shared MCP interface, requiring an explicit client identity.
 - `tests/`: shared tests and separate client qualification suites.
 
-Status: project structure and scope only. No addon or MCP implementation has been qualified yet.
+Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
+
+Install dependencies with `python -m pip install -r requirements.txt`, then run `python server.py` for stdio MCP. Set `AZEROTH_DATA_DIR` to the snapshot directory, or use the default ignored `local-data/snapshots`. Tools: `capabilities`, `inspect_snapshot`. Snapshot ingestion currently uses the Python `SnapshotStore` interface; addon ingestion is still pending.
 
 ## Boundaries
 
