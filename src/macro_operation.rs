@@ -148,7 +148,9 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &MacroRequest) -
         }
     }
     fields[1] = format!("{:x}", Sha256::digest(fields.join("|").as_bytes()));
-    let code = fields.join("|");
+    // WoW interprets pipe escapes in edit boxes. Keep the canonical ID stable,
+    // but transport fields with colons (all free text is already hexadecimal).
+    let code = fields.join(":");
     ensure!(code.len() <= 8192, "Operation too large");
     Ok(
         json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"client":snapshot.client,"character":snapshot.character,
