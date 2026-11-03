@@ -15,3 +15,13 @@ Full source gate passed format, locked build, Rust/Lua tests, Clippy and 33 Pyth
 Advisory Jev review of source: `jev-1.14.0`, request `e92063163fe671ec2479be6367707d1dcfa8c3abb5efe3c830c758f7a8e9f927`, 2289 input/134 output tokens, 0.309 seconds; `investigate_supported_issue` with reported confidence 0.38. The typed response did not identify a concrete defect and is not a passing review. Direct follow-up inspected full-catalogue comparison, missing-API selection and post-effect exceptions; added the latter failure fixtures. Live displacement semantics remain unverified and explicitly fail closed. Previously configured OCR/adversarial rule files remain unavailable.
 
 Next: capture specialisation IDs for preparation; compile bounded association/catalogue preimages and displaced-set details; strict decoder; explicit review/Apply and receipt integration; packaging and independent importer qualification. Do not enable this source-only executor merely because these unit fixtures pass.
+
+## Specialisation identity capture checkpoint
+
+The source collector now optionally includes `equipment_sets.specializations`, a complete map of index strings to positive unique spec IDs. It uses the native menu's GetNumSpecializations/C_SpecializationInfo.GetSpecializationInfo contract referenced above. Both the count and every ID are read again, and every set's assigned index must exist. Accepted count is 1–64 as a defensive bound, not a statement about game limits. A failed, restricted, partial or changing read omits this entire optional field without dropping the raw set catalogue. This is not an atomic server snapshot.
+
+Rust validates contiguous indices, unique positive 32-bit IDs and assigned-index membership. Actual Lua collector/Core exporter→Rust import fixtures cover valid capture and optional omission for absent APIs, duplicate/missing/restricted IDs, changed count/identity and an unavailable assigned index. Malformed imported maps (including gaps, duplicate IDs, zero/oversized IDs and incomplete assigned-index coverage) are rejected.
+
+Full source gate passed format/build/Rust tests/Clippy and 33 Python tests. Advisory Jev: `jev-1.14.0`, request `f06fc44d9dc610551374c6f97fa18f249fa829e9dbc544498972f73c5a8325cf`, 990 input/131 output tokens, 0.274 seconds; `no_material_issue`, reported confidence 0.46. Advisory only, not native qualification. Configured OCR/adversarial rule paths remain absent.
+
+No new package or installation was made. Existing hosted/local importers need this schema update before an addon exporting the optional field is installed. Preparation, decoder, player review and receipt integration for association writes remain pending.
