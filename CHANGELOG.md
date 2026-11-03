@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only equipment-set metadata compiler and strict 193-field Lua transport, preserving the complete captured set preimage and observed identities. Compiler-to-decoder-to-export roundtrip and executor fixtures pass; MCP/review/receipt integration remains pending.
+
 - Add source-only exact-preimage equipment-set name/icon modification and deletion executors with native readback and failure fixtures. Not connected to MCP, review, receipts or packages.
 
 - Refuse ambiguous action spell cursors when the native spell-ID return is absent; retain the cursor and stop before placement. Source regression verified; installed 0.9.0-dev is unchanged.
