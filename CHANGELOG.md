@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add source-only exact-preimage equipment-set name/icon modification and deletion executors with native readback and failure fixtures. Not connected to MCP, review, receipts or packages.
+
+- Refuse ambiguous action spell cursors when the native spell-ID return is absent; retain the cursor and stop before placement. Source regression verified; installed 0.9.0-dev is unchanged.
+
 - Resolve optional equipment-set item observations to worn/carried locations, item GUIDs and lock flags, with repeated identity checks and strict validation. Unsupported or uncertain identities remain absent. Source only; native set swaps are not yet implemented.
 
 - Add source-only Retail native equipment-set observations with raw slot values, missing-value preservation, bounded catalogue checks and Lua-to-Rust failure fixtures. No equipment-set mutations or deployment.
