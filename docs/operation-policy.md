@@ -1,6 +1,6 @@
 # Operation scope and evidence
 
-Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Unknown permissions remain disabled. No live client has been qualified.
+Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; player-applied mutations remain pending live qualification. ADR006 supersedes the original blanket read-only implementation target.
 
 ## Published sources
 
@@ -23,7 +23,9 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Compare observations and review equipment selections | Implemented | Schema supported | Schema supported | Draft JSON only; no gear legality, optimality or live ownership guarantee |
 | Return original captured talent import string | Development support | Disabled | Disabled | Retail only; staged changes refused; player reviews/imports manually; game acceptance unverified |
 | Generate optimised builds or new game import formats | Not implemented | Not implemented | Not implemented | Needs client-specific metadata, format verification and policy evidence |
-| Equip gear, switch talents or apply action bars/macros/bindings | Disabled | Disabled | Disabled | No MCP execution path; a player click is not assumed to authorise arbitrary queued automation |
+| Create/edit/delete/move macro scope | Development implementation installed | Disabled | Disabled | MCP prepares bounded data; player reviews/applies through ordinary addon APIs; live mutation qualification pending |
+| Change keybindings | Executor source tested | Disabled | Disabled | One explicit key and context; expected binding/set checks; transport, UI and deployment pending |
+| Equip gear, switch talents or apply action bars | Not implemented | Not implemented | Not implemented | In scope for player-applied operations; no autonomous gameplay or protected-action bypass |
 | Sort/move/split items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | No inventory mutation or destructive operation exposed |
 | Auction bids/listings, purchases, crafting, trade or chat sends | Disabled | Disabled | Disabled | No transaction or messaging tools |
 | Graphics/CVar configuration proposals | Not implemented | Not implemented | Not implemented | Requires exact client settings, hardware evidence and bounded file-change workflow |
@@ -34,6 +36,6 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 
 Record the exact operation, client family/variant/build/interface, official policy/API evidence, player interaction required, combat/protected/secret-value restrictions, data prerequisites and observed result. Unknown evidence must remain explicit. A working fixture or successful API call is not enough to enable execution. Preserve original scope: supporting a review draft does not fulfil an equip/build/item-management request.
 
-Actual enforcement today is structural: seven read-only MCP tools, a reader container with a read-only owner store, a separate bounded data importer, no addon external-command intake and no game mutation functions. Inspect `src/main.rs`, `addon/Core.lua`, `addon/Collectors.lua`, `tools/gateway_profile.py` and the deployed profile when changing this boundary. Annotations and this document alone are not enforcement.
+Actual enforcement today is structural: eight MCP tools operating on captured data, a reader container with a read-only owner store, and a separate bounded importer. The macro compiler returns data; the installed addon accepts an explicit player paste/review/apply and checks client/character/combat/preimage before ordinary macro API calls. It does not evaluate imported Lua, simulate input or execute macro bodies. Inspect `src/main.rs`, `addon/MacroImport.lua`, `addon/MacroOperations.lua`, `addon/MacroUI.lua` and the deployed profile. Annotations and this document alone are not enforcement.
 
 No game action is newly enabled by this record. Live qualification, operation-specific policy evidence and feature implementation remain outstanding in ROADMAP.md.
