@@ -9,6 +9,7 @@
 - Family-filtered MCP snapshot listing with pagination and corrupt-file count.
 - Initial Lua exporter for equipment, bags and basic stats; Lua 5.1 fixture roundtrip tested. Not installed/live-qualified.
 - Expanded collectors and unavailable reasons tested with fixtures; local deterministic development ZIPs verified. Retail development addon installed with matching hashes; live qualification still pending.
+- Snapshot comparisons with client/character/capture-order gates and bounded differences; basic observed character summaries.
 
 ## Required before completion
 
@@ -16,7 +17,7 @@
 - Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented.
 - Installed-client identification, capability inventory and per-client tests.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.
-- Snapshot comparison and character analysis tools; discovery implemented (performance benchmarking pending).
+- Deeper character/equipment analysis beyond observed counts; comparison and discovery implemented.
 - Player-reviewed build/configuration proposals and export formats; no autonomous game writes.
 - Policy evidence for every proposed action; unknown permission means disabled.
 - Source distribution on cafasdon GitHub, isolated installation, reproducible dependency setup.

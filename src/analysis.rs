@@ -1,0 +1,146 @@
+//! Snapshot-only analysis. Missing data is not an empty inventory.
+use crate::Snapshot;
+use anyhow::{Result, ensure};
+use serde_json::{Value, json};
+use std::collections::BTreeSet;
+
+pub fn compare(before: &Snapshot, after: &Snapshot) -> Result<Value> {
+    ensure!(before.client == after.client, "Client/build mismatch");
+    ensure!(
+        before.character.name == after.character.name
+            && before.character.realm == after.character.realm,
+        "Character mismatch"
+    );
+    ensure!(
+        before.captured_at <= after.captured_at,
+        "Snapshots are reversed"
+    );
+    let names: BTreeSet<_> = before
+        .sections
+        .keys()
+        .chain(after.sections.keys())
+        .chain(before.unavailable.keys())
+        .chain(after.unavailable.keys())
+        .collect();
+    let mut sections = serde_json::Map::new();
+    for name in names {
+        let result = match (before.sections.get(name), after.sections.get(name)) {
+            (Some(a), Some(b)) => {
+                let mut paths = Vec::new();
+                let mut count = 0;
+                diff(a, b, "", &mut paths, &mut count);
+                json!({"status":if count==0 {"unchanged"} else {"changed"},"changed_paths":paths,"change_count":count,"truncated":count>paths.len()})
+            }
+            _ => {
+                json!({"status":"not_comparable","before_available":before.sections.contains_key(name),"after_available":after.sections.contains_key(name)})
+            }
+        };
+        sections.insert(name.clone(), result);
+    }
+    Ok(
+        json!({"client":after.client,"character":after.character,"before_captured_at":before.captured_at,"after_captured_at":after.captured_at,"live":false,"sections":sections}),
+    )
+}
+
+fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {
+    if a == b {
+        return;
+    }
+    if let (Some(a), Some(b)) = (a.as_object(), b.as_object()) {
+        let keys: BTreeSet<_> = a.keys().chain(b.keys()).collect();
+        for key in keys {
+            let next = format!("{}/{}", path, key.replace('~', "~0").replace('/', "~1"));
+            match (a.get(key), b.get(key)) {
+                (Some(a), Some(b)) => diff(a, b, &next, paths, count),
+                _ => record(next, paths, count),
+            }
+        }
+    } else {
+        record(path.to_owned(), paths, count);
+    }
+}
+fn record(path: String, paths: &mut Vec<String>, count: &mut usize) {
+    *count += 1;
+    if paths.len() < 100 {
+        paths.push(path);
+    }
+}
+
+pub fn summary(s: &Snapshot) -> Value {
+    let equipment = s.sections.get("equipment").and_then(Value::as_object);
+    let bags = s.sections.get("bags").and_then(Value::as_object);
+    let occupied = equipment.map(|v| v.len());
+    let bag_slots = bags.and_then(|b| {
+        b.values()
+            .map(|v| v.as_object().map(|v| v.len()))
+            .sum::<Option<usize>>()
+    });
+    let unspent = s
+        .sections
+        .get("talents")
+        .and_then(|v| v.get("has_unspent"))
+        .and_then(Value::as_bool);
+    json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
+      "equipped_slots_observed":occupied,"carried_item_slots_observed":bag_slots,
+      "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
+      "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn fixture() -> Snapshot {
+        serde_json::from_value(json!({"schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z","client":{"family":"retail","variant":"live","build":"123","interface":120105},"character":{"name":"Example","realm":"Test"},"sections":{"equipment":{"16":{"item_id":1}}}})).unwrap()
+    }
+    #[test]
+    fn compare_identity_missing_and_changed() {
+        let a = fixture();
+        let mut b = a.clone();
+        b.sections.get_mut("equipment").unwrap()["16"]["item_id"] = json!(2);
+        assert_eq!(
+            compare(&a, &b).unwrap()["sections"]["equipment"]["changed_paths"],
+            json!(["/16/item_id"])
+        );
+        b.sections.remove("equipment");
+        assert_eq!(
+            compare(&a, &b).unwrap()["sections"]["equipment"]["status"],
+            "not_comparable"
+        );
+        b.client.build = "124".into();
+        assert!(compare(&a, &b).is_err());
+        b = a.clone();
+        b.character.name = "Other".into();
+        assert!(compare(&a, &b).is_err());
+    }
+    #[test]
+    fn output_bounded_and_missing_not_zero() {
+        let a = fixture();
+        assert!(summary(&a)["carried_item_slots_observed"].is_null());
+        let mut b = a.clone();
+        for n in 0..500 {
+            b.sections.get_mut("equipment").unwrap()[n.to_string()] = json!({"item_id":n});
+        }
+        let result = compare(&a, &b).unwrap();
+        assert_eq!(
+            result["sections"]["equipment"]["changed_paths"]
+                .as_array()
+                .unwrap()
+                .len(),
+            100
+        );
+        assert_eq!(result["sections"]["equipment"]["truncated"], true);
+    }
+
+    #[test]
+    fn unavailable_sections_and_malformed_bags_remain_unknown() {
+        let mut a = fixture();
+        a.unavailable
+            .insert("talents".into(), "API unavailable".into());
+        let result = compare(&a, &a).unwrap();
+        assert_eq!(result["sections"]["talents"]["status"], "not_comparable");
+        a.sections.insert("bags".into(), json!({"0": {}, "1": []}));
+        assert!(summary(&a)["carried_item_slots_observed"].is_null());
+        a.sections.insert("bags".into(), json!({"0": {}}));
+        assert_eq!(summary(&a)["carried_item_slots_observed"], 0);
+    }
+}

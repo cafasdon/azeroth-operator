@@ -28,6 +28,17 @@ struct List {
     offset: Option<usize>,
     limit: Option<usize>,
 }
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct Compare {
+    before_id: String,
+    after_id: String,
+}
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct Summary {
+    snapshot_id: String,
+}
 
 #[tool_router]
 impl Operator {
@@ -40,7 +51,46 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary"],"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "Compare same-character same-client snapshots; bounded changed JSON paths only",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn compare_snapshots(&self, Parameters(args): Parameters<Compare>) -> CallToolResult {
+        let result = (|| {
+            let a = self.store.read(&args.before_id)?;
+            let b = self.store.read(&args.after_id)?;
+            azeroth_operator::analysis::compare(&a, &b)
+        })();
+        match result {
+            Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Snapshots unavailable, reversed or incompatible",
+            )]),
+        }
+    }
+    #[tool(
+        description = "Summarise observed character data; missing values remain unknown",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        match self.store.read(&args.snapshot_id) {
+            Ok(s) => CallToolResult::success(vec![ContentBlock::text(
+                azeroth_operator::analysis::summary(&s).to_string(),
+            )]),
+            Err(_) => {
+                CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
+            }
+        }
     }
     #[tool(
         description = "List snapshots for an explicit client family, newest capture first",

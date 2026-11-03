@@ -1,4 +1,5 @@
 //! Data-only client contracts and snapshot storage. No game execution.
+pub mod analysis;
 pub mod import;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
@@ -143,14 +144,23 @@ impl Store {
                 continue;
             };
             match self.read(id) {
-                Ok(s) if s.client.family == family => rows.push((s.captured_at, id.to_owned(), s)),
+                Ok(s) if s.client.family == family => {
+                    // Retain metadata only: listing must not hold every inventory payload.
+                    let summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    rows.push((s.captured_at, id.to_owned(), summary));
+                }
                 Ok(_) => (),
                 Err(_) => invalid += 1,
             }
         }
         rows.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
         let has_more = rows.len().saturating_sub(offset) > limit;
-        let snapshots:Vec<_>=rows.into_iter().skip(offset).take(limit).map(|(_,id,s)|json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source})).collect();
+        let snapshots: Vec<_> = rows
+            .into_iter()
+            .skip(offset)
+            .take(limit)
+            .map(|(_, _, summary)| summary)
+            .collect();
         Ok(json!({"snapshots":snapshots,"has_more":has_more,"invalid_count":invalid}))
     }
     pub fn ingest(&self, snapshot: &Snapshot) -> Result<String> {

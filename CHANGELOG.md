@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add bounded snapshot comparisons and character summaries, preserving unknown/missing data.
+- Add repeatable synthetic release-mode storage benchmark.
+
 - Expand read-only export collectors with explicit unavailable/partial coverage.
 - Add deterministic development ZIPs and manifests; install initial Retail test package with hash verification.
 

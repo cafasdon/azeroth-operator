@@ -24,13 +24,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.add("list_snapshots")
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         listing = await session.call_tool("list_snapshots", {"family": "retail"})
                         self.assertEqual(json.loads(listing.content[0].text)["snapshots"][0]["snapshot_id"], key)
                         other = await session.call_tool("list_snapshots", {"family": "forever"})
                         self.assertEqual(json.loads(other.content[0].text)["snapshots"], [])
+                        comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
+                        self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
+                        summary = await session.call_tool("character_summary", {"snapshot_id": key})
+                        self.assertFalse(json.loads(summary.content[0].text)["live"])
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key})
                     self.assertFalse(result.isError)
                     payload = json.loads(result.content[0].text)
