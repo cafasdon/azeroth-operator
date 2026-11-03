@@ -19,3 +19,11 @@ Source-only ActionRequest compiler and ActionImport decoder now bind two explici
 Rust-to-Lua tests preserve newline/colon/pipe text and distinguish move from swap; malformed fields and missing preimages are rejected. Full source gate passed including31Python tests. No MCP registration, dispatcher/UI integration or deployment yet. Executor cursor assumptions remain unqualified.
 
 Jev advisory request c20e1a8ef52410679718bfd12f2fb9dc7f4b528ddfcb97c5566b251937a752f5, jev-1.14.0,886input/116output tokens,0.288seconds: insufficient_evidence (reported confidence0.42), not a pass. Deterministic checks establish transport behaviour only.
+
+## MCP preparation integration — 2026-11-04
+
+prepare_action_operation is now exposed by source Rust MCP (thirteenth tool). Its description and result explicitly state that addon execution is disabled. Actual stdio protocol tests prepare a macro-to-empty-slot request, verify exact macro body and reject an unobserved target. Importer qualification fixture now includes partial action observations. Gateway/probe tool lists updated; probe count derives from discovery rather than a stale literal.
+
+The protocol fixture caught that the Python reference store omitted the new observation section; its section allowlist is now aligned. This reference store remains a structural validator; Rust owns detailed nested validation. Full source gate subsequently passed (including31Python tests). Source only, not deployed. Existing installed addon does not accept AO-ACTION-1.
+
+Jev advisory request9bf990ca41800e6c3cd3a0e92ff00734b794c82f84dd6830bc902a590f7b39f9, jev-1.14.0,817input/116output tokens,0.293seconds: insufficient_evidence (reported confidence0.43), not a pass. No claim of live or deployed action-bar control.

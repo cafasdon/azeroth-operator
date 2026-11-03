@@ -78,8 +78,43 @@ struct TalentOperation {
     operation: azeroth_operator::talent_operation::TalentRequest,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct ActionOperation {
+    snapshot_id: String,
+    operation: azeroth_operator::action_operation::ActionRequest,
+}
+
 #[tool_router]
 impl Operator {
+    #[tool(
+        description = "Prepare a Retail action-slot move/swap from two explicitly observed slots, including exact macro contents. Data only: the addon execution path is not enabled yet. Does not change action bars.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn prepare_action_operation(
+        &self,
+        Parameters(args): Parameters<ActionOperation>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            azeroth_operator::action_operation::compile(
+                &snapshot,
+                &args.snapshot_id,
+                &args.operation,
+            )
+        })();
+        match result {
+            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Action operation rejected: explicit slot or macro preimages unavailable or invalid",
+            )]),
+        }
+    }
+
     #[tool(
         description = "Prepare a saved Retail talent loadout for player review using exact captured current and target contents. Requires a saved-loadout catalogue and no staged changes. The player opens Talents and applies; completion requires readback. Does not change talents.",
         annotations(
@@ -190,7 +225,7 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
     }
     #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",
