@@ -92,7 +92,7 @@ No character data, account identifiers, credentials or local exports belong in G
 
 Run `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. Set `AZEROTH_TEST_BINARY` as above for Rust protocol verification. These checks do not establish runtime game compatibility.
 
-Retail development addon 0.1.1-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).
+Retail development addon 0.1.2-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).
 
 
 Inspect an explicit installation without launching the game:
@@ -107,7 +107,7 @@ The probe reads only `.flavor.info` and the parent `.build.info`, with byte limi
 Check installed addon integrity against a retained package manifest:
 
 ```powershell
-python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_retail_' --manifest 'T:\Projects\Azeroth Operator\dist\bigwigs-0.1.1\AzerothOperator-0.1.1-dev-retail-live.manifest.json'
+python -m tools.verify_installed_addon --client 'T:\Games\World of Warcraft\_retail_' --manifest 'T:\Projects\Azeroth Operator\dist\bigwigs-0.1.2\AzerothOperator-0.1.2-dev-retail-live.manifest.json'
 ```
 
 Exit zero means the four installed files matched the supplied manifest during this read. Missing, changed, extra or oversized files produce nonzero without repairs. The manifest is caller-trusted, not signed authentication; concurrent edits can invalidate the observation. Retail and Forever product checks are supported; Classic installation verification remains unavailable. No live API compatibility is implied.
