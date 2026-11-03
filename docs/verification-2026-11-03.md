@@ -250,3 +250,12 @@ Added docs/operation-policy.md to cover the user's explicit request for action b
 
 Jev claims advisory jev-1.14.0, request b5745a94df056b88ff97f5ef2fb1c5c855bd06ba6bded3efcad07913eba18e22, 873 input/116 output tokens, 0.556s: insufficient_evidence confidence0.70/probability0.80, claim_supported0.68, evidence_sufficient0.53, accidental-approval concern0.13. This does not approve the bridge; incomplete policy evidence remains an explicit outstanding requirement. Documentation-only update.
 Authenticated public HTTPS smoke passed with seven tools. No fixture or live character readback claimed in this check.
+
+
+## Hex encoding lookup optimisation
+
+Replace per-payload-byte Lua callback/string.format with a 256-entry lookup table built once at addon load. JSON encoding, escaping, secret checks, wire format and4MiB limit unchanged. Regression test passes ASCII0..127 plus Portuguese, Chinese and emoji through actual Lua5.1 export and Rust decode. Existing failure-isolation/fatal-preservation tests pass; Clippy all-targets clean.
+
+Fixed benchmark examples/benchmark_addon.rs, baseline Core.lua at888d162, current Core.lua: four alternating pairs,10warmups/100captures each,180bag/19equipment entries. Exact output equality asserted each pair. Samples and hashes in docs/benchmarks/addon-hex-2026-11-03.json. Median of per-run mean capture times4.934835ms before/2.0538005ms after,58.4% lower. Windows fixture only, not in-game latency/FPS. Packaged0.1.4-dev SHA256603019688b98a5282bb088897786aa668fbec86ca4029971f5efd6e0a6a73c61 passes actual packaged Lua checks.
+
+Jev claims advisory jev-1.14.0 request4eaacc7e19f62ed247c4e4e9d4efc8e3183bf2d8beab44483b21194002a810f2,975input/112output tokens,0.297s: claim_supported0.80, evidence_sufficient0.64, unsupported-claim concern0.31, no_material_issue choice confidence0.33/probability0.55. Advisory only; measured samples and output equality supply the narrow evidence. Required bdr-performance and adversarial-review files absent; those workflows did not run.

@@ -1,5 +1,9 @@
 -- Read-only exporter. No external command intake or gameplay actions.
 local addonName, AO = ...
+local hexByte = {}
+for byte = 0, 255 do
+    hexByte[string.char(byte)] = string.format('%02x', byte)
+end
 local function escape(value)
     return '"' .. value:gsub('[%z\1-\31\\"]', function(c)
         return string.format('\\u%04x', string.byte(c))
@@ -58,7 +62,7 @@ function AO.Capture()
     }
     local payload = json(snapshot, encoded)
     assert(#payload <= 4 * 1024 * 1024, "Export too large")
-    AzerothOperatorExport = payload:gsub('.', function(c) return string.format('%02x', string.byte(c)) end)
+    AzerothOperatorExport = payload:gsub('.', hexByte)
     return snapshot
 end
 

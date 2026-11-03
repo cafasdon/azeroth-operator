@@ -231,6 +231,33 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     );
     lua.load("AO.collectors.equipment=saved_collector; AO.Capture()")
         .exec()?;
+    // Hex lookup preserves control-byte escaping and multibyte UTF-8 payloads.
+    lua.load(
+        r#"
+        local bytes={}
+        for byte=0,127 do bytes[#bytes+1]=string.char(byte) end
+        encoding_body=table.concat(bytes)..'ação 世界 😀'
+        saved_macro=AO.collectors.macros
+        AO.collectors.macros=function()
+            return {['1']={name='Encoding',body=encoding_body,scope='account'}}
+        end
+        AO.Capture()
+    "#,
+    )
+    .exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
+    let encoded = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+    let expected: String = (0u8..128).map(char::from).collect();
+    assert_eq!(
+        encoded.sections["macros"]["1"]["body"],
+        expected + "ação 世界 😀"
+    );
+    lua.load("AO.collectors.macros=saved_macro; AO.Capture()")
+        .exec()?;
     let last_hex: String = lua.globals().get("AzerothOperatorExport")?;
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;
