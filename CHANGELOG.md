@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add one bounded source-verification command binding protocol tests to the freshly built Rust target, with fail-fast checks and timeout cleanup.
+
 - Make the seven-tool Rust MCP protocol test mandatory in the default Python suite; retain the two-tool Python reference test separately. Verify disabled execution, annotations, capability inventory and unknown mutation-tool rejection.
 
 - Replace per-byte hex formatting with a fixed256-entry lookup. Four paired Lua fixtures measured58.4% lower capture median versus0.1.3-dev, with identical output; no in-game FPS claim.

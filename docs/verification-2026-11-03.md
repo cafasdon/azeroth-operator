@@ -268,3 +268,10 @@ Installed Retail0.1.4-dev after no Wow.exe process was observed. Backup local-da
 The previous default Python suite selected the two-tool Python reference server unless AZEROTH_TEST_BINARY was set. Its 28-test count did not by itself establish Rust protocol coverage. Existing separately recorded Rust/public probes remain valid. Now distinct tests always exercise both servers: default Rust binary target/debug/azeroth-operator (platform suffix), explicit override permitted, missing binary fails with build instructions. Each session has a60-second timeout.
 
 Built current Rust server with cargo build --locked. Independent Python SDK test exercises all seven Rust tools, exact capability inventory, read-only/non-destructive annotations, game_execution=false and empty live-qualified list. Added unknown equip_item refusal: actual server returns protocol McpError tool not found, not a successful call result; corrected the test to assert that observed contract. Full suite29 passed before timeout wrapper addition; targeted protocol tests rerun after it. No production/source runtime behaviour changed. Required adversarial-review file absent; its workflow not run. Deterministic checks only; no advisory model judgement used as proof.
+
+
+## Unified source verification
+
+Added python -m tools.verify_source: format check, locked build, locked Rust tests, Clippy all-targets warnings-as-errors, Python protocol/tool suite. Explicit CARGO_TARGET_DIR and AZEROTH_TEST_BINARY bind the protocol test to this checkout's freshly built target/debug executable. Each child has600-second deadline and reuses the existing cross-platform process-tree cleanup; no packaging/deployment. Test injects a build failure and stale environment overrides, proving no later checks run and both paths are replaced.
+
+Actual gate passed all five stages:20 Rust tests,30 Python tests; binary SHA25634c435ec7e430b5314412be66f992ef856dd32e21b6212f1d70dca22aa8aa318. This is local source verification, not production qualification or a hermetic dependency environment. Deterministic verification only. Previous absent adversarial-review workflow remains unavailable.

@@ -90,6 +90,8 @@ No character data, account identifiers, credentials or local exports belong in G
 
 ## Verification
 
+Run `python -m tools.verify_source` for the local source gate after installing requirements.txt and the Rust toolchain. It checks formatting, builds the Rust binary, runs Rust tests and Clippy, then runs the Python suite against that exact target path. Each step has a ten-minute ceiling with process-tree cleanup on timeout; the first failure stops the gate. It does not package, install, upload or qualify a live game client.
+
 Run `cargo build --locked`, `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. The Python suite always exercises the Rust stdio server from target/debug (or the explicit AZEROTH_TEST_BINARY override), with a separate Python-reference test. Missing Rust binaries fail the test rather than silently using the reference implementation. These checks do not establish runtime game compatibility.
 
 Retail development addon 0.1.4-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).
