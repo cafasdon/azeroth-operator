@@ -41,7 +41,7 @@ function AO.Capture()
     -- Reuse only successful section encodings within this synchronous capture.
     local encoded = {}
     local unavailable = {}
-    for _, name in ipairs({"equipment", "bags", "stats", "talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements", "operation_receipts"}) do
+    for _, name in ipairs({"equipment", "bags", "stats", "talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements", "operation_receipts", "binding_state"}) do
         local collector = AO.collectors and AO.collectors[name]
         if collector then
             local ok, data = pcall(collector)

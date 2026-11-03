@@ -7,6 +7,8 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let lua = Lua::new();
     lua.load(r#"
         AO = {}; SlashCmdList = {}; combat = false
+        function GetCurrentBindingSet() return 2 end
+        C_KeyBindings={GetBindingContextForAction=function() return 0 end}
         function InCombatLockdown() return combat end
         function GetBuildInfo() return "12.1.5", "70688", "", 120105 end
         function GetInventoryItemID(_,slot) if slot==16 then return 123 end end
@@ -72,7 +74,9 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let full_hex: String = lua.globals().get("AzerothOperatorExport")?;
     let full = decode(format!("AzerothOperatorExport = \"{full_hex}\"").as_bytes())?;
     assert!(full.unavailable.is_empty());
-    assert_eq!(full.sections.len(), 12);
+    assert_eq!(full.sections.len(), 13);
+    assert_eq!(full.sections["binding_state"]["binding_set"], 2);
+    assert_eq!(full.sections["bindings"]["1"]["context"], 0);
     assert_eq!(
         full.sections["operation_receipts"]["a".repeat(64)]["status"],
         "outcome_unknown"
@@ -205,7 +209,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         assert!(!partial.sections.contains_key(name));
         assert_eq!(partial.unavailable[name], "api_unavailable_or_failed");
         assert_eq!(partial.sections["quests"]["42"]["title"], "Test quest");
-        assert_eq!(partial.sections.len(), 11);
+        assert_eq!(partial.sections.len(), 12);
         lua.load(restore).exec()?;
     }
     lua.load("saved=C_Container; C_Container=nil; AO.Capture()")

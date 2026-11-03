@@ -89,6 +89,19 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "binding_state" => {
+            object(
+                value,
+                &[
+                    ("binding_set", "uint", true),
+                    ("coverage", "bound_keys_only", true),
+                ],
+            )?;
+            ensure!(
+                matches!(value["binding_set"].as_u64(), Some(1 | 2)),
+                "Invalid binding set"
+            );
+        }
         "operation_receipts" => {
             let receipts = value
                 .as_object()
@@ -162,6 +175,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("category", "text", false),
                 ("key1", "text", false),
                 ("key2", "text", false),
+                ("context", "uint", false),
             ],
         )?,
         "action_bars" => entries(

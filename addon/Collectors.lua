@@ -59,9 +59,23 @@ AO.collectors.bindings = function()
     local result = {}
     for index=1,GetNumBindings() do
         local command, category, key1, key2 = GetBinding(index)
-        if key1 or key2 then result[tostring(index)] = {command=command, category=category, key1=key1, key2=key2} end
+        if key1 or key2 then
+            local context
+            if AO.family=="retail" and C_KeyBindings and C_KeyBindings.GetBindingContextForAction then
+                context=C_KeyBindings.GetBindingContextForAction(command) or 0
+            end
+            result[tostring(index)] = {command=command, category=category, key1=key1, key2=key2, context=context}
+        end
     end
     return result
+end
+
+AO.collectors.binding_state = function()
+    assert(AO.family=="retail" and GetCurrentBindingSet, "Binding state unavailable")
+    local set=GetCurrentBindingSet()
+    assert(set==1 or set==2, "Unsupported binding set")
+    assert(C_KeyBindings and C_KeyBindings.GetBindingContextForAction, "Binding contexts unavailable")
+    return {binding_set=set,coverage="bound_keys_only"}
 end
 
 AO.collectors.action_bars = function()
