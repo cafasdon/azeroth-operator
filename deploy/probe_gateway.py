@@ -53,4 +53,4 @@ if __name__ == "__main__":
     snapshots = json.loads(result["result"]["content"][0]["text"])["snapshots"]
     assert isinstance(snapshots, list)
     print(json.dumps({"missing_token": 401, "wrong_token": 401, "authenticated": True,
-                      "tools": 7, "retail_snapshots_returned": len(snapshots)}))
+                      "tools": 8, "retail_snapshots_returned": len(snapshots)}))
