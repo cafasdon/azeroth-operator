@@ -199,3 +199,13 @@ Only after all three schema consumers were upgraded, installed Retail addon 0.1.
 Verification: 25 Python tests passed. Earlier source qualification passed 20 Windows and 21 Linux Rust tests and packaged Lua checks. Rollback test preserves concurrent edits. Required adversarial-review.md remains unavailable; no claim that its workflow ran.
 
 Prior Jev plan advisory (jev-1.14.0, request f40a702dfc76faea3c586b4b1ffd20fa6130ff5af4a7f67dcd300447729b27d4, 1121 input/135 output tokens, 0.36 s) returned insufficient_evidence 0.57 and material_issue 0.79, with schema-order and optimisation-confusion concerns. It was not a pass. Ordered deployment and public readback now provide direct schema compatibility evidence; live API acceptance and optimisation remain explicitly unverified.
+
+
+## Explicit installation metadata inventory
+
+Added `python -m tools.inspect_client` with explicit absolute client path, family and variant. Reads only bounded regular metadata files, rejecting link/reparse ancestors. Family/product mismatch and malformed records fail closed; multiple distinct active versions are ambiguous. Variant is labelled caller-supplied, interface null, game_execution false, live_qualified false. This does not authorise writes or establish live API support.
+
+Actual CLI calls identified Retail product wow/build 12.1.5.70688 and Forever product wowf/build 1.60.1.70755, matching the local metadata read independently. The explicit _classic_era_ directory reported not_installed; this is not a host-wide absence claim. Two new tests cover all three family boundaries, conflicting versions, inactive/other-product filtering, malformed metadata and byte limits. No hosted service or addon change was required.
+
+Jev plan advisory: jev-1.14.0, request 3253aa3d3e27884bed4d2469d3b5b98a869bf8b416be5a18479a8f191d33ed22, 832 input/116 output tokens, 0.318s. Returned insufficient_evidence (choice confidence 0.28; probability 0.52), material_issue 0.70, evidence_sufficient 0.31 and overstatement concern 0.40. This is not approval. Actual metadata output and deterministic tests supply the implementation evidence; runtime compatibility remains explicitly unverified. Required bdr-ocr-review and adversarial-review files remain absent, so those workflows did not run.
+`python -m unittest discover -s tests -q`: all 27 Python tests passed; git diff --check clean.

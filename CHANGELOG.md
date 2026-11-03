@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add bounded read-only installed-client metadata inspection with product/family checks, ambiguous-build reporting and explicit unknown live compatibility. No interface or independently verified variant is inferred.
+
 - Capture original Retail talent import strings for manual review when APIs permit and no staged changes exist. Preserve observed talent data on optional-export failure; add strict schema checks and read-only captured_talent_loadout MCP tool. Live/game-format acceptance remains unverified.
 
 - Add checksum-pinned BigWigs packaging in isolated Linux/WSL staging, strict ZIP/source verification and actual packaged Lua5.1 fixture execution. Keep all packages development-only pending live-client/manager qualification.

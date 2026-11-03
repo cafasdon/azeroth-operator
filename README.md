@@ -93,3 +93,12 @@ No character data, account identifiers, credentials or local exports belong in G
 Run `cargo test --locked`, `cargo clippy --all-targets -- -D warnings`, and `python -m unittest discover -s tests -v` from the project root. Set `AZEROTH_TEST_BINARY` as above for Rust protocol verification. These checks do not establish runtime game compatibility.
 
 Retail development addon 0.1.1-dev and the compatible local companion are installed. The hosted seven-tool MCP includes `captured_talent_loadout`; it returns captured strings for manual review only. Live character exports remain pending. See [captured loadouts](docs/captured-loadouts.md).
+
+
+Inspect an explicit installation without launching the game:
+
+```powershell
+python -m tools.inspect_client --client 'T:\Games\World of Warcraft\_retail_' --family retail --variant live
+```
+
+The probe reads only `.flavor.info` and the parent `.build.info`, with byte limits and link/reparse rejection. Conflicting active versions are reported rather than selected. Family is checked against the product code; variant remains caller-supplied, interface remains unknown and installation metadata does not qualify live APIs. Classic accepts `wow_classic` and `wow_classic_era` products with an explicit variant; unknown products fail closed. Missing directories report `not_installed`; malformed or unreadable metadata exits non-zero. No account data is read.
