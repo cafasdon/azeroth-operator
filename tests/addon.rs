@@ -205,6 +205,32 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     assert!(!missing.sections.contains_key("bags"));
     assert_eq!(missing.unavailable["bags"], "api_unavailable_or_failed");
     lua.load("C_Container=saved; AO.Capture()").exec()?;
+    // Encodings must be capture-local: reusing a collector table cannot return stale data.
+    lua.load(
+        r#"
+        saved_collector=AO.collectors.equipment
+        reused={['16']={item_id=701}}
+        AO.collectors.equipment=function() return reused end
+        AO.Capture()
+        reused['16'].item_id=702
+        AO.Capture()
+    "#,
+    )
+    .exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let changed = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+    assert_eq!(changed.sections["equipment"]["16"]["item_id"], 702);
+    lua.load("reused['16'].link=function() end; AO.Capture()")
+        .exec()?;
+    let hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let invalid = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+    assert!(!invalid.sections.contains_key("equipment"));
+    assert_eq!(
+        invalid.unavailable["equipment"],
+        "restricted_or_unserializable"
+    );
+    lua.load("AO.collectors.equipment=saved_collector; AO.Capture()")
+        .exec()?;
     let last_hex: String = lua.globals().get("AzerothOperatorExport")?;
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reuse validated section JSON within each synchronous capture, avoiding duplicate serialisation. Four paired synthetic Lua runs measured 23.5% lower median capture time with identical export bytes; no in-game performance claim.
+
 - Isolate equipment, bags and stats collector failures so readable sections still export; failed sections are unavailable rather than empty. Preserve fatal combat/interface and identity guards.
 
 - Add bounded read-only installed addon verification against explicit manifests, reporting drift without overwriting local changes.

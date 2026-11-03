@@ -229,3 +229,14 @@ Real Lua5.1 producer-to-Rust-decoder tests inject errors in each primary section
 Jev advisory jev-1.14.0, request d6910fa5058cdc39268fcdcb4ce4bb4bc7d9fbb27e1017676531b18b864e555c, 895 input/112 output tokens, 0.568s: material_issue 0.23, evidence_sufficient 0.36, false-empty concern 0.20; next-step no_material_issue confidence 0.13 with probability tied at 0.42 against insufficient_evidence. Treat this as inconclusive, not approval; deterministic producer/decoder tests establish the narrow claim. Required diagnosing-bugs and adversarial-review files were absent; those workflows were not run.
 
 Installed Retail 0.1.2-dev after observing no Wow.exe process. Guarded updater backed up prior files to local-data/addon-backups/addon-update-g6miv8xy and verified four replacements. Independent read-only installed verifier returned matches_manifest with no problems. Source commit 6160cdd. Hosted reader/importer and local companion unchanged because the schema is unchanged.
+
+
+## Capture-local serialisation reuse
+
+Successful section JSON was previously discarded and encoded again in the final envelope. Reuse those strings only within the synchronous capture; no encoding survives to the next capture. Current collectors own their returned tables and do not mutate earlier sections. New collectors must preserve that property. Secret-value checks still precede cache lookup; failed serialisation still produces unavailable, not empty data.
+
+Fixed benchmark examples/benchmark_addon.rs runs four alternating pairs of separate Lua5.1 VMs, ten warmups then 100 captures per run, 180 bag and 19 equipped items. Each pair asserts exact byte identity and validates output with the Rust decoder. Evidence docs/benchmarks/addon-serialization-2026-11-03.json: median per-run mean 6.7497645ms before versus 5.164652ms after, 23.5% reduction. These are Windows fixture timings, not game measurements or a universal performance guarantee. Reproduce using the baseline Core.lua from f2fa14b and current Core.lua as the two positional paths to cargo run --release --locked --example benchmark_addon.
+
+Producer regression test passes including reused-table mutation between captures and unsupported-value rejection. Clippy all-targets clean. Pinned BigWigs 0.1.3-dev package SHA256 98e0a34323ca5d88a49befce00d80a49daee068edd93728be078e136dc0422e6 passed packaged Lua roundtrip and interface guard. Schema unchanged.
+
+Jev claims advisory jev-1.14.0, request d11b91d76045f03e55339e9eb05d0ff6d6c6e1224caefe3035a2a188a2ce670c, 1002 input/116 output tokens, 0.437s: insufficient_evidence confidence0.43/probability0.62, claim_supported0.42, evidence_sufficient0.26, positively phrased bounded-claim concern0.69. Not approval. The recorded samples and equality assertions support only the narrow fixture result. Required bdr-performance and adversarial-review files absent; those workflows did not run.

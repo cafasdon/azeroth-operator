@@ -1,0 +1,28 @@
+{
+  "baseline_commit": "f2fa14b",
+  "before_core_sha256": "b50eadf016409eb7bb463a96776eb09abb41d5b52824a58bf424c2aaa294c4b6",
+  "after_core_sha256": "ff2d53f9fe570e8276482a18d3fb964189da00808898c4a7e14103c55c456b2d",
+  "platform": "Windows embedded Lua5.1 release fixture",
+  "captures_per_run": 100,
+  "warmup": 10,
+  "alternating_pairs": 4,
+  "equipment_items": 19,
+  "bag_items": 180,
+  "before_ms": [
+    6.88098,
+    6.618549,
+    5.840816,
+    7.118163
+  ],
+  "after_ms": [
+    6.152379,
+    5.168321,
+    4.557535,
+    5.160983
+  ],
+  "before_median_ms": 6.7497644999999995,
+  "after_median_ms": 5.164652,
+  "reduction_percent": 23.483967477680135,
+  "export_bytes_identical": true,
+  "live_game_measurement": false
+}
