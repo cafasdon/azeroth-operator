@@ -27,6 +27,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
             sample["sections"]["equipment"] = {"16": {"item_id": 123}}
+            sample["sections"]["macros"] = {"1": {"name":"AO Test", "icon":134400,
+                "body":"/say test", "scope":"account"}}
             sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 2},
                                                      "2": {"item_id": 123, "count": 3}}}
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
@@ -42,7 +44,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         for tool in tools.tools:
@@ -87,6 +89,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(captured["loadout"]["import_string"], "QUJDRA==")
                         self.assertEqual(captured["snapshot_id"], key)
                         self.assertFalse(captured["game_execution"])
+                        for operation in [
+                            {"kind":"create","target_scope":"character","desired":{"name":"New","icon":134400,"body":""}},
+                            {"kind":"edit","source_index":1,"desired":{"name":"Edited","icon":134400,"body":"/say changed"}},
+                            {"kind":"delete","source_index":1},
+                            {"kind":"move","source_index":1,"target_scope":"character"},
+                        ]:
+                            prepared = await session.call_tool("prepare_macro_operation", {
+                                "snapshot_id":key, "operation":operation})
+                            self.assertFalse(prepared.isError)
+                            data = json.loads(prepared.content[0].text)
+                            self.assertEqual(data["kind"], operation["kind"])
+                            self.assertEqual(data["snapshot_id"], key)
+                            self.assertTrue(data["requires_player_apply"])
+                            self.assertTrue(data["import_code"].startswith("AO-MACRO-1|"))
+                            self.assertFalse(data["game_execution"])
+                        rejected = await session.call_tool("prepare_macro_operation", {
+                            "snapshot_id":key,"operation":{"kind":"delete","source_index":999}})
+                        self.assertTrue(rejected.isError)
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key})
                     self.assertFalse(result.isError)
                     payload = json.loads(result.content[0].text)

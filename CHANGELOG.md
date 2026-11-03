@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add local MCP `prepare_macro_operation`, strict data import and `/aomacros` review/apply UI source. Protocol tests cover all four macro operation types; Lua fixtures cover target checks, replay refusal and review invalidation. Not yet packaged, deployed or live-qualified.
+
 - Begin executable macro management: source-only Lua executor for create/edit/delete/scope moves with exact-content checks and partial-move readback; not yet packaged or exposed by MCP.
 
 - Verify first Retail export through the hosted MCP; support namespaced Constants.MacroConsts.MAX_ACCOUNT_MACROS after a live macro-collector failure. Action-bar qualification remains open.

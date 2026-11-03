@@ -47,6 +47,13 @@ struct EquipmentReview {
     selections: Vec<azeroth_operator::planning::EquipmentSelection>,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct MacroOperation {
+    snapshot_id: String,
+    operation: azeroth_operator::macro_operation::MacroRequest,
+}
+
 #[tool_router]
 impl Operator {
     #[tool(
@@ -58,7 +65,34 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn prepare_macro_operation(
+        &self,
+        Parameters(args): Parameters<MacroOperation>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            azeroth_operator::macro_operation::compile(
+                &snapshot,
+                &args.snapshot_id,
+                &args.operation,
+            )
+        })();
+        match result {
+            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Macro operation rejected: snapshot, client, source or requested fields invalid",
+            )]),
+        }
     }
     #[tool(
         description = "Return the original captured Retail talent import string for player review, if available. Does not apply talents, create optimal builds or verify game acceptance.",
