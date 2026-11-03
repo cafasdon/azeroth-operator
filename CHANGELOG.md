@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Isolate per-family export discovery errors, report retryable failure in fresh sync status and continue processing other families.
+
 - Extend independent container protocol smoke to verify capability claims, missing-snapshot rejection across all read/review tools and rejection of unknown mutation tools.
 
 - Add one bounded source-verification command binding protocol tests to the freshly built Rust target, with fail-fast checks and timeout cleanup.

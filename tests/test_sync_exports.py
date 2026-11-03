@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import sys
 import unittest
+from unittest.mock import patch
 from tools.sync_exports import PASS_SECONDS, discover, exclusive, invoke_sync, load_config, run_pass
 
 
@@ -27,6 +28,22 @@ class SyncTests(unittest.TestCase):
             self.fail("No export must mean no subprocess")
         result = run_pass(self.config, invoke=forbidden)
         self.assertEqual(result["results"], [{"family": "retail", "status": "waiting_for_export"}])
+
+    def test_discovery_failure_is_reported_without_blocking_other_family(self):
+        path = self.export()
+        self.config["clients"].append(dict(family="forever", accounts=self.root / "forever"))
+        calls = []
+        def invoke(argv, **options):
+            calls.append(argv)
+            return subprocess.CompletedProcess(argv, 0, json.dumps(dict(status="uploaded", snapshot_id="b" * 64)).encode())
+        with patch("tools.sync_exports.discover", side_effect=[PermissionError("private path"), [path]]):
+            result = run_pass(self.config, invoke=invoke)
+        self.assertEqual(result["results"], [
+            {"family": "retail", "status": "failed_retry_next_pass"},
+            {"family": "forever", "status": "uploaded", "snapshot_id": "b" * 64}])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][2], "forever")
+        self.assertNotIn("private path", json.dumps(result))
 
     def test_exact_arguments_and_retry_status(self):
         path = self.export()

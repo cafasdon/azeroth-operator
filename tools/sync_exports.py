@@ -132,7 +132,11 @@ def run_pass(config, invoke=invoke_sync, clock=time.monotonic):
     jobs = []
     results = []
     for client in config["clients"]:
-        exports = discover(client["accounts"])
+        try:
+            exports = discover(client["accounts"])
+        except (OSError, ValueError):
+            results.append({"family": client["family"], "status": "failed_retry_next_pass"})
+            continue
         if not exports:
             results.append({"family": client["family"], "status": "waiting_for_export"})
         jobs.extend((client["family"], path) for path in exports)
