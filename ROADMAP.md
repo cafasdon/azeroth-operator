@@ -13,7 +13,7 @@
 - Pinned BigWigs packaging runs in isolated staging without network/upload access; packaged Retail/Forever/Classic-fixture Lua roundtrips verified and Retail rebuild byte identity confirmed. Manager and live-client qualification remain pending.
 - Snapshot comparisons with client/character/capture-order gates and bounded differences; basic observed character summaries.
 - Read-only equipment-selection JSON reviews with exact observed-location/item matching, duplicate rejection and swap/vacancy accounting. Deployed seven-tool public MCP and verified synthetic changed/no-change reviews and wrong-item refusal. These are unverified selection drafts, not optimal builds or game imports; see docs/equipment-review.md.
-- Hosted read-only MCP and restricted authenticated upload on personal pylon CT290, verified with synthetic upload and public SDK readback. First live Retail snapshot uploaded and read back; nine sections available, macros/action bars failed.
+- Hosted read-only MCP and restricted authenticated upload on personal pylon CT290, verified with synthetic upload and public SDK readback. First live Retail snapshot uploaded and read back; ten sections available after the macro fix; action bars remain unavailable.
 - Incremental hash acknowledgements and bounded local sync runner; missing exports, retries, concurrency and Windows timeout cleanup tested. Current-user scheduled task installed; first real scheduled run completed with result 0 and waiting statuses for Retail/Forever.
 
 ## Required before completion
