@@ -35,6 +35,31 @@ AO.collectors.action_bars = function()
     return result
 end
 
+local function loadoutExport(configID)
+    if AO.family ~= "retail" then return {status="unavailable", reason="client_not_supported"} end
+    local spec = C_SpecializationInfo
+    if not (spec and spec.GetSpecialization and spec.GetSpecializationInfo and
+        C_Traits.GenerateImportString and C_Traits.GetLoadoutSerializationVersion and
+        C_Traits.ConfigHasStagedChanges) then
+        return {status="unavailable", reason="api_unavailable"}
+    end
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted value")
+        return value
+    end
+    local staged = readable(C_Traits.ConfigHasStagedChanges(configID))
+    assert(type(staged)=="boolean", "Unknown staged state")
+    if staged then return {status="unavailable", reason="staged_changes"} end
+    local index = readable(spec.GetSpecialization())
+    local specID = readable(spec.GetSpecializationInfo(index))
+    local version = readable(C_Traits.GetLoadoutSerializationVersion())
+    local text = readable(C_Traits.GenerateImportString(configID))
+    assert(type(specID)=="number" and specID>0 and type(version)=="number" and version>=0, "Invalid export identity")
+    assert(type(text)=="string" and #text>0 and #text<=16384 and not text:find("[^A-Za-z0-9+/=]"), "Invalid export string")
+    return {status="available", format="blizzard_traits", import_string=text,
+        spec_id=specID, serialization_version=version, staged_changes=false}
+end
+
 AO.collectors.talents = function()
     assert(C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetTreeNodes and C_Traits.GetNodeInfo, "Trait API unavailable")
     local configID = C_ClassTalents.GetActiveConfigID()
@@ -51,6 +76,8 @@ AO.collectors.talents = function()
         end
     end
     local result = {config_id=configID, name=config.name, nodes=nodes}
+    local exported, loadout = pcall(loadoutExport,configID)
+    result.loadout_export = exported and loadout or {status="unavailable", reason="restricted_or_failed"}
     if C_ClassTalents.HasUnspentTalentPoints then
         local has, class, spec = C_ClassTalents.HasUnspentTalentPoints()
         result.has_unspent=has; result.unspent_class=class; result.unspent_spec=spec

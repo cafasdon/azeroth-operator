@@ -6,6 +6,36 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::BTreeSet;
 
+pub fn captured_loadout(snapshot: &Snapshot) -> Result<Value> {
+    snapshot.validate()?;
+    let mut review = json!({"client":snapshot.client,"character":snapshot.character,
+        "captured_at":snapshot.captured_at,"source":snapshot.source,"live":false,"game_execution":false,
+        "status":"unavailable","requires_player_review":true,
+        "compatibility":"not_live_verified","optimisation":"not_assessed"});
+    if snapshot.client.family != crate::Family::Retail {
+        review["reason"] = json!("client_not_supported");
+        return Ok(review);
+    }
+    match snapshot
+        .sections
+        .get("talents")
+        .and_then(|value| value.get("loadout_export"))
+    {
+        Some(export) if export["status"] == "available" => {
+            review["status"] = json!("captured_string_for_review");
+            review["loadout"] = export.clone();
+            review["limitations"] = json!([
+                "Original captured API string; not a newly generated or optimised build",
+                "Confirm current character, specialisation and game build before using the in-game talent import UI",
+                "String syntax checked; semantic header, tree hash and game acceptance not verified"
+            ]);
+        }
+        Some(export) => review["reason"] = export["reason"].clone(),
+        None => review["reason"] = json!("not_captured"),
+    }
+    Ok(review)
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ItemLocation {
@@ -110,6 +140,41 @@ mod tests {
           "bags":{"0":{"1":{"item_id":30,"count":1},"2":{"item_id":30,"count":1}}}}}),
         )
         .unwrap()
+    }
+    #[test]
+    fn captured_loadouts_preserve_strings_and_report_missing_or_unsupported() {
+        let mut snapshot = fixture();
+        assert_eq!(
+            captured_loadout(&snapshot).unwrap()["reason"],
+            "not_captured"
+        );
+        snapshot.sections.insert("talents".into(), json!({"config_id":7,"nodes":{},"loadout_export":{
+            "status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,
+            "serialization_version":2,"staged_changes":false}}));
+        let review = captured_loadout(&snapshot).unwrap();
+        assert_eq!(review["loadout"]["import_string"], "QUJDRA==");
+        assert_eq!(review["game_execution"], false);
+        assert_eq!(review["compatibility"], "not_live_verified");
+        for invalid in [
+            json!("/run bad"),
+            json!(""),
+            json!(123),
+            json!("A".repeat(16385)),
+        ] {
+            let mut malformed = snapshot.clone();
+            malformed.sections.get_mut("talents").unwrap()["loadout_export"]["import_string"] =
+                invalid;
+            assert!(captured_loadout(&malformed).is_err());
+        }
+        let mut malformed = snapshot.clone();
+        malformed.sections.get_mut("talents").unwrap()["loadout_export"]["staged_changes"] =
+            json!(true);
+        assert!(captured_loadout(&malformed).is_err());
+        snapshot.client.family = crate::Family::Classic;
+        assert_eq!(
+            captured_loadout(&snapshot).unwrap()["reason"],
+            "client_not_supported"
+        );
     }
     fn bag(target: u32, slot: u32) -> EquipmentSelection {
         EquipmentSelection {

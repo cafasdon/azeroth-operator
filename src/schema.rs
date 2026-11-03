@@ -182,6 +182,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("has_unspent", "bool", false),
                     ("unspent_class", "uint", false),
                     ("unspent_spec", "uint", false),
+                    ("loadout_export", "map", false),
                 ],
             )?;
             entries(
@@ -192,6 +193,50 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("tree_id", "positive", true),
                 ],
             )?;
+            if let Some(export) = value.get("loadout_export") {
+                if export["status"] == "available" {
+                    object(
+                        export,
+                        &[
+                            ("status", "available", true),
+                            ("format", "blizzard_traits", true),
+                            ("import_string", "text", true),
+                            ("spec_id", "positive", true),
+                            ("serialization_version", "uint", true),
+                            ("staged_changes", "bool", true),
+                        ],
+                    )?;
+                    let text = export["import_string"].as_str().unwrap();
+                    ensure!(
+                        !text.is_empty()
+                            && text
+                                .bytes()
+                                .all(|c| c.is_ascii_alphanumeric() || b"+/=".contains(&c)),
+                        "Invalid loadout alphabet"
+                    );
+                    ensure!(
+                        export["staged_changes"] == false,
+                        "Staged loadout cannot be exported as committed"
+                    );
+                } else {
+                    object(
+                        export,
+                        &[("status", "unavailable", true), ("reason", "text", true)],
+                    )?;
+                    ensure!(
+                        matches!(
+                            export["reason"].as_str(),
+                            Some(
+                                "client_not_supported"
+                                    | "api_unavailable"
+                                    | "staged_changes"
+                                    | "restricted_or_failed"
+                            )
+                        ),
+                        "Unknown loadout refusal"
+                    );
+                }
+            }
         }
         _ => anyhow::bail!("Unknown section"),
     }

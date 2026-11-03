@@ -115,10 +115,66 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
             "{section}{pointer} accepted wrong type"
         );
     }
+    assert_eq!(
+        full.sections["talents"]["loadout_export"]["reason"],
+        "api_unavailable"
+    );
+    lua.load(r#"
+        export_calls=0
+        C_SpecializationInfo={GetSpecialization=function() return 2 end,GetSpecializationInfo=function() return 263 end}
+        C_Traits.ConfigHasStagedChanges=function() return false end
+        C_Traits.GetLoadoutSerializationVersion=function() return 2 end
+        C_Traits.GenerateImportString=function(id) assert(id==7); export_calls=export_calls+1; return "QUJDRA==" end
+        AO.Capture()
+    "#).exec()?;
+    let exported: String = lua.globals().get("AzerothOperatorExport")?;
+    let loadout = decode(format!("AzerothOperatorExport = \"{exported}\"").as_bytes())?;
+    assert_eq!(
+        loadout.sections["talents"]["loadout_export"]["import_string"],
+        "QUJDRA=="
+    );
+    assert_eq!(
+        loadout.sections["talents"]["loadout_export"]["spec_id"],
+        263
+    );
+    for (setup, reason) in [
+        (
+            "C_Traits.ConfigHasStagedChanges=function() return true end",
+            "staged_changes",
+        ),
+        (
+            "C_Traits.ConfigHasStagedChanges=function() return false end; AO.family='forever'",
+            "client_not_supported",
+        ),
+        (
+            "AO.family='retail'; issecretvalue=function(v) return v=='QUJDRA==' end",
+            "restricted_or_failed",
+        ),
+        (
+            "issecretvalue=nil; C_Traits.GenerateImportString=function() error('API error') end",
+            "restricted_or_failed",
+        ),
+    ] {
+        lua.load(setup).exec()?;
+        lua.load("AO.Capture()").exec()?;
+        let hex: String = lua.globals().get("AzerothOperatorExport")?;
+        let snapshot = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
+        assert_eq!(
+            snapshot.sections["talents"]["loadout_export"]["reason"],
+            reason
+        );
+        assert_eq!(snapshot.sections["talents"]["nodes"]["10"]["rank"], 2);
+        assert!(
+            snapshot.sections["talents"]["loadout_export"]
+                .get("import_string")
+                .is_none()
+        );
+    }
+    let last_hex: String = lua.globals().get("AzerothOperatorExport")?;
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;
     assert_eq!(
-        full_hex,
+        last_hex,
         lua.globals().get::<String>("AzerothOperatorExport")?
     );
     Ok(())

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture original Retail talent import strings for manual review when APIs permit and no staged changes exist. Preserve observed talent data on optional-export failure; add strict schema checks and read-only captured_talent_loadout MCP tool. Live/game-format acceptance remains unverified.
+
 - Add checksum-pinned BigWigs packaging in isolated Linux/WSL staging, strict ZIP/source verification and actual packaged Lua5.1 fixture execution. Keep all packages development-only pending live-client/manager qualification.
 
 - Reduce repeated item allocations and store-root resolution without caching snapshot validity. Four alternating Windows benchmark pairs measured 24.4% lower listing median and 12.7% lower inspection median on 200 synthetic snapshots; preserve hash/schema/containment and pagination checks.

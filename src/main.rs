@@ -58,7 +58,29 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout"],"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "Return the original captured Retail talent import string for player review, if available. Does not apply talents, create optimal builds or verify game acceptance.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn captured_talent_loadout(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            let mut review = azeroth_operator::planning::captured_loadout(&snapshot)?;
+            review["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            Ok::<_, anyhow::Error>(review)
+        })();
+        match result {
+            Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
+            Err(_) => {
+                CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
+            }
+        }
     }
     #[tool(
         description = "Review player-selected equipment from exact exported locations. Returns a JSON draft; does not equip, optimise, validate game legality or generate a game import.",
