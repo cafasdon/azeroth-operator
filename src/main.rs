@@ -95,7 +95,7 @@ struct EquipmentSetOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Prepare a Retail saved equipment-set metadata change, deletion or use request from exact captured contents. Data only; never changes the game. Metadata operations require player review/Apply in addon 0.10.0-dev. Use preparation is source-only and addon execution is disabled; uncaptured equipped slots require explicit expect_empty_slots. Live execution remains unqualified. Does not repair external references.",
+        description = "Prepare a Retail saved equipment-set metadata change, deletion or use request from exact captured contents. Data only; never changes the game. Metadata operations require player review/Apply in addon 0.10.0-dev. Use requires player review/Apply in addon 0.11.0-dev; uncaptured equipped slots require explicit expect_empty_slots. Live execution remains unqualified. Does not repair external references.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

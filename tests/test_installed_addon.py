@@ -23,7 +23,7 @@ class InstalledAddonTests(unittest.TestCase):
                 (target / name).write_bytes(data)
             result = verify(str(client), str(manifest))
             self.assertEqual(result["status"], "matches_manifest")
-            self.assertEqual(result["verified_files"], 19)
+            self.assertEqual(result["verified_files"], 20)
             (target / "Core.lua").write_bytes(b"user edit")
             (target / "Adapter.lua").unlink()
             (target / "extra.txt").write_text("keep")
