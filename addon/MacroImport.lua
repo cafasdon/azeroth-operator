@@ -1,7 +1,7 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
 local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
-local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true}
 local function readReceipts()
     local saved=AzerothOperatorOperations or ""
     assert(type(saved)=="string" and #saved<=16384, "Invalid receipt checkpoint")
@@ -67,7 +67,7 @@ end
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
 local function decodeOperation(text)
-    if type(text)=="string" and text:sub(1,9)=="AO-BAG-1:" then
+    if type(text)=="string" and (text:sub(1,9)=="AO-BAG-1:" or text:sub(1,11)=="AO-SPLIT-1:") then
         assert(AO.DecodeBagOperation,"Bag import unavailable")
         return AO.DecodeBagOperation(text)
     end
@@ -109,7 +109,7 @@ function AO.ApplyImportedMacro(text)
     assert(count<128, "Operation receipt limit reached")
     receipts[operation.id]={status="outcome_unknown",kind=operation.kind}
     saveReceipts(receipts)
-    local executor=operation.kind=="move_bag_item" and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
+    local executor=(operation.kind=="move_bag_item" or operation.kind=="split_bag_item") and AO.ApplyBagOperation or operation.kind=="equip_bag_item" and AO.ApplyEquipmentOperation or (operation.kind=="set_binding" and AO.ApplyBindingOperation or AO.ApplyMacroOperation)
     local ok,result=pcall(executor,operation)
     if ok then receipts[operation.id]=result end
     saveReceipts(receipts)

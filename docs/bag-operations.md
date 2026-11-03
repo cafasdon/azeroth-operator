@@ -13,3 +13,11 @@ Shared review/receipt dispatch, MCP preparation and packaging are implemented in
 Pending: deployment and live tests. No bag mutation is deployed yet. Swaps, merging, splitting, sorting and bank transfers remain subsequent work within the full operational goal.
 
 The dispatcher error-path fixture also verifies that an executor exception preserves outcome_unknown and blocks replay. Advisory claims review: Jev 1.14.0, request 65b9ff671d0495ed95cd33b857e9d39ab2dc5b695efb39c139de3cd2ddfb988d, 836 input/116 output tokens, 0.304 seconds. Result insufficient_evidence (reported confidence 0.42), not a review pass. Deterministic fixture results support only source behaviour; live qualification is outstanding. The configured adversarial-review file is absent; that workflow was not run.
+
+## Stack splitting — source only
+
+The bag executor now supports split_bag_item internally, with amount strictly between zero and the captured full count. It rechecks the original GUID and remaining quantity after splitting, then verifies a distinct destination GUID, matching item/link, exact split amount and empty cursor. Tests cover quantity conservation, invalid amounts, failed placement and incorrect destination count. Existing full-stack move tests still pass.
+
+The distinct-GUID and synchronous-readback behaviour are fixture expectations, not live qualifications. Compiler/transport, MCP optional amount, review text and receipt enum now support splits in source. AO-SPLIT-1 extends the full-stack fields with an amount; full moves retain their original AO-BAG-1 format and operation IDs. Rust-to-Lua and shared dispatch tests cover amount preservation and receipts. Deployment and live split verification remain pending. Installed 0.5.0-dev is unchanged, preserving the pending live move test.
+
+2026-11-04 package/UI verification: review fixtures distinguish full moves from splits, display source GUID, target slot, split amount and remaining quantity, and invalidate Apply after edits. Retail 0.6.0-dev ZIP d09acb556804b24f4493655b89d3fabea9e1929acf19794b56c0ebeda4836ba8 passed staged Lua loading/export and interface-change refusal. Importer qualification fixture now includes split_bag_item uncertainty receipts. Package is not installed; live split behaviour remains unqualified.

@@ -125,3 +125,7 @@ Equipment development deployment: hosted importer/reader and local companion upg
 - Connected bag movement to MCP preparation, shared review/receipts and the thirteen-file 0.5.0-dev package. Source/protocol/package checks pass; deployment and live qualification remain pending.
 
 - Bag development release deployed to hosted MCP/importer, Windows companion and Retail addon 0.5.0-dev. Public discovery and thirteen-file integrity passed; player move test pending.
+
+- Added source-only stack-split executor checks and quantity-conservation/failure fixtures. Split transport and deployment are pending; the installed bag-move test build is unchanged.
+
+- Split preparation, review/receipt integration and 0.6.0-dev package verified in fixtures. Review displays both split amount and source remainder. Not deployed.

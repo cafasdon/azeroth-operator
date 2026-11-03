@@ -28,6 +28,7 @@ def qualify(image):
                 snapshot["sections"]["equipment"] = {"1":{"item_id":123,"guid":"Item-Equipped"}}
                 snapshot["sections"]["bags"] = {"0":{"1":{"item_id":123,"count":1,"guid":"Item-Carried"}}}
                 snapshot["sections"]["operation_receipts"]["d" * 64] = {"status":"applied", "kind":"move_bag_item"}
+                snapshot["sections"]["operation_receipts"]["e" * 64] = {"status":"outcome_unknown", "kind":"split_bag_item"}
                 snapshot["sections"]["binding_state"] = {"binding_set":2,"coverage":"bound_keys_only"}
                 snapshot["sections"]["bindings"] = {"1":{"command":"ACTIONBUTTON1","key1":"CTRL-1","context":0}}
                 snapshot["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{

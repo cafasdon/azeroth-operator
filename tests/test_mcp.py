@@ -33,7 +33,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             sample["sections"]["macros"] = {"1": {"name":"AO Test", "icon":134400,
                 "body":"/say test", "scope":"account"}}
             sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 1,"guid":"Item-New"},
-                                                     "2": {"item_id": 123, "count": 4}}}
+                                                     "2": {"item_id": 123, "count": 4, "guid":"Item-Stack"}}}
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
@@ -64,6 +64,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         bag=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_bag":0,"target_slot":3,"expect_empty_target":True}})
                         self.assertFalse(bag.isError)
                         self.assertTrue(json.loads(bag.content[0].text)["import_code"].startswith("AO-BAG-1:"))
+                        split=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":2,"target_bag":0,"target_slot":3,"expect_empty_target":True,"amount":2}})
+                        self.assertFalse(split.isError)
+                        self.assertEqual(json.loads(split.content[0].text)["kind"],"split_bag_item")
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)

@@ -8,6 +8,8 @@ use sha2::{Digest, Sha256};
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BagRequest {
+    /// Omit for a full-stack move; provide a smaller positive amount to split.
+    pub amount: Option<u32>,
     pub bag: u32,
     pub slot: u32,
     pub target_bag: u32,
@@ -59,6 +61,17 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
     let count = source["count"]
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Source count unavailable"))?;
+    if let Some(amount) = request.amount {
+        ensure!(
+            amount > 0 && u64::from(amount) < count,
+            "Split must leave a source remainder"
+        );
+    }
+    let kind = if request.amount.is_some() {
+        "split_bag_item"
+    } else {
+        "move_bag_item"
+    };
     let guid = source["guid"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("Source GUID unavailable"))?;
@@ -93,9 +106,13 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         hex(guid),
         count.to_string(),
     ];
+    if let Some(amount) = request.amount {
+        fields[0] = "AO-SPLIT-1".into();
+        fields.push(amount.to_string());
+    }
     fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
     Ok(
-        json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"move_bag_item",
+        json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":kind,"amount":request.amount,
         "source":source,"bag":request.bag,"slot":request.slot,"target_bag":request.target_bag,
         "target_slot":request.target_slot,"empty_target_is_explicit_precondition":true,
         "import_code":fields.join(":"),"requires_player_apply":true,"game_execution":false,
