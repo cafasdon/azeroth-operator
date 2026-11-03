@@ -68,6 +68,8 @@ pub struct Snapshot {
     pub client: ClientIdentity,
     pub character: Character,
     pub sections: BTreeMap<String, Value>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub unavailable: BTreeMap<String, String>,
 }
 
 impl Snapshot {
@@ -94,6 +96,16 @@ impl Snapshot {
             ensure!(
                 value.is_array() || value.is_object(),
                 "Section must be an array or object"
+            );
+        }
+        for (name, reason) in &self.unavailable {
+            ensure!(
+                SECTIONS.contains(&name.as_str()) && !self.sections.contains_key(name),
+                "Invalid unavailable section"
+            );
+            ensure!(
+                !reason.trim().is_empty() && reason.len() <= 256,
+                "Invalid unavailable reason"
             );
         }
         Ok(())
@@ -201,8 +213,10 @@ impl Store {
             ensure!(SECTIONS.contains(&name), "Unknown section");
             result["available"] = json!(s.sections.contains_key(name));
             result["data"] = s.sections.get(name).cloned().unwrap_or(Value::Null);
+            result["unavailable_reason"] = json!(s.unavailable.get(name));
         } else {
             result["available_sections"] = json!(s.sections.keys().collect::<Vec<_>>());
+            result["unavailable"] = json!(s.unavailable);
         }
         Ok(result)
     }

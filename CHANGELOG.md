@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Expand read-only export collectors with explicit unavailable/partial coverage.
+- Add deterministic development ZIPs and manifests; install initial Retail test package with hash verification.
+
 - Add strict data-only SavedVariables/JSON import CLI and family-filtered MCP snapshot discovery.
 - Add read-only Lua equipment/bag/basic-stat exporter and Lua 5.1 roundtrip harness.
 

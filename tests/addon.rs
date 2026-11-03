@@ -27,6 +27,8 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let namespace: mlua::Table = lua.globals().get("AO")?;
     lua.load(include_str!("../clients/retail/Adapter.lua"))
         .call::<()>(("AzerothOperator", namespace.clone()))?;
+    lua.load(include_str!("../addon/Collectors.lua"))
+        .call::<()>(("AzerothOperator", namespace.clone()))?;
     lua.load(include_str!("../addon/Core.lua"))
         .call::<()>(("AzerothOperator", namespace))?;
     lua.load("AO.Capture()").exec()?;
@@ -34,6 +36,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     let snapshot = decode(format!("AzerothOperatorExport = \"{hex}\"").as_bytes())?;
     assert_eq!(snapshot.sections["equipment"]["16"]["item_id"], 123);
     assert_eq!(snapshot.sections["bags"]["0"]["1"]["count"], 2);
+    assert_eq!(snapshot.unavailable["talents"], "api_unavailable_or_failed");
     assert_eq!(
         snapshot.sections["equipment"]["16"]["link"],
         "quoted \"item\" \\ link"
@@ -41,5 +44,45 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
     lua.load("combat=true; assert(not pcall(AO.Capture))")
         .exec()?;
     assert_eq!(hex, lua.globals().get::<String>("AzerothOperatorExport")?);
+    lua.load(r#"
+        combat=false
+        MAX_ACCOUNT_MACROS=120; MAX_ACTION_BUTTONS=180
+        function GetNumMacros() return 1,1 end
+        function GetMacroInfo(index) return "Macro"..index,123,"/cast Test" end
+        function GetNumBindings() return 1 end
+        function GetBinding() return "ACTIONBUTTON1","Action Bar","1",nil end
+        function GetActionInfo(slot) if slot==1 then return "spell",123,nil end end
+        C_ClassTalents={GetActiveConfigID=function() return 7 end,HasUnspentTalentPoints=function() return true,1,2 end}
+        C_Traits={GetConfigInfo=function() return {name="Build",treeIDs={5}} end,
+          GetTreeNodes=function() return {10} end,
+          GetNodeInfo=function() return {activeEntry={entryID=11,rank=2}} end}
+        function GetProfessions() return 1,nil,3 end
+        function GetProfessionInfo(i) return "Profession"..i,0,10,100,0,0,200+i end
+        C_QuestLog={GetNumQuestLogEntries=function() return 1 end,GetInfo=function() return {questID=42,title="Test quest",level=80} end}
+        C_CurrencyInfo={GetCurrencyListSize=function() return 1 end,GetCurrencyListInfo=function() return {name="Currency",quantity=5} end}
+        function GetTotalAchievementPoints() return 1234 end
+        AO.Capture()
+    "#).exec()?;
+    let full_hex: String = lua.globals().get("AzerothOperatorExport")?;
+    let full = decode(format!("AzerothOperatorExport = \"{full_hex}\"").as_bytes())?;
+    assert!(full.unavailable.is_empty());
+    assert_eq!(full.sections.len(), 11);
+    assert_eq!(full.sections["macros"]["121"]["scope"], "character");
+    assert_eq!(full.sections["bindings"]["1"]["key1"], "1");
+    assert_eq!(full.sections["action_bars"]["1"]["id"], 123);
+    assert_eq!(full.sections["talents"]["nodes"]["10"]["rank"], 2);
+    assert_eq!(full.sections["professions"]["3"]["rank"], 10);
+    assert_eq!(full.sections["quests"]["42"]["title"], "Test quest");
+    assert_eq!(
+        full.sections["currencies"]["coverage"],
+        "visible_currency_list_only"
+    );
+    assert_eq!(full.sections["achievements"]["total_points"], 1234);
+    lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
+        .exec()?;
+    assert_eq!(
+        full_hex,
+        lua.globals().get::<String>("AzerothOperatorExport")?
+    );
     Ok(())
 }

@@ -8,6 +8,7 @@
 - Rust CLI import of bounded JSON or strict hex-encoded SavedVariables; code-bearing files rejected.
 - Family-filtered MCP snapshot listing with pagination and corrupt-file count.
 - Initial Lua exporter for equipment, bags and basic stats; Lua 5.1 fixture roundtrip tested. Not installed/live-qualified.
+- Expanded collectors and unavailable reasons tested with fixtures; local deterministic development ZIPs verified. Retail development addon installed with matching hashes; live qualification still pending.
 
 ## Required before completion
 

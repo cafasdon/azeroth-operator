@@ -7,6 +7,7 @@ local function escape(value)
 end
 
 local function json(value)
+    assert(not issecretvalue or not issecretvalue(value), "Restricted value")
     local kind = type(value)
     if kind == "string" then return escape(value) end
     if kind == "number" then
@@ -30,6 +31,7 @@ function AO.Capture()
     assert(not InCombatLockdown(), "Export unavailable in combat")
     local version, build, _, interface = GetBuildInfo()
     assert(AO.family and AO.variant, "Client adapter missing")
+    assert(not AO.interface or AO.interface == interface, "Client interface changed; rebuild package")
     local sections = {}
     local equipment = {}
     for slot = 1, 19 do
@@ -52,11 +54,23 @@ function AO.Capture()
         sections.bags = bags
     end
     sections.stats = { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }
+    local unavailable = {}
+    for _, name in ipairs({"talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements"}) do
+        local collector = AO.collectors and AO.collectors[name]
+        if collector then
+            local ok, data = pcall(collector)
+            if ok and data then
+                local serializable = pcall(json, data)
+                if serializable then sections[name] = data else unavailable[name] = "restricted_or_unserializable" end
+            else unavailable[name] = "api_unavailable_or_failed" end
+        else unavailable[name] = "collector_not_implemented" end
+    end
+    if not sections.bags then unavailable.bags = "container_api_unavailable" end
     local snapshot = {
         schema_version = 1, source = "addon",
         captured_at = date("!%Y-%m-%dT%H:%M:%SZ", GetServerTime()),
         client = {family = AO.family, variant = AO.variant, build = tostring(build), interface = interface},
-        character = {name = UnitName("player"), realm = GetRealmName()}, sections = sections
+        character = {name = UnitName("player"), realm = GetRealmName()}, sections = sections, unavailable = unavailable
     }
     local payload = json(snapshot)
     assert(#payload <= 4 * 1024 * 1024, "Export too large")
