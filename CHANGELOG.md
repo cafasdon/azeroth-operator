@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only action-slot move/swap executor and failure fixtures, including macro-content preimages. Not packaged, registered or MCP-enabled; cursor contracts and live protection behaviour remain unqualified.
+
 - Add source-only, explicitly partial Retail action-button observations with occupied/empty slots and coverage counts. Actual Lua-to-Rust roundtrip and malformed-coverage tests pass; no action mutations or deployment.
 
 - Install Retail 0.7.1-dev bag observation fixes after packaged Lua verification; fifteen installed files match the manifest. Refresh operational capability status; live qualification remains deferred.
