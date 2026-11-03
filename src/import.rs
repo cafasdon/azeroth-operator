@@ -72,6 +72,7 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "set_binding"
                                     | "equip_bag_item"
                                     | "move_bag_item"
+                                    | "split_bag_item"
                             ),
                             "Invalid receipt result"
                         );

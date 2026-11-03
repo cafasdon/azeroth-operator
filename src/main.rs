@@ -75,7 +75,7 @@ struct BagOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Prepare one full-stack Retail carried-bag move to an explicitly empty slot. Binds captured GUID and count; player review and Apply required. Does not move items.",
+        description = "Prepare a Retail carried-bag move or split to an explicitly empty slot. Omit amount for full-stack movement; provide a positive smaller amount to split. Binds captured GUID and count; player review and Apply required. Does not move items.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

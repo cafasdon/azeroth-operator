@@ -12,6 +12,7 @@ fn full_stack_transport_requires_explicit_empty_target() -> anyhow::Result<()> {
         "sections":{"bags":{"0":{"1":{"item_id":123,"count":20,"guid":"Item-Stack"}}}}}),
     )?;
     let mut request = BagRequest {
+        amount: None,
         bag: 0,
         slot: 1,
         target_bag: 0,
@@ -62,8 +63,9 @@ fn full_stack_transport_requires_explicit_empty_target() -> anyhow::Result<()> {
         local failing=code:gsub('AO%-BAG%-1:[0-9a-f]+:', 'AO-BAG-1:'..string.rep('f',64)..':',1)
         function AO.ApplyBagOperation() calls=calls+1; error('partial placement') end
         AO.ReviewMacroImport(failing)
-        local uncertain,success=AO.ApplyReviewedMacro(failing)
+        local uncertain,success,detail=AO.ApplyReviewedMacro(failing)
         assert(not success and uncertain.status=='outcome_unknown' and calls==2)
+        assert(detail:find('partial placement',1,true))
         assert(AzerothOperatorOperations:find('outcome_unknown:move_bag_item',1,true))
         AO.ReviewMacroImport(failing)
         assert(not pcall(AO.ApplyReviewedMacro,failing) and calls==2)
@@ -72,6 +74,35 @@ fn full_stack_transport_requires_explicit_empty_target() -> anyhow::Result<()> {
     )
     .exec()
     .unwrap();
+    request.amount = Some(5);
+    let split = compile(&snapshot, &"a".repeat(64), &request)?;
+    assert_eq!(split["kind"], "split_bag_item");
+    assert_ne!(split["operation_id"], compiled["operation_id"]);
+    let decoded: mlua::Table = decode.call(split["import_code"].as_str().unwrap()).unwrap();
+    assert_eq!(decoded.get::<u32>("amount").unwrap(), 5);
+    assert_eq!(decoded.get::<String>("kind").unwrap(), "split_bag_item");
+    lua.globals()
+        .set("splitcode", split["import_code"].as_str().unwrap())
+        .unwrap();
+    lua.load(
+        r#"
+        function AO.ApplyBagOperation(op)
+            assert(op.kind=='split_bag_item' and op.amount==5 and op.count==20)
+            return {kind=op.kind,status='applied'}
+        end
+        AO.ReviewMacroImport(splitcode)
+        local receipt,ok=AO.ApplyReviewedMacro(splitcode)
+        assert(ok and receipt.kind=='split_bag_item')
+        assert(AzerothOperatorOperations:find('applied:split_bag_item',1,true))
+    "#,
+    )
+    .exec()
+    .unwrap();
+    for amount in [0, 20, 21] {
+        request.amount = Some(amount);
+        assert!(compile(&snapshot, &"a".repeat(64), &request).is_err());
+    }
+    request.amount = None;
     request.target_slot = 1;
     assert!(compile(&snapshot, &"a".repeat(64), &request).is_err());
     request.target_slot = 2;

@@ -4,7 +4,7 @@ use mlua::Lua;
 fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
     let lua = Lua::new();
     lua.load(r#"
-        AO={}; SlashCmdList={}; frames={}; applies=0; invalidations=0
+        AO={}; SlashCmdList={}; frames={}; fonts={}; applies=0; invalidations=0
         local function widget()
             local w={scripts={},enabled=true,text=''}
             setmetatable(w,{__index=function(_,k) return function() end end})
@@ -13,7 +13,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
             function w:GetText() return self.text end
             function w:Disable() self.enabled=false end
             function w:Enable() self.enabled=true end
-            function w:CreateFontString() return widget() end
+            function w:CreateFontString() local f=widget(); fonts[#fonts+1]=f; return f end
             function w:CreateTexture() return widget() end
             function w:SetHeight(height) self.height=height end
             function w:EnableMouse(enabled) self.mouse=enabled end
@@ -26,6 +26,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
             if text=='binding' then return {kind='set_binding',character='Test',realm='Realm',family='retail',variant='live',build='123',key='CTRL-1',context=0,binding_set=2,expected='',desired='ACTIONBUTTON1'} end
+            if text=='bag' or text=='split' then return {kind=text=='split' and 'split_bag_item' or 'move_bag_item',character='Test',realm='Realm',family='retail',variant='live',build='123',bag=0,slot=1,target_bag=2,target_slot=3,item_id=123,count=20,amount=text=='split' and 5 or nil,source_guid='Item-Source'} end
             assert(text=='valid')
             return {kind='delete',character='Test',realm='Realm',family='retail',variant='live',build='123',source_scope='account',expected={name='Test',icon=1,body='/say test'}}
         end
@@ -52,6 +53,24 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(apply.enabled and frames[5].text:find('Unbound (checked on Apply)',1,true))
         assert(frames[5].text:find('Binding set: Character',1,true))
         assert(frames[5].text:find('Desired action: ACTIONBUTTON1',1,true))
+        input:SetText('bag'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Moves the full stack.',1,true))
+        assert(frames[5].text:find('Target bag/slot: 2 / 3',1,true))
+        input:SetText('split'); assert(not apply.enabled)
+        review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Split amount: 5 / Remaining: 15',1,true))
+        assert(frames[5].text:find('Source instance: Item-Source',1,true))
+        assert(not frames[5].text:find('Moves the full stack.',1,true))
+        function AO.ApplyReviewedMacro() return {status='outcome_unknown'},false,'Source |Hbad|h changed\ncheck' end
+        apply.scripts.OnClick()
+        assert(not apply.enabled and fonts[2].text:find('Outcome unknown:',1,true))
+        assert(fonts[2].text:find('Source /Hbad/h changed check',1,true))
+        review.scripts.OnClick()
+        function AO.ApplyReviewedMacro() error('Different character') end
+        apply.scripts.OnClick()
+        assert(fonts[2].text:find('Refused:',1,true) and fonts[2].text:find('Different character',1,true))
+
+
     "#,
     )
     .exec()
