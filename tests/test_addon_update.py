@@ -1,0 +1,36 @@
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from deploy.install_addon_update import install
+from tools.package_addon import package, render_entries
+
+
+class AddonUpdateTests(unittest.TestCase):
+    def test_hash_guard_backup_and_client_identity(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            game = root / "game"
+            addon = game / "Interface" / "AddOns" / "AzerothOperator"
+            addon.mkdir(parents=True)
+            (game / ".flavor.info").write_text("Product Flavor!STRING:0\nwow\n")
+            old_archive, old = package("retail","live",120105,"old-dev",root / "packages")
+            new_archive, new = package("retail","live",120105,"new-dev",root / "packages")
+            old_entries = render_entries("retail","live",120105,"old-dev")
+            for name,data in old_entries.items(): (addon / name).write_bytes(data)
+            args = [game,old_archive.with_suffix(".manifest.json"),new_archive.with_suffix(".manifest.json"),root / "backups"]
+            (addon / "Core.lua").write_text("user modification")
+            with self.assertRaisesRegex(ValueError,"changed"):
+                install(*args)
+            self.assertFalse((root / "backups").exists())
+            (addon / "Core.lua").write_bytes(old_entries["Core.lua"])
+            (game / ".flavor.info").write_text("Product Flavor!STRING:0\nwowf\n")
+            with self.assertRaisesRegex(ValueError,"product"):
+                install(*args)
+            (game / ".flavor.info").write_text("Product Flavor!STRING:0\nwow\n")
+            result = install(*args)
+            self.assertEqual(result["verified_files"],4)
+            backup = Path(result["backup"])
+            self.assertEqual((backup / "AzerothOperator.toc").read_bytes(),old_entries["AzerothOperator.toc"])
+            self.assertEqual(json.loads((backup / "manifest.json").read_text()),old)
+            self.assertIn("new-dev",(addon / "AzerothOperator.toc").read_text())
