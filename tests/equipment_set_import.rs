@@ -28,7 +28,7 @@ fn set_transport_binds_all_metadata_slots_and_observed_identities()
         icon: Some(134400),
     };
     let compiled = compile(&snapshot, &"a".repeat(64), &request)?;
-    assert_eq!(compiled["addon_execution_enabled"], false);
+    assert_eq!(compiled["addon_execution_enabled"], true);
     let code = compiled["import_code"].as_str().unwrap();
     assert_eq!(code.split(':').count(), 193);
     let lua = Lua::new();

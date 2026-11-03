@@ -95,7 +95,7 @@ struct EquipmentSetOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Prepare a Retail saved equipment-set rename/icon change or deletion from exact captured contents. Data only: does not equip gear, delete items or modify a set. Player review/Apply support exists in source but is not yet packaged; addon execution remains disabled. Does not repair external references.",
+        description = "Prepare a Retail saved equipment-set rename/icon change or deletion from exact captured contents. Data only: does not equip gear, delete items or modify a set. Player review and Apply requires addon 0.10.0-dev or later; live execution remains unqualified. Does not repair external references.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

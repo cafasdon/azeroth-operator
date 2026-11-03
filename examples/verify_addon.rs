@@ -27,6 +27,18 @@ fn main() -> anyhow::Result<()> {
         function GetRealmName() return "Synthetic" end
         function GetServerTime() return 1735689600 end
         function date() return "2025-01-01T00:00:00Z" end
+        setName='Package set'; setIcon=134400; setWrites=0
+        C_EquipmentSet={CanUseEquipmentSets=function() return true end,
+            GetEquipmentSetIDs=function() return {0} end,GetNumEquipmentSets=function() return 1 end,
+            GetEquipmentSetInfo=function(id) return setName,setIcon,id,false,0,0,0,0,0 end,
+            GetIgnoredSlots=function() return {} end,GetItemIDs=function() return {} end,
+            GetItemLocations=function() return {} end,GetEquipmentSetAssignedSpec=function() end,
+            GetEquipmentSetID=function() end,
+            ModifyEquipmentSet=function(id,name,icon)
+                assert(id==0 and AzerothOperatorOperations:find(':outcome_unknown:modify_equipment_set;',1,true))
+                setWrites=setWrites+1; setName=name; setIcon=tonumber(icon)
+            end}
+        function GetCursorInfo() end; function UnitCastingInfo() end; function UnitChannelInfo() end
     "#;
     let result = (|| -> mlua::Result<String> {
         lua.load(fixture).exec()?;
@@ -46,6 +58,8 @@ fn main() -> anyhow::Result<()> {
             "TalentImport.lua",
             "ActionOperations.lua",
             "ActionImport.lua",
+            "EquipmentSetOperations.lua",
+            "EquipmentSetImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
         ] {
@@ -78,10 +92,41 @@ fn main() -> anyhow::Result<()> {
         snapshot.sections["equipment"]["16"]["item_id"] == 123,
         "Item observation mismatch"
     );
+    if args[1] == "retail" {
+        let prepared = azeroth_operator::equipment_set_operation::compile(
+            &snapshot,
+            &"a".repeat(64),
+            &azeroth_operator::equipment_set_operation::EquipmentSetRequest {
+                operation: azeroth_operator::equipment_set_operation::EquipmentSetAction::Modify,
+                set_id: 0,
+                name: Some("Verified package".into()),
+                icon: Some(123),
+            },
+        )?;
+        let receipt_export=(|| -> mlua::Result<String> {
+            lua.globals().set("expected_interface",interface)?;
+            lua.globals().set("setCode",prepared["import_code"].as_str().unwrap())?;
+            lua.load(r#"
+                assert(not pcall(AO.ApplyReviewedMacro,setCode) and setWrites==0)
+                AO.ReviewMacroImport(setCode)
+                local receipt,ok=AO.ApplyReviewedMacro(setCode)
+                assert(ok and receipt.status=='applied' and setName=='Verified package' and setIcon==123 and setWrites==1)
+                AO.ReviewMacroImport(setCode); assert(not pcall(AO.ApplyReviewedMacro,setCode) and setWrites==1)
+                AO.Capture()
+            "#).exec()?;
+            lua.globals().get("AzerothOperatorExport")
+        })().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let verified = decode(format!("AzerothOperatorExport = \"{receipt_export}\"").as_bytes())?;
+        anyhow::ensure!(
+            verified.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]["status"]
+                == "applied",
+            "Packaged set receipt missing"
+        );
+    }
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }
