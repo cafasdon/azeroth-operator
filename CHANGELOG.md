@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only exact-instance Retail equipment swap executor with GUID, cursor and slot checks, displaced-item readback and failure tests. Two-handed/multi-slot handling remains incomplete; no live gear changes.
+
 - Add optional Retail item GUID capture to equipment/bag observations, preserving unknown identity when unavailable. Lua producer and Rust validation tested; undeployed groundwork for exact-instance equipment operations.
 - Verify live binding no-op through player review, persisted already_selected receipt and public MCP readback; actual binding writes remain unqualified.
 
