@@ -20,7 +20,7 @@
 
 - All eleven current section shapes have nested validation and malformed-input coverage. Live API compatibility and semantic constraints remain unverified. Bag indices 0..64 and slots 1..1024 are ingestion bounds, not claims about available game slots.
 - Maintain hosted MCP and authenticated local snapshot transfer; complete live-export qualification. ADRs 003–005 record the boundaries. Scheduled missing-export and manual synthetic runner paths are proven; actual Retail game-export delivery verified on build70688/interface120105; broader qualification remains pending.
-- Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented.
+- Finish addon adapters, packaging and export coverage; data-only SavedVariables ingestion implemented. Retail action-bar slot enumeration remains unresolved; see docs/action-bar-qualification.md. The synthetic MAX_ACTION_BUTTONS fixture is not a live API contract.
 - Explicit-root installed-client metadata identification and per-family fixture tests implemented; live capability inventory and independent variant/interface qualification remain pending.
 - Character, equipment, bags, talents, stats, professions, quests, currencies, achievements, macros, bindings and action-bar coverage where supported; explicit unavailable reasons elsewhere.
 - Deeper character/equipment analysis beyond observed counts; comparison and discovery implemented.
