@@ -19,13 +19,22 @@ local function open()
         box:SetMultiLine(true)
         box:SetFontObject(ChatFontNormal)
         box:SetWidth(550)
+        box:SetHeight(height)
+        box:EnableMouse(true)
         box:SetAutoFocus(false)
         box:SetScript("OnEscapePressed",box.ClearFocus)
         scroll:SetScrollChild(box)
+        local background=scroll:CreateTexture(nil,"BACKGROUND")
+        background:SetAllPoints()
+        background:SetColorTexture(0.05,0.05,0.05,0.9)
         return box
     end
     local input=textbox(-42,105)
     input:SetMaxLetters(8192)
+    local hint=panel:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
+    hint:SetPoint("TOPLEFT",18,-28)
+    hint:SetText("Click the dark box below and paste the operation code (Ctrl+V).")
+    input:SetScript("OnMouseDown",function(self) self:SetFocus() end)
     local details=textbox(-195,265)
     local review=CreateFrame("Button",nil,panel,"UIPanelButtonTemplate")
     review:SetSize(150,26); review:SetPoint("TOPLEFT",18,-155); review:SetText("Review pasted code")
@@ -66,6 +75,7 @@ local function open()
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)
     panel:SetScript("OnHide",function() AO.InvalidateMacroReview(); apply:Disable() end)
+    input:SetFocus()
 end
 SLASH_AZEROTHOPERATORMACROS1="/aomacros"
 SlashCmdList.AZEROTHOPERATORMACROS=open

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix the macro paste field after the first live UI report: give the empty edit box an explicit height, mouse interaction, initial focus, dark background and paste instructions. Regression fixture checks its clickable dimensions and focus. Retail 0.2.1-dev installed with seven matching files; player confirmation pending.
+
 - Export bounded macro operation receipts as `operation_receipts`, validated by Rust and readable with `inspect_snapshot`. Lua-to-snapshot and actual MCP protocol tests preserve unknown outcomes. Hosted reader/importer upgrades remain required before addon installation.
 
 - Persist macro attempt receipts as bounded data strings and accept both SavedVariables assignments in the Rust companion without executing Lua. Reject duplicate IDs, unsupported statuses, extra assignments and executable input; retain legacy single-export support. Source verification passes; receipt inspection through hosted snapshots remains to implement.
