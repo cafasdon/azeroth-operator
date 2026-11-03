@@ -43,3 +43,11 @@ Jev advisory previously returned insufficient evidence (0.63), claim_supported 0
 Equipment and bag maps now reject array shapes, noncanonical/out-of-range indices, zero item IDs, missing/negative stack counts, oversized links and unknown item fields. Empty object means observed empty; missing remains unknown. Legacy array fixtures were migrated explicitly; existing such snapshots will be rejected rather than silently reinterpreted. Other nested sections remain pending. Ten Rust tests and nine Python tests pass, including the unchanged Lua producer roundtrip and actual MCP caller. Clippy passes.
 
 Read-only SSH on 2026-11-03 verified host pylon, CT290 running with hostname mcp-gateway, and mcp-router active. Listener inventory collected without credentials. Existing source supports stdio-backed scope workers. No remote source, service, firewall, route or credentials were changed. Remote hosting and authenticated ingestion remain implementation work.
+
+## Complete current section-shape validation
+
+All eleven emitted section shapes now reject unsupported root shapes and unknown fields. Talents and currency entry maps are recursively checked; required fields, scalar types, coverage markers and string/entry bounds are enforced. Optional null is accepted. This validates the current wire contract, not complete semantic legality or actual game API compatibility. Runtime API differences may still require collector/schema changes together.
+
+The Lua producer fixture imports successfully. Twenty-two root mutations (array and unknown field per section) and six nested numeric type mutations are rejected by the real decoder. Ten Rust tests, nine Python tests and warnings-denied Clippy pass. The Python MCP test invokes the rebuilt Rust binary.
+
+Jev advisory: jev-1.14.0; request 33c47c319add1a9cfb727295f61a9d0145eb6d56f9452cfe6e0b362704a6f5a0; 899/135 tokens; 0.524s elapsed. Returned insufficient_evidence 0.49, claim_supported 0.62. Not a pass or live qualification. Disposition: commit directly tested contract checks; keep broader delivery and live verification open.

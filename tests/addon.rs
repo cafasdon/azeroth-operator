@@ -78,6 +78,43 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         "visible_currency_list_only"
     );
     assert_eq!(full.sections["achievements"]["total_points"], 1234);
+    // Mutate the actual producer output, rather than validating hand-built happy paths.
+    for name in full.sections.keys() {
+        let mut malformed = full.clone();
+        malformed
+            .sections
+            .insert(name.clone(), serde_json::json!([]));
+        assert!(
+            decode(&serde_json::to_vec(&malformed)?).is_err(),
+            "{name} accepted an array"
+        );
+        let mut malformed = full.clone();
+        malformed.sections.get_mut(name).unwrap()["unexpected_field"] = serde_json::json!(true);
+        assert!(
+            decode(&serde_json::to_vec(&malformed)?).is_err(),
+            "{name} accepted an unknown field"
+        );
+    }
+    for (section, pointer) in [
+        ("talents", "/nodes/10/rank"),
+        ("currencies", "/entries/1/quantity"),
+        ("professions", "/3/rank"),
+        ("achievements", "/total_points"),
+        ("stats", "/level"),
+        ("action_bars", "/1/id"),
+    ] {
+        let mut malformed = full.clone();
+        *malformed
+            .sections
+            .get_mut(section)
+            .unwrap()
+            .pointer_mut(pointer)
+            .unwrap() = serde_json::json!("wrong type");
+        assert!(
+            decode(&serde_json::to_vec(&malformed)?).is_err(),
+            "{section}{pointer} accepted wrong type"
+        );
+    }
     lua.load("AO.interface=1; assert(not pcall(AO.Capture))")
         .exec()?;
     assert_eq!(

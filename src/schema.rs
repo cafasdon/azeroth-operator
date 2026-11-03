@@ -1,4 +1,4 @@
-//! Version-one inventory payload validation. Other sections remain independently staged.
+//! Version-one payload validation matching the Lua export contract.
 use anyhow::{Result, ensure};
 use serde::Deserialize;
 use serde_json::Value;
@@ -44,6 +44,48 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
     Ok(())
 }
 
+// Bounds describe accepted export data, not limits of any particular game client.
+fn object(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
+    let map = value
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Expected object"))?;
+    ensure!(
+        map.keys()
+            .all(|key| fields.iter().any(|(name, _, _)| name == key)),
+        "Unknown field"
+    );
+    for (name, kind, required) in fields {
+        let Some(v) = map.get(*name).filter(|v| !v.is_null()) else {
+            ensure!(!required, "Missing required field: {name}");
+            continue;
+        };
+        let valid = match *kind {
+            "text" => v.as_str().is_some_and(|s| s.len() <= 16384),
+            "uint" => v.as_u64().is_some_and(|n| n <= u32::MAX as u64),
+            "positive" => v.as_u64().is_some_and(|n| n > 0 && n <= u32::MAX as u64),
+            "int" => v.as_i64().is_some_and(|n| i32::try_from(n).is_ok()),
+            "bool" => v.is_boolean(),
+            "icon" => v.as_u64().is_some() || v.as_str().is_some_and(|s| s.len() <= 4096),
+            "map" => v.is_object(),
+            literal => v.as_str() == Some(literal),
+        };
+        ensure!(valid, "Invalid field: {name}");
+    }
+    Ok(())
+}
+
+fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
+    let map = value
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Expected entry map"))?;
+    ensure!(map.len() <= 10000, "Too many entries");
+    for (key, entry) in map {
+        index(key, 1, u32::MAX)?;
+        object(entry, fields)?;
+    }
+    Ok(())
+}
+
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
         "equipment" => items(value, true)?,
@@ -56,7 +98,101 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 items(slots, false)?;
             }
         }
-        _ => (),
+        "stats" => object(
+            value,
+            &[
+                ("level", "int", true),
+                ("class", "text", true),
+                ("race", "text", true),
+                ("client_version", "text", true),
+            ],
+        )?,
+        "macros" => {
+            entries(
+                value,
+                &[
+                    ("name", "text", true),
+                    ("icon", "icon", false),
+                    ("body", "text", false),
+                    ("scope", "text", true),
+                ],
+            )?;
+            for entry in value.as_object().unwrap().values() {
+                ensure!(
+                    matches!(entry["scope"].as_str(), Some("account" | "character")),
+                    "Invalid macro scope"
+                );
+            }
+        }
+        "bindings" => entries(
+            value,
+            &[
+                ("command", "text", true),
+                ("category", "text", false),
+                ("key1", "text", false),
+                ("key2", "text", false),
+            ],
+        )?,
+        "action_bars" => entries(
+            value,
+            &[
+                ("kind", "text", true),
+                ("id", "positive", false),
+                ("sub_type", "text", false),
+            ],
+        )?,
+        "professions" => entries(
+            value,
+            &[
+                ("name", "text", true),
+                ("rank", "uint", true),
+                ("max_rank", "uint", true),
+                ("skill_line", "positive", true),
+            ],
+        )?,
+        "quests" => entries(value, &[("title", "text", true), ("level", "int", true)])?,
+        "currencies" => {
+            object(
+                value,
+                &[
+                    ("coverage", "visible_currency_list_only", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[("name", "text", true), ("quantity", "uint", true)],
+            )?;
+        }
+        "achievements" => object(
+            value,
+            &[
+                ("coverage", "points_only", true),
+                ("total_points", "uint", true),
+            ],
+        )?,
+        "talents" => {
+            object(
+                value,
+                &[
+                    ("config_id", "positive", true),
+                    ("name", "text", false),
+                    ("nodes", "map", true),
+                    ("has_unspent", "bool", false),
+                    ("unspent_class", "uint", false),
+                    ("unspent_spec", "uint", false),
+                ],
+            )?;
+            entries(
+                &value["nodes"],
+                &[
+                    ("entry_id", "positive", true),
+                    ("rank", "positive", true),
+                    ("tree_id", "positive", true),
+                ],
+            )?;
+        }
+        _ => anyhow::bail!("Unknown section"),
     }
     Ok(())
 }
