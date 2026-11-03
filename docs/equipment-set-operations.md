@@ -1,6 +1,6 @@
 # Equipment-set metadata operations — 2026-11-04
 
-Source-only `EquipmentSetOperations.lua` supports `modify_equipment_set` (name/icon) and `delete_equipment_set`. A Rust compiler and fixed-field Lua decoder now exist. The source review dispatcher, UI and receipt validators now recognise both operations. The source MCP preparation tool and 0.10.0-dev package now exist; deployment remains pending. Nothing in the running client can invoke this new module through Azeroth Operator.
+Source-only `EquipmentSetOperations.lua` supports `modify_equipment_set` (name/icon) and `delete_equipment_set`. A Rust compiler and fixed-field Lua decoder now exist. The source review dispatcher, UI and receipt validators now recognise both operations. The MCP preparation tool and 0.10.0-dev package are now deployed as development support; see [deployment evidence](equipment-set-deployment-2026-11-04.md). A running client must load the installed package before using it; native qualification remains pending. Earlier checkpoints below record source-only stages.
 
 The intended caller is an explicit player review/Apply handler. It must validate the prepared operation, record `outcome_unknown` before entry and refuse duplicate operation IDs, including unknown results. The executor itself has no receipt store; the shared review/Apply dispatcher now implements and tests these caller guarantees. It never retries, rolls back, equips items, saves current gear or assigns a specialisation.
 

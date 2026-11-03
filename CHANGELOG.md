@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy Retail 0.10.0-dev equipment-set development support with compatible hosted importer/reader and Windows companion. Public fourteen-tool discovery/preparation checks and nineteen installed hashes pass. No live set mutation or in-game test occurred.
+
 - Build nineteen-file Retail 0.10.0-dev equipment-set package with legacy upgrade support and actual staged Lua review/Apply/receipt verification. Require 0.10.0-dev for set operations; candidate verified offline, not installed.
 
 - Expose source MCP equipment-set metadata preparation as the fourteenth read-only tool. Real protocol tests verify preparation/refusals and unchanged snapshot files; gateway allowlists and importer qualification fixtures are aligned. Not deployed.
