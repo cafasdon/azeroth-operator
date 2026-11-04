@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible talent-creation importer/reader/companion and Retail 0.15.0-dev. Public synthetic preparation/receipt checks and all 29 installed hashes verified; no game action or native qualification. Preserve the legacy unknown macro-move importer fixture with a distinct creation ID.
+
 - Package current-build talent creation in Retail 0.15.0-dev (29 files), enable preparation with the minimum addon version, verify staged Apply/export and guarded 27→29 upgrades, and extend importer qualification. Deployment and native qualification remain pending.
 
 - Connect source talent creation to player review/Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and refusal to replay after exceptions, expiry or reload. Packaging/deployment and native qualification remain pending.
