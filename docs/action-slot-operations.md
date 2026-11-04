@@ -62,3 +62,14 @@ Primary implementation reference: [Blizzard SecureHandlers source mirror](https:
 Offline fixtures cover all three kinds, occupied destination refusal before writes, unavailable API, wrong cursor, changed source after pickup, rejected placement with retained cursor, delayed read-only confirmation and duplicate preimage refusal. Full source verification passed: format, locked build, Rust/Lua tests, Clippy with warnings denied and 38 Python tests. Existing move/swap tests pass. This is not exposed by MCP or the shared decoder/review/receipt path yet and is not deployed.
 
 Jev advisory: request `93254a567a0d02c688ed65f3f09b9ec164fd295db03f4c51f0ff411fd1fb1ecd`, resolved model `jev-1.14.0`, 985 input/116 output tokens, 0.310 seconds. `insufficient_evidence` (probability 0.78, confidence 0.67); no concrete finding or review pass. Configured adversarial-review file was absent. Direct source review and deterministic fixtures support only the stated offline behaviour. In-game testing remains deferred by the user.
+
+
+## Copy preparation and transport — 2026-11-04
+
+`prepare_action_operation` accepts optional `operation: "move" | "copy"` inside its operation request. Omission preserves legacy move/swap semantics and AO-ACTION-1 bytes. Copy uses AO-ACTIONCOPY-1 with the same 23 bounded fields and 8192-byte limit; the distinct magic participates in the SHA256 operation ID. Compiler and decoder both require an explicitly empty target. Source/macro identities, client/character and snapshot preimages remain bound. This hash is an identifier, not authentication.
+
+The source MCP reports copy `addon_execution_enabled=false`, `requires_addon_version=null` and `game_execution=false`. The shared import dispatcher still refuses the new format: review/Apply/receipt integration is next. No package or deployment changed.
+
+Verification: full source gate passed (format/build, all Rust/Lua tests, Clippy, 38 Python tests). The actual stdio MCP caller prepares copy and legacy move with distinct IDs. Actual Rust compiler → Lua decoder → executor composition preserves source and places a copy with mocked spell APIs. Occupied-target copy is rejected by both compiler and decoder; unsupported operation enum is rejected. Existing move/swap and malformed-field checks pass. Two fixture mistakes were corrected before the gate passed: observed-button count and missing interface return in GetBuildInfo. Neither was a product defect.
+
+Jev advisory request `7ab91be04baff225b532c209d0016fff2e8e947fad75972f9a3b9971ef999496`, resolved model `jev-1.14.0`, 1090 input/154 output tokens, 0.289 seconds: `insufficient_evidence` (probability 0.45, confidence 0.18), no concrete finding or review pass. Configured OCR skill and adversarial-review file were absent; those workflows did not run. Direct source inspection and deterministic checks support the narrow offline claims above, not native qualification.

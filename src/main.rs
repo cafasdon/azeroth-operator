@@ -122,7 +122,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Prepare a Retail action-slot move/swap from two explicitly observed slots, including exact macro contents. Data only; player review and Apply requires addon 0.9.0-dev or later. Live execution remains unqualified. Does not change action bars.",
+        description = "Prepare a Retail action-slot move/swap or copy into an empty slot from two explicitly observed slots, including exact macro contents. Data only; copy execution is disabled pending addon integration. Move/swap player review and Apply requires addon 0.9.0-dev or later. Live execution remains unqualified. Does not change action bars.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
