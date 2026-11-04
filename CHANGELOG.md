@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP talent rename/delete drafts with full captured catalogue/content binding and explicit non-executable status. Preserve default saved-build load transport; verify compiler refusals and actual MCP requests. Nothing deployed.
+
 - Add source-only saved talent-loadout rename/delete executors with complete current-spec catalogue and active-content preimages, single native calls and failure fixtures. Selected-loadout deletion and preparation/integration remain pending; nothing deployed.
 
 - Deploy compatible importer/reader/companion and Retail 0.13.0-dev create/save support. Public synthetic checks and all twenty-five installed hashes verified; no game action and native qualification remains pending.

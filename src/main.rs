@@ -150,7 +150,7 @@ impl Operator {
     }
 
     #[tool(
-        description = "Prepare a saved Retail talent loadout for player review using exact captured current and target contents. Requires a saved-loadout catalogue and no staged changes. The player opens Talents and applies; completion requires readback. Does not change talents.",
+        description = "Prepare a saved Retail talent loadout using exact captured contents. Operation load (default) produces player-review import code. Rename/delete produce non-executable metadata drafts binding the full current-spec catalogue; transport is not integrated. Selected-loadout deletion is refused. Does not change talents.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

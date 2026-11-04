@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Saved talent-loadout rename/delete source executors and failure fixtures implemented. Compiler/transport/review/receipts and packaging remain pending; selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
+- Saved talent-loadout rename/delete source executors, non-executable MCP drafts and failure fixtures implemented. Transport/review/receipts and packaging remain pending; selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.
