@@ -23,7 +23,7 @@ pub fn verify_swap_fixture(
     let prepared = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(prepared["kind"], "swap_bag_items");
     assert_eq!(prepared["addon_execution_enabled"], true);
-    assert_eq!(prepared["requires_addon_version"], "0.19.0-dev");
+    assert_eq!(prepared["requires_addon_version"], "0.20.0-dev");
     let lua = Lua::new();
     let ao = lua.create_table()?;
     lua.load(fixture_source(
@@ -64,6 +64,11 @@ pub fn verify_swap_fixture(
     lua.globals().set("AO", ao.clone())?;
     lua.globals().set("code", code)?;
     for source in [
+        fixture_source(
+            root,
+            "BagCompatibility.lua",
+            include_str!("../addon/BagCompatibility.lua"),
+        )?,
         fixture_source(root, "BagSwap.lua", include_str!("../addon/BagSwap.lua"))?,
         fixture_source(
             root,
@@ -84,6 +89,11 @@ pub fn verify_swap_fixture(
         ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return slot end}
         C_Item={GetItemGUID=function(slot) return slots[slot] and slots[slot].guid end}
         C_Container={GetContainerNumSlots=function() return 10 end,GetContainerItemInfo=function(_,slot) return slots[slot] end}
+C_Container.GetContainerNumFreeSlots=function() return 0,0 end
+C_Item.GetItemFamily=function() return 0 end
+C_Item.GetItemInfo=function() return 'Fixture',nil,nil,nil,nil,nil,nil,nil,'',nil,nil,nil,nil,nil,nil,nil,false end
+function ContainerFrame_IsReagentBag() return false end
+
         now=0;writes=0;function GetTime() return now end
         function reset()
             slots={[1]={itemID=123,stackCount=2,guid='one',hyperlink='source:|link'},[2]={itemID=456,stackCount=3,guid='two',hyperlink='target:|link'}}

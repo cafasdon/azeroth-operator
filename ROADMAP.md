@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Source-only bag compatibility preflight distinguishes compatible/incompatible/unknown with stable metadata checks; executor integration, packaging and native qualification remain pending. [Contract](docs/bag-compatibility.md).
+- Source-only bag compatibility preflight distinguishes compatible/incompatible/unknown with stable metadata checks; move/split and both swap directions now require compatibility and recheck identities before pickup. Retail0.20.0-dev package/staged lifecycle/actual0.19upgrade verified; deployment and native qualification pending. [Contract](docs/bag-compatibility.md).
 
 - Source-only carried-item swap executor and failure fixtures pass; compiler/transport and actual MCP preparation now pass offline tests; shared review/Apply/receipt integration now passes lifecycle/UI fixtures; 0.19.0-dev packaging/staged lifecycle/actual prior-archive upgrade verified; compatible services/companion/addon rollout verified; same-ID stack compatibility and native qualification remain unfinished. [Contract](docs/bag-swap-operations.md).
 

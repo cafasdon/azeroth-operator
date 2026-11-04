@@ -152,7 +152,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         swap_data=json.loads(swap.content[0].text)
                         self.assertEqual(swap_data["kind"],"swap_bag_items")
                         self.assertTrue(swap_data["addon_execution_enabled"])
-                        self.assertEqual(swap_data["requires_addon_version"],"0.19.0-dev")
+                        self.assertEqual(swap_data["requires_addon_version"],"0.20.0-dev")
                         self.assertEqual(swap_data["target"]["guid"],"Item-Swap")
                         split=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":2,"target_bag":0,"target_slot":3,"expect_empty_target":True,"amount":2}})
                         self.assertFalse(split.isError)

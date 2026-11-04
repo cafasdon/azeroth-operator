@@ -29,6 +29,12 @@ function AO.ApplyBagOperation(op)
     assert(info and not info.isLocked and info.itemID==op.item_id and info.stackCount==op.count, "Source changed or locked")
     assert(C_Item.GetItemGUID(source)==op.source_guid and emptyTarget(), "Item locations changed")
     local observedLink=info.hyperlink
+    assert(type(AO.CheckBagCompatibility)=="function", "Bag compatibility preflight unavailable")
+    assert(AO.CheckBagCompatibility(observedLink,op.target_bag).status=="compatible", "Destination bag compatibility unconfirmed")
+    -- Metadata reads can observe a later state; revalidate identities before pickup.
+    local checked=C_Container.GetContainerItemInfo(op.bag,op.slot)
+    assert(checked and not checked.isLocked and checked.itemID==op.item_id and checked.stackCount==op.count
+        and checked.hyperlink==observedLink and C_Item.GetItemGUID(source)==op.source_guid and emptyTarget(), "Item locations changed during preflight")
     -- Caller must checkpoint uncertainty before entry. Never clear or retry a cursor.
     local function sourceAfterPickup()
         if not splitting then return not C_Item.GetItemGUID(source) end

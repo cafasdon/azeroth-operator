@@ -24,6 +24,9 @@ fn full_stack_move_guards_and_partial_effects() -> mlua::Result<()> {
     )
     .exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
+    lua.load(include_str!("bag_metadata_fixture.lua")).exec()?;
+    lua.load(include_str!("../addon/BagCompatibility.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(include_str!("../addon/BagOperations.lua"))
         .call::<()>(("AzerothOperator", ao))?;
     lua.load(
@@ -35,6 +38,18 @@ fn full_stack_move_guards_and_partial_effects() -> mlua::Result<()> {
         slots[2]={guid='occupied'}; assert(not pcall(AO.ApplyBagOperation,op)); slots[2]=nil
         op.source_guid='wrong'; assert(not pcall(AO.ApplyBagOperation,op)); op.source_guid='stack'
         assert(writes==0)
+        local classifier=ContainerFrame_IsReagentBag
+        ContainerFrame_IsReagentBag=function() return true end
+        assert(not pcall(AO.ApplyBagOperation,op) and writes==0)
+        ContainerFrame_IsReagentBag=classifier
+        local family=C_Item.GetItemFamily
+        C_Item.GetItemFamily=function() return nil end
+        assert(not pcall(AO.ApplyBagOperation,op) and writes==0)
+        C_Item.GetItemFamily=family
+        local info=C_Item.GetItemInfo
+        C_Item.GetItemInfo=function(...) slots[1].guid='race';return info(...) end
+        assert(not pcall(AO.ApplyBagOperation,op) and writes==0)
+        slots[1].guid='stack';C_Item.GetItemInfo=info
         assert(AO.ApplyBagOperation(op).status=='applied')
         assert(writes==2 and slots[1]==nil and slots[2].stackCount==20 and cursor==nil)
         assert(not pcall(AO.ApplyBagOperation,op) and writes==2)

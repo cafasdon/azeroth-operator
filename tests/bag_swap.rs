@@ -28,9 +28,22 @@ fn swap_checks_both_identities_and_never_retries_uncertainty() -> mlua::Result<(
  end
  "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
+    lua.load(include_str!("bag_metadata_fixture.lua")).exec()?;
+    lua.load(include_str!("../addon/BagCompatibility.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(include_str!("../addon/BagSwap.lua"))
         .call::<()>(("AzerothOperator", ao))?;
     lua.load(r#"
+ reset();local classifier=ContainerFrame_IsReagentBag
+ ContainerFrame_IsReagentBag=function(bag) return bag==0 end
+ -- Forward destination is general; displaced target cannot return to reagent source.
+ assert(not pcall(AO.ApplyBagSwap,op) and writes==0)
+ ContainerFrame_IsReagentBag=classifier
+ reset();local family=C_Item.GetItemFamily;C_Item.GetItemFamily=function() end
+ assert(not pcall(AO.ApplyBagSwap,op) and writes==0);C_Item.GetItemFamily=family
+ reset();local metadata=C_Item.GetItemInfo
+ C_Item.GetItemInfo=function(...) slots['1:2'].guid='race';return metadata(...) end
+ assert(not pcall(AO.ApplyBagSwap,op) and writes==0);C_Item.GetItemInfo=metadata
  reset(); assert(AO.ApplyBagSwap(op).status=='applied' and writes==3 and not cursor)
  assert(slots['0:1'].guid=='two' and slots['1:2'].guid=='one')
  assert(not pcall(AO.ApplyBagSwap,op) and writes==3)

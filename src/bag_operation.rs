@@ -147,7 +147,7 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         return Ok(
             json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"swap_bag_items",
             "source":entries[0],"target":entries[1],"import_code":code,"requires_player_apply":true,
-            "game_execution":false,"live_qualified":false,"addon_execution_enabled":true,"requires_addon_version":"0.19.0-dev"}),
+            "game_execution":false,"live_qualified":false,"addon_execution_enabled":true,"requires_addon_version":"0.20.0-dev"}),
         );
     }
     let count = source["count"]
@@ -208,6 +208,6 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         "source":source,"bag":request.bag,"slot":request.slot,"target_bag":request.target_bag,
         "target_slot":request.target_slot,"empty_target_is_explicit_precondition":true,
         "import_code":fields.join(":"),"requires_player_apply":true,"game_execution":false,
-        "live_qualified":false,"destination_compatibility":"checked_in_game"}),
+        "live_qualified":false,"addon_execution_enabled":true,"requires_addon_version":"0.20.0-dev","destination_compatibility":"metadata_preflight_and_native_readback"}),
     )
 }
