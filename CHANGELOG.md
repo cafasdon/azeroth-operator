@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect source bag swaps to player review/Apply and persisted receipts. End-to-end success, delayed observation, exceptions, expiry and reload replay-refusal fixtures pass; packaging/deployment and native qualification pending.
+
 - Add source MCP bag-swap preparation and bounded AO-BAGSWAP-1 transport binding both item identities/links/counts. Legacy move/split preserved; swap execution disabled pending shared review/receipt integration.
 
 - Add source-only carried-item swap executor with both exact item preimages, cursor checks and refusal to place over stale source observations. Offline success/failure tests pass; same-ID stack semantics, integration and native qualification remain pending.

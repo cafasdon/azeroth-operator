@@ -179,6 +179,17 @@ local function open()
             end
             lines[#lines+1]="Both slots and macro contents are checked again. No action body is executed."
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. On failure inspect the cursor; do not retry."
+        elseif op.kind=="swap_bag_items" then
+            lines[#lines+1]="Swap both complete item stacks."
+            for _,entry in ipairs({{"Source",op.source},{"Target",op.target}}) do
+                local item=entry[2]
+                lines[#lines+1]=entry[1].." bag/slot: "..item.bag.." / "..item.slot
+                lines[#lines+1]="Item ID: "..item.item_id.." / Count: "..item.count
+                lines[#lines+1]="Instance: "..item.guid
+                lines[#lines+1]="Item link: "..item.link
+            end
+            lines[#lines+1]="Both item identities and quantities are checked again."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. On failure inspect the cursor; do not retry."
         elseif op.kind=="move_bag_item" or op.kind=="split_bag_item" then
             lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
             lines[#lines+1]="Target bag/slot: "..op.target_bag.." / "..op.target_slot
