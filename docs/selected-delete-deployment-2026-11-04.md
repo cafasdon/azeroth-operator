@@ -1,0 +1,13 @@
+# Selected talent deletion deployment — 2026-11-04
+
+Source `0b35d1861eb7089fc48968e43b6252bd4b3b6135` (PR59). Personal pylon/CT290 mcp-gateway identities, previous importer pin and active service were verified. Installed Retail 0.15.0-dev matched all 29 previous hashes before upgrade.
+
+Linux release tests/build passed. Importer and dedicated reader now use `sha256:47c2360442e14ffd1ff7ca97544aed19bd879788ce2aac3e2df5efb0e374d0c6`. Isolated legacy/extended importer fixtures and guarded reader profile/read-only mount/authenticated loopback checks passed. Previous image `sha256:158a95b399d0163c9c0b766c0edff8da08ffc87570594f88e3d684990f288e0e`; reader rollback `/var/tmp/azeroth-reader-upgrade-k5d8otrt`; source `/var/tmp/azeroth-source-0b35d18`; image ID `/var/tmp/azeroth-selected-delete-0b35d18.iid`. Post-check confirmed importer pin and active service. No unrelated profile changed.
+
+Public TLS SDK checks used synthetic snapshot `88ad28be65e062d7616b5f83140d91703a4c95061d131bb9b9a939144c48f9cf`. Fourteen tools were listed. Selected deletion requires addon 0.16.0-dev, binds full catalogue and selected ID and reports clears_saved_selection true. Creation, rename, nonselected deletion, collision refusal, legacy load and receipt readback passed; captured talents remained identical. Local evidence `local-data/selected-delete-public-check.json`, helper `local-data/check-selected-delete-release.py`. No prepared code was applied in game.
+
+Windows companion SHA-256 `b2395d0375b1e6049bc3593b8b943562ca830c3887963d368002943217f39db0` was hash-verified in its content-addressed runtime directory and atomically selected. Backup `local-data/sync/config-before-selected-delete.json`. Sync at `2026-11-04T01:26:21.845731Z` reported Retail unchanged at `184cd8a9ffd714eb7a5f33f4b661ba15e542c117fd483acef5b65e041b15f3c8`, remote_rechecked false; Forever waits for export. Cached acknowledgement is not a fresh remote check of the character. Scheduled task unchanged.
+
+Retail 0.16.0-dev installed after compatible service checks; all 29 files independently match the manifest. ZIP SHA-256 `c40af5251f618118fc6d7ba0f782f5243f103acec1d28a9ae99586cf4fb26c9c`; backup `local-data/addon-backups/addon-update-g_kn8ywh`. The running game may retain its previous addon until player reload/restart. No input or test prompt was issued.
+
+Native selection clearing, taint and active-content preservation remain unqualified. Arbitrary import/node editing and broader policy-matrix coverage remain incomplete. Classic/Forever mutations remain disabled. The uncertain Cutlass move remains untouched and must not be replayed.
