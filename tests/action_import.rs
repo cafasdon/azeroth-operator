@@ -245,6 +245,84 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
     "#,
     )
     .exec()?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(r#"
+        slots={[1]={kind='spell',id=123}}; writes=0; now=0
+        function GetTime() return now end
+        local id=AO.DecodeActionOperation(code).id
+        C_Spell.PickupSpell=function(value)
+            assert(AzerothOperatorOperations:find(id..':outcome_unknown:copy_action_slot;',1,true))
+            writes=writes+1; cursor={kind='spell',id=value}
+        end
+        assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code)
+        assert(not pcall(AO.ApplyReviewedMacro,code..':') and writes==0)
+        AO.ReviewMacroImport(code)
+        local receipt,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and receipt.kind=='copy_action_slot' and receipt.status=='applied' and writes==2)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==2)
+        -- Separate synthetic operations exercise delayed observation, expiry and exceptions.
+        C_Spell.PickupSpell=function(value) writes=writes+1; cursor={kind='spell',id=value} end
+        function fresh(letter)
+            slots={[1]={kind='spell',id=123}}; cursor=nil
+            return code:gsub('AO%-ACTIONCOPY%-1:[0-9a-f]+:','AO-ACTIONCOPY-1:'..string.rep(letter,64)..':',1)
+        end
+        function PlaceAction(slot) writes=writes+1; pending=cursor; cursor=nil end
+        local delayed=fresh('b'); AO.ReviewMacroImport(delayed)
+        receipt,ok=AO.ApplyReviewedMacro(delayed)
+        assert(ok and receipt.status=='outcome_unknown' and writes==4)
+        assert(AO.ReadMacroReceipts()[string.rep('b',64)].status=='outcome_unknown')
+        slots[2]=pending; now=10
+        assert(AO.ReadMacroReceipts()[string.rep('b',64)].status=='applied' and writes==4)
+        local expired=fresh('c'); AO.ReviewMacroImport(expired); AO.ApplyReviewedMacro(expired)
+        slots[2]=pending; now=71
+        assert(AO.ReadMacroReceipts()[string.rep('c',64)].status=='outcome_unknown' and writes==6)
+        AO.ReviewMacroImport(expired); assert(not pcall(AO.ApplyReviewedMacro,expired) and writes==6)
+        local failed=fresh('d')
+        function PlaceAction(slot) writes=writes+1; slots[slot],cursor=cursor,nil; error('after effect') end
+        AO.ReviewMacroImport(failed); receipt,ok=AO.ApplyReviewedMacro(failed)
+        assert(not ok and receipt.status=='outcome_unknown' and writes==8)
+        assert(AO.ReadMacroReceipts()[string.rep('d',64)].status=='outcome_unknown')
+        local before=fresh('e')
+        C_Spell.PickupSpell=function() error('before effect') end
+        AO.ReviewMacroImport(before); receipt,ok=AO.ApplyReviewedMacro(before)
+        assert(not ok and receipt.status=='outcome_unknown' and writes==8)
+        SlashCmdList={}
+        function GetServerTime() return 1735689600 end
+        function date() return '2025-01-01T00:00:00Z' end
+        AO.collectors={operation_receipts=AO.ReadMacroReceipts}
+    "#).exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("AO.Capture()").exec()?;
+    let exported: String = lua.globals().get("AzerothOperatorExport")?;
+    let checkpoint: String = lua.globals().get("AzerothOperatorOperations")?;
+    let imported = azeroth_operator::import::decode(
+        format!(
+            "AzerothOperatorExport = \"{exported}\"\nAzerothOperatorOperations = \"{checkpoint}\""
+        )
+        .as_bytes(),
+    )?;
+    let receipts = &imported.sections["operation_receipts"];
+    assert_eq!(
+        receipts[copied["operation_id"].as_str().unwrap()]["kind"],
+        "copy_action_slot"
+    );
+    assert_eq!(receipts["b".repeat(64)]["status"], "applied");
+    for letter in ["c", "d", "e"] {
+        assert_eq!(receipts[letter.repeat(64)]["status"], "outcome_unknown");
+    }
+    // Reload loses observers but preserves checkpoint and duplicate refusal.
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(r#"
+        for _,letter in ipairs({'c','d','e'}) do
+            local attempted=code:gsub('AO%-ACTIONCOPY%-1:[0-9a-f]+:','AO-ACTIONCOPY-1:'..string.rep(letter,64)..':',1)
+            assert(AO.ReadMacroReceipts()[string.rep(letter,64)].status=='outcome_unknown')
+            AO.ReviewMacroImport(attempted); assert(not pcall(AO.ApplyReviewedMacro,attempted) and writes==8)
+        end
+    "#).exec()?;
     let decoder: mlua::Function = ao.get("DecodeActionOperation")?;
     let occupied = compile(
         &snapshot,

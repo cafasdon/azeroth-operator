@@ -164,10 +164,10 @@ local function open()
             lines[#lines+1]="Open your Talents panel before Apply. Current and saved build contents are checked again."
             lines[#lines+1]="Completion requires committed talents and matching saved selection."
             lines[#lines+1]="After the game finishes, run /aoexport within 60 seconds, then /reload. Do not repeat Apply while uncertain."
-        elseif op.kind=="move_action_slot" then
+        elseif op.kind=="move_action_slot" or op.kind=="copy_action_slot" then
             lines[#lines+1]="Source action slot: "..op.source_slot
             lines[#lines+1]="Target action slot: "..op.target_slot
-            lines[#lines+1]=op.target.empty and "Move to captured empty slot." or "Swap the two captured actions."
+            lines[#lines+1]=op.kind=="copy_action_slot" and "Copy to captured empty slot; keep the source action." or (op.target.empty and "Move to captured empty slot." or "Swap the two captured actions.")
             for _,entry in ipairs({{"Source",op.source},{"Target",op.target}}) do
                 local action=entry[2]
                 lines[#lines+1]=entry[1]..": "..(action.empty and "Empty" or (action.kind.." / "..action.id))

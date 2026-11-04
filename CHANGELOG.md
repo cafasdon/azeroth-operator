@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect source action copying to player review/Apply and receipt export/import. Verify pre-write uncertainty, delayed readback, expiry, exceptions and reload replay refusal. Packaging/deployment and native qualification remain pending.
+
 - Add source MCP action-copy preparation and strict AO-ACTIONCOPY-1 transport. Preserve default move requests and refuse occupied copy destinations; execution remains disabled pending shared review/receipt integration.
 
 - Add source-only action-slot copying for spells, items and macros into an explicitly empty observed slot. Verify source preservation, cursor identity, uncertain placement and no retry offline; MCP transport/review integration and native qualification remain pending.
