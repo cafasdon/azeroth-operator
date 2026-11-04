@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible talent-import services/companion and Retail 0.17.0-dev. Public synthetic preparation/receipt checks and all 33 installed hashes verified; native game qualification remains deferred.
+
 - Package talent imports in Retail 0.17.0-dev (33 files), enable explicit minimum-version preparation, run the full import lifecycle against staged Lua, and verify guarded 29→33 upgrades. Compatible rollout/native qualification remain pending.
 
 - Connect talent import to source player review, explicit Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and replay refusal through expiry/reload/exceptions. Packaging and native qualification remain pending.
