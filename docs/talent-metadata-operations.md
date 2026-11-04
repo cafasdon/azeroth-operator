@@ -1,5 +1,9 @@
 # Saved talent-loadout metadata
 
+## Deployment — 2026-11-04
+
+Retail 0.14.0-dev and compatible importer/reader/companion are deployed. Public synthetic checks and all 27 installed hashes passed. Native testing remains deferred; the running client may not yet have loaded the files. See [deployment evidence](talent-metadata-deployment-2026-11-04.md). Earlier source-only checkpoints below are historical.
+
 ## Package 0.14.0-dev — 2026-11-04
 
 The Retail package now includes `TalentMetadata.lua` and `TalentMetadataImport.lua` before shared dispatch: 27 files. Compiler output advertises player-applied support requiring addon `0.14.0-dev`, while `game_execution` and `live_qualified` remain false. This checkpoint does not change the installed addon, Windows companion or hosted services; compatible importer/reader deployment must precede installation.

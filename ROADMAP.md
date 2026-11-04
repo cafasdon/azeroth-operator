@@ -3,7 +3,7 @@
 ## Current operational checkpoint — 2026-11-04
 
 - Public MCP: fourteen tools; importer and reader support macro, binding, equipment, bag and saved-talent operation data. Preparation is external; execution requires player review and Apply in the addon.
-- Installed Retail addon: 0.13.0-dev, twenty-five files verified. Native equipment-set observations and player-applied name/icon/delete/use/spec-association/create/save operations are development-supported but unqualified. This includes full-stack moves, splits, saved-talent switches, observation-only completion handling and explicitly partial action-bar capture. Action-slot preparation and player-applied execution are deployed as development support; no live operation qualified. Installation is not proof the running client loaded this version. [Latest deployment evidence](docs/equipment-set-save-deployment-2026-11-04.md).
+- Installed Retail addon: 0.14.0-dev, twenty-seven files verified. Native equipment-set observations and player-applied name/icon/delete/use/spec-association/create/save operations are development-supported but unqualified. This includes full-stack moves, splits, saved-talent switches, observation-only completion handling and explicitly partial action-bar capture. Action-slot preparation and player-applied execution are deployed as development support; no live operation qualified. Installation is not proof the running client loaded this version. [Latest deployment evidence](docs/talent-metadata-deployment-2026-11-04.md).
 - Live-qualified mutations: blank test macro creation only. Binding no-op verified. Item identity capture verified. Bag move receipt is outcome_unknown with the original item still observed at source; no replay. Equipment swaps, actual binding changes, other macro mutations, splits and talent switches remain unqualified.
 - User deferred further in-game tests until tomorrow. Continue offline development; no additional game-test prompts today.
 - Next implementation work: native equipment-set empty-slot semantics and qualification; talent creation/import/editing; further action-bar operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Deployment/native qualification remain pending; selected deletion is unresolved. Installed version remains 0.13.0-dev until deployment. [Contract](docs/talent-metadata-operations.md).
+- Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Compatible importer/reader/companion and addon are deployed; native qualification remains pending and selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.
