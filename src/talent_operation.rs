@@ -186,7 +186,7 @@ fn metadata_draft(
     if !catalog["selected_config_id"].is_null() {
         expected["selected_config_id"] = catalog["selected_config_id"].clone();
     }
-    let mut draft = json!({"format":"talent_metadata_draft_v1","kind":if rename {"rename_talent_config"} else {"delete_talent_config"},"snapshot_id":sid,"family":"retail","variant":snapshot.client.variant,"build":snapshot.client.build,"interface":snapshot.client.interface,"character":snapshot.character.name,"realm":snapshot.character.realm,"target_config_id":request.target_config_id,"expected":expected,"requires_player_apply":true,"game_execution":false,"live_qualified":false,"execution_supported":false,"import_code":null,"action_bar_contents_verified":false,"completion":"requires_full_catalogue_and_active_content_readback"});
+    let mut draft = json!({"format":"talent_metadata_draft_v1","kind":if rename {"rename_talent_config"} else {"delete_talent_config"},"snapshot_id":sid,"family":"retail","variant":snapshot.client.variant,"build":snapshot.client.build,"interface":snapshot.client.interface,"character":snapshot.character.name,"realm":snapshot.character.realm,"target_config_id":request.target_config_id,"expected":expected,"requires_player_apply":true,"game_execution":false,"live_qualified":false,"execution_supported":true,"addon_execution_enabled":true,"requires_addon_version":"0.14.0-dev","import_code":null,"action_bar_contents_verified":false,"completion":"requires_full_catalogue_and_active_content_readback"});
     if rename {
         draft["name"] = json!(request.name);
     }

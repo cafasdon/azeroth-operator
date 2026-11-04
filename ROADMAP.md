@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Saved talent-loadout rename/delete source executors, MCP transport, strict Lua decoder, shared review/receipts and failure fixtures implemented. Packaging/deployment remain pending; execution support is not advertised and selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
+- Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Deployment/native qualification remain pending; selected deletion is unresolved. Installed version remains 0.13.0-dev until deployment. [Contract](docs/talent-metadata-operations.md).
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.

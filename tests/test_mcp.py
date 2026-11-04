@@ -167,7 +167,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(draft.isError)
                             data=json.loads(draft.content[0].text)
                             self.assertEqual(data["kind"],kind+"_talent_config")
-                            self.assertFalse(data["execution_supported"])
+                            self.assertTrue(data["execution_supported"])
+                            self.assertEqual(data["requires_addon_version"],"0.14.0-dev")
                             self.assertTrue(data["import_code"].startswith("AO-TALMETA-1:"))
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})

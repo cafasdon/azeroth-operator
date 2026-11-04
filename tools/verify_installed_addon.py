@@ -22,13 +22,15 @@ EQUIPMENT_SET_SAVE_FILES = EQUIPMENT_SET_SPEC_FILES | {"EquipmentSetSaveState.lu
 MAX_FILE = 1024 * 1024
 
 
+TALENT_METADATA_FILES = EQUIPMENT_SET_SAVE_FILES | {"TalentMetadata.lua", "TalentMetadataImport.lua"}
+
 def verify(client, manifest):
     client = ordinary(absolute(client))
     receipt = json.loads(read_metadata(ordinary(absolute(manifest)), 16384))
     if not isinstance(receipt, dict) or not isinstance(receipt.get("files"), dict):
         raise ValueError("Invalid manifest")
     files = set(receipt["files"])
-    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES) or any(
+    if files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES, TALENT_METADATA_FILES) or any(
         not isinstance(value, str) or not re.fullmatch("[a-f0-9]{64}", value)
         for value in receipt["files"].values()
     ):
