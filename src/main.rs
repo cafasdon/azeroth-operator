@@ -150,7 +150,7 @@ impl Operator {
     }
 
     #[tool(
-        description = "Prepare a saved Retail talent loadout using exact captured contents. Operation load (default) produces player-review import code. Rename/delete produce bounded import data binding the full current-spec catalogue; player Apply integration is pending and execution_supported is false. Selected-loadout deletion is refused. Does not change talents.",
+        description = "Prepare a saved Retail talent loadout using exact captured contents. Operation load (default) produces player-review import code. Rename/delete produce bounded import data binding the full current-spec catalogue; packaging/deployment is pending and execution_supported is false. Selected-loadout deletion is refused. Does not change talents.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

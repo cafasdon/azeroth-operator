@@ -26,6 +26,9 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='talent_rename' or text=='talent_delete' then
+                return {kind=text=='talent_rename' and 'rename_talent_config' or 'delete_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',target_config_id=9,name='New build',expected={spec_id=263,selected_config_id=8,entries={['9']={name='Old|Build'}}}}
+            end
             if text=='set_create' or text=='set_save' then
                 local slots,before,ignored={},{},{}
                 for i=1,19 do local k=tostring(i); slots[k]={ignored=true}; before[k]={guid='',item_id=0}; ignored[k]=true end
@@ -122,6 +125,12 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         input:SetText('spec_unassign'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find("Remove this set's specialisation association.",1,true))
         assert(not frames[5].text:find('Remove this association from:',1,true))
+        input:SetText('talent_rename'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('New name: New build',1,true))
+        assert(frames[5].text:find('Old/Build',1,true) and frames[5].text:find('Actual action-bar contents are not verified.',1,true))
+        input:SetText('talent_delete'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('DELETE this saved talent loadout',1,true))
+        assert(frames[5].text:find('Recovery requires recreating',1,true))
         input:SetText('talent'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('Saved loadout: Saved Build (9)',1,true))
         assert(frames[5].text:find('loadout-specific bars may change',1,true))

@@ -1,12 +1,12 @@
 -- Fixed data fields only. No Lua evaluation, network input or automatic execution.
 local _, AO = ...
 local statuses={applied=true,outcome_unknown=true,copied_source_removal_unconfirmed=true,already_selected=true}
-local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true,move_action_slot=true,modify_equipment_set=true,delete_equipment_set=true,use_equipment_set=true,assign_equipment_set_spec=true,unassign_equipment_set_spec=true,create_equipment_set=true,save_equipment_set=true}
+local kinds={create=true,edit=true,delete=true,move=true,set_binding=true,equip_bag_item=true,move_bag_item=true,split_bag_item=true,load_talent_config=true,rename_talent_config=true,delete_talent_config=true,move_action_slot=true,modify_equipment_set=true,delete_equipment_set=true,use_equipment_set=true,assign_equipment_set_spec=true,unassign_equipment_set_spec=true,create_equipment_set=true,save_equipment_set=true}
 local executors={create="ApplyMacroOperation",edit="ApplyMacroOperation",delete="ApplyMacroOperation",move="ApplyMacroOperation",
     set_binding="ApplyBindingOperation",equip_bag_item="ApplyEquipmentOperation",move_bag_item="ApplyBagOperation",split_bag_item="ApplyBagOperation",
-    load_talent_config="ApplyTalentOperation",move_action_slot="ApplyActionOperation",
+    load_talent_config="ApplyTalentOperation",rename_talent_config="ApplyTalentMetadata",delete_talent_config="ApplyTalentMetadata",move_action_slot="ApplyActionOperation",
     modify_equipment_set="ApplyEquipmentSetOperation",delete_equipment_set="ApplyEquipmentSetOperation",use_equipment_set="ApplyEquipmentSetUse",assign_equipment_set_spec="ApplyEquipmentSetSpec",unassign_equipment_set_spec="ApplyEquipmentSetSpec",create_equipment_set="ApplyEquipmentSetSave",save_equipment_set="ApplyEquipmentSetSave"}
-local verifiers={load_talent_config="VerifyTalentOperation",move_action_slot="VerifyActionOperation",
+local verifiers={load_talent_config="VerifyTalentOperation",rename_talent_config="VerifyTalentMetadata",delete_talent_config="VerifyTalentMetadata",move_action_slot="VerifyActionOperation",
     move_bag_item="VerifyBagOperation",split_bag_item="VerifyBagOperation",
     modify_equipment_set="VerifyEquipmentSetOperation",delete_equipment_set="VerifyEquipmentSetOperation",use_equipment_set="VerifyEquipmentSetUse",assign_equipment_set_spec="VerifyEquipmentSetSpec",unassign_equipment_set_spec="VerifyEquipmentSetSpec",create_equipment_set="VerifyEquipmentSetSave",save_equipment_set="VerifyEquipmentSetSave"}
 local function readReceipts()
@@ -90,6 +90,10 @@ end
 -- the review; an Apply event cannot silently substitute different operation data.
 local reviewedText
 local function decodeOperation(text)
+    if type(text)=="string" and text:sub(1,13)=="AO-TALMETA-1:" then
+        assert(AO.DecodeTalentMetadata,"Talent metadata import unavailable")
+        return AO.DecodeTalentMetadata(text)
+    end
     if type(text)=="string" and text:sub(1,13)=="AO-SETSAVE-1:" then
         assert(AO.DecodeEquipmentSetSave,"Equipment set save import unavailable")
         return AO.DecodeEquipmentSetSave(text)

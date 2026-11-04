@@ -1,7 +1,8 @@
 use mlua::Lua;
 
 #[test]
-fn saved_loadout_metadata_preserves_active_contents_and_bystanders() -> mlua::Result<()> {
+fn saved_loadout_metadata_preserves_active_contents_and_bystanders()
+-> Result<(), Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.load(r#"
         AO={family='retail',variant='live',interface=120105}
@@ -16,6 +17,7 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders() -> mlua::Re
         end
         function native(id,name)
             assert(id==9); writes=writes+1
+            if checkReceipt then assert(AzerothOperatorOperations:find(op.id..':outcome_unknown:'..op.kind..';',1,true)) end
             if mode=='throw_before' then error('before') end
             if mode=='delay' or mode=='reject' then return true end
             finish()
@@ -56,7 +58,7 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders() -> mlua::Re
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
     lua.load(include_str!("../addon/TalentMetadata.lua"))
-        .call::<()>(("AzerothOperator", ao))?;
+        .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(r#"
         for _,kind in ipairs({'rename_talent_config','delete_talent_config'}) do
             reset(kind); assert(AO.ApplyTalentMetadata(op).status=='applied' and writes==1)
@@ -96,5 +98,73 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders() -> mlua::Re
         reset(); function issecretvalue(v) return v=='Build' end
         assert(not pcall(AO.ApplyTalentMetadata,op) and writes==0); issecretvalue=nil
         reset(); AO.family='classic'; assert(not pcall(AO.ApplyTalentMetadata,op) and writes==0)
-    "#).exec()
+    "#).exec()?;
+    for source in [
+        include_str!("../addon/TalentMetadataImport.lua"),
+        include_str!("../addon/MacroImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.load("SlashCmdList={}; function GetServerTime() return 0 end; function date() return '2026-11-04T00:00:00Z' end; AO.collectors={operation_receipts=function() return AO.ReadMacroReceipts() end}").exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    let snapshot: azeroth_operator::Snapshot = serde_json::from_value(
+        serde_json::json!({"schema_version":1,"source":"fixture","captured_at":"2026-11-04T00:00:00Z","client":{"family":"retail","variant":"live","build":"70688","interface":120105},"character":{"name":"Fixture","realm":"Fixture"},"sections":{"talents":{"config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,"serialization_version":2,"staged_changes":false},"saved_loadouts":{"spec_id":263,"selected_config_id":8,"entries":{"8":{"name":"Other","uses_shared_action_bars":false,"import_string":"RUZHSA==","serialization_version":2},"9":{"name":"Build","uses_shared_action_bars":true,"import_string":"SUo=","serialization_version":2}}}}}}),
+    )?;
+    for kind in ["rename", "delete"] {
+        let mut request = serde_json::json!({"operation":kind,"target_config_id":9});
+        if kind == "rename" {
+            request["name"] = serde_json::json!("Renamed");
+        }
+        let compiled = azeroth_operator::talent_operation::compile(
+            &snapshot,
+            &"a".repeat(64),
+            &serde_json::from_value(request)?,
+        )?;
+        lua.globals()
+            .set("code", compiled["import_code"].as_str().unwrap())?;
+        lua.load(r#"
+            function GetTime() return now end
+            function setup()
+                AO.family='retail'; AzerothOperatorOperations=''; now=0; checkReceipt=true
+                local decoded=AO.DecodeTalentMetadata(code); reset(decoded.kind); op=decoded
+            end
+            setup(); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+            AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..':-') and writes==0)
+            AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+            assert(ok and r.status=='applied' and writes==1)
+            AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        "#).exec()?;
+        let receipt: String = lua.globals().get("AzerothOperatorOperations")?;
+        lua.load("AO.Capture()").exec()?;
+        let export: String = lua.globals().get("AzerothOperatorExport")?;
+        let imported = azeroth_operator::import::decode(
+            format!(
+                "AzerothOperatorExport = \"{export}\"\nAzerothOperatorOperations = \"{receipt}\""
+            )
+            .as_bytes(),
+        )?;
+        assert_eq!(
+            imported.sections["operation_receipts"][compiled["operation_id"].as_str().unwrap()],
+            serde_json::json!({"kind":compiled["kind"],"status":"applied"})
+        );
+        assert!(receipt.contains(&format!(":applied:{};", compiled["kind"].as_str().unwrap())));
+        lua.load(r#"
+            setup(); mode='delay'; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+            assert(ok and r.status=='outcome_unknown' and writes==1)
+            finish(); assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==1)
+            setup(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+            now=61; finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==1)
+            setup(); mode='throw_after'; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+            assert(not ok and r.status=='outcome_unknown' and writes==1)
+            assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+            AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+            setup(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+        "#).exec()?;
+        lua.load(include_str!("../addon/MacroImport.lua"))
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+        lua.load("finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown'); AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)").exec()?;
+    }
+    Ok(())
 }
