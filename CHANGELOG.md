@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source selected-talent-build deletion with native event-owned selection clearing, full preservation/readback and delayed UI/receipt tests. Preparation remains execution-disabled pending packaging; no deployment or game action.
+
 - Deploy compatible talent-creation importer/reader/companion and Retail 0.15.0-dev. Public synthetic preparation/receipt checks and all 29 installed hashes verified; no game action or native qualification. Preserve the legacy unknown macro-move importer fixture with a distinct creation ID.
 
 - Package current-build talent creation in Retail 0.15.0-dev (29 files), enable preparation with the minimum addon version, verify staged Apply/export and guarded 27→29 upgrades, and extend importer qualification. Deployment and native qualification remain pending.

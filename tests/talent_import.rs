@@ -104,7 +104,7 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
     assert!(
         metadata_decoder
             .call::<mlua::Table>(selected_delete.join(":"))
-            .is_err()
+            .is_ok()
     );
     let mut duplicate: Vec<_> = metadata_code.split(':').collect();
     duplicate[17] = "2";
@@ -121,7 +121,10 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
     );
     let mut changed = snapshot.clone();
     changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["selected_config_id"] = json!(9);
-    assert!(compile(&changed, &"a".repeat(64), &delete).is_err());
+    let selected = compile(&changed, &"a".repeat(64), &delete)?;
+    assert_eq!(selected["clears_saved_selection"], true);
+    assert_eq!(selected["execution_supported"], false);
+    assert!(selected["requires_addon_version"].is_null());
     assert!(compile(&changed, &"a".repeat(64), &rename).is_ok());
     changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]["10"] = json!({"name":"NEW BUILD","import_string":"QUJDRA==","serialization_version":2,"uses_shared_action_bars":true});
     assert!(compile(&changed, &"a".repeat(64), &rename).is_err());

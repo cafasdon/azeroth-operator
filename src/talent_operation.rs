@@ -202,10 +202,6 @@ fn metadata_draft(
         }
     } else {
         ensure!(request.name.is_none(), "Delete does not accept a name");
-        ensure!(
-            catalog["selected_config_id"].as_u64() != Some(target as u64),
-            "Deleting the selected saved loadout is not supported"
-        );
     }
     let mut expected = json!({"spec_id":active["spec_id"],"active_config_id":working,"serialization_version":active["serialization_version"],"active_import_string":active["import_string"],"entries":entries});
     if !catalog["selected_config_id"].is_null() {
@@ -223,6 +219,14 @@ fn metadata_draft(
         draft["completion"] =
             json!("requires_unique_new_selected_build_and_preserved_active_contents");
         draft["selects_new_build"] = json!(true);
+    }
+    if !rename && !creating && catalog["selected_config_id"].as_u64() == Some(target as u64) {
+        draft["clears_saved_selection"] = json!(true);
+        draft["execution_supported"] = json!(false);
+        draft["addon_execution_enabled"] = json!(false);
+        draft["requires_addon_version"] = Value::Null;
+        draft["completion"] =
+            json!("requires_removed_target_cleared_selection_and_preserved_active_contents");
     }
     if rename || creating {
         draft["name"] = json!(request.name);
