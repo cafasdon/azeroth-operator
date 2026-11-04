@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect source talent creation to player review/Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and refusal to replay after exceptions, expiry or reload. Packaging/deployment and native qualification remain pending.
+
 - Add source MCP current-build creation preparation and strict AO-TALCREATE-1 transport. Bind catalogue/active contents and explicit expected shared-bars state; preserve legacy talent requests. Shared review/receipts and deployment remain pending.
 
 - Add source-only current-talent-build creation with native creation bookkeeping, full catalogue preconditions, exact new-build/selection readback and failure fixtures. Integration, deployment and native qualification remain pending.
