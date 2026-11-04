@@ -115,5 +115,123 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
     "#,
     )
     .exec()?;
+    // Compose all actual addon helpers; only Blizzard APIs/streams remain fixtures.
+    for source in [
+        include_str!("../addon/TalentImportValidation.lua"),
+        include_str!("../addon/TalentImportEntries.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.globals().set("requested", import_text(true, 1))?;
+    lua.globals().set("nativeDesired", import_text(false, 1))?;
+    lua.globals().set("nativeOther", import_text(false, 2))?;
+    lua.load(r#"
+        local actualPlan,actualMatch=AO.PlanTalentImport,AO.TalentImportContentsMatch
+        local alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+        ExportUtil={MakeImportDataStream=function(text)
+            local position=0
+            return {GetNumberOfBits=function() return #text*6 end,ExtractValue=function(_,width)
+                local value=0
+                for bit=0,width-1 do
+                    local index=math.floor(position/6)+1
+                    local digit=assert(alphabet:find(text:sub(index,index),1,true))-1
+                    value=value+math.floor(digit/2^(position%6))%2*2^bit; position=position+1
+                end
+                return value
+            end}
+        end}
+        Enum={TraitNodeType={Single=0,Selection=2,SubTreeSelection=3,Tiered=4}}
+        function realReset()
+            reset(); AO.family='retail'; AO.PlanTalentImport=actualPlan; AO.TalentImportContentsMatch=actualMatch
+            current=nativeOther; entries['8'].import_string=nativeOther
+            op.expected.active_import_string=current; op.expected.entries=copy(entries)
+            op.import_string=requested; op.allow_empty_hash=true
+            C_Traits.GetTreeHash=function() local h={} for i=1,16 do h[i]=i end return h end
+            C_Traits.GetTreeNodes=function() return {10} end
+            C_Traits.GetNodeInfo=function() return {ID=10,type=0,maxRanks=2,entryIDs={101},activeEntry={entryID=101}} end
+            C_Traits.GetEntryInfo=function() return {maxRanks=2} end
+            frame.GetTreeInfo=function() return {ID=100} end
+            frame.ReadLoadoutHeader=function(_,stream)
+                local version,spec=stream:ExtractValue(8),stream:ExtractValue(16); local h={}
+                for i=1,16 do h[i]=stream:ExtractValue(8) end
+                return true,version,spec,h
+            end
+            frame.ReadLoadoutContent=function(_,stream)
+                local selected=stream:ExtractValue(1)==1
+                local purchased,partial,choice=false,false,false; local ranks,index=0,1
+                if selected then
+                    purchased=stream:ExtractValue(1)==1
+                    if purchased then
+                        partial=stream:ExtractValue(1)==1
+                        if partial then ranks=stream:ExtractValue(6) end
+                        choice=stream:ExtractValue(1)==1
+                        if choice then index=stream:ExtractValue(2)+1 end
+                    end
+                end
+                return {{isNodeSelected=selected,isNodeGranted=selected and not purchased,isPartiallyRanked=partial,
+                    isChoiceNode=choice,partialRanksPurchased=ranks,choiceNodeSelection=index}}
+            end
+            frame.ConvertToImportLoadoutEntryInfo=function(_,active,tree,content)
+                assert(active==7 and tree==100 and content[1].partialRanksPurchased==1)
+                return {{nodeID=10,selectionEntryID=101,ranksGranted=0,ranksPurchased=1}}
+            end
+            C_ClassTalents.ImportLoadout=function(id,nodes,name,text)
+                assert(id==7 and name=='New' and text==requested and #nodes==1)
+                assert(nodes[1].nodeID==10 and nodes[1].selectionEntryID==101 and nodes[1].ranksPurchased==1 and nodes[1].ranksGranted==0)
+                writes=writes+1; nodes[1].ranksPurchased=99
+                if mode~='delay' then realFinish() end
+                return true
+            end
+        end
+        function realFinish()
+            current=mode=='wrong_active' and nativeOther or nativeDesired
+            entries['11']={name='New',uses_shared_action_bars=false,import_string=mode=='wrong_saved' and nativeOther or nativeDesired,serialization_version=2}
+            selected=11; frame.lastSelectedConfigID=11; uiSelection=11
+            if mode=='changed_tree' then C_Traits.GetTreeNodes=function() return {20} end end
+        end
+        realReset(); assert(AO.ApplyTalentImport(op).status=='applied' and writes==1)
+        assert(current~=op.expected.active_import_string and entries['8'].import_string==nativeOther)
+        for _,failure in ipairs({'wrong_active','wrong_saved','changed_tree'}) do
+            realReset(); mode=failure; assert(AO.ApplyTalentImport(op).status=='outcome_unknown' and writes==1,failure)
+        end
+        realReset(); mode='delay'; assert(AO.ApplyTalentImport(op).status=='outcome_unknown' and writes==1)
+        realFinish(); assert(AO.VerifyTalentImport(op) and writes==1)
+        realReset(); op.allow_empty_hash=false
+        assert(not pcall(AO.ApplyTalentImport,op) and writes==0)
+        realReset(); frame.ConvertToImportLoadoutEntryInfo=function() return {} end
+        assert(not pcall(AO.ApplyTalentImport,op) and writes==0)
+    "#).exec()?;
     Ok(())
+}
+
+fn import_text(empty_hash: bool, ranks: u32) -> String {
+    let mut bits = Vec::new();
+    let mut add = |width, value: u32| {
+        for bit in 0..width {
+            bits.push((value >> bit) & 1);
+        }
+    };
+    add(8, 2);
+    add(16, 263);
+    for byte in 1..=16 {
+        add(8, if empty_hash { 0 } else { byte });
+    }
+    add(1, 1);
+    add(1, 1);
+    add(1, u32::from(ranks < 2));
+    if ranks < 2 {
+        add(6, ranks);
+    }
+    add(1, 0);
+    let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    bits.chunks(6)
+        .map(|chunk| {
+            alphabet[chunk
+                .iter()
+                .enumerate()
+                .map(|(i, b)| (*b as usize) << i)
+                .sum::<usize>()] as char
+        })
+        .collect()
 }

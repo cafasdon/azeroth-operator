@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Verify actual talent import parser/planner/executor/readback composition using independently encoded single-node data, delayed completion, input mutation and mismatched active/saved contents. Native dependencies remain mocked; no deployment.
+
 - Add source-only arbitrary talent import executor with private preimage/plan retention, single native import, selected-build/active-content readback and failure fixtures. Real-helper composition and compiler/review/receipt integration remain pending; no deployment.
 
 - Add source-only parsed talent import readback comparison, accepting acknowledged omitted request hashes only when native contents/tree identity match. Reject changed ranks/choices/identity and observation races; no import execution or deployment.

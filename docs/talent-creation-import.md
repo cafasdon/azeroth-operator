@@ -91,3 +91,13 @@ Completion requires exactly one added saved build, requested name/shared-bars ex
 Executor fixtures independently mock planner/comparator and native APIs, covering delay, rejected/false-with-effect returns, exceptions before/after effects and in bookkeeping, wrong saved/active contents/settings, multiple added builds, changed bystanders, unselected/stale UI state, guards, mutated native entry input, altered operation and repeated-object refusal. Existing parser/conversion/comparison suites test those dependencies separately. Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. Full real-helper composition, compiler/wire/review/receipt integration, packaging and native qualification remain pending. Nothing deployed and no game input.
 
 Jev advisory jev-1.14.0, request `871259a160981ad79a3155f1582d06894c30f62e41063c9806eb801554208426`, 1115 input/135 output tokens, 0.280 s: insufficient evidence. No AI review pass claimed. Configured adversarial file remains absent. Deterministic fixtures establish this source contract only.
+
+## Import helper composition — 2026-11-04
+
+The executor fixture now additionally loads actual TalentImportValidation, TalentImportEntries, TalentImportExecute and TalentMetadata together. Rust independently encodes a one-node partial-rank request with omitted hash, a matching full-hash native export and a different full-rank baseline. Native stream/parser/converter and game APIs remain mocks; addon helper functions are no longer mocked in this composition path.
+
+The test proves the converted node/entry/rank sent to ImportLoadout, copied-input isolation when the native mock mutates ranks, requested active-content changes, new saved contents and preserved prior saved contents. Wrong saved/active rank or tree identity keeps unknown; delayed completion resolves by observation only. Missing omitted-hash acknowledgement and dropped conversion entries refuse before mutation. This is one-node composition coverage, not a complete class-tree/native-client qualification; choice/tiered conversion still has separate helper tests.
+
+Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. No production source logic changed, no deployment or game input occurred. Compiler/wire, explicit review and durable receipt integration remain the next implementation work.
+
+Jev advisory jev-1.14.0, request `5e731cd1d85e93a2138e30735859ea6a996a9b664d03f1ae2b034901b74176bc`, 915 input/116 output tokens, 0.288 s: insufficient evidence. No AI review pass claimed. Configured adversarial file remains absent. Native compatibility remains unproven.
