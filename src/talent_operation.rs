@@ -274,9 +274,9 @@ fn metadata_draft(
         draft["import_string"] = json!(request.import_string);
         draft["allow_empty_hash"] = json!(request.allow_empty_hash);
         draft["changes_active_talents"] = json!(true);
-        draft["execution_supported"] = json!(false);
-        draft["addon_execution_enabled"] = json!(false);
-        draft["requires_addon_version"] = Value::Null;
+        draft["execution_supported"] = json!(true);
+        draft["addon_execution_enabled"] = json!(true);
+        draft["requires_addon_version"] = json!("0.17.0-dev");
         draft["completion"] =
             json!("requires_unique_new_selected_build_requested_active_and_saved_contents");
     }

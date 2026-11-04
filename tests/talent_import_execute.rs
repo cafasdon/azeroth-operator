@@ -3,6 +3,12 @@ use mlua::Lua;
 #[test]
 fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn std::error::Error>>
 {
+    verify_import_fixture(None)
+}
+
+pub fn verify_import_fixture(
+    root: Option<&std::path::Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.load(r#"
         AO={family='retail',variant='live',interface=120105}
@@ -66,8 +72,16 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
     for source in [
-        include_str!("../addon/TalentMetadata.lua"),
-        include_str!("../addon/TalentImportExecute.lua"),
+        fixture_source(
+            root,
+            "TalentMetadata.lua",
+            include_str!("../addon/TalentMetadata.lua"),
+        )?,
+        fixture_source(
+            root,
+            "TalentImportExecute.lua",
+            include_str!("../addon/TalentImportExecute.lua"),
+        )?,
     ] {
         lua.load(source)
             .call::<()>(("AzerothOperator", ao.clone()))?;
@@ -117,8 +131,16 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
     .exec()?;
     // Compose all actual addon helpers; only Blizzard APIs/streams remain fixtures.
     for source in [
-        include_str!("../addon/TalentImportValidation.lua"),
-        include_str!("../addon/TalentImportEntries.lua"),
+        fixture_source(
+            root,
+            "TalentImportValidation.lua",
+            include_str!("../addon/TalentImportValidation.lua"),
+        )?,
+        fixture_source(
+            root,
+            "TalentImportEntries.lua",
+            include_str!("../addon/TalentImportEntries.lua"),
+        )?,
     ] {
         lua.load(source)
             .call::<()>(("AzerothOperator", ao.clone()))?;
@@ -221,12 +243,17 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
         )
     };
     let prepared = compile(request.clone())?;
-    assert_eq!(prepared["execution_supported"], false);
+    assert_eq!(prepared["execution_supported"], true);
+    assert_eq!(prepared["requires_addon_version"], "0.17.0-dev");
     assert_eq!(prepared["changes_active_talents"], true);
     let code = prepared["import_code"].as_str().unwrap();
     assert_eq!(code.split(':').count(), 26);
-    lua.load(include_str!("../addon/TalentImportDecode.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "TalentImportDecode.lua",
+        include_str!("../addon/TalentImportDecode.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     let decoder: mlua::Function = ao.get("DecodeTalentImport")?;
     let decoded: mlua::Table = decoder.call(code)?;
     assert_eq!(
@@ -238,8 +265,12 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
     lua.load("assert(AO.ApplyTalentImport(op).status=='applied' and writes==1)")
         .exec()?;
     lua.globals().set("code", code)?;
-    lua.load(include_str!("../addon/MacroImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "MacroImport.lua",
+        include_str!("../addon/MacroImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(r#"
         function GetTime() return now end
         function setupImport()
@@ -255,8 +286,12 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
         function date() return '2026-11-04T00:00:00Z' end
         AO.collectors={operation_receipts=function() return AO.ReadMacroReceipts() end}
     "#).exec()?;
-    lua.load(include_str!("../addon/Core.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "Core.lua",
+        include_str!("../addon/Core.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load("AO.Capture()").exec()?;
     let receipt: String = lua.globals().get("AzerothOperatorOperations")?;
     let export: String = lua.globals().get("AzerothOperatorExport")?;
@@ -282,8 +317,12 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
         end
         setupImport(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
     "#).exec()?;
-    lua.load(include_str!("../addon/MacroImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "MacroImport.lua",
+        include_str!("../addon/MacroImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load("realFinish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown'); AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)").exec()?;
     for field in [
         "import_string",
@@ -358,4 +397,15 @@ fn import_text(empty_hash: bool, ranks: u32) -> String {
                 .sum::<usize>()] as char
         })
         .collect()
+}
+
+fn fixture_source(
+    root: Option<&std::path::Path>,
+    name: &str,
+    embedded: &str,
+) -> std::io::Result<String> {
+    match root {
+        Some(path) => std::fs::read_to_string(path.join(name)),
+        None => Ok(embedded.to_owned()),
+    }
 }

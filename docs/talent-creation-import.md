@@ -121,3 +121,13 @@ The composition fixture now runs compiler→decoder→actual parser/planner/exec
 Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. Compiler still reports execution disabled pending packaging; no installed or hosted component changed. Native API behaviour, parser compatibility and full class-tree coverage remain unqualified.
 
 Jev advisory jev-1.14.0, request `fb40af4c553420ae2796066f3459664c1867a11385c761b547190f89c6364fec`, 991 input/135 output tokens, 0.360 s: insufficient evidence. No AI review pass claimed. Configured adversarial review file remains absent. The deterministic actual-helper lifecycle tests are the bounded evidence.
+
+## Import package — 2026-11-04
+
+Retail 0.17.0-dev contains 33 files, adding TalentImportValidation, TalentImportEntries, TalentImportExecute and TalentImportDecode before shared dispatch. Import preparation now reports execution support with minimum addon 0.17.0-dev. Actual game_execution and live_qualified remain false. Installer/integrity allowlists retain older sets and add the 33-file set; a guarded 29→33 fixture checks backup preservation. The isolated importer qualification payload now includes a distinct import_talent_config receipt, pending Linux rollout execution.
+
+Artifact `dist/talent-import-release/AzerothOperator-0.17.0-dev-retail-live.zip`, SHA-256 `ebf69b8843dbac6b9c33cd550b67f9b67819670ebb1e6734dc788ea892ca3eac`. The staged verifier reuses the import lifecycle harness with an explicit staged root: every relevant Lua module is read from that root, while embedded source is used only by ordinary source tests. This runs compiler/decoder/parser/planner/executor/review/export/import, delayed completion, exceptions, expiry/reload and replay refusal against packaged files. Other talent/equipment staged fixtures also pass. Native APIs remain mocked.
+
+Full source gate passed Rust/Lua tests, Clippy and 37 Python tests; after adding the upgrade fixture, the complete Python suite passed 38 tests. No hosted service, companion or installed addon changed. Compatible rollout and native qualification remain pending.
+
+Jev advisory jev-1.14.0, request `7b9fde084607feeacf43f1ff5e0a5104bfa80e4445f166be65a8adceaa38aa82`, 902 input/116 output tokens, 0.327 s: insufficient evidence. No AI review pass claimed. Configured adversarial file remains absent. Deterministic source/staged checks establish package readiness only.

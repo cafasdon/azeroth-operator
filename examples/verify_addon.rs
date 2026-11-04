@@ -2,6 +2,8 @@
 use azeroth_operator::import::decode;
 use mlua::Lua;
 use std::path::Path;
+#[path = "../tests/talent_import_execute.rs"]
+mod import_fixture;
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
@@ -60,6 +62,10 @@ fn main() -> anyhow::Result<()> {
             "TalentMetadataImport.lua",
             "TalentCreate.lua",
             "TalentCreateImport.lua",
+            "TalentImportValidation.lua",
+            "TalentImportEntries.lua",
+            "TalentImportExecute.lua",
+            "TalentImportDecode.lua",
             "ActionOperations.lua",
             "ActionImport.lua",
             "EquipmentSetOperations.lua",
@@ -416,10 +422,14 @@ fn main() -> anyhow::Result<()> {
             );
         }
     }
+    if args[1] == "retail" {
+        import_fixture::verify_import_fixture(Some(Path::new(&args[0])))
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    }
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","talent_import_lifecycle_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }
