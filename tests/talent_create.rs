@@ -96,7 +96,8 @@ fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders()
         azeroth_operator::talent_operation::compile(s, &"a".repeat(64), &serde_json::from_value(r)?)
     };
     let prepared = compile(&snapshot, request.clone())?;
-    assert_eq!(prepared["execution_supported"], false);
+    assert_eq!(prepared["execution_supported"], true);
+    assert_eq!(prepared["requires_addon_version"], "0.15.0-dev");
     assert_eq!(prepared["selects_new_build"], true);
     assert!(prepared.get("target_config_id").is_none());
     let code = prepared["import_code"].as_str().unwrap();
