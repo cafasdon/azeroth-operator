@@ -71,3 +71,13 @@ Artifact: `dist/talent-create-release/AzerothOperator-0.15.0-dev-retail-live.zip
 Full source gate passed Rust/Lua tests, Clippy and 37 Python tests; nine packaging/installer tests passed again after the importer qualification fixture addition. The Linux importer fixture now includes an applied creation receipt, but actual container qualification is pending the compatible rollout. Current hosted services and installed addon remain the previous release.
 
 Jev advisory `jev-1.14.0`, request `95183f5f71ed261171d4e4e382e84dd4d13a6a1d1d211a2b5eb905c3e8fcb101`, 942 input/116 output tokens, 0.309 s: insufficient evidence. No AI review pass is claimed. Deterministic staged and protocol checks support package readiness only; deployment and native compatibility remain unproven. Configured adversarial/OCR files remain unavailable.
+
+## Parsed import readback comparison — 2026-11-04
+
+Source-only `TalentImportContentsMatch` compares a retained inspection with a native export's bounded parse. It requires exact working config/spec/tree/node IDs/tree hash/version and all parsed node flags/ranks/choices, then re-inspects to reject changed observations. The request's text and hash-omitted marker are deliberately excluded: an explicitly acknowledged zero-hash request can match the same contents exported with the actual hash. The readback itself must include the actual tree hash. Reference: [native import/export format and writer](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_PlayerSpells/ClassTalents/Blizzard_ClassTalentImportExport.lua).
+
+This helper performs no mutation, is not packaged or MCP-exposed, and is not a success receipt. Future import execution must retain its original plan privately, bind client/catalogue preimages, require unique new-build identity and native selection, and verify both active and saved contents plus preserved bystanders. Matching contents alone does not prove legality, successful import or selection.
+
+Fixtures cover omitted-request/full-native hash equivalence, mandatory readback hash, each parsed field mismatch, all observation identity fields, changed node/hash and a tree race between reads. Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. Parser dependencies remain mocked; native compatibility is unqualified. No game action or deployment.
+
+Jev advisory jev-1.14.0, request `88d7f7eaa07bc639138264780fbcb637765718777c4043b751c59f9268fdf3db`, 903 input/116 output tokens, 0.287 s: insufficient evidence. No AI review pass claimed. Configured adversarial review file remains absent. Deterministic fixtures support the bounded comparison contract only.

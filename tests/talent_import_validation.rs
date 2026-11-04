@@ -92,6 +92,39 @@ fn native_parser_preflight_is_bounded_and_read_only() -> mlua::Result<()> {
     }
     let omitted: mlua::Table = inspect.call((encoded(2, 263, true, false), true))?;
     assert!(omitted.get::<bool>("hash_omitted")?);
+    let matches: mlua::Function = ao.get("TalentImportContentsMatch")?;
+    assert!(matches.call::<bool>((omitted.clone(), text.clone()))?);
+    assert!(matches.call::<bool>((result.clone(), text.clone()))?);
+    assert!(
+        matches
+            .call::<bool>((result.clone(), encoded(2, 263, true, false)))
+            .is_err()
+    );
+    lua.globals().set("expected", omitted)?;
+    lua.globals().set("nativeText", text.clone())?;
+    lua.load(r#"
+        local function copy(t) local r={} for k,v in pairs(t) do r[k]=type(v)=='table' and copy(v) or v end return r end
+        for _,field in ipairs({'isNodeSelected','isNodeGranted','isPartiallyRanked','isChoiceNode'}) do
+            local changed=copy(expected); changed.content[1][field]=not changed.content[1][field]
+            assert(not AO.TalentImportContentsMatch(changed,nativeText),field)
+        end
+        for _,field in ipairs({'partialRanksPurchased','choiceNodeSelection'}) do
+            local changed=copy(expected); changed.content[1][field]=changed.content[1][field]+1
+            assert(not AO.TalentImportContentsMatch(changed,nativeText),field)
+        end
+        for _,field in ipairs({'active_config_id','spec_id','tree_id','serialization_version'}) do
+            local changed=copy(expected); changed.observation[field]=changed.observation[field]+1
+            assert(not AO.TalentImportContentsMatch(changed,nativeText),field)
+        end
+        local changed=copy(expected); changed.observation.nodes[1]=20
+        assert(not AO.TalentImportContentsMatch(changed,nativeText))
+        changed=copy(expected); changed.observation.tree_hash[1]=99
+        assert(not AO.TalentImportContentsMatch(changed,nativeText))
+        local original=C_Traits.GetTreeNodes; local n=0
+        C_Traits.GetTreeNodes=function() n=n+1; return {n<=2 and 10 or 20} end
+        assert(not AO.TalentImportContentsMatch(expected,nativeText))
+        C_Traits.GetTreeNodes=original
+    "#).exec()?;
     let mut padding = text.clone();
     padding.pop();
     padding.push('/');

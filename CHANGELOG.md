@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only parsed talent import readback comparison, accepting acknowledged omitted request hashes only when native contents/tree identity match. Reject changed ranks/choices/identity and observation races; no import execution or deployment.
+
 - Deploy selected-build deletion support across importer/reader/companion and Retail 0.16.0-dev. Public synthetic preparation checks and 29 installed hashes verified; no game action or native qualification.
 
 - Package selected saved-build deletion as Retail 0.16.0-dev with explicit minimum version and staged execution/receipt verification. Compatible rollout and native qualification remain pending.

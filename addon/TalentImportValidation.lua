@@ -77,3 +77,15 @@ function AO.InspectTalentImport(text,allowEmptyHash)
     assert(same(before,observe(frame)),"Talent tree changed during inspection")
     return {observation=before,content=copied,import_string=text,hash_omitted=empty,semantic_legality_verified=false,game_execution=false}
 end
+
+-- Compare parsed node semantics, not text bytes: requested imports may omit the
+-- hash, while native exports contain it. The captured tree identity must agree.
+-- This is read-only evidence for a future executor, not an import success receipt.
+function AO.TalentImportContentsMatch(expected,text)
+    assert(type(read(expected))=="table" and type(read(expected.observation))=="table"
+        and type(read(expected.content))=="table","Captured import inspection required")
+    local actual=AO.InspectTalentImport(text,false)
+    if not same(expected.observation,actual.observation) or not same(expected.content,actual.content) then return false end
+    local again=AO.InspectTalentImport(text,false)
+    return same(actual,again)
+end
