@@ -190,11 +190,49 @@ fn metadata_draft(
     if rename {
         draft["name"] = json!(request.name);
     }
-    let bytes = serde_json::to_vec(&draft)?;
+    let mut fields = vec![
+        "AO-TALMETA-1".into(),
+        String::new(),
+        sid.into(),
+        "retail".into(),
+        hex(&snapshot.client.variant),
+        hex(&snapshot.client.build),
+        snapshot.client.interface.to_string(),
+        hex(&snapshot.character.name),
+        hex(&snapshot.character.realm),
+        draft["kind"].as_str().unwrap().into(),
+        request.target_config_id.to_string(),
+        hex(request.name.as_deref().unwrap_or_default()),
+        active["spec_id"].to_string(),
+        working.to_string(),
+        catalog["selected_config_id"]
+            .as_u64()
+            .unwrap_or(0)
+            .to_string(),
+        active["serialization_version"].to_string(),
+        hex(active["import_string"].as_str().unwrap()),
+        entries.len().to_string(),
+    ];
+    for (id, entry) in entries {
+        fields.extend([
+            id.clone(),
+            hex(entry["name"].as_str().unwrap()),
+            if entry["uses_shared_action_bars"] == true {
+                "1".into()
+            } else {
+                "0".into()
+            },
+            entry["serialization_version"].to_string(),
+            hex(entry["import_string"].as_str().unwrap()),
+        ]);
+    }
+    fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
+    let code = fields.join(":");
     ensure!(
-        bytes.len() <= 524288,
-        "Talent metadata draft exceeds size limit"
+        code.len() <= 524288,
+        "Talent metadata transport exceeds size limit"
     );
-    draft["operation_id"] = json!(format!("{:x}", Sha256::digest(bytes)));
+    draft["operation_id"] = json!(fields[1]);
+    draft["import_code"] = json!(code);
     Ok(draft)
 }

@@ -27,10 +27,94 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
     );
     assert_eq!(draft["expected"]["active_import_string"], "QUJDRA==");
     assert_eq!(draft["execution_supported"], false);
-    assert!(draft["import_code"].is_null());
+    let metadata_code = draft["import_code"].as_str().unwrap();
+    let metadata_lua = mlua::Lua::new();
+    let metadata_ao = metadata_lua.create_table().unwrap();
+    metadata_lua
+        .load(include_str!("../addon/TalentMetadataImport.lua"))
+        .call::<()>(("AzerothOperator", metadata_ao.clone()))
+        .unwrap();
+    let metadata_decoder: mlua::Function = metadata_ao.get("DecodeTalentMetadata").unwrap();
+    let decoded: mlua::Table = metadata_decoder.call(metadata_code).unwrap();
+    assert_eq!(decoded.get::<String>("name").unwrap(), "New build");
+    assert_eq!(
+        decoded.get::<String>("id").unwrap(),
+        draft["operation_id"].as_str().unwrap()
+    );
+    let expected: mlua::Table = decoded.get("expected").unwrap();
+    assert_eq!(expected.get::<u32>("active_config_id").unwrap(), 7);
+    assert_eq!(expected.get::<u32>("selected_config_id").unwrap(), 8);
+    assert_eq!(
+        expected.get::<String>("active_import_string").unwrap(),
+        "QUJDRA=="
+    );
+    let captured: mlua::Table = expected.get("entries").unwrap();
+    let entry: mlua::Table = captured.get("9").unwrap();
+    assert_eq!(entry.get::<String>("import_string").unwrap(), "RUZHSA==");
+    assert!(!entry.get::<bool>("uses_shared_action_bars").unwrap());
+    for (index, bad) in [
+        (0, "AO-TALMETA-2"),
+        (1, "bad"),
+        (3, "classic"),
+        (9, "load_talent_config"),
+        (10, "7"),
+        (11, "7c"),
+        (12, "0263"),
+        (14, "-1"),
+        (16, "7c"),
+        (17, "2"),
+        (18, "7"),
+        (20, "2"),
+        (21, "3"),
+        (22, "-"),
+    ] {
+        let mut fields: Vec<_> = metadata_code.split(':').collect();
+        fields[index] = bad;
+        assert!(
+            metadata_decoder
+                .call::<mlua::Table>(fields.join(":"))
+                .is_err(),
+            "accepted malformed field {index}"
+        );
+    }
+    assert!(
+        metadata_decoder
+            .call::<mlua::Table>(format!("{metadata_code}:extra"))
+            .is_err()
+    );
+    assert!(
+        metadata_decoder
+            .call::<mlua::Table>("a".repeat(524289))
+            .is_err()
+    );
     assert_eq!(draft, compile(&snapshot, &"a".repeat(64), &rename)?);
     let delete: TalentRequest =
         serde_json::from_value(json!({"operation":"delete","target_config_id":9}))?;
+    let delete_draft = compile(&snapshot, &"a".repeat(64), &delete)?;
+    let delete_code = delete_draft["import_code"].as_str().unwrap();
+    let decoded_delete: mlua::Table = metadata_decoder.call(delete_code).unwrap();
+    assert!(
+        decoded_delete
+            .get::<Option<String>>("name")
+            .unwrap()
+            .is_none()
+    );
+    let mut selected_delete: Vec<_> = delete_code.split(':').collect();
+    selected_delete[14] = "9";
+    assert!(
+        metadata_decoder
+            .call::<mlua::Table>(selected_delete.join(":"))
+            .is_err()
+    );
+    let mut duplicate: Vec<_> = metadata_code.split(':').collect();
+    duplicate[17] = "2";
+    let record = duplicate[18..23].to_vec();
+    duplicate.extend(record);
+    assert!(
+        metadata_decoder
+            .call::<mlua::Table>(duplicate.join(":"))
+            .is_err()
+    );
     assert_eq!(
         compile(&snapshot, &"a".repeat(64), &delete)?["kind"],
         "delete_talent_config"
