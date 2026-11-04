@@ -1,0 +1,13 @@
+# Action-copy deployment — 2026-11-04
+
+Source `f4513eec251f3de4c5c397c978d42ec328c49773` (PR71). Personal pylon/CT290 mcp-gateway identities, previous importer pin and active reader were verified before changes. Installed Retail 0.17.0-dev matched all33 previous hashes.
+
+Linux release tests/build passed. Importer and dedicated reader now use `sha256:05ad0052457d5a029c779faf3e9a724ac431168cfabf0dc05c4544120911cf72`. Isolated legacy/extended importer fixtures (including distinct unknown-copy receipt), reader profile/read-only mount/authenticated loopback checks passed. Post-check confirms importer pin and active service. Previous image `sha256:70466a621956b3a648252bc4bb01313a9a92d84a9c328d898b81e25de9bfe430`; reader rollback `/var/tmp/azeroth-reader-upgrade-o6kr3s2b`; source `/var/tmp/azeroth-source-f4513ee`; image ID `/var/tmp/azeroth-import-f4513ee.iid`. No unrelated profile changed.
+
+Public TLS SDK checks found14tools and used restricted-upload synthetic snapshot `a41d114d21b8f4236e8efbe572133a9a0a7282aef8580e2ddc42f8bd0e1780bb`. Copy preparation requires0.18.0-dev, preserves legacy move format/version and has a distinct ID. Occupied destination was refused; unknown-copy receipt readback and unchanged captured actions passed. Existing talent import/create/rename/selected and nonselected deletion/load checks also passed. Evidence: `local-data/action-copy-public-check.json`, helpers `check-action-copy-release.py` and `check-talent-import-release.py`. These are preparation/receipt checks, not native action execution.
+
+Windows companion `0ad7d459a52bcc2f4986cff053e5801539731f9d6af08f20d623a74e97256309` was hash-verified in its content-addressed runtime path and atomically selected. Backup `local-data/sync/config-before-action-copy.json`. Sync at2026-11-04T02:00:10.012325Z reported Retail unchanged at `184cd8a9ffd714eb7a5f33f4b661ba15e542c117fd483acef5b65e041b15f3c8`, remote_rechecked=false; Forever waiting_for_export. This cached acknowledgement is not a fresh remote character check. Scheduled task unchanged.
+
+Retail0.18.0-dev installed after compatible services; all33files independently match the manifest. ZIP `dist/action-copy-release/AzerothOperator-0.18.0-dev-retail-live.zip`, SHA256 `305b290dc6ef2173e281ace0f23c673e85356a4a7f8b1d10dcc9c4bb57feee3a`; backup `local-data/addon-backups/addon-update-y84by6ut`. The running game may retain an older addon until player reload/restart. No game input or test prompt issued.
+
+Native pickup/placement, taint/protection, cursor identity and hidden action-page coverage remain unqualified. Classic/Forever mutations remain disabled. The uncertain Cutlass move was not replayed. Broader operation-matrix implementation remains incomplete.
