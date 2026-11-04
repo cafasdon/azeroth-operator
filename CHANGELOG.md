@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only current-talent-build creation with native creation bookkeeping, full catalogue preconditions, exact new-build/selection readback and failure fixtures. Integration, deployment and native qualification remain pending.
+
 - Add source-only talent import entry planning with exact native conversion checks for single, choice, granted and tiered nodes. Reject silently dropped/changed entries and unstable metadata; no import execution or deployment.
 
 - Add source-only read-only talent import validation with bounded native-parser reads, explicit omitted-hash acknowledgement and failure fixtures. Document creation/automatic-selection semantics; no new executable operation or deployment.

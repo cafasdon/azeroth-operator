@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Talent creation/import research, source-only read-only import validation and exact node/entry conversion checks implemented. Native creation may select/apply the resulting build; executors and legality/completion contracts remain pending. [Contract](docs/talent-creation-import.md).
+- Talent creation/import research, read-only import validation and node/entry conversion checks implemented in source. Current-build creation executor has full catalogue/selection readback fixtures; compiler/integration/deployment remain pending. Arbitrary import execution and legality/completion contracts remain unfinished. [Contract](docs/talent-creation-import.md).
 
 - Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Compatible importer/reader/companion and addon are deployed; native qualification remains pending and selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
 

@@ -1,5 +1,17 @@
 # Talent creation and import
 
+## Current-build creation executor — 2026-11-04
+
+`TalentCreate.lua` adds source-only `create_talent_config`. It requires exact client identity, full captured current-spec catalogue/active contents, a non-colliding name and explicit `expected_new_shared_action_bars`. The latter is a readback expectation, not a setting request: the executor never changes shared-bars settings and does not assume the native default.
+
+Apply requires native capacity/edit permission, no combat/cast/channel/cursor or staged changes, visible idle player Talents, no competing dialogs/popups and no pending native creation/population/commit indicators. It calls `RequestNewConfig` once and, only on a true acceptance return, invokes `OnTraitConfigCreateStarted` with the captured purchased-rank flag, matching native `NewEntryCallback`. Blizzard's own events own population and selection. There is no direct commit, guessed ID, fallback, rollback or retry.
+
+The observation-only verifier requires exactly one added ID, the requested name, original active import contents/version, expected shared-bars flag and selection of that new ID. All prior catalogue entries, working config, active contents and spec must remain identical. A successful native return is insufficient; false return with complete readback can still be confirmed. Exceptions propagate for the future caller to retain its pre-write unknown checkpoint. Actual action-bar contents are not verified, and UI/server timing remains native-unqualified.
+
+Read-only stable catalogue/comparison primitives are shared from `TalentMetadata.lua`; existing metadata behaviour is unchanged. Lua fixtures cover delayed completion, false-return-with-effect, wrong contents/settings, multiple added IDs, changed active/bystander data, exceptions before/after effect and in native bookkeeping, duplicate preimage refusal, capacity/staged/client/UI/pending-operation guards and restricted observations. Full source gate passed Rust/Lua, Clippy and 36 Python tests; the targeted creation suite passed again after pending-operation guards were added.
+
+Jev advisory `jev-1.14.0`, request `a779c4ffa9375df889850ee3dc367acbc12382600e08d8afb195a90a86ec69b2`, 1066 input/135 output tokens, 0.328 s: insufficient evidence. No AI review pass is claimed. Native-source comparison and deterministic fixture results support only the stated source contract. Configured OCR/adversarial files remain absent. Compiler/transport/player review/receipts, packaging and deployment are pending; arbitrary import execution is still unfinished.
+
 ## Entry conversion inspection — 2026-11-04
 
 `TalentImportEntries.lua` adds source-only `PlanTalentImport`, composing the bounded inspector with selected node/entry observations and native `ConvertToImportLoadoutEntryInfo`. It independently derives expected single-node, choice/subtree, granted and tiered entry records from copied metadata, compares the native conversion exactly, and refuses missing/extra/sparse records, wrong choices/ranks, or discarded tiered ranks. Node descriptions and the full inspected plan are read again before returning. The helper calls no mutation APIs.
