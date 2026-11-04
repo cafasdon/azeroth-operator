@@ -1,0 +1,13 @@
+# Equipment-set create/save deployment — 2026-11-04
+
+Source `aaef3f7ad7a94a74cecddcdf64b6e67e3241b4c5` (PR42). Personal pylon/CT290 `mcp-gateway` identities and previous image were checked; CT290 had 31 GiB free. Installed Retail 0.12.0-dev matched all twenty-two hashes before upgrade. No unrelated profile or scheduled task changed.
+
+Linux release tests/build passed. Importer and dedicated reader now use `sha256:1926cf09b66eac31d0924ab94d79c591eec28ef172d3f4b7e8e838f366b73892`. Isolated legacy/extended importer qualification passed, including both new receipt kinds. Reader profile/read-only mount, authentication and loopback protocol checks passed. Rollback evidence: `/var/tmp/azeroth-reader-upgrade-oj1xk3ij`; source staging `/var/tmp/azeroth-source-aaef3f7`.
+
+Public TLS SDK verification discovered fourteen tools. Synthetic snapshot `999fe27eeff5afaeb831a5e18e7b21fc3b185e11fff657b19293717c83d26a06` (`EquipmentSetSaveReleaseFixture`) was uploaded through the restricted channel. Create/save preparation bound exact equipped identities and catalogue, required addon 0.13.0-dev, preserved save metadata/spec association, rejected name collisions and missing empty preconditions, and left captured sets unchanged. Both new receipt kinds were accepted; the synthetic unknown save receipt was read back. Local evidence: `local-data/equipment-set-save-public-check.json`. No prepared code was applied in game.
+
+Windows companion SHA256 `7a14f641e95677f3dc178dd3c10765905e5e9b6bbe417d009eed62664915b0fe` is installed in its content-addressed runtime directory and selected atomically in sync config. Backup: `local-data/sync/config-before-equipment-set-save.json`. Sync at `2026-11-04T00:28:00.238887Z` reported Retail unchanged at `184cd8a9ffd714eb7a5f33f4b661ba15e542c117fd483acef5b65e041b15f3c8`, `remote_rechecked:false`; Forever waits for export. This cached acknowledgement is not fresh remote verification of the real character.
+
+Retail addon 0.13.0-dev was installed after compatible importer/reader/companion checks. All twenty-five installed files independently match the manifest. ZIP SHA256 `d23135437502314539d303258859a3a7b177c4df7f0b7196bb16c2c133b674c7`; backup `local-data/addon-backups/addon-update-5nmk81gn`. The running client may retain an earlier addon until the player reloads/restarts. No game input was triggered or requested.
+
+Create/save native behaviour, ignored-flag timing/ownership, UI exclusion and paste capacity remain unqualified. Nonignored empty save slots remain refused pending native semantics. Classic/Forever mutations remain disabled. Broader roadmap work is incomplete; the unknown Cutlass move was not replayed.
