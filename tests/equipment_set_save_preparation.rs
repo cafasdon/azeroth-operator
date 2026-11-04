@@ -149,6 +149,100 @@ fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots()
     let mut duplicate: Vec<_> = large_code.split(':').collect();
     duplicate[252] = "0";
     assert!(decoder.call::<mlua::Table>(duplicate.join(":")).is_err());
+    lua.load(r#"
+        function copy(t) local out={} for k,v in pairs(t) do out[k]=type(v)=='table' and copy(v) or v end return out end
+        function GetCursorInfo() end; function UnitCastingInfo() end; function UnitChannelInfo() end
+        function StaticPopup_Visible() end; function IsInventoryItemLocked() return false end
+        function GetTime() return now end
+        ItemLocation={CreateFromEquipmentSlot=function(_,i) return i end}
+        C_Item={DoesItemExist=function(i) return worn[tostring(i)].guid~='' end,
+            GetItemGUID=function(i) local g=worn[tostring(i)].guid; if g~='' then return g end end,
+            GetItemID=function(i) local id=worn[tostring(i)].item_id; if id~=0 then return id end end}
+        function setup(code,mode)
+            testCode=code; testMode=mode; op=AO.DecodeEquipmentSetSave(code)
+            sets=copy(op.expected_catalogue); worn=copy(op.equipment_before); now=0; writes=0; flags={}
+            for i=1,19 do flags[i]=false end
+            AzerothOperatorOperations=''; MAX_EQUIPMENT_SETS_PER_PLAYER=20
+            AO.collectors.equipment_sets=function() return {coverage='native_catalogue_raw_slots',can_use=true,entries=copy(sets)} end
+            AO.collectors.operation_receipts=function() return AO.ReadMacroReceipts() end
+            C_EquipmentSet={GetEquipmentSetID=function(name) for id,e in pairs(sets) do if e.name==name then return tonumber(id) end end end,
+                IsSlotIgnoredForSave=function(i) return flags[i] end,
+                IgnoreSlotForSave=function(i) flags[i]=true end,UnignoreSlotForSave=function(i) flags[i]=false end,
+                CreateEquipmentSet=function() native() end,SaveEquipmentSet=function() native() end}
+        end
+        function finish()
+            local id=op.set_id or 7
+            local target={name=op.name,icon=op.icon,is_equipped=true,num_items=1,num_equipped=1,num_in_inventory=0,num_lost=0,num_ignored=18,
+                assigned_spec=op.set_id and sets[tostring(op.set_id)].assigned_spec,slots={}}
+            for i=1,19 do local k=tostring(i); target.slots[k]={ignored=op.ignored_slots[k]} end
+            target.slots['16']={ignored=false,raw_item_id=123,raw_location=16,
+                observed_item={kind='equipment',slot=16,item_id=123,guid='Item-exact',locked=false}}
+            sets[tostring(id)]=target
+        end
+        function native()
+            assert(AzerothOperatorOperations:find(op.id..':outcome_unknown:'..op.kind..';',1,true))
+            writes=writes+1
+            if testMode~='delay' then finish() end
+            if testMode=='throw_after' then error('post-effect failure') end
+        end
+    "#).exec()?;
+    for source in [
+        include_str!("../addon/EquipmentSetSaveState.lua"),
+        include_str!("../addon/EquipmentSetSave.lua"),
+        include_str!("../addon/MacroImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    for (compiled, kind) in [
+        (&draft, "create_equipment_set"),
+        (&saved, "save_equipment_set"),
+    ] {
+        lua.globals()
+            .set("testCode", compiled["import_code"].as_str().unwrap())?;
+        lua.load(r#"
+            setup(testCode,'success')
+            assert(not pcall(AO.ApplyReviewedMacro,testCode) and writes==0)
+            AO.ReviewMacroImport(testCode)
+            assert(not pcall(AO.ApplyReviewedMacro,testCode..':-') and writes==0)
+            AO.ReviewMacroImport(testCode); local r,ok=AO.ApplyReviewedMacro(testCode)
+            assert(ok and r.status=='applied' and writes==1)
+            AO.ReviewMacroImport(testCode); assert(not pcall(AO.ApplyReviewedMacro,testCode) and writes==1)
+            AO.Capture()
+        "#).exec()?;
+        let exported: String = lua.globals().get("AzerothOperatorExport")?;
+        let roundtrip = azeroth_operator::import::decode(
+            format!("AzerothOperatorExport = \"{exported}\"").as_bytes(),
+        )?;
+        let id = compiled["operation_id"].as_str().unwrap();
+        assert_eq!(
+            roundtrip.sections["operation_receipts"][id],
+            json!({"kind":kind,"status":"applied"})
+        );
+        let checkpoint: String = lua.globals().get("AzerothOperatorOperations")?;
+        azeroth_operator::import::decode(format!("AzerothOperatorExport = \"{exported}\"\nAzerothOperatorOperations = \"{checkpoint}\"").as_bytes())?;
+        lua.load(r#"
+            setup(testCode,'delay'); AO.ReviewMacroImport(testCode); local r,ok=AO.ApplyReviewedMacro(testCode)
+            assert(ok and r.status=='outcome_unknown' and writes==1)
+            finish(); assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==1)
+            setup(testCode,'delay'); AO.ReviewMacroImport(testCode); AO.ApplyReviewedMacro(testCode)
+            now=61; finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==1)
+            setup(testCode,'throw_after'); AO.ReviewMacroImport(testCode); local r,ok=AO.ApplyReviewedMacro(testCode)
+            assert(not ok and r.status=='outcome_unknown' and writes==1)
+            assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+            AO.ReviewMacroImport(testCode); assert(not pcall(AO.ApplyReviewedMacro,testCode) and writes==1)
+        "#).exec()?;
+        lua.load(include_str!("../addon/MacroImport.lua"))
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+        lua.load("AO.ReviewMacroImport(testCode); assert(not pcall(AO.ApplyReviewedMacro,testCode) and writes==1)").exec()?;
+        lua.load("setup(testCode,'delay'); AO.ReviewMacroImport(testCode); AO.ApplyReviewedMacro(testCode)").exec()?;
+        lua.load(include_str!("../addon/MacroImport.lua"))
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+        lua.load(r#"
+            finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==1)
+            AO.ReviewMacroImport(testCode); assert(not pcall(AO.ApplyReviewedMacro,testCode) and writes==1)
+        "#).exec()?;
+    }
     for (key, value) in [
         ("set_id", json!(0)),
         ("name", json!("existing")),

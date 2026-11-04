@@ -80,6 +80,8 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "use_equipment_set"
                                     | "assign_equipment_set_spec"
                                     | "unassign_equipment_set_spec"
+                                    | "create_equipment_set"
+                                    | "save_equipment_set"
                             ),
                             "Invalid receipt result"
                         );
