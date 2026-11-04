@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible action-copy importer/reader/companion and Retail 0.18.0-dev. Public synthetic preparation/receipt checks and all33 installed hashes verified; native game qualification deferred.
+
 - Package action copying in Retail 0.18.0-dev, require that version in preparation, and verify staged copy lifecycle plus actual 0.17→0.18 upgrade. Extend importer qualification for copy receipts; deployment/native qualification pending.
 
 - Connect source action copying to player review/Apply and receipt export/import. Verify pre-write uncertainty, delayed readback, expiry, exceptions and reload replay refusal. Packaging/deployment and native qualification remain pending.
