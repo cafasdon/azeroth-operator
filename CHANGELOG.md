@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a source-only equipment-set save-flag helper and Lua failure fixtures. It prepares explicit ignored slots, calls a save callback once and checks restoration without retrying; create/save execution and deployment remain pending.
+
 - Deploy Retail 0.12.0-dev association support with compatible hosted/local importers. Public synthetic assign/unassign preparation and twenty-two installed hashes verified; native behaviour remains unqualified and no game input occurred.
 
 - Package Retail 0.12.0-dev association operations and spec identity capture with twenty-two files. Staged assign/unassign receipts and 20→22 upgrades verified offline; hosted qualification fixture extended. Not installed or deployed.
