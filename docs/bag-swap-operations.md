@@ -22,3 +22,12 @@ AO-BAGSWAP-1 has21colon-separated fields: common nine identity fields, then sour
 Full source gate passed including38Python tests and actual MCP preparation. Rust-to-Lua decoder tests cover delimiter-bearing links, both identities, malformed fields/arity, missing target/link, conflicting amount/empty flags and changed target count changing the operation ID. Existing move/split checks pass. The extra fixture item raised expected carried quantity from5to7; corrected the test expectation after the first full run caught it.
 
 Jev advisory `837f480879c13a13c3229cdb6d28547268f83214b0f1e0c7b7454c8476b8f4f9`, model `jev-1.14.0`,1103input/154output tokens,0.321seconds: insufficient_evidence(probability0.71,confidence0.56), no concrete finding/pass. Configured adversarial-review file absent. Direct source/producer-consumer checks establish transport behaviour; compiler-to-executor shared lifecycle and native qualification remain pending.
+
+
+## Review, Apply and receipts — 2026-11-04
+
+Source shared dispatcher now routes AO-BAGSWAP-1 to the strict decoder and explicit ApplyBagSwap/VerifyBagSwap mappings. UI shows both complete item stacks with location, ID/count, GUID and link, plus uncertainty/no-retry instructions. Lua and Rust snapshot/checkpoint receipt allowlists accept swap_bag_items. Source preparation remains execution-disabled pending packaging; no hosted service or installed addon changed.
+
+Actual Rust compiler → Lua decoder/review/Apply/executor → Core export → Rust SavedVariables import tests pass. They assert pre-write unknown checkpoint inside pickup, no-review/edited-byte refusal, immediate success, duplicate refusal, delayed read-only promotion, expiry preserving unknown, exceptions before/after effects and reload preserving unknown with replay refusal. Native APIs remain mocked. UI fixture verifies both target location and identity. Full source gate passed (format/build, Rust/Lua tests, Clippy and38Python tests).
+
+Jev advisory `0f7b46b1a69cd17b1f4598a0f1fa9177f641555c483a8e31afcefa84dbecbb87`, resolved `jev-1.14.0`,1102input/154output tokens,0.353seconds: insufficient_evidence(probability0.78,confidence0.67), no concrete finding/pass. Configured frontend skill and adversarial-review file absent. Direct source and fixture checks establish integration only; packaging/deployment, same-ID stack semantics and native qualification remain incomplete.
