@@ -1,0 +1,21 @@
+# Saved talent-loadout metadata
+
+## Source executor — 2026-11-04
+
+`addon/TalentMetadata.lua` adds source-only `rename_talent_config` and `delete_talent_config`. It is not in TOCs/packages, MCP preparation, import dispatch or receipt allowlists yet. No installed files or hosted services changed.
+
+Primary reference: the [native edit dialog](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_PlayerSpells/ClassTalents/Blizzard_ClassTalentLoadoutEditDialog.lua) calls `C_ClassTalents.RenameConfig` and `DeleteConfig` directly. The [native talents frame](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_PlayerSpells/ClassTalents/Blizzard_ClassTalentsFrame.lua) separately tracks selected saved configurations and handles deletion events. API references establish a callable path, not live qualification or blanket approval.
+
+Requests bind family/variant/build/interface/character, target ID and a full expected state: current spec, working config, selected saved config, serialization version, active import string, and every saved entry for the current spec (name, import string, serialization version and shared-action-bar flag). The executor reads the entire native state twice and compares both copies and the supplied preimage. Sparse, duplicate, restricted, changing or unavailable observations fail closed. Staged changes in working or saved configurations are refused. The active working config cannot be a saved target.
+
+Apply requires the visible idle non-inspecting player Talents panel, matching working config, no cast/channel/combat/cursor, no competing create/edit/import dialog or deletion/shared-bars confirmation, and native permission to edit talents. Rename rejects invalid/colliding names and treats an identical name as a no-op. Exactly one native rename/delete call follows. No load, commit, spec switch, action-bar change, fallback, rollback or retry is requested.
+
+Readback requires the complete expected state, changing only the target name or removing only the target entry. Active talent contents, selected ID and every captured bystander must match. Return values alone are not success evidence. Normal delayed outcomes remain unknown with an observation-only verifier available for later integration. Native exceptions propagate: the future shared caller must checkpoint unknown before entry and never automatically replay or reconcile thrown writes.
+
+Renaming a selected saved build is supported by this source contract. Deleting the selected saved build is explicitly refused until selection side effects are resolved; this is unfinished scope, not a claim that the native API forbids it. Coverage is current-spec saved loadouts only. Other specs, actual action-bar contents, native timing/taint/name limits, and hidden UI transitions are not qualified. Talent creation/import/node editing remain separate outstanding work.
+
+Actual Lua 5.1 fixtures cover rename/delete success despite false native return, true return without effect, no-op, selected rename, selected-delete refusal, delayed completion, exceptions before/after effect, active-content/selection/bystander/shared-flag changes, duplicate/sparse lists, missing APIs, staged changes, stale/spec/version changes, restricted reads, racing selection reads and UI/combat/cursor guards. Full `python -m tools.verify_source` passed formatting, locked build, all Rust/Lua fixtures, Clippy and 35 Python tests.
+
+Advisory Jev review: `jev-1.14.0`, request `6f261e14e5b9709a83b4ed54f0678b9de545f37dc1caf2662dcb13858ae6ad5b`, 2868 input/153 output tokens, 0.301 seconds; `investigate_supported_issue` with reported confidence 0.30. No concrete defect was supplied. Direct reinspection confirms complete structured state comparison before/after the single call; fixtures reject changed active contents, bystanders and selections. This does not prove uncaptured effects or native behaviour. The configured OCR skill and adversarial rule files were checked and are absent; neither workflow is claimed.
+
+Next: compiler and strict import transport, player review including deletion consequences, receipt integration, packaging and compatible importer rollout. Native testing remains deferred. Existing unknown game operations must not be replayed.
