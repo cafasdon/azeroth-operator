@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible talent metadata importer/reader/companion and Retail 0.14.0-dev. Public synthetic preparation/receipt checks and all 27 installed hashes passed; native qualification remains deferred.
+
 - Package saved talent rename/delete in Retail 0.14.0-dev (27 files), verify staged execution/receipts and guarded 25→27 upgrades, and extend importer qualification. Deployment and native qualification remain pending.
 
 - Connect saved talent rename/delete to source player review/Apply and persisted receipt parsing. Verify full compiler-to-executor/export flow, uncertain outcomes and replay refusal offline. Packaging/deployment and native qualification remain pending.
