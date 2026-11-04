@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only arbitrary talent import executor with private preimage/plan retention, single native import, selected-build/active-content readback and failure fixtures. Real-helper composition and compiler/review/receipt integration remain pending; no deployment.
+
 - Add source-only parsed talent import readback comparison, accepting acknowledged omitted request hashes only when native contents/tree identity match. Reject changed ranks/choices/identity and observation races; no import execution or deployment.
 
 - Deploy selected-build deletion support across importer/reader/companion and Retail 0.16.0-dev. Public synthetic preparation checks and 29 installed hashes verified; no game action or native qualification.
