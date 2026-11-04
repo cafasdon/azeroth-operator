@@ -180,7 +180,10 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
                 assert(id==7 and name=='New' and text==requested and #nodes==1)
                 assert(nodes[1].nodeID==10 and nodes[1].selectionEntryID==101 and nodes[1].ranksPurchased==1 and nodes[1].ranksGranted==0)
                 writes=writes+1; nodes[1].ranksPurchased=99
+                if checkReceipt then assert(AzerothOperatorOperations==op.id..':outcome_unknown:import_talent_config;') end
+                if mode=='throw_before' then error('before') end
                 if mode~='delay' then realFinish() end
+                if mode=='throw_after' then error('after') end
                 return true
             end
         end
@@ -234,6 +237,54 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
     lua.globals().set("op", decoded)?;
     lua.load("assert(AO.ApplyTalentImport(op).status=='applied' and writes==1)")
         .exec()?;
+    lua.globals().set("code", code)?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(r#"
+        function GetTime() return now end
+        function setupImport()
+            realReset(); AzerothOperatorOperations=''; now=0; checkReceipt=true
+            op=AO.DecodeTalentImport(code)
+        end
+        setupImport(); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..':-') and writes==0)
+        AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and r.status=='applied' and writes==1)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        SlashCmdList={}; function GetServerTime() return 0 end
+        function date() return '2026-11-04T00:00:00Z' end
+        AO.collectors={operation_receipts=function() return AO.ReadMacroReceipts() end}
+    "#).exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("AO.Capture()").exec()?;
+    let receipt: String = lua.globals().get("AzerothOperatorOperations")?;
+    let export: String = lua.globals().get("AzerothOperatorExport")?;
+    let imported = azeroth_operator::import::decode(
+        format!("AzerothOperatorExport = \"{export}\"\nAzerothOperatorOperations = \"{receipt}\"")
+            .as_bytes(),
+    )?;
+    assert_eq!(
+        imported.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()],
+        serde_json::json!({"kind":"import_talent_config","status":"applied"})
+    );
+    lua.load(r#"
+        setupImport(); mode='delay'; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and r.status=='outcome_unknown' and writes==1)
+        realFinish(); assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==1)
+        setupImport(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+        now=61; realFinish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==1)
+        for _,failure in ipairs({'throw_before','throw_after','callback_error'}) do
+            setupImport(); mode=failure; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+            assert(not ok and r.status=='outcome_unknown' and writes==1,failure)
+            assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+            AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        end
+        setupImport(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+    "#).exec()?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("realFinish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown'); AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)").exec()?;
     for field in [
         "import_string",
         "allow_empty_hash",

@@ -111,3 +111,13 @@ AO-TALIMPORT-1 uses 21+5N fields (N 0–127), bounded to 512 KiB. The first 19 m
 The draft reports changes_active_talents and selects_new_build, but execution_supported/addon_execution_enabled remain false and required addon version is null pending integration. No source change is deployed or packaged. Actual Rust preparation→Lua decoder→parser/planner/executor composition passes, plus missing-field/forbidden-target/unacknowledged-hash/changed-hash-ID and malformed-wire checks. Full source gate passed Rust/Lua, Clippy and 37 Python tests. Native APIs remain mocks; review/receipt integration and native qualification remain outstanding.
 
 Jev advisory jev-1.14.0, request `b39d2dc2b285aee669b6d95fdeb977a495a6d2de3dad90e0871171532bd6a5a5`, 973 input/116 output tokens, 0.294 s: insufficient evidence. No AI review pass claimed. Configured adversarial review file remains absent.
+
+## Player review and import receipts — 2026-11-04
+
+Import now uses the shared exact-byte Review/Apply dispatcher and explicit executor/verifier mapping. The review displays the full validated import text, name/spec, active-talent change, omitted-hash acknowledgement and checked-not-set shared-bars expectation. It states that existing saved builds must remain unchanged, bars may change and uncertain imports must not be repeated. Lua and Rust receipt/schema allowlists accept import_talent_config.
+
+The composition fixture now runs compiler→decoder→actual parser/planner/executor through shared Review/Apply, Core export and Rust SavedVariables import. It asserts the unknown checkpoint exists inside the mocked native call, successful receipt roundtrip, missing/mismatched review and duplicate refusal, delayed observation-only completion, 60-second expiry, dispatcher reload and exceptions before/after effect or during native bookkeeping. Uncertain attempts remain non-replayable by the same ID. These checkpoints become durable only on reload/logout; no crash durability or semantic exactly-once across new IDs is claimed.
+
+Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. Compiler still reports execution disabled pending packaging; no installed or hosted component changed. Native API behaviour, parser compatibility and full class-tree coverage remain unqualified.
+
+Jev advisory jev-1.14.0, request `fb40af4c553420ae2796066f3459664c1867a11385c761b547190f89c6364fec`, 991 input/135 output tokens, 0.360 s: insufficient evidence. No AI review pass claimed. Configured adversarial review file remains absent. The deterministic actual-helper lifecycle tests are the bounded evidence.

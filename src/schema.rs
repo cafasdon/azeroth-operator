@@ -149,6 +149,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                                 | "split_bag_item"
                                 | "load_talent_config"
                                 | "create_talent_config"
+                                | "import_talent_config"
                                 | "rename_talent_config"
                                 | "delete_talent_config"
                                 | "move_action_slot"

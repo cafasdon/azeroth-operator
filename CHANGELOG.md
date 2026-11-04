@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect talent import to source player review, explicit Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and replay refusal through expiry/reload/exceptions. Packaging and native qualification remain pending.
+
 - Add source talent import preparation and bounded AO-TALIMPORT-1 transport with explicit hash/shared-bars acknowledgements and compiler-to-executor fixtures. Execution stays disabled pending review/receipt integration; nothing deployed.
 
 - Verify actual talent import parser/planner/executor/readback composition using independently encoded single-node data, delayed completion, input mutation and mismatched active/saved contents. Native dependencies remain mocked; no deployment.

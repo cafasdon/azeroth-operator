@@ -26,6 +26,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='talent_import' then return {kind='import_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',name='New|Import',import_string='ABCDE',allow_empty_hash=true,expected_new_shared_action_bars=false,expected={spec_id=263}} end
             if text=='talent_create' then return {kind='create_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',name='New|Build',expected_new_shared_action_bars=false,expected={spec_id=263}} end
             if text=='selected_delete' then return {kind='delete_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',target_config_id=9,expected={spec_id=263,selected_config_id=9,entries={['9']={name='Selected'}}}} end
             if text=='talent_rename' or text=='talent_delete' then
@@ -127,6 +128,10 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         input:SetText('spec_unassign'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find("Remove this set's specialisation association.",1,true))
         assert(not frames[5].text:find('Remove this association from:',1,true))
+        input:SetText('talent_import'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('CHANGING YOUR ACTIVE TALENTS',1,true))
+        assert(frames[5].text:find('Import text: ABCDE',1,true) and frames[5].text:find('Omitted tree hash allowed: Yes',1,true))
+        assert(frames[5].text:find('New/Import',1,true) and frames[5].text:find('Do not repeat an uncertain import',1,true))
         input:SetText('talent_create'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('Create saved talent build: New/Build',1,true))
         assert(frames[5].text:find('will select the new build',1,true) and frames[5].text:find('checked, not set',1,true))
