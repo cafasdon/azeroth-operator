@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package talent imports in Retail 0.17.0-dev (33 files), enable explicit minimum-version preparation, run the full import lifecycle against staged Lua, and verify guarded 29→33 upgrades. Compatible rollout/native qualification remain pending.
+
 - Connect talent import to source player review, explicit Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and replay refusal through expiry/reload/exceptions. Packaging and native qualification remain pending.
 
 - Add source talent import preparation and bounded AO-TALIMPORT-1 transport with explicit hash/shared-bars acknowledgements and compiler-to-executor fixtures. Execution stays disabled pending review/receipt integration; nothing deployed.

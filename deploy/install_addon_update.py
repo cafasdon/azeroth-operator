@@ -7,7 +7,7 @@ import tempfile
 from tools.package_addon import render_entries
 from tools.package_bigwigs import sha, verified_contents
 from tools.sync_exports import ordinary
-from tools.verify_installed_addon import FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES, TALENT_METADATA_FILES, TALENT_CREATE_FILES
+from tools.verify_installed_addon import FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES, TALENT_METADATA_FILES, TALENT_CREATE_FILES, TALENT_IMPORT_FILES
 
 
 def replace(path, data):
@@ -39,7 +39,7 @@ def install(client, old_manifest, new_manifest, backups):
         raise ValueError("Archive hash mismatch")
     verified_contents(archive, entries)
     old_files = set(old["files"])
-    if new["files"] != {name:sha(data) for name,data in entries.items()} or old_files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES, TALENT_METADATA_FILES, TALENT_CREATE_FILES) or not old_files <= set(entries):
+    if new["files"] != {name:sha(data) for name,data in entries.items()} or old_files not in (FILES, OPERATION_FILES, BINDING_FILES, EQUIPMENT_FILES, BAG_FILES, TALENT_FILES, ACTION_FILES, EQUIPMENT_SET_FILES, EQUIPMENT_SET_USE_FILES, EQUIPMENT_SET_SPEC_FILES, EQUIPMENT_SET_SAVE_FILES, TALENT_METADATA_FILES, TALENT_CREATE_FILES, TALENT_IMPORT_FILES) or not old_files <= set(entries):
         raise ValueError("File manifest mismatch")
     target = ordinary(client / "Interface" / "AddOns" / "AzerothOperator")
     if {path.name for path in target.iterdir()} != old_files:
