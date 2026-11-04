@@ -147,7 +147,7 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         return Ok(
             json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"swap_bag_items",
             "source":entries[0],"target":entries[1],"import_code":code,"requires_player_apply":true,
-            "game_execution":false,"live_qualified":false,"addon_execution_enabled":false,"requires_addon_version":null}),
+            "game_execution":false,"live_qualified":false,"addon_execution_enabled":true,"requires_addon_version":"0.19.0-dev"}),
         );
     }
     let count = source["count"]

@@ -31,3 +31,14 @@ Source shared dispatcher now routes AO-BAGSWAP-1 to the strict decoder and expli
 Actual Rust compiler → Lua decoder/review/Apply/executor → Core export → Rust SavedVariables import tests pass. They assert pre-write unknown checkpoint inside pickup, no-review/edited-byte refusal, immediate success, duplicate refusal, delayed read-only promotion, expiry preserving unknown, exceptions before/after effects and reload preserving unknown with replay refusal. Native APIs remain mocked. UI fixture verifies both target location and identity. Full source gate passed (format/build, Rust/Lua tests, Clippy and38Python tests).
 
 Jev advisory `0f7b46b1a69cd17b1f4598a0f1fa9177f641555c483a8e31afcefa84dbecbb87`, resolved `jev-1.14.0`,1102input/154output tokens,0.353seconds: insufficient_evidence(probability0.78,confidence0.67), no concrete finding/pass. Configured frontend skill and adversarial-review file absent. Direct source and fixture checks establish integration only; packaging/deployment, same-ID stack semantics and native qualification remain incomplete.
+
+
+## Package candidate — 2026-11-04
+
+Retail0.19.0-dev adds BagSwap.lua and BagSwapImport.lua before the shared dispatcher,35files total. Installed-file validation and guarded upgrades admit the exact35file set while retaining all prior manifest shapes. Source preparation now advertises0.19.0-dev minimum/execution support; native qualification remains false. Compatible importer/reader/companion deployment must precede installation. Importer qualification includes a distinct ae*32 unknownswap receipt without replacing older evidence.
+
+Full source gate passed, including38Python tests. Lifecycle fixture now reads every Lua dependency from the staged root when invoked by package verification. Actual extracted ZIP passed swap review/Apply/export/uncertainty/reload tests and existing action/talent/equipment fixtures. A temporary upgrade from the actual0.18archive to0.19 verified35files and backup, without changing the game installation.
+
+ZIP `dist/bag-swap-release/AzerothOperator-0.19.0-dev-retail-live.zip`, SHA256 `74215783c082e51157c0b07e9f5a3cd0a266c3a967c44a47c5b2d747fb61d19a`. No deployment or game input occurred.
+
+Jev advisory `1b662496426b85ebb11e2afe5af4da5e927a520173b2568ac350a6d50172f014`, resolved `jev-1.14.0`,1136input/154output tokens,0.289seconds: insufficient_evidence(probability0.59,confidence0.38), no concrete finding/pass. Configured adversarial-review file absent. Direct source inspection and deterministic packaged tests establish artifact integration only; native compatibility and same-ID stack semantics remain unfinished.
