@@ -107,7 +107,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(result.isError)
                             draft=json.loads(result.content[0].text)
                             self.assertFalse(draft["addon_execution_enabled"])
-                            self.assertIsNone(draft["import_code"])
+                            self.assertTrue(draft["import_code"].startswith("AO-SETSAVE-1:"))
                             self.assertEqual(draft["equipment_before"]["16"],{"guid":"Item-Old","item_id":123})
                             self.assertEqual(draft["kind"],action+"_equipment_set")
                             self.assertEqual(draft["overwrites_saved_contents"],action=="save")

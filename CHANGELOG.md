@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add bounded create/save import transport and strict Lua decoding, including full-catalogue roundtrip and malformed-input fixtures. Shared review/Apply remains disabled; no package or service deployment.
+
 - Add source MCP create/save drafts binding the full catalogue, equipped identities and explicit ignored/empty preconditions. Existing operation formats are preserved; create/save imports and execution remain disabled pending integration.
 
 - Add source-only native equipment-set create/save executors with full catalogue/equipment preimages, temporary ignored-slot restoration, one native call and exact readback fixtures. Nonignored empty slots, transport/review integration, packaging and native qualification remain pending.
