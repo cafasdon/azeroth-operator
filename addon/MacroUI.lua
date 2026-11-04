@@ -117,6 +117,17 @@ local function open()
             end
             lines[#lines+1]="Exact captured set contents are checked again. External references are not repaired."
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="import_talent_config" then
+            lines[#lines+1]="Import NEW saved talent build: "..reason(op.name)
+            lines[#lines+1]="Specialisation ID: "..op.expected.spec_id
+            lines[#lines+1]="This imports and selects a new build, CHANGING YOUR ACTIVE TALENTS."
+            lines[#lines+1]="Import text: "..op.import_string
+            lines[#lines+1]="Omitted tree hash allowed: "..(op.allow_empty_hash and "Yes" or "No")
+            lines[#lines+1]="Expected new shared action bars: "..(op.expected_new_shared_action_bars and "Yes" or "No")
+            lines[#lines+1]="This expectation is checked, not set. Actual action-bar contents are not verified and may change."
+            lines[#lines+1]="All existing saved builds must remain unchanged. Native validation may refuse the import."
+            lines[#lines+1]="Open Talents and close loadout dialogs before Apply. Keep Talents open until completion."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain import."
         elseif op.kind=="create_talent_config" then
             lines[#lines+1]="Create saved talent build: "..reason(op.name)
             lines[#lines+1]="Specialisation ID: "..op.expected.spec_id
