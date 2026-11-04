@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only carried-item swap executor with both exact item preimages, cursor checks and refusal to place over stale source observations. Offline success/failure tests pass; same-ID stack semantics, integration and native qualification remain pending.
+
 - Deploy compatible action-copy importer/reader/companion and Retail 0.18.0-dev. Public synthetic preparation/receipt checks and all33 installed hashes verified; native game qualification deferred.
 
 - Package action copying in Retail 0.18.0-dev, require that version in preparation, and verify staged copy lifecycle plus actual 0.17→0.18 upgrade. Extend importer qualification for copy receipts; deployment/native qualification pending.
