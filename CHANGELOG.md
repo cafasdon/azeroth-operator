@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package bag swaps in Retail 0.19.0-dev (35 files), require that version in preparation, and verify staged lifecycle plus actual 0.18→0.19 upgrade. Compatible deployment and native qualification remain pending.
+
 - Connect source bag swaps to player review/Apply and persisted receipts. End-to-end success, delayed observation, exceptions, expiry and reload replay-refusal fixtures pass; packaging/deployment and native qualification pending.
 
 - Add source MCP bag-swap preparation and bounded AO-BAGSWAP-1 transport binding both item identities/links/counts. Legacy move/split preserved; swap execution disabled pending shared review/receipt integration.

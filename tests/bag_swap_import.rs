@@ -7,6 +7,11 @@ use serde_json::json;
 #[test]
 fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
 -> Result<(), Box<dyn std::error::Error>> {
+    verify_swap_fixture(None)
+}
+pub fn verify_swap_fixture(
+    root: Option<&std::path::Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut snapshot: Snapshot = serde_json::from_value(
         json!({"schema_version":1,"source":"fixture","captured_at":"2026-11-03T00:00:00Z",
  "client":{"family":"retail","variant":"live","build":"70688","interface":120105},"character":{"name":"Test","realm":"Test"},
@@ -17,11 +22,16 @@ fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
     )?;
     let prepared = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(prepared["kind"], "swap_bag_items");
-    assert_eq!(prepared["addon_execution_enabled"], false);
+    assert_eq!(prepared["addon_execution_enabled"], true);
+    assert_eq!(prepared["requires_addon_version"], "0.19.0-dev");
     let lua = Lua::new();
     let ao = lua.create_table()?;
-    lua.load(include_str!("../addon/BagSwapImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "BagSwapImport.lua",
+        include_str!("../addon/BagSwapImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     let decoder: mlua::Function = ao.get("DecodeBagSwap")?;
     let code = prepared["import_code"].as_str().unwrap();
     let op: mlua::Table = decoder.call(code)?;
@@ -54,8 +64,12 @@ fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
     lua.globals().set("AO", ao.clone())?;
     lua.globals().set("code", code)?;
     for source in [
-        include_str!("../addon/BagSwap.lua"),
-        include_str!("../addon/MacroImport.lua"),
+        fixture_source(root, "BagSwap.lua", include_str!("../addon/BagSwap.lua"))?,
+        fixture_source(
+            root,
+            "MacroImport.lua",
+            include_str!("../addon/MacroImport.lua"),
+        )?,
     ] {
         lua.load(source)
             .call::<()>(("AzerothOperator", ao.clone()))?;
@@ -103,8 +117,12 @@ fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
         SlashCmdList={};function GetServerTime() return 1735689600 end;function date() return '2025-01-01T00:00:00Z' end
         AO.collectors={operation_receipts=AO.ReadMacroReceipts}
     "#).exec()?;
-    lua.load(include_str!("../addon/Core.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "Core.lua",
+        include_str!("../addon/Core.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load("AO.Capture()").exec()?;
     let export: String = lua.globals().get("AzerothOperatorExport")?;
     let checkpoint: String = lua.globals().get("AzerothOperatorOperations")?;
@@ -123,8 +141,12 @@ fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
     for letter in ["c", "d", "e"] {
         assert_eq!(receipts[letter.repeat(64)]["status"], "outcome_unknown");
     }
-    lua.load(include_str!("../addon/MacroImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "MacroImport.lua",
+        include_str!("../addon/MacroImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(
         r#"
         for _,letter in ipairs({'c','d','e'}) do
@@ -152,4 +174,15 @@ fn swap_transport_binds_both_items_and_rejects_ambiguous_requests()
     snapshot.sections.get_mut("bags").unwrap()["0"]["2"]["link"] = json!(null);
     assert!(compile(&snapshot, &"a".repeat(64), &request).is_err());
     Ok(())
+}
+
+fn fixture_source(
+    root: Option<&std::path::Path>,
+    name: &str,
+    embedded: &str,
+) -> std::io::Result<String> {
+    match root {
+        Some(path) => std::fs::read_to_string(path.join(name)),
+        None => Ok(embedded.to_owned()),
+    }
 }

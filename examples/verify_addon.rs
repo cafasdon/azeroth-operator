@@ -4,6 +4,8 @@ use mlua::Lua;
 use std::path::Path;
 #[path = "../tests/action_import.rs"]
 mod action_fixture;
+#[path = "../tests/bag_swap_import.rs"]
+mod bag_swap_fixture;
 #[path = "../tests/talent_import_execute.rs"]
 mod import_fixture;
 
@@ -58,6 +60,8 @@ fn main() -> anyhow::Result<()> {
             "EquipmentImport.lua",
             "BagOperations.lua",
             "BagImport.lua",
+            "BagSwap.lua",
+            "BagSwapImport.lua",
             "TalentOperations.lua",
             "TalentImport.lua",
             "TalentMetadata.lua",
@@ -425,6 +429,8 @@ fn main() -> anyhow::Result<()> {
         }
     }
     if args[1] == "retail" {
+        bag_swap_fixture::verify_swap_fixture(Some(Path::new(&args[0])))
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         action_fixture::verify_copy_fixture(Some(Path::new(&args[0])))
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         import_fixture::verify_import_fixture(Some(Path::new(&args[0])))
@@ -433,7 +439,7 @@ fn main() -> anyhow::Result<()> {
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","talent_import_lifecycle_fixture":args[1]=="retail","action_copy_lifecycle_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","talent_import_lifecycle_fixture":args[1]=="retail","action_copy_lifecycle_fixture":args[1]=="retail","bag_swap_lifecycle_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }
