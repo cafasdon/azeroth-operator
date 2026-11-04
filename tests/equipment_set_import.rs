@@ -23,11 +23,12 @@ fn set_transport_binds_all_metadata_slots_and_observed_identities()
     )?;
     let mut request = EquipmentSetRequest {
         operation: EquipmentSetAction::Modify,
-        set_id: 0,
+        set_id: Some(0),
         name: Some("New name".into()),
         icon: Some(134400),
         expect_empty_slots: vec![],
         spec_index: None,
+        ignored_slots: None,
     };
     let compiled = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(compiled["addon_execution_enabled"], true);
@@ -218,9 +219,9 @@ fn set_transport_binds_all_metadata_slots_and_observed_identities()
     "#,
     )
     .exec()?;
-    request.set_id = 99;
+    request.set_id = Some(99);
     assert!(compile(&snapshot, &"a".repeat(64), &request).is_err());
-    request.set_id = 0;
+    request.set_id = Some(0);
     snapshot.client.family = azeroth_operator::Family::Classic;
     assert!(compile(&snapshot, &"a".repeat(64), &request).is_err());
     Ok(())

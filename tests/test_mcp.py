@@ -98,6 +98,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(use_data["import_code"].startswith("AO-SET-USE-1:"))
                         self.assertEqual(use_data["equipment_before"]["16"],"Item-Old")
                         self.assertEqual(use_data["desired_equipment"]["16"],"Item-New")
+                        for action in ["create","save"]:
+                            operation={"operation":action,"ignored_slots":[i for i in range(1,20) if i!=16],
+                                "expect_empty_slots":[i for i in range(1,20) if i!=16]}
+                            if action=="create": operation.update({"name":"New fixture","icon":123})
+                            else: operation["set_id"]=0
+                            result=await session.call_tool("prepare_equipment_set_operation",{"snapshot_id":set_key,"operation":operation})
+                            self.assertFalse(result.isError)
+                            draft=json.loads(result.content[0].text)
+                            self.assertFalse(draft["addon_execution_enabled"])
+                            self.assertIsNone(draft["import_code"])
+                            self.assertEqual(draft["equipment_before"]["16"],{"guid":"Item-Old","item_id":123})
+                            self.assertEqual(draft["kind"],action+"_equipment_set")
+                            self.assertEqual(draft["overwrites_saved_contents"],action=="save")
                         for action in ["assign_spec","unassign_spec"]:
                             operation={"operation":action,"set_id":0}
                             if action=="assign_spec": operation["spec_index"]=1
@@ -114,6 +127,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertNotIn("assigned_spec",draft["desired_catalogue"]["1"])
                             else: self.assertNotIn("assigned_spec",draft["desired_catalogue"]["0"])
                         for sid,operation in [(key,{"operation":"delete","set_id":0}),
+                            (set_key,{"operation":"create","name":"New","icon":123}),
+                            (set_key,{"operation":"save"}),
                             (set_key,{"operation":"assign_spec","set_id":0,"spec_index":1}),
                             (spec_key,{"operation":"assign_spec","set_id":0,"spec_index":99}),
                             (spec_key,{"operation":"unassign_spec","set_id":0,"spec_index":1}),

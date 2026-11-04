@@ -9,6 +9,7 @@
 - Next implementation work: native equipment-set empty-slot semantics/create/save; talent creation/import/editing; further action-bar operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
 - Create/save prerequisite: source-only temporary ignored-slot helper and failure fixtures implemented; no new packaged operation. [Contract and remaining work](docs/equipment-set-save-operations.md).
 - Create/save executors now have source-only preimage, single-call and readback fixtures. Compiler/transport/review integration and nonignored empty-slot support remain pending; no additional operation is deployed.
+- Source MCP preparation now produces create/save drafts with explicit ignored/empty preconditions and exact equipped identities. Strict import transport, review/receipts, packaging and native empty-slot qualification remain outstanding.
 
 ## Implemented
 

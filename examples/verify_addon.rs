@@ -101,11 +101,12 @@ fn main() -> anyhow::Result<()> {
             &"a".repeat(64),
             &azeroth_operator::equipment_set_operation::EquipmentSetRequest {
                 operation: azeroth_operator::equipment_set_operation::EquipmentSetAction::Modify,
-                set_id: 0,
+                set_id: Some(0),
                 name: Some("Verified package".into()),
                 icon: Some(123),
                 expect_empty_slots: vec![],
                 spec_index: None,
+                ignored_slots: None,
             },
         )?;
         let receipt_export=(|| -> mlua::Result<String> {
@@ -162,11 +163,12 @@ fn main() -> anyhow::Result<()> {
             &"b".repeat(64),
             &azeroth_operator::equipment_set_operation::EquipmentSetRequest {
                 operation: azeroth_operator::equipment_set_operation::EquipmentSetAction::Use,
-                set_id: 0,
+                set_id: Some(0),
                 name: None,
                 icon: None,
                 expect_empty_slots: (1..=19).filter(|i| *i != 16).collect(),
                 spec_index: None,
+                ignored_slots: None,
             },
         )?;
         let use_export=(|| -> mlua::Result<String> {
@@ -214,11 +216,12 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     azeroth_operator::equipment_set_operation::EquipmentSetAction::UnassignSpec
                 },
-                set_id: 0,
+                set_id: Some(0),
                 name: None,
                 icon: None,
                 expect_empty_slots: vec![],
                 spec_index: assigning.then_some(1),
+                ignored_slots: None,
             };
             let prepared = azeroth_operator::equipment_set_operation::compile(
                 &snap,
