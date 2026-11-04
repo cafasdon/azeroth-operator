@@ -10,11 +10,55 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
     )?;
     let request = TalentRequest {
         target_config_id: 9,
+        ..Default::default()
     };
     let prepared = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(prepared["expected_active_config_id"], 7);
     assert_eq!(prepared["expected_selected_config_id"], 8);
     assert_eq!(prepared["desired"]["import_string"], "RUZHSA==");
+    let rename: TalentRequest = serde_json::from_value(
+        json!({"operation":"rename","target_config_id":9,"name":"New build"}),
+    )?;
+    let draft = compile(&snapshot, &"a".repeat(64), &rename)?;
+    assert_eq!(draft["kind"], "rename_talent_config");
+    assert_eq!(
+        draft["expected"]["entries"],
+        snapshot.sections["talents"]["saved_loadouts"]["entries"]
+    );
+    assert_eq!(draft["expected"]["active_import_string"], "QUJDRA==");
+    assert_eq!(draft["execution_supported"], false);
+    assert!(draft["import_code"].is_null());
+    assert_eq!(draft, compile(&snapshot, &"a".repeat(64), &rename)?);
+    let delete: TalentRequest =
+        serde_json::from_value(json!({"operation":"delete","target_config_id":9}))?;
+    assert_eq!(
+        compile(&snapshot, &"a".repeat(64), &delete)?["kind"],
+        "delete_talent_config"
+    );
+    let mut changed = snapshot.clone();
+    changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["selected_config_id"] = json!(9);
+    assert!(compile(&changed, &"a".repeat(64), &delete).is_err());
+    assert!(compile(&changed, &"a".repeat(64), &rename).is_ok());
+    changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]["10"] = json!({"name":"NEW BUILD","import_string":"QUJDRA==","serialization_version":2,"uses_shared_action_bars":true});
+    assert!(compile(&changed, &"a".repeat(64), &rename).is_err());
+    changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]["10"]["name"] =
+        json!("Bystander");
+    assert_ne!(
+        compile(&changed, &"a".repeat(64), &rename)?["operation_id"],
+        draft["operation_id"]
+    );
+    changed.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]["10"]["serialization_version"] =
+        json!(3);
+    assert!(compile(&changed, &"a".repeat(64), &rename).is_err());
+    for value in [
+        json!({"operation":"rename","target_config_id":9}),
+        json!({"operation":"delete","target_config_id":9,"name":"x"}),
+        json!({"target_config_id":9,"name":"x"}),
+        json!({"operation":"rename","target_config_id":9,"name":" bad"}),
+        json!({"operation":"rename","target_config_id":9,"name":"a|b"}),
+    ] {
+        assert!(compile(&snapshot, &"a".repeat(64), &serde_json::from_value(value)?).is_err());
+    }
     assert_eq!(
         prepared["import_code"].as_str().unwrap().split(':').count(),
         18

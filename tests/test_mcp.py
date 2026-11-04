@@ -159,6 +159,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         talent=await session.call_tool("prepare_talent_operation",{"snapshot_id":key,"operation":{"target_config_id":9}})
                         self.assertFalse(talent.isError)
                         self.assertTrue(json.loads(talent.content[0].text)["import_code"].startswith("AO-TALENT-1:"))
+                        for kind in ("rename", "delete"):
+                            request={"operation":kind,"target_config_id":9}
+                            if kind == "rename":
+                                request["name"]="Prepared name"
+                            draft=await session.call_tool("prepare_talent_operation",{"snapshot_id":key,"operation":request})
+                            self.assertFalse(draft.isError)
+                            data=json.loads(draft.content[0].text)
+                            self.assertEqual(data["kind"],kind+"_talent_config")
+                            self.assertFalse(data["execution_supported"])
+                            self.assertIsNone(data["import_code"])
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)

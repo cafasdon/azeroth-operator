@@ -1,5 +1,13 @@
 # Saved talent-loadout metadata
 
+## MCP preparation — 2026-11-04
+
+`prepare_talent_operation` now accepts `operation: rename|delete` with a target ID and a required name for rename. Omitted operation still means load and retains the existing AO-TALENT-1 format. Metadata drafts bind client identity, snapshot, all captured current-spec saved entries, active contents, working config, selection and serialization version. Their deterministic hash changes when any bound bystander changes. Mixed versions, working-config catalogue entries, colliding/invalid names and selected deletion are refused.
+
+These are source-only, non-executable drafts: `execution_supported: false`, `import_code: null`. No deployed service or addon changed. The catalogue remains a captured observation; the executor must independently compare the complete native state before writing. Transport, review, receipts and packaging remain next. Live testing is deferred at the user's request.
+
+Verification: full source gate passed formatting, locked build, Rust/Lua fixtures, Clippy and 35 Python tests, including actual MCP requests and unchanged legacy load transport. Tests cover selection refusal, selected rename, catalogue hash binding, collision, mixed versions and invalid arguments. Jev advisory `jev-1.14.0`, request `4d3044b61035f9e71b8f04ed341b2ad5345300db666ac23c5a979a20c2a190f7`, 948 input/135 output tokens, 0.306 s, returned insufficient evidence; this is not a review pass. Direct source inspection and deterministic tests support the bounded preparation claims only. Configured OCR/adversarial files remain absent.
+
 ## Source executor — 2026-11-04
 
 `addon/TalentMetadata.lua` adds source-only `rename_talent_config` and `delete_talent_config`. It is not in TOCs/packages, MCP preparation, import dispatch or receipt allowlists yet. No installed files or hosted services changed.
