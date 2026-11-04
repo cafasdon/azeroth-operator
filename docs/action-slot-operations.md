@@ -51,3 +51,14 @@ Full source gate passed after package/schema integration (31Python tests). Addit
 Independent implementation evidence for item cursor mapping: https://github.com/kemayo/wow-bankstack/blob/master/core.lua reads cursor type/item ID from the first/second GetCursorInfo results. Read2026-11-04. This supports tuple interpretation, not Blizzard authorisation or this executor's live behaviour. BankStack's retries/automatic cursor handling were not adopted. Native spell/macro tuple references are recorded above. Taint/protected-function behaviour remains unqualified and will not be bypassed.
 
 Jev advisory90b4990ba27129135dd2e5f018b0c610e6422b07b7ca0e7a2a0ca3772897cc7c, jev-1.14.0,900input/115output tokens,0.298seconds: investigate_supported_issue (reported confidence0.66), not a pass and no specific source finding supplied. Follow-up inspection added a pre-write PickupAction/PlaceAction availability guard and zero-write refusal test. Deterministic evidence supports a development candidate only; no live-success claim.
+
+
+## Copy executor — 2026-11-04
+
+Source-only `copy_action_slot` reconstructs a spell/item/macro cursor by exact ID using `C_Spell.PickupSpell`, `C_Item.PickupItem` or `PickupMacro`, then places it once into an explicitly empty observed destination. It inherits client/character, combat/cast/channel, empty cursor, supported type and macro-content preconditions. Both slots are checked again after pickup. Final and delayed readback require the original source to remain identical, target to match it and cursor to be empty. No source-removing pickup, action invocation, cursor clearing or retry is introduced.
+
+Primary implementation reference: [Blizzard SecureHandlers source mirror](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_RestrictedAddOnEnvironment/SecureHandlers.lua), read 2026-11-04. `PickupAny` dispatches spell/item/macro IDs to those pickup functions. This supports API choice, not native taint/protection qualification or policy approval.
+
+Offline fixtures cover all three kinds, occupied destination refusal before writes, unavailable API, wrong cursor, changed source after pickup, rejected placement with retained cursor, delayed read-only confirmation and duplicate preimage refusal. Full source verification passed: format, locked build, Rust/Lua tests, Clippy with warnings denied and 38 Python tests. Existing move/swap tests pass. This is not exposed by MCP or the shared decoder/review/receipt path yet and is not deployed.
+
+Jev advisory: request `93254a567a0d02c688ed65f3f09b9ec164fd295db03f4c51f0ff411fd1fb1ecd`, resolved model `jev-1.14.0`, 985 input/116 output tokens, 0.310 seconds. `insufficient_evidence` (probability 0.78, confidence 0.67); no concrete finding or review pass. Configured adversarial-review file was absent. Direct source review and deterministic fixtures support only the stated offline behaviour. In-game testing remains deferred by the user.

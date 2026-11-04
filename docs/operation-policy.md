@@ -33,7 +33,9 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Switch saved talent builds | Development implementation deployed | Disabled | Disabled | Exact captured build and current-state checks; native player-triggered talent UI path; live switch unqualified |
 | Rename/delete saved talent builds | Development implementation deployed | Disabled | Disabled | Full current-spec catalogue and active-content checks, explicit player review/Apply, exact readback; selected deletion requires 0.16.0-dev and verified API/frame/dropdown selection clearing; native unqualified |
 | Move/swap captured action slots | Development implementation deployed | Disabled | Disabled | Exact source/target and macro-content preimages; player review/Apply; live unqualified |
-| Create/edit talent builds or add new action-bar entries | Not implemented | Not implemented | Not implemented | Remains in scope; no protected-action bypass |
+| Create saved talent builds / import supplied builds | Development implementation deployed | Disabled | Disabled | Player review/Apply; complete catalogue and active-content checks; explicit shared-bars/hash acknowledgements where applicable; native unqualified |
+| Edit individual talent nodes / generate new action-bar entries | Not implemented | Not implemented | Not implemented | Remains in scope; no protected-action bypass |
+| Copy captured actions into empty slots | Source executor only | Disabled | Disabled | Spell/item/macro identity and source preservation; MCP transport/review/receipt integration pending; native unqualified |
 | Move carried items | Development implementation deployed | Disabled | Disabled | Exact-instance move to explicit empty slot; first live attempt outcome_unknown, no replay; timing fixes fixture-tested |
 | Split carried stacks | Development implementation deployed | Disabled | Disabled | Explicit amount, empty destination, source conservation and distinct destination identity; live unqualified |
 | Sort/merge/swap items, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
