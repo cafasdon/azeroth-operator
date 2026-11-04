@@ -1,5 +1,15 @@
 # Saved talent-loadout metadata
 
+## Package 0.14.0-dev — 2026-11-04
+
+The Retail package now includes `TalentMetadata.lua` and `TalentMetadataImport.lua` before shared dispatch: 27 files. Compiler output advertises player-applied support requiring addon `0.14.0-dev`, while `game_execution` and `live_qualified` remain false. This checkpoint does not change the installed addon, Windows companion or hosted services; compatible importer/reader deployment must precede installation.
+
+Archive: `dist/talent-metadata-release/AzerothOperator-0.14.0-dev-retail-live.zip`, SHA-256 `10f9107c7164c4079e7a156286b95387b141ed67e27c664d55d4c2b7c114571c`. Actual staged Lua files passed rename/delete compiler→decoder→Review/Apply→executor→Core export→Rust receipt verification, including pre-write uncertainty and duplicate refusal. The package's existing equipment-set fixtures passed too. A staged fixture initially retained a talents-unavailable marker when supplying talents; the contradictory marker was removed and the package check passed.
+
+Guarded installer and independent integrity verifier recognise the 27-file set while retaining legacy sets. Tests cover 25→27 upgrades with exact old-file backup, plus existing earlier-version, drift, identity and rollback cases. Full source gate passed Rust/Lua, Clippy and 36 Python tests; Clippy passed again after the staged-fixture correction. Importer deployment qualification now includes rename and delete receipts.
+
+Jev advisory `jev-1.14.0`, request `ce2d642ce229bb7c82e24f097bda3a7f5199005fd19058973de56a881fbf5677`, 1042 input/134 output tokens, 0.289 s, returned investigate_supported_issue at reported confidence 0.10 without a concrete defect. Direct inspection confirms the installer still checks old hashes, exact file sets and identity, backs up before writing and publishes TOC last; offline tests do not establish native qualification or deployment. No AI review pass is claimed. Configured OCR/adversarial files remain absent.
+
 ## Shared review and receipts — 2026-11-04
 
 Source Review/Apply now dispatches the strict metadata decoder and explicit rename/delete executors/verifiers. The shared caller retains the exact reviewed bytes and records `outcome_unknown` before the executor. Lua receipts, Rust snapshot validation and SavedVariables receipt parsing accept both metadata kinds. Normal unknown results permit observation-only verification for 60 seconds; exceptions, expiry and reload retain uncertainty. Repeated operation IDs remain refused.

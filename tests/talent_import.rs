@@ -26,7 +26,7 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
         snapshot.sections["talents"]["saved_loadouts"]["entries"]
     );
     assert_eq!(draft["expected"]["active_import_string"], "QUJDRA==");
-    assert_eq!(draft["execution_supported"], false);
+    assert_eq!(draft["execution_supported"], true);
     let metadata_code = draft["import_code"].as_str().unwrap();
     let metadata_lua = mlua::Lua::new();
     let metadata_ao = metadata_lua.create_table().unwrap();

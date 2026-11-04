@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package saved talent rename/delete in Retail 0.14.0-dev (27 files), verify staged execution/receipts and guarded 25→27 upgrades, and extend importer qualification. Deployment and native qualification remain pending.
+
 - Connect saved talent rename/delete to source player review/Apply and persisted receipt parsing. Verify full compiler-to-executor/export flow, uncertain outcomes and replay refusal offline. Packaging/deployment and native qualification remain pending.
 
 - Add bounded AO-TALMETA-1 rename/delete transport and data-only Lua decoder with producer-consumer and malformed-input tests. Execution remains disabled pending shared review/receipt integration; nothing deployed.
