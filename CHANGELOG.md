@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only talent import entry planning with exact native conversion checks for single, choice, granted and tiered nodes. Reject silently dropped/changed entries and unstable metadata; no import execution or deployment.
+
 - Add source-only read-only talent import validation with bounded native-parser reads, explicit omitted-hash acknowledgement and failure fixtures. Document creation/automatic-selection semantics; no new executable operation or deployment.
 
 - Deploy compatible talent metadata importer/reader/companion and Retail 0.14.0-dev. Public synthetic preparation/receipt checks and all 27 installed hashes passed; native qualification remains deferred.
