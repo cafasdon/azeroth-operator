@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP create/save drafts binding the full catalogue, equipped identities and explicit ignored/empty preconditions. Existing operation formats are preserved; create/save imports and execution remain disabled pending integration.
+
 - Add source-only native equipment-set create/save executors with full catalogue/equipment preimages, temporary ignored-slot restoration, one native call and exact readback fixtures. Nonignored empty slots, transport/review integration, packaging and native qualification remain pending.
 
 - Add a source-only equipment-set save-flag helper and Lua failure fixtures. It prepares explicit ignored slots, calls a save callback once and checks restoration without retrying; create/save execution and deployment remain pending.

@@ -13,17 +13,20 @@ pub enum EquipmentSetAction {
     Use,
     AssignSpec,
     UnassignSpec,
+    Create,
+    Save,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EquipmentSetRequest {
     pub operation: EquipmentSetAction,
-    pub set_id: u32,
+    pub set_id: Option<u32>,
     pub name: Option<String>,
     pub icon: Option<u32>,
     #[serde(default)]
     pub expect_empty_slots: Vec<u32>,
     pub spec_index: Option<u32>,
+    pub ignored_slots: Option<Vec<u32>>,
 }
 fn hex(s: &str) -> String {
     if s.is_empty() {
@@ -63,8 +66,21 @@ pub fn compile(
         .ok_or_else(|| anyhow::anyhow!("Equipment set catalogue unavailable"))?;
     ensure!(catalogue["can_use"] == true, "Equipment sets unavailable");
     let entries = catalogue["entries"].as_object().unwrap();
+    if matches!(
+        request.operation,
+        EquipmentSetAction::Create | EquipmentSetAction::Save
+    ) {
+        return save_draft(snapshot, snapshot_id, request, catalogue);
+    }
+    ensure!(
+        request.ignored_slots.is_none(),
+        "Ignored slots only apply to create/save"
+    );
+    let set_id = request
+        .set_id
+        .ok_or_else(|| anyhow::anyhow!("Equipment set ID required"))?;
     let expected = entries
-        .get(&request.set_id.to_string())
+        .get(&set_id.to_string())
         .ok_or_else(|| anyhow::anyhow!("Equipment set not captured"))?;
     if matches!(
         request.operation,
@@ -101,10 +117,8 @@ pub fn compile(
                 "Positive icon required"
             );
             ensure!(
-                entries
-                    .iter()
-                    .all(|(id, e)| id == &request.set_id.to_string()
-                        || !e["name"].as_str().unwrap().eq_ignore_ascii_case(name)),
+                entries.iter().all(|(id, e)| id == &set_id.to_string()
+                    || !e["name"].as_str().unwrap().eq_ignore_ascii_case(name)),
                 "Equipment set name already exists"
             );
             "modify_equipment_set"
@@ -174,6 +188,7 @@ pub fn compile(
             "use_equipment_set"
         }
         EquipmentSetAction::AssignSpec | EquipmentSetAction::UnassignSpec => unreachable!(),
+        EquipmentSetAction::Create | EquipmentSetAction::Save => unreachable!(),
     };
     let mut f = vec![
         if is_use { "AO-SET-USE-1" } else { "AO-SET-1" }.into(),
@@ -186,7 +201,7 @@ pub fn compile(
         hex(&snapshot.character.name),
         hex(&snapshot.character.realm),
         kind.into(),
-        request.set_id.to_string(),
+        set_id.to_string(),
         request
             .name
             .as_deref()
@@ -221,12 +236,152 @@ pub fn compile(
     )
 }
 
+fn save_draft(
+    snapshot: &Snapshot,
+    snapshot_id: &str,
+    request: &EquipmentSetRequest,
+    catalogue: &Value,
+) -> Result<Value> {
+    ensure!(
+        request.spec_index.is_none(),
+        "Create/save cannot change specialisation associations"
+    );
+    let entries = catalogue["entries"].as_object().unwrap();
+    let creating = matches!(request.operation, EquipmentSetAction::Create);
+    let old = if creating {
+        ensure!(request.set_id.is_none(), "Create cannot overwrite a set");
+        ensure!(entries.len() < 128, "Catalogue capture limit reached");
+        None
+    } else {
+        let id = request
+            .set_id
+            .ok_or_else(|| anyhow::anyhow!("Save requires a set ID"))?;
+        Some(
+            entries
+                .get(&id.to_string())
+                .ok_or_else(|| anyhow::anyhow!("Equipment set not captured"))?,
+        )
+    };
+    let name = request
+        .name
+        .as_deref()
+        .or_else(|| old.and_then(|v| v["name"].as_str()))
+        .ok_or_else(|| anyhow::anyhow!("Create requires a name"))?;
+    ensure!(
+        !name.is_empty()
+            && name.len() <= 64
+            && name.trim() == name
+            && !name.chars().any(|c| c.is_control() || c == '|'),
+        "Invalid set name"
+    );
+    if let Some(old) = old {
+        ensure!(old["name"] == name, "Save cannot rename a set");
+    }
+    let icon = request
+        .icon
+        .map(u64::from)
+        .or_else(|| old.and_then(|v| v["icon"].as_u64()))
+        .ok_or_else(|| anyhow::anyhow!("Create requires an icon"))?;
+    ensure!(
+        (1..=u32::MAX as u64).contains(&icon),
+        "Positive icon required"
+    );
+    for (id, entry) in entries {
+        ensure!(
+            Some(id.parse::<u32>()?) == request.set_id
+                || !entry["name"].as_str().unwrap().eq_ignore_ascii_case(name),
+            "Equipment set name already exists"
+        );
+    }
+    let requested_ignored = request
+        .ignored_slots
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("Explicit ignored_slots required"))?;
+    let ignored: std::collections::BTreeSet<_> = requested_ignored.iter().copied().collect();
+    let empty: std::collections::BTreeSet<_> = request.expect_empty_slots.iter().copied().collect();
+    ensure!(
+        ignored.len() == requested_ignored.len() && ignored.iter().all(|i| (1..=19).contains(i)),
+        "Invalid ignored slots"
+    );
+    ensure!(
+        empty.len() == request.expect_empty_slots.len()
+            && empty.iter().all(|i| (1..=19).contains(i)),
+        "Invalid empty-slot preconditions"
+    );
+    let equipment = snapshot
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow::anyhow!("Equipment unavailable"))?;
+    let mut before = serde_json::Map::new();
+    let mut ignored_map = serde_json::Map::new();
+    let mut desired = serde_json::Map::new();
+    let mut seen = std::collections::BTreeSet::new();
+    for slot in 1..=19 {
+        let key = slot.to_string();
+        let item = if let Some(item) = equipment.get(&key) {
+            ensure!(
+                !empty.contains(&slot),
+                "Empty precondition conflicts with captured equipment"
+            );
+            let guid = item["guid"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Equipment GUID unavailable"))?;
+            ensure!(
+                !guid.is_empty() && seen.insert(guid),
+                "Missing or duplicate equipped identity"
+            );
+            json!({"guid":guid,"item_id":item["item_id"]})
+        } else {
+            ensure!(
+                empty.contains(&slot),
+                "Uncaptured equipment requires explicit empty precondition"
+            );
+            ensure!(
+                ignored.contains(&slot),
+                "Nonignored empty save slots not yet qualified"
+            );
+            json!({"guid":"","item_id":0})
+        };
+        ignored_map.insert(key.clone(), json!(ignored.contains(&slot)));
+        desired.insert(
+            key.clone(),
+            if ignored.contains(&slot) {
+                json!({"ignored":true})
+            } else {
+                json!({"ignored":false,"item":item})
+            },
+        );
+        before.insert(key, item);
+    }
+    let mut draft = json!({"format":"equipment_set_save_draft_v1","snapshot_id":snapshot_id,
+        "kind":if creating {"create_equipment_set"} else {"save_equipment_set"},
+        "client":snapshot.client,"character":snapshot.character,"set_id":request.set_id,
+        "name":name,"icon":icon,"expected_catalogue":entries,"equipment_before":before,
+        "ignored_slots":ignored_map,"desired_slots":desired,"explicit_empty_preconditions":empty,
+        "assigned_spec":old.and_then(|v|v.get("assigned_spec")),
+        "overwrites_saved_contents":!creating,"capacity_rechecked_on_apply":true,
+        "import_code":null,"requires_player_apply":true,"addon_execution_enabled":false,
+        "requires_addon_version":null,"game_execution":false,"live_qualified":false,
+        "preparation_status":"draft_transport_pending"});
+    let bytes = serde_json::to_vec(&draft)?;
+    ensure!(
+        bytes.len() <= 512 * 1024,
+        "Equipment set save draft exceeds size limit"
+    );
+    draft["operation_id"] = json!(format!("{:x}", Sha256::digest(&bytes)));
+    Ok(draft)
+}
+
 fn association_draft(
     snapshot: &Snapshot,
     snapshot_id: &str,
     request: &EquipmentSetRequest,
     catalogue: &Value,
 ) -> Result<Value> {
+    let set_id = request
+        .set_id
+        .ok_or_else(|| anyhow::anyhow!("Equipment set ID required"))?;
     ensure!(
         request.name.is_none() && request.icon.is_none() && request.expect_empty_slots.is_empty(),
         "Association must not contain gear or metadata replacements"
@@ -263,7 +418,7 @@ fn association_draft(
         );
         None
     };
-    let key = request.set_id.to_string();
+    let key = set_id.to_string();
     let displaced = request
         .spec_index
         .and_then(|spec| owners.get(&(spec as u64)).copied())
@@ -309,7 +464,7 @@ fn association_draft(
         hex(&snapshot.character.name),
         hex(&snapshot.character.realm),
         draft["kind"].as_str().unwrap().into(),
-        request.set_id.to_string(),
+        set_id.to_string(),
         scalar(&draft["spec_index"]),
         scalar(&draft["spec_id"]),
         specs.len().to_string(),

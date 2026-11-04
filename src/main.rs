@@ -95,7 +95,7 @@ struct EquipmentSetOperation {
 #[tool_router]
 impl Operator {
     #[tool(
-        description = "Prepare Retail saved equipment-set metadata, deletion or use requests. Assign_spec/unassign_spec return association data with displaced associations requiring addon 0.12.0-dev and player review/Apply. Data only; never changes the game. Metadata requires addon 0.10.0-dev, use 0.11.0-dev and player review/Apply. Uncaptured equipped slots require explicit expect_empty_slots. Live execution remains unqualified. Does not repair external references.",
+        description = "Prepare Retail equipment-set operations. Create/save produce non-executable drafts requiring explicit ignored_slots and expect_empty_slots; no import transport yet. Existing metadata, deletion and use requests are supported. Assign_spec/unassign_spec return association data with displaced associations requiring addon 0.12.0-dev and player review/Apply. Data only; never changes the game. Metadata requires addon 0.10.0-dev, use 0.11.0-dev and player review/Apply. Uncaptured equipped slots require explicit expect_empty_slots. Live execution remains unqualified. Does not repair external references.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

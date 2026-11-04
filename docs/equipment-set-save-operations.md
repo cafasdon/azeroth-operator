@@ -1,5 +1,19 @@
 # Equipment-set creation and saving
 
+## MCP preparation — source only, 2026-11-04
+
+`prepare_equipment_set_operation` now accepts `operation: create` or `save` in source. Create requires a new name/icon and forbids `set_id`; save requires a captured ID, preserves its name and defaults to its icon unless explicitly replaced. All previous operation kinds still require an ID, including ID zero. Their existing wire formats remain unchanged.
+
+Both new kinds require an explicit `ignored_slots` list (unique positions 1–19; an empty list is valid when all slots are occupied). Every uncaptured equipped slot additionally needs `expect_empty_slots`; conflicting, duplicate, out-of-range or nonignored-empty requests are refused. No absent slot is inferred empty. Captured item IDs are positive u32 values validated by the snapshot schema; GUIDs must be available and distinct. The executor must verify explicit empty preconditions against native reads later.
+
+The bounded `equipment_set_save_draft_v1` result contains the complete catalogue, nineteen GUID/item-ID preimages, nineteen ignored flags, desired slot descriptions, spec association to preserve, and whether saved contents will be overwritten. Its deterministic operation ID binds the draft and snapshot. Creation accepts an empty catalogue, but native capacity/name checks remain necessary at Apply. ASCII case-insensitive captured name collisions are refused; this is not a substitute for native name lookup.
+
+These are non-executable drafts: `import_code: null`, `addon_execution_enabled: false`, no required addon version, and `draft_transport_pending`. The hosted service and installed addon remain unchanged. Next work is strict transport/decoder, then player review/receipts and packaging; nonignored empty-slot semantics remain outstanding.
+
+Verification: full `python -m tools.verify_source` passed format, locked build, all Rust/Lua tests, Clippy and 34 Python tests. The actual stdio MCP prepares both kinds, verifies disabled execution and exact GUID data, rejects incomplete requests and preserves snapshot-store bytes. Unit fixtures cover empty catalogue, ID zero, save metadata preservation, malformed lists, collision/rename refusal, missing identities and hashes changing with equipment or bystander catalogue edits. Existing metadata/use/spec transport fixtures remain green.
+
+Advisory Jev review: `jev-1.14.0`, request `2e05eae3e49cf5f24b50e0f4991494a24dbae59600f1c620de94fda606645e20`, 3459 input/150 output tokens, 0.310 seconds, `no_material_issue` with reported confidence 0.33. Advisory only; direct source/protocol fixtures are the bounded evidence, not native qualification. The configured adversarial-review rule remains absent; the OCR skill was previously checked and is unavailable.
+
 ## Create/save executor — source only, 2026-11-04
 
 `EquipmentSetSave.lua` adds source-only `create_equipment_set` and `save_equipment_set` executors. They remain excluded from transport, shared dispatch and packaging. Requests bind client/build/interface/character, full catalogue, nineteen equipped GUID/item-ID pairs and nineteen explicit ignored flags. Create requires an unused name and available native capacity. Save requires the captured set ID/name and preserves its spec association; renaming is a separate operation.
