@@ -7,6 +7,7 @@
 - Live-qualified mutations: blank test macro creation only. Binding no-op verified. Item identity capture verified. Bag move receipt is outcome_unknown with the original item still observed at source; no replay. Equipment swaps, actual binding changes, other macro mutations, splits and talent switches remain unqualified.
 - User deferred further in-game tests until tomorrow. Continue offline development; no additional game-test prompts today.
 - Next implementation work: native equipment-set empty-slot semantics/create/save; talent creation/import/editing; further action-bar operations; inventory swap/merge/sort; remaining permitted operations in the policy matrix. Independently qualify family-specific adapters rather than enabling Retail paths on Classic/Forever.
+- Create/save prerequisite: source-only temporary ignored-slot helper and failure fixtures implemented; no new packaged operation. [Contract and remaining work](docs/equipment-set-save-operations.md).
 
 ## Implemented
 
