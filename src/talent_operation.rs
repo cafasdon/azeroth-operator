@@ -222,9 +222,9 @@ fn metadata_draft(
     }
     if !rename && !creating && catalog["selected_config_id"].as_u64() == Some(target as u64) {
         draft["clears_saved_selection"] = json!(true);
-        draft["execution_supported"] = json!(false);
-        draft["addon_execution_enabled"] = json!(false);
-        draft["requires_addon_version"] = Value::Null;
+        draft["execution_supported"] = json!(true);
+        draft["addon_execution_enabled"] = json!(true);
+        draft["requires_addon_version"] = json!("0.16.0-dev");
         draft["completion"] =
             json!("requires_removed_target_cleared_selection_and_preserved_active_contents");
     }
