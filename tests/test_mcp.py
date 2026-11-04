@@ -170,6 +170,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertTrue(data["execution_supported"])
                             self.assertEqual(data["requires_addon_version"],"0.14.0-dev")
                             self.assertTrue(data["import_code"].startswith("AO-TALMETA-1:"))
+                        created=await session.call_tool("prepare_talent_operation",{"snapshot_id":key,"operation":{"operation":"create","name":"New build","expected_new_shared_action_bars":False}})
+                        self.assertFalse(created.isError)
+                        creation=json.loads(created.content[0].text)
+                        self.assertTrue(creation["import_code"].startswith("AO-TALCREATE-1:"))
+                        self.assertFalse(creation["execution_supported"])
+                        self.assertTrue(creation["selects_new_build"])
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})
                         self.assertFalse(binding.isError)

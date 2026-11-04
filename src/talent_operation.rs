@@ -11,14 +11,16 @@ pub enum TalentOperation {
     Load,
     Rename,
     Delete,
+    Create,
 }
 #[derive(Default, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TalentRequest {
-    pub target_config_id: u32,
+    pub target_config_id: Option<u32>,
     #[serde(default)]
     pub operation: TalentOperation,
     pub name: Option<String>,
+    pub expected_new_shared_action_bars: Option<bool>,
 }
 fn hex(value: &str) -> String {
     if value.is_empty() {
@@ -44,7 +46,6 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &TalentRequest) 
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
         "Invalid snapshot identity"
     );
-    ensure!(request.target_config_id > 0, "Invalid target config");
     let talents = snapshot
         .sections
         .get("talents")
@@ -59,8 +60,23 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &TalentRequest) 
         catalog["spec_id"] == active["spec_id"],
         "Loadout spec mismatch"
     );
+    if request.operation == TalentOperation::Create {
+        ensure!(
+            request.target_config_id.is_none(),
+            "Create cannot target an existing config"
+        );
+        return metadata_draft(snapshot, snapshot_id, request, talents);
+    }
+    ensure!(
+        request.expected_new_shared_action_bars.is_none(),
+        "Unexpected new-loadout setting"
+    );
+    let target = request
+        .target_config_id
+        .ok_or_else(|| anyhow::anyhow!("Target config required"))?;
+    ensure!(target > 0, "Invalid target config");
     let desired = catalog["entries"]
-        .get(request.target_config_id.to_string())
+        .get(target.to_string())
         .ok_or_else(|| anyhow::anyhow!("Saved loadout not captured"))?;
     ensure!(
         desired["serialization_version"] == active["serialization_version"],
@@ -87,7 +103,7 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &TalentRequest) 
         hex(&snapshot.character.realm),
         catalog["spec_id"].to_string(),
         talents["config_id"].to_string(),
-        request.target_config_id.to_string(),
+        target.to_string(),
         active["serialization_version"].to_string(),
         text(&active["import_string"])?,
         text(&desired["import_string"])?,
@@ -119,6 +135,8 @@ fn metadata_draft(
     request: &TalentRequest,
     talents: &Value,
 ) -> Result<Value> {
+    let creating = request.operation == TalentOperation::Create;
+    let target = request.target_config_id.unwrap_or(0);
     let active = &talents["loadout_export"];
     let catalog = &talents["saved_loadouts"];
     let entries = catalog["entries"]
@@ -135,6 +153,13 @@ fn metadata_draft(
         entries.len() <= 128 && !entries.contains_key(&working.to_string()),
         "Ambiguous catalogue"
     );
+    if creating {
+        ensure!(entries.len() < 128, "Captured loadout catalogue full");
+        ensure!(
+            request.expected_new_shared_action_bars.is_some(),
+            "Expected new shared-bars state required"
+        );
+    }
     for entry in entries.values() {
         ensure!(
             entry["serialization_version"] == active["serialization_version"],
@@ -153,11 +178,11 @@ fn metadata_draft(
         "Active import exceeds executor limit"
     );
     let rename = request.operation == TalentOperation::Rename;
-    if rename {
+    if rename || creating {
         let name = request
             .name
             .as_deref()
-            .ok_or_else(|| anyhow::anyhow!("Rename requires a name"))?;
+            .ok_or_else(|| anyhow::anyhow!("Operation requires a name"))?;
         ensure!(
             !name.is_empty()
                 && name.len() <= 64
@@ -167,7 +192,7 @@ fn metadata_draft(
         );
         for (id, entry) in entries {
             ensure!(
-                id == &request.target_config_id.to_string()
+                (!creating && id == &target.to_string())
                     || !entry["name"]
                         .as_str()
                         .unwrap_or_default()
@@ -178,7 +203,7 @@ fn metadata_draft(
     } else {
         ensure!(request.name.is_none(), "Delete does not accept a name");
         ensure!(
-            catalog["selected_config_id"].as_u64() != Some(request.target_config_id as u64),
+            catalog["selected_config_id"].as_u64() != Some(target as u64),
             "Deleting the selected saved loadout is not supported"
         );
     }
@@ -187,11 +212,27 @@ fn metadata_draft(
         expected["selected_config_id"] = catalog["selected_config_id"].clone();
     }
     let mut draft = json!({"format":"talent_metadata_draft_v1","kind":if rename {"rename_talent_config"} else {"delete_talent_config"},"snapshot_id":sid,"family":"retail","variant":snapshot.client.variant,"build":snapshot.client.build,"interface":snapshot.client.interface,"character":snapshot.character.name,"realm":snapshot.character.realm,"target_config_id":request.target_config_id,"expected":expected,"requires_player_apply":true,"game_execution":false,"live_qualified":false,"execution_supported":true,"addon_execution_enabled":true,"requires_addon_version":"0.14.0-dev","import_code":null,"action_bar_contents_verified":false,"completion":"requires_full_catalogue_and_active_content_readback"});
-    if rename {
+    if creating {
+        draft["format"] = json!("talent_create_draft_v1");
+        draft["kind"] = json!("create_talent_config");
+        draft.as_object_mut().unwrap().remove("target_config_id");
+        draft["expected_new_shared_action_bars"] = json!(request.expected_new_shared_action_bars);
+        draft["execution_supported"] = json!(false);
+        draft["addon_execution_enabled"] = json!(false);
+        draft["requires_addon_version"] = Value::Null;
+        draft["completion"] =
+            json!("requires_unique_new_selected_build_and_preserved_active_contents");
+        draft["selects_new_build"] = json!(true);
+    }
+    if rename || creating {
         draft["name"] = json!(request.name);
     }
     let mut fields = vec![
-        "AO-TALMETA-1".into(),
+        if creating {
+            "AO-TALCREATE-1".into()
+        } else {
+            "AO-TALMETA-1".into()
+        },
         String::new(),
         sid.into(),
         "retail".into(),
@@ -201,7 +242,11 @@ fn metadata_draft(
         hex(&snapshot.character.name),
         hex(&snapshot.character.realm),
         draft["kind"].as_str().unwrap().into(),
-        request.target_config_id.to_string(),
+        if creating {
+            "-".into()
+        } else {
+            target.to_string()
+        },
         hex(request.name.as_deref().unwrap_or_default()),
         active["spec_id"].to_string(),
         working.to_string(),
@@ -213,6 +258,13 @@ fn metadata_draft(
         hex(active["import_string"].as_str().unwrap()),
         entries.len().to_string(),
     ];
+    if creating {
+        fields.push(if request.expected_new_shared_action_bars == Some(true) {
+            "1".into()
+        } else {
+            "0".into()
+        });
+    }
     for (id, entry) in entries {
         fields.extend([
             id.clone(),

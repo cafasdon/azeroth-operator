@@ -9,7 +9,7 @@ fn saved_talent_preparation_binds_contents_and_refuses_uncertainty() -> anyhow::
         json!({"schema_version":1,"source":"fixture","captured_at":"2026-11-03T00:00:00Z","client":{"family":"retail","variant":"live","build":"70688","interface":120105},"character":{"name":"Test","realm":"Test"},"sections":{"talents":{"config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,"serialization_version":2,"staged_changes":false},"saved_loadouts":{"spec_id":263,"selected_config_id":8,"entries":{"9":{"name":"Build","import_string":"RUZHSA==","serialization_version":2,"uses_shared_action_bars":false}}}}}}),
     )?;
     let request = TalentRequest {
-        target_config_id: 9,
+        target_config_id: Some(9),
         ..Default::default()
     };
     let prepared = compile(&snapshot, &"a".repeat(64), &request)?;

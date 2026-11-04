@@ -1,8 +1,8 @@
 use mlua::Lua;
 
 #[test]
-fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders() -> mlua::Result<()>
-{
+fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders()
+-> Result<(), Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.load(r#"
         AO={family='retail',variant='live',interface=120105}
@@ -86,5 +86,87 @@ fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders()
         reset(); function issecretvalue(v) return v==true end
         assert(not pcall(AO.ApplyTalentCreate,op) and writes==0); issecretvalue=nil
         reset(); AO.family='forever'; assert(not pcall(AO.ApplyTalentCreate,op) and writes==0)
-    "#).exec()
+    "#).exec()?;
+    let mut snapshot: azeroth_operator::Snapshot = serde_json::from_value(
+        serde_json::json!({"schema_version":1,"source":"fixture","captured_at":"2026-11-04T00:00:00Z","client":{"family":"retail","variant":"live","build":"70688","interface":120105},"character":{"name":"Fixture","realm":"Synthetic"},"sections":{"talents":{"config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,"serialization_version":2,"staged_changes":false},"saved_loadouts":{"spec_id":263,"selected_config_id":8,"entries":{"8":{"name":"Old","uses_shared_action_bars":true,"import_string":"RUZHSA==","serialization_version":2}}}}}}),
+    )?;
+    let request = serde_json::json!({"operation":"create","name":"New","expected_new_shared_action_bars":false});
+    let compile = |s: &azeroth_operator::Snapshot, r: serde_json::Value| {
+        azeroth_operator::talent_operation::compile(s, &"a".repeat(64), &serde_json::from_value(r)?)
+    };
+    let prepared = compile(&snapshot, request.clone())?;
+    assert_eq!(prepared["execution_supported"], false);
+    assert_eq!(prepared["selects_new_build"], true);
+    assert!(prepared.get("target_config_id").is_none());
+    let code = prepared["import_code"].as_str().unwrap();
+    assert_eq!(code.split(':').count(), 24);
+    lua.load(include_str!("../addon/TalentCreateImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    let decoder: mlua::Function = ao.get("DecodeTalentCreate")?;
+    let decoded: mlua::Table = decoder.call(code)?;
+    assert_eq!(
+        decoded.get::<String>("id")?,
+        prepared["operation_id"].as_str().unwrap()
+    );
+    assert!(!decoded.get::<bool>("expected_new_shared_action_bars")?);
+    lua.load("reset(); AO.family='retail'").exec()?;
+    lua.globals().set("op", decoded)?;
+    lua.load("assert(AO.ApplyTalentCreate(op).status=='applied' and writes==1)")
+        .exec()?;
+    for (index, value) in [
+        (0, "AO-TALMETA-1"),
+        (3, "classic"),
+        (10, "9"),
+        (11, "7c"),
+        (12, "0263"),
+        (17, "128"),
+        (18, "2"),
+        (19, "7"),
+        (21, "2"),
+        (22, "3"),
+        (23, "-"),
+    ] {
+        let mut fields: Vec<_> = code.split(':').collect();
+        fields[index] = value;
+        assert!(decoder.call::<mlua::Table>(fields.join(":")).is_err());
+    }
+    assert!(
+        decoder
+            .call::<mlua::Table>(format!("{code}:extra"))
+            .is_err()
+    );
+    let mut duplicate: Vec<_> = code.split(':').collect();
+    duplicate[17] = "2";
+    duplicate.extend(duplicate[19..24].to_vec());
+    assert!(decoder.call::<mlua::Table>(duplicate.join(":")).is_err());
+    for bad in [
+        serde_json::json!({"operation":"create","name":"New"}),
+        serde_json::json!({"operation":"create","name":"OLD","expected_new_shared_action_bars":false}),
+        serde_json::json!({"operation":"create","target_config_id":8,"name":"New","expected_new_shared_action_bars":false}),
+        serde_json::json!({"operation":"create","name":" bad","expected_new_shared_action_bars":false}),
+        serde_json::json!({"target_config_id":8,"expected_new_shared_action_bars":false}),
+    ] {
+        assert!(compile(&snapshot, bad).is_err());
+    }
+    let shared = compile(
+        &snapshot,
+        serde_json::json!({"operation":"create","name":"New","expected_new_shared_action_bars":true}),
+    )?;
+    assert_ne!(shared["operation_id"], prepared["operation_id"]);
+    snapshot.sections.get_mut("talents").unwrap()["saved_loadouts"] =
+        serde_json::json!({"spec_id":263,"entries":{}});
+    let empty = compile(&snapshot, request.clone())?;
+    assert_eq!(
+        empty["import_code"].as_str().unwrap().split(':').count(),
+        19
+    );
+    let empty_decoded: mlua::Table = decoder.call(empty["import_code"].as_str().unwrap())?;
+    let expected: mlua::Table = empty_decoded.get("expected")?;
+    assert!(expected.get::<Option<u32>>("selected_config_id")?.is_none());
+    for id in 10..138 {
+        snapshot.sections.get_mut("talents").unwrap()["saved_loadouts"]["entries"]
+            [id.to_string()] = serde_json::json!({"name":format!("Build{id}"),"uses_shared_action_bars":false,"import_string":"QUJDRA==","serialization_version":2});
+    }
+    assert!(compile(&snapshot, request).is_err());
+    Ok(())
 }

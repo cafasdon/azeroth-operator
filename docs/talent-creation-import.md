@@ -1,5 +1,17 @@
 # Talent creation and import
 
+## Creation preparation and transport — 2026-11-04
+
+Source `prepare_talent_operation` accepts `operation: create`, `name` and required boolean `expected_new_shared_action_bars`; it forbids `target_config_id`. Existing load/rename/delete requests still require their positive target ID, reject creation-only fields and retain their prior wire formats. Creation binds the full captured current-spec catalogue and active contents, rejects collisions, mixed versions, a working config listed as saved, and catalogues already containing 128 entries. Empty captured catalogues are supported.
+
+`AO-TALCREATE-1` uses the metadata header layout with creation kind and `-` target, then a new shared-bars expectation field. Exact field count is `19 + 5*N` for 0–127 saved records; total limit is 512 KiB. Each record carries config ID, name hex, shared-bars flag, serialization version and import hex. The operation ID hashes canonical wire with the ID field blank; it is identity binding, not authentication. `TalentCreateImport.lua` is a data-only strict decoder that reconstructs the creation executor's preimage.
+
+Output explicitly reports `selects_new_build: true`, `execution_supported: false`, `addon_execution_enabled: false`, no required addon version yet, and no verification of actual action-bar contents. Shared player Review/Apply and receipt integration remain pending, so this transport is not packaged or deployed.
+
+Actual Rust compiler→Lua decoder→creation executor fixtures passed, along with empty catalogue, malformed fields, duplicate IDs, wrong versions, target refusal, missing shared-bars expectation, name collision and capacity refusal. The expected shared-bars value changes the operation hash. Actual MCP calls and existing talent operation regressions passed. Full source gate: Rust/Lua, Clippy and 36 Python tests. Only the tool-description prose changed after that gate.
+
+Jev advisory `jev-1.14.0`, request `2fe1e33b7cf2a2efd285df44c4265dd39a50d3e1626f753b20960e5d65431e34`, 1045 input/135 output tokens, 0.297 s: insufficient evidence. No AI review pass is claimed. Direct compiler/decoder inspection and producer-consumer tests support the data-only contract; native qualification remains absent. Configured OCR/adversarial files remain absent.
+
 ## Current-build creation executor — 2026-11-04
 
 `TalentCreate.lua` adds source-only `create_talent_config`. It requires exact client identity, full captured current-spec catalogue/active contents, a non-colliding name and explicit `expected_new_shared_action_bars`. The latter is a readback expectation, not a setting request: the executor never changes shared-bars settings and does not assume the native default.

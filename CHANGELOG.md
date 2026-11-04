@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP current-build creation preparation and strict AO-TALCREATE-1 transport. Bind catalogue/active contents and explicit expected shared-bars state; preserve legacy talent requests. Shared review/receipts and deployment remain pending.
+
 - Add source-only current-talent-build creation with native creation bookkeeping, full catalogue preconditions, exact new-build/selection readback and failure fixtures. Integration, deployment and native qualification remain pending.
 
 - Add source-only talent import entry planning with exact native conversion checks for single, choice, granted and tiered nodes. Reject silently dropped/changed entries and unstable metadata; no import execution or deployment.
