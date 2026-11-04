@@ -343,8 +343,12 @@ fn main() -> anyhow::Result<()> {
         let mut talents = snapshot.clone();
         talents.unavailable.remove("talents");
         talents.sections.insert("talents".into(), serde_json::json!({"config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,"serialization_version":2,"staged_changes":false},"saved_loadouts":{"spec_id":263,"entries":{"9":{"name":"Build","import_string":"RUZHSA==","serialization_version":2,"uses_shared_action_bars":false}}}}));
-        for kind in ["rename", "delete", "create"] {
-            let mut request = serde_json::json!({"operation":kind,"target_config_id":9});
+        for kind in ["rename", "delete", "create", "selected_delete"] {
+            if kind == "selected_delete" {
+                talents.sections.get_mut("talents").unwrap()["saved_loadouts"]["selected_config_id"] =
+                    serde_json::json!(9);
+            }
+            let mut request = serde_json::json!({"operation":if kind=="selected_delete" {"delete"} else {kind},"target_config_id":9});
             if kind == "rename" {
                 request["name"] = serde_json::json!("Packaged rename");
             }
@@ -362,7 +366,7 @@ fn main() -> anyhow::Result<()> {
                     expected_interface=AO.interface; AzerothOperatorOperations=''; talentWrites=0
                     local creating=talentCode:sub(1,15)=='AO-TALCREATE-1:'
                     local op=creating and AO.DecodeTalentCreate(talentCode) or AO.DecodeTalentMetadata(talentCode)
-                    local selected
+                    local selected=op.expected.selected_config_id
                     local entries=op.expected.entries
                     function StaticPopup_Visible() end
                     function GetTime() return 0 end
@@ -386,10 +390,16 @@ fn main() -> anyhow::Result<()> {
                         DeleteConfig=function(id)
                             assert(id==9 and AzerothOperatorOperations:find(op.id..':outcome_unknown:delete_talent_config;',1,true))
                             talentWrites=talentWrites+1; entries['9']=nil
+                            if selected==id then selected=nil; PlayerSpellsFrame.TalentsFrame.lastSelectedConfigID=nil end
                         end}
                     PlayerSpellsFrame={TalentsFrame={IsShown=function() return true end,IsInspecting=function() return false end,
                         IsCommitInProgress=function() return false end,GetConfigID=function() return 7 end,
                         HasAnyPurchasedRanks=function() return true end,OnTraitConfigCreateStarted=function(_,purchased) assert(purchased) end}}
+                    local frame=PlayerSpellsFrame.TalentsFrame
+                    frame.lastSelectedConfigID=selected
+                    frame.LoadSystem={GetSelectionID=function() return selected end}
+                    frame.OnTraitConfigDeleted=function() error('Do not invoke native handler') end
+                    frame.ClearLastSelectedConfigID=function() error('Do not manually clear selection') end
                     AO.ReviewMacroImport(talentCode); local receipt,ok=AO.ApplyReviewedMacro(talentCode)
                     assert(ok and receipt.status=='applied' and talentWrites==1)
                     AO.ReviewMacroImport(talentCode); assert(not pcall(AO.ApplyReviewedMacro,talentCode) and talentWrites==1)
@@ -409,7 +419,7 @@ fn main() -> anyhow::Result<()> {
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package selected saved-build deletion as Retail 0.16.0-dev with explicit minimum version and staged execution/receipt verification. Compatible rollout and native qualification remain pending.
+
 - Add source selected-talent-build deletion with native event-owned selection clearing, full preservation/readback and delayed UI/receipt tests. Preparation remains execution-disabled pending packaging; no deployment or game action.
 
 - Deploy compatible talent-creation importer/reader/companion and Retail 0.15.0-dev. Public synthetic preparation/receipt checks and all 29 installed hashes verified; no game action or native qualification. Preserve the legacy unknown macro-move importer fixture with a distinct creation ID.
