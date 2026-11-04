@@ -38,7 +38,7 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Copy captured actions into empty slots | Development implementation deployed | Disabled | Disabled | Spell/item/macro identity and source preservation; Strict transport and shared review/receipt integration implemented; requires 0.18.0-dev; public synthetic checks passed; native unqualified |
 | Move carried items | Development implementation deployed | Disabled | Disabled | Exact-instance move to explicit empty slot; first live attempt outcome_unknown, no replay; timing fixes fixture-tested |
 | Split carried stacks | Development implementation deployed | Disabled | Disabled | Explicit amount, empty destination, source conservation and distinct destination identity; live unqualified |
-| Swap distinct carried item IDs | Packaged development candidate | Disabled | Disabled | Exact two-item identities; no retry/cursor clearing; strict transport and review/receipts implemented; requires 0.19.0-dev; compatible deployment pending; native unqualified |
+| Swap distinct carried item IDs | Development implementation deployed | Disabled | Disabled | Exact two-item identities; no retry/cursor clearing; strict transport and review/receipts implemented; requires 0.19.0-dev; public synthetic checks passed; native unqualified |
 | Sort/merge/same-ID swaps, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
 | Auction bids/listings, purchases, crafting, trade or chat sends | Disabled | Disabled | Disabled | No transaction or messaging tools |
 | Graphics/CVar configuration proposals | Not implemented | Not implemented | Not implemented | Requires exact client settings, hardware evidence and bounded file-change workflow |

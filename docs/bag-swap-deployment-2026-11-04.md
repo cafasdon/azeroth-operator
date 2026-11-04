@@ -1,0 +1,13 @@
+# Bag-swap deployment — 2026-11-04
+
+Source `2857cf241c78d3d6f4314f5e9d89bf48a82aa052` (PR76). Personal pylon/CT290 mcp-gateway identities, previous importer pin/active reader and installed0.18.0-dev33file hashes verified before changes.
+
+Linux release tests/build passed. Importer and dedicated reader now use `sha256:15fc58e33abe25ea3fcc659e43d020f9363a0851f35a4bae7d77c3dd7de8a73d`. Isolated legacy/extended importer qualification (including unknownswap receipt) and guarded reader profile/read-only mount/authenticated loopback checks passed. Post-check confirmed importer pin and active service. Previous image `sha256:05ad0052457d5a029c779faf3e9a724ac431168cfabf0dc05c4544120911cf72`; reader rollback `/var/tmp/azeroth-reader-upgrade-u4w_828e`; source `/var/tmp/azeroth-source-2857cf2`; image ID `/var/tmp/azeroth-import-2857cf2.iid`. No unrelated profile changed. Build was slower than prior release; the original live handle was retained and completed, never restarted.
+
+Public TLS SDK check found14tools and used restricted-upload synthetic snapshot `2c6a7903e7ee68327d6cee50b393b1346be38f5e92239a852f3da5f96c533c61`. Swap preparation binds both GUIDs and requires0.19.0-dev. Split/empty-target/missing-target swap requests refused. Legacy bag move/split and action move/copy checks passed, unknownswap receipt read back, captured bags/actions unchanged. Evidence `local-data/bag-swap-public-check.json`; helper `local-data/check-bag-swap-release.py`. This proves synthetic preparation/readback, not native execution.
+
+Windows companion SHA256 `7d4ea70df83d97449a2aae67f638a8e368c41cac379feb5d9c1589779104d8f9` hash-verified in content-addressed runtime path and atomically selected; config backup `local-data/sync/config-before-bag-swap.json`. Sync2026-11-04T02:16:24.735724Z reported Retail unchanged at `184cd8a9ffd714eb7a5f33f4b661ba15e542c117fd483acef5b65e041b15f3c8`, remote_rechecked=false; Forever waiting_for_export. Cached acknowledgement is not a fresh remote character check; scheduled task unchanged.
+
+Retail0.19.0-dev installed after compatible service checks; all35files independently match manifest. ZIP `dist/bag-swap-release/AzerothOperator-0.19.0-dev-retail-live.zip`, SHA256 `74215783c082e51157c0b07e9f5a3cd0a266c3a967c44a47c5b2d747fb61d19a`; backup `local-data/addon-backups/addon-update-zwgf9hv6`. Running client may retain an older addon until player reload/restart. No game input/test prompt occurred.
+
+Native pickup/placement, cursor/timing/taint and specialised bags remain unqualified. Same-ID stack semantics and broader policy-matrix coverage remain unfinished. Classic/Forever mutations disabled; uncertain Cutlass move not replayed.

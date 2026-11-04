@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible bag-swap services/companion and Retail0.19.0-dev. Public synthetic preparation/receipt checks and all35 installed hashes passed; native qualification remains deferred.
+
 - Package bag swaps in Retail 0.19.0-dev (35 files), require that version in preparation, and verify staged lifecycle plus actual 0.18→0.19 upgrade. Compatible deployment and native qualification remain pending.
 
 - Connect source bag swaps to player review/Apply and persisted receipts. End-to-end success, delayed observation, exceptions, expiry and reload replay-refusal fixtures pass; packaging/deployment and native qualification pending.
