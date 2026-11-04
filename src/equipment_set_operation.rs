@@ -403,7 +403,7 @@ fn save_draft(
     );
     draft["operation_id"] = json!(fields[1]);
     draft["import_code"] = json!(code);
-    draft["preparation_status"] = json!("draft_review_integration_pending");
+    draft["preparation_status"] = json!("draft_packaging_pending");
     Ok(draft)
 }
 

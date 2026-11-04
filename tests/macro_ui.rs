@@ -26,6 +26,15 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='set_create' or text=='set_save' then
+                local slots,before,ignored={},{},{}
+                for i=1,19 do local k=tostring(i); slots[k]={ignored=true}; before[k]={guid='',item_id=0}; ignored[k]=true end
+                before['16']={guid='Item|exact',item_id=123}; ignored['16']=false
+                return {kind=text=='set_create' and 'create_equipment_set' or 'save_equipment_set',
+                    character='Test',realm='Realm',family='retail',variant='live',build='123',
+                    set_id=text=='set_save' and 0 or nil,name='Test|Set',icon=123,equipment_before=before,ignored_slots=ignored,
+                    expected_catalogue={['0']={name='Test|Set',assigned_spec=2,slots=slots}}}
+            end
             if text=='spec_assign' or text=='spec_unassign' then
                 return {kind=text=='spec_assign' and 'assign_equipment_set_spec' or 'unassign_equipment_set_spec',
                     character='Test',realm='Realm',family='retail',variant='live',build='123',set_id=1,
@@ -98,6 +107,14 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(frames[5].text:find('Slot 19 / Preserve: Empty (checked on Apply) -> Empty',1,true))
         assert(frames[5].text:find('A partial swap remains unconfirmed.',1,true))
         assert(not frames[5].text:find('DELETE this saved',1,true))
+        input:SetText('set_create'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Equipment set: Test/Set (new)',1,true))
+        assert(frames[5].text:find('Create a new set',1,true) and frames[5].text:find('Save item 123 / Equipped: Item/exact',1,true))
+        assert(frames[5].text:find('Ignore in saved set / Equipped: Empty (checked on Apply)',1,true))
+        input:SetText('set_save'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Equipment set: Test/Set (ID 0)',1,true))
+        assert(frames[5].text:find('OVERWRITE',1,true) and frames[5].text:find('Preserved specialisation index: 2',1,true))
+        assert(frames[5].text:find('Close the native equipment-set editor',1,true))
         input:SetText('spec_assign'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('Assign to specialisation index 2 / ID 262',1,true))
         assert(frames[5].text:find('Remove this association from: Other/Set (ID 0)',1,true))

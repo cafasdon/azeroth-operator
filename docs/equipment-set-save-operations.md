@@ -1,5 +1,17 @@
 # Equipment-set creation and saving
 
+## Review, Apply and receipts — source only, 2026-11-04
+
+Shared dispatch recognises `AO-SETSAVE-1`, explicitly maps both create/save kinds to the save executor and registers their read-only verifier. Lua checkpoints and both Rust receipt validators accept the two kinds. The private reviewed byte string, invalidation on editing/hiding, uncertainty checkpoint before executor entry and duplicate-ID refusal remain unchanged. A normally returned unknown result can be observed read-only for sixty seconds; thrown calls are never enrolled. Reload discards pending observation but preserves the saved unknown receipt. SavedVariables still persist only at reload/logout, not crash-durably.
+
+Review shows the new/existing set name and ID, icon, explicit saved-content overwrite, preserved spec association, each previous slot identity and requested saved/ignored state, plus the exact currently equipped GUID or explicit empty precondition. It asks the player to close the native equipment-set editor/dialogs and explains export/reload and uncertain-operation handling. Displayed names and GUIDs use existing control/pipe sanitisation. Widget fixtures cover create, overwrite of ID zero, ignored empty slots, item identities, association preservation and the editor instruction.
+
+Actual compiled create/save transport runs through Review → Apply → real source executor/helper → Core export → Rust receipt import. Fixtures assert uncertainty exists before the native callback, no Apply without review, changed-byte invalidation, one write only, duplicate refusal, delayed read-only completion, expiry, post-effect exceptions staying unknown and simulated module reload retaining unknown/replay refusal. Both operation kinds export/import applied receipts through both snapshot and SavedVariables checkpoint validation paths.
+
+Full `python -m tools.verify_source` passed format/build, all Rust/Lua tests, Clippy and 34 Python tests. Compiler output remains execution-disabled with `draft_packaging_pending`; TOCs/packages, installed addon and hosted services are unchanged. Packaging/versioning and importer rollout must precede installation. Native tests remain deferred, nonignored empty slots remain unsupported, and unknown Cutlass work is not replayed.
+
+Advisory Jev review: `jev-1.14.0`, request `224ef7791929d109d943a1f44277e3e67d6b11128c164c2ea27273a070cb70be`, 3053 input/154 output tokens, 0.804 seconds; `insufficient_evidence`, reported confidence 0.20. Not a passing review or native qualification. Direct fixture results provide the bounded evidence. The configured adversarial rule remains absent; the previously checked OCR skill remains unavailable.
+
 ## Import transport — source only, 2026-11-04
 
 The compiler now emits `AO-SETSAVE-1` data with `EquipmentSetSaveImport.lua` decoding it. The first fourteen fields contain the version, operation/snapshot IDs, client and character identity, operation kind, optional target ID, name/icon and catalogue count. Nineteen GUID/item-ID/ignored triples follow, then zero to 128 catalogue records (ID plus the existing 180-field preimage). Exact arity is `71 + 181 * set_count`, bounded to 512 KiB. Text is hex-encoded, absent create ID is a dash, numbers are canonical unsigned decimal, and booleans are explicit 0/1.

@@ -60,7 +60,23 @@ local function open()
         local lines={"Operation: "..op.kind,"Character: "..op.character.." — "..op.realm,
             "Client: "..op.family.." / "..op.variant.." / "..op.build,
             "From: "..(op.source_scope or "none"),"To: "..(op.target_scope or op.source_scope or "none")}
-        if op.kind=="assign_equipment_set_spec" or op.kind=="unassign_equipment_set_spec" then
+        if op.kind=="create_equipment_set" or op.kind=="save_equipment_set" then
+            lines[#lines+1]="Equipment set: "..reason(op.name)..(op.set_id~=nil and " (ID "..op.set_id..")" or " (new)")
+            lines[#lines+1]="Saved icon: "..op.icon
+            local old=op.set_id~=nil and op.expected_catalogue[tostring(op.set_id)] or nil
+            lines[#lines+1]=old and "OVERWRITE this saved set's item contents with the reviewed equipped items." or "Create a new set from the reviewed equipped items."
+            lines[#lines+1]="Preserved specialisation index: "..(old and old.assigned_spec or "None")
+            for slot=1,19 do
+                local key=tostring(slot); local item=op.equipment_before[key]
+                local previous=old and old.slots[key]
+                local before=previous and (previous.ignored==true and "Ignored" or previous.observed_item and reason(previous.observed_item.guid) or "Unresolved saved identity") or "New set"
+                lines[#lines+1]="Slot "..slot.." / Previous: "..before
+                lines[#lines+1]="  "..(op.ignored_slots[key] and "Ignore in saved set" or "Save item "..item.item_id).." / Equipped: "..reason(item.guid~="" and item.guid or "Empty (checked on Apply)")
+            end
+            lines[#lines+1]="Close the native equipment-set editor and confirmation dialogs before Apply."
+            lines[#lines+1]="Current equipment and all captured sets are checked again. Gear is not equipped by this operation."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="assign_equipment_set_spec" or op.kind=="unassign_equipment_set_spec" then
             local target=op.expected_catalogue[tostring(op.set_id)]
             lines[#lines+1]="Equipment set: "..reason(target.name).." (ID "..op.set_id..")"
             lines[#lines+1]="Previous specialisation index: "..(target.assigned_spec or "None")
