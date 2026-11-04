@@ -1,4 +1,4 @@
--- Source-only saved-loadout metadata executor. Caller checkpoints uncertainty first.
+-- Saved-loadout metadata executor. Caller checkpoints uncertainty first.
 local _,AO=...
 local function read(v)
     assert(not issecretvalue or not issecretvalue(v), "Restricted talent state")
@@ -56,6 +56,9 @@ local function stableState()
     assert(same(first,state()), "Talent state changed during observation")
     return first
 end
+-- Read-only primitives shared by talent creation; no mutation authority here.
+AO.ReadTalentCatalogueState=stableState
+AO.TalentCatalogueStatesEqual=same
 local function validate(op)
     local _,build,_,interface=GetBuildInfo()
     assert(type(op)=="table" and (op.kind=="rename_talent_config" or op.kind=="delete_talent_config")
