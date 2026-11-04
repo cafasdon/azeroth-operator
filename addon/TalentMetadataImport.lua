@@ -43,7 +43,7 @@ function AO.DecodeTalentMetadata(text)
             assert(key==tostring(op.target_config_id) or entry.name:lower()~=op.name:lower(), "Loadout name collision")
         end
     else
-        assert(f[12]=="-" and selected~=op.target_config_id, "Invalid loadout deletion")
+        assert(f[12]=="-", "Invalid loadout deletion")
     end
     return op
 end

@@ -77,12 +77,12 @@ local function validate(op)
         end
     else
         assert(op.name==nil, "Delete cannot rename")
-        assert(op.target_config_id~=op.expected.selected_config_id, "Selected loadout deletion not yet qualified")
     end
 end
 local function desired(op)
     local result={}
     for k,v in pairs(op.expected) do result[k]=v end
+    if op.kind=="delete_talent_config" and op.target_config_id==op.expected.selected_config_id then result.selected_config_id=nil end
     result.entries={}
     for id,entry in pairs(op.expected.entries) do
         if id~=tostring(op.target_config_id) then result.entries[id]=entry
@@ -97,6 +97,11 @@ end
 function AO.VerifyTalentMetadata(op)
     validate(op)
     if GetCursorInfo()~=nil then return false end
+    if op.kind=="delete_talent_config" and op.target_config_id==op.expected.selected_config_id then
+        local frame=PlayerSpellsFrame and PlayerSpellsFrame.TalentsFrame
+        if not frame or read(frame.lastSelectedConfigID)~=nil or not frame.LoadSystem
+            or read(frame.LoadSystem:GetSelectionID())~=nil then return false end
+    end
     return same(stableState(),desired(op))
 end
 function AO.ApplyTalentMetadata(op)
@@ -112,6 +117,14 @@ function AO.ApplyTalentMetadata(op)
     assert(frame and read(frame:IsShown())==true and read(frame:IsInspecting())==false
         and read(frame:IsCommitInProgress())==false and frame:GetConfigID()==op.expected.active_config_id,
         "Open the idle player Talents panel first")
+    if op.kind=="delete_talent_config" and op.target_config_id==op.expected.selected_config_id then
+        assert(read(frame.lastSelectedConfigID)==op.target_config_id
+            and frame.LoadSystem and read(frame.LoadSystem:GetSelectionID())==op.target_config_id
+            and type(frame.OnTraitConfigDeleted)=="function" and type(frame.ClearLastSelectedConfigID)=="function",
+            "Native selected-loadout deletion handler unavailable")
+        assert(read(frame.autoLoadNewConfigID)==nil and not read(frame.nextNewConfigRequiresPopulatedCheck)
+            and not read(frame.areClassTalentCommitVisualsActive), "Another talent operation is pending")
+    end
     for _,dialog in pairs({edit=ClassTalentLoadoutEditDialog,create=ClassTalentLoadoutCreateDialog,import=ClassTalentLoadoutImportDialog}) do
         assert(read(dialog:IsShown())==false, "Close the loadout editor first")
     end

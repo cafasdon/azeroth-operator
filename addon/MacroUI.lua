@@ -136,6 +136,9 @@ local function open()
                 lines[#lines+1]="New name: "..reason(op.name)
             else
                 lines[#lines+1]="DELETE this saved talent loadout. Its saved contents will be removed."
+                if op.target_config_id==op.expected.selected_config_id then
+                    lines[#lines+1]="This is the selected saved build. Native UI must clear its saved selection; current talent contents must stay unchanged."
+                end
                 lines[#lines+1]="External references are not repaired. Recovery requires recreating the saved build."
             end
             lines[#lines+1]="Current talents and all other captured saved builds must remain unchanged."

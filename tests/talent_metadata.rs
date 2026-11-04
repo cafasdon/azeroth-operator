@@ -13,7 +13,15 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders()
         function StaticPopup_Visible() return popup end
         function copy(t) local r={} for k,v in pairs(t) do r[k]=type(v)=='table' and copy(v) or v end return r end
         function finish()
-            if op.kind=='rename_talent_config' then entries['9'].name=op.name else entries['9']=nil end
+            if op.kind=='rename_talent_config' then entries['9'].name=op.name else
+                entries['9']=nil
+                if selected==9 and mode~='selection_delayed' then
+                    selected=nil
+                    if mode~='ui_delayed' then
+                        PlayerSpellsFrame.TalentsFrame.lastSelectedConfigID=nil; uiSelection=nil
+                    end
+                end
+            end
         end
         function native(id,name)
             assert(id==9); writes=writes+1
@@ -88,8 +96,36 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders()
         reset(); op.name='Build'; assert(AO.ApplyTalentMetadata(op).status=='already_selected' and writes==0)
         reset(); selected=9; op.expected.selected_config_id=9
         assert(AO.ApplyTalentMetadata(op).status=='applied' and writes==1)
-        reset('delete_talent_config'); selected=9; op.expected.selected_config_id=9
-        assert(not pcall(AO.ApplyTalentMetadata,op) and writes==0)
+        function selectedSetup()
+            reset('delete_talent_config'); selected=9; op.expected.selected_config_id=9
+            local f=PlayerSpellsFrame.TalentsFrame
+            f.lastSelectedConfigID=9; uiSelection=9
+            f.LoadSystem={GetSelectionID=function() return uiSelection end}
+            f.OnTraitConfigDeleted=function() error('Addon must not invoke native event handler') end
+            f.ClearLastSelectedConfigID=function() error('Addon must not clear selection itself') end
+        end
+        selectedSetup(); assert(AO.ApplyTalentMetadata(op).status=='applied' and writes==1)
+        assert(selected==nil and current==op.expected.active_import_string and entries['8'].name=='Other')
+        for _,failure in ipairs({'delay','reject','active','bystander','selection_delayed','ui_delayed'}) do
+            selectedSetup(); mode=failure
+            assert(AO.ApplyTalentMetadata(op).status=='outcome_unknown' and writes==1,failure)
+        end
+        selectedSetup(); mode='selection_delayed'
+        assert(AO.ApplyTalentMetadata(op).status=='outcome_unknown' and writes==1)
+        selected=nil; assert(not AO.VerifyTalentMetadata(op) and writes==1)
+        PlayerSpellsFrame.TalentsFrame.lastSelectedConfigID=nil
+        assert(not AO.VerifyTalentMetadata(op) and writes==1)
+        uiSelection=nil; assert(AO.VerifyTalentMetadata(op) and writes==1)
+        for _,failure in ipairs({'stale_ui','missing_handler','missing_clear','pending_id','pending_population','pending_visual'}) do
+            selectedSetup(); local f=PlayerSpellsFrame.TalentsFrame
+            if failure=='stale_ui' then f.lastSelectedConfigID=8
+            elseif failure=='missing_handler' then f.OnTraitConfigDeleted=nil
+            elseif failure=='missing_clear' then f.ClearLastSelectedConfigID=nil
+            elseif failure=='pending_id' then f.autoLoadNewConfigID=11
+            elseif failure=='pending_population' then f.nextNewConfigRequiresPopulatedCheck=true
+            else f.areClassTalentCommitVisualsActive=true end
+            assert(not pcall(AO.ApplyTalentMetadata,op) and writes==0,failure)
+        end
         reset(); op.name='OTHER'; assert(not pcall(AO.ApplyTalentMetadata,op) and writes==0)
         reset(); mode='shared'; assert(AO.ApplyTalentMetadata(op).status=='outcome_unknown' and writes==1)
         reset(); local reads=0; C_ClassTalents.GetLastSelectedSavedConfigID=function()
@@ -112,13 +148,18 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders()
     let snapshot: azeroth_operator::Snapshot = serde_json::from_value(
         serde_json::json!({"schema_version":1,"source":"fixture","captured_at":"2026-11-04T00:00:00Z","client":{"family":"retail","variant":"live","build":"70688","interface":120105},"character":{"name":"Fixture","realm":"Fixture"},"sections":{"talents":{"config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":"QUJDRA==","spec_id":263,"serialization_version":2,"staged_changes":false},"saved_loadouts":{"spec_id":263,"selected_config_id":8,"entries":{"8":{"name":"Other","uses_shared_action_bars":false,"import_string":"RUZHSA==","serialization_version":2},"9":{"name":"Build","uses_shared_action_bars":true,"import_string":"SUo=","serialization_version":2}}}}}}),
     )?;
-    for kind in ["rename", "delete"] {
-        let mut request = serde_json::json!({"operation":kind,"target_config_id":9});
+    for kind in ["rename", "delete", "selected_delete"] {
+        let mut fixture = snapshot.clone();
+        if kind == "selected_delete" {
+            fixture.sections.get_mut("talents").unwrap()["saved_loadouts"]["selected_config_id"] =
+                serde_json::json!(9);
+        }
+        let mut request = serde_json::json!({"operation":if kind=="selected_delete" {"delete"} else {kind},"target_config_id":9});
         if kind == "rename" {
             request["name"] = serde_json::json!("Renamed");
         }
         let compiled = azeroth_operator::talent_operation::compile(
-            &snapshot,
+            &fixture,
             &"a".repeat(64),
             &serde_json::from_value(request)?,
         )?;
@@ -128,7 +169,10 @@ fn saved_loadout_metadata_preserves_active_contents_and_bystanders()
             function GetTime() return now end
             function setup()
                 AO.family='retail'; AzerothOperatorOperations=''; now=0; checkReceipt=true
-                local decoded=AO.DecodeTalentMetadata(code); reset(decoded.kind); op=decoded
+                local decoded=AO.DecodeTalentMetadata(code)
+                if decoded.kind=='delete_talent_config' and decoded.expected.selected_config_id==9 then selectedSetup()
+                else reset(decoded.kind) end
+                op=decoded
             end
             setup(); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
             AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..':-') and writes==0)
