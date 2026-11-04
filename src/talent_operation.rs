@@ -12,6 +12,7 @@ pub enum TalentOperation {
     Rename,
     Delete,
     Create,
+    Import,
 }
 #[derive(Default, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +21,8 @@ pub struct TalentRequest {
     #[serde(default)]
     pub operation: TalentOperation,
     pub name: Option<String>,
+    pub import_string: Option<String>,
+    pub allow_empty_hash: Option<bool>,
     pub expected_new_shared_action_bars: Option<bool>,
 }
 fn hex(value: &str) -> String {
@@ -60,7 +63,51 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &TalentRequest) 
         catalog["spec_id"] == active["spec_id"],
         "Loadout spec mismatch"
     );
-    if request.operation == TalentOperation::Create {
+    let importing = request.operation == TalentOperation::Import;
+    if importing {
+        let text = request
+            .import_string
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("Import text required"))?;
+        ensure!(
+            (26..=16384).contains(&text.len())
+                && text
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'+' || b == b'/'),
+            "Invalid import text"
+        );
+        ensure!(
+            request.allow_empty_hash.is_some(),
+            "Explicit empty-hash acknowledgement required"
+        );
+        let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let bits: Vec<u8> = text
+            .bytes()
+            .take(26)
+            .flat_map(|b| {
+                let value = alphabet.iter().position(|x| *x == b).unwrap() as u8;
+                (0..6).map(move |i| (value >> i) & 1)
+            })
+            .collect();
+        let value = |start: usize, width: usize| -> u64 {
+            (0..width).map(|i| u64::from(bits[start + i]) << i).sum()
+        };
+        ensure!(
+            Some(value(0, 8)) == active["serialization_version"].as_u64()
+                && Some(value(8, 16)) == active["spec_id"].as_u64(),
+            "Import version/spec mismatch"
+        );
+        ensure!(
+            bits[24..152].iter().any(|b| *b != 0) || request.allow_empty_hash == Some(true),
+            "Import hash omitted without acknowledgement"
+        );
+    } else {
+        ensure!(
+            request.import_string.is_none() && request.allow_empty_hash.is_none(),
+            "Unexpected import fields"
+        );
+    }
+    if request.operation == TalentOperation::Create || importing {
         ensure!(
             request.target_config_id.is_none(),
             "Create cannot target an existing config"
@@ -135,7 +182,8 @@ fn metadata_draft(
     request: &TalentRequest,
     talents: &Value,
 ) -> Result<Value> {
-    let creating = request.operation == TalentOperation::Create;
+    let importing = request.operation == TalentOperation::Import;
+    let creating = request.operation == TalentOperation::Create || importing;
     let target = request.target_config_id.unwrap_or(0);
     let active = &talents["loadout_export"];
     let catalog = &talents["saved_loadouts"];
@@ -220,6 +268,18 @@ fn metadata_draft(
             json!("requires_unique_new_selected_build_and_preserved_active_contents");
         draft["selects_new_build"] = json!(true);
     }
+    if importing {
+        draft["format"] = json!("talent_import_draft_v1");
+        draft["kind"] = json!("import_talent_config");
+        draft["import_string"] = json!(request.import_string);
+        draft["allow_empty_hash"] = json!(request.allow_empty_hash);
+        draft["changes_active_talents"] = json!(true);
+        draft["execution_supported"] = json!(false);
+        draft["addon_execution_enabled"] = json!(false);
+        draft["requires_addon_version"] = Value::Null;
+        draft["completion"] =
+            json!("requires_unique_new_selected_build_requested_active_and_saved_contents");
+    }
     if !rename && !creating && catalog["selected_config_id"].as_u64() == Some(target as u64) {
         draft["clears_saved_selection"] = json!(true);
         draft["execution_supported"] = json!(true);
@@ -232,7 +292,9 @@ fn metadata_draft(
         draft["name"] = json!(request.name);
     }
     let mut fields = vec![
-        if creating {
+        if importing {
+            "AO-TALIMPORT-1".into()
+        } else if creating {
             "AO-TALCREATE-1".into()
         } else {
             "AO-TALMETA-1".into()
@@ -268,6 +330,14 @@ fn metadata_draft(
         } else {
             "0".into()
         });
+    }
+    if importing {
+        fields.push(if request.allow_empty_hash == Some(true) {
+            "1".into()
+        } else {
+            "0".into()
+        });
+        fields.push(hex(request.import_string.as_deref().unwrap()));
     }
     for (id, entry) in entries {
         fields.extend([

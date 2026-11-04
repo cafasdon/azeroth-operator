@@ -101,3 +101,13 @@ The test proves the converted node/entry/rank sent to ImportLoadout, copied-inpu
 Full source gate passed Rust/Lua tests, Clippy and 37 Python tests. No production source logic changed, no deployment or game input occurred. Compiler/wire, explicit review and durable receipt integration remain the next implementation work.
 
 Jev advisory jev-1.14.0, request `5e731cd1d85e93a2138e30735859ea6a996a9b664d03f1ae2b034901b74176bc`, 915 input/116 output tokens, 0.288 s: insufficient evidence. No AI review pass claimed. Configured adversarial file remains absent. Native compatibility remains unproven.
+
+## Import preparation and transport — 2026-11-04
+
+Source MCP preparation accepts operation import, name, import_string, allow_empty_hash and expected_new_shared_action_bars. Both booleans are mandatory, target_config_id is forbidden, and non-import operations reject import-only fields. Rust bounds unpadded native alphabet text to 26–16384 bytes, checks encoded version/spec against the snapshot, and requires explicit acknowledgement for zero-filled hash. This is header validation only; body/tree/entry validation remains mandatory inside the addon before mutation.
+
+AO-TALIMPORT-1 uses 21+5N fields (N 0–127), bounded to 512 KiB. The first 19 mirror creation transport with import kind/magic; field20 is empty-hash acknowledgement and field21 is hex-encoded import text, followed by five-field catalogue records. The canonical wire hash binds both booleans, contents and full captured preimage. Lua decoder enforces exact arity, canonical numbers/hex, client family, names/collision/unique catalogue/version and text bounds; it evaluates no code. Native parser performs remaining header/body checks on Apply.
+
+The draft reports changes_active_talents and selects_new_build, but execution_supported/addon_execution_enabled remain false and required addon version is null pending integration. No source change is deployed or packaged. Actual Rust preparation→Lua decoder→parser/planner/executor composition passes, plus missing-field/forbidden-target/unacknowledged-hash/changed-hash-ID and malformed-wire checks. Full source gate passed Rust/Lua, Clippy and 37 Python tests. Native APIs remain mocks; review/receipt integration and native qualification remain outstanding.
+
+Jev advisory jev-1.14.0, request `b39d2dc2b285aee669b6d95fdeb977a495a6d2de3dad90e0871171532bd6a5a5`, 973 input/116 output tokens, 0.294 s: insufficient evidence. No AI review pass claimed. Configured adversarial review file remains absent.
