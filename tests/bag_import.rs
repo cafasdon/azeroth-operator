@@ -12,6 +12,7 @@ fn full_stack_transport_requires_explicit_empty_target() -> anyhow::Result<()> {
         "sections":{"bags":{"0":{"1":{"item_id":123,"count":20,"guid":"Item-Stack"}}}}}),
     )?;
     let mut request = BagRequest {
+        operation: Default::default(),
         amount: None,
         bag: 0,
         slot: 1,

@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Source-only carried-item swap executor and failure fixtures pass; compiler/transport/review/receipt integration, same-ID stack compatibility, packaging and native qualification remain unfinished. [Contract](docs/bag-swap-operations.md).
+- Source-only carried-item swap executor and failure fixtures pass; compiler/transport and actual MCP preparation now pass offline tests; shared review/receipt integration, same-ID stack compatibility, packaging and native qualification remain unfinished. [Contract](docs/bag-swap-operations.md).
 
 - Source-only action-copy executor preserves an observed spell/item/macro source and places it into an explicitly empty observed target. Failure fixtures and full source gate pass; compiler/wire integration now passes producer-consumer and actual MCP protocol tests; shared review/Apply/receipt integration now passes lifecycle and UI fixtures; 0.18.0-dev packaging and staged lifecycle/actual prior-archive upgrade checks pass; compatible importer/reader/companion/addon rollout now verified with public synthetic checks and installed hashes; native qualification remains pending. [Contract](docs/action-slot-operations.md).
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP bag-swap preparation and bounded AO-BAGSWAP-1 transport binding both item identities/links/counts. Legacy move/split preserved; swap execution disabled pending shared review/receipt integration.
+
 - Add source-only carried-item swap executor with both exact item preimages, cursor checks and refusal to place over stale source observations. Offline success/failure tests pass; same-ID stack semantics, integration and native qualification remain pending.
 
 - Deploy compatible action-copy importer/reader/companion and Retail 0.18.0-dev. Public synthetic preparation/receipt checks and all33 installed hashes verified; native game qualification deferred.

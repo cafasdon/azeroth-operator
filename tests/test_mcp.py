@@ -35,6 +35,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                 "body":"/say test", "scope":"account"}}
             sample["sections"]["bags"] = {"0": {"1": {"item_id": 123, "count": 1,"guid":"Item-New"},
                                                      "2": {"item_id": 123, "count": 4, "guid":"Item-Stack"}}}
+            sample["sections"]["bags"]["0"]["4"]={"item_id":456,"count":2,"guid":"Item-Swap","link":"target"}
+            sample["sections"]["bags"]["0"]["1"]["link"]="source"
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
@@ -145,6 +147,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         bag=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":1,"target_bag":0,"target_slot":3,"expect_empty_target":True}})
                         self.assertFalse(bag.isError)
                         self.assertTrue(json.loads(bag.content[0].text)["import_code"].startswith("AO-BAG-1:"))
+                        swap=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"operation":"swap","bag":0,"slot":1,"target_bag":0,"target_slot":4}})
+                        self.assertFalse(swap.isError)
+                        swap_data=json.loads(swap.content[0].text)
+                        self.assertEqual(swap_data["kind"],"swap_bag_items")
+                        self.assertFalse(swap_data["addon_execution_enabled"])
+                        self.assertEqual(swap_data["target"]["guid"],"Item-Swap")
                         split=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":2,"target_bag":0,"target_slot":3,"expect_empty_target":True,"amount":2}})
                         self.assertFalse(split.isError)
                         self.assertEqual(json.loads(split.content[0].text)["kind"],"split_bag_item")
@@ -210,7 +218,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})
                         self.assertFalse(json.loads(summary.content[0].text)["live"])
                         carried = json.loads(summary.content[0].text)["carried_item_review"]
-                        self.assertEqual(carried["quantity_observed"], 5)
+                        self.assertEqual(carried["quantity_observed"], 7)
                         self.assertEqual(carried["repeated_item_ids"][0]["occupied_slots_observed"], 2)
                         self.assertEqual(carried["stack_compatibility"], "unknown")
                         observed = sample["sections"]["equipment"]

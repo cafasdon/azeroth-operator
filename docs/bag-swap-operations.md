@@ -11,3 +11,14 @@ Primary API reference read2026-11-04: [Blizzard generated ContainerDocumentation
 Offline fixtures exercise cross-bag success, exact swapped identities/counts, duplicate preimage refusal, combat, wrong GUID/count, locks, carried boundaries, same-ID refusal, race after pickup, rejected second/third placement, delayed read-only success, stale source observation and unavailable pickup API. Full source gate passed: format/build, Rust/Lua tests, Clippy and38Python tests. Existing bag move/split behaviour unchanged. No real item moved; previous Cutlass unknown operation was not retried.
 
 Jev advisory request `78a90c03c2bbbadb8205899f5a88d7d3f634771263b12f5d6614308602326332`, resolved `jev-1.14.0`,1207input/154output tokens,0.289seconds: insufficient_evidence (probability0.87,confidence0.80), no concrete finding or pass. Configured adversarial-review file absent. Direct source inspection and deterministic fixtures support only the offline claims above.
+
+
+## Preparation and transport — 2026-11-04
+
+`prepare_bag_operation` now accepts optional `operation: "move" | "swap"`; omitted operation preserves existing move/split semantics and bytes. Swap refuses split amount or empty-target precondition and requires two captured item entries with GUID/count/link/ID. Both item IDs and GUIDs must differ. Client/character fields and item links reject control characters.
+
+AO-BAGSWAP-1 has21colon-separated fields: common nine identity fields, then source and target groups of bag, slot, item ID, count, GUID hex, link hex. SHA256 ID binds all fields; it is not authentication. Decoder validates exact arity, canonical numeric ranges, nonempty bounded hex strings, Retail, distinct locations/identities and8192byte total. No Lua evaluation. Preparation reports execution disabled and no minimum addon version pending integration. No package/deployment change.
+
+Full source gate passed including38Python tests and actual MCP preparation. Rust-to-Lua decoder tests cover delimiter-bearing links, both identities, malformed fields/arity, missing target/link, conflicting amount/empty flags and changed target count changing the operation ID. Existing move/split checks pass. The extra fixture item raised expected carried quantity from5to7; corrected the test expectation after the first full run caught it.
+
+Jev advisory `837f480879c13a13c3229cdb6d28547268f83214b0f1e0c7b7454c8476b8f4f9`, model `jev-1.14.0`,1103input/154output tokens,0.321seconds: insufficient_evidence(probability0.71,confidence0.56), no concrete finding/pass. Configured adversarial-review file absent. Direct source/producer-consumer checks establish transport behaviour; compiler-to-executor shared lifecycle and native qualification remain pending.
