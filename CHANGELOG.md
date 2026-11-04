@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy Retail 0.12.0-dev association support with compatible hosted/local importers. Public synthetic assign/unassign preparation and twenty-two installed hashes verified; native behaviour remains unqualified and no game input occurred.
+
 - Package Retail 0.12.0-dev association operations and spec identity capture with twenty-two files. Staged assign/unassign receipts and 20→22 upgrades verified offline; hosted qualification fixture extended. Not installed or deployed.
 
 - Connect equipment-set associations to source player review/Apply and persisted receipts, showing displaced ownership and future spec-selection consequences. Test delayed/expired/reloaded and post-effect-error outcomes; packaging remains pending.
