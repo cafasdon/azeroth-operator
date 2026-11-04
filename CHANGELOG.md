@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source MCP action-copy preparation and strict AO-ACTIONCOPY-1 transport. Preserve default move requests and refuse occupied copy destinations; execution remains disabled pending shared review/receipt integration.
+
 - Add source-only action-slot copying for spells, items and macros into an explicitly empty observed slot. Verify source preservation, cursor identity, uncertain placement and no retry offline; MCP transport/review integration and native qualification remain pending.
 
 - Deploy compatible talent-import services/companion and Retail 0.17.0-dev. Public synthetic preparation/receipt checks and all 33 installed hashes verified; native game qualification remains deferred.

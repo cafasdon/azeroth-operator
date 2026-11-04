@@ -25,11 +25,13 @@ end
 function AO.DecodeActionOperation(text)
     assert(type(text)=="string" and #text<=8192,"Invalid action data size")
     local f={}; for field in (text..":"):gmatch("([^:]*):") do f[#f+1]=field end
-    assert(#f==23 and f[1]=="AO-ACTION-1" and f[4]=="retail","Invalid action format")
+    local copying=f[1]=="AO-ACTIONCOPY-1"
+    assert(#f==23 and (f[1]=="AO-ACTION-1" or copying) and f[4]=="retail","Invalid action format")
     for _,i in ipairs({2,3}) do assert(#f[i]==64 and not f[i]:find("[^0-9a-f]"),"Invalid action identity") end
     local result={id=f[2],snapshot_id=f[3],family=f[4],variant=unhex(f[5]),build=unhex(f[6]),
-        interface=number(f[7],4294967295),character=unhex(f[8]),realm=unhex(f[9]),kind="move_action_slot",
+        interface=number(f[7],4294967295),character=unhex(f[8]),realm=unhex(f[9]),kind=copying and "copy_action_slot" or "move_action_slot",
         source_slot=number(f[10],4096),target_slot=number(f[11],4096),source=action(f,12),target=action(f,18)}
     assert(not result.source.empty and result.source_slot~=result.target_slot,"Invalid action move")
+    assert(not copying or result.target.empty,"Copy destination must be explicitly empty")
     return result
 end

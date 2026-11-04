@@ -5,9 +5,19 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+#[derive(Default, Deserialize, JsonSchema, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ActionOperation {
+    #[default]
+    Move,
+    Copy,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ActionRequest {
+    #[serde(default)]
+    pub operation: ActionOperation,
     pub source_slot: u32,
     pub target_slot: u32,
 }
@@ -93,8 +103,18 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &ActionRequest) 
     let (source, source_fields) = action(snapshot, request.source_slot)?;
     let (target, target_fields) = action(snapshot, request.target_slot)?;
     ensure!(source["empty"] == false, "Source is empty");
+    let copying = request.operation == ActionOperation::Copy;
+    ensure!(
+        !copying || target["empty"] == true,
+        "Copy destination must be explicitly empty"
+    );
     let mut f = vec![
-        "AO-ACTION-1".into(),
+        if copying {
+            "AO-ACTIONCOPY-1"
+        } else {
+            "AO-ACTION-1"
+        }
+        .into(),
         String::new(),
         snapshot_id.into(),
         "retail".into(),
@@ -112,9 +132,9 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &ActionRequest) 
     let code = f.join(":");
     ensure!(code.len() <= 8192, "Action request exceeds import limit");
     Ok(
-        json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":"move_action_slot",
+        json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":if copying {"copy_action_slot"} else {"move_action_slot"},
         "source_slot":request.source_slot,"target_slot":request.target_slot,"source":source,"target":target,
         "import_code":code,"requires_player_apply":true,"game_execution":false,"live_qualified":false,
-        "addon_execution_enabled":true,"requires_addon_version":"0.9.0-dev","coverage":"two_explicitly_observed_slots","mode":if target["empty"]==true {"move"} else {"swap"}}),
+        "addon_execution_enabled":!copying,"requires_addon_version":if copying {Value::Null} else {json!("0.9.0-dev")},"coverage":"two_explicitly_observed_slots","mode":if copying {"copy"} else if target["empty"]==true {"move"} else {"swap"}}),
     )
 }
