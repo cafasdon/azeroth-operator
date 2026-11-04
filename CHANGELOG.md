@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy compatible bag-preflight services/companion and Retail0.20.0-dev. Public minimum-version/regression checks and all36 installed hashes passed; native qualification deferred.
+
 - Require bag compatibility before move/split pickup and both swap directions, then recheck identities. Package helper/guards as Retail0.20.0-dev (36files); zero-write refusal, staged lifecycle and actual prior-archive upgrade tests pass. Deployment/native qualification pending.
 
 - Add source-only read-only bag compatibility preflight with explicit unknown metadata handling and stable double reads. Fixture checks cover general/reagent/specialised bags; executor integration and native qualification pending.
