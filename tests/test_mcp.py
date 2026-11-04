@@ -174,7 +174,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(created.isError)
                         creation=json.loads(created.content[0].text)
                         self.assertTrue(creation["import_code"].startswith("AO-TALCREATE-1:"))
-                        self.assertFalse(creation["execution_supported"])
+                        self.assertTrue(creation["execution_supported"])
+                        self.assertEqual(creation["requires_addon_version"],"0.15.0-dev")
                         self.assertTrue(creation["selects_new_build"])
                         binding = await session.call_tool("prepare_binding_operation", {"snapshot_id":key,
                             "operation":{"key":"CTRL-1","context":0,"desired":"ACTIONBUTTON2"}})

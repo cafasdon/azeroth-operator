@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package current-build talent creation in Retail 0.15.0-dev (29 files), enable preparation with the minimum addon version, verify staged Apply/export and guarded 27→29 upgrades, and extend importer qualification. Deployment and native qualification remain pending.
+
 - Connect source talent creation to player review/Apply and receipt export/import. Verify pre-write unknown checkpoints, delayed observation and refusal to replay after exceptions, expiry or reload. Packaging/deployment and native qualification remain pending.
 
 - Add source MCP current-build creation preparation and strict AO-TALCREATE-1 transport. Bind catalogue/active contents and explicit expected shared-bars state; preserve legacy talent requests. Shared review/receipts and deployment remain pending.

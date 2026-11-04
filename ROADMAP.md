@@ -18,7 +18,7 @@
 
 ## Implemented
 
-- Talent creation/import research, read-only import validation and node/entry conversion checks implemented in source. Current-build creation executor, MCP preparation and strict transport have compiler-to-executor fixtures; shared review/Apply and receipt export/import now pass offline lifecycle fixtures. Packaging/deployment remain pending. Arbitrary import execution and legality/completion contracts remain unfinished. [Contract](docs/talent-creation-import.md).
+- Talent creation/import research, read-only import validation and node/entry conversion checks implemented in source. Current-build creation executor, MCP preparation and strict transport have compiler-to-executor fixtures; shared review/Apply and receipt export/import now pass offline lifecycle fixtures. Creation is packaged as 0.15.0-dev (29 files), including staged Apply/receipt checks and guarded upgrades; compatible deployment remains pending. Arbitrary import execution and legality/completion contracts remain unfinished. [Contract](docs/talent-creation-import.md).
 
 - Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Compatible importer/reader/companion and addon are deployed; native qualification remains pending and selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
 

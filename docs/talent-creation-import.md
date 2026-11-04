@@ -61,3 +61,13 @@ The compiler-to-decoder-to-Apply fixture asserts the unknown checkpoint exists i
 Full local gate passed format, build, Rust/Lua tests, Clippy and 36 Python tests. Native calls remain mocked and no in-game qualification is claimed. Configured OCR/adversarial review files are absent; direct inspection and the actual local compiler/export/import path are the evidence.
 
 Jev advisory `jev-1.14.0`, request `75ea70d0a4d73b6628106d94ba2c5d2cdbc048ed397109c58c2c85a51f9b4676`, 1025 input/131 output tokens, 0.275 s: `no_material_issue`, confidence 0.13 (probabilities 0.42 no material issue, 0.35 insufficient evidence, 0.23 investigate). This weak advisory is not a review pass or native qualification. Packaging, compatible rollout and arbitrary import execution remain outstanding. The uncertain real bag move remains untouched.
+
+## Creation package — 2026-11-04
+
+Retail 0.15.0-dev contains 29 files, adding TalentCreate.lua and TalentCreateImport.lua after their metadata helpers and before shared dispatch. Creation preparation now advertises execution support with minimum addon 0.15.0-dev; game_execution and live_qualified remain false. Existing metadata operations retain minimum 0.14.0-dev. Read-only arbitrary import inspection/planning helpers are still source-only.
+
+Artifact: `dist/talent-create-release/AzerothOperator-0.15.0-dev-retail-live.zip`, SHA-256 `82f9c5bf1d248a15acad78685b8ae703038bafdc211a40e7f43d5ba7b44cd704`. The staged verifier loads actual packaged files, compiles creation data, exercises Review/Apply with synthetic native APIs, asserts the pre-write unknown receipt and replay refusal, exports through Core and verifies the imported applied receipt. Existing metadata/equipment fixtures also pass. The guarded installer and integrity verifier accept the new file set while preserving legacy sets; a 27→29 fixture verifies backup preservation. No live install or game action occurred.
+
+Full source gate passed Rust/Lua tests, Clippy and 37 Python tests; nine packaging/installer tests passed again after the importer qualification fixture addition. The Linux importer fixture now includes an applied creation receipt, but actual container qualification is pending the compatible rollout. Current hosted services and installed addon remain the previous release.
+
+Jev advisory `jev-1.14.0`, request `95183f5f71ed261171d4e4e382e84dd4d13a6a1d1d211a2b5eb905c3e8fcb101`, 942 input/116 output tokens, 0.309 s: insufficient evidence. No AI review pass is claimed. Deterministic staged and protocol checks support package readiness only; deployment and native compatibility remain unproven. Configured adversarial/OCR files remain unavailable.

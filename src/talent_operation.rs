@@ -217,9 +217,9 @@ fn metadata_draft(
         draft["kind"] = json!("create_talent_config");
         draft.as_object_mut().unwrap().remove("target_config_id");
         draft["expected_new_shared_action_bars"] = json!(request.expected_new_shared_action_bars);
-        draft["execution_supported"] = json!(false);
-        draft["addon_execution_enabled"] = json!(false);
-        draft["requires_addon_version"] = Value::Null;
+        draft["execution_supported"] = json!(true);
+        draft["addon_execution_enabled"] = json!(true);
+        draft["requires_addon_version"] = json!("0.15.0-dev");
         draft["completion"] =
             json!("requires_unique_new_selected_build_and_preserved_active_contents");
         draft["selects_new_build"] = json!(true);
