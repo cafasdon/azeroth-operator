@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Deploy selected-build deletion support across importer/reader/companion and Retail 0.16.0-dev. Public synthetic preparation checks and 29 installed hashes verified; no game action or native qualification.
+
 - Package selected saved-build deletion as Retail 0.16.0-dev with explicit minimum version and staged execution/receipt verification. Compatible rollout and native qualification remain pending.
 
 - Add source selected-talent-build deletion with native event-owned selection clearing, full preservation/readback and delayed UI/receipt tests. Preparation remains execution-disabled pending packaging; no deployment or game action.
