@@ -5,7 +5,8 @@ use azeroth_operator::{
 use serde_json::{Value, json};
 
 #[test]
-fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots() -> anyhow::Result<()> {
+fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots()
+-> Result<(), Box<dyn std::error::Error>> {
     let slots: serde_json::Map<String, Value> = (1..=19)
         .map(|i| (i.to_string(), json!({"ignored":true})))
         .collect();
@@ -24,7 +25,13 @@ fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots() -> a
     let draft = compile(&snapshot, &sid, &parsed)?;
     assert_eq!(draft, compile(&snapshot, &sid, &parsed)?);
     assert_eq!(draft["kind"], "create_equipment_set");
-    assert!(draft["set_id"].is_null() && draft["import_code"].is_null());
+    assert!(draft["set_id"].is_null());
+    assert!(
+        draft["import_code"]
+            .as_str()
+            .unwrap()
+            .starts_with("AO-SETSAVE-1:")
+    );
     assert_eq!(draft["addon_execution_enabled"], false);
     assert_eq!(
         draft["equipment_before"]["16"],
@@ -46,6 +53,102 @@ fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots() -> a
     assert_eq!(saved["icon"], 123);
     assert_eq!(saved["assigned_spec"], 2);
     assert_eq!(saved["overwrites_saved_contents"], true);
+    let lua = mlua::Lua::new();
+    let ao = lua.create_table()?;
+    lua.globals().set("AO", ao.clone())?;
+    for source in [
+        include_str!("../addon/EquipmentSetImport.lua"),
+        include_str!("../addon/EquipmentSetSaveImport.lua"),
+    ] {
+        lua.load(source)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    lua.globals()
+        .set("createCode", draft["import_code"].as_str().unwrap())?;
+    lua.globals()
+        .set("saveCode", saved["import_code"].as_str().unwrap())?;
+    lua.load(r#"
+        local c=AO.DecodeEquipmentSetSave(createCode)
+        assert(c.kind=='create_equipment_set' and c.set_id==nil and c.name=='New' and c.icon==134400)
+        assert(c.equipment_before['16'].guid=='Item-exact' and c.equipment_before['16'].item_id==123)
+        assert(c.equipment_before['19'].guid=='' and c.equipment_before['19'].item_id==0)
+        assert(c.ignored_slots['19'] and not c.ignored_slots['16'])
+        assert(c.expected_catalogue['0'].assigned_spec==2)
+        local s=AO.DecodeEquipmentSetSave(saveCode)
+        assert(s.kind=='save_equipment_set' and s.set_id==0 and s.name=='Existing' and s.icon==123)
+        assert(AO.ApplyEquipmentSetSave==nil)
+    "#).exec()?;
+    let decoder: mlua::Function = ao.get("DecodeEquipmentSetSave")?;
+    let code = draft["import_code"].as_str().unwrap();
+    let fields: Vec<_> = code.split(':').collect();
+    for (index, value) in [
+        (0, "AO-SET-1"),
+        (1, "bad"),
+        (3, "classic"),
+        (9, "use_equipment_set"),
+        (10, "0"),
+        (12, "0"),
+        (13, "2"),
+        (14, "61"),
+        (15, "1"),
+        (16, "0"),
+        (59, "2"),
+        (71, "00"),
+    ] {
+        let mut bad = fields.clone();
+        bad[index] = value;
+        assert!(
+            decoder.call::<mlua::Table>(bad.join(":")).is_err(),
+            "field {index}"
+        );
+    }
+    assert!(decoder.call::<mlua::Table>(format!("{code}:-")).is_err());
+    assert!(
+        decoder
+            .call::<mlua::Table>(fields[..fields.len() - 1].join(":"))
+            .is_err()
+    );
+    assert!(decoder.call::<mlua::Table>("x".repeat(524289)).is_err());
+    let mut missing_target: Vec<_> = saved["import_code"].as_str().unwrap().split(':').collect();
+    missing_target[10] = "9";
+    assert!(
+        decoder
+            .call::<mlua::Table>(missing_target.join(":"))
+            .is_err()
+    );
+    lua.load(r#"
+        local c=AO.DecodeEquipmentSetSave(createCode)
+        AO.family='retail'; AO.variant='live'; AO.interface=120105; SlashCmdList={}
+        function GetBuildInfo() return '', '70688', '', 120105 end
+        function UnitName() return 'Fixture' end; function GetRealmName() return 'Fixture' end
+        function InCombatLockdown() return false end
+        function GetServerTime() return 0 end; function date() return '2025-01-01T00:00:00Z' end
+        AO.collectors={equipment_sets=function() return {coverage='native_catalogue_raw_slots',can_use=true,entries=c.expected_catalogue} end}
+    "#).exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("AO.Capture()").exec()?;
+    let exported: String = lua.globals().get("AzerothOperatorExport")?;
+    let roundtrip = azeroth_operator::import::decode(
+        format!("AzerothOperatorExport = \"{exported}\"").as_bytes(),
+    )?;
+    assert_eq!(
+        roundtrip.sections["equipment_sets"],
+        snapshot.sections["equipment_sets"]
+    );
+    let mut large = snapshot.clone();
+    for id in 1..32 {
+        let mut other = entry.clone();
+        other["name"] = json!(format!("Other{id}"));
+        large.sections.get_mut("equipment_sets").unwrap()["entries"][id.to_string()] = other;
+    }
+    let large_draft = compile(&large, &sid, &parsed)?;
+    let large_code = large_draft["import_code"].as_str().unwrap();
+    assert!(large_code.len() > 8192);
+    assert!(decoder.call::<mlua::Table>(large_code).is_ok());
+    let mut duplicate: Vec<_> = large_code.split(':').collect();
+    duplicate[252] = "0";
+    assert!(decoder.call::<mlua::Table>(duplicate.join(":")).is_err());
     for (key, value) in [
         ("set_id", json!(0)),
         ("name", json!("existing")),
@@ -99,6 +202,11 @@ fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots() -> a
     assert!(compile(&changed, &sid, &parsed).is_err());
     changed = snapshot.clone();
     changed.sections.get_mut("equipment_sets").unwrap()["entries"] = json!({});
-    assert!(compile(&changed, &sid, &parsed).is_ok());
+    let empty_draft = compile(&changed, &sid, &parsed)?;
+    assert!(
+        decoder
+            .call::<mlua::Table>(empty_draft["import_code"].as_str().unwrap())
+            .is_ok()
+    );
     Ok(())
 }

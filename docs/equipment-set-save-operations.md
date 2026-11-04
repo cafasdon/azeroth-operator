@@ -1,5 +1,17 @@
 # Equipment-set creation and saving
 
+## Import transport — source only, 2026-11-04
+
+The compiler now emits `AO-SETSAVE-1` data with `EquipmentSetSaveImport.lua` decoding it. The first fourteen fields contain the version, operation/snapshot IDs, client and character identity, operation kind, optional target ID, name/icon and catalogue count. Nineteen GUID/item-ID/ignored triples follow, then zero to 128 catalogue records (ID plus the existing 180-field preimage). Exact arity is `71 + 181 * set_count`, bounded to 512 KiB. Text is hex-encoded, absent create ID is a dash, numbers are canonical unsigned decimal, and booleans are explicit 0/1.
+
+The decoder rejects duplicate set IDs or equipped GUIDs, malformed/truncated/extra data, wrong kinds/families, create overwrites/name collisions, missing or renamed save targets, invalid GUID/item-ID pairs and unresolved nonignored empty slots. It reuses the strict existing catalogue record decoder. Decoding performs no native calls or code evaluation. Operation IDs bind the canonical wire with an initially blank ID field; they are replay identifiers, not authentication signatures.
+
+Create/save output remains `addon_execution_enabled: false`, with no required addon version and `draft_review_integration_pending`. A non-null `import_code` now exists, but the shared dispatcher still rejects this prefix. No TOC/package, installed addon or hosted service changed. Review/Apply/receipt integration is the next stage.
+
+Actual Rust-produced codes decode through Lua 5.1, preserving exact equipped IDs, ignored flags, target zero and full catalogue. The decoded catalogue exports through Core and imports through Rust identically. Tests include zero-entry create, 32-entry imports over 8 KiB, duplicate IDs, malformed/extra/truncated/oversize fields, wrong operation/client, missing target and legacy format regressions. Full `python -m tools.verify_source` passed format/build, all Rust/Lua tests, Clippy and 34 Python tests including the actual stdio MCP caller.
+
+Advisory Jev review: `jev-1.14.0`, request `64f6a8c9dbd0e423d770719e4821a9efebdcd6f56d45853db1eb246796f2c297`, 2529 input/153 output tokens, 0.278 seconds; `investigate_supported_issue`, reported confidence 0.58. No concrete defect was supplied. Direct reinspection confirmed header/triple/record offsets against zero/one/32-entry producer-decoder fixtures, target/name refusals, and retained disabled-execution flags. This is not a passing AI review or native qualification. The configured adversarial-review rule remains absent and the OCR skill unavailable.
+
 ## MCP preparation — source only, 2026-11-04
 
 `prepare_equipment_set_operation` now accepts `operation: create` or `save` in source. Create requires a new name/icon and forbids `set_id`; save requires a captured ID, preserves its name and defaults to its icon unless explicitly replaced. All previous operation kinds still require an ID, including ID zero. Their existing wire formats remain unchanged.

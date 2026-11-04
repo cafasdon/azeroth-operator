@@ -369,7 +369,41 @@ fn save_draft(
         bytes.len() <= 512 * 1024,
         "Equipment set save draft exceeds size limit"
     );
-    draft["operation_id"] = json!(format!("{:x}", Sha256::digest(&bytes)));
+    let mut fields = vec![
+        "AO-SETSAVE-1".into(),
+        String::new(),
+        snapshot_id.into(),
+        "retail".into(),
+        hex(&snapshot.client.variant),
+        hex(&snapshot.client.build),
+        snapshot.client.interface.to_string(),
+        hex(&snapshot.character.name),
+        hex(&snapshot.character.realm),
+        draft["kind"].as_str().unwrap().into(),
+        scalar(&draft["set_id"]),
+        hex(name),
+        icon.to_string(),
+        entries.len().to_string(),
+    ];
+    for slot in 1..=19 {
+        let key = slot.to_string();
+        fields.push(scalar(&draft["equipment_before"][&key]["guid"]));
+        fields.push(scalar(&draft["equipment_before"][&key]["item_id"]));
+        fields.push(scalar(&draft["ignored_slots"][&key]));
+    }
+    for (id, entry) in entries {
+        fields.push(id.clone());
+        fields.extend(entry_fields(entry));
+    }
+    fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
+    let code = fields.join(":");
+    ensure!(
+        code.len() <= 512 * 1024,
+        "Equipment set save import exceeds size limit"
+    );
+    draft["operation_id"] = json!(fields[1]);
+    draft["import_code"] = json!(code);
+    draft["preparation_status"] = json!("draft_review_integration_pending");
     Ok(draft)
 }
 
