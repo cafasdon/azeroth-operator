@@ -5,9 +5,19 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
+#[derive(Default, Deserialize, JsonSchema, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum BagOperation {
+    #[default]
+    Move,
+    Swap,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BagRequest {
+    #[serde(default)]
+    pub operation: BagOperation,
     /// Omit for a full-stack move; provide a smaller positive amount to split.
     pub amount: Option<u32>,
     pub bag: u32,
@@ -58,6 +68,88 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         request.bag != request.target_bag || request.slot != request.target_slot,
         "Source equals destination"
     );
+    if request.operation == BagOperation::Swap {
+        ensure!(
+            request.amount.is_none() && !request.expect_empty_target,
+            "Swap cannot split or expect an empty target"
+        );
+        let target = snapshot
+            .sections
+            .get("bags")
+            .and_then(|b| b.get(request.target_bag.to_string()))
+            .and_then(|b| b.get(request.target_slot.to_string()))
+            .ok_or_else(|| anyhow::anyhow!("Swap target not captured"))?;
+        for value in [
+            &snapshot.client.variant,
+            &snapshot.client.build,
+            &snapshot.character.name,
+            &snapshot.character.realm,
+        ] {
+            ensure!(
+                !value.bytes().any(|b| b.is_ascii_control()),
+                "Control character in swap identity"
+            );
+        }
+        let mut fields = vec![
+            "AO-BAGSWAP-1".into(),
+            String::new(),
+            snapshot_id.into(),
+            "retail".into(),
+            hex(&snapshot.client.variant),
+            hex(&snapshot.client.build),
+            snapshot.client.interface.to_string(),
+            hex(&snapshot.character.name),
+            hex(&snapshot.character.realm),
+        ];
+        let mut entries = Vec::new();
+        for (entry, bag, slot) in [
+            (source, request.bag, request.slot),
+            (target, request.target_bag, request.target_slot),
+        ] {
+            let id = entry["item_id"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Item ID missing"))?;
+            let count = entry["count"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Count missing"))?;
+            let guid = entry["guid"]
+                .as_str()
+                .filter(|v| !v.is_empty())
+                .ok_or_else(|| anyhow::anyhow!("GUID missing"))?;
+            let link = entry["link"]
+                .as_str()
+                .filter(|v| !v.is_empty())
+                .ok_or_else(|| anyhow::anyhow!("Item link missing"))?;
+            ensure!(
+                !link.bytes().any(|b| b.is_ascii_control()),
+                "Control character in item link"
+            );
+            fields.extend([
+                bag.to_string(),
+                slot.to_string(),
+                id.to_string(),
+                count.to_string(),
+                hex(guid),
+                hex(link),
+            ]);
+            entries.push(
+                json!({"bag":bag,"slot":slot,"item_id":id,"count":count,"guid":guid,"link":link}),
+            );
+        }
+        ensure!(
+            entries[0]["guid"] != entries[1]["guid"]
+                && entries[0]["item_id"] != entries[1]["item_id"],
+            "Swap identities must differ; same-item stack compatibility unsupported"
+        );
+        fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
+        let code = fields.join(":");
+        ensure!(code.len() <= 8192, "Swap exceeds import limit");
+        return Ok(
+            json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"swap_bag_items",
+            "source":entries[0],"target":entries[1],"import_code":code,"requires_player_apply":true,
+            "game_execution":false,"live_qualified":false,"addon_execution_enabled":false,"requires_addon_version":null}),
+        );
+    }
     let count = source["count"]
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Source count unavailable"))?;
