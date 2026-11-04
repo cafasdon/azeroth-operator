@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only native equipment-set create/save executors with full catalogue/equipment preimages, temporary ignored-slot restoration, one native call and exact readback fixtures. Nonignored empty slots, transport/review integration, packaging and native qualification remain pending.
+
 - Add a source-only equipment-set save-flag helper and Lua failure fixtures. It prepares explicit ignored slots, calls a save callback once and checks restoration without retrying; create/save execution and deployment remain pending.
 
 - Deploy Retail 0.12.0-dev association support with compatible hosted/local importers. Public synthetic assign/unassign preparation and twenty-two installed hashes verified; native behaviour remains unqualified and no game input occurred.

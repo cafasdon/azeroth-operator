@@ -1,5 +1,21 @@
 # Equipment-set creation and saving
 
+## Create/save executor — source only, 2026-11-04
+
+`EquipmentSetSave.lua` adds source-only `create_equipment_set` and `save_equipment_set` executors. They remain excluded from transport, shared dispatch and packaging. Requests bind client/build/interface/character, full catalogue, nineteen equipped GUID/item-ID pairs and nineteen explicit ignored flags. Create requires an unused name and available native capacity. Save requires the captured set ID/name and preserves its spec association; renaming is a separate operation.
+
+Before a save, the executor checks combat/casting/channel/cursor, equipped locks, full catalogue and repeated equipped identities, name lookup, and the native editor/popup state. It repeats these checks after temporary flag setup, immediately before exactly one `CreateEquipmentSet` or `SaveEquipmentSet` call. It does not equip items, retry or delete/repair a partial result. The outer caller must checkpoint uncertainty before entry. Exceptions propagate after the helper attempts flag restoration, so a future shared caller must retain unknown and must not enrol a thrown call for automatic reconciliation.
+
+Readback requires exactly one new set for create (ID zero is valid), or the original set for save. All other catalogue entries must remain identical, with no extra/deleted bystanders. Name/icon/spec, ignored flags, every nonignored equipped item GUID/ID/location and aggregate item/ignored/lost counts must match; current equipment must still match all nineteen preimages. False native return values cannot override successful readback; true values cannot prove completion. Already-matching save is a no-op. A read-only verifier supports later observation of a normally returned delayed result.
+
+Ignored empty equipment slots are supported. Nonignored empty slots are explicitly refused until native saved-empty semantics are established; no implicit ignore conversion or guessed sentinel is used. Set counts and observed locations are conservative verification requirements, not live-qualified semantics or a claim to expose internal persistent set GUIDs. Native event timing, complete UI exclusion and same-value edits by other addons remain unqualified. This is an implementation stage towards complete create/save support, not completion of that scope.
+
+Native create/name collision/capacity behaviour was checked in [GearManagerPopupFrameMixin:OkayButton_OnClick](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/PaperDollFrame.lua); method signatures remain in the API reference below. No private-server implementation is used as evidence of Retail behaviour.
+
+Actual Lua 5.1 executor/helper fixtures cover both operation kinds, new ID zero, no-op save, complete result verification, changed/missing/new bystanders, wrong GUID/spec/count/ignore flags, changed equipped state, cursor occupancy, delayed readback, native exceptions before/after effects, setup races, visible editor/dialog, capacity/name collisions, missing methods, stale/client/lock refusals and unresolved nonignored empties. Native game tests remain deferred; no installed package or service changes in this checkpoint.
+
+Full source gate passed: `python -m tools.verify_source` (format, locked build, all Rust/Lua tests, Clippy with warnings denied, 34 Python tests). Advisory Jev review: `jev-1.14.0`, request `b9121dc2d935c9ff451cfbd2267ab57613d823b97ecfbe4243d239447a914ba6`, 3515 input/154 output tokens, 0.307 seconds; `insufficient_evidence`, reported confidence 0.19. No passing review or native qualification is inferred. The configured adversarial rule remains absent; the previously checked OCR skill is also unavailable. Direct source/fixture verification is the evidence for this bounded checkpoint.
+
 ## Temporary save flags — 2026-11-04
 
 `addon/EquipmentSetSaveState.lua` is an internal source-only prerequisite for native create/save executors. It is excluded from TOCs, packaging and wire dispatch. No new game operation is enabled or deployed.
