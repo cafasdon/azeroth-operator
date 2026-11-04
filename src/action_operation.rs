@@ -135,6 +135,6 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &ActionRequest) 
         json!({"operation_id":f[1],"snapshot_id":snapshot_id,"kind":if copying {"copy_action_slot"} else {"move_action_slot"},
         "source_slot":request.source_slot,"target_slot":request.target_slot,"source":source,"target":target,
         "import_code":code,"requires_player_apply":true,"game_execution":false,"live_qualified":false,
-        "addon_execution_enabled":!copying,"requires_addon_version":if copying {Value::Null} else {json!("0.9.0-dev")},"coverage":"two_explicitly_observed_slots","mode":if copying {"copy"} else if target["empty"]==true {"move"} else {"swap"}}),
+        "addon_execution_enabled":true,"requires_addon_version":if copying {"0.18.0-dev"} else {"0.9.0-dev"},"coverage":"two_explicitly_observed_slots","mode":if copying {"copy"} else if target["empty"]==true {"move"} else {"swap"}}),
     )
 }
