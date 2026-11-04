@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only action-slot copying for spells, items and macros into an explicitly empty observed slot. Verify source preservation, cursor identity, uncertain placement and no retry offline; MCP transport/review integration and native qualification remain pending.
+
 - Deploy compatible talent-import services/companion and Retail 0.17.0-dev. Public synthetic preparation/receipt checks and all 33 installed hashes verified; native game qualification remains deferred.
 
 - Package talent imports in Retail 0.17.0-dev (33 files), enable explicit minimum-version preparation, run the full import lifecycle against staged Lua, and verify guarded 29→33 upgrades. Compatible rollout/native qualification remain pending.

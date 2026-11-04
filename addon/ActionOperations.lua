@@ -42,12 +42,15 @@ local function sameClient(op)
 end
 function AO.VerifyActionOperation(op)
     return sameClient(op) and GetCursorInfo()==nil
-        and matches(op.target_slot,op.source) and matches(op.source_slot,op.target)
+        and matches(op.target_slot,op.source)
+        and matches(op.source_slot,op.kind=="copy_action_slot" and op.source or op.target)
 end
 function AO.ApplyActionOperation(op)
-    assert(type(op)=="table" and op.kind=="move_action_slot" and sameClient(op), "Action client mismatch")
+    assert(type(op)=="table" and (op.kind=="move_action_slot" or op.kind=="copy_action_slot") and sameClient(op), "Action client mismatch")
     assert(not InCombatLockdown() and not UnitCastingInfo("player") and not UnitChannelInfo("player"), "Action changes unavailable")
-    assert(type(PickupAction)=="function" and type(PlaceAction)=="function", "Action placement APIs unavailable")
+    assert(type(PlaceAction)=="function", "Action placement API unavailable")
+    local copying=op.kind=="copy_action_slot"
+    if not copying then assert(type(PickupAction)=="function", "Action pickup API unavailable") end
     assert(GetCursorInfo()==nil, "Cursor already occupied")
     validateAction(op.source); validateAction(op.target)
     assert(not op.source.empty and op.source_slot~=op.target_slot, "Invalid action move")
@@ -58,6 +61,20 @@ function AO.ApplyActionOperation(op)
     assert(observed.slots[tostring(op.source_slot)] and observed.slots[tostring(op.target_slot)], "Action slot no longer observed")
     assert(matches(op.source_slot,op.source) and matches(op.target_slot,op.target), "Action contents changed")
     -- Caller must checkpoint uncertainty before entry. Never invoke an action body.
+    if copying then
+        assert(op.target.empty,"Copy destination must be explicitly empty")
+        local pickup
+        if op.source.kind=="spell" then pickup=C_Spell and C_Spell.PickupSpell
+        elseif op.source.kind=="item" then pickup=C_Item and C_Item.PickupItem
+        else pickup=PickupMacro end
+        assert(type(pickup)=="function","Action copy pickup API unavailable")
+        -- Reconstruct the cursor action by identity; never remove the source slot.
+        pickup(op.source.id)
+        assert(cursorMatches(op.source),"Copied action pickup unconfirmed; cursor retained")
+        assert(matches(op.source_slot,op.source) and matches(op.target_slot,op.target),"Action contents changed after copy pickup")
+        PlaceAction(op.target_slot)
+        return {kind=op.kind,status=AO.VerifyActionOperation(op) and "applied" or "outcome_unknown"}
+    end
     PickupAction(op.source_slot,false)
     assert(cursorMatches(op.source), "Action pickup unconfirmed; cursor retained")
     assert(matches(op.source_slot,{empty=true}) and matches(op.target_slot,op.target), "Action slots changed after pickup")

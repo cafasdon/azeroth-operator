@@ -60,6 +60,36 @@ fn action_moves_swaps_and_refusals_preserve_cursor() -> mlua::Result<()> {
  GetCursorInfo=function() if cursor then return 'spell',123,nil,nil end end
  assert(not pcall(AO.ApplyActionOperation,op) and writes==1 and cursor.id==123 and slots[2]==nil)
  GetCursorInfo=cursorInfo
+ op.kind='copy_action_slot'
+ local function pickup(kind,id)
+  writes=writes+1; cursor={kind=kind,id=id}
+  if changeSource then slots[1].id=999 end
+  if wrongCursor then cursor.id=999 end
+ end
+ C_Spell={PickupSpell=function(id) pickup('spell',id) end}
+ C_Item={PickupItem=function(id) pickup('item',id) end}
+ PickupMacro=function(id) pickup('macro',id) end
+ for _,kind in ipairs({'spell','item','macro'}) do
+  reset(); slots[2]=nil; slots[1]={kind=kind,id=kind=='macro' and 121 or 123}
+  op.source={empty=false,kind=kind,id=slots[1].id}
+  if kind=='macro' then op.source.macro={name='Macro',icon=134400,body='/cast Test'} end
+  assert(AO.ApplyActionOperation(op).status=='applied' and writes==2)
+  assert(slots[1].id==slots[2].id and slots[1].kind==kind and cursor==nil)
+  assert(not pcall(AO.ApplyActionOperation,op) and writes==2)
+ end
+ op.source={empty=false,kind='spell',id=123}
+ reset(); op.target={empty=false,kind='macro',id=121,macro={name='Macro',icon=134400,body='/cast Test'}}
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==0)
+ op.target={empty=true}; reset(); slots[2]=nil; reject=true
+ assert(AO.ApplyActionOperation(op).status=='outcome_unknown' and writes==2 and slots[1].id==123 and cursor.id==123)
+ reject=false; slots[2]=cursor; cursor=nil
+ assert(AO.VerifyActionOperation(op) and writes==2)
+ reset(); slots[2]=nil; changeSource=true
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==1 and not slots[2]); changeSource=false
+ reset(); slots[2]=nil; wrongCursor=true
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==1 and cursor.id==999); wrongCursor=false
+ reset(); slots[2]=nil; C_Spell.PickupSpell=nil
+ assert(not pcall(AO.ApplyActionOperation,op) and writes==0)
  "#,
     )
     .exec()
