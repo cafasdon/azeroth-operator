@@ -18,6 +18,8 @@
 
 ## Implemented
 
+- Saved talent-loadout rename/delete source executors and failure fixtures implemented. Compiler/transport/review/receipts and packaging remain pending; selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
+
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
 - Bounded JSON snapshot store with SHA256 integrity and atomic publication.
 - Listing optimisation deployed with unchanged per-file validation. Four paired synthetic Windows benchmark runs measured 24.4% lower listing median and 12.7% lower inspection median; hosted Linux speedup is not measured.

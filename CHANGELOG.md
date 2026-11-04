@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only saved talent-loadout rename/delete executors with complete current-spec catalogue and active-content preimages, single native calls and failure fixtures. Selected-loadout deletion and preparation/integration remain pending; nothing deployed.
+
 - Deploy compatible importer/reader/companion and Retail 0.13.0-dev create/save support. Public synthetic checks and all twenty-five installed hashes verified; no game action and native qualification remains pending.
 
 - Package Retail 0.13.0-dev create/save support in twenty-five files, verify staged create/save receipts and 22→25 guarded upgrades, and extend importer qualification fixtures. Package capability is enabled; installation and native qualification remain pending.
