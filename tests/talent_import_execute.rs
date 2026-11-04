@@ -202,6 +202,79 @@ fn import_waits_for_requested_active_and_saved_contents() -> Result<(), Box<dyn 
         realReset(); frame.ConvertToImportLoadoutEntryInfo=function() return {} end
         assert(not pcall(AO.ApplyTalentImport,op) and writes==0)
     "#).exec()?;
+    let snapshot: azeroth_operator::Snapshot = serde_json::from_value(serde_json::json!({
+        "schema_version":1,"source":"fixture","captured_at":"2026-11-04T00:00:00Z",
+        "client":{"family":"retail","variant":"live","build":"70688","interface":120105},
+        "character":{"name":"Fixture","realm":"Synthetic"},"sections":{"talents":{
+        "config_id":7,"nodes":{},"loadout_export":{"status":"available","format":"blizzard_traits","import_string":import_text(false,2),"spec_id":263,"serialization_version":2,"staged_changes":false},
+        "saved_loadouts":{"spec_id":263,"selected_config_id":8,"entries":{"8":{"name":"Old","uses_shared_action_bars":true,"import_string":import_text(false,2),"serialization_version":2}}}}}
+    }))?;
+    let request = serde_json::json!({"operation":"import","name":"New","import_string":import_text(true,1),"allow_empty_hash":true,"expected_new_shared_action_bars":false});
+    let compile = |r: serde_json::Value| {
+        azeroth_operator::talent_operation::compile(
+            &snapshot,
+            &"a".repeat(64),
+            &serde_json::from_value(r)?,
+        )
+    };
+    let prepared = compile(request.clone())?;
+    assert_eq!(prepared["execution_supported"], false);
+    assert_eq!(prepared["changes_active_talents"], true);
+    let code = prepared["import_code"].as_str().unwrap();
+    assert_eq!(code.split(':').count(), 26);
+    lua.load(include_str!("../addon/TalentImportDecode.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    let decoder: mlua::Function = ao.get("DecodeTalentImport")?;
+    let decoded: mlua::Table = decoder.call(code)?;
+    assert_eq!(
+        decoded.get::<String>("import_string")?,
+        import_text(true, 1)
+    );
+    lua.load("realReset()").exec()?;
+    lua.globals().set("op", decoded)?;
+    lua.load("assert(AO.ApplyTalentImport(op).status=='applied' and writes==1)")
+        .exec()?;
+    for field in [
+        "import_string",
+        "allow_empty_hash",
+        "expected_new_shared_action_bars",
+        "name",
+    ] {
+        let mut invalid = request.clone();
+        invalid.as_object_mut().unwrap().remove(field);
+        assert!(compile(invalid).is_err());
+    }
+    for (field, value) in [
+        ("allow_empty_hash", serde_json::json!(false)),
+        ("import_string", serde_json::json!("AAAA")),
+        ("target_config_id", serde_json::json!(9)),
+        ("operation", serde_json::json!("create")),
+    ] {
+        let mut invalid = request.clone();
+        invalid[field] = value;
+        assert!(compile(invalid).is_err());
+    }
+    let mut full = request.clone();
+    full["import_string"] = serde_json::json!(import_text(false, 1));
+    full["allow_empty_hash"] = serde_json::json!(false);
+    assert_ne!(compile(full)?["operation_id"], prepared["operation_id"]);
+    for (index, value) in [
+        (0, "AO-TALCREATE-1"),
+        (10, "9"),
+        (17, "128"),
+        (19, "2"),
+        (20, "4141"),
+        (21, "7"),
+    ] {
+        let mut fields: Vec<_> = code.split(':').collect();
+        fields[index] = value;
+        assert!(decoder.call::<mlua::Table>(fields.join(":")).is_err());
+    }
+    assert!(
+        decoder
+            .call::<mlua::Table>(format!("{code}:extra"))
+            .is_err()
+    );
     Ok(())
 }
 
