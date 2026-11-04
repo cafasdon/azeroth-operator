@@ -1,5 +1,17 @@
 # Saved talent-loadout metadata
 
+## Import transport — 2026-11-04
+
+Metadata preparation now returns `AO-TALMETA-1` import data. `execution_supported` remains false: the source decoder is not packaged or connected to shared Review/Apply. Nothing deployed or applied in game.
+
+Wire layout: magic, operation ID, snapshot ID, family, variant hex, build hex, interface, character hex, realm hex, kind, target config ID, rename-name hex (delete uses `-`), spec ID, working config ID, selected config ID (zero means absent), serialization version, active import hex, record count. Each saved record adds ID, name hex, shared-bars flag, serialization version and import hex. Exact arity is `18 + 5*N`, with 1–128 records and a 512 KiB total limit. Operation ID hashes the canonical wire with its ID field blank; this is binding/identity, not authentication.
+
+`TalentMetadataImport.lua` is data-only. It validates canonical integers, lower-case hex, bounded text, build alphabet, record count, booleans, uniform versions, unique IDs excluding the working config, target presence and rename/delete constraints. It reconstructs the executor's complete expected state, omitting absent selected IDs. Shared player review and receipt integration remain required before execution support.
+
+Rust-to-Lua 5.1 rename/delete round trips and malformed field, duplicate, oversize, extra/truncated, selected-deletion and legacy-load regressions pass. Full source verification passed formatting, locked build, all Rust/Lua tests, Clippy and 35 Python tests. The initial test compilation exposed mlua errors lacking Send/Sync conversion into anyhow; fixture assertions were corrected and the complete gate rerun successfully.
+
+Jev advisory: `jev-1.14.0`, request `f5a20e9cd95879c1ba523342f559f50b24b043f08f7ec7a231b1922d8663dc10`, 946 input/131 output tokens, 0.288 s; no_material_issue at reported confidence 0.28 with low evidence sufficiency. This is not independent proof. Direct decoder/source inspection and producer-consumer tests support the transport claims; no native qualification is claimed. Configured OCR/adversarial files remain absent.
+
 ## MCP preparation — 2026-11-04
 
 `prepare_talent_operation` now accepts `operation: rename|delete` with a target ID and a required name for rename. Omitted operation still means load and retains the existing AO-TALENT-1 format. Metadata drafts bind client identity, snapshot, all captured current-spec saved entries, active contents, working config, selection and serialization version. Their deterministic hash changes when any bound bystander changes. Mixed versions, working-config catalogue entries, colliding/invalid names and selected deletion are refused.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add bounded AO-TALMETA-1 rename/delete transport and data-only Lua decoder with producer-consumer and malformed-input tests. Execution remains disabled pending shared review/receipt integration; nothing deployed.
+
 - Add source MCP talent rename/delete drafts with full captured catalogue/content binding and explicit non-executable status. Preserve default saved-build load transport; verify compiler refusals and actual MCP requests. Nothing deployed.
 
 - Add source-only saved talent-loadout rename/delete executors with complete current-spec catalogue and active-content preimages, single native calls and failure fixtures. Selected-loadout deletion and preparation/integration remain pending; nothing deployed.
