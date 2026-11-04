@@ -58,6 +58,7 @@ def qualify(image):
                 snapshot["sections"]["operation_receipts"]["0" * 64]={"status":"outcome_unknown","kind":"delete_talent_config"}
                 snapshot["sections"]["operation_receipts"]["ab" * 32]={"status":"applied","kind":"create_talent_config"}
                 snapshot["sections"]["operation_receipts"]["ac" * 32]={"status":"applied","kind":"import_talent_config"}
+                snapshot["sections"]["operation_receipts"]["ad" * 32]={"status":"outcome_unknown","kind":"copy_action_slot"}
             name = "azeroth-import-test-" + uuid.uuid4().hex
             try:
                 result = subprocess.run(["docker","run","--rm","-i","--name",name,"--network","none",

@@ -17,7 +17,7 @@ class AddonUpdateTests(unittest.TestCase):
             addon.mkdir(parents=True)
             (game / ".flavor.info").write_text("Product Flavor!STRING:0\nwow\n")
             old_archive,old=package("retail","live",120105,"0.16.0-dev",root / "packages")
-            new_archive,_=package("retail","live",120105,"0.17.0-dev",root / "packages")
+            new_archive,_=package("retail","live",120105,"0.18.0-dev",root / "packages")
             entries=render_entries("retail","live",120105,"0.16.0-dev")
             for name in ("TalentImportValidation.lua", "TalentImportEntries.lua", "TalentImportExecute.lua", "TalentImportDecode.lua"):
                 entries.pop(name)

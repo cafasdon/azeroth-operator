@@ -82,3 +82,14 @@ Source shared review now dispatches AO-ACTIONCOPY-1 to the strict action decoder
 Actual compiler → Lua decoder/review/Apply/executor → Core export → Rust import fixtures pass. They assert the unknown checkpoint inside the first pickup, refusal without review or with edited bytes, immediate success, duplicate refusal, delayed read-only success, expiry retaining unknown, exceptions before/after effect retaining unknown, and reload preserving unknown/replay refusal. Native APIs remain mocked. UI fixture checks copy wording alongside existing move details. A dispatch prefix-length typo was found by the lifecycle test and corrected before verification passed.
 
 Full source gate passed: format/build, all Rust/Lua tests, Clippy and 38 Python tests. Configured frontend/OCR skills and adversarial-review file were absent; their workflows were not run. Jev advisory request `b7e01f816164c7f9683bb9eb313546ea937e418758c84ad0249389ea1550fd2c`, resolved `jev-1.14.0`, 1070 input/154 output tokens, 0.290 seconds: `insufficient_evidence` (probability 0.41, confidence 0.11), no concrete finding or review pass. Deterministic evidence supports source integration only; packaged compatibility and native qualification remain outstanding.
+
+
+## Copy package candidate — 2026-11-04
+
+Retail 0.18.0-dev packages the existing 33-file set with action-copy integration. Preparation now advertises minimum addon 0.18.0-dev and execution support; legacy move/swap retains its 0.9.0-dev minimum. This is capability metadata, not a claim the installed/running client supports it. Compatible importer/reader/companion rollout must precede installation. Importer qualification now includes a distinct `ad` repeated32 unknown-copy receipt without replacing legacy fixture receipts.
+
+The action-copy lifecycle fixture accepts a staged root and reads every relevant Lua module from that root. The package verifier executes it against extracted ZIP files, covering review/Apply/checkpoint/export, delayed observation, expiry, exceptions and reload replay refusal. Native functions remain mocked. Existing talent/equipment staged fixtures also pass. Full source gate passed with 38 Python tests. A temporary upgrade using the actual previous 0.17.0-dev archive and new archive verified33files and backup; the game installation was not touched.
+
+Artifact: `dist/action-copy-release/AzerothOperator-0.18.0-dev-retail-live.zip`, SHA256 `305b290dc6ef2173e281ace0f23c673e85356a4a7f8b1d10dcc9c4bb57feee3a`. No deployment or native game action occurred.
+
+Jev advisory request `929971983d404a9d205a124bc02bdf6a6a311200a326b5382262c03a75441e31`, resolved `jev-1.14.0`, 1033 input/135 output tokens, 0.296seconds: `insufficient_evidence` (probability0.55, confidence0.33), no concrete finding or review pass. Configured adversarial-review file remained absent. Direct source inspection and deterministic artifact execution establish the stated package evidence only.

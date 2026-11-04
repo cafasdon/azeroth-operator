@@ -194,6 +194,12 @@ fn compiler_decoder_bind_slots_and_macro_contents() -> Result<(), Box<dyn std::e
 #[test]
 fn copy_transport_preserves_source_and_refuses_occupied_target()
 -> Result<(), Box<dyn std::error::Error>> {
+    verify_copy_fixture(None)
+}
+
+pub fn verify_copy_fixture(
+    root: Option<&std::path::Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
     use azeroth_operator::action_operation::ActionOperation;
     let snapshot: Snapshot = serde_json::from_value(json!({
         "schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z",
@@ -211,13 +217,22 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
     };
     let copied = compile(&snapshot, &"a".repeat(64), &request)?;
     assert_eq!(copied["mode"], "copy");
-    assert_eq!(copied["addon_execution_enabled"], false);
+    assert_eq!(copied["addon_execution_enabled"], true);
+    assert_eq!(copied["requires_addon_version"], "0.18.0-dev");
     assert_ne!(copied["operation_id"], moved["operation_id"]);
     let lua = Lua::new();
     let ao = lua.create_table()?;
     for source in [
-        include_str!("../addon/ActionImport.lua"),
-        include_str!("../addon/ActionOperations.lua"),
+        fixture_source(
+            root,
+            "ActionImport.lua",
+            include_str!("../addon/ActionImport.lua"),
+        )?,
+        fixture_source(
+            root,
+            "ActionOperations.lua",
+            include_str!("../addon/ActionOperations.lua"),
+        )?,
     ] {
         lua.load(source)
             .call::<()>(("AzerothOperator", ao.clone()))?;
@@ -245,8 +260,12 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
     "#,
     )
     .exec()?;
-    lua.load(include_str!("../addon/MacroImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "MacroImport.lua",
+        include_str!("../addon/MacroImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(r#"
         slots={[1]={kind='spell',id=123}}; writes=0; now=0
         function GetTime() return now end
@@ -293,8 +312,12 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
         function date() return '2025-01-01T00:00:00Z' end
         AO.collectors={operation_receipts=AO.ReadMacroReceipts}
     "#).exec()?;
-    lua.load(include_str!("../addon/Core.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "Core.lua",
+        include_str!("../addon/Core.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load("AO.Capture()").exec()?;
     let exported: String = lua.globals().get("AzerothOperatorExport")?;
     let checkpoint: String = lua.globals().get("AzerothOperatorOperations")?;
@@ -314,8 +337,12 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
         assert_eq!(receipts[letter.repeat(64)]["status"], "outcome_unknown");
     }
     // Reload loses observers but preserves checkpoint and duplicate refusal.
-    lua.load(include_str!("../addon/MacroImport.lua"))
-        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(fixture_source(
+        root,
+        "MacroImport.lua",
+        include_str!("../addon/MacroImport.lua"),
+    )?)
+    .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(r#"
         for _,letter in ipairs({'c','d','e'}) do
             local attempted=code:gsub('AO%-ACTIONCOPY%-1:[0-9a-f]+:','AO-ACTIONCOPY-1:'..string.rep(letter,64)..':',1)
@@ -358,4 +385,15 @@ fn copy_transport_preserves_source_and_refuses_occupied_target()
         .is_err()
     );
     Ok(())
+}
+
+fn fixture_source(
+    root: Option<&std::path::Path>,
+    name: &str,
+    embedded: &str,
+) -> std::io::Result<String> {
+    match root {
+        Some(path) => std::fs::read_to_string(path.join(name)),
+        None => Ok(embedded.to_owned()),
+    }
 }
