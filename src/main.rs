@@ -150,7 +150,7 @@ impl Operator {
     }
 
     #[tool(
-        description = "Prepare Retail talent operations from captured contents. Load (default), rename and delete target a saved config; rename/delete require addon 0.14.0-dev. Create saves the current build under a new name, requires expected_new_shared_action_bars, forbids target_config_id and produces source-only import data with execution_supported false pending integration. Creation selects the new build. Selected-loadout deletion is refused. No game changes; native qualification remains pending.",
+        description = "Prepare Retail talent operations from captured contents. Load (default), rename and delete target a saved config; rename/delete require addon 0.14.0-dev. Create saves the current build under a new name, requires expected_new_shared_action_bars, forbids target_config_id and produces source-only import data with execution_supported false pending packaging. Creation selects the new build. Selected-loadout deletion is refused. No game changes; native qualification remains pending.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

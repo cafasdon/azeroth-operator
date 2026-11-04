@@ -51,3 +51,13 @@ Rust-generated synthetic bitstreams and Lua 5.1 fixtures cover spec/version/hash
 Jev advisory `jev-1.14.0`, request `f161111d15eb2d1a1ee8ae6ffeaa1cb59e758ed12d91c46653d4b1d27927d508`, 1010 input/135 output tokens, 0.321 s: insufficient evidence. No AI review pass or native qualification is claimed. Configured OCR/adversarial files are absent; direct source inspection and bounded fixture results support only the stated helper contract.
 
 Remaining: complete node/entry conversion and legality/readback contract; current-build duplication and arbitrary import executors with full catalogue preimages and native creation/selection lifecycle; explicit user review of active talent and action-bar consequences; completion/receipt integration, transport, packaging and deployment. No retry after uncertain creation and no guessing the server-assigned ID. Native tests remain deferred.
+
+## Player review and receipt integration — 2026-11-04
+
+Creation now uses the shared exact-byte Review/Apply dispatcher, explicit executor/verifier maps and `create_talent_config` receipt kind. The review explains copying committed contents, automatic selection of the new build, checked (not set) shared-bars expectations and unverified action-bar effects. SavedVariables and Rust snapshot/receipt parsing accept the new kind. Compiler execution remains disabled pending packaging; none of this source change is installed or deployed.
+
+The compiler-to-decoder-to-Apply fixture asserts the unknown checkpoint exists inside the mocked native call, then exports through Core and imports through Rust. It covers review mismatch, duplicate attempts, delayed observation-only completion, 60-second expiry, exceptions before/after effect and in native bookkeeping, and reload with an outstanding unknown receipt. No path retries the native call. The persisted receipt prevents replay of the same operation ID; it is not semantic exactly-once protection against newly generated IDs. SavedVariables become durable only on reload/logout.
+
+Full local gate passed format, build, Rust/Lua tests, Clippy and 36 Python tests. Native calls remain mocked and no in-game qualification is claimed. Configured OCR/adversarial review files are absent; direct inspection and the actual local compiler/export/import path are the evidence.
+
+Jev advisory `jev-1.14.0`, request `75ea70d0a4d73b6628106d94ba2c5d2cdbc048ed397109c58c2c85a51f9b4676`, 1025 input/131 output tokens, 0.275 s: `no_material_issue`, confidence 0.13 (probabilities 0.42 no material issue, 0.35 insufficient evidence, 0.23 investigate). This weak advisory is not a review pass or native qualification. Packaging, compatible rollout and arbitrary import execution remain outstanding. The uncertain real bag move remains untouched.

@@ -26,6 +26,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         end
         function AO.InvalidateMacroReview() invalidations=invalidations+1 end
         function AO.ReviewMacroImport(text)
+            if text=='talent_create' then return {kind='create_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',name='New|Build',expected_new_shared_action_bars=false,expected={spec_id=263}} end
             if text=='talent_rename' or text=='talent_delete' then
                 return {kind=text=='talent_rename' and 'rename_talent_config' or 'delete_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',target_config_id=9,name='New build',expected={spec_id=263,selected_config_id=8,entries={['9']={name='Old|Build'}}}}
             end
@@ -125,6 +126,10 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         input:SetText('spec_unassign'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find("Remove this set's specialisation association.",1,true))
         assert(not frames[5].text:find('Remove this association from:',1,true))
+        input:SetText('talent_create'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Create saved talent build: New/Build',1,true))
+        assert(frames[5].text:find('will select the new build',1,true) and frames[5].text:find('checked, not set',1,true))
+        assert(frames[5].text:find('may change',1,true) and frames[5].text:find('Do not repeat an uncertain creation',1,true))
         input:SetText('talent_rename'); review.scripts.OnClick()
         assert(apply.enabled and frames[5].text:find('New name: New build',1,true))
         assert(frames[5].text:find('Old/Build',1,true) and frames[5].text:find('Actual action-bar contents are not verified.',1,true))

@@ -117,6 +117,16 @@ local function open()
             end
             lines[#lines+1]="Exact captured set contents are checked again. External references are not repaired."
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="create_talent_config" then
+            lines[#lines+1]="Create saved talent build: "..reason(op.name)
+            lines[#lines+1]="Specialisation ID: "..op.expected.spec_id
+            lines[#lines+1]="Copies the current committed talents into a NEW saved build."
+            lines[#lines+1]="The native Talents UI will select the new build when ready."
+            lines[#lines+1]="Expected new shared action bars: "..(op.expected_new_shared_action_bars and "Yes" or "No")
+            lines[#lines+1]="This expectation is checked, not set. Actual action-bar contents are not verified and may change."
+            lines[#lines+1]="Existing saved builds and current talent contents must remain unchanged."
+            lines[#lines+1]="Open your Talents panel and close loadout dialogs before Apply. Keep Talents open until creation finishes."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain creation."
         elseif op.kind=="rename_talent_config" or op.kind=="delete_talent_config" then
             local target=op.expected.entries[tostring(op.target_config_id)]
             lines[#lines+1]="Specialisation ID: "..op.expected.spec_id

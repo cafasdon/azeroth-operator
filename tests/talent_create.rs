@@ -33,6 +33,7 @@ fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders()
                 CanCreateNewConfig=function() return canCreate end,CanEditTalents=function() return true end,
                 RequestNewConfig=function(name)
                     assert(name=='New'); writes=writes+1
+                    if checkReceipt then assert(AzerothOperatorOperations==op.id..':outcome_unknown:create_talent_config;') end
                     if mode=='throw_before' then error('before') end
                     if mode~='delay' and mode~='reject' then finish() end
                     if mode=='throw_after' then error('after') end
@@ -113,6 +114,54 @@ fn creation_waits_for_unique_populated_selected_build_and_preserves_bystanders()
     lua.globals().set("op", decoded)?;
     lua.load("assert(AO.ApplyTalentCreate(op).status=='applied' and writes==1)")
         .exec()?;
+    lua.globals().set("code", code)?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load(r#"
+        function GetTime() return now end
+        function setup()
+            reset(); AO.family='retail'; AzerothOperatorOperations=''; now=0; checkReceipt=true
+            op=AO.DecodeTalentCreate(code)
+        end
+        setup(); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==0)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code..':-') and writes==0)
+        AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and r.status=='applied' and writes==1)
+        AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        SlashCmdList={}; function GetServerTime() return 0 end
+        function date() return '2026-11-04T00:00:00Z' end
+        AO.collectors={operation_receipts=function() return AO.ReadMacroReceipts() end}
+    "#).exec()?;
+    lua.load(include_str!("../addon/Core.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("AO.Capture()").exec()?;
+    let receipt: String = lua.globals().get("AzerothOperatorOperations")?;
+    let export: String = lua.globals().get("AzerothOperatorExport")?;
+    let imported = azeroth_operator::import::decode(
+        format!("AzerothOperatorExport = \"{export}\"\nAzerothOperatorOperations = \"{receipt}\"")
+            .as_bytes(),
+    )?;
+    assert_eq!(
+        imported.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()],
+        serde_json::json!({"kind":"create_talent_config","status":"applied"})
+    );
+    lua.load(r#"
+        setup(); mode='delay'; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+        assert(ok and r.status=='outcome_unknown' and writes==1)
+        finish(); assert(AO.ReadMacroReceipts()[op.id].status=='applied' and writes==1)
+        setup(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+        now=61; finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown' and writes==1)
+        for _,failure in ipairs({'throw_before','throw_after','callback_error'}) do
+            setup(); mode=failure; AO.ReviewMacroImport(code); local r,ok=AO.ApplyReviewedMacro(code)
+            assert(not ok and r.status=='outcome_unknown' and writes==1)
+            assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown')
+            AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)
+        end
+        setup(); mode='delay'; AO.ReviewMacroImport(code); AO.ApplyReviewedMacro(code)
+    "#).exec()?;
+    lua.load(include_str!("../addon/MacroImport.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
+    lua.load("finish(); assert(AO.ReadMacroReceipts()[op.id].status=='outcome_unknown'); AO.ReviewMacroImport(code); assert(not pcall(AO.ApplyReviewedMacro,code) and writes==1)").exec()?;
     for (index, value) in [
         (0, "AO-TALMETA-1"),
         (3, "classic"),
