@@ -361,8 +361,8 @@ fn save_draft(
         "ignored_slots":ignored_map,"desired_slots":desired,"explicit_empty_preconditions":empty,
         "assigned_spec":old.and_then(|v|v.get("assigned_spec")),
         "overwrites_saved_contents":!creating,"capacity_rechecked_on_apply":true,
-        "import_code":null,"requires_player_apply":true,"addon_execution_enabled":false,
-        "requires_addon_version":null,"game_execution":false,"live_qualified":false,
+        "import_code":null,"requires_player_apply":true,"addon_execution_enabled":true,
+        "requires_addon_version":"0.13.0-dev","game_execution":false,"live_qualified":false,
         "preparation_status":"draft_transport_pending"});
     let bytes = serde_json::to_vec(&draft)?;
     ensure!(
@@ -403,7 +403,7 @@ fn save_draft(
     );
     draft["operation_id"] = json!(fields[1]);
     draft["import_code"] = json!(code);
-    draft["preparation_status"] = json!("draft_packaging_pending");
+    draft["preparation_status"] = json!("requires_player_review");
     Ok(draft)
 }
 

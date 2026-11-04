@@ -63,6 +63,9 @@ fn main() -> anyhow::Result<()> {
             "EquipmentSetImport.lua",
             "EquipmentSetSpec.lua",
             "EquipmentSetSpecImport.lua",
+            "EquipmentSetSaveState.lua",
+            "EquipmentSetSave.lua",
+            "EquipmentSetSaveImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
         ] {
@@ -257,10 +260,85 @@ fn main() -> anyhow::Result<()> {
             );
         }
     }
+    if args[1] == "retail" {
+        lua.load(r#"
+            savedName=nil; savedIcon=nil; saveWrites=0; saveFlags={}; savedFlags={}
+            for i=1,19 do saveFlags[i]=false end
+            MAX_EQUIPMENT_SETS_PER_PLAYER=20
+            function StaticPopup_Visible() end
+            function EquipmentManager_GetLocationData(location) return {isPlayer=true,isBank=false,isBags=false,slot=location} end
+            C_EquipmentSet.GetEquipmentSetIDs=function() return savedName and {0} or {} end
+            C_EquipmentSet.GetNumEquipmentSets=function() return savedName and 1 or 0 end
+            C_EquipmentSet.GetEquipmentSetID=function(name) if savedName==name then return 0 end end
+            C_EquipmentSet.GetEquipmentSetInfo=function(id) return savedName,savedIcon,id,true,1,1,0,0,18 end
+            C_EquipmentSet.GetIgnoredSlots=function() return savedFlags end
+            C_EquipmentSet.GetItemLocations=function() return {[16]=16} end
+            C_EquipmentSet.GetEquipmentSetAssignedSpec=function() end
+            C_EquipmentSet.IsSlotIgnoredForSave=function(i) return saveFlags[i] end
+            C_EquipmentSet.IgnoreSlotForSave=function(i) saveFlags[i]=true end
+            C_EquipmentSet.UnignoreSlotForSave=function(i) saveFlags[i]=false end
+            local function saveFlagsNow()
+                for i=1,19 do savedFlags[i]=saveFlags[i]; assert(saveFlags[i]==(i~=16)) end
+                saveWrites=saveWrites+1
+            end
+            C_EquipmentSet.CreateEquipmentSet=function(name,icon)
+                assert(AzerothOperatorOperations:find(':outcome_unknown:create_equipment_set;',1,true))
+                savedName=name; savedIcon=tonumber(icon); saveFlagsNow()
+            end
+            C_EquipmentSet.SaveEquipmentSet=function(id,icon)
+                assert(id==0 and AzerothOperatorOperations:find(':outcome_unknown:save_equipment_set;',1,true))
+                savedIcon=tonumber(icon); saveFlagsNow()
+            end
+        "#).exec().map_err(|e|anyhow::anyhow!(e.to_string()))?;
+        for creating in [true, false] {
+            let captured = (|| -> mlua::Result<String> {
+                lua.load("AO.Capture()").exec()?;
+                lua.globals().get("AzerothOperatorExport")
+            })()
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let snap = decode(format!("AzerothOperatorExport = \"{captured}\"").as_bytes())?;
+            let prepared = azeroth_operator::equipment_set_operation::compile(
+                &snap,
+                &"d".repeat(64),
+                &azeroth_operator::equipment_set_operation::EquipmentSetRequest {
+                    operation: if creating {
+                        azeroth_operator::equipment_set_operation::EquipmentSetAction::Create
+                    } else {
+                        azeroth_operator::equipment_set_operation::EquipmentSetAction::Save
+                    },
+                    set_id: if creating { None } else { Some(0) },
+                    name: creating.then(|| "Package saved set".into()),
+                    icon: Some(if creating { 123 } else { 124 }),
+                    expect_empty_slots: (1..=19).filter(|i| *i != 16).collect(),
+                    ignored_slots: Some((1..=19).filter(|i| *i != 16).collect()),
+                    spec_index: None,
+                },
+            )?;
+            let exported=(|| -> mlua::Result<String> {
+                lua.globals().set("saveCode",prepared["import_code"].as_str().unwrap())?;
+                lua.load(r#"
+                    local before=saveWrites
+                    AO.ReviewMacroImport(saveCode); local receipt,ok=AO.ApplyReviewedMacro(saveCode)
+                    assert(ok and receipt.status=='applied' and saveWrites==before+1)
+                    for i=1,19 do assert(saveFlags[i]==false) end
+                    AO.ReviewMacroImport(saveCode); assert(not pcall(AO.ApplyReviewedMacro,saveCode) and saveWrites==before+1)
+                    AO.Capture()
+                "#).exec()?;
+                lua.globals().get("AzerothOperatorExport")
+            })().map_err(|e|anyhow::anyhow!(e.to_string()))?;
+            let verified = decode(format!("AzerothOperatorExport = \"{exported}\"").as_bytes())?;
+            anyhow::ensure!(
+                verified.sections["operation_receipts"][prepared["operation_id"].as_str().unwrap()]
+                    ["status"]
+                    == "applied",
+                "Packaged create/save receipt missing"
+            );
+        }
+    }
     println!(
         "{}",
         serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
-        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","live_qualified":false})
+        "packaged_lua51_roundtrip":true,"changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","live_qualified":false})
     );
     Ok(())
 }

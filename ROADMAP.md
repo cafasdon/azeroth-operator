@@ -12,6 +12,7 @@
 - Source MCP preparation now produces create/save drafts with explicit ignored/empty preconditions and exact equipped identities. Strict import transport, review/receipts, packaging and native empty-slot qualification remain outstanding.
 - Create/save import transport and Lua decoder now pass producer/consumer fixtures, including empty and large catalogues. Shared review/receipt integration, packaging and native qualification remain pending; execution is still disabled.
 - Create/save source review/Apply and receipt integration now pass end-to-end fixtures and replay/uncertainty checks. Package/versioning and compatible importer rollout remain next; compiler still reports execution disabled pending packaging.
+- Retail 0.13.0-dev create/save package now passes twenty-five-file staged execution/export fixtures and 22→25 upgrade tests. Compiler advertises that required version; hosted/local importer rollout and installation are next, native qualification deferred.
 
 ## Implemented
 
