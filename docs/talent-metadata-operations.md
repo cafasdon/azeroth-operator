@@ -1,5 +1,15 @@
 # Saved talent-loadout metadata
 
+## Shared review and receipts — 2026-11-04
+
+Source Review/Apply now dispatches the strict metadata decoder and explicit rename/delete executors/verifiers. The shared caller retains the exact reviewed bytes and records `outcome_unknown` before the executor. Lua receipts, Rust snapshot validation and SavedVariables receipt parsing accept both metadata kinds. Normal unknown results permit observation-only verification for 60 seconds; exceptions, expiry and reload retain uncertainty. Repeated operation IDs remain refused.
+
+Review shows target ID/name/spec, selected build, proposed name or deletion/recreation consequences, preservation requirements, and the absence of actual action-bar verification. Native Talents must be open and competing dialogs closed. No external reference repair is promised.
+
+Actual Rust compiler → Lua decoder → real executor → Core export → Rust importer fixtures verify rename and delete, pre-write checkpoints, exact-review rejection, duplicate refusal, delayed completion, expiry, post-effect exceptions and reload. Widget fixtures verify consequences and sanitised names. Full source gate passed Rust/Lua tests, Clippy and 35 Python tests after correcting a fixture's expected sanitisation from doubled pipe to the existing slash replacement.
+
+Source integration is not deployment: `execution_supported` stays false until packaging and compatible importer/reader rollout. Native qualification is deferred. Jev advisory `jev-1.14.0`, request `1624454cfd21459a3d0fbeed2c27d9416341398023701c35e20b862e76a06c25`, 951 input/135 output tokens, 0.297 s, returned insufficient evidence; no review pass is claimed. Direct source inspection and actual producer/consumer fixtures support the bounded offline claims. Configured OCR/adversarial files remain absent.
+
 ## Import transport — 2026-11-04
 
 Metadata preparation now returns `AO-TALMETA-1` import data. `execution_supported` remains false: the source decoder is not packaged or connected to shared Review/Apply. Nothing deployed or applied in game.

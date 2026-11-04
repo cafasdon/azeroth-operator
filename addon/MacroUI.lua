@@ -117,6 +117,21 @@ local function open()
             end
             lines[#lines+1]="Exact captured set contents are checked again. External references are not repaired."
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
+        elseif op.kind=="rename_talent_config" or op.kind=="delete_talent_config" then
+            local target=op.expected.entries[tostring(op.target_config_id)]
+            lines[#lines+1]="Specialisation ID: "..op.expected.spec_id
+            lines[#lines+1]="Saved loadout: "..reason(target.name).." ("..op.target_config_id..")"
+            lines[#lines+1]="Selected saved loadout: "..(op.expected.selected_config_id or "None")
+            if op.kind=="rename_talent_config" then
+                lines[#lines+1]="New name: "..reason(op.name)
+            else
+                lines[#lines+1]="DELETE this saved talent loadout. Its saved contents will be removed."
+                lines[#lines+1]="External references are not repaired. Recovery requires recreating the saved build."
+            end
+            lines[#lines+1]="Current talents and all other captured saved builds must remain unchanged."
+            lines[#lines+1]="Actual action-bar contents are not verified."
+            lines[#lines+1]="Open your Talents panel and close loadout edit/import dialogs before Apply."
+            lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. Do not repeat an uncertain operation."
         elseif op.kind=="load_talent_config" then
             lines[#lines+1]="Specialisation ID: "..op.spec_id
             lines[#lines+1]="Saved loadout: "..reason(op.desired_name).." ("..op.target_config_id..")"

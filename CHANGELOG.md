@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Connect saved talent rename/delete to source player review/Apply and persisted receipt parsing. Verify full compiler-to-executor/export flow, uncertain outcomes and replay refusal offline. Packaging/deployment and native qualification remain pending.
+
 - Add bounded AO-TALMETA-1 rename/delete transport and data-only Lua decoder with producer-consumer and malformed-input tests. Execution remains disabled pending shared review/receipt integration; nothing deployed.
 
 - Add source MCP talent rename/delete drafts with full captured catalogue/content binding and explicit non-executable status. Preserve default saved-build load transport; verify compiler refusals and actual MCP requests. Nothing deployed.

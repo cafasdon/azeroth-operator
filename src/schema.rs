@@ -148,6 +148,8 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                                 | "move_bag_item"
                                 | "split_bag_item"
                                 | "load_talent_config"
+                                | "rename_talent_config"
+                                | "delete_talent_config"
                                 | "move_action_slot"
                                 | "modify_equipment_set"
                                 | "delete_equipment_set"
