@@ -46,6 +46,10 @@ function AO.ApplyBagSwap(op)
     -- Same item IDs may merge rather than swap; never infer stack compatibility.
     assert(source.item_id~=target.item_id,"Same-item swaps require stack compatibility support")
     assert(matches(source) and matches(target),"Bag swap preimage changed or locked")
+    assert(type(AO.CheckBagCompatibility)=="function","Bag compatibility preflight unavailable")
+    assert(AO.CheckBagCompatibility(source.link,target.bag).status=="compatible"
+        and AO.CheckBagCompatibility(target.link,source.bag).status=="compatible","Swap bag compatibility unconfirmed")
+    assert(matches(source) and matches(target),"Bag swap preimage changed during preflight")
     -- Caller checkpoints unknown before entry. Pickup can retain the source observation.
     C_Container.PickupContainerItem(source.bag,source.slot)
     assert(cursorMatches(source) and (empty(source) or matches(source)) and matches(target),"Source pickup unconfirmed; inspect cursor")

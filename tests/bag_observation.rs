@@ -36,6 +36,9 @@ fn retained_source_and_delayed_readback_do_not_repeat_writes() -> mlua::Result<(
     )
     .exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
+    lua.load(include_str!("bag_metadata_fixture.lua")).exec()?;
+    lua.load(include_str!("../addon/BagCompatibility.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
     for source in [
         include_str!("../addon/BagOperations.lua"),
         include_str!("../addon/MacroImport.lua"),

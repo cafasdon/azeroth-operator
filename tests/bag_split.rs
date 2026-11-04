@@ -25,12 +25,21 @@ fn split_requires_quantity_conservation_and_distinct_identity() -> mlua::Result<
  end}
  "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
+    lua.load(include_str!("bag_metadata_fixture.lua")).exec()?;
+    lua.load(include_str!("../addon/BagCompatibility.lua"))
+        .call::<()>(("AzerothOperator", ao.clone()))?;
     lua.load(include_str!("../addon/BagOperations.lua"))
         .call::<()>(("AzerothOperator", ao))?;
     lua.load(r#"
  local op={kind='split_bag_item',bag=0,slot=1,target_bag=0,target_slot=2,source_guid='original',item_id=123,count=20,amount=5,expect_empty_target=true}
  for _,amount in ipairs({0,20,21,1.5}) do op.amount=amount; assert(not pcall(AO.ApplyBagOperation,op)) end
  assert(writes==0); op.amount=5
+ local classifier=ContainerFrame_IsReagentBag
+ ContainerFrame_IsReagentBag=function() return true end
+ assert(not pcall(AO.ApplyBagOperation,op) and writes==0)
+ ContainerFrame_IsReagentBag=classifier
+ local family=C_Item.GetItemFamily;C_Item.GetItemFamily=function() end
+ assert(not pcall(AO.ApplyBagOperation,op) and writes==0);C_Item.GetItemFamily=family
  assert(AO.ApplyBagOperation(op).status=='applied')
  assert(writes==2 and slots[1].stackCount==15 and slots[2].stackCount==5 and cursor==nil)
  reset(); reject=true
