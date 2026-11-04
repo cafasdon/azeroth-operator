@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only full-stack merge executor with exact identities, stable native capacity checks and read-only quantity-conservation verification. Transport, player review integration, packaging and native qualification remain pending.
+
 - Deploy compatible bag-preflight services/companion and Retail0.20.0-dev. Public minimum-version/regression checks and all36 installed hashes passed; native qualification deferred.
 
 - Require bag compatibility before move/split pickup and both swap directions, then recheck identities. Package helper/guards as Retail0.20.0-dev (36files); zero-write refusal, staged lifecycle and actual prior-archive upgrade tests pass. Deployment/native qualification pending.
