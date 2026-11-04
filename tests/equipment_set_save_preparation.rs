@@ -32,7 +32,8 @@ fn save_drafts_bind_catalogue_and_equipment_without_inferring_empty_slots()
             .unwrap()
             .starts_with("AO-SETSAVE-1:")
     );
-    assert_eq!(draft["addon_execution_enabled"], false);
+    assert_eq!(draft["addon_execution_enabled"], true);
+    assert_eq!(draft["requires_addon_version"], "0.13.0-dev");
     assert_eq!(
         draft["equipment_before"]["16"],
         json!({"guid":"Item-exact","item_id":123})

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package Retail 0.13.0-dev create/save support in twenty-five files, verify staged create/save receipts and 22→25 guarded upgrades, and extend importer qualification fixtures. Package capability is enabled; installation and native qualification remain pending.
+
 - Connect equipment-set create/save to source player review/Apply and receipt validation. Show overwritten contents and ignored-slot choices; verify delayed, expired, reloaded and post-effect-error outcomes offline. Packaging and native qualification remain pending.
 
 - Add bounded create/save import transport and strict Lua decoding, including full-catalogue roundtrip and malformed-input fixtures. Shared review/Apply remains disabled; no package or service deployment.

@@ -1,5 +1,17 @@
 # Equipment-set creation and saving
 
+## Package checkpoint — 2026-11-04
+
+Retail 0.13.0-dev packages twenty-five files, adding `EquipmentSetSaveState.lua`, `EquipmentSetSave.lua` and `EquipmentSetSaveImport.lua` before shared dispatch. Create/save preparation now reports `addon_execution_enabled: true`, requires `0.13.0-dev` and returns `requires_player_review`. These describe package capability, not proof of installation or native compatibility. Earlier operation version requirements are preserved.
+
+Candidate: `dist/equipment-set-save-release/AzerothOperator-0.13.0-dev-retail-live.zip`, SHA-256 `d23135437502314539d303258859a3a7b177c4df7f0b7196bb16c2c133b674c7`. The matching manifest records all twenty-five hashes. Installed-file verification accepts the new layout and guarded upgrades retain old layouts, including the current twenty-two-file release. A 22→25 fixture verifies backup and final files; earlier upgrade, rollback and concurrent-edit preservation fixtures also pass.
+
+The staged verifier loads actual archive files and exercises native-API fixtures through the real collector, Rust compiler, review/Apply, save-state helper, executor and export/import for both create and save. It asserts the pre-write unknown checkpoint, restored flags and replay refusal; existing metadata/use/association and changed-interface checks remain green. The hosted importer qualification fixture now includes both receipt kinds, ready for the later rollout.
+
+`python -m tools.verify_source` passed format, locked build, all Rust/Lua tests, Clippy and 35 Python tests. `cargo build --locked --example verify_addon` and `python -m tools.verify_addon_packages --directory dist/equipment-set-save-release --verifier target/debug/examples/verify_addon.exe` passed the staged package. No installation, companion switch or hosted deployment occurred. Upgrade both hosted/local importers before installing the new addon. Nonignored empty slots, native timing/taint/paste capacity and actual game operation remain unqualified.
+
+Advisory Jev review: `jev-1.14.0`, request `d06b7f1bd438ee372b3908104f28f21fe0e387d7edeeb4fe31d26a06081354af`, 3144 input/154 output tokens, 0.294 seconds; `insufficient_evidence`, reported confidence 0.06. No passing review or live qualification is inferred. The configured adversarial rule remains absent; OCR skill unavailable as previously recorded.
+
 ## Review, Apply and receipts — source only, 2026-11-04
 
 Shared dispatch recognises `AO-SETSAVE-1`, explicitly maps both create/save kinds to the save executor and registers their read-only verifier. Lua checkpoints and both Rust receipt validators accept the two kinds. The private reviewed byte string, invalidation on editing/hiding, uncertainty checkpoint before executor entry and duplicate-ID refusal remain unchanged. A normally returned unknown result can be observed read-only for sixty seconds; thrown calls are never enrolled. Reload discards pending observation but preserves the saved unknown receipt. SavedVariables still persist only at reload/logout, not crash-durably.
