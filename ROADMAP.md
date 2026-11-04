@@ -18,6 +18,8 @@
 
 ## Implemented
 
+- Talent creation/import research and source-only read-only import validator implemented. Native creation may select/apply the resulting build; executors and completion contracts remain pending. [Contract](docs/talent-creation-import.md).
+
 - Saved talent-loadout rename/delete executors, MCP transport, strict decoder and shared review/receipts packaged as 0.14.0-dev (27 files), with staged verification. Compatible importer/reader/companion and addon are deployed; native qualification remains pending and selected deletion is unresolved. [Contract](docs/talent-metadata-operations.md).
 
 - Separate Retail, Classic and Forever boundaries with explicit variant/build/interface.
