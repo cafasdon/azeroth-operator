@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add source-only read-only bag compatibility preflight with explicit unknown metadata handling and stable double reads. Fixture checks cover general/reagent/specialised bags; executor integration and native qualification pending.
+
 - Deploy compatible bag-swap services/companion and Retail0.19.0-dev. Public synthetic preparation/receipt checks and all35 installed hashes passed; native qualification remains deferred.
 
 - Package bag swaps in Retail 0.19.0-dev (35 files), require that version in preparation, and verify staged lifecycle plus actual 0.18→0.19 upgrade. Compatible deployment and native qualification remain pending.
