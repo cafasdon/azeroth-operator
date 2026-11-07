@@ -92,10 +92,24 @@ It accepted synthetic quest data via `import-stdin` and served the timer,
 difficulty and waypoint-filtered checklist through MCP stdio. Update the
 reader and importer before syncing these fields. Native capture is pending.
 
+The staged `0.39.0-dev` candidate is in `dist/forever-progression`, built
+from `289aa0e` for interface `16001`. The addon ZIP SHA-256 is
+`3ab8e4227bfe659f8bf179f1542b935fb159df4082256455ff28667e033d22ba`.
+The packaged Lua fixture passed export/import and changed-interface refusal.
+A synthetic Windows install matched all four manifest hashes and refused
+to overwrite the existing addon directory.
+
+The matching Windows release companion is `dist/forever-progression/azeroth-operator.exe`,
+SHA-256 `e47cd8275af5105d7b414e735a3c92fde5d7383688434e88e5e5077061c079c9`.
+It imported synthetic data with the experience section and served XP
+progress, the quest XP projection, reward spell filtering and recipe
+observations over MCP stdio. Update the reader and importer before syncing
+this candidate. Native capture is pending.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
-$manifest = (Resolve-Path 'dist/forever-quest-review/AzerothOperator-0.38.0-dev-forever-live.manifest.json').Path
+$manifest = (Resolve-Path 'dist/forever-progression/AzerothOperator-0.39.0-dev-forever-live.manifest.json').Path
 python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
 ```
 
