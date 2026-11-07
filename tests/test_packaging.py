@@ -22,6 +22,11 @@ class PackagingTests(unittest.TestCase):
                 self.assertIn('AO.family = "retail"', archive.read("AzerothOperator/Adapter.lua").decode())
             b, _ = package("forever", "beta", 16001, "0.1.0-dev", folder)
             self.assertNotEqual(a, b)
+            with zipfile.ZipFile(b) as archive:
+                self.assertEqual(set(archive.namelist()), {
+                    "AzerothOperator/" + name for name in ("Adapter.lua", "Collectors.lua", "Core.lua", "AzerothOperator.toc")
+                })
+                self.assertNotIn(b"AzerothOperatorOperations", archive.read("AzerothOperator/AzerothOperator.toc"))
             with self.assertRaises(ValueError):
                 package("retail", "../escape", 120105, "dev", folder)
             self.assertEqual(len(list(Path(folder).glob("*.zip"))), 2)

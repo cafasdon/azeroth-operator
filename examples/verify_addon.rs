@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
     let result = (|| -> mlua::Result<String> {
         lua.load(fixture).exec()?;
         let namespace: mlua::Table = lua.globals().get("AO")?;
-        for name in [
+        let modules = [
             "Adapter.lua",
             "Collectors.lua",
             "Core.lua",
@@ -85,11 +85,23 @@ fn main() -> anyhow::Result<()> {
             "EquipmentSetSaveImport.lua",
             "MacroImport.lua",
             "MacroUI.lua",
-        ] {
+        ];
+        let modules = if args[1] == "forever" {
+            &modules[..3]
+        } else {
+            &modules[..]
+        };
+        for name in modules {
             let source = std::fs::read_to_string(Path::new(&args[0]).join(name))
                 .map_err(mlua::Error::external)?;
             lua.load(&source)
                 .call::<()>(("AzerothOperator", namespace.clone()))?;
+        }
+        if args[1] == "forever" {
+            lua.load(
+                "assert(AO.ApplyImportedMacro==nil and SlashCmdList.AZEROTHOPERATORMACROS==nil)",
+            )
+            .exec()?;
         }
         lua.load("AO.Capture()").exec()?;
         let previous: String = lua.globals().get("AzerothOperatorExport")?;

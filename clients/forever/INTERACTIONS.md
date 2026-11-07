@@ -2,7 +2,7 @@
 
 Updated 7 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
-The hosted reader and importer now support the bank, recipe, reputation, currency, tracked-achievement and quest observations below. See the [deployment evidence](../../docs/container.md#forever-snapshot-rollout-7-november-2026). Local sync companion compatibility and live addon capture remain separate.
+The hosted reader and importer support the bank, recipe, reputation, currency, tracked-achievement and quest observations below. See the [hosted deployment evidence](../../docs/container.md#forever-snapshot-rollout-7-november-2026) and the [Windows companion and package checkpoint](README.md#capture-only-installation-checkpoint). Live addon capture remains pending.
 
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |

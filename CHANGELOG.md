@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Package Forever as a four-file capture-only addon with no Apply command or executor modules.
+
 - Capture Forever quest objective counts, failure and turn-in readiness in saved snapshots for read-only MCP review.
 
 - Capture saved Forever tracked-achievement completion and criterion counts, excluding guild and contributor details.

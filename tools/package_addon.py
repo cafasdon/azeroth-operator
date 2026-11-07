@@ -18,16 +18,21 @@ def render_entries(family, variant, interface, version):
     if type(interface) is not int or not 1 <= interface <= 999999:
         raise ValueError("Invalid interface")
     adapter = f'local _, AO = ...\nAO.family = "{family}"\nAO.variant = "{variant}"\nAO.interface = {interface}\n'
+    capture_only = family == "forever"
+    notes = "Read-only character export" if capture_only else "Character export and player-applied macros"
+    saved = "AzerothOperatorExport" if capture_only else "AzerothOperatorExport, AzerothOperatorOperations"
     toc = f"""## Interface: {interface}
 ## Title: Azeroth Operator
-## Notes: Character export and player-applied macros; development build, not live-qualified
+## Notes: {notes}; development build, not live-qualified
 ## Author: cafasdon
 ## Version: {version}
-## SavedVariables: AzerothOperatorExport, AzerothOperatorOperations
+## SavedVariables: {saved}
 Adapter.lua
 Collectors.lua
 Core.lua
-MacroOperations.lua
+"""
+    if not capture_only:
+        toc += """MacroOperations.lua
 BindingOperations.lua
 BindingImport.lua
 EquipmentOperations.lua
@@ -61,8 +66,9 @@ MacroImport.lua
 MacroUI.lua
 """
     entries = {"Adapter.lua": adapter.encode(), "AzerothOperator.toc": toc.encode()}
-    for name in ("Collectors.lua", "Core.lua", "MacroOperations.lua", "BindingOperations.lua", "BindingImport.lua", "EquipmentOperations.lua", "EquipmentImport.lua", "BagCompatibility.lua", "BagOperations.lua", "BagImport.lua", "BagSwap.lua", "BagSwapImport.lua", "TalentOperations.lua", "TalentImport.lua", "TalentMetadata.lua", "TalentMetadataImport.lua", "TalentCreate.lua", "TalentCreateImport.lua", "TalentImportValidation.lua", "TalentImportEntries.lua", "TalentImportExecute.lua", "TalentImportDecode.lua", "ActionOperations.lua", "ActionImport.lua", "EquipmentSetOperations.lua", "EquipmentSetUse.lua", "EquipmentSetImport.lua", "EquipmentSetSpec.lua", "EquipmentSetSpecImport.lua", "EquipmentSetSaveState.lua", "EquipmentSetSave.lua", "EquipmentSetSaveImport.lua", "MacroImport.lua", "MacroUI.lua"):
-        entries[name] = (ROOT / "addon" / name).read_text(encoding="utf-8").replace("\r\n", "\n").encode()
+    for name in toc.splitlines():
+        if name and not name.startswith("#") and name != "Adapter.lua":
+            entries[name] = (ROOT / "addon" / name).read_text(encoding="utf-8").encode()
     return entries
 
 

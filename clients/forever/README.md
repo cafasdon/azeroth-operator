@@ -12,6 +12,16 @@ The `0.20.0-dev` Forever package passed byte and manifest verification, a packag
 
 ## In-game coverage
 
+### Capture-only installation checkpoint
+
+Forever `0.27.0-dev` contains only the adapter, collectors, export core and TOC. The ZIP SHA-256 is `e6190ec5842b0d273a029b7e87bb57ab5622890d9dff78104f40a2f1bd87a803`. The exact package passed a Lua export/import round trip, interface mismatch refusal and absence of the Apply handler. Retail and Classic package entries were verified byte-identical against the previous packager.
+
+The Windows release companion imported the complete synthetic Forever fixture. Its executable SHA-256 `aae7f17c0762d54a42ff76cc92aad4dbb5f27d7b00d84577931d92db6ba86550` was verified and selected in the existing sync configuration. The previous configuration is backed up in `local-data/sync/config-before-forever-capture.json`. The scheduled runner matches its source and ran at 16:15:41 SAST on 7 November 2026 with result 0. Forever returned `waiting_for_export` and Retail returned `unchanged` from its cached acknowledgement. The task reported no live game access.
+
+Caller and failure review checked package contents, installed-file drift, command import resolution and interrupted staging. The companion was verified before its atomic move and configuration selection. Jev advisory triage marked the cutover issues material (`jev-1.14.0`, request `58e7e1f9bc6b982a96ef0c0e6d86d52e75323d6d7c7c9b02108e1188d552c3d3`, 431 input/46 output tokens, 0.294 seconds). Forever was running and its addon directory was absent. The package was staged in the project. Installation, restart and native capture remain pending.
+
+### Coverage by system
+
 | Area | Current Forever support | Evidence needed |
 | --- | --- | --- |
 | Equipment, bags, character stats, basic talents, macros, bindings, professions, quests, currencies and achievements | Shared export candidates, with explicit unavailable sections when a collector fails | One real `/aoexport`, reload and MCP readback. Record the exact build/interface, missing sections and partial coverage |
