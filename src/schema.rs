@@ -431,6 +431,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("relative_difficulty", "text", false),
                     ("can_skill_up", "bool", false),
                     ("skill_ups_reported", "uint", false),
+                    ("cooldown", "map", false),
                     ("output_item_id", "positive", false),
                     ("base_output_quantity", "map", false),
                     ("requirements", "text", true),
@@ -459,6 +460,27 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     value["output_item_id"].as_u64().is_some()
                         && quantity["minimum"].as_u64() <= quantity["maximum"].as_u64(),
                     "Invalid recipe output range"
+                );
+            }
+            if let Some(cooldown) = value.get("cooldown").filter(|value| !value.is_null()) {
+                object(
+                    cooldown,
+                    &[
+                        ("remaining_seconds", "uint", false),
+                        ("daily", "bool", false),
+                        ("charges", "uint", false),
+                        ("max_charges", "positive", false),
+                    ],
+                )?;
+                let seconds = cooldown["remaining_seconds"].as_u64();
+                let charges = cooldown["charges"].as_u64();
+                let maximum = cooldown["max_charges"].as_u64();
+                ensure!(
+                    (seconds.is_some() || charges.is_some())
+                        && (cooldown["daily"].is_null() || seconds.is_some())
+                        && charges.is_some() == maximum.is_some()
+                        && charges <= maximum,
+                    "Invalid recipe cooldown observation"
                 );
             }
             let reagents = value["reagents"].as_object().unwrap();

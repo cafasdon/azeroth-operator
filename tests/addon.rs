@@ -423,7 +423,8 @@ pub fn verify_forever_capture_fixture(
         ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end}
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
         Professions={InLocalCraftingMode=function() return localCrafting end}
-        C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end}
+        C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end,
+            GetRecipeCooldown=function(id) assert(id==100); return 12.1,false,1,3 end}
         local recipeInfo={recipeID=100,name='Fixture recipe',learned=true,
             relativeDifficulty=0,canSkillUp=true,numSkillUps=2}
         recipeSchematic={recipeID=100,outputItemID=456,quantityMin=2,quantityMax=3,isRecraft=false,recipeType=1,reagentSlotSchematics={
@@ -744,6 +745,20 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(recipe["recipe"]["relative_difficulty"], "optimal");
     assert_eq!(recipe["recipe"]["can_skill_up"], true);
     assert_eq!(recipe["recipe"]["skill_ups_reported"], 2);
+    assert_eq!(
+        recipe["recipe"]["cooldown"],
+        serde_json::json!({
+            "remaining_seconds":13,"daily":false,"charges":1,"max_charges":3
+        })
+    );
+    assert_eq!(recipe["shortfall_vs_observed_recipe_charges"], 1);
+    lua.load(
+        "issecretvalue=function(v) return v==12.1 end;
+        local cooldown=AO.collectors.selected_recipe().cooldown;
+        assert(cooldown.remaining_seconds==nil and cooldown.charges==1);
+        issecretvalue=nil",
+    )
+    .exec()?;
     lua.load(
         "issecretvalue=function(v) return v==3 end;
         local recipe=AO.collectors.selected_recipe();

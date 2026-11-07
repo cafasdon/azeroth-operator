@@ -59,6 +59,12 @@ The archive is in `dist/forever-recipe-yield` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with this field.
 
+The staged 0.35.0-dev candidate adds optional recipe cooldown and charge
+observations. The archive is in `dist/forever-recipe-cooldown` with SHA-256
+`0dab1f3299528a42dda5361e4591cb03a5dc23dbbe75155e356d85792d5c4d00`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with this field.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

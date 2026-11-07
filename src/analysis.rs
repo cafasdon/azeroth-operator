@@ -142,6 +142,8 @@ pub fn review_recipe_with_inventory(
         });
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "base_output_if_completed":base_output_if_completed,
+        "shortfall_vs_observed_recipe_charges":recipe["cooldown"]["charges"].as_u64()
+            .map(|charges| u64::from(crafts).saturating_sub(charges)),
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
         "material_capacity":{
             "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),

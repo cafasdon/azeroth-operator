@@ -452,6 +452,23 @@ AO.collectors.selected_recipe = function()
     if accessible(skillUps) and (skillUps==0 or positive(skillUps)) then
         result.skill_ups_reported=skillUps
     end
+    if info.learned then
+        local ok,cooldown=pcall(function()
+            local seconds,daily,charges,maximum=C_TradeSkillUI.GetRecipeCooldown(info.recipeID)
+            local result={}
+            if accessible(seconds) and type(seconds)=="number" and seconds>=0 and seconds<=4294967295 then
+                result.remaining_seconds=math.ceil(seconds)
+                if accessible(daily) and type(daily)=="boolean" then result.daily=daily end
+            end
+            if accessible(charges) and accessible(maximum) and positive(maximum)
+                and (charges==0 or positive(charges)) and charges<=maximum then
+                result.charges=charges
+                result.max_charges=maximum
+            end
+            if next(result) then return result end
+        end)
+        if ok then result.cooldown=cooldown end
+    end
     for _,slot in ipairs(slots) do
         assert(type(slot.required)=="boolean", "Reagent requirement unavailable")
         if slot.required then

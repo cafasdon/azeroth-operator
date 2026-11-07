@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture available Forever recipe cooldowns and show requested crafts exceeding observed charges.
+
 - Show bag shortfalls and suggested bank withdrawals for ordered Forever crafting batches.
 
 - Estimate starting materials for ordered Forever crafting batches that produce intermediate reagents.
