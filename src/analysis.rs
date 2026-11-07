@@ -18,13 +18,15 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
 pub fn recipe_tracking(snapshot: &Snapshot, recipe_id: u64) -> Value {
     let tracked = snapshot.sections.get("tracked_recipes");
     let key = recipe_id.to_string();
-    let membership = |group: &str| {
-        tracked?
-            .get(group)?
-            .as_object()
-            .map(|rows| rows.contains_key(&key))
-    };
-    json!({"tracked_as_craft":membership("crafts"),"tracked_as_recraft":membership("recrafts")})
+    let observation = |group: &str| tracked?.get(group)?.as_object().map(|rows| rows.get(&key));
+    let craft = observation("crafts");
+    let recraft = observation("recrafts");
+    json!({
+        "tracked_as_craft":craft.map(|row| row.is_some()),
+        "tracked_as_recraft":recraft.map(|row| row.is_some()),
+        "tracked_craft_learned":craft.flatten().and_then(|row| row["learned"].as_bool()),
+        "tracked_recraft_learned":recraft.flatten().and_then(|row| row["learned"].as_bool())
+    })
 }
 
 pub fn plan_recipe(

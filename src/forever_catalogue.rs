@@ -2249,9 +2249,12 @@ impl EquipmentCatalogue {
                     let (count, references) = matches.get(&id)?;
                     let selected = snapshot.sections.get("selected_recipe")
                         .filter(|recipe| recipe["recipe_id"].as_u64() == Some(id));
-                    let observed_recipe = (*count > 0 || selected.is_some()).then(|| json!({
+                    let tracking = crate::analysis::recipe_tracking(snapshot, id);
+                    let tracked = tracking["tracked_as_craft"].as_bool() == Some(true)
+                        || tracking["tracked_as_recraft"].as_bool() == Some(true);
+                    let observed_recipe = (*count > 0 || selected.is_some() || tracked).then(|| json!({
                         "selected_recipe_learned":selected.and_then(|recipe| recipe["learned"].as_bool()),
-                        "tracking":crate::analysis::recipe_tracking(snapshot,id)
+                        "tracking":tracking
                     }));
                     Some((
                         position,

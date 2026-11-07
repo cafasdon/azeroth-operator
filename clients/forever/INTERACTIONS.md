@@ -182,10 +182,11 @@ enchant sources. It keeps reward positions and shows up to eight references
 per spell with the full match count. A match identifies a catalogue recipe
 association. The quest reward and the character's learned recipes remain
 separate observations.
-For a catalogue recipe match or an exact selected recipe ID, `observed_recipe`
-also reports saved tracking and any learned flag from the matching selected
-recipe in the same snapshot. Missing learned status stays unknown, even if
-the reward spell is present in the player's spellbook.
+For a catalogue recipe match or an exact selected or tracked recipe ID,
+`observed_recipe` also reports saved tracking and learned flags from the
+same snapshot. Selected, tracked craft and tracked recraft flags stay
+separate. Missing learned status stays unknown, even if the reward spell
+is present in the player's spellbook.
 
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same
@@ -292,6 +293,8 @@ field. [Forever recipe metadata](https://raw.githubusercontent.com/Gethe/wow-ui-
 Tracking comes from that recipe's own capture, including when the review
 uses another snapshot for material counts. It remains separate from the
 recipe's captured learned status.
+`tracked_craft_learned` and `tracked_recraft_learned` preserve the learned
+flags in the corresponding tracking rows when available.
 
 A selected recipe can include its observed `profession` ID, name, rank and
 cap. The review reports `profession_points_to_observed_cap` when a positive

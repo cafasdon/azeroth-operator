@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show separate tracked craft and recraft learned flags in Forever recipe and quest reward reviews.
+
 - Capture observed learned status for player-tracked Forever recipes.
 
 - Find saved Forever schematic captures by exact recipe ID for material review.
