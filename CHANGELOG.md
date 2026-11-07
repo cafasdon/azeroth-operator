@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exclude gear with observed character requirement conflicts from Forever catalogue searches.
+
 - Filter Forever catalogue searches by simulator equipment slot and minimum recorded item level.
 
 - Filter Forever catalogue items by observed ownership in a saved inventory.

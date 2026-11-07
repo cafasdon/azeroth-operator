@@ -152,6 +152,9 @@ pub struct Query {
     pub acquisition_snapshot_id: Option<String>,
     /// Filter by base item presence in the supplied snapshot. Absent requires all four storage sections.
     pub observed_ownership: Option<ObservedOwnership>,
+    /// Keep gear without a known conflict against the supplied saved character.
+    #[serde(default)]
+    pub exclude_observed_requirement_conflicts: bool,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
     /// Build simulator inputs for an exact encounter preset path.
@@ -285,8 +288,19 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     } else {
         None
     };
+    let check_requirements = if query.exclude_observed_requirement_conflicts {
+        let snapshot = snapshot
+            .filter(|snapshot| snapshot.client.family == Family::Forever)
+            .ok_or_else(|| {
+                anyhow::anyhow!("Requirement filtering requires a saved Forever snapshot")
+            })?;
+        Some(item_requirement_check(snapshot))
+    } else {
+        None
+    };
     let item_filter = item_ids.is_some()
         || ownership.is_some()
+        || check_requirements.is_some()
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
@@ -432,6 +446,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 && matches_vendor
                 && matches_reputation
                 && matches_source
+                && check_requirements
+                    .as_ref()
+                    .is_none_or(|check| !simulator_slots(row).is_empty() && check(row).is_none())
             {
                 if remaining_offset > 0 {
                     remaining_offset -= 1;
@@ -1195,6 +1212,23 @@ fn requirement_check(
     snapshot: &Snapshot,
 ) -> impl Fn(&Value, &crate::planning::EquipmentSelection) -> Option<Value> {
     use crate::planning::ItemLocation;
+    let check = item_requirement_check(snapshot);
+    move |item, selection| {
+        if selection.source
+            == (ItemLocation::Equipment {
+                slot: selection.target_slot,
+            })
+        {
+            return None;
+        }
+        let mut conflict = check(item)?;
+        conflict["slot"] = json!(selection.target_slot);
+        conflict["item_id"] = json!(selection.expected_item_id);
+        Some(conflict)
+    }
+}
+
+fn item_requirement_check(snapshot: &Snapshot) -> impl Fn(&Value) -> Option<Value> {
     let stats = snapshot.sections.get("stats").unwrap_or(&Value::Null);
     let level = stats["level"].as_u64().filter(|level| *level > 0);
     let faction = stats["faction"].as_str();
@@ -1215,14 +1249,7 @@ fn requirement_check(
         .sections
         .get("professions")
         .and_then(Value::as_object);
-    move |item, selection| {
-        if selection.source
-            == (ItemLocation::Equipment {
-                slot: selection.target_slot,
-            })
-        {
-            return None;
-        }
+    move |item| {
         let level_conflict = level
             .zip(item["reqLvl"].as_u64())
             .is_some_and(|(level, required)| level < required);
@@ -1269,7 +1296,6 @@ fn requirement_check(
             || proficiency.is_some())
         .then(|| {
             let mut conflict = json!({
-                "slot":selection.target_slot,"item_id":selection.expected_item_id,
                 "below_required_level":level_conflict,"class_excluded":class_conflict
             });
             if let Some(id) = missing_skill_line {

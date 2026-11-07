@@ -127,6 +127,13 @@ matching uses the pinned simulator's item placement rules. This gives
 candidate gear for the slot, with character eligibility and complete-set
 legality evaluated separately.
 
+With a Forever `acquisition_snapshot_id`, set
+`exclude_observed_requirement_conflicts: true` to keep equippable catalogue
+records and remove candidates with a known level, class, proficiency,
+faction or profession conflict. Missing observations leave those checks
+undecided. The filter evaluates individual catalogue items and does not
+verify complete-set legality or live equip eligibility.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With
