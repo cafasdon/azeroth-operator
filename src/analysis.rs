@@ -285,6 +285,7 @@ pub struct ComparisonSelectors {
     pub quest_id: Option<u32>,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
+    pub wallet: bool,
 }
 
 pub fn compare_observations(
@@ -435,6 +436,24 @@ pub fn compare_observations(
         comparison["profession_change"] = json!({
             "skill_line":skill_line,"before_status":before_status,"after_status":after_status,
             "before":previous,"after":current,"rank_delta":rank_delta
+        });
+    }
+    if selectors.wallet {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Wallet comparisons require Forever snapshots"
+        );
+        let copper = |snapshot: &Snapshot| {
+            snapshot
+                .sections
+                .get("wallet")
+                .and_then(|section| section["copper"].as_i64())
+        };
+        let previous = copper(before);
+        let current = copper(after);
+        comparison["wallet_change"] = json!({
+            "before_copper":previous,"after_copper":current,
+            "delta_copper":previous.zip(current).map(|(a,b)| b-a)
         });
     }
     Ok(comparison)

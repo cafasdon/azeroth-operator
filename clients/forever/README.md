@@ -270,6 +270,10 @@ and `section: "wallet"`. The capture uses Blizzard's `GetMoney` UI API.
 Use a wallet-aware importer and reader before syncing these exports.
 [Generated Forever UI documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/PlayerScriptDocumentation.lua)
 
+Pass `wallet: true` to `compare_snapshots` to report the net change in copper
+between two compatible wallet captures. A missing wallet leaves its value and
+the net change unknown. The result reports balances and net change only.
+
 Pass `faction_id` to `compare_snapshots` for captured reputation before and
 after. The signed standing change is available when both records have standard
 standing and the same account scope. Friendship, renown, paragon and unknown

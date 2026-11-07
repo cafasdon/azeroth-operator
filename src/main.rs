@@ -62,6 +62,9 @@ struct Compare {
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
     profession_skill_line: Option<std::num::NonZeroU32>,
+    /// Include a net change in captured Forever wallet copper.
+    #[serde(default)]
+    wallet: bool,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -635,7 +638,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever currency, reputation and tracked achievement comparisons.",
+        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever wallet, currency, reputation and tracked achievement comparisons.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -656,6 +659,7 @@ impl Operator {
                     quest_id: args.quest_id.map(|id| id.get()),
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
+                    wallet: args.wallet,
                 },
             )
         })();

@@ -204,12 +204,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after = json.loads(json.dumps(forever))
                         reputation_after["character"]["realm"] = "First"
                         reputation_after["sections"]["reputation"]["entries"]["10"]["standing"] = -20
+                        reputation_after["sections"]["wallet"]["copper"] = 0
                         reputation_after["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 3
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]["1"]["quantity"] = 2
                         reputation_after["sections"]["quests"]["42"]["objectives"]["1"]["fulfilled"] = 2
                         after_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         rep_diff = await session.call_tool("compare_snapshots", {
-                            "before_id":forever_key,"after_id":after_key,"faction_id":10})
+                            "before_id":forever_key,"after_id":after_key,"faction_id":10,"wallet":True})
                         self.assertFalse(rep_diff.isError)
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
                                          ["/entries/10/standing"])
@@ -223,12 +224,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(standing["standing_delta"], 30)
                         self.assertEqual(standing["before"]["standing"], -50)
                         self.assertEqual(standing["after"]["standing"], -20)
+                        self.assertEqual(json.loads(rep_diff.content[0].text)["wallet_change"], {
+                            "before_copper": 5_000_000_001, "after_copper": 0, "delta_copper": -5_000_000_001})
                         reputation_after["sections"]["reputation"]["entries"]["10"]["kind"] = "renown"
+                        del reputation_after["sections"]["wallet"]
                         renown_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         renown = await session.call_tool("compare_snapshots", {
-                            "before_id":after_key,"after_id":renown_key,"faction_id":10})
+                            "before_id":after_key,"after_id":renown_key,"faction_id":10,"wallet":True})
                         self.assertFalse(renown.isError)
                         self.assertIsNone(json.loads(renown.content[0].text)["reputation_change"]["standing_delta"])
+                        self.assertEqual(json.loads(renown.content[0].text)["wallet_change"], {
+                            "before_copper": 0, "after_copper": None, "delta_copper": None})
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]

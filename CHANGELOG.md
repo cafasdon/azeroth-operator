@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured Forever wallet balances on explicit request.
+
 - Add an explicit Forever wallet export and owner-scoped MCP readback.
 
 - Find an item across up to eight explicitly selected snapshots without combining shared bank totals.
