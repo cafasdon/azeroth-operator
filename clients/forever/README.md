@@ -439,6 +439,19 @@ point estimates. These are two fixture runs with different final iteration
 counts. They measure shortlist agreement on those inputs, including an
 actual cull. Near-tie recall on other gear pools remains unmeasured.
 
+An offline follow-up held that gear pool, duration and duration variation
+fixed and used seed 20261109 for both `Default/Raid Target` and
+`Default/Movement`. Both profiles came from the local MCP catalogue. The
+fixed pass ran all 72 sets at 1,000 iterations each. Bulk screened 71
+candidates at 1,000 iterations for Raid Target and 1,030 for Movement, then
+advanced five to 10,000 in each profile. The ordered top five agreed with
+the fixed pass in both profiles and the same sets won in this fixture.
+
+| Preset | Fixed wall time | Bulk wall time | Fixed top five missed |
+| --- | ---: | ---: | ---: |
+| Default/Raid Target | 24.49 s | 6.73 s | 0 |
+| Default/Movement | 24.98 s | 6.82 s | 0 |
+
 A separate cutoff check used 48 chest alternatives from the public Hunter
 fixture, one target, three seconds of duration variation and 1,000 fixed
 iterations per distinct gear set. It ran each profile with both `--top 5`
