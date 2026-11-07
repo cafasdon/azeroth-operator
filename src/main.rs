@@ -58,6 +58,8 @@ struct Inspect {
     quest_difficulty: Option<QuestDifficulty>,
     /// Filter saved Forever quests by captured turn-in readiness.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
+    /// Keep saved Forever quests with at most this many seconds remaining at capture.
+    quest_max_remaining_seconds: Option<u32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
@@ -919,6 +921,7 @@ impl Operator {
                 || args.quest_waypoint_map_id.is_some()
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
+                || args.quest_max_remaining_seconds.is_some()
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
@@ -960,6 +963,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest readiness selection requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_max_remaining_seconds.is_some()
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest timer selection requires the quests section without a quest ID",
             )]);
         }
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
@@ -1087,6 +1097,7 @@ impl Operator {
                 if args.quest_waypoint_map_id.is_some()
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
+                    || args.quest_max_remaining_seconds.is_some()
                 {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
@@ -1129,6 +1140,19 @@ impl Operator {
                                 azeroth_operator::analysis::quest_readiness(quest) == readiness
                             });
                         }
+                    }
+                    if let Some(maximum) = args.quest_max_remaining_seconds {
+                        value["quest_max_remaining_seconds"] = serde_json::json!(maximum);
+                        value["quest_timer_unknown_count"] =
+                            serde_json::json!(data.as_object_mut().map(|quests| {
+                                let mut unknown = 0;
+                                quests.retain(|_, quest| {
+                                    let remaining = quest["timer"]["remaining_seconds"].as_u64();
+                                    unknown += usize::from(remaining.is_none());
+                                    remaining.is_some_and(|seconds| seconds <= u64::from(maximum))
+                                });
+                                unknown
+                            }));
                     }
                     value["quest_checklist"] =
                         data.as_object().map_or(serde_json::Value::Null, |quests| {

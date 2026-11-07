@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever quests by recorded time remaining.
+
 - Filter saved Forever quests by captured turn-in readiness alongside waypoint and difficulty.
 
 - Capture names and player spellbook presence for saved Forever quest reward spells.

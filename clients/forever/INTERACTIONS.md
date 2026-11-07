@@ -208,6 +208,11 @@ return only quests in that checklist category. A captured failure takes
 precedence over the ready flag. This filter combines with waypoint and
 difficulty filters and requires the quests section without a quest ID.
 
+Use `quest_max_remaining_seconds` to include only quests with a recorded
+timer at or below the given number of seconds. Zero matches recorded zero
+seconds. Quests without a usable timer are counted separately after any
+waypoint, difficulty or readiness filters. This uses the timer at export.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,
