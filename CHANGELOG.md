@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show bag shortfalls and suggested bank withdrawals for ordered Forever crafting batches.
+
 - Estimate starting materials for ordered Forever crafting batches that produce intermediate reagents.
 
 - Plan Forever crafting materials from a target base item quantity.

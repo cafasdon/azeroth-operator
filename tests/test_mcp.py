@@ -610,22 +610,42 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         intermediate_key = SnapshotStore(Path(folder)).ingest(intermediate_user)
                         producer = {"snapshot_id": second_key, "crafts": 2}
                         consumer = {"snapshot_id": intermediate_key, "crafts": 1}
-                        async def starting_materials(*recipes):
+                        async def starting_materials(*recipes, stock_key=inventory_key):
                             response = await session.call_tool("review_forever_recipe", {
-                                **batch_request, "additional_recipes": list(recipes)})
+                                **batch_request, "inventory_snapshot_id": stock_key,
+                                "additional_recipes": list(recipes)})
                             self.assertFalse(response.isError)
                             return json.loads(response.content[0].text)["ordered_starting_materials"]
                         forward = await starting_materials(producer, consumer)
                         reverse = await starting_materials(consumer, producer)
                         self.assertEqual(next(row for row in forward if row["item_id"] == 456),
                                          {"item_id": 456, "required_before_batch": 1,
-                                          "quantity_observed": 0, "shortfall_vs_observed": 1})
+                                          "quantity_observed": 0, "shortfall_vs_observed": 1,
+                                          "shortfall_vs_bags": 1,
+                                          "suggested_bank_withdrawals": {"character_bank": None, "account_bank": 0}})
                         self.assertEqual(next(row for row in reverse if row["item_id"] == 456)
                                          ["required_before_batch"], 5)
                         unknown = await starting_materials(
                             {"snapshot_id": unknown_output_key, "crafts": 2}, consumer)
                         self.assertEqual(next(row for row in unknown if row["item_id"] == 456)
                                          ["required_before_batch"], 5)
+                        bank_stock = json.loads(json.dumps(refreshed))
+                        bank_stock["sections"]["character_bank"] = {
+                            "6": {"1": {"item_id": 456, "count": 2}}}
+                        bank_stock["sections"]["account_bank"] = {
+                            "13": {"1": {"item_id": 456, "count": 9}}}
+                        bank_stock_key = SnapshotStore(Path(folder)).ingest(bank_stock)
+                        withdrawal_plan = await starting_materials(consumer, producer, stock_key=bank_stock_key)
+                        item_plan = next(row for row in withdrawal_plan if row["item_id"] == 456)
+                        self.assertEqual(item_plan["shortfall_vs_observed"], 0)
+                        self.assertEqual(item_plan["shortfall_vs_bags"], 5)
+                        self.assertEqual(item_plan["suggested_bank_withdrawals"],
+                                         {"character_bank": 2, "account_bank": 3})
+                        del bank_stock["sections"]["bags"]
+                        missing_bags_key = SnapshotStore(Path(folder)).ingest(bank_stock)
+                        bank_only = await starting_materials(consumer, producer, stock_key=missing_bags_key)
+                        self.assertIsNone(next(row for row in bank_only if row["item_id"] == 456)
+                                          ["suggested_bank_withdrawals"])
                         duplicate = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
                         self.assertTrue(duplicate.isError)

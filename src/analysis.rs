@@ -227,13 +227,36 @@ pub fn ordered_recipe_materials<'a>(
                 .ok_or_else(|| anyhow::anyhow!("Output balance overflow"))?;
         }
     }
-    Ok(json!(materials.iter().map(|material| {
-        let item = material["item_id"].as_u64().ok_or_else(|| anyhow::anyhow!("Missing combined reagent ID"))?;
-        let required = starting_stock.get(&item).ok_or_else(|| anyhow::anyhow!("Missing starting stock estimate"))?;
+    let mut starting_materials = Vec::new();
+    for material in materials {
+        let item = material["item_id"]
+            .as_u64()
+            .ok_or_else(|| anyhow::anyhow!("Missing combined reagent ID"))?;
+        let required = *starting_stock
+            .get(&item)
+            .ok_or_else(|| anyhow::anyhow!("Missing starting stock estimate"))?;
         let observed = material["quantity_observed"].as_u64();
-        Ok(json!({"item_id":item,"required_before_batch":required,"quantity_observed":observed,
-            "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity))}))
-    }).collect::<Result<Vec<_>>>()?))
+        let by_storage = &material["quantity_by_storage"];
+        let bag_shortfall = by_storage["bags"]
+            .as_u64()
+            .map(|count| required.saturating_sub(count));
+        let withdrawals = bag_shortfall.map(|shortfall| {
+            let character_bank = by_storage["character_bank"]
+                .as_u64()
+                .map(|count| count.min(shortfall));
+            let remaining = shortfall - character_bank.unwrap_or(0);
+            let account_bank = by_storage["account_bank"]
+                .as_u64()
+                .map(|count| count.min(remaining));
+            json!({"character_bank":character_bank,"account_bank":account_bank})
+        });
+        starting_materials.push(json!({
+            "item_id":item,"required_before_batch":required,"quantity_observed":observed,
+            "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity)),
+            "shortfall_vs_bags":bag_shortfall,"suggested_bank_withdrawals":withdrawals
+        }));
+    }
+    Ok(json!(starting_materials))
 }
 
 pub fn combine_recipe_outputs<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
