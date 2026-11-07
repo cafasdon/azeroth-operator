@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare recorded effect buff IDs with the saved Forever equipped item.
+
 - Find Forever catalogue items by recorded buff spell ID and effect trigger.
 
 - Filter Forever weapons by recorded base DPS and an inclusive weapon speed range.

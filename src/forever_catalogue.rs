@@ -499,9 +499,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 || row["itemEffects"].as_array().is_some_and(|effects| {
                     effects.iter().any(|effect| {
                         query.item_effect_buff_id.is_none_or(|id| {
-                            let id = Some(u64::from(id.get()));
-                            effect["buffId"].as_u64() == id
-                                || effect["stackingAura"]["buffId"].as_u64() == id
+                            effect_buff_ids(effect).any(|buff| buff == u64::from(id.get()))
                         }) && query
                             .item_effect_trigger
                             .as_ref()
@@ -661,7 +659,31 @@ struct EquippedSlot {
     item_id: Option<u64>,
     level: Option<i64>,
     weapon_dps: Option<f64>,
+    effect_ids: Option<BTreeSet<u64>>,
     regular_stats: Option<serde_json::Map<String, Value>>,
+}
+
+fn effect_buff_ids(effect: &Value) -> impl Iterator<Item = u64> {
+    [
+        effect["buffId"].as_u64(),
+        effect["stackingAura"]["buffId"].as_u64(),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|id| *id > 0)
+}
+
+fn recorded_effect_ids(item: &Value) -> Option<BTreeSet<u64>> {
+    match item.get("itemEffects") {
+        Some(effects) => Some(
+            effects
+                .as_array()?
+                .iter()
+                .flat_map(effect_buff_ids)
+                .collect(),
+        ),
+        None => Some(BTreeSet::new()),
+    }
 }
 
 fn default_item_level(item: &Value) -> Option<i64> {
@@ -742,6 +764,7 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
         item_id,
         level: equipped.and_then(default_item_level),
         weapon_dps: equipped.and_then(default_weapon_dps),
+        effect_ids: equipped.and_then(recorded_effect_ids),
         regular_stats: equipped.and_then(default_regular_stats),
     }
 }
@@ -759,10 +782,18 @@ impl EquippedSlot {
                     let candidate = default_regular_stats(item)?;
                     regular_stat_delta(equipped, &candidate)
                 });
+                let effect_changes = self.effect_ids.as_ref().and_then(|equipped| {
+                    let candidate = recorded_effect_ids(item)?;
+                    Some(json!({
+                        "added_buff_ids":candidate.difference(equipped).collect::<Vec<_>>(),
+                        "removed_buff_ids":equipped.difference(&candidate).collect::<Vec<_>>(),
+                    }))
+                });
                 json!({"item_id":item["id"],"default_item_level":level,
                     "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped)),
                     "default_regular_stat_delta":stat_delta,
-                    "default_weapon_dps":weapon_dps,"default_weapon_dps_delta":weapon_dps_delta})
+                    "default_weapon_dps":weapon_dps,"default_weapon_dps_delta":weapon_dps_delta,
+                    "catalogue_effect_buff_changes":effect_changes})
             })
             .collect();
         json!({"simulator_slot":self.slot,"equipment_observed":self.observed,"equipped_item_id":self.item_id,

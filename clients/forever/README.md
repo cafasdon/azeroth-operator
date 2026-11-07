@@ -134,7 +134,11 @@ simulator stat ID. A null delta map means the default scaling record was
 unavailable. Stat gains are positive and losses are negative. These are
 regular base stats only, excluding weapon damage, pseudo-stats, procs and
 modifiers. The comparison uses base IDs and
-does not account for modifiers or measure damage. Set
+does not account for modifiers or measure damage. It also shows
+`catalogue_effect_buff_changes` for buffs added or removed from the two
+catalogue records, including nested stacking aura IDs. An uncatalogued
+baseline gives null. An item with no recorded effects contributes an empty
+set, which describes catalogue coverage only. Set
 `minimum_item_level_gain` to a positive number to keep only candidates
 meeting that gain before pagination. This filter requires a known equipped
 level in the requested slot. Use `minimum_stat_gain` with `stat_id` and
