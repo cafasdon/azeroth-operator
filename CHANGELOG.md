@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report equipped set-piece counts for ranked Forever drafts, including retained pieces.
+
 - Rank owned Forever gear combinations from a selected catalogue set.
 
 - Collapse equivalent Forever one-handed storage copies while preserving dual-wield combinations.

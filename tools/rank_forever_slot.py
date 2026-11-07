@@ -164,6 +164,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         baseline = await call("review_equipment_selection", selections=[])
         if not baseline["checks"]["simulator_equipment_spec"]:
             raise ValueError("Captured baseline has unresolved equipment")
+        set_observation = None
+        if set_id is not None:
+            set_observation = (await call("review_forever_owned_gear", set_id=set_id, limit=1))["set_observation"]
         drafts = [([], baseline)]
         skipped = []
         options = []
@@ -212,10 +215,10 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
             else:
                 skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
-        return drafts, skipped, coverage, stats.get("data") or {}, selected_capture
+        return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation
 
 
-def rank_encounter(args, template, encounter, drafts):
+def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
               if args.bulk_engine else None)
@@ -223,6 +226,9 @@ def rank_encounter(args, template, encounter, drafts):
         result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
     for row in result["results"]:
         selections, draft = drafts[row["review"] - 1]
+        if set_piece_ids is not None:
+            equipment = draft["checks"]["simulator_equipment_spec"]["items"]
+            row["selected_set_equipped_pieces"] = sum(item.get("id") in set_piece_ids for item in equipment)
         cleared = draft["checks"].get("simulator_cleared_equipment_slots")
         if cleared:
             row["cleared_equipment_slots"] = cleared
@@ -247,6 +253,11 @@ def weighted_ranking(rankings, weights):
         raise ValueError("Weighted ranking requires every draft in every encounter")
     results = [{"review": review, "weighted_dps_gain_pct": 100 * fsum(parts)}
                for review, parts in gains.items()]
+    set_counts = {row["review"]: row["selected_set_equipped_pieces"]
+                  for row in rankings[0]["results"] if "selected_set_equipped_pieces" in row}
+    for row in results:
+        if row["review"] in set_counts:
+            row["selected_set_equipped_pieces"] = set_counts[row["review"]]
     results.sort(key=lambda row: (-row["weighted_dps_gain_pct"], row["review"]))
     return {"encounter_weights": weights, "results": results}
 
@@ -309,20 +320,22 @@ def main():
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
-            drafts, skipped, coverage, stats, selected_capture = asyncio.run(asyncio.wait_for(
+            drafts, skipped, coverage, stats, selected_capture, set_observation = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id), timeout=45,
             ))
         identity = check_template_identity(template, stats)
+        set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
+                         if set_observation is not None else None)
         if len(encounters) == 1:
-            result = rank_encounter(args, template, encounters[0], drafts)
+            result = rank_encounter(args, template, encounters[0], drafts, set_piece_ids)
         else:
             for encounter in encounters:
                 request_from(template, drafts[0][1], encounter)
             rankings = []
             for index, encounter in enumerate(encounters, 1):
-                ranking = rank_encounter(args, template, encounter, drafts)
+                ranking = rank_encounter(args, template, encounter, drafts, set_piece_ids)
                 profile = encounter["simulation_input"]["encounter"]
                 ranking.update(
                     encounter_index=index,
@@ -341,6 +354,8 @@ def main():
             result["requested_item_ids"] = args.item_id
         if args.set_id is not None:
             result["requested_set_id"] = args.set_id
+            result["set_catalogue_piece_count"] = len(set_piece_ids)
+            result["observed_distinct_set_pieces"] = set_observation["observed_distinct_pieces"]
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]
         else:

@@ -156,6 +156,10 @@ IDs in the selected slots and the observed storage. MCP callers can use
 Use `--set-id` to restrict alternatives to pieces of one pinned catalogue
 set. This can be combined with `--item-id`, in which case a candidate must
 match both filters. The complete equipped baseline is still included.
+Each encounter and weighted result row counts occupied simulator slots belonging to that catalogue
+set, including retained equipment. The response also reports catalogue piece
+count and distinct pieces observed across storage. These are set membership
+counts, with bonus effects evaluated by the simulator.
 
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
