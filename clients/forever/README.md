@@ -77,10 +77,25 @@ The archive is in `dist/forever-tracked-recipes` with SHA-256
 The packaged Lua round trip passed. Update the reader and importer before
 syncing captures with this section.
 
+The staged `0.38.0-dev` quest review candidate is in
+`dist/forever-quest-review`, built from `261873b` for interface `16001`.
+The ZIP SHA-256 is
+`57eb2a06ca64c122a0faf4ab4a00bc57e36ed2fbe66ca4c75d8e9af548f826e5`.
+The packaged Lua fixture passed export/import and rejected a changed
+interface. The same ZIP installed on a synthetic Windows client with all
+four hashes matching and refused to overwrite the existing directory.
+
+The matching staged Windows release companion is
+`dist/forever-quest-review/azeroth-operator.exe`, SHA-256
+`5cba3812f0e8352e67d218e3884d7068cbda0f6eb067ccc2864b56a803467b06`.
+It accepted synthetic quest data via `import-stdin` and served the timer,
+difficulty and waypoint-filtered checklist through MCP stdio. Update the
+reader and importer before syncing these fields. Native capture is pending.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
-$manifest = (Resolve-Path 'dist/forever-enchant-capture/AzerothOperator-0.28.0-dev-forever-live.manifest.json').Path
+$manifest = (Resolve-Path 'dist/forever-quest-review/AzerothOperator-0.38.0-dev-forever-live.manifest.json').Path
 python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
 ```
 
