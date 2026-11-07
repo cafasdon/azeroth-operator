@@ -87,6 +87,15 @@ The pinned Forever bulk engine already has staged culling and reuses samples for
 
 On Windows, the same public Survival Melee Hunter fixture, 180-second one-target profile and seed 20261107 took 0.271 s at 100 iterations, 1.133 s at 1,000 and 4.944 s at 5,000. Approximate 95% DPS half-widths were 7.20, 1.98 and 0.88 respectively, using 1.96 × sample standard deviation divided by the square root of iterations. These are individual CLI wall-time observations including startup. They measure precision cost for one profile, with no bulk speedup or rank-recall claim.
 
+A second offline check ran the pinned Hunter defaults and `turret.apl.siml` using `siml sim` with `settingsFile`. Copies of the defaults changed only the encounter duration to 45 or 180 seconds and selected either `p1.gear.siml` or `p1_melee.gear.siml`. Both profiles kept one target and five seconds of duration variation. Each gear and duration pair used 1,000 iterations on seeds 20261107–20261109.
+
+| Duration | P1 mean DPS range | P1 Melee mean DPS range | Approximate individual 95% half-widths |
+| --- | --- | --- | --- |
+| 45 s | 889.702–889.834 | 892.775–892.942 | 3.52–3.58 DPS |
+| 180 s | 828.990–829.013 | 831.810–831.854 | 1.66–1.67 DPS |
+
+The duration change shifted both DPS estimates and their precision. The order stayed the same and the individual intervals overlapped in both scenarios. These are per-profile intervals, with no paired-difference estimate or claim that the gear sets are tied. P1 CLI wall time was 0.273–0.309 s for 45 seconds and 0.504–0.519 s for 180 seconds. This synthetic check covers duration only. It adds no evidence about add waves, movement or native encounter accuracy.
+
 With a configured local catalogue, `review_equipment_selection` checks whether the draft leaves an item in the off-hand while placing or retaining a catalogue two-handed main-hand item. The check overlays requested targets and removes moved sources from their original slots. It covers that single conflict. Full weapon pairing and equip legality remain unknown.
 
 **Owned gear capture.** The Forever exporter now records character-bank and account-bank containers separately when the bank is open and each visible bank's tab and free-slot counts reconcile. It retains item links and available GUIDs alongside the occupied slots. A closed or unreadable bank is unavailable, while an observed empty bank is reported as zero. The Rust MCP exposes both sections through `inspect_snapshot` and counts through `character_summary`. The updated reader and importer must be in place before using this addon with the hosted sync path.
