@@ -385,7 +385,8 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                     "item_id":item["id"],"source_index":index+1,"quest_id":id,
                     "quest_observed":row.is_some(),
                     "ready_for_turn_in":row.and_then(|quest| quest["ready_for_turn_in"].as_bool()),
-                    "failed":row.and_then(|quest| quest["failed"].as_bool())
+                    "failed":row.and_then(|quest| quest["failed"].as_bool()),
+                    "unfinished_objectives":crate::analysis::unfinished_quest_objectives(row)
                 }));
             }
             if let Some(id) = source["rep"]["repFactionId"].as_u64().filter(|id| *id > 0) {

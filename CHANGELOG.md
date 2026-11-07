@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved unfinished quest objectives on Forever catalogue reward sources.
+
 - Compare captured character faction with Forever catalogue vendor and reputation source tags.
 
 - Compare Forever catalogue reputation requirements with captured standard faction reactions.
