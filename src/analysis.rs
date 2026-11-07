@@ -140,7 +140,17 @@ pub fn review_recipe_with_inventory(
             json!({"item_id":recipe["output_item_id"],"minimum":minimum * u64::from(crafts),
                 "maximum":maximum * u64::from(crafts)})
         });
+    let tracked = snapshot.sections.get("tracked_recipes");
+    let recipe_id = recipe["recipe_id"].as_u64().map(|id| id.to_string());
+    let membership = |group: &str| {
+        tracked?
+            .get(group)?
+            .as_object()
+            .zip(recipe_id.as_deref())
+            .map(|(rows, id)| rows.contains_key(id))
+    };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
+        "recipe_tracking":{"tracked_as_craft":membership("crafts"),"tracked_as_recraft":membership("recrafts")},
         "base_output_if_completed":base_output_if_completed,
         "shortfall_vs_observed_recipe_charges":recipe["cooldown"]["charges"].as_u64()
             .map(|charges| u64::from(crafts).saturating_sub(charges)),

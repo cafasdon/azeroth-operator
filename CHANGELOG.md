@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved craft and recraft tracking in individual and batch Forever recipe reviews.
+
 - Inspect craft and recraft tracking for one saved Forever recipe ID.
 
 - Filter saved Forever quest readiness by elite status or suggested group size, optionally by waypoint map.
