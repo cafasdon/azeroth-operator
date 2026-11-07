@@ -4,6 +4,13 @@ use anyhow::{Result, ensure};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Default)]
+struct ObservedReagent {
+    quantities: [u64; 3],
+    stack_count: usize,
+    locations: Vec<Value>,
+}
+
 pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
@@ -16,24 +23,32 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
         .ok_or_else(|| anyhow::anyhow!("Selected recipe was not captured"))?;
     let fixed = recipe["requirements"] == "fixed_items";
     let storage = ["bags", "character_bank", "account_bank"];
-    let mut observed: BTreeMap<&str, [u64; 3]> = BTreeMap::new();
+    let mut observed: BTreeMap<&str, ObservedReagent> = BTreeMap::new();
     let mut missing_storage = Vec::new();
     for (index, name) in storage.into_iter().enumerate() {
         let Some(containers) = snapshot.sections.get(name).and_then(Value::as_object) else {
             missing_storage.push(name);
             continue;
         };
-        for item in containers
-            .values()
-            .filter_map(Value::as_object)
-            .flat_map(|slots| slots.values())
-        {
-            if let (Some(id), Some(count)) = (item["item_id"].as_u64(), item["count"].as_u64())
-                && let Some((key, _)) = recipe["reagents"]
-                    .as_object()
-                    .and_then(|map| map.get_key_value(&id.to_string()))
-            {
-                observed.entry(key).or_default()[index] += count;
+        for (container, items) in containers {
+            let Some(slots) = items.as_object() else {
+                continue;
+            };
+            for (slot, item) in slots {
+                if let (Some(id), Some(count)) = (item["item_id"].as_u64(), item["count"].as_u64())
+                    && let Some((key, _)) = recipe["reagents"]
+                        .as_object()
+                        .and_then(|map| map.get_key_value(&id.to_string()))
+                {
+                    let reagent = observed.entry(key).or_default();
+                    reagent.quantities[index] += count;
+                    reagent.stack_count += 1;
+                    if reagent.locations.len() < 20 {
+                        reagent.locations.push(json!({
+                            "storage":name,"container":container,"slot":slot,"count":count
+                        }));
+                    }
+                }
             }
         }
     }
@@ -51,7 +66,8 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
                 .ok_or_else(|| anyhow::anyhow!("Invalid reagent quantity"))?;
             let item_id = id.parse::<u32>()?;
             let required = per_craft * u64::from(crafts);
-            let quantities = observed.get(id.as_str()).copied().unwrap_or_default();
+            let reagent = observed.remove(id.as_str()).unwrap_or_default();
+            let quantities = reagent.quantities;
             let available: u64 = quantities.iter().sum();
             bag_limits.push((item_id, quantities[0] / per_craft));
             observed_limits.push((item_id, available / per_craft));
@@ -63,7 +79,9 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
             materials.push(json!({"item_id":item_id, "required":required,
                 "quantity_observed":(missing_storage.len()<storage.len()).then_some(available),
                 "shortfall_vs_observed":(missing_storage.len()<storage.len()).then_some(required.saturating_sub(available)),
-                "quantity_by_storage":by_storage}));
+                "quantity_by_storage":by_storage,
+                "observed_stack_count":(missing_storage.len()<storage.len()).then_some(reagent.stack_count),
+                "observed_locations":reagent.locations}));
         }
     }
     let capacity = |limits: &[(u32, u64)], observed| {

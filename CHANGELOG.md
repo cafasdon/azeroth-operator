@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show where fixed Forever recipe reagents were observed in bags and banks.
+
 - Report Forever recipe material capacity and bottleneck reagents from bags and banks.
 
 - Let Forever gear searches collapse equivalent single-slot storage copies before expanding combinations.

@@ -216,6 +216,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(recipe_data["materials"], [{
                             "item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5,
                             "quantity_by_storage":{"bags":None,"character_bank":1,"account_bank":0},
+                            "observed_stack_count":1,
+                            "observed_locations":[{"storage":"character_bank","container":"6","slot":"1","count":1}],
                         }])
                         self.assertFalse(recipe_data["craftability_verified"])
                         self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
@@ -236,6 +238,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "bags": {"supported_crafts": 2, "limiting_item_ids": [744]},
                             "all_observed_storage": {"supported_crafts": 3, "limiting_item_ids": [10, 744]},
                         })
+                        forever["sections"]["bags"]["0"] = {
+                            str(slot): {"item_id": 744, "count": 2} for slot in range(1, 22)
+                        }
+                        capped_key = SnapshotStore(Path(folder)).ingest(forever)
+                        capped = await session.call_tool("review_forever_recipe", {
+                            "snapshot_id": capped_key, "crafts": 1})
+                        self.assertFalse(capped.isError)
+                        reagents = {row["item_id"]: row for row in json.loads(capped.content[0].text)["materials"]}
+                        self.assertEqual(reagents[744]["quantity_observed"], 43)
+                        self.assertEqual(reagents[744]["observed_stack_count"], 22)
+                        self.assertEqual(len(reagents[744]["observed_locations"]), 20)
+                        self.assertEqual(reagents[10]["observed_stack_count"], 0)
+                        self.assertEqual(reagents[10]["observed_locations"], [])
                         for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},
                                     {"snapshot_id":key,"crafts":1}):
                             self.assertTrue((await session.call_tool("review_forever_recipe", bad)).isError)
