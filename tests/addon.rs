@@ -401,6 +401,7 @@ pub fn verify_forever_capture_fixture(
         function UnitRace() return 'Orc','Orc' end
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
+        C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end}
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
         Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
@@ -715,6 +716,11 @@ pub fn verify_forever_capture_fixture(
     assert!(quests["43"].get("objectives").is_none());
     assert!(quests["43"].get("ready_for_turn_in").is_none());
     assert_eq!(quests["42"]["next_waypoint_map_id"], 1411);
+    assert_eq!(snapshot.sections["stats"]["map_id"], 1411);
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["quests_with_waypoint_on_captured_map"],
+        serde_json::json!([42])
+    );
     assert_eq!(quests["42"]["required_copper"], 250);
     assert_eq!(quests["43"]["required_copper"], 0);
     assert_eq!(quests["42"]["suggested_group_size"], 3);

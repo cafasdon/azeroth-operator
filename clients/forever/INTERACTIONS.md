@@ -276,6 +276,12 @@ quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response
 also counts quests with an unknown waypoint map in the full capture.
 
+`character_summary` can report the player's `captured_map_id` and
+`quests_with_waypoint_on_captured_map`. The list matches exact map IDs
+from the same export. It does not measure distance or include coordinates.
+Missing map or quest data gives null. Update the importer and reader before
+syncing this field. [Forever map API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MapDocumentation.lua)
+
 Add `quest_difficulty: "elite"` or `quest_difficulty: "suggested_group"`
 to filter by observed elite status or a suggested group size above one.
 The checklist reflects the filtered quests. Unknown difficulty counts apply

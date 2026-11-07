@@ -224,6 +224,11 @@ AO.collectors.stats = function()
             stats.faction = faction
         end
     end
+    if AO.family == "forever" then
+        local ok,map=pcall(C_Map and C_Map.GetBestMapForUnit,"player")
+        if ok and (not issecretvalue or not issecretvalue(map)) and type(map)=="number"
+            and map%1==0 and map>=1 and map<=4294967295 then stats.map_id=map end
+    end
     return stats
 end
 

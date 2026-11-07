@@ -332,6 +332,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("class", "text", true),
                 ("race", "text", true),
                 ("faction", "faction_tag", false),
+                ("map_id", "positive", false),
                 ("client_version", "text", true),
             ],
         )?,

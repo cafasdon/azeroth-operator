@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the Forever player's map ID and list quests with matching saved waypoints.
+
 - Find captured Forever built-in action buttons and slots by exact hotkey.
 
 - Compare saved Forever button hotkeys separately from changes to their action slot references.

@@ -1469,6 +1469,22 @@ pub fn summary(s: &Snapshot) -> Value {
         elite.sort_unstable();
         json!({"suggested_groups":groups.into_iter().map(|(quest_id,size)| json!({"quest_id":quest_id,"suggested_group_size":size})).collect::<Vec<_>>(),"elite_quest_ids":elite})
     });
+    let is_forever = s.client.family == crate::Family::Forever;
+    let waypoint_maps = quests.filter(|_| is_forever).map(quest_waypoint_maps);
+    let captured_map = s
+        .sections
+        .get("stats")
+        .filter(|_| is_forever)
+        .and_then(|stats| stats["map_id"].as_u64());
+    let quests_on_captured_map =
+        captured_map
+            .zip(waypoint_maps.as_ref())
+            .map(|(map, waypoints)| {
+                waypoints["by_map_id"]
+                    .get(map.to_string())
+                    .cloned()
+                    .unwrap_or_else(|| json!([]))
+            });
     let quest_money = quests
         .filter(|_| s.client.family == crate::Family::Forever)
         .map(|quests| {
@@ -1515,7 +1531,8 @@ pub fn summary(s: &Snapshot) -> Value {
       "tracked_achievements_observed":s.sections.get("tracked_achievements").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "quest_turn_in":quest_turn_in,
       "quest_checklist":quests.map(quest_checklist),
-      "quest_waypoint_maps":if s.client.family == crate::Family::Forever { quests.map(quest_waypoint_maps) } else { None },
+      "quest_waypoint_maps":waypoint_maps,
+      "captured_map_id":captured_map,"quests_with_waypoint_on_captured_map":quests_on_captured_map,
       "quest_money":quest_money,
       "observed_quest_timers":timed_quests,
       "observed_quest_difficulty":group_quests,
