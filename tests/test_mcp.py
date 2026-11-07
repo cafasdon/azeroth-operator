@@ -181,6 +181,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["sections"]["reputation"] = {"coverage":"visible_faction_rows_only","entries":{
                             "10":{"name":"Fixture faction","kind":"standard","account_wide":False,"reaction":4,
                                   "standing":-50,"threshold":-100,"next_threshold":0}}}
+                        forever["sections"]["tracked_recipes"] = {"coverage": "player_tracked_recipes_only",
+                            "crafts": {"100": {"name": "Tracked fixture"}, "101": {}},
+                            "recrafts": {"100": {}}}
                         forever["sections"]["selected_recipe"] = {"recipe_id":100,"name":"Fixture recipe","learned":True,
                             "requirements":"fixed_items","reagents":{"744":3}}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
@@ -193,6 +196,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(filtered_data["has_more"])
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
                         self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")
+                        tracked_recipes = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "tracked_recipes"})
+                        self.assertFalse(tracked_recipes.isError)
+                        self.assertEqual(json.loads(tracked_recipes.content[0].text)["data"],
+                                         forever["sections"]["tracked_recipes"])
                         bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
                         bank_summary_data = json.loads(bank_summary.content[0].text)
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)

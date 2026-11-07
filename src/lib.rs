@@ -33,6 +33,7 @@ const SECTIONS: &[&str] = &[
     "character_bank",
     "account_bank",
     "selected_recipe",
+    "tracked_recipes",
     "reputation",
     "currency_balances",
     "wallet",
@@ -120,6 +121,7 @@ impl Snapshot {
                 !matches!(
                     name.as_str(),
                     "selected_recipe"
+                        | "tracked_recipes"
                         | "reputation"
                         | "currency_balances"
                         | "tracked_achievements"

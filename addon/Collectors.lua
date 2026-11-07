@@ -403,6 +403,39 @@ AO.collectors.professions = function()
     return result
 end
 
+AO.collectors.tracked_recipes = function()
+    local api=C_TradeSkillUI
+    local function accessible(value)
+        return not issecretvalue or not issecretvalue(value)
+    end
+    local function read(isRecraft)
+        local ids=api.GetRecipesTracked(isRecraft)
+        assert(accessible(ids) and type(ids)=="table" and #ids<=128, "Tracked recipes unavailable")
+        local rows,count={},0
+        for index,id in pairs(ids) do
+            assert(type(index)=="number" and index%1==0 and index>=1 and index<=#ids
+                and accessible(id) and type(id)=="number" and id%1==0 and id>=1 and id<=4294967295,
+                "Invalid tracked recipe")
+            local key=tostring(id)
+            assert(not rows[key], "Duplicate tracked recipe")
+            local row={}
+            local ok,info=pcall(api.GetRecipeInfo,id)
+            if ok and accessible(info) and type(info)=="table"
+                and accessible(info.recipeID) and info.recipeID==id then
+                local name=info.name
+                if accessible(name) and type(name)=="string" and #name>0 and #name<=256 then
+                    row.name=name
+                end
+            end
+            rows[key]=row
+            count=count+1
+        end
+        assert(count==#ids, "Tracked recipe list incomplete")
+        return rows
+    end
+    return {coverage="player_tracked_recipes_only",crafts=read(false),recrafts=read(true)}
+end
+
 AO.collectors.selected_recipe = function()
     local page=ProfessionsFrame and ProfessionsFrame.CraftingPage
     local form=page and page.SchematicForm

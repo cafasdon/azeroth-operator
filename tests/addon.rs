@@ -424,6 +424,16 @@ pub fn verify_forever_capture_fixture(
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
         Professions={InLocalCraftingMode=function() return localCrafting end}
         C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end,
+            GetRecipesTracked=function(recraft)
+                if malformedTrackedRecipes then return {[2]=100} end
+                if recraft then return {100} end
+                return {100,101,102}
+            end,
+            GetRecipeInfo=function(id)
+                if id==100 then return {recipeID=id,name="Tracked fixture",learned=false} end
+                if id==101 then return {recipeID=id,name="Restricted fixture",learned=true} end
+                if id==102 then error("Unavailable metadata") end
+            end,
             GetRecipeCooldown=function(id) assert(id==100); return 12.1,false,1,3 end,
             GetRecipeRequirements=function(id)
                 assert(id==100)
@@ -737,6 +747,23 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["selected_recipe"]["reagents"],
         serde_json::json!({"744":3})
     );
+    assert_eq!(
+        snapshot.sections["tracked_recipes"],
+        serde_json::json!({
+            "coverage":"player_tracked_recipes_only",
+            "crafts":{"100":{"name":"Tracked fixture"},
+                "101":{"name":"Restricted fixture"},"102":{}},
+            "recrafts":{"100":{"name":"Tracked fixture"}}
+        })
+    );
+    lua.load(
+        "issecretvalue=function(v) return v=='Restricted fixture' end;
+        assert(AO.collectors.tracked_recipes().crafts['101'].name==nil);
+        issecretvalue=nil;malformedTrackedRecipes=true;
+        assert(not pcall(AO.collectors.tracked_recipes));
+        malformedTrackedRecipes=false",
+    )
+    .exec()?;
     let recipe = azeroth_operator::analysis::review_recipe(&snapshot, 2)?;
     assert_eq!(recipe["materials"][0]["required"], 6);
     assert_eq!(

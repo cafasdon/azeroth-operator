@@ -421,6 +421,28 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("skill_line", "positive", true),
             ],
         )?,
+        "tracked_recipes" => {
+            object(
+                value,
+                &[
+                    ("coverage", "player_tracked_recipes_only", true),
+                    ("crafts", "map", true),
+                    ("recrafts", "map", true),
+                ],
+            )?;
+            for kind in ["crafts", "recrafts"] {
+                let recipes = &value[kind];
+                entries(recipes, &[("name", "text", false)])?;
+                let recipes = recipes.as_object().unwrap();
+                ensure!(recipes.len() <= 128, "Too many tracked recipes");
+                ensure!(
+                    recipes.values().all(|recipe| recipe["name"]
+                        .as_str()
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256)),
+                    "Invalid tracked recipe name"
+                );
+            }
+        }
         "selected_recipe" => {
             object(
                 value,

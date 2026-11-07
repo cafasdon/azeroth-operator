@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the player's tracked Forever crafts and recrafts for offline inspection.
+
 - Report observed unmet tools, stations and area conditions for saved Forever recipes.
 
 - Capture available Forever recipe cooldowns and show requested crafts exceeding observed charges.

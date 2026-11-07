@@ -71,6 +71,12 @@ The archive is in `dist/forever-craft-conditions` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with this field.
 
+The staged 0.37.0-dev candidate adds tracked recipe and recraft observations.
+The archive is in `dist/forever-tracked-recipes` with SHA-256
+`702d9d417e2530da4cc24cbfadec5860e943ede761bc1977b99d333986989fe7`.
+The packaged Lua round trip passed. Update the reader and importer before
+syncing captures with this section.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

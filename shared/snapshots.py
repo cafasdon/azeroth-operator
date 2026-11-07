@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "reputation", "currency_balances", "wallet", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -34,6 +34,23 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
                 or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
             raise ValueError("Invalid Forever wallet observation")
+    if "tracked_recipes" in sections:
+        recipes = sections["tracked_recipes"]
+        if (c["family"] != "forever" or not isinstance(recipes, dict)
+                or set(recipes) != {"coverage", "crafts", "recrafts"}
+                or recipes["coverage"] != "player_tracked_recipes_only"):
+            raise ValueError("Invalid tracked recipe observation")
+        for group in (recipes["crafts"], recipes["recrafts"]):
+            if not isinstance(group, dict) or len(group) > 128:
+                raise ValueError("Invalid tracked recipe group")
+            for recipe_id, recipe in group.items():
+                if (not isinstance(recipe_id, str) or not re.fullmatch(r"[1-9][0-9]{0,9}", recipe_id)
+                        or int(recipe_id) > 4_294_967_295 or not isinstance(recipe, dict)
+                        or set(recipe) - {"name"}):
+                    raise ValueError("Invalid tracked recipe entry")
+                name = recipe.get("name")
+                if name is not None and (not isinstance(name, str) or not 1 <= len(name.encode("utf-8")) <= 256):
+                    raise ValueError("Invalid tracked recipe name")
     return value
 
 
