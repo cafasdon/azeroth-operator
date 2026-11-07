@@ -107,6 +107,11 @@ Each matched reward also lists the captured items in its compatible slots.
 A null `equipped_slots` means equipment was unavailable. A null item ID
 means the slot was empty in the captured equipment section. A known ID
 with a null name has no catalogue match.
+`default_item_level` comes from the catalogue's default scaling record.
+`reward_item_level_delta` subtracts the equipped item's base level from the
+reward's base level. The delta is null if either level is unavailable.
+This measures item level and does not rank gear or account for scaling,
+modifiers, set bonuses or combat performance.
 
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same

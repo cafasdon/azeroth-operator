@@ -2170,14 +2170,29 @@ impl EquipmentCatalogue {
             .get("equipment")
             .and_then(Value::as_object);
         let equipped_slots = |item: &Value| {
+            let reward_level = default_item_level(item);
             equipment.map(|equipment| {
-                (1..=19).filter_map(|index| {
-                    let slot = simulator_slot_for_equipment(index)?;
-                    if !simulator_slots(item).contains(&slot) { return None; }
-                    let id = equipment.get(&index.to_string()).and_then(|row| row["item_id"].as_u64());
-                    let name = id.and_then(|id| self.items.get(&id)).map(|row| &row["name"]);
-                    Some(json!({"equipment_slot":index,"simulator_slot":slot,"item_id":id,"name":name}))
-                }).collect::<Vec<_>>()
+                (1..=19)
+                    .filter_map(|index| {
+                        let slot = simulator_slot_for_equipment(index)?;
+                        if !simulator_slots(item).contains(&slot) {
+                            return None;
+                        }
+                        let id = equipment
+                            .get(&index.to_string())
+                            .and_then(|row| row["item_id"].as_u64());
+                        let equipped = id.and_then(|id| self.items.get(&id)).copied();
+                        let level = equipped.and_then(default_item_level);
+                        let delta = reward_level
+                            .zip(level)
+                            .map(|(reward, equipped)| reward - equipped);
+                        Some(
+                            json!({"equipment_slot":index,"simulator_slot":slot,"item_id":id,
+                        "name":equipped.map(|row| &row["name"]),"default_item_level":level,
+                        "reward_item_level_delta":delta}),
+                        )
+                    })
+                    .collect::<Vec<_>>()
             })
         };
         let references = |field: &str| {
@@ -2187,6 +2202,7 @@ impl EquipmentCatalogue {
                         let item = row["item_id"].as_u64().and_then(|id| self.items.get(&id));
                         (position.clone(), item.map(|item| json!({
                         "item_id":item["id"],"name":item["name"],"required_level":item["reqLvl"],
+                        "default_item_level":default_item_level(item),
                         "simulator_slots":simulator_slots(item),"equipped_slots":equipped_slots(item)
                     })))
                     })

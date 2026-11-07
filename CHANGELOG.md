@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare catalogue base item levels for Forever quest rewards and the equipped items they could replace.
+
 - Show captured equipped items alongside compatible Forever quest rewards.
 
 - Resolve saved Forever quest reward item names and simulator slots from the local catalogue.
