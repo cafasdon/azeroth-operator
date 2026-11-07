@@ -25,6 +25,11 @@ New MCP routes are denied until reviewed for data source, owner scope, outputs a
 
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
+On the Rust MCP, pass `achievement_id` with `section: "tracked_achievements"`
+to inspect one saved achievement and its captured remaining work. A false
+observation flag means the ID is absent from the tracked list. A null flag
+means the list was unavailable. Only player-tracked achievements are covered.
+
 On the Rust MCP, pass `faction_id` with `section: "reputation"` to inspect
 one faction and its standard or special progress. An unlisted faction
 has a false observation flag. An unavailable list gives a null flag.

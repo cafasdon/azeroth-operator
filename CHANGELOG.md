@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect one saved Forever tracked achievement and its remaining work by ID.
+
 - Inspect one saved Forever faction and its reputation progress by ID.
 
 - Compare proposed Forever currency rewards against recorded cap headroom.

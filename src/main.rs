@@ -43,6 +43,8 @@ struct Inspect {
     currency_reward_quantity: Option<std::num::NonZeroU64>,
     /// Select one saved Forever faction by ID. Requires section "reputation".
     faction_id: Option<std::num::NonZeroU32>,
+    /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
+    achievement_id: Option<std::num::NonZeroU32>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -818,7 +820,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select a quest, Forever currency or Forever faction by ID, compare a proposed currency reward against recorded caps, or check explicit costs against saved balances. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select a quest, Forever currency, faction or tracked achievement by ID, compare a currency reward against recorded caps, or check costs against saved balances. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -836,6 +838,7 @@ impl Operator {
                 || args.quest_id.is_some()
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
+                || args.achievement_id.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
                     "Spending budgets cannot be combined with a section or record selection",
@@ -861,6 +864,12 @@ impl Operator {
         if args.faction_id.is_some() && args.section.as_deref() != Some("reputation") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Faction selection requires the reputation section",
+            )]);
+        }
+        if args.achievement_id.is_some() && args.section.as_deref() != Some("tracked_achievements")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Achievement selection requires the tracked_achievements section",
             )]);
         }
         match self
@@ -944,8 +953,27 @@ impl Operator {
                         value["special_reputation_progress"] = special;
                     }
                 } else if args.section.as_deref() == Some("tracked_achievements") {
-                    value["tracked_achievement_work"] =
-                        azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
+                    let work = azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
+                    if let Some(id) = args.achievement_id {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Achievement selection requires a saved Forever snapshot",
+                            )]);
+                        }
+                        let key = id.to_string();
+                        let section = value["data"].take();
+                        let entries = section["entries"].as_object();
+                        let row = entries.and_then(|entries| entries.get(&key));
+                        value["achievement_id"] = serde_json::json!(id);
+                        value["achievement_observed"] =
+                            serde_json::json!(entries.map(|_| row.is_some()));
+                        value["coverage"] = section["coverage"].clone();
+                        value["data"] = row.cloned().unwrap_or_default();
+                        value["tracked_achievement_work"] =
+                            work.get(&key).cloned().unwrap_or_default();
+                    } else {
+                        value["tracked_achievement_work"] = work;
+                    }
                 } else if args.section.as_deref() == Some("professions") {
                     value["profession_training_progress"] =
                         azeroth_operator::analysis::profession_training_progress(&value["data"]);
