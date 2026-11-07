@@ -625,7 +625,7 @@ pub fn review_equipment_catalogue(
     path: &Path,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
-) -> Result<(&'static str, Value, Value)> {
+) -> Result<(&'static str, Value, Value, Value)> {
     use crate::planning::ItemLocation;
 
     let projected_item = |slot| {
@@ -675,11 +675,20 @@ pub fn review_equipment_catalogue(
         })
         .collect();
     let mut unique_slots = BTreeMap::<u64, Vec<u32>>::new();
+    let mut limit_categories = BTreeMap::<u64, Vec<Value>>::new();
     for slot in 1..=19 {
         if let Some(id) = projected_item(slot)
-            && find(id).is_some_and(|item| item["unique"] == true)
+            && let Some(item) = find(id)
         {
-            unique_slots.entry(id).or_default().push(slot);
+            if item["unique"] == true {
+                unique_slots.entry(id).or_default().push(slot);
+            }
+            if let Some(category) = item["limitCategory"].as_u64().filter(|id| *id != 0) {
+                limit_categories
+                    .entry(category)
+                    .or_default()
+                    .push(json!({"slot":slot,"item_id":id}));
+            }
         }
     }
     let duplicates: Vec<_> = unique_slots
@@ -687,7 +696,17 @@ pub fn review_equipment_catalogue(
         .filter(|(_, slots)| slots.len() > 1)
         .map(|(id, slots)| json!({"item_id":id,"slots":slots}))
         .collect();
-    Ok((pairing, json!(fit), json!(duplicates)))
+    let shared_categories: Vec<_> = limit_categories
+        .into_iter()
+        .filter(|(_, items)| items.len() > 1)
+        .map(|(category, items)| json!({"limit_category":category,"items":items}))
+        .collect();
+    Ok((
+        pairing,
+        json!(fit),
+        json!(duplicates),
+        json!(shared_categories),
+    ))
 }
 
 fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {

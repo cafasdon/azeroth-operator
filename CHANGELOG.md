@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report shared catalogue limit categories in projected Forever equipment drafts.
+
 - Flag duplicate catalogue-marked unique items in projected Forever equipment drafts.
 
 - Flag simulator slot mismatches in local Forever equipment drafts.

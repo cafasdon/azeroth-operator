@@ -61,9 +61,11 @@ items and slots outside the simulator, such as shirts and tabards, report
 Character eligibility and full slot legality remain unverified.
 
 `catalogue_unique_item_duplicates` lists repeated base item IDs marked unique
-in the projected equipment, with their target slots. Shared limit categories
-and items missing from the catalogue need separate checks. A null result means
-the catalogue could not be verified.
+in the projected equipment, with their target slots.
+`catalogue_shared_limit_categories` lists nonzero categories shared by two or
+more projected slots, with the associated item IDs. It does not resolve
+category caps or restrictions for uncatalogued items. A null result means the
+catalogue could not be verified.
 
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
