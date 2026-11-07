@@ -50,6 +50,8 @@ pub struct Query {
     pub recipe_spell_id: Option<u32>,
     /// Restrict items to this pinned catalogue set ID.
     pub set_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to records with a drop source for this NPC ID.
+    pub drop_npc_id: Option<std::num::NonZeroU32>,
 }
 
 fn load(path: &Path) -> Result<(Value, Value)> {
@@ -89,10 +91,15 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         );
     }
     ensure!(
-        query.set_id.is_none() || matches!(query.section, Section::Items),
-        "Set ID is supported for items only"
+        (query.set_id.is_none() && query.drop_npc_id.is_none())
+            || matches!(query.section, Section::Items),
+        "Set and drop NPC filters are supported for items only"
     );
-    if key.is_some() || query.recipe_spell_id.is_some() || query.set_id.is_some() {
+    if key.is_some()
+        || query.recipe_spell_id.is_some()
+        || query.set_id.is_some()
+        || query.drop_npc_id.is_some()
+    {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
         for row in rows {
@@ -118,7 +125,14 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
-            if matches && matches_recipe && matches_set {
+            let matches_drop_npc = query.drop_npc_id.is_none_or(|id| {
+                row["sources"].as_array().is_some_and(|sources| {
+                    sources
+                        .iter()
+                        .any(|source| source["drop"]["npcId"].as_u64() == Some(u64::from(id.get())))
+                })
+            });
+            if matches && matches_recipe && matches_set && matches_drop_npc {
                 if records.len() == 20 {
                     has_more = true;
                     break;

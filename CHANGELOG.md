@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up Forever catalogue items associated with drops from a specific NPC.
+
 - Compare catalogue set pieces against all observed Forever storage in one owned-gear review.
 
 - List Forever catalogue item records by set ID for comparison against observed gear.
