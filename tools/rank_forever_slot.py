@@ -22,10 +22,11 @@ SIMULATOR_SLOTS = (
 )
 
 
-async def slot_candidates(call, slot, multi):
+async def slot_candidates(call, slot, multi, collapse_identical):
     candidates = []
     skipped = []
     offset = 0
+    representatives = {}
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50)
         count = page["filtered_item_locations"]
@@ -43,6 +44,19 @@ async def slot_candidates(call, slot, multi):
                 if not multi and not same_slot:
                     skipped.append({"selection": selection, "reason": "would_vacate_another_slot"})
                     continue
+            elif collapse_identical:
+                reference = row.get("catalogue_base_item") or {}
+                modifiers = row.get("catalogue_modifier_candidates") or {}
+                spec = modifiers.get("simulator_item_spec")
+                # Multi-slot items may need two physical copies in the same set.
+                if spec and reference.get("simulator_slots") == [slot]:
+                    key = json.dumps(spec, sort_keys=True, separators=(",", ":"))
+                    representative = representatives.get(key)
+                    if representative is not None:
+                        skipped.append({"selection": selection, "reason": "equivalent_simulator_item",
+                                        "representative": representative})
+                        continue
+                    representatives[key] = selection
             candidates.append(selection)
         offset += len(page["items"])
         if not page["has_more"]:
@@ -53,7 +67,7 @@ async def slot_candidates(call, slot, multi):
             raise ValueError("Invalid candidate pagination")
 
 
-async def collect(binary, snapshot_id, slots, errlog):
+async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -73,7 +87,7 @@ async def collect(binary, snapshot_id, slots, errlog):
         coverage = None
         multi = len(slots) > 1
         for slot in slots:
-            candidates, exclusions, coverage = await slot_candidates(call, slot, multi)
+            candidates, exclusions, coverage = await slot_candidates(call, slot, multi, collapse_identical)
             skipped.extend(exclusions)
             options.append([None, *candidates])
         if prod(map(len, options)) > 1024:
@@ -154,6 +168,8 @@ def main():
     slots.add_argument("--slot", action="append", choices=SIMULATOR_SLOTS, help="Simulator slot. Repeat for combinations.")
     slots.add_argument("--all-slots", action="store_const", const=SIMULATOR_SLOTS, dest="slot",
                        help="Consider all 17 simulator slots within the search limits.")
+    parser.add_argument("--collapse-identical-items", action="store_true",
+                        help="Use one storage copy of each equivalent single-slot simulator item.")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -191,7 +207,7 @@ def main():
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage = asyncio.run(asyncio.wait_for(
-                collect(args.mcp, args.snapshot_id, args.slot, errlog), timeout=45,
+                collect(args.mcp, args.snapshot_id, args.slot, errlog, args.collapse_identical_items), timeout=45,
             ))
         if len(encounters) == 1:
             result = rank_encounter(args, template, encounters[0], drafts)

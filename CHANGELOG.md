@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Let Forever gear searches collapse equivalent single-slot storage copies before expanding combinations.
+
 - Search all 17 Forever simulator slots and exclude impossible combinations before applying the draft limit.
 
 - Rank Forever gear across fights using player-supplied weights and encounter-relative DPS gains.

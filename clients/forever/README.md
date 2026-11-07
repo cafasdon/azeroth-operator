@@ -125,6 +125,12 @@ coverage and skipped candidates. Multi-slot output uses `slots` and a
 `selections` array per result. Character eligibility and complete-inventory
 optimisation remain separate checks.
 
+Use `--collapse-identical-items` to collapse resolved simulator-equivalent
+storage copies before applying the combination and draft limits. This applies
+to items that fit exactly one simulator slot. Each skipped copy records its
+representative location. Equipped items and items that can fit multiple slots
+keep their separate locations so a draft can still use two physical copies.
+
 For adaptive bulk ranking, build the local adapter from the pinned WoWSims
 checkout with its generated protobuf files and embedded database:
 
