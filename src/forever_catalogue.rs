@@ -86,6 +86,9 @@ pub struct Query {
     pub reputation_faction_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with this type of acquisition source.
     pub source_kind: Option<ItemSource>,
+    /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
+    #[serde(default)]
+    pub include_source_references: bool,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
     /// Build simulator inputs for an exact encounter preset path.
@@ -180,6 +183,12 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         !item_filter || matches!(query.section, Section::Items),
         "Set and acquisition source filters are supported for items only"
     );
+    ensure!(
+        !query.include_source_references
+            || (matches!(query.section, Section::Items)
+                && (key.is_some() || query.recipe_spell_id.is_some() || item_filter)),
+        "Source references require a filtered item lookup"
+    );
     if key.is_some() || query.recipe_spell_id.is_some() || item_filter {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
@@ -271,6 +280,9 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if query.include_source_references {
+        result["source_references"] = source_references(&db, &records);
+    }
     if let Some(settings) = &query.simulation {
         ensure!(
             matches!(query.section, Section::Encounters)
@@ -284,6 +296,42 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         result["simulation_input"] = encounter_input(record, settings)?;
     }
     Ok(result)
+}
+
+fn source_references(db: &Value, items: &[&Value]) -> Value {
+    let mut references = BTreeMap::new();
+    for (source_kind, id_key, section) in [
+        ("drop", "npcId", "npcs"),
+        ("drop", "zoneId", "zones"),
+        ("soldBy", "npcId", "npcs"),
+        ("soldBy", "zoneId", "zones"),
+        ("rep", "repFactionId", "factions"),
+    ] {
+        let names: BTreeMap<_, _> = db[section]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| Some((row["id"].as_u64()?, row["name"].as_str()?)))
+            .collect();
+        for item in items {
+            for (index, source) in item["sources"].as_array().into_iter().flatten().enumerate() {
+                if let Some(id) = source[source_kind][id_key].as_u64().filter(|id| *id > 0) {
+                    references
+                        .entry((item["id"].as_u64(), index + 1))
+                        .or_insert_with(Vec::new)
+                        .push(json!({"section":section,"id":id,"name":names.get(&id)}));
+                }
+            }
+        }
+    }
+    json!(
+        references
+            .into_iter()
+            .map(|((item_id, source_index), references)| json!({
+                "item_id":item_id,"source_index":source_index,"references":references
+            }))
+            .collect::<Vec<_>>()
+    )
 }
 
 /// Equipment categories from the pinned Forever catalogue's ItemType enum.

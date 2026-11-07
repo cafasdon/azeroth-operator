@@ -69,6 +69,12 @@ Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The ot
 
 For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve NPC names through the `npcs` section first. Results include only items with an explicit matching NPC drop in the pinned catalogue. For zone loot, use `drop_zone_id` to include both NPC and unattributed drops recorded for that zone. When both filters are supplied, they must match the same drop source. Missing entries provide no evidence about live loot availability.
 
+Add `include_source_references: true` to a filtered item lookup to resolve
+recorded drop and vendor NPCs, zones and reputation factions against the same
+pinned catalogue. Each reference identifies the item and one-based position
+of the source in its original record. A null name means the source ID has
+no name in the catalogue reference table. Live acquisition remains unverified.
+
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 
 For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` using a reputation faction ID from the saved standings or the catalogue. Source records can include a required reputation tier and an Alliance or Horde restriction. Character eligibility requires separate verification.

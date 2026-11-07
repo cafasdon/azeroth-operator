@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Resolve Forever item source IDs to pinned catalogue NPC, zone and faction names.
+
 - Rank a targeted shortlist of up to sixteen owned Forever item IDs.
 
 - Prune unresolved Forever simulator item inputs before expanding gear combinations.
