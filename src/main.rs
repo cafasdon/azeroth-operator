@@ -38,6 +38,7 @@ struct Inspect {
 #[serde(deny_unknown_fields)]
 struct List {
     family: String,
+    character: Option<azeroth_operator::Character>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -419,7 +420,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List snapshots for an explicit client family, newest capture first",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -433,13 +434,15 @@ impl Operator {
             "forever" => Family::Forever,
             _ => return CallToolResult::error(vec![ContentBlock::text("Unknown family")]),
         };
-        match self
-            .store
-            .list(family, args.offset.unwrap_or(0), args.limit.unwrap_or(20))
-        {
+        match self.store.list_matching(
+            family,
+            args.character.as_ref(),
+            args.offset.unwrap_or(0),
+            args.limit.unwrap_or(20),
+        ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed or limit invalid",
+                "Snapshot listing failed or character or limit invalid",
             )]),
         }
     }

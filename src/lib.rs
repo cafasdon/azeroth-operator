@@ -30,6 +30,8 @@ const SECTIONS: &[&str] = &[
     "equipment",
     "equipment_sets",
     "bags",
+    "character_bank",
+    "account_bank",
     "talents",
     "stats",
     "professions",
@@ -61,7 +63,7 @@ pub struct ClientIdentity {
     pub interface: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Character {
     pub name: String,
@@ -116,6 +118,25 @@ impl Snapshot {
                 "Section must be an array or object"
             );
         }
+        if self.sections.contains_key("character_bank")
+            || self.sections.contains_key("account_bank")
+        {
+            ensure!(
+                self.client.family == Family::Forever,
+                "Bank snapshot requires Forever"
+            );
+            let mut containers = std::collections::BTreeSet::new();
+            for name in ["bags", "character_bank", "account_bank"] {
+                if let Some(bags) = self.sections.get(name).and_then(Value::as_object) {
+                    for bag in bags.keys() {
+                        ensure!(
+                            containers.insert(bag),
+                            "Container appears in multiple storage sections"
+                        );
+                    }
+                }
+            }
+        }
         for (name, reason) in &self.unavailable {
             ensure!(
                 SECTIONS.contains(&name.as_str()) && !self.sections.contains_key(name),
@@ -137,7 +158,25 @@ pub struct Store {
 
 impl Store {
     pub fn list(&self, family: Family, offset: usize, limit: usize) -> Result<Value> {
+        self.list_matching(family, None, offset, limit)
+    }
+
+    pub fn list_matching(
+        &self,
+        family: Family,
+        character: Option<&Character>,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Value> {
         ensure!((1..=100).contains(&limit), "Limit must be 1..100");
+        if let Some(character) = character {
+            ensure!(
+                [&character.name, &character.realm]
+                    .into_iter()
+                    .all(|value| !value.trim().is_empty() && value.len() <= 128),
+                "Invalid character identity"
+            );
+        }
         if !self.root.exists() {
             return Ok(json!({"snapshots":[],"has_more":false,"invalid_count":0}));
         }
@@ -163,7 +202,13 @@ impl Store {
                 continue;
             };
             match Self::read_in_root(&root, id) {
-                Ok(s) if s.client.family == family => {
+                Ok(s)
+                    if s.client.family == family
+                        && character.is_none_or(|target| {
+                            s.character.name.to_lowercase() == target.name.to_lowercase()
+                                && s.character.realm.to_lowercase() == target.realm.to_lowercase()
+                        }) =>
+                {
                     // Retain metadata only: listing must not hold every inventory payload.
                     let summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
                     rows.push((s.captured_at, id.to_owned(), summary));

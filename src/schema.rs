@@ -314,7 +314,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
-        "bags" => {
+        "bags" | "character_bank" | "account_bank" => {
             let bags = value
                 .as_object()
                 .ok_or_else(|| anyhow::anyhow!("Bags must be an object"))?;

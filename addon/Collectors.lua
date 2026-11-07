@@ -1,7 +1,7 @@
 local _, AO = ...
 AO.collectors = {}
 local function itemGUID(bag,slot)
-    if AO.family~="retail" or not (C_Item and C_Item.GetItemGUID and ItemLocation) then return nil end
+    if (AO.family~="retail" and AO.family~="forever") or not (C_Item and C_Item.GetItemGUID and ItemLocation) then return nil end
     local ok,guid=pcall(function()
         local location=bag~=nil and ItemLocation:CreateFromBagAndSlot(bag,slot) or ItemLocation:CreateFromEquipmentSlot(slot)
         return C_Item.GetItemGUID(location)
@@ -160,21 +160,59 @@ AO.collectors.equipment_sets = function()
     return result
 end
 
+local function containerItems(bag, capacity)
+    local slots,occupied = {},0
+    for slot = 1, capacity do
+        local info = C_Container.GetContainerItemInfo(bag, slot)
+        if info then
+            slots[tostring(slot)] = {item_id=info.itemID,count=info.stackCount,link=info.hyperlink,guid=itemGUID(bag,slot)}
+            occupied=occupied+1
+        end
+    end
+    return slots,occupied
+end
+
 AO.collectors.bags = function()
     local bags = {}
     if C_Container and C_Container.GetContainerNumSlots and C_Container.GetContainerItemInfo then
         for bag = 0, (NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4) do
-            local slots = {}
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info then slots[tostring(slot)] = { item_id = info.itemID, count = info.stackCount, link = info.hyperlink, guid=itemGUID(bag,slot) } end
-            end
-            bags[tostring(bag)] = slots
+            bags[tostring(bag)] = containerItems(bag,C_Container.GetContainerNumSlots(bag))
         end
         return bags
     end
     error("Container API unavailable")
 end
+
+local function bankItems(kind)
+    assert(BankFrame and BankFrame:IsShown(), "Bank is not open")
+    local bankType=Enum.BankType[kind]
+    assert(bankType~=nil and C_Bank.CanViewBank(bankType), "Bank type unavailable")
+    local count=C_Bank.FetchNumPurchasedBankTabs(bankType)
+    local tabs=C_Bank.FetchPurchasedBankTabData(bankType)
+    assert(type(count)=="number" and count>=0 and count<=64 and #tabs==count, "Bank tabs not loaded")
+    assert(kind~="Character" or count>0, "Character bank tabs not loaded")
+    local containers={}
+    for _,tab in ipairs(tabs) do
+        local bag=tab.ID
+        assert(tab.bankType==bankType and type(bag)=="number" and bag%1==0
+            and bag>(NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4) and bag<=64
+            and not containers[tostring(bag)], "Invalid bank tab")
+        local capacity=C_Container.GetContainerNumSlots(bag)
+        assert(type(capacity)=="number" and capacity%1==0 and capacity>=1 and capacity<=1024, "Bank slots not loaded")
+        local slots,occupied=containerItems(bag,capacity)
+        assert(C_Container.GetContainerNumFreeSlots(bag)==capacity-occupied, "Bank slots do not reconcile")
+        for _,item in pairs(slots) do
+            assert(type(item.item_id)=="number" and item.item_id%1==0 and item.item_id>=1 and item.item_id<=4294967295
+                and type(item.count)=="number" and item.count%1==0 and item.count>=1 and item.count<=4294967295
+                and (item.link==nil or (type(item.link)=="string" and #item.link<=4096)), "Bank item data unavailable")
+        end
+        containers[tostring(bag)]=slots
+    end
+    return containers
+end
+
+AO.collectors.character_bank = function() return bankItems("Character") end
+AO.collectors.account_bank = function() return bankItems("Account") end
 
 AO.collectors.stats = function()
     local version = GetBuildInfo()

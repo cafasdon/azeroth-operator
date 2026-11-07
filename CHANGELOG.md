@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Enforce a fail-closed offline MCP tool allowlist and remove Apply-code preparation from the hosted gateway profile.
+- Capture observed Forever character and account bank slots, expose bank coverage through the MCP, and support filtering saved snapshots by character name and realm.
 
 - Sync a pinned WoWSims Forever catalogue to disk and optionally expose offline gear, world-reference and encounter lookups through the local MCP.
 

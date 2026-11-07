@@ -104,22 +104,32 @@ fn record(path: String, paths: &mut Vec<String>, count: &mut usize) {
     }
 }
 
+fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
+    s.sections
+        .get(section)
+        .and_then(Value::as_object)
+        .and_then(|b| {
+            b.values()
+                .map(|v| v.as_object().map(|v| v.len()))
+                .sum::<Option<usize>>()
+        })
+}
+
 pub fn summary(s: &Snapshot) -> Value {
-    let equipment = s.sections.get("equipment").and_then(Value::as_object);
-    let bags = s.sections.get("bags").and_then(Value::as_object);
-    let occupied = equipment.map(|v| v.len());
-    let bag_slots = bags.and_then(|b| {
-        b.values()
-            .map(|v| v.as_object().map(|v| v.len()))
-            .sum::<Option<usize>>()
-    });
+    let occupied = s
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object)
+        .map(|v| v.len());
     let unspent = s
         .sections
         .get("talents")
         .and_then(|v| v.get("has_unspent"))
         .and_then(Value::as_bool);
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
-      "equipped_slots_observed":occupied,"carried_item_slots_observed":bag_slots,
+      "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
+      "character_bank_item_slots_observed":container_slots(s,"character_bank"),
+      "account_bank_item_slots_observed":container_slots(s,"account_bank"),
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

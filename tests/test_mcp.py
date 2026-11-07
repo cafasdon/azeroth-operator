@@ -137,6 +137,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual({row["snapshot_id"] for row in json.loads(listing.content[0].text)["snapshots"]}, {key,set_key,spec_key})
                         other = await session.call_tool("list_snapshots", {"family": "forever"})
                         self.assertEqual(json.loads(other.content[0].text)["snapshots"], [])
+                        forever = fixture()
+                        forever["client"] = {"family":"forever","variant":"live","build":"70862","interface":16001}
+                        forever["character"] = {"name":"Example","realm":"First"}
+                        forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
+                        forever["sections"]["account_bank"] = {}
+                        forever_key = SnapshotStore(Path(folder)).ingest(forever)
+                        forever["character"]["realm"] = "Second"
+                        SnapshotStore(Path(folder)).ingest(forever)
+                        filtered = await session.call_tool("list_snapshots", {"family":"forever",
+                            "character":{"name":"example","realm":"FIRST"},"limit":1})
+                        filtered_data = json.loads(filtered.content[0].text)
+                        self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
+                        self.assertFalse(filtered_data["has_more"])
+                        bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
+                        self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")
+                        bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
+                        bank_summary_data = json.loads(bank_summary.content[0].text)
+                        self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
+                        self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
                         self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})
