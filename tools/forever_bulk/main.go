@@ -27,8 +27,8 @@ func run(input io.Reader, output io.Writer) error {
 		return errors.New("invalid bulk request JSON")
 	}
 	if request.BaseRequest == nil || request.BulkSettings != nil || request.AllResults ||
-		len(request.Candidates) == 0 || len(request.Candidates) > 64 ||
-		request.TopResults < 1 || int(request.TopResults) > len(request.Candidates) {
+		len(request.Candidates) == 0 || len(request.Candidates) > 128 ||
+		request.TopResults < 1 || request.TopResults > 64 || int(request.TopResults) > len(request.Candidates) {
 		return errors.New("expected a baseline, explicit candidates and bounded shortlist")
 	}
 	seen := make(map[int32]bool, len(request.Candidates))

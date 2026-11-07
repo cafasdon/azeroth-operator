@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Allow adaptive bulk Forever searches with up to 128 explicitly requested drafts.
+
 - Allow up to 128 Forever gear drafts in explicitly expanded fixed-iteration searches.
 
 - Report equipped set-piece counts for ranked Forever drafts, including retained pieces.

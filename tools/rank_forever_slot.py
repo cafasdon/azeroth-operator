@@ -279,7 +279,7 @@ def main():
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
     parser.add_argument("--max-drafts", type=int, default=64,
-                        help="Maximum proposed changes (1–128 fixed mode, 1–64 bulk mode).")
+                        help="Maximum proposed changes (1–128, default 64).")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -304,8 +304,8 @@ def main():
             raise ValueError("Provide a positive catalogue set ID")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
-        if not 1 <= args.max_drafts <= (64 if args.bulk_engine else 128):
-            raise ValueError("Draft limit is out of range for the comparison mode")
+        if not 1 <= args.max_drafts <= 128:
+            raise ValueError("Draft limit is out of range")
         if len(args.encounter_lookup) > 4:
             raise ValueError("Provide up to four encounter exports")
         weights = args.encounter_weight

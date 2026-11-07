@@ -141,8 +141,8 @@ per slot and scans at most 1,024 combinations, including the baseline. It skips
 combinations that reuse a physical source or leave a moved item's slot unfilled.
 It checks up to 64 remaining changes by default, rejects larger searches and
 sorts resolved results by mean DPS against the captured baseline. Use
-`--max-drafts` to choose a different limit up to 128 in fixed mode or 64 in
-bulk mode. The baseline is additional. The existing comparison iteration and
+`--max-drafts` to choose a different limit up to 128. The baseline is
+additional. The existing comparison iteration and
 time limits still apply.
 `--paired` adds uncertainty against that baseline. Results include storage
 coverage and skipped candidates. Multi-slot output uses `slots` and a
@@ -223,7 +223,9 @@ distinct, resolved simulator gear sets. The result includes the baseline, the
 shortlist with its matching observed selections, and the engine's stage metrics.
 An unavailable paired standard error is null. The engine chooses its precision
 and iteration counts and may use a single stage for small searches. The
-64-draft and 120-second comparison limits apply in bulk mode. The encounter's
+Configured draft and 120-second comparison limits apply in bulk mode. Rebuild
+the adapter and use its new SHA-256 before running bulk searches over 64 drafts.
+The encounter's
 requested iteration count and the fixed mode's aggregate iteration cap apply
 to fixed mode, including the fallback when every set matches the baseline.
 
