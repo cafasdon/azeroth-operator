@@ -91,6 +91,14 @@ were observed for the selected quest. Other quests and unreadable choices
 omit the field. The addon does not change selection or choose a reward.
 Update the importer and reader before syncing this field.
 
+Set `quest_currency_projection: true` when inspecting a saved Forever
+quest by ID to compare its receive rewards with currency caps from the same
+capture. Rows for the same currency are summed. Each currency choice is
+compared separately with the receive total for its currency. Missing receive
+data leaves the combined choice result unknown. Missing recorded cap headroom
+leaves the within-cap and above-cap amounts unknown. These comparisons use
+captured quantities and are independent of later eligibility or payout.
+
 Pass `quest_waypoint_map_id` with `section: "quests"` to return only
 quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response

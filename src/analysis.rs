@@ -941,6 +941,56 @@ pub fn currency_cap_headroom(section: &Value) -> Value {
     )
 }
 
+pub fn currency_reward_projection(proposed: u64, entry: &Value, caps: &Value) -> Value {
+    let maximum = caps["maximum_remaining"].as_u64();
+    let weekly = caps["weekly_remaining"]
+        .as_u64()
+        .filter(|_| entry["can_earn_per_week"].as_bool() != Some(false));
+    let limit = maximum.into_iter().chain(weekly).min();
+    json!({
+        "proposed_quantity":proposed,
+        "quantity_within_recorded_headroom":limit.map(|cap| proposed.min(cap)),
+        "quantity_above_recorded_headroom":limit.map(|cap| proposed.saturating_sub(cap))
+    })
+}
+
+pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Value {
+    let Some(quest) = quest else {
+        return Value::Null;
+    };
+    let headroom = currency_cap_headroom(balances);
+    let project = |id: u64, quantity| {
+        let key = id.to_string();
+        currency_reward_projection(quantity, &balances["entries"][&key], &headroom[&key])
+    };
+    let receive = quest["currency_rewards"].as_object().map(|rows| {
+        let mut totals = BTreeMap::<u64, u64>::new();
+        for row in rows.values() {
+            if let (Some(id), Some(quantity)) =
+                (row["currency_id"].as_u64(), row["quantity"].as_u64())
+            {
+                *totals.entry(id).or_default() += quantity;
+            }
+        }
+        totals
+    });
+    let fixed = receive.as_ref().map(|totals| {
+        totals
+            .iter()
+            .map(|(&id, &quantity)| (id, project(id, quantity)))
+            .collect::<BTreeMap<_, _>>()
+    });
+    let choices = quest["currency_choices"].as_object().map(|rows| {
+        rows.iter().filter_map(|(index, row)| {
+            let id = row["currency_id"].as_u64()?;
+            let quantity = row["quantity"].as_u64()?;
+            let combined = receive.as_ref().map(|totals| project(id, quantity + totals.get(&id).copied().unwrap_or(0)));
+            Some((index, json!({"currency_id":id,"choice_quantity":quantity,"with_receive_rewards":combined})))
+        }).collect::<BTreeMap<_, _>>()
+    });
+    json!({"receive_by_currency_id":fixed,"choices_by_position":choices})
+}
+
 pub fn profession_training_progress(section: &Value) -> Value {
     let Some(entries) = section.as_object() else {
         return Value::Null;

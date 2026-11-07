@@ -37,6 +37,9 @@ struct Inspect {
     section: Option<String>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
+    /// Compare captured quest currency rewards against caps from the same snapshot.
+    #[serde(default)]
+    quest_currency_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
@@ -832,6 +835,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.quest_currency_projection
+            && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest currency projection requires a quest ID and the quests section",
+            )]);
+        }
         if args.currency_reward_quantity.is_some() && args.currency_id.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Currency reward comparison requires a currency ID",
@@ -903,6 +913,29 @@ impl Operator {
                         serde_json::json!(quests.as_object().map(|_| quest.is_some()));
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
+                    if args.quest_currency_projection {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest currency projection requires a saved Forever snapshot",
+                            )]);
+                        }
+                        let snapshot = match self.store.read(&args.snapshot_id) {
+                            Ok(snapshot) => snapshot,
+                            Err(_) => {
+                                return CallToolResult::error(vec![ContentBlock::text(
+                                    "Could not read captured currency balances",
+                                )]);
+                            }
+                        };
+                        value["quest_currency_projection"] =
+                            azeroth_operator::analysis::quest_currency_projection(
+                                quest,
+                                snapshot
+                                    .sections
+                                    .get("currency_balances")
+                                    .unwrap_or(&serde_json::Value::Null),
+                            );
+                    }
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
                 if let Some(map) = args.quest_waypoint_map_id {
@@ -951,18 +984,12 @@ impl Operator {
                         value["currency_cap_headroom"] =
                             headroom.get(&key).cloned().unwrap_or_default();
                         if let Some(quantity) = args.currency_reward_quantity {
-                            let caps = &value["currency_cap_headroom"];
-                            let maximum = caps["maximum_remaining"].as_u64();
-                            let weekly = caps["weekly_remaining"].as_u64().filter(|_| {
-                                value["data"]["can_earn_per_week"].as_bool() != Some(false)
-                            });
-                            let limit = maximum.into_iter().chain(weekly).min();
-                            let proposed = quantity.get();
-                            value["currency_reward_projection"] = serde_json::json!({
-                                "proposed_quantity":proposed,
-                                "quantity_within_recorded_headroom":limit.map(|cap| proposed.min(cap)),
-                                "quantity_above_recorded_headroom":limit.map(|cap| proposed.saturating_sub(cap))
-                            });
+                            value["currency_reward_projection"] =
+                                azeroth_operator::analysis::currency_reward_projection(
+                                    quantity.get(),
+                                    &value["data"],
+                                    &value["currency_cap_headroom"],
+                                );
                         }
                     } else {
                         value["currency_cap_headroom"] = headroom;

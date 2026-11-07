@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever quest currency rewards and individual choices against recorded cap headroom.
+
 - Capture currency choices for the selected Forever quest without changing selection.
 
 - Capture Forever quest currency receive rows separately from reward choices.
