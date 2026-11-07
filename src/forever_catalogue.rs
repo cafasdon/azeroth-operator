@@ -259,6 +259,7 @@ pub fn review_owned(
     limit: usize,
     item_type: Option<GearType>,
     set_id: Option<std::num::NonZeroU32>,
+    observed_item_id: Option<std::num::NonZeroU32>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -317,7 +318,9 @@ pub fn review_owned(
                     .entry(storage)
                     .or_default() += 1;
             }
-            if wrong_type || wrong_set {
+            let wrong_item =
+                observed_item_id.is_some_and(|id| item_id != Some(u64::from(id.get())));
+            if wrong_type || wrong_set || wrong_item {
                 return;
             }
             if included >= offset && entries.len() < limit {
