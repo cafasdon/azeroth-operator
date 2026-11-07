@@ -125,7 +125,9 @@ Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The ot
 Use `drop_instance_kind: "dungeon"` or `"raid"` to filter recorded
 drop categories. When supplied with `drop_npc_id` or `drop_zone_id`, the
 category and IDs must match the same source. Sources with unknown categories
-are excluded from this filter.
+are excluded from this filter. Use `drop_label` for an exact ASCII
+case-insensitive match on recorded source labels such as `Trash`, `World Drop`
+or `Relic Coffer`. Any other drop filters must match that same source record.
 
 For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve NPC names through the `npcs` section first. Results include only items with an explicit matching NPC drop in the pinned catalogue. For zone loot, use `drop_zone_id` to include both NPC and unattributed drops recorded for that zone. When both filters are supplied, they must match the same drop source. Missing entries provide no evidence about live loot availability.
 

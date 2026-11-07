@@ -87,6 +87,8 @@ pub struct Query {
     pub drop_zone_id: Option<std::num::NonZeroU32>,
     /// Restrict drops to the catalogue dungeon or raid category on the same source.
     pub drop_instance_kind: Option<DropInstanceKind>,
+    /// Exact case-insensitive drop label, such as Trash or World Drop.
+    pub drop_label: Option<String>,
     /// Restrict items to records with a reward source for this quest ID.
     pub reward_quest_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a sale source for this vendor NPC ID.
@@ -192,9 +194,17 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             "Expected a positive recipe spell ID for items or enchants"
         );
     }
+    let drop_label = query.drop_label.as_deref().map(str::trim);
+    if let Some(label) = drop_label {
+        ensure!(
+            !label.is_empty() && label.len() <= 160,
+            "Invalid drop label"
+        );
+    }
     let drop_filter = query.drop_npc_id.is_some()
         || query.drop_zone_id.is_some()
-        || query.drop_instance_kind.is_some();
+        || query.drop_instance_kind.is_some()
+        || drop_label.is_some();
     let item_filter = query.set_id.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
@@ -250,6 +260,13 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                             }) && query
                                 .drop_instance_kind
                                 .is_none_or(|kind| drop["difficulty"].as_u64() == Some(kind as u64))
+                                && drop_label.is_none_or(|label| {
+                                    ["category", "otherName"].iter().any(|field| {
+                                        drop[*field]
+                                            .as_str()
+                                            .is_some_and(|value| value.eq_ignore_ascii_case(label))
+                                    })
+                                })
                         })
                     });
             let matches_quest = query.reward_quest_id.is_none_or(|id| {

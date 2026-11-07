@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever loot by recorded encounter or drop group label.
+
 - Filter pinned Forever loot by recorded dungeon or raid drop category.
 
 - Show saved unfinished quest objectives on Forever catalogue reward sources.
