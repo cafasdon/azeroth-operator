@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect craft and recraft tracking for one saved Forever recipe ID.
+
 - Filter saved Forever quest readiness by elite status or suggested group size, optionally by waypoint map.
 
 - Capture Forever quest elite status and suggested group size for saved planning.

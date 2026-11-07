@@ -63,6 +63,8 @@ struct Inspect {
     achievement_id: Option<std::num::NonZeroU32>,
     /// Select one saved profession by skill line. Requires section "professions".
     profession_skill_line: Option<std::num::NonZeroU32>,
+    /// Select one saved Forever recipe ID in the tracked_recipes section.
+    tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -904,6 +906,7 @@ impl Operator {
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
                 || args.profession_skill_line.is_some()
+                || args.tracked_recipe_id.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
                     "Spending budgets cannot be combined with a section or record selection",
@@ -954,6 +957,11 @@ impl Operator {
         if args.profession_skill_line.is_some() && args.section.as_deref() != Some("professions") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Profession selection requires the professions section",
+            )]);
+        }
+        if args.tracked_recipe_id.is_some() && args.section.as_deref() != Some("tracked_recipes") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Tracked recipe selection requires the tracked_recipes section",
             )]);
         }
         match self
@@ -1081,6 +1089,27 @@ impl Operator {
                             azeroth_operator::analysis::quest_checklist(quests)
                         });
                     value["data"] = data;
+                }
+                if let Some(id) = args.tracked_recipe_id {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Tracked recipe selection requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let section = value["data"].take();
+                    let key = id.to_string();
+                    let crafts = section["crafts"].as_object();
+                    let recrafts = section["recrafts"].as_object();
+                    let craft = crafts.and_then(|rows| rows.get(&key));
+                    let recraft = recrafts.and_then(|rows| rows.get(&key));
+                    value["tracked_recipe_id"] = serde_json::json!(id);
+                    value["coverage"] = section["coverage"].clone();
+                    value["tracked_as_craft"] = serde_json::json!(crafts.map(|_| craft.is_some()));
+                    value["tracked_as_recraft"] =
+                        serde_json::json!(recrafts.map(|_| recraft.is_some()));
+                    if section.is_object() {
+                        value["data"] = serde_json::json!({"craft":craft,"recraft":recraft});
+                    }
                 }
                 if args.section.as_deref() == Some("currency_balances") {
                     let headroom =
