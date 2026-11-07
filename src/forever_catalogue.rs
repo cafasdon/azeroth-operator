@@ -252,28 +252,51 @@ pub enum GearType {
     Ranged = 14,
 }
 
-// Names follow the pinned simulator's itemfit.ItemSlots, not game slot IDs.
-fn simulator_slots(item: &Value) -> &'static [&'static str] {
+/// Slot names from the pinned simulator's SIML format.
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, serde::Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SimulatorSlot {
+    Head,
+    Neck,
+    Shoulder,
+    Back,
+    Chest,
+    Wrist,
+    Hands,
+    Waist,
+    Legs,
+    Feet,
+    Finger1,
+    Finger2,
+    Trinket1,
+    Trinket2,
+    MainHand,
+    OffHand,
+    Ranged,
+}
+
+fn simulator_slots(item: &Value) -> &'static [SimulatorSlot] {
+    use SimulatorSlot::*;
     match item["type"].as_u64() {
-        Some(1) => &["head"],
-        Some(2) => &["neck"],
-        Some(3) => &["shoulder"],
-        Some(4) => &["back"],
-        Some(5) => &["chest"],
-        Some(6) => &["wrist"],
-        Some(7) => &["hands"],
-        Some(8) => &["waist"],
-        Some(9) => &["legs"],
-        Some(10) => &["feet"],
-        Some(11) => &["finger1", "finger2"],
-        Some(12) => &["trinket1", "trinket2"],
+        Some(1) => &[Head],
+        Some(2) => &[Neck],
+        Some(3) => &[Shoulder],
+        Some(4) => &[Back],
+        Some(5) => &[Chest],
+        Some(6) => &[Wrist],
+        Some(7) => &[Hands],
+        Some(8) => &[Waist],
+        Some(9) => &[Legs],
+        Some(10) => &[Feet],
+        Some(11) => &[Finger1, Finger2],
+        Some(12) => &[Trinket1, Trinket2],
         Some(13) => match item["handType"].as_u64() {
-            Some(1 | 4) => &["main_hand"],
-            Some(2) => &["main_hand", "off_hand"],
-            Some(3) => &["off_hand"],
+            Some(1 | 4) => &[MainHand],
+            Some(2) => &[MainHand, OffHand],
+            Some(3) => &[OffHand],
             _ => &[],
         },
-        Some(14) => &["ranged"],
+        Some(14) => &[Ranged],
         _ => &[],
     }
 }
@@ -480,19 +503,14 @@ mod tests {
 
     #[test]
     fn simulator_slot_names_match_pinned_siml() {
-        assert_eq!(simulator_slots(&json!({"type":11})), ["finger1", "finger2"]);
+        let slots = |item| json!(simulator_slots(&item));
+        assert_eq!(slots(json!({"type":11})), json!(["finger1", "finger2"]));
+        assert_eq!(slots(json!({"type":12})), json!(["trinket1", "trinket2"]));
         assert_eq!(
-            simulator_slots(&json!({"type":12})),
-            ["trinket1", "trinket2"]
+            slots(json!({"type":13,"handType":2})),
+            json!(["main_hand", "off_hand"])
         );
-        assert_eq!(
-            simulator_slots(&json!({"type":13,"handType":2})),
-            ["main_hand", "off_hand"]
-        );
-        assert_eq!(
-            simulator_slots(&json!({"type":13,"handType":4})),
-            ["main_hand"]
-        );
+        assert_eq!(slots(json!({"type":13,"handType":4})), json!(["main_hand"]));
     }
 
     #[test]
@@ -610,6 +628,7 @@ pub fn review_owned(
     item_type: Option<GearType>,
     set_id: Option<std::num::NonZeroU32>,
     observed_item_id: Option<std::num::NonZeroU32>,
+    simulator_slot: Option<SimulatorSlot>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -670,7 +689,10 @@ pub fn review_owned(
             }
             let wrong_item =
                 observed_item_id.is_some_and(|id| item_id != Some(u64::from(id.get())));
-            if wrong_type || wrong_set || wrong_item {
+            let wrong_slot = simulator_slot.is_some_and(|slot| {
+                !reference.is_some_and(|item| simulator_slots(item).contains(&slot))
+            });
+            if wrong_type || wrong_set || wrong_item || wrong_slot {
                 return;
             }
             if included >= offset && entries.len() < limit {

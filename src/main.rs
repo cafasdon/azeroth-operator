@@ -68,6 +68,8 @@ struct OwnedGearReview {
     set_id: Option<std::num::NonZeroU32>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
+    /// Filter candidates by a pinned simulator slot before paging.
+    simulator_slot: Option<azeroth_operator::forever_catalogue::SimulatorSlot>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -354,6 +356,7 @@ impl Operator {
                 args.item_type,
                 args.set_id,
                 args.item_id,
+                args.simulator_slot,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter captured Forever gear candidates by simulator slot before paging.
+
 - Show the simulator slot candidates for captured Forever gear.
 
 - Include regular enchant stats in the Forever item estimate when exactly one catalogue row fits.
