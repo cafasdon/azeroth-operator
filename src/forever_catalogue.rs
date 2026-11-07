@@ -63,6 +63,13 @@ impl ItemSource {
     }
 }
 
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DropInstanceKind {
+    Dungeon = 1,
+    Raid = 2,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
@@ -78,6 +85,8 @@ pub struct Query {
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
     pub drop_zone_id: Option<std::num::NonZeroU32>,
+    /// Restrict drops to the catalogue dungeon or raid category on the same source.
+    pub drop_instance_kind: Option<DropInstanceKind>,
     /// Restrict items to records with a reward source for this quest ID.
     pub reward_quest_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a sale source for this vendor NPC ID.
@@ -183,9 +192,11 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             "Expected a positive recipe spell ID for items or enchants"
         );
     }
-    let item_filter = query.set_id.is_some()
-        || query.drop_npc_id.is_some()
+    let drop_filter = query.drop_npc_id.is_some()
         || query.drop_zone_id.is_some()
+        || query.drop_instance_kind.is_some();
+    let item_filter = query.set_id.is_some()
+        || drop_filter
         || query.reward_quest_id.is_some()
         || query.vendor_npc_id.is_some()
         || query.reputation_faction_id.is_some()
@@ -227,18 +238,20 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
-            let matches_drop = (query.drop_npc_id.is_none() && query.drop_zone_id.is_none())
-                || row["sources"].as_array().is_some_and(|sources| {
-                    sources.iter().any(|source| {
-                        let drop = &source["drop"];
-                        query
-                            .drop_npc_id
-                            .is_none_or(|id| drop["npcId"].as_u64() == Some(u64::from(id.get())))
-                            && query.drop_zone_id.is_none_or(|id| {
+            let matches_drop =
+                !drop_filter
+                    || row["sources"].as_array().is_some_and(|sources| {
+                        sources.iter().any(|source| {
+                            let drop = &source["drop"];
+                            query.drop_npc_id.is_none_or(|id| {
+                                drop["npcId"].as_u64() == Some(u64::from(id.get()))
+                            }) && query.drop_zone_id.is_none_or(|id| {
                                 drop["zoneId"].as_u64() == Some(u64::from(id.get()))
-                            })
-                    })
-                });
+                            }) && query
+                                .drop_instance_kind
+                                .is_none_or(|kind| drop["difficulty"].as_u64() == Some(kind as u64))
+                        })
+                    });
             let matches_quest = query.reward_quest_id.is_none_or(|id| {
                 row["sources"].as_array().is_some_and(|sources| {
                     sources

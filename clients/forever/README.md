@@ -122,6 +122,11 @@ For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to fi
 
 Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The other source categories are `crafted`, `drop`, `quest`, `vendor` and `reputation`. Filters combine at item level, so an item can match through multiple recorded sources. The catalogue PvP tag supplies no rank, cost or season data.
 
+Use `drop_instance_kind: "dungeon"` or `"raid"` to filter recorded
+drop categories. When supplied with `drop_npc_id` or `drop_zone_id`, the
+category and IDs must match the same source. Sources with unknown categories
+are excluded from this filter.
+
 For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve NPC names through the `npcs` section first. Results include only items with an explicit matching NPC drop in the pinned catalogue. For zone loot, use `drop_zone_id` to include both NPC and unattributed drops recorded for that zone. When both filters are supplied, they must match the same drop source. Missing entries provide no evidence about live loot availability.
 
 Add `include_source_references: true` to a filtered item lookup to resolve

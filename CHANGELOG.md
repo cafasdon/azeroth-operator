@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter pinned Forever loot by recorded dungeon or raid drop category.
+
 - Show saved unfinished quest objectives on Forever catalogue reward sources.
 
 - Compare captured character faction with Forever catalogue vendor and reputation source tags.
