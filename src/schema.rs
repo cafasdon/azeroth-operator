@@ -804,12 +804,21 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 &[
                     ("base_spell_id", "positive", true),
                     ("spell_id", "positive", true),
+                    ("name", "text", false),
+                    ("passive", "bool", false),
+                    ("off_spec", "bool", false),
                 ],
             )?;
             let rows = value["entries"].as_object().unwrap();
             ensure!(rows.len() <= 1024, "Too many spellbook observations");
-            for key in rows.keys() {
+            for (key, row) in rows {
                 index(key, 1, 4096)?;
+                ensure!(
+                    row["name"]
+                        .as_str()
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid spellbook spell name"
+                );
             }
         }
         "experience" => {

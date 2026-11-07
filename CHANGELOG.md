@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture available Forever spellbook names and passive and off-spec flags.
+
 - Compare saved Forever spellbook base IDs and reported overrides across captures.
 
 - Find saved Forever spellbook slots by exact base or reported spell ID.

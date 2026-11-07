@@ -77,7 +77,9 @@ Use the saved readiness flag separately for turn-ins.
 `inspect_snapshot` with `section: "spellbook"` lists captured spell slots
 in the player bank. Each row preserves the base `actionID` and the reported
 spell ID, which may be an override. The export skips hidden and guild skill
-lines, pet banks, future spells and flyouts. `character_summary` counts the
+lines. Available spell names, passive flags and off-spec flags are captured
+as optional metadata. The export also skips
+pet banks, future spells and flyouts. `character_summary` counts the
 observed slots, which can include the same spell more than once. Update
 the importer and reader before syncing this section. [Forever spellbook API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SpellBookDocumentation.lua)
 

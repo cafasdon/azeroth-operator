@@ -42,9 +42,14 @@ def validate_snapshot(value):
             raise ValueError("Invalid Forever spellbook observation")
         for slot, spell in book["entries"].items():
             if (not isinstance(slot, str) or not re.fullmatch(r"[1-9][0-9]{0,3}", slot) or int(slot) > 4096
-                    or not isinstance(spell, dict) or set(spell) != {"base_spell_id", "spell_id"}
-                    or any(type(id) is not int or not 1 <= id <= 4_294_967_295 for id in spell.values())):
+                    or not isinstance(spell, dict) or set(spell) - {"base_spell_id", "spell_id", "name", "passive", "off_spec"}
+                    or any(type(spell.get(key)) is not int or not 1 <= spell[key] <= 4_294_967_295
+                           for key in ("base_spell_id", "spell_id"))):
                 raise ValueError("Invalid Forever spellbook entry")
+            name = spell.get("name")
+            if (name is not None and (not isinstance(name, str) or not 1 <= len(name.encode("utf-8")) <= 256)
+                    or any(spell.get(key) is not None and type(spell[key]) is not bool for key in ("passive", "off_spec"))):
+                raise ValueError("Invalid Forever spellbook metadata")
     if "experience" in sections:
         xp = sections["experience"]
         if (c["family"] != "forever" or not isinstance(xp, dict)

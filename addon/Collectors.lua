@@ -827,7 +827,12 @@ AO.collectors.spellbook = function()
                 if item.itemType==spellType then
                     assert(questRewardInteger(item.actionID,1,4294967295)
                         and questRewardInteger(item.spellID,1,4294967295), "Invalid spellbook spell")
-                    entries[tostring(slot)]={base_spell_id=item.actionID,spell_id=item.spellID}
+                    local row={base_spell_id=item.actionID,spell_id=item.spellID}
+                    local name,passive,offSpec=item.name,item.isPassive,item.isOffSpec
+                    if questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256 then row.name=name end
+                    if questRewardAccessible(passive) and type(passive)=="boolean" then row.passive=passive end
+                    if questRewardAccessible(offSpec) and type(offSpec)=="boolean" then row.off_spec=offSpec end
+                    entries[tostring(slot)]=row
                 end
             end
         end

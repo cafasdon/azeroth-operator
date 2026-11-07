@@ -529,7 +529,7 @@ pub fn verify_forever_capture_fixture(
             return {isGuild=false,shouldHide=true,itemIndexOffset=5,numSpellBookItems=1}
         end,GetSpellBookItemInfo=function(slot,bank)
             assert(bank==0)
-            if slot==3 then return {itemType=1,actionID=100,spellID=101} end
+            if slot==3 then return {itemType=1,actionID=100,spellID=101,name="Fixture spell",isPassive=false,isOffSpec=true} end
             if slot==4 then return {itemType=2,actionID=102,spellID=102} end
             error("Non-player line queried")
         end}
@@ -663,7 +663,7 @@ pub fn verify_forever_capture_fixture(
     let quests = &snapshot.sections["quests"];
     assert_eq!(
         snapshot.sections["spellbook"],
-        serde_json::json!({"coverage":"visible_player_spell_slots","entries":{"3":{"base_spell_id":100,"spell_id":101}}})
+        serde_json::json!({"coverage":"visible_player_spell_slots","entries":{"3":{"base_spell_id":100,"spell_id":101,"name":"Fixture spell","passive":false,"off_spec":true}}})
     );
     lua.load("malformedSpellbook=true;AO.Capture()").exec()?;
     assert!(read()?.unavailable.contains_key("spellbook"));
