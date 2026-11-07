@@ -287,6 +287,15 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+Use `--tank-metrics` with the standalone simulator to report mean damage
+taken per second (DTPS) and its standard deviation. For owned gear, use
+`--rank-by dtps` to order fixed comparisons by lowest mean DTPS. In both
+commands the template must assign its first player as the sole tank and at
+least one encounter target must point to that tank. Comparisons also report
+DTPS change from equipped gear. Bulk shortlists and weighted encounter
+rankings remain DPS modes. Paired error estimates apply to DPS. Mean DTPS
+does not capture burst damage or survival probability.
+
 For `Default/Custom Boss`, add `custom_boss` to the `simulation` object
 with any combination of `thrash`, `cleave` and `magic_spell`. Thrash takes `extra_attacks`,
 `proc_chance_percent` and `cooldown_seconds`. Cleave takes

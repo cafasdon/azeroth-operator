@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report simulated tank damage taken and rank Forever equipment by lowest mean DTPS in fixed comparisons.
+
 - Configure magic school, cast time, cooldown and damage for the Forever custom boss.
 
 - Configure thrash and cleave for the Forever custom boss simulator.

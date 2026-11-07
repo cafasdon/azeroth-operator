@@ -180,7 +180,16 @@ def verify_engine(engine, expected_hash):
             raise ValueError("Engine SHA-256 mismatch")
 
 
-def run(engine, expected_hash, request, deadline=None, paired=False):
+def run(engine, expected_hash, request, deadline=None, paired=False, tank_metrics=False):
+    if tank_metrics:
+        raid = request["raid"]
+        first_party = raid["parties"][0].get("players", [])
+        tanks = raid.get("tanks", [])
+        if (not first_party or len(tanks) != 1 or tanks[0].get("type") not in ("Player", 1)
+                or tanks[0].get("index", 0) != 0
+                or not any(target.get("tankIndex", target.get("tank_index", 0)) == 0
+                           for target in request["encounter"]["targets"])):
+            raise ValueError("Tank metrics require the first player as the encounter tank")
     verify_engine(engine, expected_hash)
     with tempfile.TemporaryDirectory(prefix="forever-sim-") as folder:
         root = Path(folder)
@@ -210,6 +219,13 @@ def run(engine, expected_hash, request, deadline=None, paired=False):
             "dps_standard_deviation": dps["stdev"],
             "engine_sha256": expected_hash.lower(),
         }
+        if tank_metrics:
+            metrics = single_player(result["raidMetrics"])["dtps"]
+            mean, deviation = metrics["avg"], metrics["stdev"]
+            if not all(type(value) in (int, float) and math.isfinite(value) and value >= 0
+                       for value in (mean, deviation)):
+                raise ValueError("Simulator returned invalid tank damage metrics")
+            summary.update(mean_dtps=mean, dtps_standard_deviation=deviation)
         if paired:
             values = dps["allValues"]
             if (not isinstance(values, list) or len(values) != summary["iterations"]
@@ -219,7 +235,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False):
         return summary
 
 
-def compare(engine, expected_hash, requests, paired=False):
+def compare(engine, expected_hash, requests, paired=False, tank_metrics=False):
     keys = [json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False)
             for request in requests]
     unique = dict(zip(keys, requests))
@@ -232,10 +248,14 @@ def compare(engine, expected_hash, requests, paired=False):
     deadline = time.monotonic() + 120
     results = {}
     for key, request in unique.items():
-        results[key] = run(engine, expected_hash, request, deadline=deadline, paired=paired)
+        results[key] = run(engine, expected_hash, request, deadline=deadline, paired=paired, tank_metrics=tank_metrics)
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
     baseline = results[keys[0]]["mean_dps"]
+    if tank_metrics:
+        baseline_dtps = results[keys[0]]["mean_dtps"]
+        for row in results.values():
+            row["mean_dtps_delta_from_baseline"] = row["mean_dtps"] - baseline_dtps
     paired_errors = {}
     if paired:
         baseline_samples = results[keys[0]]["_dps_samples"]
@@ -321,6 +341,7 @@ def main():
     parser.add_argument("--equipment-review", type=Path, action="append", required=True)
     parser.add_argument("--encounter-lookup", type=Path, required=True)
     parser.add_argument("--paired", action="store_true", help="Report paired DPS standard errors for a comparison")
+    parser.add_argument("--tank-metrics", action="store_true", help="Report damage taken per second for an explicit tank")
     args = parser.parse_args()
     try:
         if len(args.equipment_review) > 8:
@@ -333,8 +354,9 @@ def main():
         encounter = read_object(args.encounter_lookup, limit)
         requests = [request_from(template, read_object(path, limit), encounter)
                     for path in args.equipment_review]
-        result = (run(args.engine, args.engine_sha256, requests[0]) if len(requests) == 1
-                  else compare(args.engine, args.engine_sha256, requests, paired=args.paired))
+        result = (run(args.engine, args.engine_sha256, requests[0], tank_metrics=args.tank_metrics)
+                  if len(requests) == 1 else compare(
+                      args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.tank_metrics))
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
