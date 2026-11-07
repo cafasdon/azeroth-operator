@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare Forever catalogue reputation requirements with captured standard faction reactions.
+
 - Include captured recipe output, cooldown and unmet-condition counts on Forever item crafting sources.
 
 - Show saved recipe tracking status on Forever catalogue crafting sources.

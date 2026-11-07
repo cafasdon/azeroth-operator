@@ -375,9 +375,22 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
             }
             if let Some(id) = source["rep"]["repFactionId"].as_u64().filter(|id| *id > 0) {
                 let row = factions.and_then(|rows| rows.get(&id.to_string()));
+                // The pinned RepLevel enum uses the same 1–8 standard tiers as the client.
+                let required_reaction = source["rep"]["repLevel"]
+                    .as_u64()
+                    .filter(|reaction| (1..=8).contains(reaction));
+                let observed_reaction = row
+                    .filter(|row| row["kind"] == "standard")
+                    .and_then(|row| row["reaction"].as_u64())
+                    .filter(|reaction| (1..=8).contains(reaction));
+                let requirement_met = required_reaction
+                    .zip(observed_reaction)
+                    .map(|(required, observed)| observed >= required);
                 sources.push(json!({
                     "item_id":item["id"],"source_index":index+1,"faction_id":id,
                     "reputation_observed":row.is_some(),
+                    "required_standard_reaction":required_reaction,
+                    "observed_reputation_requirement_met":requirement_met,
                     "standing":row.and_then(|faction| faction["standing"].as_i64()),
                     "reaction":row.and_then(|faction| faction["reaction"].as_u64()),
                     "kind":row.and_then(|faction| faction["kind"].as_str()),

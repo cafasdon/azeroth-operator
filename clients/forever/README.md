@@ -150,7 +150,7 @@ reflect the capture time. Craftability remains unverified.
 
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 
-For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` using a reputation faction ID from the saved standings or the catalogue. Source records can include a required reputation tier and an Alliance or Horde restriction. Character eligibility requires separate verification.
+For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` using a reputation faction ID from the saved standings or the catalogue. Source records can include a required reputation tier and an Alliance or Horde restriction. With `acquisition_snapshot_id`, `observed_reputation_requirement_met` compares the saved standard faction reaction to the recorded tier. Missing observations, unknown tiers and special progression give null. This field evaluates the reputation tier only. Character eligibility requires separate verification.
 
 For quest rewards, pass `{"section":"items","reward_quest_id":53}` using the quest ID from a saved quest observation or other reference. Results cover reward associations recorded in the pinned catalogue. Character eligibility and live availability require separate evidence.
 
