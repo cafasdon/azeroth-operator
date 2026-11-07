@@ -571,6 +571,8 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
     let mut recipe_review = None;
     let mut sources = Vec::new();
     let mut owned_quantities = serde_json::Map::new();
+    let mut requirement_conflicts = serde_json::Map::new();
+    let check_requirements = item_requirement_check(snapshot);
     for item in records
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Invalid item records"))?
@@ -580,6 +582,11 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         {
             let mut found = crate::analysis::find_item(snapshot, id, 0, 1)?;
             owned_quantities.insert(id.to_string(), found["quantity_by_storage"].take());
+            if !simulator_slots(item).is_empty()
+                && let Some(conflict) = check_requirements(item)
+            {
+                requirement_conflicts.insert(id.to_string(), conflict);
+            }
         }
         for (index, source) in item["sources"].as_array().into_iter().flatten().enumerate() {
             if let Some(id) = source["quest"]["id"].as_u64().filter(|id| *id > 0) {
@@ -665,7 +672,8 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         json!({"captured_at":snapshot.captured_at,"quests_available":quests.is_some(),
         "reputation_available":factions.is_some(),"selected_recipe_available":selected_recipe.is_some(),
         "tracked_recipes_available":tracked_recipes.is_some(),
-        "sources":sources,"owned_quantities_by_item_id":owned_quantities}),
+        "sources":sources,"owned_quantities_by_item_id":owned_quantities,
+        "observed_requirement_conflicts_by_item_id":requirement_conflicts}),
     )
 }
 

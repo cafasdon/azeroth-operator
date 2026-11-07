@@ -132,7 +132,9 @@ With a Forever `acquisition_snapshot_id`, set
 records and remove candidates with a known level, class, proficiency,
 faction or profession conflict. Missing observations leave those checks
 undecided. The filter evaluates individual catalogue items and does not
-verify complete-set legality or live equip eligibility.
+verify complete-set legality or live equip eligibility. With snapshot context,
+returned gear can include reasons in `observed_requirement_conflicts_by_item_id`.
+An omitted ID means no conflict was found in the available observations.
 
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source

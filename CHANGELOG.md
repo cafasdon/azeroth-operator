@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Explain saved character requirement conflicts on Forever catalogue gear results.
+
 - Exclude gear with observed character requirement conflicts from Forever catalogue searches.
 
 - Filter Forever catalogue searches by simulator equipment slot and minimum recorded item level.
