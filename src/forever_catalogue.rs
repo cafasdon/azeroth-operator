@@ -187,6 +187,7 @@ pub fn review_owned(
     let mut total = 0usize;
     let mut matched = 0usize;
     let mut included = 0usize;
+    let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             coverage.insert(
@@ -197,7 +198,8 @@ pub fn review_owned(
         };
         let mut count = 0usize;
         let mut record = |container: Option<&str>, slot: &str, item: &Value| {
-            let reference = item["item_id"].as_u64().and_then(|id| catalogue.get(&id));
+            let item_id = item["item_id"].as_u64();
+            let reference = item_id.and_then(|id| catalogue.get(&id));
             total += 1;
             count += 1;
             matched += usize::from(reference.is_some());
@@ -207,6 +209,16 @@ pub fn review_owned(
             let wrong_set = set_id.is_some_and(|id| {
                 reference.and_then(|item| item["setId"].as_u64()) != Some(u64::from(id.get()))
             });
+            if set_id.is_some()
+                && !wrong_set
+                && let Some(id) = item_id
+            {
+                *set_locations
+                    .entry(id)
+                    .or_default()
+                    .entry(storage)
+                    .or_default() += 1;
+            }
             if wrong_type || wrong_set {
                 return;
             }
@@ -239,10 +251,21 @@ pub fn review_owned(
             json!({"status":"observed","occupied_slots":count}),
         );
     }
-    Ok(
-        json!({"family":"forever","captured_at":snapshot.captured_at,"catalogue_source":provenance,
+    let mut result = json!({"family":"forever","captured_at":snapshot.captured_at,"catalogue_source":provenance,
         "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,
         "items":entries,"filtered_item_locations":included,"has_more":included.saturating_sub(offset)>limit,
-        "live":false,"ranked":false,"equip_legality_verified":false}),
-    )
+        "live":false,"ranked":false,"equip_legality_verified":false});
+    if let Some(set_id) = set_id {
+        let pieces: Vec<_> = catalogue
+            .iter()
+            .filter(|(_, item)| item["setId"].as_u64() == Some(u64::from(set_id.get())))
+            .map(|(id, item)| {
+                json!({"item_id":id,"name":item["name"],"observed":set_locations.contains_key(id),
+                    "observed_locations_by_storage":set_locations.get(id).cloned().unwrap_or_default()})
+            })
+            .collect();
+        result["set_observation"] = json!({"set_id":set_id.get(),"catalogue_pieces":pieces,
+            "observed_distinct_pieces":set_locations.len()});
+    }
+    Ok(result)
 }
