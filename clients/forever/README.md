@@ -103,7 +103,9 @@ An offline bulk pilot exercised the pinned Go `BulkSimAsync` entry point on the 
 | 45 s | 0.419 s | 7.135 s | 1981, 4082, 2041, 6773, 7063 |
 | 180 s | 1.186 s | 16.761 s | 1981, 4082, 2041, 6773, 7063 |
 
-Staged mode screened 48 candidates at 160 iterations and advanced five to 1,000. Exhaustive mode simulated all 48 at 1,000 and then refined all 48 to 4,000 iterations. The timing compares different search and refinement budgets. Two executions with the same seed reproduced the reported 180-second exhaustive ranking and the 45-second staged ranking. The captured comparison covers one seed, two durations and one changed slot. Default-budget runs, multi-slot searches and near-tie recall still need qualification.
+Staged mode screened 48 candidates at 160 iterations and advanced five to 1,000. Exhaustive mode simulated all 48 at 1,000 and then refined all 48 to 4,000 iterations. The timing compares different search and refinement budgets. Two executions with the same seed reproduced the reported 180-second exhaustive ranking and the 45-second staged ranking. The captured comparison covers one seed, two durations and one changed slot.
+
+The same 45-second case also passed with the pinned engine's unmodified stage floors and target errors. Staged mode screened all 48 at 1,720 iterations, then finished five at 16,203 in 4.470 s. Exhaustive mode ran all 48 at 27,240 and refined all 48 to 108,960 in 156.664 s. Both modes returned the same ordered top five as the reduced-budget pilot. The leading candidate's paired standard error against the next result was 0.090 DPS in staged mode and 0.034 DPS in exhaustive mode. This is one seed and one slot, with different final precision. Multi-slot searches and near-tie recall still need qualification.
 
 With a configured local catalogue, `review_equipment_selection` checks whether the draft leaves an item in the off-hand while placing or retaining a catalogue two-handed main-hand item. The check overlays requested targets and removes moved sources from their original slots. It covers that single conflict. Full weapon pairing and equip legality remain unknown.
 
