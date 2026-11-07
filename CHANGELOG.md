@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Order Forever catalogue searches by descending item level or selected stat gain before pagination.
+
 - Filter Forever gear by minimum regular base stat gain over a saved slot.
 
 - Compare default regular stat gains and losses with the saved Forever equipped slot.

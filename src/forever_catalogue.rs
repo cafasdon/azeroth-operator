@@ -113,6 +113,13 @@ pub struct StatGain {
     minimum_gain: f64,
 }
 
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemOrder {
+    ItemLevelDesc,
+    StatGainDesc,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
@@ -134,6 +141,8 @@ pub struct Query {
     pub minimum_item_level_gain: Option<std::num::NonZeroU32>,
     /// Require a gain in one regular base stat over the saved equipped slot.
     pub minimum_stat_gain: Option<StatGain>,
+    /// Order matching item records before paging. Stat gain ordering requires minimum_stat_gain.
+    pub order_by: Option<ItemOrder>,
     /// Restrict items to records with a drop source for this NPC ID.
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
@@ -350,6 +359,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
+        || query.order_by.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
         || vendor_filter
@@ -421,12 +431,10 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                     default_item_level(row).is_some_and(|level| level >= minimum)
                 })
                 && minimum_stat.as_ref().is_none_or(|(id, baseline, minimum)| {
-                    default_regular_stats(row)
-                        .and_then(|stats| stats.get(id).map_or(Some(0.0), Value::as_f64))
-                        .is_some_and(|candidate| {
-                            let delta = candidate - baseline;
-                            delta.is_finite() && delta >= *minimum
-                        })
+                    default_regular_stat(row, id).is_some_and(|candidate| {
+                        let delta = candidate - baseline;
+                        delta.is_finite() && delta >= *minimum
+                    })
                 });
             let matches_set = query
                 .set_id
@@ -507,17 +515,40 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                     .as_ref()
                     .is_none_or(|check| !simulator_slots(row).is_empty() && check(row).is_none())
             {
-                if remaining_offset > 0 {
-                    remaining_offset -= 1;
-                    continue;
-                }
-                if records.len() == 20 {
-                    has_more = true;
-                    break;
+                if query.order_by.is_none() {
+                    if remaining_offset > 0 {
+                        remaining_offset -= 1;
+                        continue;
+                    }
+                    if records.len() == 20 {
+                        has_more = true;
+                        break;
+                    }
                 }
                 records.push(row);
             }
         }
+    }
+    if let Some(order) = query.order_by {
+        match order {
+            ItemOrder::ItemLevelDesc => {
+                records.sort_by_cached_key(|item| std::cmp::Reverse(default_item_level(item)));
+            }
+            ItemOrder::StatGainDesc => {
+                let (id, baseline, _) = minimum_stat.as_ref().ok_or_else(|| {
+                    anyhow::anyhow!("Stat gain ordering requires a stat gain filter")
+                })?;
+                records.sort_by(|a, b| {
+                    let value =
+                        |item: &Value| default_regular_stat(item, id).unwrap_or(0.0) - baseline;
+                    value(b).total_cmp(&value(a))
+                });
+            }
+        }
+        let offset = query.offset.unwrap_or_default().min(records.len());
+        has_more = records.len() - offset > 20;
+        records.drain(..offset);
+        records.truncate(20);
     }
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
@@ -563,6 +594,15 @@ fn default_regular_stats(item: &Value) -> Option<serde_json::Map<String, Value>>
         Some(stats) => stats.as_object().cloned(),
         None => Some(serde_json::Map::new()),
     }
+}
+
+fn default_regular_stat(item: &Value, id: &str) -> Option<f64> {
+    let scaling = item["scalingOptions"]["0"].as_object()?;
+    let stat = match scaling.get("stats") {
+        Some(stats) => stats.as_object()?.get(id),
+        None => None,
+    };
+    stat.map_or(Some(0.0), Value::as_f64)
 }
 
 fn regular_stat_delta(

@@ -140,7 +140,10 @@ meeting that gain before pagination. This filter requires a known equipped
 level in the requested slot. Use `minimum_stat_gain` with `stat_id` and
 positive `minimum_gain` to filter by one regular base stat, such as Strength
 (ID 0). This requires a known default scaling record for the equipped item.
-A stat omitted from a present stat map counts as zero.
+A stat omitted from a present stat map counts as zero. Use
+`order_by: "item_level_desc"` or `"stat_gain_desc"` to order matches before
+pagination. Stat ordering uses the stat in `minimum_stat_gain`. Equal values
+retain catalogue order. Missing item levels sort last.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue
