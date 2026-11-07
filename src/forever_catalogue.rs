@@ -89,7 +89,7 @@ pub struct Query {
     /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
     #[serde(default)]
     pub include_source_references: bool,
-    /// Optional owner-scoped Forever snapshot for observed quest and reputation source progress.
+    /// Optional owner-scoped Forever snapshot for observed quest, reputation and crafted source progress.
     pub acquisition_snapshot_id: Option<String>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
@@ -346,6 +346,8 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         .sections
         .get("reputation")
         .and_then(|section| section["entries"].as_object());
+    let selected_recipe = snapshot.sections.get("selected_recipe");
+    let mut recipe_review = None;
     let mut sources = Vec::new();
     for item in records
         .as_array()
@@ -372,11 +374,34 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                     "account_wide":row.and_then(|faction| faction["account_wide"].as_bool())
                 }));
             }
+            if let Some(id) = source["crafted"]["spellId"].as_u64().filter(|id| *id > 0) {
+                let recipe = selected_recipe.filter(|row| row["recipe_id"].as_u64() == Some(id));
+                let output_matches = recipe
+                    .and_then(|row| row["output_item_id"].as_u64())
+                    .map(|output| item["id"].as_u64() == Some(output));
+                let matched_recipe = recipe.filter(|_| output_matches != Some(false));
+                let review = if matched_recipe.is_some() {
+                    if recipe_review.is_none() {
+                        recipe_review = Some(crate::analysis::review_recipe(snapshot, 1)?);
+                    }
+                    recipe_review.as_ref()
+                } else {
+                    None
+                };
+                sources.push(json!({
+                    "item_id":item["id"],"source_index":index+1,"recipe_spell_id":id,
+                    "recipe_observed":recipe.is_some(),"output_matches":output_matches,
+                    "learned":matched_recipe.and_then(|row| row["learned"].as_bool()),
+                    "material_capacity":review.and_then(|value| value.get("material_capacity")),
+                    "unobserved_storage":review.and_then(|value| value.get("unobserved_storage"))
+                }));
+            }
         }
     }
     Ok(
         json!({"captured_at":snapshot.captured_at,"quests_available":quests.is_some(),
-        "reputation_available":factions.is_some(),"sources":sources}),
+        "reputation_available":factions.is_some(),"selected_recipe_available":selected_recipe.is_some(),
+        "sources":sources}),
     )
 }
 

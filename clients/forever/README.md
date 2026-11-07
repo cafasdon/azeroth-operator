@@ -81,6 +81,12 @@ snapshot must be Forever and come from the configured owner store. A quest
 absent from the capture has unknown progress. The result reports captured
 standing and source requirements separately, leaving acquisition unverified.
 
+For a crafted source, the same lookup checks the saved selected recipe's ID.
+When the recipe matches and any observed output agrees, it reports learned
+status and material capacity from that capture. An absent output ID leaves
+output matching unknown. An explicit mismatch suppresses learned status and
+material capacity for that item. Craftability remains unverified.
+
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 
 For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` using a reputation faction ID from the saved standings or the catalogue. Source records can include a required reputation tier and an Alliance or Horde restriction. Character eligibility requires separate verification.

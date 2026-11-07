@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Join Forever crafted item sources to the matching saved recipe and material capacity.
+
 - Join Forever item quest and reputation sources to observations in an explicitly selected snapshot.
 
 - Resolve Forever item source IDs to pinned catalogue NPC, zone and faction names.
