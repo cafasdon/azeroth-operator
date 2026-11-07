@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Run a local Forever simulation from equipment and encounter MCP exports and an explicit single-player template.
+
 - Build explicit simulator encounter and iteration inputs from pinned Forever presets.
 
 - Export captured Forever equipment as a simulator baseline with an empty selection list.

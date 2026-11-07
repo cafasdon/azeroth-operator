@@ -81,6 +81,24 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+The standalone `python -m tools.run_forever_sim` command combines saved
+equipment and encounter MCP responses with a trusted local WoWSims executable
+and a caller-supplied `RaidSimRequest` JSON template. Supply `--engine` as an
+absolute path, `--engine-sha256` from the trusted local build, and the three
+input paths through `--template`, `--equipment-review` and
+`--encounter-lookup`. Save the JSON text inside each MCP response as its own
+file. The template uses canonical lower-camel-case protobuf JSON field names and supplies one
+player with class, race, spec, talents, explicit APL, and the desired buffs
+and consumables. Disable item swapping. The equipment and encounter exports
+replace their corresponding template inputs.
+
+The command runs locally with a 120-second timeout and prints only the DPS
+summary, iteration count, seed and executable checksum. The supplied checksum
+must come from a build you trust. Temporary request and result files are
+removed after the run. The template is explicit caller input, so results only
+represent the captured character when the template accurately describes that
+character. This command is separate from the MCP tool registry.
+
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
 `simulation` object. For example:
