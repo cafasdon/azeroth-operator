@@ -782,6 +782,9 @@ impl Operator {
                         azeroth_operator::analysis::standard_reputation_progress(&value["data"]);
                     value["special_reputation_progress"] =
                         azeroth_operator::analysis::special_reputation_progress(&value["data"]);
+                } else if args.section.as_deref() == Some("tracked_achievements") {
+                    value["tracked_achievement_work"] =
+                        azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
                 }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }

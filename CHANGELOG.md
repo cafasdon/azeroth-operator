@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show unfinished criteria and remaining counts for saved tracked Forever achievements.
+
 - Compare saved Forever renown, friendship and paragon progress by faction ID.
 
 - Show saved Forever renown and friendship progress alongside paragon reward status.

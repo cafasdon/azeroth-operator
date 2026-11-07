@@ -169,7 +169,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "101":{"name":"Fixture achievement","points":5,"completed":False,"earned_by_character":False,
                                    "account_wide":True,"criteria":{
                                        "1":{"criterion_id":301,"completed":False,"quantity":1,"required":5},
-                                       "2":{"criterion_id":302,"completed":True}}}}}
+                                       "2":{"criterion_id":302,"completed":True},
+                                       "3":{"completed":False},
+                                       "4":{"criterion_id":304,"completed":False,"quantity":6,"required":5}}},
+                            "102":{"name":"Finished achievement","points":5,"completed":True,
+                                   "earned_by_character":True,"account_wide":False,"criteria":{}}}}
                         forever["sections"]["currency_balances"] = {"coverage":"visible_currency_ids_only","entries":{
                             "100":{"name":"Fixture currency","quantity":0,"account_wide":True,"inactive":False,"max_quantity":100,
                                    "max_weekly_quantity":40,"earned_this_week":10,"total_earned":60,
@@ -229,9 +233,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         bad_selector = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "equipment", "quest_id": 42})
                         self.assertTrue(bad_selector.isError)
-                        self.assertEqual(bank_summary_data["tracked_achievements_observed"], 1)
+                        self.assertEqual(bank_summary_data["tracked_achievements_observed"], 2)
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
-                        self.assertEqual(json.loads(achievement.content[0].text)["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
+                        achievement_data = json.loads(achievement.content[0].text)
+                        self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
+                        self.assertEqual(achievement_data["tracked_achievement_work"], {
+                            "101": {"1": {"criterion_id": 301, "remaining_count": 4},
+                                    "3": {"criterion_id": None, "remaining_count": None},
+                                    "4": {"criterion_id": 304, "remaining_count": 0}},
+                            "102": {},
+                        })
+                        missing_achievements = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": key, "section": "tracked_achievements"})
+                        self.assertIsNone(json.loads(missing_achievements.content[0].text)["tracked_achievement_work"])
                         self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
                         currency_data = json.loads(currency.content[0].text)
@@ -427,7 +441,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(achievement["completed_changed"])
                         self.assertFalse(achievement["earned_by_character_changed"])
                         comparison = achievement["criterion_comparison"]
-                        self.assertEqual(comparison["matched_criterion_count"], 2)
+                        self.assertEqual(comparison["matched_criterion_count"], 3)
                         self.assertEqual(len(comparison["changes"]), 1)
                         self.assertEqual(comparison["changes"][0]["criterion_id"], 301)
                         self.assertEqual(comparison["changes"][0]["quantity_delta"], 1)

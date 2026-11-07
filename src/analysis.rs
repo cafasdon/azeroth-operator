@@ -745,6 +745,35 @@ pub fn currency_cap_headroom(section: &Value) -> Value {
     )
 }
 
+pub fn tracked_achievement_work(section: &Value) -> Value {
+    let Some(entries) = section["entries"].as_object() else {
+        return Value::Null;
+    };
+    Value::Object(
+        entries
+            .iter()
+            .filter_map(|(id, achievement)| {
+                let criteria = achievement["criteria"].as_object()?;
+                let unfinished = criteria
+                    .iter()
+                    .filter(|(_, criterion)| criterion["completed"].as_bool() == Some(false))
+                    .map(|(index, criterion)| {
+                        let remaining = criterion["required"]
+                            .as_u64()
+                            .zip(criterion["quantity"].as_u64())
+                            .map(|(required, quantity)| required.saturating_sub(quantity));
+                        (
+                            index.clone(),
+                            json!({"criterion_id":criterion["criterion_id"],"remaining_count":remaining}),
+                        )
+                    })
+                    .collect();
+                Some((id.clone(), Value::Object(unfinished)))
+            })
+            .collect(),
+    )
+}
+
 pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     let Some(objectives) = quest.and_then(|quest| quest["objectives"].as_object()) else {
         return Value::Null;
