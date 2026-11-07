@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find an item across up to eight explicitly selected snapshots without combining shared bank totals.
+
 - Compare tracked Forever achievement criteria by stable ID across reordered captures.
 
 - Compare captured profession ranks by skill line across snapshot slot changes.

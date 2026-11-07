@@ -353,6 +353,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(tail["locations"], [
                             {"storage": "character_bank", "container": "6", "slot": "1", "count": 1}])
                         self.assertFalse(tail["has_more"])
+                        across = await session.call_tool("find_snapshot_item", {
+                            **search, "additional_snapshot_ids": [forever_key]})
+                        self.assertFalse(across.isError)
+                        across_data = json.loads(across.content[0].text)
+                        self.assertEqual(across_data["quantity_by_storage"]["character_bank"], 1)
+                        extra = across_data["additional_snapshot_results"][0]
+                        self.assertEqual(extra["snapshot_id"], forever_key)
+                        self.assertEqual(extra["matched_locations"], 1)
+                        self.assertEqual(extra["quantity_by_storage"]["character_bank"], 1)
+                        self.assertIsNone(extra["quantity_by_storage"]["bags"])
+                        for invalid in ([key], [capped_key]):
+                            self.assertTrue((await session.call_tool("find_snapshot_item", {
+                                **search, "additional_snapshot_ids": invalid})).isError)
                         self.assertTrue((await session.call_tool("find_snapshot_item", {**search, "limit": 51})).isError)
                         forever["sections"]["bags"]["0"]["1"]["count"] = 1
                         forever["sections"]["character_bank"]["6"]["1"]["count"] = 2

@@ -110,6 +110,8 @@ struct FindItem {
     item_id: std::num::NonZeroU32,
     offset: Option<usize>,
     limit: Option<usize>,
+    /// Up to seven additional snapshot IDs with the exact same client/build.
+    additional_snapshot_ids: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -406,7 +408,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Find a base item ID in captured equipment, bags and supported banks. Returns bounded saved locations and per-storage quantities without a simulator catalogue.",
+        description = "Find a base item ID in captured equipment, bags and supported banks. Optionally search several explicitly selected snapshots separately, without a simulator catalogue.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -414,21 +416,38 @@ impl Operator {
         )
     )]
     fn find_snapshot_item(&self, Parameters(args): Parameters<FindItem>) -> CallToolResult {
-        let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
-            azeroth_operator::analysis::find_item(
-                &snapshot,
-                args.item_id.get(),
-                args.offset.unwrap_or(0),
-                args.limit.unwrap_or(20),
-            )
-        });
-        match result {
-            Ok(mut found) => {
-                found["snapshot_id"] = serde_json::json!(args.snapshot_id);
-                CallToolResult::success(vec![ContentBlock::text(found.to_string())])
+        let result = (|| {
+            let additional = args.additional_snapshot_ids.unwrap_or_default();
+            anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
+            let query = |id: &str, snapshot: &azeroth_operator::Snapshot| {
+                let mut found = azeroth_operator::analysis::find_item(
+                    snapshot,
+                    args.item_id.get(),
+                    args.offset.unwrap_or(0),
+                    args.limit.unwrap_or(20),
+                )?;
+                found["snapshot_id"] = serde_json::json!(id);
+                Ok::<_, anyhow::Error>(found)
+            };
+            let primary = self.store.read(&args.snapshot_id)?;
+            let mut found = query(&args.snapshot_id, &primary)?;
+            if !additional.is_empty() {
+                let mut seen = std::collections::BTreeSet::from([args.snapshot_id.as_str()]);
+                let mut extra = Vec::new();
+                for id in &additional {
+                    anyhow::ensure!(seen.insert(id), "Duplicate snapshot ID");
+                    let snapshot = self.store.read(id)?;
+                    anyhow::ensure!(snapshot.client == primary.client, "Client/build mismatch");
+                    extra.push(query(id, &snapshot)?);
+                }
+                found["additional_snapshot_results"] = serde_json::json!(extra);
             }
+            Ok::<_, anyhow::Error>(found)
+        })();
+        match result {
+            Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Item search requires a valid snapshot and a limit from 1 to 50.",
+                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50.",
             )]),
         }
     }

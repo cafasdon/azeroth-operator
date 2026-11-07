@@ -252,6 +252,11 @@ catalogue. Use `offset` and `limit` (1–50, default 20) to page through matchin
 locations. Per-storage quantities cover every matching location. A null
 quantity means the storage was unavailable in that capture.
 
+Pass up to seven `additional_snapshot_ids` to check the same item across
+explicitly selected captures from the same client and build. Each capture
+retains its own quantities, coverage and pagination. The search applies the
+same offset and limit to each capture. Shared bank observations stay separate.
+
 Pass `currency_id` to `compare_snapshots` for a Forever currency's captured
 before and after records, including its observed balance and cap fields.
 The report gives the direction and amount of the balance change when both
