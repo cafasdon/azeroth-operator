@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Screen proposed Forever off-hand weapons against the selected simulator specialisation.
+
 - Exclude Forever gear swaps that conflict with the pinned class equipment capabilities.
 
 - Join Forever crafted item sources to the matching saved recipe and material capacity.

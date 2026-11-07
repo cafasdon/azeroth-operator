@@ -167,7 +167,9 @@ eligibility remains unverified.
 The same check screens known armour, melee, two-handed and ranged types
 against the captured class using the pinned simulator's class capabilities.
 Missing types leave the check unknown. This does not infer trained skill,
-level-specific armour unlocks or specialisation-specific dual wielding.
+level-specific armour unlocks. Separately, the ranker screens proposed off-hand
+weapon swaps against the selected template specialisation's dual-wield rules.
+It preserves shields, held off-hand items and the equipped baseline.
 [Pinned WoWSims class capabilities](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/ui/sim/player/classes/capabilities_auto_gen.ts)
 
 The ranker also skips locations whose saved links cannot produce a simulator

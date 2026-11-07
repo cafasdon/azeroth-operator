@@ -12,7 +12,7 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from tools.run_forever_sim import CLASS_IDS, compare, compare_bulk, read_object, request_from, single_player
+from tools.run_forever_sim import CLASS_IDS, compare, compare_bulk, player_spec, read_object, request_from, single_player
 
 
 SIMULATOR_SLOTS = (
@@ -26,6 +26,8 @@ CAPTURED_RACES = {
     "orc": 6, "tauren": 7, "troll": 8, "undead": 9,
     "highorderskyborne": 10, "windshaperskyborne": 11,
 }
+# Pinned WoWSims SPEC_CAN_DUAL_WIELD.
+DUAL_WIELD_SPECS = frozenset(("hunter", "rogue", "dpsWarrior", "protectionWarrior"))
 
 
 def check_template_identity(template, stats):
@@ -51,7 +53,7 @@ def check_template_identity(template, stats):
     return checks
 
 
-async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
+async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True):
     candidates = []
     skipped = []
     offset = 0
@@ -74,8 +76,8 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
             if selection is None:
                 raise ValueError("Local MCP did not supply a draft selection")
             source = selection["source"]
+            same_slot = source["kind"] == "equipment" and source["slot"] == selection["target_slot"]
             if source["kind"] == "equipment":
-                same_slot = source["slot"] == selection["target_slot"]
                 if multi and same_slot:
                     continue
                 if not multi and not same_slot:
@@ -88,6 +90,15 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
                     "conflicts": [conflict],
                 })
                 continue
+            reference = row.get("catalogue_base_item") or {}
+            if (not can_dual_wield and slot == "off_hand" and not same_slot
+                    and reference.get("type") == 13 and reference.get("handType") in (2, 3)
+                    and reference.get("weaponType") in (1, 2, 3, 4, 6, 8, 9)):
+                skipped.append({
+                    **({"selections": [selection]} if multi else {"selection": selection}),
+                    "reason": "specialisation_cannot_dual_wield",
+                })
+                continue
             modifier_review = row.get("catalogue_modifier_candidates", {})
             modifiers = modifier_review or {}
             spec = modifiers.get("simulator_item_spec")
@@ -98,7 +109,6 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
                 })
                 continue
             if collapse_identical and source["kind"] != "equipment":
-                reference = row.get("catalogue_base_item") or {}
                 # Multi-slot items may need two physical copies in the same set.
                 if spec and reference.get("simulator_slots") == [slot]:
                     key = json.dumps(spec, sort_keys=True, separators=(",", ":"))
@@ -114,7 +124,8 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
             return candidates, skipped, page["coverage"]
 
 
-async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None):
+async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
+                  can_dual_wield=True):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -135,7 +146,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         coverage = None
         multi = len(slots) > 1
         for slot in slots:
-            candidates, exclusions, coverage = await slot_candidates(call, slot, multi, collapse_identical, item_ids)
+            candidates, exclusions, coverage = await slot_candidates(
+                call, slot, multi, collapse_identical, item_ids, can_dual_wield,
+            )
             skipped.extend(exclusions)
             options.append([None, *candidates])
         if prod(map(len, options)) > 1024:
@@ -262,12 +275,13 @@ def main():
             if any(weight == 0 for weight in weights):
                 raise ValueError("Encounter weights are too far apart to normalise")
         template = read_object(args.template, 4 * 1024 * 1024)
+        can_dual_wield = player_spec(single_player(template["raid"])) in DUAL_WIELD_SPECS
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage, stats = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
-                        args.collapse_identical_items, args.item_id), timeout=45,
+                        args.collapse_identical_items, args.item_id, can_dual_wield), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         if len(encounters) == 1:

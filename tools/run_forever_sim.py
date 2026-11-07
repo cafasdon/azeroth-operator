@@ -44,6 +44,16 @@ def single_player(raid):
     return players[0]
 
 
+def player_spec(player):
+    specs = SPEC_CLASSES.keys() & player.keys()
+    if len(specs) != 1:
+        raise ValueError("Provide exactly one supported specialisation")
+    spec = next(iter(specs))
+    if not isinstance(player[spec], dict):
+        raise ValueError("Provide an explicit specialisation configuration")
+    return spec
+
+
 def request_from(template, equipment_review, encounter_lookup):
     raid = deepcopy(template["raid"])
     player = single_player(raid)
@@ -52,13 +62,12 @@ def request_from(template, equipment_review, encounter_lookup):
         entry.get("action") for entry in rotation.get("priorityList", [])
     ):
         raise ValueError("Provide a single-player template with an explicit APL")
-    specs = SPEC_CLASSES.keys() & player.keys()
-    if (len(specs) != 1 or not isinstance(player[next(iter(specs))], dict)
-            or not isinstance(player.get("talentsString"), str)
+    spec = player_spec(player)
+    if (not isinstance(player.get("talentsString"), str)
             or not player.get("class") or player["class"] == "ClassUnknown"
             or not player.get("race") or player["race"] == "RaceUnknown"):
         raise ValueError("Provide an explicit class, race, spec and talent string")
-    spec_class = SPEC_CLASSES[next(iter(specs))]
+    spec_class = SPEC_CLASSES[spec]
     declared_class = player["class"]
     if not (declared_class == f"Class{spec_class.capitalize()}"
             or type(declared_class) is int and declared_class == CLASS_IDS[spec_class]):
