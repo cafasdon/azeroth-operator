@@ -283,6 +283,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         mismatch = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "inventory_snapshot_id": forever_key})
                         self.assertTrue(mismatch.isError)
+                        second_recipe = json.loads(json.dumps(forever))
+                        second_recipe["sections"]["selected_recipe"].update({
+                            "recipe_id": 101, "reagents": {"744": 5}})
+                        second_key = SnapshotStore(Path(folder)).ingest(second_recipe)
+                        batch_request = {**recipe_request, "additional_recipes": [
+                            {"snapshot_id": second_key, "crafts": 2}]}
+                        batch = await session.call_tool("review_forever_recipe", batch_request)
+                        self.assertFalse(batch.isError)
+                        batch_data = json.loads(batch.content[0].text)
+                        combined = {row["item_id"]: row for row in batch_data["combined_materials"]}
+                        self.assertEqual(combined[744], {
+                            "item_id": 744, "required": 13, "quantity_observed": 12, "shortfall_vs_observed": 1})
+                        self.assertEqual(batch_data["additional_recipe_reviews"][0]["snapshot_id"], second_key)
+                        duplicate = await session.call_tool("review_forever_recipe", {
+                            **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
+                        self.assertTrue(duplicate.isError)
                         forever["sections"]["bags"]["0"] = {
                             str(slot): {"item_id": 744, "count": 2} for slot in range(1, 22)
                         }

@@ -90,6 +90,15 @@ struct RecipeReview {
     crafts: u32,
     /// Optional same-character and same-build capture, at least as recent as the recipe.
     inventory_snapshot_id: Option<String>,
+    /// Up to seven other saved recipes checked against the same inventory capture.
+    additional_recipes: Option<Vec<RecipeBatchEntry>>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct RecipeBatchEntry {
+    snapshot_id: String,
+    crafts: u32,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -422,7 +431,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare a saved Forever recipe's fixed reagents with observed bags and banks for 1 to 1000 crafts. Optionally use a newer compatible inventory snapshot. Offline estimate only.",
+        description = "Compare one to eight saved Forever recipes with observed bags and banks for 1 to 1000 crafts each. Multiple recipes share one compatible inventory snapshot. Offline estimate only.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -431,6 +440,8 @@ impl Operator {
     )]
     fn review_forever_recipe(&self, Parameters(args): Parameters<RecipeReview>) -> CallToolResult {
         let result = (|| {
+            let additional = args.additional_recipes.unwrap_or_default();
+            anyhow::ensure!(additional.len() <= 7, "Too many recipes");
             let snapshot = self.store.read(&args.snapshot_id)?;
             let inventory = args
                 .inventory_snapshot_id
@@ -445,12 +456,40 @@ impl Operator {
             if let Some(id) = args.inventory_snapshot_id {
                 review["inventory_snapshot_id"] = serde_json::json!(id);
             }
+            if !additional.is_empty() {
+                let stock = inventory.as_ref().unwrap_or(&snapshot);
+                let mut extra_reviews = Vec::new();
+                let mut recipe_ids =
+                    std::collections::BTreeSet::from([review["recipe"]["recipe_id"].as_u64()]);
+                for entry in additional {
+                    let saved = self.store.read(&entry.snapshot_id)?;
+                    let mut extra = azeroth_operator::analysis::review_recipe_with_inventory(
+                        &saved,
+                        entry.crafts,
+                        Some(stock),
+                    )?;
+                    anyhow::ensure!(
+                        recipe_ids.insert(extra["recipe"]["recipe_id"].as_u64()),
+                        "Duplicate recipe ID"
+                    );
+                    extra["snapshot_id"] = serde_json::json!(entry.snapshot_id);
+                    extra_reviews.push(extra);
+                }
+                review["combined_materials"] =
+                    azeroth_operator::analysis::combine_recipe_materials(
+                        std::iter::once(&review).chain(&extra_reviews),
+                    )?;
+                review["additional_recipe_reviews"] = serde_json::json!(extra_reviews);
+                if inventory.is_none() {
+                    review["inventory_snapshot_id"] = serde_json::json!(args.snapshot_id);
+                }
+            }
             Ok::<_, anyhow::Error>(review)
         })();
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe review requires a saved Forever recipe, 1 to 1000 crafts and compatible inventory if supplied.",
+                "Recipe review requires up to eight distinct saved Forever recipes, 1 to 1000 crafts each and a compatible inventory capture.",
             )]),
         }
     }

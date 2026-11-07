@@ -235,6 +235,13 @@ at least as recent as the recipe capture. Reagents come from the recipe
 capture, while counts, locations and storage coverage come from the inventory
 capture. The response includes both capture times. Missing storage stays unknown.
 
+Supply up to seven `additional_recipes`, each with a saved `snapshot_id` and
+`crafts`, to plan multiple distinct recipes against one inventory capture.
+The primary capture provides the inventory if no separate capture is supplied.
+`combined_materials` sums fixed demand and counts the shared stock once.
+It is null if any recipe has unsupported requirements. The plan uses captured
+stock and does not credit outputs from other planned crafts.
+
 Use `find_snapshot_item` with a saved `snapshot_id` and a base `item_id` to
 find captured copies in equipment, bags and banks without a simulator
 catalogue. Use `offset` and `limit` (1–50, default 20) to page through matching

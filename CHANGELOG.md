@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Plan fixed materials for up to eight saved Forever recipes against shared inventory.
+
 - Review a saved Forever recipe against a newer same-character inventory capture.
 
 - Compare captured quest and tracked Forever achievement progress by ID.

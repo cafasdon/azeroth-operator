@@ -120,6 +120,40 @@ pub fn review_recipe_with_inventory(
     Ok(review)
 }
 
+/// Combine demands from reviews already validated against the same inventory capture.
+pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) -> Result<Value> {
+    let mut totals = BTreeMap::<u64, (u64, Option<u64>)>::new();
+    for review in reviews {
+        if review["recipe"]["requirements"] != "fixed_items" {
+            return Ok(Value::Null);
+        }
+        for material in review["materials"].as_array().into_iter().flatten() {
+            let id = material["item_id"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Missing reagent ID"))?;
+            let required = material["required"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Missing reagent quantity"))?;
+            let observed = material["quantity_observed"].as_u64();
+            let total = totals.entry(id).or_insert((0, observed));
+            ensure!(total.1 == observed, "Inventory observations differ");
+            total.0 = total
+                .0
+                .checked_add(required)
+                .ok_or_else(|| anyhow::anyhow!("Reagent quantity overflow"))?;
+        }
+    }
+    Ok(json!(
+        totals
+            .into_iter()
+            .map(|(item_id, (required, observed))| json!({
+                "item_id":item_id,"required":required,"quantity_observed":observed,
+                "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity))
+            }))
+            .collect::<Vec<_>>()
+    ))
+}
+
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),
