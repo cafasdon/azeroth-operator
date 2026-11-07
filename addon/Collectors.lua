@@ -650,6 +650,17 @@ local function questSpellRewards(id)
         assert(questRewardInteger(index,1,count) and questRewardInteger(spellID,1,4294967295),
             "Invalid quest spell reward")
         local entry={spell_id=spellID}
+        local nameOk,name=pcall(C_Spell and C_Spell.GetSpellName,spellID)
+        if nameOk and questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256 then
+            entry.name=name
+        end
+        local bank=Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
+        if questRewardInteger(bank,0,4294967295) then
+            local bookOk,listed=pcall(C_SpellBook and C_SpellBook.IsSpellInSpellBook,spellID,bank,true)
+            if bookOk and questRewardAccessible(listed) and type(listed)=="boolean" then
+                entry.in_player_spellbook=listed
+            end
+        end
         local ok,info=pcall(api.GetQuestRewardSpellInfo,id,spellID)
         if ok and questRewardAccessible(info) and type(info)=="table" then
             local kind,learned=info.type,info.isSpellLearned

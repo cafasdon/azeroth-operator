@@ -677,12 +677,20 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             ("spell_id", "positive", true),
                             ("reward_type", "uint", false),
                             ("is_spell_learned", "bool", false),
+                            ("name", "text", false),
+                            ("in_player_spellbook", "bool", false),
                         ],
                     )?;
                     let spells = spells.as_object().unwrap();
                     ensure!(spells.len() <= 32, "Too many quest spell rewards");
-                    for key in spells.keys() {
+                    for (key, spell) in spells {
                         index(key, 1, spells.len() as u32)?;
+                        ensure!(
+                            spell["name"]
+                                .as_str()
+                                .is_none_or(|name| !name.is_empty() && name.len() <= 256),
+                            "Invalid quest reward spell name"
+                        );
                     }
                 }
                 if let Some(amounts) = quest.get("reward_amounts").filter(|v| !v.is_null()) {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture names and player spellbook presence for saved Forever quest reward spells.
+
 - Compare saved Forever levels and within-level XP across captures.
 
 - Compare saved Forever quest XP rewards with the captured next-level threshold.

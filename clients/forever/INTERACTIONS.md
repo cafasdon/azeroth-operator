@@ -150,6 +150,9 @@ before the panel groups or filters them. When
 available it also includes the client's numeric `reward_type` and
 `is_spell_learned` reward flag. That flag describes the reward and does not
 query the character's spellbook. An empty object is an observed empty list.
+When available, `name` identifies the spell and `in_player_spellbook` reports
+the same player spellbook check the quest panel uses. It includes overrides,
+so presence alone does not establish permanent learning.
 Update the importer and reader before syncing this field. [Forever quest reward API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestInfoSystemDocumentation.lua)
 
 Set `quest_wallet_projection: true` when inspecting a saved Forever quest

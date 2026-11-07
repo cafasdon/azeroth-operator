@@ -511,6 +511,12 @@ pub fn verify_forever_capture_fixture(
             return "Private",0,1,1,true,118
         end
         GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
+        Enum.SpellBookSpellBank={Player=0}
+        C_Spell={GetSpellName=function(spell) if spell==101 then return "Fixture spell" end end}
+        C_SpellBook={IsSpellInSpellBook=function(spell,bank,overrides)
+            assert(bank==0 and overrides==true)
+            return spell==102
+        end}
         C_QuestInfoSystem={GetQuestRewardSpells=function(id)
             if id==43 then return {} end
             return invalidItemChoice and {101,0} or {101,102}
@@ -714,7 +720,7 @@ pub fn verify_forever_capture_fixture(
     assert!(quests["43"].get("renown_rewards").is_none());
     assert_eq!(
         quests["42"]["spell_rewards"],
-        serde_json::json!({"1":{"spell_id":101,"reward_type":0,"is_spell_learned":false},"2":{"spell_id":102}})
+        serde_json::json!({"1":{"spell_id":101,"reward_type":0,"is_spell_learned":false,"name":"Fixture spell","in_player_spellbook":false},"2":{"spell_id":102,"in_player_spellbook":true}})
     );
     assert_eq!(quests["43"]["spell_rewards"], serde_json::json!({}));
     lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
