@@ -364,6 +364,11 @@ baseline. One run per binary returned identical collection results in
 14.15 seconds with the older debug server and 5.55 seconds with batching.
 Timing covers snapshot and draft collection before simulation.
 
+A separate before/after run on the same fixture compared the already
+batched debug server with per-batch catalogue verification and indexed
+item lookup. The collection took 11.05 seconds before and 0.90 seconds
+after, with identical ordered results.
+
 The check uses the pinned simulator enum mapping. The simulator request also
 requires the template's specialisation to agree with its declared class.
 [WoWSims Forever enum definitions](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)

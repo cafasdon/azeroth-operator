@@ -1865,9 +1865,35 @@ fn item_requirement_check(snapshot: &Snapshot) -> impl Fn(&Value) -> Option<Valu
     }
 }
 
+/// A verified catalogue for reviewing one request's equipment drafts.
+pub struct EquipmentCatalogue {
+    db: &'static Value,
+    items: &'static BTreeMap<u64, &'static Value>,
+}
+
+impl EquipmentCatalogue {
+    pub fn load(path: &Path) -> Result<Self> {
+        static ITEMS: OnceLock<BTreeMap<u64, &'static Value>> = OnceLock::new();
+        let (db, _) = load(path)?;
+        let rows = db["items"]
+            .as_array()
+            .ok_or_else(|| anyhow::anyhow!("Missing catalogue items"))?;
+        let items = ITEMS.get_or_init(|| {
+            let mut index = BTreeMap::new();
+            for row in rows {
+                if let Some(id) = row["id"].as_u64() {
+                    index.entry(id).or_insert(row);
+                }
+            }
+            index
+        });
+        Ok(Self { db, items })
+    }
+}
+
 /// Checks catalogue slot fit and two-handed pairing in a validated equipment draft.
 pub fn review_equipment_catalogue(
-    path: &Path,
+    catalogue: &EquipmentCatalogue,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
     allow_two_hand_off_hand_clear: bool,
@@ -1894,11 +1920,8 @@ pub fn review_equipment_catalogue(
         }
         equipment.get(&slot.to_string())
     };
-    let (db, _) = load(path)?;
-    let items = db["items"]
-        .as_array()
-        .ok_or_else(|| anyhow::anyhow!("Missing catalogue items"))?;
-    let find = |id| items.iter().find(|item| item["id"].as_u64() == Some(id));
+    let db = catalogue.db;
+    let find = |id| catalogue.items.get(&id).copied();
     let clear_off_hand = allow_two_hand_off_hand_clear
         && selected_observation(17).is_some()
         && selected_observation(16)

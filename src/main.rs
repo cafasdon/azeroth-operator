@@ -702,11 +702,17 @@ impl Operator {
                             && self.forever_catalogue.is_some())),
                 "Additional drafts require a Forever catalogue and a bounded batch"
             );
+            let catalogue = self
+                .forever_catalogue
+                .as_deref()
+                .filter(|_| snapshot.client.family == Family::Forever)
+                .map(azeroth_operator::forever_catalogue::EquipmentCatalogue::load);
             let mut review = self.review_equipment_draft(
                 &snapshot,
                 &args.snapshot_id,
                 &args.selections,
                 args.allow_two_hand_off_hand_clear,
+                catalogue.as_ref(),
             )?;
             if !additional.is_empty() {
                 let extra = additional
@@ -717,6 +723,7 @@ impl Operator {
                             &args.snapshot_id,
                             &draft.selections,
                             draft.allow_two_hand_off_hand_clear,
+                            catalogue.as_ref(),
                         )
                     })
                     .collect::<anyhow::Result<Vec<_>>>()?;
@@ -1007,6 +1014,7 @@ impl Operator {
         snapshot_id: &str,
         selections: &[azeroth_operator::planning::EquipmentSelection],
         allow_two_hand_off_hand_clear: bool,
+        catalogue: Option<&anyhow::Result<azeroth_operator::forever_catalogue::EquipmentCatalogue>>,
     ) -> anyhow::Result<serde_json::Value> {
         anyhow::ensure!(
             !selections.is_empty() || self.forever_catalogue.is_some(),
@@ -1025,29 +1033,32 @@ impl Operator {
             "Clearing the off-hand requires a Forever catalogue and a main-hand selection without an off-hand selection"
         );
         let mut review = azeroth_operator::planning::equipment_review(snapshot, selections)?;
-        if snapshot.client.family == Family::Forever
-            && let Some(path) = &self.forever_catalogue
-        {
-            let checks = azeroth_operator::forever_catalogue::review_equipment_catalogue(
-                path,
-                snapshot,
-                selections,
-                allow_two_hand_off_hand_clear,
-            )
-            .or_else(|error| {
-                if selections.is_empty() || allow_two_hand_off_hand_clear {
-                    return Err(error);
-                }
-                Ok(serde_json::json!({
-                    "catalogue_two_hand_pairing":"unknown",
-                    "catalogue_slot_fit":null,
-                    "catalogue_requirement_conflicts":null,
-                    "catalogue_unique_item_duplicates":null,
-                    "catalogue_shared_limit_categories":null,
-                    "simulator_equipment_spec":null,
-                    "simulator_equipment_unresolved_slots":null
-                }))
-            })?;
+        if let Some(catalogue) = catalogue {
+            let checks = catalogue
+                .as_ref()
+                .map_err(|_| anyhow::anyhow!("Catalogue verification failed"))
+                .and_then(|catalogue| {
+                    azeroth_operator::forever_catalogue::review_equipment_catalogue(
+                        catalogue,
+                        snapshot,
+                        selections,
+                        allow_two_hand_off_hand_clear,
+                    )
+                })
+                .or_else(|error| {
+                    if selections.is_empty() || allow_two_hand_off_hand_clear {
+                        return Err(error);
+                    }
+                    Ok(serde_json::json!({
+                        "catalogue_two_hand_pairing":"unknown",
+                        "catalogue_slot_fit":null,
+                        "catalogue_requirement_conflicts":null,
+                        "catalogue_unique_item_duplicates":null,
+                        "catalogue_shared_limit_categories":null,
+                        "simulator_equipment_spec":null,
+                        "simulator_equipment_unresolved_slots":null
+                    }))
+                })?;
             review["checks"]
                 .as_object_mut()
                 .unwrap()
