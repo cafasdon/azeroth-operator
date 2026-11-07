@@ -430,6 +430,21 @@ AO.collectors.selected_recipe = function()
     local result={recipe_id=info.recipeID,name=info.name,learned=info.learned,
         output_item_id=positive(schematic.outputItemID) and schematic.outputItemID or nil,
         requirements="fixed_items",reagents={}}
+    local function accessible(value)
+        return not issecretvalue or not issecretvalue(value)
+    end
+    local difficulty=info.relativeDifficulty
+    if accessible(difficulty) and (difficulty==0 or positive(difficulty)) then
+        local labels={[0]="optimal","medium","easy","trivial"}
+        result.relative_difficulty=labels[difficulty]
+    end
+    local canSkillUp,skillUps=info.canSkillUp,info.numSkillUps
+    if accessible(canSkillUp) and type(canSkillUp)=="boolean" then
+        result.can_skill_up=canSkillUp
+    end
+    if accessible(skillUps) and (skillUps==0 or positive(skillUps)) then
+        result.skill_ups_reported=skillUps
+    end
     for _,slot in ipairs(slots) do
         assert(type(slot.required)=="boolean", "Reagent requirement unavailable")
         if slot.required then

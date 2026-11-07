@@ -527,7 +527,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(mismatch.isError)
                         second_recipe = json.loads(json.dumps(forever))
                         second_recipe["sections"]["selected_recipe"].update({
-                            "recipe_id": 101, "reagents": {"744": 5}})
+                            "recipe_id": 101, "reagents": {"744": 5}, "relative_difficulty": "trivial",
+                            "can_skill_up": False, "skill_ups_reported": 0})
                         second_key = SnapshotStore(Path(folder)).ingest(second_recipe)
                         batch_request = {**recipe_request, "additional_recipes": [
                             {"snapshot_id": second_key, "crafts": 2}]}
@@ -551,6 +552,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_materials[744]["shortfall_vs_bags"], 3)
                         self.assertEqual(bank_materials[744]["shortfall_vs_observed"], 2)
                         self.assertEqual(batch_data["additional_recipe_reviews"][0]["snapshot_id"], second_key)
+                        training_recipe = batch_data["additional_recipe_reviews"][0]["recipe"]
+                        self.assertEqual(training_recipe["relative_difficulty"], "trivial")
+                        self.assertIs(training_recipe["can_skill_up"], False)
+                        self.assertEqual(training_recipe["skill_ups_reported"], 0)
                         duplicate = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
                         self.assertTrue(duplicate.isError)

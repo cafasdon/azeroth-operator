@@ -424,7 +424,8 @@ pub fn verify_forever_capture_fixture(
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
         Professions={InLocalCraftingMode=function() return localCrafting end}
         C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end}
-        local recipeInfo={recipeID=100,name='Fixture recipe',learned=true}
+        local recipeInfo={recipeID=100,name='Fixture recipe',learned=true,
+            relativeDifficulty=0,canSkillUp=true,numSkillUps=2}
         recipeSchematic={recipeID=100,outputItemID=456,isRecraft=false,recipeType=1,reagentSlotSchematics={
             {required=true,reagents={{itemID=744}},quantityRequired=2,variableQuantities={}},
             {required=true,reagents={{itemID=744}},quantityRequired=1,variableQuantities={}},
@@ -734,6 +735,16 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(recipe["materials"][0]["quantity_observed"], 1);
     assert_eq!(recipe["materials"][0]["shortfall_vs_observed"], 5);
     assert_eq!(recipe["craftability_verified"], false);
+    assert_eq!(recipe["recipe"]["relative_difficulty"], "optimal");
+    assert_eq!(recipe["recipe"]["can_skill_up"], true);
+    assert_eq!(recipe["recipe"]["skill_ups_reported"], 2);
+    lua.load(
+        "issecretvalue=function(v) return v==2 end;
+        local recipe=AO.collectors.selected_recipe();
+        assert(recipe.skill_ups_reported==nil and recipe.relative_difficulty=='optimal');
+        issecretvalue=nil",
+    )
+    .exec()?;
     lua.load("recipeSchematic.recipeType=3;recipeSchematic.outputItemID=nil;AO.Capture()")
         .exec()?;
     let enchant = azeroth_operator::analysis::review_recipe(&read()?, 2)?;

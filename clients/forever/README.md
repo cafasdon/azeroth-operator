@@ -47,6 +47,12 @@ The archive is in `dist/forever-paragon` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with these fields.
 
+The staged 0.33.0-dev candidate adds optional recipe training indicators.
+The archive is in `dist/forever-recipe-training` with SHA-256
+`830decf33ffde52392a33f834ba212131e7b5f0eee2a820bb282ac376841dd24`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with these fields.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

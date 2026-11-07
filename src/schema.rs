@@ -428,6 +428,9 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("recipe_id", "positive", true),
                     ("name", "text", true),
                     ("learned", "bool", true),
+                    ("relative_difficulty", "text", false),
+                    ("can_skill_up", "bool", false),
+                    ("skill_ups_reported", "uint", false),
                     ("output_item_id", "positive", false),
                     ("requirements", "text", true),
                     ("reagents", "map", true),
@@ -435,6 +438,14 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
             let name = value["name"].as_str().unwrap();
             ensure!(!name.is_empty() && name.len() <= 256, "Invalid recipe name");
+            ensure!(
+                value["relative_difficulty"].is_null()
+                    || matches!(
+                        value["relative_difficulty"].as_str(),
+                        Some("optimal" | "medium" | "easy" | "trivial")
+                    ),
+                "Invalid recipe difficulty"
+            );
             let reagents = value["reagents"].as_object().unwrap();
             ensure!(reagents.len() <= 64, "Too many required reagents");
             ensure!(

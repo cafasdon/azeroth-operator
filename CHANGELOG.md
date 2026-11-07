@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture displayed Forever recipe difficulty and skill-up indicators for saved craft planning.
+
 - Show skill points remaining to observed profession caps in saved captures.
 
 - Show unfinished criteria and remaining counts for saved tracked Forever achievements.
