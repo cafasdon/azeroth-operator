@@ -18,6 +18,17 @@ Forever `0.27.0-dev` contains only the adapter, collectors, export core and TOC.
 
 The Windows release companion imported the complete synthetic Forever fixture. Its executable SHA-256 `aae7f17c0762d54a42ff76cc92aad4dbb5f27d7b00d84577931d92db6ba86550` was verified and selected in the existing sync configuration. The previous configuration is backed up in `local-data/sync/config-before-forever-capture.json`. The scheduled runner matches its source and ran at 16:15:41 SAST on 7 November 2026 with result 0. Forever returned `waiting_for_export` and Retail returned `unchanged` from its cached acknowledgement. The task reported no live game access.
 
+After closing Forever, first-install the reviewed capture package from the repository root:
+
+```powershell
+$manifest = (Resolve-Path 'dist/forever-capture-only/AzerothOperator-0.27.0-dev-forever-live.manifest.json').Path
+python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
+```
+
+The installer checks the build and package against the local source, publishes all four files together, and refuses an existing addon directory. Then start Forever, use `/aoexport`, and reload or log out to persist the snapshot for sync. A changed client build needs fresh qualification.
+
+Use trusted local directories. If verification fails after publication, the installer reports that the directory was created and preserves it for inspection. The Windows synthetic CLI test checked wrong-build and corrupt-package refusal, exact installed hashes, existing-file preservation and post-publication failure reporting. Caller and failure review covered the Windows rename and package checks. Jev advisory triage supported the trusted-local recovery boundary (`jev-1.14.0`, request `7fff9f320321b40de5c142e6f31a9ef9a03d843d13210bfa345849dd6b2929cb`, 442 input/44 output tokens, 0.279 seconds).
+
 Caller and failure review checked package contents, installed-file drift, command import resolution and interrupted staging. The companion was verified before its atomic move and configuration selection. Jev advisory triage marked the cutover issues material (`jev-1.14.0`, request `58e7e1f9bc6b982a96ef0c0e6d86d52e75323d6d7c7c9b02108e1188d552c3d3`, 431 input/46 output tokens, 0.294 seconds). Forever was running and its addon directory was absent. The package was staged in the project. Installation, restart and native capture remain pending.
 
 ### Coverage by system
