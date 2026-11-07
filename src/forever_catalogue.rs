@@ -660,6 +660,9 @@ struct EquippedSlot {
     level: Option<i64>,
     weapon_dps: Option<f64>,
     effect_ids: Option<BTreeSet<u64>>,
+    set_id: Option<u64>,
+    observed_set_counts: Option<BTreeMap<u64, usize>>,
+    uncatalogued_equipped_items: Option<usize>,
     regular_stats: Option<serde_json::Map<String, Value>>,
 }
 
@@ -744,6 +747,10 @@ fn regular_stat_delta(
     Some(deltas)
 }
 
+fn recorded_set_id(item: &Value) -> Option<u64> {
+    item["setId"].as_u64().filter(|id| *id > 0)
+}
+
 fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) -> EquippedSlot {
     let equipment = snapshot
         .sections
@@ -758,6 +765,24 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
             .iter()
             .find(|item| item["id"].as_u64() == Some(id))
     });
+    let set_observation = equipment.map(|equipment| {
+        let mut counts = BTreeMap::new();
+        let mut uncatalogued = 0;
+        for item in equipment.values() {
+            let reference = item["item_id"]
+                .as_u64()
+                .and_then(|id| catalogue.iter().find(|row| row["id"].as_u64() == Some(id)));
+            if let Some(reference) = reference {
+                if let Some(set_id) = recorded_set_id(reference) {
+                    *counts.entry(set_id).or_default() += 1;
+                }
+            } else {
+                uncatalogued += 1;
+            }
+        }
+        (counts, uncatalogued)
+    });
+    let (observed_set_counts, uncatalogued_equipped_items) = set_observation.unzip();
     EquippedSlot {
         slot,
         observed: equipment.is_some(),
@@ -765,6 +790,9 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
         level: equipped.and_then(default_item_level),
         weapon_dps: equipped.and_then(default_weapon_dps),
         effect_ids: equipped.and_then(recorded_effect_ids),
+        set_id: equipped.and_then(recorded_set_id),
+        observed_set_counts,
+        uncatalogued_equipped_items,
         regular_stats: equipped.and_then(default_regular_stats),
     }
 }
@@ -789,15 +817,28 @@ impl EquippedSlot {
                         "removed_buff_ids":equipped.difference(&candidate).collect::<Vec<_>>(),
                     }))
                 });
+                let candidate_set = recorded_set_id(item);
+                let set_projection = self.observed_set_counts.as_ref().map(|counts| {
+                    [self.set_id, candidate_set].into_iter().flatten().collect::<BTreeSet<_>>()
+                        .into_iter().map(|set_id| {
+                            let before = counts.get(&set_id).copied().unwrap_or_default();
+                            let after = before.saturating_sub(usize::from(self.set_id == Some(set_id)))
+                                + usize::from(candidate_set == Some(set_id));
+                            json!({"set_id":set_id,"observed_equipped_pieces":before,
+                                "projected_equipped_pieces":after})
+                        }).collect::<Vec<_>>()
+                });
                 json!({"item_id":item["id"],"default_item_level":level,
                     "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped)),
                     "default_regular_stat_delta":stat_delta,
                     "default_weapon_dps":weapon_dps,"default_weapon_dps_delta":weapon_dps_delta,
-                    "catalogue_effect_buff_changes":effect_changes})
+                    "catalogue_effect_buff_changes":effect_changes,
+                    "single_slot_set_projection":set_projection})
             })
             .collect();
         json!({"simulator_slot":self.slot,"equipment_observed":self.observed,"equipped_item_id":self.item_id,
-            "equipped_default_item_level":self.level,"equipped_default_weapon_dps":self.weapon_dps,"items":items})
+            "equipped_default_item_level":self.level,"equipped_default_weapon_dps":self.weapon_dps,
+            "uncatalogued_equipped_items":self.uncatalogued_equipped_items,"items":items})
     }
 }
 

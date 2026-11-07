@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show projected set-piece counts for single-slot Forever catalogue gear swaps.
+
 - Compare recorded effect buff IDs with the saved Forever equipped item.
 
 - Find Forever catalogue items by recorded buff spell ID and effect trigger.
