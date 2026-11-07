@@ -8,6 +8,7 @@ import logging
 from math import fsum, isfinite, prod
 import os
 from pathlib import Path
+from time import monotonic
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -235,12 +236,50 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation
 
 
+def audit_shortlist(staged, fixed, requests, top):
+    canonical = {}
+    aliases = {}
+    for review, request in enumerate(requests, 1):
+        gear = single_player(request["raid"])["equipment"]
+        key = json.dumps(gear, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        aliases[review] = canonical.setdefault(key, review)
+
+    def unique_order(result):
+        ordered = sorted(result["results"], key=lambda row: (-row["mean_dps"], row["review"]))
+        return list(dict.fromkeys(aliases[row["review"]] for row in ordered if aliases[row["review"]] != 1))
+
+    staged_reviews = unique_order(staged) if staged is not None else []
+    fixed_reviews = unique_order(fixed)[:top]
+    return {
+        "fixed_iterations": requests[0]["simOptions"]["iterations"],
+        "fixed_unique_gear_sets": fixed["unique_runs"],
+        "staged_shortlist_reviews": staged_reviews,
+        "fixed_top_reviews": fixed_reviews,
+        "fixed_top_missing_from_shortlist": [review for review in fixed_reviews if review not in staged_reviews],
+    }
+
+
 def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
+    start = monotonic()
+    fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+             if args.audit_shortlist else None)
+    after_fixed = monotonic()
     result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
               if args.bulk_engine else None)
+    staged_wall = monotonic() - after_fixed if result is not None else None
+    audit = audit_shortlist(result, fixed, requests, args.top) if fixed is not None else None
     if result is None:
-        result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+        result = fixed if fixed is not None else compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+    if audit is not None:
+        audit["fixed_wall_seconds"] = after_fixed - start
+        audit["staged_wall_seconds"] = staged_wall
+        fixed_rows = {row["review"]: row for row in fixed["results"]}
+        audit["fixed_top_details"] = [
+            {**fixed_rows[review], "selections": drafts[review - 1][0]}
+            for review in audit["fixed_top_reviews"]
+        ]
+        result["shortlist_audit"] = audit
     for row in result["results"]:
         selections, draft = drafts[row["review"] - 1]
         if set_piece_ids is not None:
@@ -308,6 +347,8 @@ def main():
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
     parser.add_argument("--top", type=int, default=5, help="Distinct gear sets to return in bulk mode")
+    parser.add_argument("--audit-shortlist", action="store_true",
+                        help="Compare the staged shortlist with a bounded fixed-iteration run of every candidate")
     args = parser.parse_args()
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
@@ -321,6 +362,8 @@ def main():
             raise ValueError("Provide a positive catalogue set ID")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
+        if args.audit_shortlist and not args.bulk_engine:
+            raise ValueError("Shortlist audit requires the bulk adapter")
         if not 1 <= args.max_drafts <= 128:
             raise ValueError("Draft limit is out of range")
         if len(args.encounter_lookup) > 4:

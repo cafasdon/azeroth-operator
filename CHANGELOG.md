@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Audit staged Forever gear shortlists against a bounded fixed-iteration run.
+
 - Verify the Forever catalogue once per equipment review batch and index item lookups.
 
 - Batch local Forever equipment draft reviews for faster owned-gear ranking.

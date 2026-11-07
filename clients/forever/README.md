@@ -287,6 +287,15 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+For a bounded shortlist check, add `--audit-shortlist` to a ranker command
+using the bulk adapter. The ranker runs every distinct gear input at the
+encounter export's fixed iteration count, then compares its top candidates
+with the bulk shortlist. It reports missed review IDs, fixed top selections
+and both wall times per encounter. Equal point estimates use input order
+as the tie-breaker. The fixed run uses the existing comparison budgets.
+The runs may reach different precision, so a disagreement calls for closer
+comparison at higher precision.
+
 The standalone `python -m tools.run_forever_sim` command combines saved
 equipment and encounter MCP responses with a trusted local WoWSims executable
 and a caller-supplied `RaidSimRequest` JSON template. Supply `--engine` as an
