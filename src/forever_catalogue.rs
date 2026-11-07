@@ -347,19 +347,20 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
         "id",
         modifiers["random_suffix_id"].as_i64(),
     );
-    let suffix_stats = item.and_then(|item| match suffixes.as_slice() {
-        [suffix] => scaled_suffix_stats(item, suffix),
+    let suffix_effects = item.and_then(|item| match suffixes.as_slice() {
+        [suffix] => scaled_suffix_effects(item, suffix),
         _ => None,
     });
     json!({
         "enchants":enchants,
         "fitting_enchants":fitting_enchants,
         "random_suffixes":suffixes,
-        "default_scaling_suffix_allocation_delta":suffix_stats
+        "default_scaling_suffix_allocation_delta":suffix_effects.as_ref().map(|(stats, _)| stats),
+        "default_scaling_suffix_extra_effects":suffix_effects.as_ref().map(|(_, extra)| extra)
     })
 }
 
-fn scaled_suffix_stats(item: &Value, suffix: &Value) -> Option<Value> {
+fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)> {
     let id = suffix["id"].as_i64()?;
     let listed = item["randomSuffixOptions"]
         .as_array()?
@@ -368,7 +369,8 @@ fn scaled_suffix_stats(item: &Value, suffix: &Value) -> Option<Value> {
     if !listed {
         return None;
     }
-    let points = item["scalingOptions"]["0"]["randPropPoints"].as_i64()?;
+    let scaling = &item["scalingOptions"]["0"];
+    let points = scaling["randPropPoints"].as_i64()?;
     let mut deltas = BTreeMap::new();
     for (stat, allocation) in suffix["stats"].as_array()?.iter().enumerate() {
         let delta = (allocation.as_f64()? * points as f64 / 10_000.0).round();
@@ -376,7 +378,25 @@ fn scaled_suffix_stats(item: &Value, suffix: &Value) -> Option<Value> {
             deltas.insert(stat, delta);
         }
     }
-    Some(json!({"random_property_points":points,"by_simulator_stat_id":deltas}))
+    let pseudo_stats: BTreeMap<_, _> = suffix["pseudoStats"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .enumerate()
+        .filter_map(|(id, value)| {
+            value
+                .as_f64()
+                .filter(|value| *value != 0.0)
+                .map(|_| (id, value))
+        })
+        .collect();
+    let weapon_damage = (suffix["reducedCasterDps"] == true)
+        .then_some(&scaling["reducedCasterWeaponDamage"])
+        .filter(|damage| damage.is_object());
+    Some((
+        json!({"random_property_points":points,"by_simulator_stat_id":deltas}),
+        json!({"by_simulator_pseudo_stat_id":pseudo_stats,"replacement_weapon_damage":weapon_damage}),
+    ))
 }
 
 #[cfg(test)]
@@ -385,13 +405,21 @@ mod tests {
 
     #[test]
     fn scales_listed_suffix_allocations_and_rounds_halves_away_from_zero() {
-        let item = json!({"randomSuffixOptions":[7],"scalingOptions":{"0":{"randPropPoints":6}}});
-        let suffix = json!({"id":7,"stats":[47500,-47500,0]});
+        let item = json!({"randomSuffixOptions":[7],"scalingOptions":{"0":{
+            "randPropPoints":6,"reducedCasterWeaponDamage":{"weaponDamageMin":44}
+        }}});
+        let suffix = json!({"id":7,"stats":[47500,-47500,0],
+            "pseudoStats":[0,0,0,0,1],"reducedCasterDps":true});
+        let (stats, extra) = scaled_suffix_effects(&item, &suffix).unwrap();
         assert_eq!(
-            scaled_suffix_stats(&item, &suffix),
-            Some(json!({"random_property_points":6,"by_simulator_stat_id":{"0":29.0,"1":-29.0}}))
+            stats,
+            json!({"random_property_points":6,"by_simulator_stat_id":{"0":29.0,"1":-29.0}})
         );
-        assert!(scaled_suffix_stats(&item, &json!({"id":8,"stats":[47500]})).is_none());
+        assert_eq!(
+            extra,
+            json!({"by_simulator_pseudo_stat_id":{"4":1},"replacement_weapon_damage":{"weaponDamageMin":44}})
+        );
+        assert!(scaled_suffix_effects(&item, &json!({"id":8,"stats":[47500]})).is_none());
     }
 
     #[test]

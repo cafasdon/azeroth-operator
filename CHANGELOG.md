@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show flat pseudo-stat and replacement weapon-damage effects of a captured Forever suffix at default simulator scaling.
+
 - Estimate Forever random-suffix stat deltas at the simulator's default item scaling.
 
 - Distinguish captured enchant candidates that fit the base item under the pinned Forever simulator rules.
