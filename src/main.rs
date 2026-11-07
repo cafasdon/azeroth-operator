@@ -62,6 +62,8 @@ struct Inspect {
     quest_max_remaining_seconds: Option<u32>,
     /// Keep saved Forever quests that offer this base item as a fixed reward or choice.
     quest_reward_item_id: Option<std::num::NonZeroU32>,
+    /// Keep saved Forever quests that offer this currency as a fixed reward or choice.
+    quest_reward_currency_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
@@ -925,6 +927,7 @@ impl Operator {
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
                 || args.quest_reward_item_id.is_some()
+                || args.quest_reward_currency_id.is_some()
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
@@ -975,11 +978,11 @@ impl Operator {
                 "Quest timer selection requires the quests section without a quest ID",
             )]);
         }
-        if args.quest_reward_item_id.is_some()
+        if (args.quest_reward_item_id.is_some() || args.quest_reward_currency_id.is_some())
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Quest reward item selection requires the quests section without a quest ID",
+                "Quest reward selection requires the quests section without a quest ID",
             )]);
         }
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
@@ -1109,6 +1112,7 @@ impl Operator {
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
                     || args.quest_reward_item_id.is_some()
+                    || args.quest_reward_currency_id.is_some()
                 {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
@@ -1165,19 +1169,26 @@ impl Operator {
                                 unknown
                             }));
                     }
-                    if let Some(item) = args.quest_reward_item_id {
-                        value["quest_reward_item_id"] = serde_json::json!(item);
-                        value["quest_reward_item_unknown_count"] =
+                    for (kind, id) in [
+                        ("item", args.quest_reward_item_id),
+                        ("currency", args.quest_reward_currency_id),
+                    ] {
+                        let Some(id) = id else { continue };
+                        let id_field = format!("{kind}_id");
+                        let fixed_field = format!("{kind}_rewards");
+                        let choice_field = format!("{kind}_choices");
+                        value[format!("quest_reward_{kind}_id")] = serde_json::json!(id);
+                        value[format!("quest_reward_{kind}_unknown_count")] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
                                 quests.retain(|_, quest| {
                                     let lists = [
-                                        quest["item_rewards"].as_object(),
-                                        quest["item_choices"].as_object(),
+                                        quest[&fixed_field].as_object(),
+                                        quest[&choice_field].as_object(),
                                     ];
                                     let matched = lists.iter().flatten().any(|rows| {
                                         rows.values().any(|row| {
-                                            row["item_id"].as_u64() == Some(u64::from(item.get()))
+                                            row[&id_field].as_u64() == Some(u64::from(id.get()))
                                         })
                                     });
                                     unknown +=

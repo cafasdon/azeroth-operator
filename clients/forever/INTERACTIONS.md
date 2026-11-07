@@ -219,6 +219,10 @@ earlier filters that had no match and at least one unavailable item list.
 Item lists are captured for the selected quest, so other quests may have
 unknown rewards. This filter requires the quests section without a quest ID.
 
+`quest_reward_currency_id` searches fixed currency rewards and currency
+choices the same way. When combined with an item reward filter, quests must
+match both. The currency unknown count applies after the item filter.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,
