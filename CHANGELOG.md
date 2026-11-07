@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured item copies across equipment, bags and supported banks without a simulator catalogue.
+
 - Show where fixed Forever recipe reagents were observed in bags and banks.
 
 - Report Forever recipe material capacity and bottleneck reagents from bags and banks.

@@ -20,6 +20,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "lookup_forever_catalogue",
     "review_forever_owned_gear",
     "review_forever_recipe",
+    "find_snapshot_item",
 ];
 
 #[derive(Clone)]
@@ -77,6 +78,15 @@ struct OwnedGearReview {
 struct RecipeReview {
     snapshot_id: String,
     crafts: u32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct FindItem {
+    snapshot_id: String,
+    item_id: std::num::NonZeroU32,
+    offset: Option<usize>,
+    limit: Option<usize>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -369,6 +379,33 @@ impl Operator {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
                 "Owned gear review requires a valid Forever snapshot, a verified local catalogue and a limit from 1 to 50.",
+            )]),
+        }
+    }
+    #[tool(
+        description = "Find a base item ID in captured equipment, bags and supported banks. Returns bounded saved locations and per-storage quantities without a simulator catalogue.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn find_snapshot_item(&self, Parameters(args): Parameters<FindItem>) -> CallToolResult {
+        let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+            azeroth_operator::analysis::find_item(
+                &snapshot,
+                args.item_id.get(),
+                args.offset.unwrap_or(0),
+                args.limit.unwrap_or(20),
+            )
+        });
+        match result {
+            Ok(mut found) => {
+                found["snapshot_id"] = serde_json::json!(args.snapshot_id);
+                CallToolResult::success(vec![ContentBlock::text(found.to_string())])
+            }
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Item search requires a valid snapshot and a limit from 1 to 50.",
             )]),
         }
     }

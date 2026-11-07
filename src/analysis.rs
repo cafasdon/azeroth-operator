@@ -106,6 +106,54 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
     )
 }
 
+pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
+    ensure!(
+        item_id > 0 && (1..=50).contains(&limit),
+        "Invalid item query"
+    );
+    let mut locations = Vec::new();
+    let mut matched_locations = 0usize;
+    let mut quantities = BTreeMap::new();
+    for storage in ["equipment", "bags", "character_bank", "account_bank"] {
+        if storage.ends_with("_bank") && snapshot.client.family != crate::Family::Forever {
+            continue;
+        }
+        let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
+            quantities.insert(storage, None);
+            continue;
+        };
+        let mut quantity = 0;
+        let mut record = |container: Option<&str>, slot: &str, item: &Value, count: u64| {
+            if item["item_id"].as_u64() == Some(u64::from(item_id)) {
+                quantity += count;
+                if matched_locations >= offset && locations.len() < limit {
+                    locations.push(json!({
+                        "storage":storage,"container":container,"slot":slot,"count":count
+                    }));
+                }
+                matched_locations += 1;
+            }
+        };
+        for (key, item) in section {
+            if storage == "equipment" {
+                record(None, key, item, 1);
+            } else if let Some(slots) = item.as_object() {
+                for (slot, observed) in slots {
+                    if let Some(count) = observed["count"].as_u64() {
+                        record(Some(key), slot, observed, count);
+                    }
+                }
+            }
+        }
+        quantities.insert(storage, Some(quantity));
+    }
+    Ok(json!({
+        "captured_at":snapshot.captured_at,"item_id":item_id,"live":false,
+        "locations":locations,"matched_locations":matched_locations,
+        "quantity_by_storage":quantities,"has_more":matched_locations.saturating_sub(offset)>limit
+    }))
+}
+
 fn carried_items(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();

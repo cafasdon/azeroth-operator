@@ -117,7 +117,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "find_snapshot_item"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         self.assertEqual(set(TOOLS), expected)
@@ -251,6 +251,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(len(reagents[744]["observed_locations"]), 20)
                         self.assertEqual(reagents[10]["observed_stack_count"], 0)
                         self.assertEqual(reagents[10]["observed_locations"], [])
+                        search = {"snapshot_id": capped_key, "item_id": 744, "limit": 2}
+                        matches = await session.call_tool("find_snapshot_item", search)
+                        self.assertFalse(matches.isError)
+                        found = json.loads(matches.content[0].text)
+                        self.assertEqual(found["matched_locations"], 22)
+                        self.assertEqual(found["quantity_by_storage"], {
+                            "equipment": 0, "bags": 42, "character_bank": 1, "account_bank": 0})
+                        self.assertTrue(found["has_more"])
+                        last = await session.call_tool("find_snapshot_item", {**search, "offset": 21})
+                        tail = json.loads(last.content[0].text)
+                        self.assertEqual(tail["locations"], [
+                            {"storage": "character_bank", "container": "6", "slot": "1", "count": 1}])
+                        self.assertFalse(tail["has_more"])
+                        self.assertTrue((await session.call_tool("find_snapshot_item", {**search, "limit": 51})).isError)
                         for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},
                                     {"snapshot_id":key,"crafts":1}):
                             self.assertTrue((await session.call_tool("review_forever_recipe", bad)).isError)
