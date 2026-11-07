@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Support simulated healing targets in Forever gear comparisons while attributing metrics to the equipped character.
+
 - Rank Forever healer gear by simulated healing per second and report time out of mana.
 
 - Rank Forever tank gear by fewest simulated deaths and flag threat and survival trade-offs.

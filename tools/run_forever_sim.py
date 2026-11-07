@@ -114,6 +114,36 @@ def single_player(raid):
     return players[0]
 
 
+def healing_dummy_count(raid):
+    dummy_count = raid.get("targetDummies", raid.get("target_dummies", 0))
+    if type(dummy_count) is not int or not 0 <= dummy_count <= 24:
+        raise ValueError("Provide zero to 24 simulated healing dummies")
+    if dummy_count:
+        active_count = raid.get("numActiveParties", raid.get("num_active_parties", 0))
+        if type(active_count) is not int or active_count < 0:
+            raise ValueError("Invalid active party count")
+        parties = raid["parties"]
+        active = parties[:active_count or len(parties)]
+        if dummy_count > 5 * len(active) - 1 or not any(party.get("players") for party in active):
+            raise ValueError("Provide an active player and enough party slots for healing dummies")
+    return dummy_count
+
+
+def simulated_player_metrics(request_raid, metrics_raid):
+    if healing_dummy_count(request_raid) == 0:
+        return single_player(metrics_raid)
+    name = single_player(request_raid).get("name")
+    if not name:
+        raise ValueError("Healing dummies require a named simulator player")
+    matches = [
+        player for party in metrics_raid["parties"] for player in party.get("players", [])
+        if player.get("name") == name
+    ]
+    if len(matches) != 1:
+        raise ValueError("Could not identify the simulated player's metrics among healing dummies")
+    return matches[0]
+
+
 def player_spec(player):
     specs = SPEC_CLASSES.keys() & player.keys()
     if len(specs) != 1:
@@ -127,6 +157,7 @@ def player_spec(player):
 def request_from(template, equipment_review, encounter_lookup):
     raid = deepcopy(template["raid"])
     player = single_player(raid)
+    healing_dummy_count(raid)
     rotation = player["rotation"]
     if rotation.get("type") != "TypeAPL" or not any(
         entry.get("action") for entry in rotation.get("priorityList", [])
@@ -220,7 +251,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             "engine_sha256": expected_hash.lower(),
         }
         if tank_metrics:
-            metrics = single_player(result["raidMetrics"])
+            metrics = simulated_player_metrics(request["raid"], result["raidMetrics"])
             for output, metric in (("dtps", "dtps"), ("tps", "threat")):
                 mean, deviation = metrics[metric]["avg"], metrics[metric]["stdev"]
                 if (not all(type(value) in (int, float) and math.isfinite(value)
@@ -236,7 +267,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             summary["simulated_death_fraction"] = min(death_fraction, 1.0)
             summary["simulated_deaths"] = round(summary["simulated_death_fraction"] * summary["iterations"])
         if healing_metrics:
-            metrics = single_player(result["raidMetrics"])
+            metrics = simulated_player_metrics(request["raid"], result["raidMetrics"])
             mean, deviation = metrics["hps"]["avg"], metrics["hps"]["stdev"]
             oom = metrics["secondsOomAvg"]
             if not all(type(value) in (int, float) and math.isfinite(value) and value >= 0

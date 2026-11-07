@@ -295,6 +295,15 @@ supplies the rotation and healing targets, so the result covers that
 scenario. Bulk and weighted modes still use DPS. Paired error estimates
 apply to DPS.
 
+To heal a simulated ally, set `raid.targetDummies` to an integer from 1 to
+24 in the template. Each active party has five slots, so a one-party
+template has room for four dummies. Include additional empty party
+objects when needed and keep those parties active. For a first-slot player and one dummy, an APL friendly
+cast can target `{"type":"Player","index":1}`. Assign that dummy as the
+tank in `raid.tanks` to give the encounter a separate incoming-damage
+target. The ranking changes only the real template player's equipment and
+reports that player's healing. Dummies model synthetic targets.
+
 Use `--tank-metrics` with the standalone simulator to report mean damage
 taken per second (DTPS), threat per second (TPS), their standard deviations
 and the fraction of iterations with a simulated death. For owned gear, use
