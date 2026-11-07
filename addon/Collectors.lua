@@ -580,27 +580,54 @@ local function questRequiredCopper(api,id)
     end
 end
 
+local function questRewardAccessible(value)
+    return not issecretvalue or not issecretvalue(value)
+end
+
+local function questRewardInteger(value,minimum,maximum)
+    return questRewardAccessible(value) and type(value)=="number" and value%1==0
+        and value>=minimum and value<=maximum
+end
+
+local function questCurrencyRow(row)
+    assert(questRewardAccessible(row) and type(row)=="table", "Invalid quest currency row")
+    assert(questRewardInteger(row.currencyID,1,4294967295)
+        and questRewardInteger(row.totalRewardAmount,1,4294967295), "Invalid quest currency reward")
+    return {currency_id=row.currencyID,quantity=row.totalRewardAmount}
+end
+
 local function questCurrencyRewards(id)
     local rows=C_QuestInfoSystem.GetQuestRewardCurrencies(id)
-    local function accessible(value)
-        return not issecretvalue or not issecretvalue(value)
-    end
-    local function positive(value,maximum)
-        return accessible(value) and type(value)=="number" and value%1==0 and value>=1 and value<=maximum
-    end
-    assert(accessible(rows) and type(rows)=="table", "Quest currencies unavailable")
+    assert(questRewardAccessible(rows) and type(rows)=="table", "Quest currencies unavailable")
     local result,count={},#rows
     assert(count<=32, "Too many quest currencies")
     local observed=0
     for index,row in pairs(rows) do
-        assert(positive(index,count) and accessible(row) and type(row)=="table", "Invalid quest currency row")
-        assert(positive(row.currencyID,4294967295) and positive(row.totalRewardAmount,4294967295),
-            "Invalid quest currency reward")
-        result[tostring(index)]={currency_id=row.currencyID,quantity=row.totalRewardAmount}
+        assert(questRewardInteger(index,1,count), "Invalid quest currency index")
+        result[tostring(index)]=questCurrencyRow(row)
         observed=observed+1
     end
     assert(observed==count, "Incomplete quest currency rewards")
     return result
+end
+
+local function questCurrencyChoices(api,id)
+    local selected=api.GetSelectedQuest()
+    if not questRewardInteger(selected,1,4294967295) or selected~=id then return nil end
+    local show=api.ShouldShowQuestRewards(id)
+    if not questRewardAccessible(show) or show~=true then return nil end
+    local count=GetNumQuestLogChoices(id,true)
+    assert(questRewardInteger(count,0,32), "Invalid quest choice count")
+    local result={}
+    for index=1,count do
+        local kind=GetQuestLogChoiceInfoLootType(index)
+        assert(questRewardInteger(kind,0,1), "Unknown quest choice type")
+        if kind==1 then
+            result[tostring(index)]=questCurrencyRow(api.GetQuestRewardCurrencyInfo(id,index,true))
+        end
+    end
+    selected=api.GetSelectedQuest()
+    if questRewardInteger(selected,1,4294967295) and selected==id then return result end
 end
 
 AO.collectors.quests = function()
@@ -628,6 +655,8 @@ AO.collectors.quests = function()
                 entry.required_copper=questRequiredCopper(api,id)
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
+                local choicesOk,choices=pcall(questCurrencyChoices,api,id)
+                if choicesOk then entry.currency_choices=choices end
                 local ok,objectives=pcall(questObjectives,api,id)
                 if ok then entry.objectives=objectives end
             end

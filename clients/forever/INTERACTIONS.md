@@ -83,6 +83,14 @@ checks. An empty object is an observed empty list. An absent field means
 the list was unavailable or unreadable. Update the importer and reader
 before syncing the new field. [Forever quest panel](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/QuestInfo.lua)
 
+Select a quest in the game's quest log before exporting to capture
+`currency_choices`. Its keys are original choice positions, so item
+alternatives can leave gaps. Each row lists the currency ID and displayed
+quantity for one alternative. An empty object means no currency choices
+were observed for the selected quest. Other quests and unreadable choices
+omit the field. The addon does not change selection or choose a reward.
+Update the importer and reader before syncing this field.
+
 Pass `quest_waypoint_map_id` with `section: "quests"` to return only
 quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response

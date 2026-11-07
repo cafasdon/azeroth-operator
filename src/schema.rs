@@ -644,14 +644,15 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("next_waypoint_map_id", "positive", false),
                     ("required_copper", "wallet_copper", false),
                     ("currency_rewards", "map", false),
+                    ("currency_choices", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
-                if let Some(rewards) = quest
-                    .get("currency_rewards")
-                    .filter(|value| !value.is_null())
-                {
+                for field in ["currency_rewards", "currency_choices"] {
+                    let Some(rewards) = quest.get(field).filter(|value| !value.is_null()) else {
+                        continue;
+                    };
                     entries(
                         rewards,
                         &[
@@ -661,8 +662,13 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     )?;
                     let rewards = rewards.as_object().unwrap();
                     ensure!(rewards.len() <= 32, "Too many quest currency rewards");
+                    let max_index = if field == "currency_rewards" {
+                        rewards.len() as u32
+                    } else {
+                        32
+                    };
                     for key in rewards.keys() {
-                        index(key, 1, rewards.len() as u32)?;
+                        index(key, 1, max_index)?;
                     }
                 }
                 if let Some(objectives) = quest.get("objectives").filter(|value| !value.is_null()) {

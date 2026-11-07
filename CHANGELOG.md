@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture currency choices for the selected Forever quest without changing selection.
+
 - Capture Forever quest currency receive rows separately from reward choices.
 
 - Capture Forever quest copper requirements and show per-quest wallet shortfalls in saved character summaries.

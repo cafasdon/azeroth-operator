@@ -459,6 +459,12 @@ pub fn verify_forever_capture_fixture(
             end,
             ReadyForTurnIn=function(id) if id==42 then return false end end,
             IsFailed=function() return false end,
+            GetSelectedQuest=function() return 42 end,
+            ShouldShowQuestRewards=function(id) return id==42 end,
+            GetQuestRewardCurrencyInfo=function(id,index,isChoice)
+                assert(id==42 and index==2 and isChoice==true)
+                return {currencyID=18,totalRewardAmount=50}
+            end,
             GetRequiredMoney=function(id)
                 if invalidQuestMoney then return -1 end
                 return id==42 and 250 or 0
@@ -475,6 +481,8 @@ pub fn verify_forever_capture_fixture(
                 return sparseObjectives and {[2]=objective} or {objective}
             end,
         }
+        GetNumQuestLogChoices=function(id,all) assert(id==42 and all==true); return 2 end
+        GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
         C_QuestInfoSystem={GetQuestRewardCurrencies=function(id)
             if id==43 then return {} end
             local row={currencyID=17,totalRewardAmount=25,name="Do not export"}
@@ -614,6 +622,11 @@ pub fn verify_forever_capture_fixture(
     );
     assert_eq!(quests["43"]["currency_rewards"], serde_json::json!({}));
     assert_eq!(
+        quests["42"]["currency_choices"],
+        serde_json::json!({"2":{"currency_id":18,"quantity":50}})
+    );
+    assert!(quests["43"].get("currency_choices").is_none());
+    assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quest_money"],
         serde_json::json!({"quests_with_cost":{"42":{"required_copper":250,"shortfall_copper":null}},"cost_unknown_count":0})
     );
@@ -624,6 +637,11 @@ pub fn verify_forever_capture_fixture(
     );
     lua.load("invalidQuestMap=true;invalidQuestMoney=true;invalidQuestReward=true;AO.Capture()")
         .exec()?;
+    assert!(
+        read()?.sections["quests"]["42"]
+            .get("currency_choices")
+            .is_none()
+    );
     assert!(
         read()?.sections["quests"]["42"]
             .get("currency_rewards")
