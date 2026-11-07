@@ -357,6 +357,21 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         .and_then(|section| section["entries"].as_object());
     let selected_recipe = snapshot.sections.get("selected_recipe");
     let tracked_recipes = snapshot.sections.get("tracked_recipes");
+    let observed_faction = snapshot
+        .sections
+        .get("stats")
+        .and_then(|stats| stats["faction"].as_str())
+        .filter(|faction| matches!(*faction, "Alliance" | "Horde"));
+    let source_faction = |value: &Value| match value.as_u64() {
+        Some(1) => Some("Alliance"),
+        Some(2) => Some("Horde"),
+        _ => None,
+    };
+    let faction_matches = |recorded| {
+        observed_faction
+            .zip(recorded)
+            .map(|(observed, recorded)| observed == recorded)
+    };
     let mut recipe_review = None;
     let mut sources = Vec::new();
     for item in records
@@ -383,6 +398,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                     .filter(|row| row["kind"] == "standard")
                     .and_then(|row| row["reaction"].as_u64())
                     .filter(|reaction| (1..=8).contains(reaction));
+                let recorded_faction = source_faction(&source["rep"]["factionId"]);
                 let requirement_met = required_reaction
                     .zip(observed_reaction)
                     .map(|(required, observed)| observed >= required);
@@ -391,10 +407,20 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                     "reputation_observed":row.is_some(),
                     "required_standard_reaction":required_reaction,
                     "observed_reputation_requirement_met":requirement_met,
+                    "catalogue_source_faction":recorded_faction,
+                    "observed_character_faction_matches":faction_matches(recorded_faction),
                     "standing":row.and_then(|faction| faction["standing"].as_i64()),
                     "reaction":row.and_then(|faction| faction["reaction"].as_u64()),
                     "kind":row.and_then(|faction| faction["kind"].as_str()),
                     "account_wide":row.and_then(|faction| faction["account_wide"].as_bool())
+                }));
+            }
+            if let Some(id) = source["soldBy"]["npcId"].as_u64().filter(|id| *id > 0) {
+                let recorded_faction = source_faction(&source["soldBy"]["faction"]);
+                sources.push(json!({
+                    "item_id":item["id"],"source_index":index+1,"vendor_npc_id":id,
+                    "catalogue_source_faction":recorded_faction,
+                    "observed_character_faction_matches":faction_matches(recorded_faction)
                 }));
             }
             if let Some(id) = source["crafted"]["spellId"].as_u64().filter(|id| *id > 0) {

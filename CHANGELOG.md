@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured character faction with Forever catalogue vendor and reputation source tags.
+
 - Compare Forever catalogue reputation requirements with captured standard faction reactions.
 
 - Include captured recipe output, cooldown and unmet-condition counts on Forever item crafting sources.
