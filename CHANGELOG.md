@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever consumables by saved ownership and report captured stock by storage.
+
 - Keep Forever gear candidates that preserve the saved slot's recorded set membership.
 
 - Show projected set-piece counts for single-slot Forever catalogue gear swaps.

@@ -148,7 +148,7 @@ pub struct Query {
     /// Exact numeric ID (enchant effect ID for enchants), encounter path, or name substring.
     /// Omit all filters to get the section count without records.
     pub key: Option<String>,
-    /// Up to 100 distinct exact item IDs, in place of key. Results follow catalogue order.
+    /// Up to 100 distinct exact item IDs for items or consumables, in place of key. Results follow catalogue order.
     pub item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
@@ -204,7 +204,7 @@ pub struct Query {
     /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
     #[serde(default)]
     pub include_source_references: bool,
-    /// Optional owner-scoped Forever snapshot for observed quest, reputation and crafted source progress.
+    /// Optional owner-scoped Forever snapshot for stock counts and, for items, observed source progress.
     pub acquisition_snapshot_id: Option<String>,
     /// Filter by base item presence in the supplied snapshot. Absent requires all four storage sections.
     pub observed_ownership: Option<ObservedOwnership>,
@@ -288,6 +288,7 @@ fn load(path: &Path) -> Result<(&'static Value, Value)> {
 pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
     let (db, provenance) = load(path)?;
     let (section, identity) = query.section.fields();
+    let has_inventory_context = matches!(query.section, Section::Items | Section::Consumables);
     let rows = db[section]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Missing catalogue section"))?;
@@ -299,9 +300,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     }
     let item_ids = if let Some(ids) = &query.item_ids {
         ensure!(
-            matches!(query.section, Section::Items)
-                && key.is_none()
-                && (1..=100).contains(&ids.len()),
+            has_inventory_context && key.is_none() && (1..=100).contains(&ids.len()),
             "Expected 1 to 100 item IDs in place of a catalogue key"
         );
         let distinct: BTreeSet<_> = ids.iter().map(|id| u64::from(id.get())).collect();
@@ -415,9 +414,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Expected positive weapon filters and an ordered speed range"
     );
     let effect_filter = query.item_effect_buff_id.is_some() || query.item_effect_trigger.is_some();
-    let item_filter = item_ids.is_some()
-        || ownership.is_some()
-        || check_requirements.is_some()
+    let inventory_filter = item_ids.is_some() || ownership.is_some();
+    let item_filter = check_requirements.is_some()
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
@@ -434,12 +432,20 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Item filters are supported for items only"
     );
     ensure!(
-        !(query.include_source_references || query.acquisition_snapshot_id.is_some())
-            || (matches!(query.section, Section::Items)
-                && (key.is_some() || query.recipe_spell_id.is_some() || item_filter)),
-        "Source context requires a filtered item lookup"
+        !inventory_filter || has_inventory_context,
+        "Inventory filters require items or consumables"
     );
-    if key.is_some() || query.recipe_spell_id.is_some() || item_filter {
+    let filtered =
+        key.is_some() || query.recipe_spell_id.is_some() || item_filter || inventory_filter;
+    ensure!(
+        !query.include_source_references || (matches!(query.section, Section::Items) && filtered),
+        "Source references require a filtered item lookup"
+    );
+    ensure!(
+        query.acquisition_snapshot_id.is_none() || (has_inventory_context && filtered),
+        "Snapshot context requires a filtered item or consumable lookup"
+    );
+    if filtered {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
         let mut remaining_offset = query.offset.unwrap_or_default();
@@ -917,6 +923,35 @@ fn source_references(db: &Value, items: &[&Value]) -> Value {
     )
 }
 
+pub fn consumable_inventory(snapshot: &Snapshot, records: &Value) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    Ok(
+        json!({"captured_at":snapshot.captured_at,"owned_quantities_by_item_id":owned_quantities(snapshot, records)?}),
+    )
+}
+
+fn owned_quantities(
+    snapshot: &Snapshot,
+    records: &Value,
+) -> Result<serde_json::Map<String, Value>> {
+    let rows = records
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Invalid item records"))?;
+    let mut quantities = serde_json::Map::new();
+    for row in rows {
+        if let Some(id) = row["id"].as_u64().and_then(|id| u32::try_from(id).ok())
+            && id > 0
+        {
+            let mut found = crate::analysis::find_item(snapshot, id, 0, 1)?;
+            quantities.insert(id.to_string(), found["quantity_by_storage"].take());
+        }
+    }
+    Ok(quantities)
+}
+
 pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -946,7 +981,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
     };
     let mut recipe_review = None;
     let mut sources = Vec::new();
-    let mut owned_quantities = serde_json::Map::new();
+    let owned_quantities = owned_quantities(snapshot, records)?;
     let mut requirement_conflicts = serde_json::Map::new();
     let check_requirements = item_requirement_check(snapshot);
     for item in records
@@ -956,8 +991,6 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         if let Some(id) = item["id"].as_u64().and_then(|id| u32::try_from(id).ok())
             && id > 0
         {
-            let mut found = crate::analysis::find_item(snapshot, id, 0, 1)?;
-            owned_quantities.insert(id.to_string(), found["quantity_by_storage"].take());
             if !simulator_slots(item).is_empty()
                 && let Some(conflict) = check_requirements(item)
             {

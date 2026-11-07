@@ -178,6 +178,11 @@ Use `item_effect_buff_id` to find items with a recorded buff spell ID, including
 `stacking_aura`. When both filters are supplied they must match the same
 effect. These are catalogue labels and do not predict in-game activation.
 
+For raid supplies, use `section: "consumables"` with `acquisition_snapshot_id`
+and a name, `item_ids` or `observed_ownership`. The result reports saved
+counts for the returned potion, food and other consumable IDs. Item-source
+and equipment filters remain limited to the items section.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With
