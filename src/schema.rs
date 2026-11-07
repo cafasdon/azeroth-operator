@@ -432,6 +432,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("can_skill_up", "bool", false),
                     ("skill_ups_reported", "uint", false),
                     ("cooldown", "map", false),
+                    ("crafting_conditions", "map", false),
                     ("output_item_id", "positive", false),
                     ("base_output_quantity", "map", false),
                     ("requirements", "text", true),
@@ -482,6 +483,34 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         && charges <= maximum,
                     "Invalid recipe cooldown observation"
                 );
+            }
+            if let Some(conditions) = value
+                .get("crafting_conditions")
+                .filter(|value| !value.is_null())
+            {
+                entries(
+                    conditions,
+                    &[
+                        ("name", "text", true),
+                        ("met", "bool", true),
+                        ("kind", "text", true),
+                    ],
+                )?;
+                let conditions = conditions.as_object().unwrap();
+                ensure!(conditions.len() <= 32, "Too many crafting conditions");
+                for (key, condition) in conditions {
+                    index(key, 1, conditions.len() as u32)?;
+                    ensure!(
+                        condition["name"]
+                            .as_str()
+                            .is_some_and(|name| !name.is_empty() && name.len() <= 256)
+                            && matches!(
+                                condition["kind"].as_str(),
+                                Some("spell_focus" | "tool" | "area")
+                            ),
+                        "Invalid crafting condition"
+                    );
+                }
             }
             let reagents = value["reagents"].as_object().unwrap();
             ensure!(reagents.len() <= 64, "Too many required reagents");

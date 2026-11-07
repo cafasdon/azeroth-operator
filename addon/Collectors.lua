@@ -469,6 +469,23 @@ AO.collectors.selected_recipe = function()
         end)
         if ok then result.cooldown=cooldown end
     end
+    local observed,conditions=pcall(function()
+        local rows=C_TradeSkillUI.GetRecipeRequirements(info.recipeID)
+        if not accessible(rows) or type(rows)~="table" or #rows>32 then return end
+        local labels={[0]="spell_focus","tool","area"}
+        local count,conditions=0,{}
+        for index,row in pairs(rows) do
+            if not positive(index) or index>#rows or not accessible(row) or type(row)~="table" then return end
+            local name,met,kind=row.name,row.met,row.type
+            if not accessible(name) or not accessible(met) or not accessible(kind)
+                or type(name)~="string" or #name==0 or #name>256 or type(met)~="boolean"
+                or not (kind==0 or positive(kind)) or not labels[kind] then return end
+            conditions[tostring(index)]={name=name,met=met,kind=labels[kind]}
+            count=count+1
+        end
+        if count==#rows then return conditions end
+    end)
+    if observed then result.crafting_conditions=conditions end
     for _,slot in ipairs(slots) do
         assert(type(slot.required)=="boolean", "Reagent requirement unavailable")
         if slot.required then

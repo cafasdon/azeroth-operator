@@ -144,6 +144,9 @@ pub fn review_recipe_with_inventory(
         "base_output_if_completed":base_output_if_completed,
         "shortfall_vs_observed_recipe_charges":recipe["cooldown"]["charges"].as_u64()
             .map(|charges| u64::from(crafts).saturating_sub(charges)),
+        "unmet_crafting_conditions":recipe["crafting_conditions"].as_object().map(|conditions|
+            conditions.iter().filter(|(_, condition)| condition["met"].as_bool() == Some(false))
+                .collect::<BTreeMap<_, _>>()),
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
         "material_capacity":{
             "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),

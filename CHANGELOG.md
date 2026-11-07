@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report observed unmet tools, stations and area conditions for saved Forever recipes.
+
 - Capture available Forever recipe cooldowns and show requested crafts exceeding observed charges.
 
 - Show bag shortfalls and suggested bank withdrawals for ordered Forever crafting batches.

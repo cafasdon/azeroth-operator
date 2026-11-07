@@ -530,7 +530,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "recipe_id": 101, "reagents": {"744": 5}, "relative_difficulty": "trivial",
                             "output_item_id": 456, "base_output_quantity": {"minimum": 2, "maximum": 3},
                             "can_skill_up": False, "skill_ups_reported": 0,
-                            "cooldown": {"remaining_seconds": 30, "daily": False, "charges": 0, "max_charges": 3}})
+                            "cooldown": {"remaining_seconds": 30, "daily": False, "charges": 0, "max_charges": 3},
+                            "crafting_conditions": {"1": {"name": "Fixture area", "kind": "area", "met": False}}})
                         second_key = SnapshotStore(Path(folder)).ingest(second_recipe)
                         batch_request = {**recipe_request, "additional_recipes": [
                             {"snapshot_id": second_key, "crafts": 2}]}
@@ -574,6 +575,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(target_data["shortfall_vs_observed_recipe_charges"], 3)
                         self.assertEqual(target_data["recipe"]["cooldown"]["remaining_seconds"], 30)
                         self.assertIsNone(batch_data["shortfall_vs_observed_recipe_charges"])
+                        self.assertIsNone(batch_data["unmet_crafting_conditions"])
+                        self.assertEqual(target_data["unmet_crafting_conditions"], {
+                            "1": {"name": "Fixture area", "kind": "area", "met": False},
+                        })
                         self.assertEqual(target_data["materials"][0]["required"], 15)
                         self.assertEqual(target_data["base_output_if_completed"],
                                          {"item_id": 456, "minimum": 6, "maximum": 9})
