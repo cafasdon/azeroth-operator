@@ -41,6 +41,12 @@ observations. The archive is in `dist/forever-friendship` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with these fields.
 
+The staged 0.32.0-dev candidate adds optional paragon reputation observations.
+The archive is in `dist/forever-paragon` with SHA-256
+`3cd3c3863880c866b039884d8b70af3e5d83a5571eacfdda7bf873ea82982dff`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with these fields.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

@@ -473,6 +473,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("next_threshold", "int", true),
                     ("renown", "map", false),
                     ("friendship", "map", false),
+                    ("paragon", "map", false),
                 ],
             )?;
             let factions = value["entries"].as_object().unwrap();
@@ -512,6 +513,22 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             ("standing", "int", true),
                             ("threshold", "int", true),
                             ("next_threshold", "int", false),
+                        ],
+                    )?;
+                }
+                if let Some(paragon) = faction.get("paragon").filter(|value| !value.is_null()) {
+                    ensure!(
+                        faction["kind"] == "paragon",
+                        "Unexpected paragon observation"
+                    );
+                    object(
+                        paragon,
+                        &[
+                            ("current_value", "uint", true),
+                            ("reward_threshold", "positive", true),
+                            ("reward_pending", "bool", true),
+                            ("level_too_low", "bool", true),
+                            ("reward_quest_id", "positive", false),
                         ],
                     )?;
                 }

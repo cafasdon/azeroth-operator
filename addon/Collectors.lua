@@ -675,6 +675,22 @@ AO.collectors.reputation = function()
                     end
                 end)
                 if observed then rows[id].friendship=progress end
+            elseif rows[id].kind=="paragon" then
+                local observed,progress=pcall(function()
+                    local current,threshold,quest,pending,tooLow=api.GetFactionParagonInfo(row.factionID)
+                    current,threshold=accessible(current),accessible(threshold)
+                    pending,tooLow=accessible(pending),accessible(tooLow)
+                    if integer(current,0,4294967295) and integer(threshold,1,4294967295)
+                        and type(pending)=="boolean" and type(tooLow)=="boolean" then
+                        local result={current_value=current,reward_threshold=threshold,
+                            reward_pending=pending,level_too_low=tooLow}
+                        if (not issecretvalue or not issecretvalue(quest)) and integer(quest,1,4294967295) then
+                            result.reward_quest_id=quest
+                        end
+                        return result
+                    end
+                end)
+                if observed then rows[id].paragon=progress end
             end
         end
     end

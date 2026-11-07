@@ -460,7 +460,11 @@ pub fn verify_forever_capture_fixture(
                 if not missingFaction then return faction(20) end
             end,
             IsMajorFaction=function(id) if classificationMissing then error("unavailable") end return id==20 end,
-            IsFactionParagonForCurrentPlayer=function() return false end,
+            IsFactionParagonForCurrentPlayer=function(id) return id==10 and paragonEnabled==true end,
+            GetFactionParagonInfo=function(id)
+                assert(id==10)
+                return 250,100,314,true,false,2
+            end,
         }
         C_GossipInfo={GetFriendshipReputation=function(id)
             if id==10 and friendshipEnabled then
@@ -688,6 +692,23 @@ pub fn verify_forever_capture_fixture(
         read()?.sections["reputation"]["entries"]["10"]["friendship"],
         serde_json::json!({"standing":35,"threshold":20})
     );
+    lua.load("paragonEnabled=true;AO.Capture()").exec()?;
+    let paragon = read()?;
+    let faction = &paragon.sections["reputation"]["entries"]["10"];
+    assert_eq!(faction["kind"], "paragon");
+    assert_eq!(
+        faction["paragon"],
+        serde_json::json!({"current_value":250,"reward_threshold":100,"reward_quest_id":314,
+            "reward_pending":true,"level_too_low":false})
+    );
+    assert!(faction.get("friendship").is_none());
+    lua.load(
+        "issecretvalue=function(v) return v==250 end;
+        local row=AO.collectors.reputation().entries['10'];
+        assert(row.kind=='paragon' and row.paragon==nil);
+        issecretvalue=nil",
+    )
+    .exec()?;
     lua.load("classificationMissing=true;AO.Capture()").exec()?;
     assert_eq!(
         read()?.sections["reputation"]["entries"]["10"]["kind"],
