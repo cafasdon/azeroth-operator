@@ -384,8 +384,13 @@ pub fn compare_observations(
             }
             Some(b["standing"].as_i64()? - a["standing"].as_i64()?)
         });
+        let special_progress_change = previous
+            .as_ref()
+            .zip(current.as_ref())
+            .and_then(|(before, after)| compare_special_reputation(before, after));
         comparison["reputation_change"] = json!({
-            "faction_id":faction_id,"before":previous,"after":current,"standing_delta":standing_delta
+            "faction_id":faction_id,"before":previous,"after":current,"standing_delta":standing_delta,
+            "special_progress_change":special_progress_change
         });
     }
     if let Some(quest_id) = selectors.quest_id {
@@ -464,6 +469,50 @@ pub fn compare_observations(
         });
     }
     Ok(comparison)
+}
+
+fn remaining_renown_points(detail: &serde_json::Map<String, Value>) -> Option<u64> {
+    if detail.get("capped")?.as_bool()? {
+        return None;
+    }
+    let threshold = detail.get("level_threshold")?.as_u64()?;
+    let earned = detail.get("earned_in_level")?.as_u64()?;
+    threshold.checked_sub(earned).filter(|_| threshold > 0)
+}
+
+fn compare_special_reputation(before: &Value, after: &Value) -> Option<Value> {
+    let kind = before["kind"].as_str()?;
+    if after["kind"] != kind || before["account_wide"] != after["account_wide"] {
+        return None;
+    }
+    let a = before.get(kind)?.as_object()?;
+    let b = after.get(kind)?.as_object()?;
+    let delta = |field| b.get(field)?.as_i64()?.checked_sub(a.get(field)?.as_i64()?);
+    let flag_changed = |field| Some(a.get(field)?.as_bool()? != b.get(field)?.as_bool()?);
+    match kind {
+        "renown" => {
+            let level_delta = delta("level")?;
+            let earned_in_level_delta = if level_delta == 0
+                && a.get("level_threshold") == b.get("level_threshold")
+                && remaining_renown_points(a).is_some()
+                && remaining_renown_points(b).is_some()
+            {
+                delta("earned_in_level")
+            } else {
+                None
+            };
+            Some(
+                json!({"kind":kind,"level_delta":level_delta,"earned_in_level_delta":earned_in_level_delta,
+                "capped_changed":flag_changed("capped")?}),
+            )
+        }
+        "friendship" => Some(json!({"kind":kind,"standing_delta":delta("standing")?})),
+        "paragon" => Some(
+            json!({"kind":kind,"reward_pending_changed":flag_changed("reward_pending")?,
+            "level_restriction_changed":flag_changed("level_too_low")?}),
+        ),
+        _ => None,
+    }
 }
 
 fn criteria_by_id(criteria: &Value) -> BTreeMap<u64, Option<&Value>> {
@@ -629,13 +678,7 @@ pub fn special_reputation_progress(section: &Value) -> Value {
                 let progress = match kind {
                     "renown" => {
                         let capped = detail.get("capped")?.as_bool()?;
-                        let remaining = if capped {
-                            None
-                        } else {
-                            let threshold = detail.get("level_threshold")?.as_u64()?;
-                            let earned = detail.get("earned_in_level")?.as_u64()?;
-                            threshold.checked_sub(earned).filter(|_| threshold > 0)
-                        };
+                        let remaining = remaining_renown_points(detail);
                         json!({"kind":kind,"capped":capped,"remaining_to_next_rank":remaining})
                     }
                     "friendship" => {

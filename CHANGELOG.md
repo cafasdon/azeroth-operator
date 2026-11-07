@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever renown, friendship and paragon progress by faction ID.
+
 - Show saved Forever renown and friendship progress alongside paragon reward status.
 
 - Capture visible Forever paragon reputation and pending reward observations.

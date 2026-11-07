@@ -277,6 +277,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                    "remaining_to_next_rank": 50},
                         })
                         more_factions = json.loads(json.dumps(forever))
+                        more_factions["character"]["realm"] = "First"
                         factions = more_factions["sections"]["reputation"]["entries"]
                         factions["11"] = {**factions["10"], "reaction": 8, "next_threshold": 0}
                         factions["12"] = {**factions["10"], "kind": "renown", "renown": {
@@ -302,6 +303,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         factions["19"] = {**factions["15"], "paragon": {
                             **factions["15"]["paragon"], "reward_pending": False,
                         }}
+                        factions["20"] = factions["12"]
+                        factions["21"] = {**factions["12"], "renown": {
+                            **factions["12"]["renown"], "earned_in_level": 101,
+                        }}
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
                         more = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": more_key, "section": "reputation"})
@@ -317,10 +322,48 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "17": {"kind": "friendship", "capped": True, "remaining_to_next_rank": None},
                             "18": {"kind": "renown", "capped": True, "remaining_to_next_rank": None},
                             "19": {"kind": "paragon", "reward_status": "no_pending_reward"},
+                            "20": {"kind": "renown", "capped": False, "remaining_to_next_rank": 88},
+                            "21": {"kind": "renown", "capped": False, "remaining_to_next_rank": None},
                         })
                         progress = more_data["standard_reputation_progress"]
                         self.assertEqual(set(progress), {"10", "11"})
                         self.assertEqual(progress["11"], {"capped": True})
+                        self.assertIs(more_data["live"], False)
+                        next_factions = json.loads(json.dumps(more_factions))
+                        next_factions["captured_at"] = "2025-01-02T00:00:00Z"
+                        next_rows = next_factions["sections"]["reputation"]["entries"]
+                        next_rows["12"]["renown"].update(level=6, earned_in_level=2)
+                        next_rows["14"]["friendship"].update(standing=105, threshold=100, next_threshold=200)
+                        next_rows["15"]["paragon"].update(reward_pending=False, level_too_low=True)
+                        next_rows["18"]["renown"].update(capped=False, earned_in_level=25)
+                        next_rows["20"]["renown"]["earned_in_level"] = 40
+                        next_rows["21"]["renown"]["earned_in_level"] = 12
+                        next_rows["16"]["account_wide"] = True
+                        next_key = SnapshotStore(Path(folder)).ingest(next_factions)
+                        async def compare_faction(faction_id, before_id=more_key):
+                            response = await session.call_tool("compare_snapshots", {
+                                "before_id": before_id, "after_id": next_key, "faction_id": faction_id})
+                            self.assertFalse(response.isError)
+                            return json.loads(response.content[0].text)["reputation_change"]["special_progress_change"]
+                        self.assertEqual(await compare_faction(12), {
+                            "kind": "renown", "level_delta": 1, "earned_in_level_delta": None,
+                            "capped_changed": False,
+                        })
+                        self.assertEqual(await compare_faction(14), {"kind": "friendship", "standing_delta": 70})
+                        self.assertEqual(await compare_faction(15), {
+                            "kind": "paragon", "reward_pending_changed": True, "level_restriction_changed": True,
+                        })
+                        self.assertEqual(await compare_faction(18), {
+                            "kind": "renown", "level_delta": 0, "earned_in_level_delta": None,
+                            "capped_changed": True,
+                        })
+                        self.assertEqual(await compare_faction(20), {
+                            "kind": "renown", "level_delta": 0, "earned_in_level_delta": 28,
+                            "capped_changed": False,
+                        })
+                        self.assertIsNone((await compare_faction(21))["earned_in_level_delta"])
+                        self.assertIsNone(await compare_faction(16))
+                        self.assertIsNone(await compare_faction(12, forever_key))
                         missing = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": key, "section": "reputation"})
                         missing_data = json.loads(missing.content[0].text)
