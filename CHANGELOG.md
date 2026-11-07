@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured Forever reputation for a faction across two same-character snapshots.
+
 - Compare an observed Forever currency balance across two same-character snapshots.
 
 - Compare captured item quantities by storage across two same-character snapshots.

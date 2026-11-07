@@ -219,7 +219,7 @@ pub fn compare_with_item(
     after: &Snapshot,
     item_id: Option<u32>,
 ) -> Result<Value> {
-    compare_observations(before, after, item_id, None)
+    compare_observations(before, after, item_id, None, None)
 }
 
 pub fn compare_observations(
@@ -227,6 +227,7 @@ pub fn compare_observations(
     after: &Snapshot,
     item_id: Option<u32>,
     currency_id: Option<u32>,
+    faction_id: Option<u32>,
 ) -> Result<Value> {
     ensure!(before.client == after.client, "Client/build mismatch");
     ensure!(
@@ -296,6 +297,34 @@ pub fn compare_observations(
         });
         comparison["currency_balance_change"] =
             json!({"currency_id":currency_id,"before":previous,"after":current,"change":change});
+    }
+    if let Some(faction_id) = faction_id {
+        ensure!(
+            before.client.family == crate::Family::Forever && faction_id > 0,
+            "Reputation comparisons require a Forever faction ID"
+        );
+        let key = faction_id.to_string();
+        let faction = |snapshot: &Snapshot| {
+            snapshot
+                .sections
+                .get("reputation")
+                .and_then(|section| section["entries"].get(&key))
+                .cloned()
+        };
+        let previous = faction(before);
+        let current = faction(after);
+        let standing_delta = previous.as_ref().zip(current.as_ref()).and_then(|(a, b)| {
+            if a["kind"] != "standard"
+                || b["kind"] != "standard"
+                || a["account_wide"] != b["account_wide"]
+            {
+                return None;
+            }
+            Some(b["standing"].as_i64()? - a["standing"].as_i64()?)
+        });
+        comparison["reputation_change"] = json!({
+            "faction_id":faction_id,"before":previous,"after":current,"standing_delta":standing_delta
+        });
     }
     Ok(comparison)
 }

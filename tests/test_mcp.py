@@ -200,7 +200,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]["1"]["quantity"] = 2
                         reputation_after["sections"]["quests"]["42"]["objectives"]["1"]["fulfilled"] = 2
                         after_key = SnapshotStore(Path(folder)).ingest(reputation_after)
-                        rep_diff = await session.call_tool("compare_snapshots", {"before_id":forever_key,"after_id":after_key})
+                        rep_diff = await session.call_tool("compare_snapshots", {
+                            "before_id":forever_key,"after_id":after_key,"faction_id":10})
                         self.assertFalse(rep_diff.isError)
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
                                          ["/entries/10/standing"])
@@ -210,6 +211,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                          ["/entries/101/criteria/1/quantity"])
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["quests"]["changed_paths"],
                                          ["/42/objectives/1/fulfilled"])
+                        standing = json.loads(rep_diff.content[0].text)["reputation_change"]
+                        self.assertEqual(standing["standing_delta"], 30)
+                        self.assertEqual(standing["before"]["standing"], -50)
+                        self.assertEqual(standing["after"]["standing"], -20)
+                        reputation_after["sections"]["reputation"]["entries"]["10"]["kind"] = "renown"
+                        renown_key = SnapshotStore(Path(folder)).ingest(reputation_after)
+                        renown = await session.call_tool("compare_snapshots", {
+                            "before_id":after_key,"after_id":renown_key,"faction_id":10})
+                        self.assertFalse(renown.isError)
+                        self.assertIsNone(json.loads(renown.content[0].text)["reputation_change"]["standing_delta"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)
