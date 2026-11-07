@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Check carried item costs alongside gold and currencies in Forever spending budgets.
+
 - Compare explicit Forever spending budgets against saved gold and currency balances.
 
 - Plan crafting and combined reagent needs for confirmed Forever consumable restock shortages.

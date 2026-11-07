@@ -48,12 +48,21 @@ struct SpendingBudget {
     wallet_copper: Option<std::num::NonZeroU64>,
     /// Up to 20 distinct currency costs.
     currencies: Option<Vec<CurrencyCost>>,
+    /// Up to 20 distinct item costs, checked against carried bags.
+    items: Option<Vec<ItemCost>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct CurrencyCost {
     currency_id: std::num::NonZeroU32,
+    quantity: std::num::NonZeroU64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct ItemCost {
+    item_id: std::num::NonZeroU32,
     quantity: std::num::NonZeroU64,
 }
 
@@ -803,7 +812,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID for remaining objectives, or compare explicit Forever costs against saved wallet and currency balances. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID for remaining objectives, or compare explicit Forever costs against saved gold, currencies and carried items. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -878,14 +887,22 @@ impl Operator {
         use std::collections::BTreeSet;
 
         let currencies = budget.currencies.unwrap_or_default();
+        let items = budget.items.unwrap_or_default();
         anyhow::ensure!(
-            currencies.len() <= 20 && (budget.wallet_copper.is_some() || !currencies.is_empty()),
-            "Expected at least one cost and at most 20 currencies"
+            currencies.len() <= 20
+                && items.len() <= 20
+                && (budget.wallet_copper.is_some() || !currencies.is_empty() || !items.is_empty()),
+            "Expected at least one cost and at most 20 of each cost type"
         );
         let mut seen = BTreeSet::new();
         anyhow::ensure!(
             currencies.iter().all(|cost| seen.insert(cost.currency_id)),
             "Currency IDs must be distinct"
+        );
+        seen.clear();
+        anyhow::ensure!(
+            items.iter().all(|cost| seen.insert(cost.item_id)),
+            "Item IDs must be distinct"
         );
         let snapshot = self.store.read(snapshot_id)?;
         anyhow::ensure!(
@@ -925,6 +942,17 @@ impl Operator {
                 result
             })
             .collect();
+        let mut item_balances = Vec::new();
+        for cost in items {
+            let found = azeroth_operator::analysis::find_item(&snapshot, cost.item_id.get(), 0, 1)?;
+            let stock = &found["quantity_by_storage"];
+            let mut result = compare(cost.quantity.get(), stock["bags"].as_u64());
+            result["item_id"] = json!(cost.item_id);
+            result["observed_bank_quantities"] = json!({
+                "character_bank":stock["character_bank"],"account_bank":stock["account_bank"]
+            });
+            item_balances.push(result);
+        }
         let covered_by_observed_balances = if known_shortage {
             Some(false)
         } else if unknown {
@@ -932,12 +960,16 @@ impl Operator {
         } else {
             Some(true)
         };
-        Ok(json!({
+        let mut result = json!({
             "snapshot_id":snapshot_id,"captured_at":snapshot.captured_at,"live":false,
             "age_seconds":(chrono::Utc::now()-snapshot.captured_at).num_seconds(),
             "spending_budget":{"wallet_copper":wallet,"currencies":currencies,
                 "covered_by_observed_balances":covered_by_observed_balances}
-        }))
+        });
+        if !item_balances.is_empty() {
+            result["spending_budget"]["items"] = json!(item_balances);
+        }
+        Ok(result)
     }
 
     fn add_restock_crafting(

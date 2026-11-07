@@ -32,7 +32,10 @@ and quest selection. Missing balances remain unknown. A known shortage
 makes the overall result false even if another balance is missing. The
 result compares captured amounts and carries available inactive and account
 scope flags. The budget response omits character names, currency names and
-other snapshot sections. Vendor eligibility, prices and purchasing are separate.
+other snapshot sections. Use `items` for up to 20 distinct `item_id` and
+`quantity` rows. These costs use carried bag stock by base item ID. Bank
+counts are shown separately where captured. Vendor eligibility, prices and
+purchasing are separate.
 
 On the Rust MCP, add a positive `quest_id` to `inspect_snapshot` with
 `section: "quests"` to inspect only that quest. The result reports whether
