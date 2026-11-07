@@ -252,6 +252,32 @@ pub enum GearType {
     Ranged = 14,
 }
 
+// Names follow the pinned simulator's itemfit.ItemSlots, not game slot IDs.
+fn simulator_slots(item: &Value) -> &'static [&'static str] {
+    match item["type"].as_u64() {
+        Some(1) => &["head"],
+        Some(2) => &["neck"],
+        Some(3) => &["shoulder"],
+        Some(4) => &["back"],
+        Some(5) => &["chest"],
+        Some(6) => &["wrist"],
+        Some(7) => &["hands"],
+        Some(8) => &["waist"],
+        Some(9) => &["legs"],
+        Some(10) => &["feet"],
+        Some(11) => &["finger1", "finger2"],
+        Some(12) => &["trinket1", "trinket2"],
+        Some(13) => match item["handType"].as_u64() {
+            Some(1 | 4) => &["main_hand"],
+            Some(2) => &["main_hand", "off_hand"],
+            Some(3) => &["off_hand"],
+            _ => &[],
+        },
+        Some(14) => &["ranged"],
+        _ => &[],
+    }
+}
+
 // Read only the fields shared with the Forever WoWSims exporter.
 fn link_modifiers(item: &Value) -> Option<Value> {
     let link = item["link"].as_str()?;
@@ -453,6 +479,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn simulator_slot_names_match_pinned_siml() {
+        assert_eq!(simulator_slots(&json!({"type":11})), ["finger1", "finger2"]);
+        assert_eq!(
+            simulator_slots(&json!({"type":12})),
+            ["trinket1", "trinket2"]
+        );
+        assert_eq!(
+            simulator_slots(&json!({"type":13,"handType":2})),
+            ["main_hand", "off_hand"]
+        );
+        assert_eq!(
+            simulator_slots(&json!({"type":13,"handType":4})),
+            ["main_hand"]
+        );
+    }
+
+    #[test]
     fn adds_regular_enchant_stats_only_for_a_unique_fit_or_explicit_zero() {
         let db = json!({"enchants":[
             {"effectId":7,"type":5,"stats":[2,0,4]},
@@ -645,6 +688,7 @@ pub fn review_owned(
                         "setId":item["setId"],"setName":item["setName"],
                         "randomSuffixOptions":item["randomSuffixOptions"],
                         "simulator_default_scaling":item["scalingOptions"]["0"],
+                        "simulator_slots":simulator_slots(item),
                         "weaponSpeed":item["weaponSpeed"],
                         "itemEffects":item["itemEffects"]
                     }))}));
