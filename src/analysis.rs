@@ -582,6 +582,29 @@ fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
         })
 }
 
+fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
+    let (mut ready, mut not_ready, mut failed, mut unknown) =
+        (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    for (key, quest) in quests {
+        let Ok(id) = key.parse::<u32>() else {
+            continue;
+        };
+        if quest["failed"].as_bool() == Some(true) {
+            failed.push(id);
+        } else {
+            match quest["ready_for_turn_in"].as_bool() {
+                Some(true) => ready.push(id),
+                Some(false) => not_ready.push(id),
+                None => unknown.push(id),
+            }
+        }
+    }
+    for ids in [&mut ready, &mut not_ready, &mut failed, &mut unknown] {
+        ids.sort_unstable();
+    }
+    json!({"ready_for_turn_in":ready,"turn_in_not_ready":not_ready,"failed":failed,"turn_in_unknown":unknown})
+}
+
 pub fn summary(s: &Snapshot) -> Value {
     let occupied = s
         .sections
@@ -593,7 +616,8 @@ pub fn summary(s: &Snapshot) -> Value {
         .get("talents")
         .and_then(|v| v.get("has_unspent"))
         .and_then(Value::as_bool);
-    let quest_turn_in = s.sections.get("quests").and_then(Value::as_object).map(|quests| {
+    let quests = s.sections.get("quests").and_then(Value::as_object);
+    let quest_turn_in = quests.map(|quests| {
         let (mut ready, mut known) = (0, 0);
         for quest in quests.values() {
             if let Some(value) = quest["ready_for_turn_in"].as_bool() {
@@ -611,6 +635,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "currency_balances_observed":s.sections.get("currency_balances").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "tracked_achievements_observed":s.sections.get("tracked_achievements").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "quest_turn_in":quest_turn_in,
+      "quest_checklist":quests.map(quest_checklist),
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

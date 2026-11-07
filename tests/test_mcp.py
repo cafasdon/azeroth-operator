@@ -155,7 +155,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["sections"]["quests"] = {
                             "42":{"title":"Fixture quest","level":10,"ready_for_turn_in":False,
                                   "objectives":{"1":{"kind":"item","finished":False,"fulfilled":0,"required":5}}},
-                            "43":{"title":"Legacy quest","level":10}}
+                            "43":{"title":"Legacy quest","level":10},
+                            "10":{"title":"Turn-in quest","level":10,"ready_for_turn_in":True},
+                            "2":{"title":"Another turn-in","level":10,"ready_for_turn_in":True},
+                            "44":{"title":"Failed quest","level":10,"ready_for_turn_in":False,"failed":True}}
                         forever["sections"]["tracked_achievements"] = {"coverage":"tracked_player_achievements_only","entries":{
                             "101":{"name":"Fixture achievement","points":5,"completed":False,"earned_by_character":False,
                                    "account_wide":True,"criteria":{
@@ -185,7 +188,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
-                        self.assertEqual(bank_summary_data["quest_turn_in"], {"ready_observed":0,"status_observed":1,"status_unknown":1})
+                        self.assertEqual(bank_summary_data["quest_turn_in"], {"ready_observed":2,"status_observed":4,"status_unknown":1})
+                        self.assertEqual(bank_summary_data["quest_checklist"], {
+                            "ready_for_turn_in": [2, 10], "turn_in_not_ready": [42],
+                            "failed": [44], "turn_in_unknown": [43],
+                        })
+                        empty_quests = json.loads(json.dumps(forever))
+                        empty_quests["sections"]["quests"] = {}
+                        empty_key = SnapshotStore(Path(folder)).ingest(empty_quests)
+                        empty_summary = await session.call_tool("character_summary", {"snapshot_id":empty_key})
+                        self.assertEqual(json.loads(empty_summary.content[0].text)["quest_checklist"], {
+                            "ready_for_turn_in": [], "turn_in_not_ready": [],
+                            "failed": [], "turn_in_unknown": [],
+                        })
                         quests = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"quests"})
                         self.assertEqual(json.loads(quests.content[0].text)["data"]["42"]["objectives"]["1"]["fulfilled"], 0)
                         self.assertEqual(bank_summary_data["tracked_achievements_observed"], 1)
@@ -428,6 +443,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
                         self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})
+                        self.assertIsNone(json.loads(summary.content[0].text)["quest_checklist"])
                         self.assertFalse(json.loads(summary.content[0].text)["live"])
                         carried = json.loads(summary.content[0].text)["carried_item_review"]
                         self.assertEqual(carried["quantity_observed"], 7)

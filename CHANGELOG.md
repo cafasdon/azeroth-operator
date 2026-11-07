@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Group saved quest IDs by observed turn-in status and failure in character summaries.
+
 - Show bag shortfalls and storage counts for Forever crafting batches so shared reagent needs can be gathered before crafting.
 
 - Reuse identical Forever encounter simulations within a single multi-encounter gear ranking while preserving each input and weight.
