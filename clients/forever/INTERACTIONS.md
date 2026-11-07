@@ -174,6 +174,13 @@ quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response
 also counts quests with an unknown waypoint map in the full capture.
 
+Add `quest_difficulty: "elite"` or `quest_difficulty: "suggested_group"`
+to filter by observed elite status or a suggested group size above one.
+The checklist reflects the filtered quests. Unknown difficulty counts apply
+after the optional waypoint filter, while the waypoint unknown count still
+describes the full capture. These filters require the quests section without
+a quest ID.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,
