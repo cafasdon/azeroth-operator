@@ -252,6 +252,77 @@ pub enum GearType {
     Ranged = 14,
 }
 
+// Read only the fields shared with the Forever WoWSims exporter.
+fn link_modifiers(item: &Value) -> Option<Value> {
+    let link = item["link"].as_str()?;
+    let payload = if let Some(payload) = link.strip_prefix("item:") {
+        payload
+    } else {
+        let (prefix, rest) = link.split_once("|Hitem:")?;
+        if !prefix.is_empty()
+            && !prefix.strip_prefix("|c").is_some_and(|color| {
+                color.len() == 8 && color.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })
+        {
+            return None;
+        }
+        let (payload, display) = rest.split_once("|h")?;
+        display.split_once("|h")?;
+        payload
+    };
+    let mut fields = payload.split(':');
+    let id = fields.next()?.parse::<u64>().ok()?;
+    if item["item_id"].as_u64()? != id {
+        return None;
+    }
+    let enchant = fields.next()?;
+    let suffix = fields.nth(4)?;
+    let enchant = if enchant.is_empty() {
+        None
+    } else {
+        Some(enchant.parse::<u32>().ok()?)
+    };
+    let suffix = if suffix.is_empty() {
+        None
+    } else {
+        Some(suffix.parse::<i32>().ok()?)
+    };
+    Some(json!({"enchant_id":enchant,"random_suffix_id":suffix}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_modifier_positions_without_guessing_from_short_or_mismatched_links() {
+        for (link, expected) in [
+            (
+                "item:744:15:1:2:3:4:-12",
+                Some(json!({"enchant_id":15,"random_suffix_id":-12})),
+            ),
+            (
+                "|cffaabbcc|Hitem:744:0:0:0:0:0:123:99|h[Example]|h|r",
+                Some(json!({"enchant_id":0,"random_suffix_id":123})),
+            ),
+            (
+                "|Hitem:744::::::|h[Example]|h",
+                Some(json!({"enchant_id":null,"random_suffix_id":null})),
+            ),
+            ("item:744:15", None),
+            ("item:745:15:0:0:0:0:-12", None),
+            ("item:744:x:0:0:0:0:-12", None),
+            ("|Hitem:744:15:0:0:0:0:-12|h[Example]", None),
+        ] {
+            assert_eq!(
+                link_modifiers(&json!({"item_id":744,"link":link})),
+                expected,
+                "{link}"
+            );
+        }
+    }
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
@@ -325,6 +396,7 @@ pub fn review_owned(
             }
             if included >= offset && entries.len() < limit {
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                    "link_modifiers":link_modifiers(item),
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],
                         "armorType":item["armorType"],"weaponType":item["weaponType"],

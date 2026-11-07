@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show raw enchant and random suffix IDs from captured Forever item links in owned-gear review.
+
 - Find all observed copies of a Forever item by ID, including items absent from the catalogue.
 
 - Browse Forever items by recorded acquisition source, including PvP.
