@@ -72,9 +72,22 @@ pub enum DropInstanceKind {
 
 #[derive(Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum VendorFaction {
+pub enum SourceFaction {
     Alliance = 1,
     Horde = 2,
+}
+
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ReputationTier {
+    Hated = 1,
+    Hostile = 2,
+    Unfriendly = 3,
+    Neutral = 4,
+    Friendly = 5,
+    Honored = 6,
+    Revered = 7,
+    Exalted = 8,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -103,9 +116,13 @@ pub struct Query {
     /// Restrict items to sale sources in this zone. With an NPC filter, both must match the same sale.
     pub vendor_zone_id: Option<std::num::NonZeroU32>,
     /// Restrict items to sale sources with this recorded faction tag.
-    pub vendor_faction: Option<VendorFaction>,
+    pub vendor_faction: Option<SourceFaction>,
     /// Restrict items to records with a reputation source for this reputation faction ID.
     pub reputation_faction_id: Option<std::num::NonZeroU32>,
+    /// Exact required rank on the same reputation reward source.
+    pub reputation_required_tier: Option<ReputationTier>,
+    /// Alliance or Horde tag recorded on the same reputation reward source.
+    pub reputation_source_faction: Option<SourceFaction>,
     /// Restrict items to records with this type of acquisition source.
     pub source_kind: Option<ItemSource>,
     /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
@@ -219,11 +236,14 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     let vendor_filter = query.vendor_npc_id.is_some()
         || query.vendor_zone_id.is_some()
         || query.vendor_faction.is_some();
+    let reputation_filter = query.reputation_faction_id.is_some()
+        || query.reputation_required_tier.is_some()
+        || query.reputation_source_faction.is_some();
     let item_filter = query.set_id.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
         || vendor_filter
-        || query.reputation_faction_id.is_some()
+        || reputation_filter
         || query.source_kind.is_some();
     ensure!(
         !item_filter || matches!(query.section, Section::Items),
@@ -304,13 +324,20 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                             })
                         })
                     });
-            let matches_reputation = query.reputation_faction_id.is_none_or(|id| {
-                row["sources"].as_array().is_some_and(|sources| {
+            let matches_reputation = !reputation_filter
+                || row["sources"].as_array().is_some_and(|sources| {
                     sources.iter().any(|source| {
-                        source["rep"]["repFactionId"].as_u64() == Some(u64::from(id.get()))
+                        let rep = &source["rep"];
+                        query.reputation_faction_id.is_none_or(|id| {
+                            rep["repFactionId"].as_u64() == Some(u64::from(id.get()))
+                        }) && query
+                            .reputation_required_tier
+                            .is_none_or(|tier| rep["repLevel"].as_u64() == Some(tier as u64))
+                            && query.reputation_source_faction.is_none_or(|faction| {
+                                rep["factionId"].as_u64() == Some(faction as u64)
+                            })
                     })
-                })
-            });
+                });
             let matches_source = query.source_kind.as_ref().is_none_or(|kind| {
                 row["sources"].as_array().is_some_and(|sources| {
                     sources
