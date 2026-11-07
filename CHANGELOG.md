@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an opt-in adaptive WoWSims bulk shortlist for local Forever gear ranking.
+
 - Compare bounded combinations of captured Forever gear across multiple slots.
 
 - Rank resolved single-slot Forever swaps from captured storage using local MCP and WoWSims.

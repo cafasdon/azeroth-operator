@@ -77,12 +77,16 @@ def request_from(template, equipment_review, encounter_lookup):
     }
 
 
-def run(engine, expected_hash, request, deadline=None, paired=False):
+def verify_engine(engine, expected_hash):
     if not engine.is_absolute() or not engine.is_file():
         raise ValueError("Provide an absolute path to the trusted local engine")
     with engine.open("rb") as handle:
         if hashlib.file_digest(handle, "sha256").hexdigest() != expected_hash.lower():
             raise ValueError("Engine SHA-256 mismatch")
+
+
+def run(engine, expected_hash, request, deadline=None, paired=False):
+    verify_engine(engine, expected_hash)
     with tempfile.TemporaryDirectory(prefix="forever-sim-") as folder:
         root = Path(folder)
         source = root / "request.json"
@@ -156,6 +160,62 @@ def compare(engine, expected_hash, requests, paired=False):
             for index, key in enumerate(keys, 1)
         ],
     }
+
+
+def compare_bulk(engine, expected_hash, requests, top_results):
+    verify_engine(engine, expected_hash)
+    baseline = requests[0]
+    candidates = []
+    reviews = {}
+    seen = {}
+    for review, request in enumerate(requests, 1):
+        if request["simOptions"] != baseline["simOptions"]:
+            raise ValueError("Bulk comparisons require matching simulation settings")
+        first_party = request["raid"]["parties"][0].get("players", [])
+        if not first_party:
+            raise ValueError("Bulk comparisons require the player in the first party")
+        equipment = first_party[0]["equipment"]
+        key = json.dumps(equipment, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        index = seen.setdefault(key, review)
+        reviews.setdefault(index, []).append(review)
+        if index == review and review != 1:
+            candidates.append({"index": index, "gear": equipment})
+    if not candidates:
+        return None
+    payload = {"baseRequest": baseline, "candidates": candidates,
+               "topResults": min(top_results, len(candidates))}
+    with tempfile.TemporaryDirectory(prefix="forever-bulk-") as folder:
+        output = Path(folder) / "result.json"
+        with output.open("wb") as stream:
+            subprocess.run([str(engine)], input=json.dumps(payload, allow_nan=False).encode(),
+                           stdout=stream, stderr=subprocess.DEVNULL, cwd=folder,
+                           timeout=120, check=True)
+        result = read_object(output, 1024 * 1024)
+    baseline_row = result["baseline"]
+    if baseline_row["candidateIndex"] != -1:
+        raise ValueError("Invalid bulk baseline")
+    returned = [row["candidateIndex"] for row in result["topResults"]]
+    if (not 1 <= len(returned) <= payload["topResults"] or len(returned) != len(set(returned))
+            or any(index == 1 or index not in reviews for index in returned)):
+        raise ValueError("Invalid bulk shortlist")
+    rows = []
+    baseline_dps = baseline_row["dpsMetrics"]["avg"]
+    for index, row in zip([1, *returned], [baseline_row, *result["topResults"]], strict=True):
+        dps = row["dpsMetrics"]
+        paired_error = row["pairedErrorToBaseline"]
+        if any(type(value) not in (int, float) or not math.isfinite(value) or value < 0
+               for value in (dps["avg"], dps["stdev"], paired_error)):
+            raise ValueError("Bulk simulation returned invalid metrics")
+        rows.extend({
+            "review": review,
+            "mean_dps": dps["avg"],
+            "dps_standard_deviation": dps["stdev"],
+            "mean_dps_delta_from_baseline": dps["avg"] - baseline_dps,
+            "paired_dps_standard_error": paired_error if index != 1 and paired_error else None,
+        } for review in reviews[index])
+    return {"mode": "staged_bulk", "baseline_review": 1, "results": rows,
+            "engine_sha256": expected_hash.lower(), "seed": baseline["simOptions"]["randomSeed"],
+            "unique_gear_sets": len(reviews), "stage_metrics": result["stageMetrics"]}
 
 
 def main():

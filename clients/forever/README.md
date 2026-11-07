@@ -122,9 +122,26 @@ and sorts resolved results by mean DPS against the captured baseline.
 `--paired` adds uncertainty against that baseline. Results include storage
 coverage and skipped candidates. Moving equipped items requires the same
 combination to fill their original slots. Multi-slot output uses `slots` and a
-`selections` array per result. The same iteration and runtime budgets apply to
-the comparison on one saved character and encounter. Character eligibility and
-complete-inventory optimisation remain separate checks.
+`selections` array per result. Character eligibility and complete-inventory
+optimisation remain separate checks.
+
+For adaptive bulk ranking, build the local adapter from the pinned WoWSims
+checkout with its generated protobuf files and embedded database:
+
+```powershell
+go build -tags with_db -o <adapter-path> <absolute-path-to-tools/forever_bulk/main.go>
+```
+
+Add `--bulk-engine` with the absolute adapter path, `--bulk-engine-sha256`
+with its SHA-256, and optionally `--top` (default five distinct alternatives).
+Use a template with its player in the first party. The adapter receives only
+distinct, resolved simulator gear sets. The result includes the baseline, the
+shortlist with its matching observed selections, and the engine's stage metrics.
+An unavailable paired standard error is null. The engine chooses its precision
+and iteration counts and may use a single stage for small searches. The
+64-draft and 120-second comparison limits apply in bulk mode. The encounter's
+requested iteration count and the fixed mode's aggregate iteration cap apply
+to fixed mode, including the fallback when every set matches the baseline.
 
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a

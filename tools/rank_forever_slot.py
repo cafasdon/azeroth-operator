@@ -12,7 +12,7 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from tools.run_forever_sim import compare, read_object, request_from
+from tools.run_forever_sim import compare, compare_bulk, read_object, request_from
 
 
 async def slot_candidates(call, slot, multi):
@@ -104,12 +104,17 @@ def main():
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--encounter-lookup", type=Path, required=True)
     parser.add_argument("--paired", action="store_true")
+    parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
+    parser.add_argument("--bulk-engine-sha256")
+    parser.add_argument("--top", type=int, default=5, help="Distinct gear sets to return in bulk mode")
     args = parser.parse_args()
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
         if len(args.slot) > 4 or len(set(args.slot)) != len(args.slot):
             raise ValueError("Provide up to four distinct slots")
+        if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
+            raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         template = read_object(args.template, 4 * 1024 * 1024)
         encounter = read_object(args.encounter_lookup, 4 * 1024 * 1024)
         logging.disable(logging.CRITICAL)
@@ -118,8 +123,12 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog), timeout=45,
             ))
         requests = [request_from(template, draft, encounter) for _, draft in drafts]
-        result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
-        for row, (selections, _) in zip(result["results"], drafts, strict=True):
+        result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
+                  if args.bulk_engine else None)
+        if result is None:
+            result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+        for row in result["results"]:
+            selections, _ = drafts[row["review"] - 1]
             if len(args.slot) == 1:
                 row["selection"] = selections[0] if selections else None
             else:
