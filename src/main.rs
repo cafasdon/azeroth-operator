@@ -45,6 +45,8 @@ struct Inspect {
     faction_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
     achievement_id: Option<std::num::NonZeroU32>,
+    /// Select one saved profession by skill line. Requires section "professions".
+    profession_skill_line: Option<std::num::NonZeroU32>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -820,7 +822,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select a quest, Forever currency, faction or tracked achievement by ID, compare a currency reward against recorded caps, or check costs against saved balances. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select a quest, currency, faction, tracked achievement or profession by ID, compare a currency reward against recorded caps, or check costs against saved balances. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -839,6 +841,7 @@ impl Operator {
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
+                || args.profession_skill_line.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
                     "Spending budgets cannot be combined with a section or record selection",
@@ -870,6 +873,11 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Achievement selection requires the tracked_achievements section",
+            )]);
+        }
+        if args.profession_skill_line.is_some() && args.section.as_deref() != Some("professions") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Profession selection requires the professions section",
             )]);
         }
         match self
@@ -975,8 +983,24 @@ impl Operator {
                         value["tracked_achievement_work"] = work;
                     }
                 } else if args.section.as_deref() == Some("professions") {
-                    value["profession_training_progress"] =
-                        azeroth_operator::analysis::profession_training_progress(&value["data"]);
+                    if let Some(id) = args.profession_skill_line {
+                        let section = value["data"].take();
+                        let (status, row) = azeroth_operator::analysis::profession_by_skill_line(
+                            Some(&section),
+                            id.get(),
+                        );
+                        value["profession_skill_line"] = serde_json::json!(id);
+                        value["profession_observation_status"] = serde_json::json!(status);
+                        value["data"] = row.cloned().unwrap_or_default();
+                        value["profession_training_progress"] = row
+                            .map(azeroth_operator::analysis::profession_rank_progress)
+                            .unwrap_or_default();
+                    } else {
+                        value["profession_training_progress"] =
+                            azeroth_operator::analysis::profession_training_progress(
+                                &value["data"],
+                            );
+                    }
                 }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }

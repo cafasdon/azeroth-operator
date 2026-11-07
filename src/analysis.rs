@@ -588,8 +588,10 @@ pub fn compare_observations(
     }
     if let Some(skill_line) = selectors.profession_skill_line {
         ensure!(skill_line > 0, "Expected a positive profession skill line");
-        let (before_status, previous) = profession_by_skill_line(before, skill_line);
-        let (after_status, current) = profession_by_skill_line(after, skill_line);
+        let (before_status, previous) =
+            profession_by_skill_line(before.sections.get("professions"), skill_line);
+        let (after_status, current) =
+            profession_by_skill_line(after.sections.get("professions"), skill_line);
         let rank_delta = previous
             .zip(current)
             .and_then(|(a, b)| Some(b["rank"].as_i64()? - a["rank"].as_i64()?));
@@ -718,15 +720,11 @@ fn compare_criteria(before: &Value, after: &Value) -> Value {
     json!({"matched_criterion_count":matched,"changes":changes})
 }
 
-fn profession_by_skill_line(
-    snapshot: &Snapshot,
+pub fn profession_by_skill_line(
+    section: Option<&Value>,
     skill_line: u32,
 ) -> (&'static str, Option<&Value>) {
-    let Some(professions) = snapshot
-        .sections
-        .get("professions")
-        .and_then(Value::as_object)
-    else {
+    let Some(professions) = section.and_then(Value::as_object) else {
         return ("unavailable", None);
     };
     let mut matching = professions
@@ -916,19 +914,18 @@ pub fn profession_training_progress(section: &Value) -> Value {
     Value::Object(
         entries
             .iter()
-            .map(|(slot, profession)| {
-                let remaining = profession["max_rank"]
-                    .as_u64()
-                    .filter(|maximum| *maximum > 0)
-                    .zip(profession["rank"].as_u64())
-                    .and_then(|(maximum, rank)| maximum.checked_sub(rank));
-                (
-                    slot.clone(),
-                    json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining}),
-                )
-            })
+            .map(|(slot, profession)| (slot.clone(), profession_rank_progress(profession)))
             .collect(),
     )
+}
+
+pub fn profession_rank_progress(profession: &Value) -> Value {
+    let remaining = profession["max_rank"]
+        .as_u64()
+        .filter(|maximum| *maximum > 0)
+        .zip(profession["rank"].as_u64())
+        .and_then(|(maximum, rank)| maximum.checked_sub(rank));
+    json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining})
 }
 
 pub fn tracked_achievement_work(section: &Value) -> Value {

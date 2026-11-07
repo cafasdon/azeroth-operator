@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect a saved profession and its observed rank cap by stable skill-line ID.
+
 - Verify current snapshot inspection parameters during a hosted reader upgrade.
 
 - Inspect one saved Forever tracked achievement and its remaining work by ID.
