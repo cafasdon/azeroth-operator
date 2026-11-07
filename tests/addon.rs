@@ -947,14 +947,17 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["tracked_recipes"],
         serde_json::json!({
             "coverage":"player_tracked_recipes_only",
-            "crafts":{"100":{"name":"Tracked fixture"},
-                "101":{"name":"Restricted fixture"},"102":{}},
-            "recrafts":{"100":{"name":"Tracked fixture"}}
+            "crafts":{"100":{"name":"Tracked fixture","learned":false},
+                "101":{"name":"Restricted fixture","learned":true},"102":{}},
+            "recrafts":{"100":{"name":"Tracked fixture","learned":false}}
         })
     );
     lua.load(
         "issecretvalue=function(v) return v=='Restricted fixture' end;
         assert(AO.collectors.tracked_recipes().crafts['101'].name==nil);
+        issecretvalue=function(v) return v==true end;
+        assert(AO.collectors.tracked_recipes().crafts['101'].learned==nil);
+        assert(AO.collectors.tracked_recipes().crafts['100'].learned==false);
         issecretvalue=nil;malformedTrackedRecipes=true;
         assert(not pcall(AO.collectors.tracked_recipes));
         malformedTrackedRecipes=false",

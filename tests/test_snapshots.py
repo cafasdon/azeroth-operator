@@ -49,7 +49,7 @@ class SnapshotTests(unittest.TestCase):
 
     def test_tracked_recipes_require_forever_and_valid_recipe_maps(self):
         value = fixture()
-        recipes = {"coverage": "player_tracked_recipes_only", "crafts": {"123": {"name": "Recipe"}},
+        recipes = {"coverage": "player_tracked_recipes_only", "crafts": {"123": {"name": "Recipe", "learned": False}},
                    "recrafts": {"123": {}}}
         value["sections"]["tracked_recipes"] = recipes
         with self.assertRaises(ValueError):
@@ -58,7 +58,7 @@ class SnapshotTests(unittest.TestCase):
         key = self.store.ingest(value)
         self.assertEqual(self.store.inspect(key, "tracked_recipes")["data"], recipes)
         for invalid in ("not an object", {**recipes, "coverage": "other_character"},
-                        {**recipes, "crafts": {"0": {}}}, {**recipes, "crafts": {"1": {"learned": True}}}):
+                        {**recipes, "crafts": {"0": {}}}, {**recipes, "crafts": {"1": {"learned": 1}}}):
             value["sections"]["tracked_recipes"] = invalid
             with self.assertRaises(ValueError):
                 self.store.ingest(value)

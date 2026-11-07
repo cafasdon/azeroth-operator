@@ -283,8 +283,10 @@ membership comparison is null.
 Pass `tracked_recipe_id` with `section: "tracked_recipes"` to check one
 recipe. `tracked_as_craft` and `tracked_as_recraft` are independent. False
 means the ID was absent from an observed list, while null means the list
-was unavailable. Tracking status does not establish whether the recipe
-is learned.
+was unavailable. Each returned row can also have a separate `learned`
+flag from the recipe API. Missing learned status stays unknown regardless
+of tracking membership. Update the importer and reader before syncing this
+field. [Forever recipe metadata](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/TradeSkillUITypesDocumentation.lua)
 
 `review_forever_recipe` includes `recipe_tracking` for each reviewed recipe.
 Tracking comes from that recipe's own capture, including when the review

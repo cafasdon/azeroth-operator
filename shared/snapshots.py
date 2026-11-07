@@ -63,11 +63,14 @@ def validate_snapshot(value):
             for recipe_id, recipe in group.items():
                 if (not isinstance(recipe_id, str) or not re.fullmatch(r"[1-9][0-9]{0,9}", recipe_id)
                         or int(recipe_id) > 4_294_967_295 or not isinstance(recipe, dict)
-                        or set(recipe) - {"name"}):
+                        or set(recipe) - {"name", "learned"}):
                     raise ValueError("Invalid tracked recipe entry")
                 name = recipe.get("name")
                 if name is not None and (not isinstance(name, str) or not 1 <= len(name.encode("utf-8")) <= 256):
                     raise ValueError("Invalid tracked recipe name")
+                learned = recipe.get("learned")
+                if learned is not None and type(learned) is not bool:
+                    raise ValueError("Invalid tracked recipe learned status")
     return value
 
 

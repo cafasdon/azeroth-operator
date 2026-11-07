@@ -432,7 +432,10 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
             for kind in ["crafts", "recrafts"] {
                 let recipes = &value[kind];
-                entries(recipes, &[("name", "text", false)])?;
+                entries(
+                    recipes,
+                    &[("name", "text", false), ("learned", "bool", false)],
+                )?;
                 let recipes = recipes.as_object().unwrap();
                 ensure!(recipes.len() <= 128, "Too many tracked recipes");
                 ensure!(

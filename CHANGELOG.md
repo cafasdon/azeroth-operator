@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture observed learned status for player-tracked Forever recipes.
+
 - Find saved Forever schematic captures by exact recipe ID for material review.
 
 - Find saved Forever recipe captures by the recorded profession ID.

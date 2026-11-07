@@ -426,6 +426,8 @@ AO.collectors.tracked_recipes = function()
                 if accessible(name) and type(name)=="string" and #name>0 and #name<=256 then
                     row.name=name
                 end
+                local learned=info.learned
+                if accessible(learned) and type(learned)=="boolean" then row.learned=learned end
             end
             rows[key]=row
             count=count+1
