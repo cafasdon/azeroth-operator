@@ -54,15 +54,19 @@ if __name__ == "__main__":
     capabilities = json.loads(result["result"]["content"][0]["text"])
     assert capabilities["policy"]["mode"] == "offline_analysis"
     assert capabilities["policy"]["generated_game_imports"] is False
-    code, result, _ = request({"jsonrpc": "2.0", "id": 5, "method": "tools/call",
-                              "params": {"name": "prepare_macro_operation", "arguments": {}}}, token, session)
-    assert code in (400, 404) or (code == 200 and
-        ("error" in result or result.get("result", {}).get("isError") is True)), "Blocked route callable"
-
+    blocked = ("macro", "binding", "equipment", "bag", "talent", "action", "equipment_set")
+    for request_id, operation in enumerate(blocked, start=5):
+        code, result, _ = request({"jsonrpc": "2.0", "id": request_id, "method": "tools/call",
+                                  "params": {"name": f"prepare_{operation}_operation", "arguments": {}}}, token, session)
+        assert code == 200 and result is not None
+        assert "error" in result or result.get("result", {}).get("isError") is True
+        error_text = json.dumps(result.get("error", result.get("result"))).lower()
+        assert any(reason in error_text for reason in ("tool not found", "unknown tool", "not allowed")), (
+            f"Expected route denial for {operation}")
     code, result, _ = request({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                               "params": {"name": "list_snapshots", "arguments": {"family": "retail"}}}, token, session)
     assert code == 200 and not result["result"].get("isError", False)
     snapshots = json.loads(result["result"]["content"][0]["text"])["snapshots"]
     assert isinstance(snapshots, list)
     print(json.dumps({"missing_token": 401, "wrong_token": 401, "authenticated": True,
-                      "tools": tool_count, "policy_mode": "offline_analysis", "prepare_macro_blocked": True, "retail_snapshots_returned": len(snapshots)}))
+                      "tools": tool_count, "policy_mode": "offline_analysis", "prepare_routes_blocked": len(blocked), "retail_snapshots_returned": len(snapshots)}))
