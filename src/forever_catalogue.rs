@@ -58,6 +58,8 @@ pub struct Query {
     pub reward_quest_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a sale source for this vendor NPC ID.
     pub vendor_npc_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to records with a reputation source for this reputation faction ID.
+    pub reputation_faction_id: Option<std::num::NonZeroU32>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
 }
@@ -102,7 +104,8 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         || query.drop_npc_id.is_some()
         || query.drop_zone_id.is_some()
         || query.reward_quest_id.is_some()
-        || query.vendor_npc_id.is_some();
+        || query.vendor_npc_id.is_some()
+        || query.reputation_faction_id.is_some();
     ensure!(
         !item_filter || matches!(query.section, Section::Items),
         "Set and acquisition source filters are supported for items only"
@@ -160,12 +163,20 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                     })
                 })
             });
+            let matches_reputation = query.reputation_faction_id.is_none_or(|id| {
+                row["sources"].as_array().is_some_and(|sources| {
+                    sources.iter().any(|source| {
+                        source["rep"]["repFactionId"].as_u64() == Some(u64::from(id.get()))
+                    })
+                })
+            });
             if matches
                 && matches_recipe
                 && matches_set
                 && matches_drop
                 && matches_quest
                 && matches_vendor
+                && matches_reputation
             {
                 if remaining_offset > 0 {
                     remaining_offset -= 1;

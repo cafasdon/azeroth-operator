@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up Forever catalogue items by reputation faction ID.
+
 - Find Forever catalogue items by recorded vendor NPC ID.
 
 - Find Forever item rewards recorded for a quest ID in the pinned catalogue.

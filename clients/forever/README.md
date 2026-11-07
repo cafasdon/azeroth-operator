@@ -69,6 +69,8 @@ For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve
 
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 
+For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` using a reputation faction ID from the saved standings or the catalogue. Source records can include a required reputation tier and an Alliance or Horde restriction. Character eligibility requires separate verification.
+
 For quest rewards, pass `{"section":"items","reward_quest_id":53}` using the quest ID from a saved quest observation or other reference. Results cover reward associations recorded in the pinned catalogue. Character eligibility and live availability require separate evidence.
 
 For a public set reference, pass `{"section":"items","set_id":495}`. For a character comparison, call `review_forever_owned_gear` with the same `set_id` and a saved snapshot ID. Its `set_observation` lists each catalogue piece, whether its base ID was observed, and the number of occupied locations by storage. Duplicate copies count once toward distinct pieces. The summary spans the whole snapshot regardless of page or equipment category. Use storage coverage to see which sections contributed. An unseen piece may be in uncaptured storage. Set bonuses, acquisition and pieces in uncaptured storage need separate evidence.
