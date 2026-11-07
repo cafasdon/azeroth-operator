@@ -150,6 +150,8 @@ pub struct Query {
     pub key: Option<String>,
     /// Up to 100 distinct exact item IDs for items or consumables, in place of key. Results follow catalogue order.
     pub item_ids: Option<Vec<std::num::NonZeroU32>>,
+    /// Plan bag stock for up to 20 distinct consumables from the supplied snapshot.
+    pub consumable_targets: Option<Vec<ConsumableTarget>>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
     /// Restrict items to this pinned catalogue set ID.
@@ -285,6 +287,13 @@ fn load(path: &Path) -> Result<(&'static Value, Value)> {
     Ok((db, provenance))
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ConsumableTarget {
+    item_id: std::num::NonZeroU32,
+    quantity: std::num::NonZeroU32,
+}
+
 pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
     let (db, provenance) = load(path)?;
     let (section, identity) = query.section.fields();
@@ -298,7 +307,27 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
     }
-    let item_ids = if let Some(ids) = &query.item_ids {
+    let item_ids = if let Some(targets) = &query.consumable_targets {
+        ensure!(
+            matches!(query.section, Section::Consumables)
+                && snapshot.is_some()
+                && key.is_none()
+                && query.item_ids.is_none()
+                && query.offset.is_none()
+                && query.observed_ownership.is_none()
+                && (1..=20).contains(&targets.len()),
+            "Consumable targets require a saved snapshot and replace lookup filters and paging"
+        );
+        let distinct: BTreeSet<_> = targets
+            .iter()
+            .map(|target| u64::from(target.item_id.get()))
+            .collect();
+        ensure!(
+            distinct.len() == targets.len(),
+            "Consumable target IDs must be distinct"
+        );
+        Some(distinct)
+    } else if let Some(ids) = &query.item_ids {
         ensure!(
             has_inventory_context && key.is_none() && (1..=100).contains(&ids.len()),
             "Expected 1 to 100 item IDs in place of a catalogue key"
@@ -923,14 +952,41 @@ fn source_references(db: &Value, items: &[&Value]) -> Value {
     )
 }
 
-pub fn consumable_inventory(snapshot: &Snapshot, records: &Value) -> Result<Value> {
+pub fn consumable_inventory(
+    snapshot: &Snapshot,
+    records: &Value,
+    targets: Option<&[ConsumableTarget]>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
         "Expected a Forever snapshot"
     );
-    Ok(
-        json!({"captured_at":snapshot.captured_at,"owned_quantities_by_item_id":owned_quantities(snapshot, records)?}),
-    )
+    let quantities = owned_quantities(snapshot, records)?;
+    let plan = targets.map(|targets| {
+        targets.iter().map(|target| {
+            let item_id = target.item_id.get();
+            let required = u64::from(target.quantity.get());
+            let Some(stock) = quantities.get(&item_id.to_string()) else {
+                return json!({"item_id":item_id,"target_bag_quantity":required,"catalogue_match":false});
+            };
+            let (bag_shortfall, withdrawals) = crate::analysis::bag_restock(stock, required);
+            let accessible = ["bags", "character_bank", "account_bank"].map(|key| stock[key].as_u64());
+            let remaining = accessible.iter().flatten().fold(required, |left, count| left.saturating_sub(*count));
+            let confirmed_shortfall = (remaining == 0 || accessible.iter().all(Option::is_some))
+                .then_some(remaining);
+            json!({
+                "item_id":item_id,"target_bag_quantity":required,"catalogue_match":true,
+                "shortfall_vs_bags":bag_shortfall,"suggested_bank_withdrawals":withdrawals,
+                "shortfall_after_observed_storage":remaining,"confirmed_shortfall":confirmed_shortfall
+            })
+        }).collect::<Vec<_>>()
+    });
+    let mut result =
+        json!({"captured_at":snapshot.captured_at,"owned_quantities_by_item_id":quantities});
+    if let Some(plan) = plan {
+        result["restock_plan"] = json!(plan);
+    }
+    Ok(result)
 }
 
 fn owned_quantities(

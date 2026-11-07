@@ -183,6 +183,15 @@ and a name, `item_ids` or `observed_ownership`. The result reports saved
 counts for the returned potion, food and other consumable IDs. Item-source
 and equipment filters remain limited to the items section.
 
+For a restock plan, supply `consumable_targets` instead of lookup filters,
+for example `[{"item_id":118,"quantity":10}]` with the same section and
+snapshot. Use up to 20 distinct IDs. The plan compares each target against
+saved bag counts, suggests manual withdrawals from the character bank first
+and reports any remaining shortage against observed stock. A positive
+shortage is confirmed only when bags and both banks were captured. Without
+bag coverage, withdrawal suggestions are unknown. Unmatched catalogue IDs
+are listed separately in the plan with `catalogue_match: false`.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With

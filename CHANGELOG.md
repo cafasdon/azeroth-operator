@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Plan Forever consumable bag stock and manual bank withdrawals from saved inventory.
+
 - Filter Forever consumables by saved ownership and report captured stock by storage.
 
 - Keep Forever gear candidates that preserve the saved slot's recorded set membership.

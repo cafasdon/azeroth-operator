@@ -391,6 +391,7 @@ impl Operator {
                     azeroth_operator::forever_catalogue::consumable_inventory(
                         &snapshot,
                         &data["records"],
+                        query.consumable_targets.as_deref(),
                     )?
                 } else {
                     azeroth_operator::forever_catalogue::acquisition_progress(
