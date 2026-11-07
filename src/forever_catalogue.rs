@@ -151,6 +151,7 @@ pub fn review_owned(
     offset: usize,
     limit: usize,
     item_type: Option<GearType>,
+    set_id: Option<std::num::NonZeroU32>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -191,9 +192,13 @@ pub fn review_owned(
             total += 1;
             count += 1;
             matched += usize::from(reference.is_some());
-            if item_type.is_some_and(|kind| {
+            let wrong_type = item_type.is_some_and(|kind| {
                 reference.and_then(|item| item["type"].as_u64()) != Some(kind as u64)
-            }) {
+            });
+            let wrong_set = set_id.is_some_and(|id| {
+                reference.and_then(|item| item["setId"].as_u64()) != Some(u64::from(id.get()))
+            });
+            if wrong_type || wrong_set {
                 return;
             }
             if included >= offset && entries.len() < limit {

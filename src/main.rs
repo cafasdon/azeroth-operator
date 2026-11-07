@@ -64,6 +64,8 @@ struct OwnedGearReview {
     limit: Option<usize>,
     /// Filter by the pinned catalogue category before paging. Unknown types are excluded when filtering.
     item_type: Option<azeroth_operator::forever_catalogue::GearType>,
+    /// Filter by the pinned catalogue's setId before paging.
+    set_id: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -348,6 +350,7 @@ impl Operator {
                 args.offset.unwrap_or(0),
                 args.limit.unwrap_or(20),
                 args.item_type,
+                args.set_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
