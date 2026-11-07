@@ -46,6 +46,9 @@ struct Inspect {
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
+    /// Compare captured quest renown rewards with saved faction progress.
+    #[serde(default)]
+    quest_renown_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
@@ -841,6 +844,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.quest_renown_projection
+            && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest renown projection requires a quest ID and the quests section",
+            )]);
+        }
         if args.quest_wallet_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -936,6 +946,7 @@ impl Operator {
                     let review_snapshot = if args.quest_item_catalogue
                         || args.quest_currency_projection
                         || args.quest_wallet_projection
+                        || args.quest_renown_projection
                     {
                         if value["client"]["family"] != "forever" {
                             return CallToolResult::error(vec![ContentBlock::text(
@@ -987,6 +998,19 @@ impl Operator {
                             azeroth_operator::analysis::quest_wallet_projection(
                                 quest,
                                 snapshot.sections.get("wallet"),
+                            );
+                    }
+                    if let Some(snapshot) = review_snapshot
+                        .as_ref()
+                        .filter(|_| args.quest_renown_projection)
+                    {
+                        value["quest_renown_projection"] =
+                            azeroth_operator::analysis::quest_renown_projection(
+                                quest,
+                                snapshot
+                                    .sections
+                                    .get("reputation")
+                                    .unwrap_or(&serde_json::Value::Null),
                             );
                     }
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);

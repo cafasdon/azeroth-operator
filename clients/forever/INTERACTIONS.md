@@ -108,6 +108,11 @@ An absent list means the client supplied no usable observation. An empty
 list is an observed empty result. Update the importer and reader before
 syncing this field. [Forever quest API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
+Set `quest_renown_projection: true` when inspecting a saved Forever quest
+by ID to total its rewards by faction and compare them with captured renown
+progress. A capped faction or missing progress has no next-rank estimate.
+The calculation covers the next recorded threshold only.
+
 Set `quest_wallet_projection: true` when inspecting a saved Forever quest
 by ID to compare its captured coin reward and required payment. The net
 amount requires both observations. The upfront shortfall uses the optional

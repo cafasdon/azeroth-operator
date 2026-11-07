@@ -991,6 +991,28 @@ pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Val
     json!({"receive_by_currency_id":fixed,"choices_by_position":choices})
 }
 
+pub fn quest_renown_projection(quest: Option<&Value>, reputation: &Value) -> Value {
+    let Some(rows) = quest.and_then(|q| q["renown_rewards"].as_object()) else {
+        return Value::Null;
+    };
+    let mut totals = BTreeMap::<u64, u64>::new();
+    for row in rows.values() {
+        if let (Some(id), Some(quantity)) = (row["faction_id"].as_u64(), row["quantity"].as_u64()) {
+            *totals.entry(id).or_default() += quantity;
+        }
+    }
+    json!(totals.into_iter().map(|(id, quantity)| {
+        let key = id.to_string();
+        let faction = &reputation["entries"][&key];
+        let detail = (faction["kind"] == "renown").then(|| faction["renown"].as_object()).flatten();
+        let capped = detail.and_then(|row| row.get("capped")).and_then(Value::as_bool);
+        let remaining = detail.and_then(remaining_renown_points);
+        (id, json!({"name":faction["name"],"reward_points":quantity,"capped":capped,
+            "points_to_next_rank":remaining,"reaches_next_rank":remaining.map(|points| quantity >= points),
+            "points_short_of_next_rank":remaining.map(|points| points.saturating_sub(quantity))}))
+    }).collect::<BTreeMap<_, _>>())
+}
+
 pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;
