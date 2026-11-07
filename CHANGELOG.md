@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Build positional Forever simulator equipment inputs from resolved saved drafts.
+
 - Expose pinned Forever simulator item inputs for resolved captured gear.
 
 - Report shared catalogue limit categories in projected Forever equipment drafts.

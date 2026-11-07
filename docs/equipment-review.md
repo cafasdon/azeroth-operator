@@ -67,6 +67,17 @@ more projected slots, with the associated item IDs. It does not resolve
 category caps or restrictions for uncatalogued items. A null result means the
 catalogue could not be verified.
 
+`simulator_equipment_spec` contains 17 positional item inputs in pinned
+WoWSims order when all projected observations in those slots resolve. Empty
+slots in the capture projection use empty objects. Shirt and tabard are
+outside the simulator model, and explicitly targeting either withholds the payload.
+Unresolved or misplaced items appear in `simulator_equipment_unresolved_slots`.
+The payload is withheld for projected two-handed conflicts, duplicate unique
+items and shared limit categories. It is also withheld when the engine would
+move a lone item from the second ring or trinket slot, or move a flexible
+off-hand weapon to an empty main hand. Character eligibility, encounter
+configuration and actual equip legality require separate evidence.
+
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
 and live client verification; this draft must not be presented as their substitute.

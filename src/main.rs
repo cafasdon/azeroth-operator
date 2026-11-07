@@ -456,22 +456,25 @@ impl Operator {
             if snapshot.client.family == Family::Forever
                 && let Some(path) = &self.forever_catalogue
             {
-                let (pairing, fit, duplicates, shared_categories) =
-                    azeroth_operator::forever_catalogue::review_equipment_catalogue(
-                        path,
-                        &snapshot,
-                        &args.selections,
-                    )
-                    .unwrap_or((
-                        "unknown",
-                        serde_json::Value::Null,
-                        serde_json::Value::Null,
-                        serde_json::Value::Null,
-                    ));
-                review["checks"]["catalogue_two_hand_pairing"] = serde_json::json!(pairing);
-                review["checks"]["catalogue_slot_fit"] = fit;
-                review["checks"]["catalogue_unique_item_duplicates"] = duplicates;
-                review["checks"]["catalogue_shared_limit_categories"] = shared_categories;
+                let checks = azeroth_operator::forever_catalogue::review_equipment_catalogue(
+                    path,
+                    &snapshot,
+                    &args.selections,
+                )
+                .unwrap_or_else(|_| {
+                    serde_json::json!({
+                        "catalogue_two_hand_pairing":"unknown",
+                        "catalogue_slot_fit":null,
+                        "catalogue_unique_item_duplicates":null,
+                        "catalogue_shared_limit_categories":null,
+                        "simulator_equipment_spec":null,
+                        "simulator_equipment_unresolved_slots":null
+                    })
+                });
+                review["checks"]
+                    .as_object_mut()
+                    .unwrap()
+                    .extend(checks.as_object().unwrap().clone());
             }
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

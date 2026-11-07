@@ -643,15 +643,27 @@ pub fn review_equipment_catalogue(
     path: &Path,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
-) -> Result<(&'static str, Value, Value, Value)> {
+) -> Result<Value> {
     use crate::planning::ItemLocation;
 
-    let projected_item = |slot| {
+    let equipment = snapshot
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow::anyhow!("Equipment observation unavailable"))?;
+    let projected_observation = |slot| {
         if let Some(selection) = selections
             .iter()
             .find(|selection| selection.target_slot == slot)
         {
-            return Some(u64::from(selection.expected_item_id));
+            return match selection.source {
+                ItemLocation::Equipment { slot } => equipment.get(&slot.to_string()),
+                ItemLocation::Bag { bag, slot } => snapshot
+                    .sections
+                    .get("bags")?
+                    .get(bag.to_string())?
+                    .get(slot.to_string()),
+            };
         }
         if selections
             .iter()
@@ -659,8 +671,9 @@ pub fn review_equipment_catalogue(
         {
             return None;
         }
-        snapshot.sections.get("equipment")?[slot.to_string()]["item_id"].as_u64()
+        equipment.get(&slot.to_string())
     };
+    let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
     let (db, _) = load(path)?;
     let items = db["items"]
         .as_array()
@@ -719,12 +732,65 @@ pub fn review_equipment_catalogue(
         .filter(|(_, items)| items.len() > 1)
         .map(|(category, items)| json!({"limit_category":category,"items":items}))
         .collect();
-    Ok((
-        pairing,
-        json!(fit),
-        json!(duplicates),
-        json!(shared_categories),
-    ))
+    // EquipmentSpec is positional in simulator ItemSlot order. Shirt and
+    // tabard have no simulator slots.
+    let mut blockers: Vec<_> = selections
+        .iter()
+        .filter(|selection| simulator_slot_for_equipment(selection.target_slot).is_none())
+        .map(|selection| json!({"slot":selection.target_slot,"item_id":selection.expected_item_id}))
+        .collect();
+    let mut specs = Vec::new();
+    for slot in [1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 16, 17, 18] {
+        let Some(observed) = projected_observation(slot) else {
+            specs.push(json!({}));
+            continue;
+        };
+        let id = observed["item_id"].as_u64();
+        let spec = id.and_then(find).and_then(|item| {
+            let target = simulator_slot_for_equipment(slot)?;
+            if !simulator_slots(item).contains(&target) {
+                return None;
+            }
+            // The engine fills the first free paired slot and ignores empty
+            // placeholders during equip. Withhold inputs it would relocate.
+            match target {
+                SimulatorSlot::Finger2 if projected_item(11).is_none() => return None,
+                SimulatorSlot::Trinket2 if projected_item(13).is_none() => return None,
+                SimulatorSlot::OffHand
+                    if item["handType"] == 2
+                        && item["weaponType"] != 7
+                        && projected_item(16).is_none() =>
+                {
+                    return None;
+                }
+                _ => {}
+            }
+            let modifiers = link_modifiers(observed)?;
+            let mut candidates = modifier_candidates(&db, &modifiers, Some(item));
+            candidates
+                .as_object_mut()?
+                .remove("simulator_item_spec")
+                .filter(|spec| !spec.is_null())
+        });
+        if let Some(spec) = spec {
+            specs.push(spec);
+        } else {
+            blockers.push(json!({"slot":slot,"item_id":id}));
+        }
+    }
+    let equipment_spec = (blockers.is_empty()
+        && pairing != "two_hand_conflict"
+        && duplicates.is_empty()
+        && shared_categories.is_empty())
+    .then(|| json!({"items":specs}));
+    Ok(json!({
+        "catalogue_two_hand_pairing":pairing,
+        "catalogue_slot_fit":fit,
+        "catalogue_unique_item_duplicates":duplicates,
+        "catalogue_shared_limit_categories":shared_categories,
+        "simulator_equipment_spec":equipment_spec,
+        "simulator_equipment_unresolved_slots":blockers
+    }))
 }
 
 fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {
