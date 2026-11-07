@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up Forever item and enchant catalogue entries by their crafting recipe spell ID.
+
 - Exercise Forever's full saved capture fixture through the packaged `/aoexport` handler and require it in package verification.
 
 - Add a Windows first-install command for the verified capture-only Forever package.

@@ -44,8 +44,10 @@ impl Section {
 pub struct Query {
     pub section: Section,
     /// Exact numeric ID (enchant effect ID for enchants), encounter path, or name substring.
-    /// Omit to get the section count.
+    /// Omit both filters to get the section count without records.
     pub key: Option<String>,
+    /// Restrict items or enchants to a crafted source with this recipe spell ID.
+    pub recipe_spell_id: Option<u32>,
 }
 
 fn load(path: &Path) -> Result<(Value, Value)> {
@@ -74,22 +76,40 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         .ok_or_else(|| anyhow::anyhow!("Missing catalogue section"))?;
     let mut records = Vec::new();
     let mut has_more = false;
-    if let Some(key) = &query.key {
-        let key = key.trim();
+    let key = query.key.as_deref().map(str::trim);
+    if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
-        let id = key.parse::<u32>().ok();
-        let name = key.to_lowercase();
+    }
+    if let Some(recipe) = query.recipe_spell_id {
+        ensure!(
+            recipe != 0 && matches!(query.section, Section::Items | Section::Enchants),
+            "Expected a positive recipe spell ID for items or enchants"
+        );
+    }
+    if key.is_some() || query.recipe_spell_id.is_some() {
+        let id = key.and_then(|key| key.parse::<u32>().ok());
+        let name = key.map(str::to_lowercase);
         for row in rows {
-            let matches = if identity == "path" {
-                row[identity].as_str() == Some(key)
+            let matches = if key.is_none() {
+                true
+            } else if identity == "path" {
+                row[identity].as_str() == key
             } else if let Some(id) = id {
                 row[identity].as_u64() == Some(u64::from(id))
             } else {
                 row["name"]
                     .as_str()
-                    .is_some_and(|s| s.to_lowercase().contains(&name))
+                    .zip(name.as_deref())
+                    .is_some_and(|(s, name)| s.to_lowercase().contains(name))
             };
-            if matches {
+            let matches_recipe = query.recipe_spell_id.is_none_or(|recipe| {
+                row["sources"].as_array().is_some_and(|sources| {
+                    sources.iter().any(|source| {
+                        source["crafted"]["spellId"].as_u64() == Some(u64::from(recipe))
+                    })
+                })
+            });
+            if matches && matches_recipe {
                 if records.len() == 20 {
                     has_more = true;
                     break;

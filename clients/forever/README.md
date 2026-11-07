@@ -61,6 +61,8 @@ Set the same environment variable in the local stdio MCP client's server configu
 
 The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinned in `catalogue.lock.json` and replaces the destination atomically after verification. A matching cache skips the network. Upgrading data requires reviewing and updating the revision and hash in the pin, rebuilding the companion, and rerunning sync. The catalogue includes simulator reference zones, NPCs and factions. For a wider world mirror, qualify an exportable Forever source independently for coverage, build identity and redistribution terms before adding it.
 
+For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to find catalogue items associated with that recipe. The `enchants` section supports the same filter for enchant references. A supplied `key` further narrows the matches. These associations come from the pinned simulator catalogue and can be incomplete or list several variants. Use the saved recipe observation for reagent requirements.
+
 Verified on 7 November 2026: the actual sync command returned `synced` then `unchanged`; a bad download preserved the destination. The Rust stdio MCP returned exact pinned records across all nine lookup sections. The unconfigured server retained 14 tools. Caller and failure review caught the lack of a total HTTP deadline in the initial implementation. The revised command has a 30-second transfer deadline and a 35-second process timeout. Jev advisory triage classified the finding as material (model `jev-1.14.0`, request `b3f8fe8728dbc6193bf06ddff54922a80d21c1f0980322deea9af094d055e3fb`, 422 input/46 output tokens, 0.304 seconds).
 
 ### Simulation and optimisation
