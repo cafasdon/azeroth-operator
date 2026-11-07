@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Allow up to 128 Forever gear drafts in explicitly expanded fixed-iteration searches.
+
 - Report equipped set-piece counts for ranked Forever drafts, including retained pieces.
 
 - Rank owned Forever gear combinations from a selected catalogue set.

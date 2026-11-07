@@ -135,7 +135,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
-                  can_dual_wield=True, character=None, set_id=None):
+                  can_dual_wield=True, character=None, set_id=None, max_drafts=64):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -198,8 +198,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             if 16 in targets and 17 not in targets:
                 draft_args["allow_two_hand_off_hand_clear"] = True
             proposed.append(draft_args)
-            if len(proposed) > 64:
-                raise ValueError("Slot combinations exceed the 64-draft ranking limit")
+            if len(proposed) > max_drafts:
+                raise ValueError("Slot combinations exceed the configured draft limit")
         for draft_args in proposed:
             selections = draft_args["selections"]
             draft = await call("review_equipment_selection", **draft_args)
@@ -278,6 +278,8 @@ def main():
     parser.add_argument("--item-id", type=int, action="append",
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
+    parser.add_argument("--max-drafts", type=int, default=64,
+                        help="Maximum proposed changes (1–128 fixed mode, 1–64 bulk mode).")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -302,6 +304,8 @@ def main():
             raise ValueError("Provide a positive catalogue set ID")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
+        if not 1 <= args.max_drafts <= (64 if args.bulk_engine else 128):
+            raise ValueError("Draft limit is out of range for the comparison mode")
         if len(args.encounter_lookup) > 4:
             raise ValueError("Provide up to four encounter exports")
         weights = args.encounter_weight
@@ -323,7 +327,7 @@ def main():
             drafts, skipped, coverage, stats, selected_capture, set_observation = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
-                        args.character, args.set_id), timeout=45,
+                        args.character, args.set_id, args.max_drafts), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}

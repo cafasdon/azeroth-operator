@@ -139,8 +139,11 @@ Repeat `--slot` or use `--all-slots` to compare combinations, including keeping 
 current item in each slot. The command pages up to 256 matching captured locations
 per slot and scans at most 1,024 combinations, including the baseline. It skips
 combinations that reuse a physical source or leave a moved item's slot unfilled.
-It checks up to 64 remaining changes, rejects larger searches and sorts resolved
-results by mean DPS against the captured baseline.
+It checks up to 64 remaining changes by default, rejects larger searches and
+sorts resolved results by mean DPS against the captured baseline. Use
+`--max-drafts` to choose a different limit up to 128 in fixed mode or 64 in
+bulk mode. The baseline is additional. The existing comparison iteration and
+time limits still apply.
 `--paired` adds uncertainty against that baseline. Results include storage
 coverage and skipped candidates. Multi-slot output uses `slots` and a
 `selections` array per result. Character eligibility and complete-inventory
