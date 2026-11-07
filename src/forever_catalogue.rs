@@ -682,6 +682,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if matches!(query.section, Section::Consumables) && filtered {
+        result["recorded_shared_cooldowns"] = shared_consumable_cooldowns(&records);
+    }
     if let Some(equipped) = equipped {
         result["equipped_slot_comparison"] = equipped.comparison(&records);
     }
@@ -701,6 +704,40 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         result["simulation_input"] = encounter_input(record, settings)?;
     }
     Ok(result)
+}
+
+fn shared_consumable_cooldowns(records: &[&Value]) -> Value {
+    let mut categories = BTreeMap::<u64, BTreeMap<u64, BTreeSet<u64>>>::new();
+    for record in records {
+        let Some(item_id) = record["id"].as_u64() else {
+            continue;
+        };
+        for effect in record["itemEffects"].as_array().into_iter().flatten() {
+            let on_use = &effect["onUse"];
+            let Some(category_id) = on_use["categoryId"].as_u64().filter(|id| *id > 0) else {
+                continue;
+            };
+            let Some(duration_ms) = on_use["categoryCooldownMs"].as_u64().filter(|ms| *ms > 0)
+            else {
+                continue;
+            };
+            categories
+                .entry(category_id)
+                .or_default()
+                .entry(item_id)
+                .or_default()
+                .insert(duration_ms);
+        }
+    }
+    json!(
+        categories
+            .into_iter()
+            .filter(|(_, items)| items.len() > 1)
+            .map(|(category_id, items)| {
+                json!({"category_id":category_id,"duration_ms_by_item_id":items})
+            })
+            .collect::<Vec<_>>()
+    )
 }
 
 struct EquippedSlot {

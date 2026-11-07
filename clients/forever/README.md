@@ -183,6 +183,13 @@ and a name, `item_ids` or `observed_ownership`. The result reports saved
 counts for the returned potion, food and other consumable IDs. Item-source
 and equipment filters remain limited to the items section.
 
+Filtered consumable responses include `recorded_shared_cooldowns`.
+Each group covers at least two returned items with the same positive on-use
+cooldown category and lists the positive recorded durations per item in
+milliseconds. To compare a specific pair, look up both IDs in one request.
+Groups cover the returned page and describe catalogue data. Live cooldowns
+and categories without a recorded positive duration are outside this view.
+
 For a restock plan, supply `consumable_targets` instead of lookup filters,
 for example `[{"item_id":118,"quantity":10}]` with the same section and
 snapshot. Use up to 20 distinct IDs. The plan compares each target against

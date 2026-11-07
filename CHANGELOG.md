@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Group Forever consumables with matching recorded on-use cooldown categories.
+
 - Plan Forever consumable bag stock and manual bank withdrawals from saved inventory.
 
 - Filter Forever consumables by saved ownership and report captured stock by storage.
