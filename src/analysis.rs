@@ -991,6 +991,24 @@ pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Val
     json!({"receive_by_currency_id":fixed,"choices_by_position":choices})
 }
 
+pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
+    let Some(quest) = quest else {
+        return Value::Null;
+    };
+    let cost = quest["required_copper"].as_u64();
+    let reward = quest["reward_amounts"]["copper"].as_u64();
+    let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
+    let upfront = balance.zip(cost);
+    json!({
+        "required_copper":cost,
+        "reward_copper":reward,
+        "net_copper":reward.zip(cost).map(|(reward, cost)| i128::from(reward) - i128::from(cost)),
+        "upfront_shortfall_copper":upfront.map(|(balance, cost)| cost.saturating_sub(balance)),
+        "projected_wallet_copper":upfront.and_then(|(balance, cost)| balance.checked_sub(cost)).zip(reward)
+            .and_then(|(remaining, reward)| remaining.checked_add(reward))
+    })
+}
+
 pub fn profession_training_progress(section: &Value) -> Value {
     let Some(entries) = section.as_object() else {
         return Value::Null;

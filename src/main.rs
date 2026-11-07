@@ -43,6 +43,9 @@ struct Inspect {
     /// Resolve captured quest reward item IDs in the pinned local Forever catalogue.
     #[serde(default)]
     quest_item_catalogue: bool,
+    /// Compare a saved quest's coin cost and reward with the optional captured wallet.
+    #[serde(default)]
+    quest_wallet_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
@@ -838,6 +841,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.quest_wallet_projection
+            && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest wallet projection requires a quest ID and the quests section",
+            )]);
+        }
         if args.quest_currency_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -923,24 +933,26 @@ impl Operator {
                         serde_json::json!(quests.as_object().map(|_| quest.is_some()));
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
-                    let review_snapshot =
-                        if args.quest_item_catalogue || args.quest_currency_projection {
-                            if value["client"]["family"] != "forever" {
+                    let review_snapshot = if args.quest_item_catalogue
+                        || args.quest_currency_projection
+                        || args.quest_wallet_projection
+                    {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest reward review requires a saved Forever snapshot",
+                            )]);
+                        }
+                        match self.store.read(&args.snapshot_id) {
+                            Ok(snapshot) => Some(snapshot),
+                            Err(_) => {
                                 return CallToolResult::error(vec![ContentBlock::text(
-                                    "Quest reward review requires a saved Forever snapshot",
+                                    "Could not read the captured quest reward context",
                                 )]);
                             }
-                            match self.store.read(&args.snapshot_id) {
-                                Ok(snapshot) => Some(snapshot),
-                                Err(_) => {
-                                    return CallToolResult::error(vec![ContentBlock::text(
-                                        "Could not read the captured quest reward context",
-                                    )]);
-                                }
-                            }
-                        } else {
-                            None
-                        };
+                        }
+                    } else {
+                        None
+                    };
                     if args.quest_item_catalogue {
                         let catalogue = self.forever_catalogue.as_deref().and_then(|path| {
                             azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path).ok()
@@ -965,6 +977,16 @@ impl Operator {
                                     .sections
                                     .get("currency_balances")
                                     .unwrap_or(&serde_json::Value::Null),
+                            );
+                    }
+                    if let Some(snapshot) = review_snapshot
+                        .as_ref()
+                        .filter(|_| args.quest_wallet_projection)
+                    {
+                        value["quest_wallet_projection"] =
+                            azeroth_operator::analysis::quest_wallet_projection(
+                                quest,
+                                snapshot.sections.get("wallet"),
                             );
                     }
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);

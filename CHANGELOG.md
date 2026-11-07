@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Project saved Forever quest coin rewards, required payments and wallet shortfalls.
+
 - Capture coin, experience and honor reward amounts for the selected Forever quest.
 
 - Compare catalogue base item levels for Forever quest rewards and the equipped items they could replace.

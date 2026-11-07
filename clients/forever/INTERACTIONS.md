@@ -102,6 +102,13 @@ and `honor`. Zero is observed, and missing amounts are unknown. These are
 reward panel values at export time. `required_copper` remains a separate
 cost observation. Update the importer and reader before syncing this field.
 
+Set `quest_wallet_projection: true` when inspecting a saved Forever quest
+by ID to compare its captured coin reward and required payment. The net
+amount requires both observations. The upfront shortfall uses the optional
+wallet from the same snapshot. The projected balance is available only when
+the wallet covers the full cost and the coin reward is known. This is a
+saved-data calculation and does not establish turn-in readiness.
+
 Set `quest_item_catalogue: true` when inspecting a saved Forever quest by ID
 to look up item names, required levels and simulator slots in the verified
 local catalogue. References keep their captured reward positions. A null row
