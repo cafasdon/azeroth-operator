@@ -604,6 +604,28 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         extra_request["additional_recipes"][-1]["snapshot_id"] = unknown_output_key
                         self.assertEqual((await combined_output(extra_request))["items"],
                                          [{"item_id": 456, "minimum": None, "maximum": None}])
+                        intermediate_user = json.loads(json.dumps(second_recipe))
+                        intermediate_user["sections"]["selected_recipe"].update(
+                            recipe_id=103, output_item_id=789, reagents={"456": 5})
+                        intermediate_key = SnapshotStore(Path(folder)).ingest(intermediate_user)
+                        producer = {"snapshot_id": second_key, "crafts": 2}
+                        consumer = {"snapshot_id": intermediate_key, "crafts": 1}
+                        async def starting_materials(*recipes):
+                            response = await session.call_tool("review_forever_recipe", {
+                                **batch_request, "additional_recipes": list(recipes)})
+                            self.assertFalse(response.isError)
+                            return json.loads(response.content[0].text)["ordered_starting_materials"]
+                        forward = await starting_materials(producer, consumer)
+                        reverse = await starting_materials(consumer, producer)
+                        self.assertEqual(next(row for row in forward if row["item_id"] == 456),
+                                         {"item_id": 456, "required_before_batch": 1,
+                                          "quantity_observed": 0, "shortfall_vs_observed": 1})
+                        self.assertEqual(next(row for row in reverse if row["item_id"] == 456)
+                                         ["required_before_batch"], 5)
+                        unknown = await starting_materials(
+                            {"snapshot_id": unknown_output_key, "crafts": 2}, consumer)
+                        self.assertEqual(next(row for row in unknown if row["item_id"] == 456)
+                                         ["required_before_batch"], 5)
                         duplicate = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
                         self.assertTrue(duplicate.isError)

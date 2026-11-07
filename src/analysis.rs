@@ -194,6 +194,48 @@ pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) ->
     ))
 }
 
+/// Model minimum yields in supplied recipe order, consuming reagents before producing output.
+pub fn ordered_recipe_materials<'a>(
+    reviews: impl Iterator<Item = &'a Value>,
+    combined_materials: &Value,
+) -> Result<Value> {
+    let Some(materials) = combined_materials.as_array() else {
+        return Ok(Value::Null);
+    };
+    let mut balance = BTreeMap::<u64, i64>::new();
+    let mut starting_stock = BTreeMap::<u64, u64>::new();
+    for review in reviews {
+        for material in review["materials"].as_array().into_iter().flatten() {
+            let item = material["item_id"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Missing reagent ID"))?;
+            let required = material["required"]
+                .as_i64()
+                .ok_or_else(|| anyhow::anyhow!("Missing reagent quantity"))?;
+            let available = balance.entry(item).or_default();
+            *available = available
+                .checked_sub(required)
+                .ok_or_else(|| anyhow::anyhow!("Reagent balance overflow"))?;
+            let minimum = starting_stock.entry(item).or_default();
+            *minimum = (*minimum).max((*available).min(0).unsigned_abs());
+        }
+        let output = &review["base_output_if_completed"];
+        if let Some((item, minimum)) = output["item_id"].as_u64().zip(output["minimum"].as_i64()) {
+            let available = balance.entry(item).or_default();
+            *available = available
+                .checked_add(minimum)
+                .ok_or_else(|| anyhow::anyhow!("Output balance overflow"))?;
+        }
+    }
+    Ok(json!(materials.iter().map(|material| {
+        let item = material["item_id"].as_u64().ok_or_else(|| anyhow::anyhow!("Missing combined reagent ID"))?;
+        let required = starting_stock.get(&item).ok_or_else(|| anyhow::anyhow!("Missing starting stock estimate"))?;
+        let observed = material["quantity_observed"].as_u64();
+        Ok(json!({"item_id":item,"required_before_batch":required,"quantity_observed":observed,
+            "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity))}))
+    }).collect::<Result<Vec<_>>>()?))
+}
+
 pub fn combine_recipe_outputs<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
     let mut totals = BTreeMap::<u64, Option<(u64, u64)>>::new();
     let mut recipes_without_observed_output_item = 0;

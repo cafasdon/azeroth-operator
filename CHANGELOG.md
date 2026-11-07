@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Estimate starting materials for ordered Forever crafting batches that produce intermediate reagents.
+
 - Plan Forever crafting materials from a target base item quantity.
 
 - Combine conditional base output ranges by item across Forever crafting batches.
