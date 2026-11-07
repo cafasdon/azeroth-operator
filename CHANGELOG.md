@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank resolved single-slot Forever swaps from captured storage using local MCP and WoWSims.
+
 - Return exact equipment draft selections alongside slot-filtered Forever gear candidates.
 
 - Select observed character-bank and account-bank items in Forever equipment drafts.
