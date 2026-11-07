@@ -41,6 +41,8 @@ struct Inspect {
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
     currency_reward_quantity: Option<std::num::NonZeroU64>,
+    /// Select one saved Forever faction by ID. Requires section "reputation".
+    faction_id: Option<std::num::NonZeroU32>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -816,7 +818,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select a quest or Forever currency by ID, compare a proposed currency reward against recorded caps, or check explicit costs against saved balances. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select a quest, Forever currency or Forever faction by ID, compare a proposed currency reward against recorded caps, or check explicit costs against saved balances. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -830,9 +832,13 @@ impl Operator {
             )]);
         }
         if let Some(budget) = args.spending_budget {
-            if args.section.is_some() || args.quest_id.is_some() || args.currency_id.is_some() {
+            if args.section.is_some()
+                || args.quest_id.is_some()
+                || args.currency_id.is_some()
+                || args.faction_id.is_some()
+            {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Spending budgets cannot be combined with section, quest or currency selection",
+                    "Spending budgets cannot be combined with a section or record selection",
                 )]);
             }
             return match self.review_spending_budget(&args.snapshot_id, budget) {
@@ -850,6 +856,11 @@ impl Operator {
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Currency selection requires the currency_balances section",
+            )]);
+        }
+        if args.faction_id.is_some() && args.section.as_deref() != Some("reputation") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Faction selection requires the reputation section",
             )]);
         }
         match self
@@ -905,10 +916,33 @@ impl Operator {
                         value["currency_cap_headroom"] = headroom;
                     }
                 } else if args.section.as_deref() == Some("reputation") {
-                    value["standard_reputation_progress"] =
+                    let standard =
                         azeroth_operator::analysis::standard_reputation_progress(&value["data"]);
-                    value["special_reputation_progress"] =
+                    let special =
                         azeroth_operator::analysis::special_reputation_progress(&value["data"]);
+                    if let Some(id) = args.faction_id {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Faction selection requires a saved Forever snapshot",
+                            )]);
+                        }
+                        let key = id.to_string();
+                        let section = value["data"].take();
+                        let entries = section["entries"].as_object();
+                        let row = entries.and_then(|entries| entries.get(&key));
+                        value["faction_id"] = serde_json::json!(id);
+                        value["faction_observed"] =
+                            serde_json::json!(entries.map(|_| row.is_some()));
+                        value["coverage"] = section["coverage"].clone();
+                        value["data"] = row.cloned().unwrap_or_default();
+                        value["standard_reputation_progress"] =
+                            standard.get(&key).cloned().unwrap_or_default();
+                        value["special_reputation_progress"] =
+                            special.get(&key).cloned().unwrap_or_default();
+                    } else {
+                        value["standard_reputation_progress"] = standard;
+                        value["special_reputation_progress"] = special;
+                    }
                 } else if args.section.as_deref() == Some("tracked_achievements") {
                     value["tracked_achievement_work"] =
                         azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
