@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Identify saved active-spec, non-passive spells without a matching observed built-in action.
+
 - Cross-reference saved Forever action bar spells against captured spellbook base and override IDs.
 
 - Export loaded built-in Forever action bar slots without requiring the legacy slot boundary.

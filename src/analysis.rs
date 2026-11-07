@@ -746,7 +746,8 @@ pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value
         base_ids.extend(row["base_spell_id"].as_u64());
         reported_ids.extend(row["spell_id"].as_u64());
     }
-    let slots = actions["slots"].as_object().map(|slots| {
+    let action_slots = actions["slots"].as_object();
+    let slots = action_slots.map(|slots| {
         slots
             .iter()
             .filter(|(_, row)| row["kind"] == "spell")
@@ -762,7 +763,24 @@ pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value
             })
             .collect::<BTreeMap<_, _>>()
     });
-    json!({"spellbook_available":book.is_some(),"spell_slots":slots})
+    let unslotted = book.zip(action_slots).map(|(book, actions)| {
+        let slotted = actions
+            .values()
+            .filter(|row| row["kind"] == "spell")
+            .filter_map(|row| row["id"].as_u64())
+            .collect::<BTreeSet<_>>();
+        book.iter()
+            .filter(|(_, row)| {
+                row["passive"].as_bool() == Some(false)
+                    && row["off_spec"].as_bool() == Some(false)
+                    && !["base_spell_id", "spell_id"]
+                        .into_iter()
+                        .any(|field| row[field].as_u64().is_some_and(|id| slotted.contains(&id)))
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+    json!({"spellbook_available":book.is_some(),"spell_slots":slots,
+        "active_spellbook_slots_without_observed_action":unslotted})
 }
 
 fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
