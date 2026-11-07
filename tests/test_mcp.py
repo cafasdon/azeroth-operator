@@ -234,7 +234,31 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(achievement.content[0].text)["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
                         self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
-                        self.assertEqual(json.loads(currency.content[0].text)["data"]["entries"]["100"]["quantity"], 0)
+                        currency_data = json.loads(currency.content[0].text)
+                        self.assertEqual(currency_data["data"]["entries"]["100"]["quantity"], 0)
+                        self.assertEqual(currency_data["currency_cap_headroom"], {
+                            "100": {"weekly_remaining": 30, "maximum_remaining": 40,
+                                    "maximum_basis": "total_earned"},
+                        })
+                        async def inspect_caps(snapshot_id):
+                            result = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": snapshot_id, "section": "currency_balances"})
+                            self.assertFalse(result.isError)
+                            return json.loads(result.content[0].text)["currency_cap_headroom"]
+                        self.assertIsNone(await inspect_caps(key))
+                        other_caps = json.loads(json.dumps(forever))
+                        entries = other_caps["sections"]["currency_balances"]["entries"]
+                        entries["100"].update(cap_uses_total_earned=False, max_weekly_quantity=0, quantity=101)
+                        entries["101"] = {**entries["100"], "max_quantity": 0}
+                        entries["102"] = {**entries["101"], "inactive": True,
+                                          "max_weekly_quantity": 5, "earned_this_week": 6}
+                        other_key = SnapshotStore(Path(folder)).ingest(other_caps)
+                        self.assertEqual(await inspect_caps(other_key), {
+                            "100": {"weekly_remaining": None, "maximum_remaining": 0,
+                                    "maximum_basis": "quantity"},
+                            "102": {"weekly_remaining": 0, "maximum_remaining": None,
+                                    "maximum_basis": None},
+                        })
                         wallet = await session.call_tool("inspect_snapshot", {"snapshot_id": forever_key, "section": "wallet"})
                         self.assertFalse(wallet.isError)
                         self.assertEqual(json.loads(wallet.content[0].text)["data"], {"copper": 5_000_000_001})

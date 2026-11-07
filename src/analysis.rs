@@ -582,6 +582,40 @@ fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
         })
 }
 
+pub fn currency_cap_headroom(section: &Value) -> Value {
+    let Some(entries) = section["entries"].as_object() else {
+        return Value::Null;
+    };
+    let remaining = |entry: &Value, limit: &str, used: &str| {
+        entry[limit]
+            .as_u64()
+            .filter(|limit| *limit > 0)
+            .zip(entry[used].as_u64())
+            .map(|(limit, used)| limit.saturating_sub(used))
+    };
+    Value::Object(
+        entries
+            .iter()
+            .filter_map(|(id, entry)| {
+                let weekly = remaining(entry, "max_weekly_quantity", "earned_this_week");
+                let basis = if entry["cap_uses_total_earned"].as_bool()? {
+                    "total_earned"
+                } else {
+                    "quantity"
+                };
+                let maximum = remaining(entry, "max_quantity", basis);
+                (weekly.is_some() || maximum.is_some()).then(|| {
+                    (
+                        id.clone(),
+                        json!({"weekly_remaining":weekly,"maximum_remaining":maximum,
+                            "maximum_basis":maximum.map(|_| basis)}),
+                    )
+                })
+            })
+            .collect(),
+    )
+}
+
 pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     let Some(objectives) = quest.and_then(|quest| quest["objectives"].as_object()) else {
         return Value::Null;

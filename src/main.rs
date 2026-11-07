@@ -774,6 +774,10 @@ impl Operator {
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
+                if args.section.as_deref() == Some("currency_balances") {
+                    value["currency_cap_headroom"] =
+                        azeroth_operator::analysis::currency_cap_headroom(&value["data"]);
+                }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }
             Err(_) => {
