@@ -1285,6 +1285,22 @@ pub fn quest_xp_projection(quest: Option<&Value>, experience: Option<&Value>) ->
     })
 }
 
+pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
+    let Some(entries) = map["entries"].as_object() else {
+        return Value::Null;
+    };
+    let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
+    Value::Object(
+        entries.iter().map(|(slot, node)| {
+            let fare_and_balance = node["fare_copper"].as_u64().zip(balance);
+            (slot.clone(), json!({
+                "affordable":fare_and_balance.map(|(fare, balance)| fare <= balance),
+                "shortfall_copper":fare_and_balance.map(|(fare, balance)| fare.saturating_sub(balance)),
+            }))
+        }).collect()
+    )
+}
+
 pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

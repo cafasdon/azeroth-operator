@@ -298,6 +298,12 @@ to the player. It covers the open flight map, so availability and fares
 can differ at another flight master. Update the importer and reader before
 syncing this section. [Forever flight map source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_FlightMap/FM_FlightPathDataProvider.lua)
 
+Set `flight_wallet_projection: true` with `section: "flight_map"` in
+`inspect_snapshot` for affordability and copper shortfall by captured
+slot. A missing fare or wallet leaves both values unknown. Each comparison
+uses the same saved balance independently. The result covers the copper
+fare at capture time.
+
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually
 exclusive with an explicit waypoint map ID. A missing captured map leaves

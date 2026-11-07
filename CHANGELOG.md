@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured Forever flight fares with the wallet balance from the same snapshot.
+
 - Include the game-reported Forever player map level range when available.
 
 - Capture open Forever flight map destinations and available fares for offline review.

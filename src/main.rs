@@ -35,6 +35,9 @@ struct Operator {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Compare recorded fares with the wallet from the same Forever flight_map capture.
+    #[serde(default)]
+    flight_wallet_projection: bool,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare captured quest currency rewards against caps from the same snapshot.
@@ -927,6 +930,11 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.flight_wallet_projection && args.section.as_deref() != Some("flight_map") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Flight wallet projection requires the flight_map section",
+            )]);
+        }
         let reward_filters: [(_, _, _, &[&str]); 4] = [
             (
                 "item",
@@ -1140,6 +1148,23 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if args.flight_wallet_projection {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Flight wallet projection requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured flight wallet context",
+                        )]);
+                    };
+                    value["flight_wallet_projection"] =
+                        azeroth_operator::analysis::flight_wallet_projection(
+                            &value["data"],
+                            snapshot.sections.get("wallet"),
+                        );
+                }
                 if let Some(id) = args.quest_id {
                     let quests = value["data"].take();
                     let quest = quests.get(id.to_string());
