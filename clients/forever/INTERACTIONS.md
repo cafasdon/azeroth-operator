@@ -293,6 +293,10 @@ flag from the recipe API. Missing learned status stays unknown regardless
 of tracking membership. Update the importer and reader before syncing this
 field. [Forever recipe metadata](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/TradeSkillUITypesDocumentation.lua)
 
+Use `tracked_recipe_learning` with `learned`, `unlearned` or `unknown` to
+filter both tracked lists independently. This requires `tracked_recipes`
+without a recipe ID. An unavailable capture remains unavailable.
+
 `review_forever_recipe` includes `recipe_tracking` for each reviewed recipe.
 Tracking comes from that recipe's own capture, including when the review
 uses another snapshot for material counts. It remains separate from the

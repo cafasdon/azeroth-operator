@@ -80,6 +80,8 @@ struct Inspect {
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
+    /// Filter saved tracked crafts and recrafts by observed learned status.
+    tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -98,6 +100,14 @@ impl QuestDifficulty {
             Self::SuggestedGroup => quest["suggested_group_size"].as_u64().map(|size| size > 1),
         }
     }
+}
+
+#[derive(Clone, Copy, Deserialize, serde::Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum RecipeLearning {
+    Learned,
+    Unlearned,
+    Unknown,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -971,6 +981,7 @@ impl Operator {
                 || args.achievement_id.is_some()
                 || args.profession_skill_line.is_some()
                 || args.tracked_recipe_id.is_some()
+                || args.tracked_recipe_learning.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
                     "Spending budgets cannot be combined with a section or record selection",
@@ -1046,6 +1057,14 @@ impl Operator {
         if args.tracked_recipe_id.is_some() && args.section.as_deref() != Some("tracked_recipes") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Tracked recipe selection requires the tracked_recipes section",
+            )]);
+        }
+        if args.tracked_recipe_learning.is_some()
+            && (args.section.as_deref() != Some("tracked_recipes")
+                || args.tracked_recipe_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Tracked recipe learning filter requires tracked_recipes without a recipe ID",
             )]);
         }
         match self
@@ -1252,6 +1271,29 @@ impl Operator {
                         serde_json::json!(recrafts.map(|_| recraft.is_some()));
                     if section.is_object() {
                         value["data"] = serde_json::json!({"craft":craft,"recraft":recraft});
+                    }
+                }
+                if let Some(learning) = args.tracked_recipe_learning {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Tracked recipe learning filter requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["tracked_recipe_learning"] = serde_json::json!(learning);
+                    if let Some(data) = value["data"].as_object_mut() {
+                        let expected = match learning {
+                            RecipeLearning::Learned => Some(true),
+                            RecipeLearning::Unlearned => Some(false),
+                            RecipeLearning::Unknown => None,
+                        };
+                        for group in ["crafts", "recrafts"] {
+                            if let Some(rows) = data
+                                .get_mut(group)
+                                .and_then(serde_json::Value::as_object_mut)
+                            {
+                                rows.retain(|_, row| row["learned"].as_bool() == expected);
+                            }
+                        }
                     }
                 }
                 if args.section.as_deref() == Some("currency_balances") {

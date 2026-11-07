@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever tracked crafts and recrafts by learned, unlearned or unknown status.
+
 - Compare known learned-status changes for tracked Forever crafts and recrafts separately.
 
 - Show separate tracked craft and recraft learned flags in Forever recipe and quest reward reviews.
