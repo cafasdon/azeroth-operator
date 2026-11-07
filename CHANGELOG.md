@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show skill points remaining to observed profession caps in saved captures.
+
 - Show unfinished criteria and remaining counts for saved tracked Forever achievements.
 
 - Compare saved Forever renown, friendship and paragon progress by faction ID.

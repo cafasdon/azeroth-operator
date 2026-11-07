@@ -45,6 +45,13 @@ Offline tests verified stable output after reordering, observed zero balances, v
 
 Bank discovery uses the [Forever bank API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/BankDocumentation.lua) and [container API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ContainerDocumentation.lua) from Blizzard's generated UI documentation as mirrored by Gethe. Runtime qualification remains pending.
 
+In the Rust MCP, `inspect_snapshot` with `section: "professions"` reports
+`profession_training_progress` by captured slot. Each row identifies the
+skill line and shows points remaining to the observed cap. Zero means the
+captured rank equals a positive cap. Zero or inconsistent caps give null
+remaining points. The result describes the captured cap and does not
+identify available trainers or a future rank cap.
+
 The selected recipe collector reads the visible local schematic form during `/aoexport`. The panel must already be open on a local item or enchant recipe. Enchant review covers fixed consumed reagents. Target selection and eligibility remain outside the estimate. The planner reports shortfall against the observed inventory and counts each reagent separately in bags, character bank and account bank. Uncaptured storage has a null count and observed storage with no matching item has a zero count. Missing observations, unlearned recipes, optional inputs and non-material requirements can affect actual craftability. [Forever schematic form](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ProfessionsTemplates/Blizzard_ProfessionsRecipeSchematicForm.lua) · [Forever trade skill types](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/TradeSkillUITypesDocumentation.lua)
 
 Offline checks passed for the Lua capture, Rust import and MCP review, including duplicate material quantities, incomplete inventory, and refusal of malformed reagent lists and salvage recipes. The `0.22.0-dev` Forever package passed byte and Lua export round-trip verification (SHA-256 `796bac24b8072309cdbee98ae8d0ce17dda6af595922c6edefbfc164b738609f`). Caller and failure review identified sparse reagent slots and separate salvage inputs, and the revised guards passed the follow-up probes. Jev advisory triage classified both as material (`jev-1.14.0`, request `9b76e769cba333e61da3c48a5110227aaa3c65ddb7041129f551dad8ff03c1d3`, 439 input/46 output tokens, 0.305 seconds). The Forever addon has not been installed.

@@ -785,6 +785,9 @@ impl Operator {
                 } else if args.section.as_deref() == Some("tracked_achievements") {
                     value["tracked_achievement_work"] =
                         azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
+                } else if args.section.as_deref() == Some("professions") {
+                    value["profession_training_progress"] =
+                        azeroth_operator::analysis::profession_training_progress(&value["data"]);
                 }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }

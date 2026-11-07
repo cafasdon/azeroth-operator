@@ -745,6 +745,28 @@ pub fn currency_cap_headroom(section: &Value) -> Value {
     )
 }
 
+pub fn profession_training_progress(section: &Value) -> Value {
+    let Some(entries) = section.as_object() else {
+        return Value::Null;
+    };
+    Value::Object(
+        entries
+            .iter()
+            .map(|(slot, profession)| {
+                let remaining = profession["max_rank"]
+                    .as_u64()
+                    .filter(|maximum| *maximum > 0)
+                    .zip(profession["rank"].as_u64())
+                    .and_then(|(maximum, rank)| maximum.checked_sub(rank));
+                (
+                    slot.clone(),
+                    json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining}),
+                )
+            })
+            .collect(),
+    )
+}
+
 pub fn tracked_achievement_work(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;

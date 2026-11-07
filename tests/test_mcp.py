@@ -234,6 +234,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "snapshot_id": forever_key, "section": "equipment", "quest_id": 42})
                         self.assertTrue(bad_selector.isError)
                         self.assertEqual(bank_summary_data["tracked_achievements_observed"], 2)
+                        training = json.loads(json.dumps(forever))
+                        training["sections"]["professions"].update({
+                            "2": {"name": "Fixture capped", "rank": 75, "max_rank": 75, "skill_line": 165},
+                            "3": {"name": "Fixture unknown cap", "rank": 0, "max_rank": 0, "skill_line": 166},
+                            "4": {"name": "Fixture inconsistent", "rank": 76, "max_rank": 75, "skill_line": 164},
+                        })
+                        training_key = SnapshotStore(Path(folder)).ingest(training)
+                        professions = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": training_key, "section": "professions"})
+                        self.assertFalse(professions.isError)
+                        self.assertEqual(json.loads(professions.content[0].text)["profession_training_progress"], {
+                            "1": {"skill_line": 164, "remaining_to_observed_cap": 55},
+                            "2": {"skill_line": 165, "remaining_to_observed_cap": 0},
+                            "3": {"skill_line": 166, "remaining_to_observed_cap": None},
+                            "4": {"skill_line": 164, "remaining_to_observed_cap": None},
+                        })
+                        missing_professions = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": key, "section": "professions"})
+                        self.assertIsNone(json.loads(missing_professions.content[0].text)["profession_training_progress"])
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         achievement_data = json.loads(achievement.content[0].text)
                         self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
