@@ -20,10 +20,12 @@ Package verification now runs the detailed Forever fixture against the actual st
 
 The Windows release companion imported the complete synthetic Forever fixture. Its executable SHA-256 `aae7f17c0762d54a42ff76cc92aad4dbb5f27d7b00d84577931d92db6ba86550` was verified and selected in the existing sync configuration. The previous configuration is backed up in `local-data/sync/config-before-forever-capture.json`. The scheduled runner matches its source and ran at 16:15:41 SAST on 7 November 2026 with result 0. Forever returned `waiting_for_export` and Retail returned `unchanged` from its cached acknowledgement. The task reported no live game access.
 
+The staged 0.28.0-dev package adds fixed-material review for selected enchant recipes using the existing snapshot format. SHA-256 `164c6442250d4f1a85c656c231de6e89bfe0c05aad91528ac349f3b2aaa9539a`. Packaged Lua round trip, changed-interface refusal and the synthetic Windows installer test passed offline.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
-$manifest = (Resolve-Path 'dist/forever-capture-only/AzerothOperator-0.27.0-dev-forever-live.manifest.json').Path
+$manifest = (Resolve-Path 'dist/forever-enchant-capture/AzerothOperator-0.28.0-dev-forever-live.manifest.json').Path
 python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
 ```
 

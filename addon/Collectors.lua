@@ -401,8 +401,10 @@ AO.collectors.selected_recipe = function()
     assert(form and form:IsVisible() and Professions.InLocalCraftingMode()
         and not form.isInspection and not C_TradeSkillUI.IsNPCCrafting(), "Local recipe is not open")
     local info,schematic=form:GetRecipeInfo(),form.recipeSchematic
+    local recipeType=schematic and schematic.recipeType
+    local types=Enum.TradeskillRecipeType
     assert(info and schematic and schematic.recipeID==info.recipeID and schematic.isRecraft==false
-        and schematic.recipeType==Enum.TradeskillRecipeType.Item,
+        and type(recipeType)=="number" and (recipeType==types.Item or recipeType==types.Enchant),
         "Selected recipe is unavailable")
     local function positive(value)
         return type(value)=="number" and value%1==0 and value>=1 and value<=4294967295

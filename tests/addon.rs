@@ -396,7 +396,7 @@ pub fn verify_forever_capture_fixture(
         function date() return '2025-01-01T00:00:00Z' end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
-        Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2},
+        Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
             ContentTrackingType={Achievement=2}}
         BankFrame={IsShown=function() return bankOpen end}
         C_Bank={
@@ -604,6 +604,13 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(recipe["materials"][0]["quantity_observed"], 1);
     assert_eq!(recipe["materials"][0]["shortfall_vs_observed"], 5);
     assert_eq!(recipe["craftability_verified"], false);
+    lua.load("recipeSchematic.recipeType=3;recipeSchematic.outputItemID=nil;AO.Capture()")
+        .exec()?;
+    let enchant = azeroth_operator::analysis::review_recipe(&read()?, 2)?;
+    assert!(enchant["recipe"].get("output_item_id").is_none());
+    assert_eq!(enchant["materials"], recipe["materials"]);
+    assert_eq!(enchant["craftability_verified"], false);
+    lua.load("recipeSchematic.recipeType=1").exec()?;
     lua.load("recipeSchematic.reagentSlotSchematics[1].reagents[2]={itemID=745};AO.Capture()")
         .exec()?;
     let unsupported = read()?;
@@ -622,6 +629,7 @@ pub fn verify_forever_capture_fixture(
     );
     for setup in [
         "recipeSchematic.recipeType=2",
+        "recipeSchematic.recipeType=nil",
         "recipeSchematic.recipeType=1;recipeSchematic.reagentSlotSchematics[1]=nil",
         "recipeVisible=false",
         "recipeVisible=true;localCrafting=false",

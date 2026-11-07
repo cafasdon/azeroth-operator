@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture fixed reagent requirements for selected Forever enchant recipes.
+
 - Break down Forever recipe materials by observed bag, character bank and account bank quantities.
 
 - Look up Forever item and enchant catalogue entries by their crafting recipe spell ID.
