@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include catalogue equipment constraints and set identifiers in Forever owned-gear reviews.
+
 - Capture fixed reagent requirements for selected Forever enchant recipes.
 
 - Break down Forever recipe materials by observed bag, character bank and account bank quantities.

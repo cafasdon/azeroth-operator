@@ -168,7 +168,16 @@ pub fn review_owned(
             let reference = item["item_id"].as_u64().and_then(|id| catalogue.get(&id));
             if total >= offset && entries.len() < limit {
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
-                    "catalogue_base_item":reference.map(|item| json!({"id":item["id"],"name":item["name"],"type":item["type"]}))}));
+                    "catalogue_base_item":reference.map(|item| json!({
+                        "id":item["id"],"name":item["name"],"type":item["type"],
+                        "armorType":item["armorType"],"weaponType":item["weaponType"],
+                        "handType":item["handType"],"rangedWeaponType":item["rangedWeaponType"],
+                        "reqLvl":item["reqLvl"],"classAllowlist":item["classAllowlist"],
+                        "factionRestriction":item["factionRestriction"],"requiredProfession":item["requiredProfession"],
+                        "unique":item["unique"],"limitCategory":item["limitCategory"],
+                        "setId":item["setId"],"setName":item["setName"],
+                        "randomSuffixOptions":item["randomSuffixOptions"]
+                    }))}));
             }
             total += 1;
             count += 1;
