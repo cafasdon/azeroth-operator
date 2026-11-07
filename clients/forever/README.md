@@ -59,7 +59,7 @@ $env:AZEROTH_FOREVER_CATALOGUE = (Resolve-Path local-data/forever/catalogue.json
 .\target\debug\azeroth-operator.exe
 ```
 
-Set the same environment variable in the local stdio MCP client's server configuration. The optional `lookup_forever_catalogue` tool reads that file only. For example, use `{"section":"items","key":"744"}` for an item, `{"section":"npcs","key":"ragna"}` for a name search, or `{"section":"encounters","key":"Default/Raid Target"}` for a simulator encounter preset. Omit all filters for a section count. Lookups return at most 20 matches. If `has_more` is true, keep the same filters and advance `offset` by 20.
+Set the same environment variable in the local stdio MCP client's server configuration. The optional `lookup_forever_catalogue` tool uses that file for catalogue records. For example, use `{"section":"items","key":"744"}` for an item, `{"section":"npcs","key":"ragna"}` for a name search, or `{"section":"encounters","key":"Default/Raid Target"}` for a simulator encounter preset. Omit all filters for a section count. Lookups return at most 20 matches. If `has_more` is true, keep the same filters and advance `offset` by 20.
 
 The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinned in `catalogue.lock.json` and replaces the destination atomically after verification. A matching cache skips the network. Upgrading data requires reviewing and updating the revision and hash in the pin, rebuilding the companion, and rerunning sync. The catalogue includes simulator reference zones, NPCs and factions. For a wider world mirror, qualify an exportable Forever source independently for coverage, build identity and redistribution terms before adding it.
 
@@ -74,6 +74,12 @@ recorded drop and vendor NPCs, zones and reputation factions against the same
 pinned catalogue. Each reference identifies the item and one-based position
 of the source in its original record. A null name means the source ID has
 no name in the catalogue reference table. Live acquisition remains unverified.
+
+Pass `acquisition_snapshot_id` to a filtered item lookup to include saved
+quest readiness and reputation observations for recorded source IDs. The
+snapshot must be Forever and come from the configured owner store. A quest
+absent from the capture has unknown progress. The result reports captured
+standing and source requirements separately, leaving acquisition unverified.
 
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 

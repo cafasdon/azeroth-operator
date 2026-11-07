@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Join Forever item quest and reputation sources to observations in an explicitly selected snapshot.
+
 - Resolve Forever item source IDs to pinned catalogue NPC, zone and faction names.
 
 - Rank a targeted shortlist of up to sixteen owned Forever item IDs.

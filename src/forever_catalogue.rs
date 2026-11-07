@@ -89,6 +89,8 @@ pub struct Query {
     /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
     #[serde(default)]
     pub include_source_references: bool,
+    /// Optional owner-scoped Forever snapshot for observed quest and reputation source progress.
+    pub acquisition_snapshot_id: Option<String>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
     /// Build simulator inputs for an exact encounter preset path.
@@ -184,10 +186,10 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         "Set and acquisition source filters are supported for items only"
     );
     ensure!(
-        !query.include_source_references
+        !(query.include_source_references || query.acquisition_snapshot_id.is_some())
             || (matches!(query.section, Section::Items)
                 && (key.is_some() || query.recipe_spell_id.is_some() || item_filter)),
-        "Source references require a filtered item lookup"
+        "Source context requires a filtered item lookup"
     );
     if key.is_some() || query.recipe_spell_id.is_some() || item_filter {
         let id = key.and_then(|key| key.parse::<u32>().ok());
@@ -331,6 +333,50 @@ fn source_references(db: &Value, items: &[&Value]) -> Value {
                 "item_id":item_id,"source_index":source_index,"references":references
             }))
             .collect::<Vec<_>>()
+    )
+}
+
+pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    let quests = snapshot.sections.get("quests").and_then(Value::as_object);
+    let factions = snapshot
+        .sections
+        .get("reputation")
+        .and_then(|section| section["entries"].as_object());
+    let mut sources = Vec::new();
+    for item in records
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Invalid item records"))?
+    {
+        for (index, source) in item["sources"].as_array().into_iter().flatten().enumerate() {
+            if let Some(id) = source["quest"]["id"].as_u64().filter(|id| *id > 0) {
+                let row = quests.and_then(|rows| rows.get(&id.to_string()));
+                sources.push(json!({
+                    "item_id":item["id"],"source_index":index+1,"quest_id":id,
+                    "quest_observed":row.is_some(),
+                    "ready_for_turn_in":row.and_then(|quest| quest["ready_for_turn_in"].as_bool()),
+                    "failed":row.and_then(|quest| quest["failed"].as_bool())
+                }));
+            }
+            if let Some(id) = source["rep"]["repFactionId"].as_u64().filter(|id| *id > 0) {
+                let row = factions.and_then(|rows| rows.get(&id.to_string()));
+                sources.push(json!({
+                    "item_id":item["id"],"source_index":index+1,"faction_id":id,
+                    "reputation_observed":row.is_some(),
+                    "standing":row.and_then(|faction| faction["standing"].as_i64()),
+                    "reaction":row.and_then(|faction| faction["reaction"].as_u64()),
+                    "kind":row.and_then(|faction| faction["kind"].as_str()),
+                    "account_wide":row.and_then(|faction| faction["account_wide"].as_bool())
+                }));
+            }
+        }
+    }
+    Ok(
+        json!({"captured_at":snapshot.captured_at,"quests_available":quests.is_some(),
+        "reputation_available":factions.is_some(),"sources":sources}),
     )
 }
 

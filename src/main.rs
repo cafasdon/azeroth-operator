@@ -363,14 +363,27 @@ impl Operator {
         &self,
         Parameters(query): Parameters<azeroth_operator::forever_catalogue::Query>,
     ) -> CallToolResult {
-        let result = self
-            .forever_catalogue
-            .as_deref()
-            .and_then(|path| azeroth_operator::forever_catalogue::lookup(path, &query).ok());
+        let result = (|| {
+            let path = self
+                .forever_catalogue
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
+            let mut data = azeroth_operator::forever_catalogue::lookup(path, &query)?;
+            if let Some(id) = query.acquisition_snapshot_id {
+                let snapshot = self.store.read(&id)?;
+                let mut progress = azeroth_operator::forever_catalogue::acquisition_progress(
+                    &snapshot,
+                    &data["records"],
+                )?;
+                progress["snapshot_id"] = serde_json::json!(id);
+                data["acquisition_progress"] = progress;
+            }
+            Ok::<_, anyhow::Error>(data)
+        })();
         match result {
-            Some(data) => CallToolResult::success(vec![ContentBlock::text(data.to_string())]),
-            None => CallToolResult::error(vec![ContentBlock::text(
-                "Forever catalogue lookup failed: invalid filters or simulation settings, unmatched simulation preset, or missing or unverified cache.",
+            Ok(data) => CallToolResult::success(vec![ContentBlock::text(data.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Forever catalogue lookup failed: check filters, simulation settings, the optional snapshot and the local cache.",
             )]),
         }
     }
