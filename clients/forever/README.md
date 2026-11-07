@@ -143,7 +143,10 @@ is an observation about the recipe ID, independent of output matching or learnin
 When the recipe matches and any observed output agrees, it reports learned
 status and material capacity from that capture. An absent output ID leaves
 output matching unknown. An explicit mismatch suppresses learned status and
-material capacity for that item. Craftability remains unverified.
+material capacity for that item. The matching source also reports the saved
+one-craft base output range, cooldown and number of unmet conditions when
+observed. Condition names stay in the recipe review. Cooldowns and conditions
+reflect the capture time. Craftability remains unverified.
 
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
 

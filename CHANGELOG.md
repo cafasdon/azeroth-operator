@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include captured recipe output, cooldown and unmet-condition counts on Forever item crafting sources.
+
 - Show saved recipe tracking status on Forever catalogue crafting sources.
 
 - Compare tracked Forever crafts and recrafts by recipe ID across saved captures.

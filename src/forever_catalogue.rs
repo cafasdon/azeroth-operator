@@ -410,7 +410,10 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                     "tracked_as_craft":tracked("crafts"),"tracked_as_recraft":tracked("recrafts"),
                     "learned":matched_recipe.and_then(|row| row["learned"].as_bool()),
                     "material_capacity":review.and_then(|value| value.get("material_capacity")),
-                    "unobserved_storage":review.and_then(|value| value.get("unobserved_storage"))
+                    "unobserved_storage":review.and_then(|value| value.get("unobserved_storage")),
+                    "base_output_if_completed":review.and_then(|value| value.get("base_output_if_completed")),
+                    "observed_cooldown":matched_recipe.and_then(|row| row.get("cooldown")),
+                    "unmet_condition_count":review.and_then(|value| value["unmet_crafting_conditions"].as_object()).map(|rows| rows.len())
                 }));
             }
         }
@@ -727,6 +730,42 @@ mod tests {
         assert_eq!(observed["sources"][0]["tracked_as_recraft"], false);
         assert!(observed["sources"][0]["learned"].is_null());
         assert!(!observed.to_string().contains("Fixture only"));
+    }
+
+    #[test]
+    fn crafted_sources_report_constraints_only_for_compatible_selected_recipe() {
+        let snapshot: Snapshot = serde_json::from_value(json!({
+            "schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z",
+            "client":{"family":"forever","variant":"live","build":"70862","interface":16001},
+            "character":{"name":"Example","realm":"Test"},"sections":{"selected_recipe":{
+                "recipe_id":2675,"name":"Fixture recipe","learned":true,"output_item_id":2870,
+                "requirements":"fixed_items","reagents":{},"base_output_quantity":{"minimum":2,"maximum":3},
+                "cooldown":{"charges":0,"max_charges":3},"crafting_conditions":{
+                    "1":{"name":"Private condition","kind":"area","met":false}
+                }
+            }}
+        })).unwrap();
+        let source = json!({"crafted":{"spellId":2675}});
+        let records = json!([{"id":2870,"sources":[source]},{"id":2871,"sources":[source]}]);
+        let result = acquisition_progress(&snapshot, &records).unwrap();
+        let matched = &result["sources"][0];
+        assert_eq!(
+            matched["base_output_if_completed"],
+            json!({"item_id":2870,"minimum":2,"maximum":3})
+        );
+        assert_eq!(
+            matched["observed_cooldown"],
+            json!({"charges":0,"max_charges":3})
+        );
+        assert_eq!(matched["unmet_condition_count"], 1);
+        for field in [
+            "base_output_if_completed",
+            "observed_cooldown",
+            "unmet_condition_count",
+        ] {
+            assert!(result["sources"][1][field].is_null());
+        }
+        assert!(!result.to_string().contains("Private condition"));
     }
 
     #[test]
