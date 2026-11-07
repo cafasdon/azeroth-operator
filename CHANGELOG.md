@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved Forever spellbook slots by captured spell name.
+
 - Filter saved Forever spellbook slots by observed passive and off-spec flags.
 
 - Capture available Forever spellbook names and passive and off-spec flags.

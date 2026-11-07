@@ -93,6 +93,10 @@ the corresponding observed flags. Missing flags do not match either value.
 These filters combine with each other and with the spell ID selector.
 When combined, `spellbook_spell_observed` reflects the filtered slots.
 
+Use `spellbook_name` for a case-insensitive substring search of captured
+spell names. It uses the language of the saved capture and combines with
+the other spellbook filters. Slots with unknown names do not match.
+
 Use `compare_snapshots` with `spellbook: true` to compare the observed base
 spell IDs and their reported IDs. Slot reordering and duplicate entries
 with the same IDs leave this comparison unchanged. Missing spellbook data

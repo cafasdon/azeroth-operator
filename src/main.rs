@@ -86,6 +86,8 @@ struct Inspect {
     spellbook_passive: Option<bool>,
     /// Keep saved spellbook slots with this observed off-spec flag.
     spellbook_off_spec: Option<bool>,
+    /// Match a case-insensitive substring of the captured spell name.
+    spellbook_name: Option<String>,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -940,7 +942,15 @@ impl Operator {
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
         let filter_spellbook = args.spellbook_spell_id.is_some()
             || args.spellbook_passive.is_some()
-            || args.spellbook_off_spec.is_some();
+            || args.spellbook_off_spec.is_some()
+            || args.spellbook_name.is_some();
+        let spellbook_name = args.spellbook_name.as_deref().map(str::trim);
+        if spellbook_name.is_some_and(|name| name.is_empty() || name.len() > 256) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Spellbook name search requires 1 to 256 UTF-8 bytes",
+            )]);
+        }
+        let spellbook_name = spellbook_name.map(str::to_lowercase);
         if args.quest_xp_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -1336,6 +1346,11 @@ impl Operator {
                                     && args
                                         .spellbook_off_spec
                                         .is_none_or(|flag| row["off_spec"].as_bool() == Some(flag))
+                                    && spellbook_name.as_ref().is_none_or(|search| {
+                                        row["name"].as_str().is_some_and(|name| {
+                                            name.to_lowercase().contains(search)
+                                        })
+                                    })
                             });
                             !rows.is_empty()
                         });
