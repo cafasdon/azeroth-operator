@@ -194,10 +194,9 @@ new field. [Forever Unit API](https://raw.githubusercontent.com/Gethe/wow-ui-sou
 
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
 storage copies before applying the combination and draft limits. It keeps one
-copy for a single slot, or two physical ring or trinket copies when both
-paired slots are selected. Each skipped copy records its retained replacement
-locations. Equipped items and weapons that can fill either hand keep their
-separate locations.
+copy for a single slot, or two physical copies when both ring, trinket or
+one-handed weapon slots are selected. Each skipped copy records its retained
+replacement locations. Equipped items keep their separate locations.
 
 For adaptive bulk ranking, build the local adapter from the pinned WoWSims
 checkout with its generated protobuf files and embedded database:

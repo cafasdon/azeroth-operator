@@ -111,7 +111,9 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
                 continue
             if collapse_identical and source["kind"] != "equipment":
                 eligible_slots = reference.get("simulator_slots")
-                if spec and eligible_slots in ([slot], ["finger1", "finger2"], ["trinket1", "trinket2"]):
+                if spec and eligible_slots in (
+                    [slot], ["finger1", "finger2"], ["trinket1", "trinket2"], ["main_hand", "off_hand"],
+                ):
                     targets = selected_slots if selected_slots is not None else (eligible_slots if multi else [slot])
                     copies_needed = max(1, len(set(eligible_slots).intersection(targets)))
                     key = json.dumps(spec, sort_keys=True, separators=(",", ":"))
