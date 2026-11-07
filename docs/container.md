@@ -81,3 +81,32 @@ verification and suppression of filesystem paths in Python reference errors.
 Jev advisory triage for the cutover findings used `jev-1.14.0`, request
 `65ecad06b92d09613492f36afda365541681235ba660a3b4437c39696ac49713`, 450 input
 and 46 output tokens, 0.281 seconds.
+
+## Forever snapshot rollout, 7 November 2026
+
+Personal pylon CT290 now runs the Forever-compatible reader and importer image
+`sha256:73dafe7bb0c0e8c905d9d5b5639ad4a3ef4ee2fb122e876f795c233c7103d738`.
+Image source `13961cb`; reader deployment script `77d7f17`. Reader changed first
+and passed its authenticated loopback probe. Importer qualification round-tripped
+legacy Retail, extended Retail and the nine-section Forever fixture in an isolated
+store, then verified the updated pin. A local real MCP readback matched every
+Forever fixture section and returned the expected one-item recipe shortfall.
+No synthetic snapshot was added to the owner store.
+
+The independent public TLS probe verified eight read-only tools, direct denial
+of seven legacy preparation routes, and HTTP 401 for absent and incorrect
+credentials. The connected MCP also reported `review_forever_recipe` and the
+configured-owner policy. Local clients with cached tool discovery need to reconnect.
+The reader remains enabled. Previous profile evidence is under
+`/var/tmp/azeroth-reader-upgrade-w6v38_z1`.
+
+Failure review caught a retry that could leave a healthy reader disabled at
+boot. The updater now enables the reader after the authenticated probe and
+checks enabled state. Follow-up failure review verified the ordering and
+fail-closed path. Jev triage classified the finding as material
+(`jev-1.14.0`, request `58ada5890fc6e9830fc800772b90f35bdb45d2e0c687b7bf98e85a29f3ec746a`,
+426 input/47 output tokens, 0.305 seconds).
+
+Forever build `1.60.1.70862` was identified by the local metadata probe.
+Azeroth Operator was absent from the Forever addon directory. No game client,
+addon installation or Windows sync companion was changed.
