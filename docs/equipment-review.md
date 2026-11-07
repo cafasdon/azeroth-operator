@@ -33,6 +33,12 @@ sources are supported. Forever also accepts observed bank sources, for example
 `{"kind":"account_bank","container":13,"slot":1}`. These reference saved item
 locations only. Live access to banked gear and mail remains outside the draft.
 
+A local `review_forever_owned_gear` query with `simulator_slot` includes a
+`draft_selection` for each result. Pass one or more of these selections to
+`review_equipment_selection` with the same snapshot ID. Each selection
+preserves the saved source location and the requested target. The resulting
+draft still checks combined restrictions and simulator input resolution.
+
 The response has format `azeroth_operator.equipment_review.v1`, the exact
 `snapshot_id`, client/character/capture identity, changes sorted by target slot,
 and equipment source slots left vacant by the requested selection. Swaps have

@@ -901,6 +901,9 @@ pub fn review_owned(
     let mut matched = 0usize;
     let mut included = 0usize;
     let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
+    let target_slot = simulator_slot.and_then(|target| {
+        (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
+    });
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             coverage.insert(
@@ -942,7 +945,10 @@ pub fn review_owned(
             }
             if included >= offset && entries.len() < limit {
                 let modifiers = link_modifiers(item);
+                let draft_selection = target_slot
+                    .and_then(|target| draft_selection(target, storage, container, slot, item_id?));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                    "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields, reference.copied())),
                     "link_modifiers":modifiers,
                     "catalogue_base_item":reference.map(|item| json!({
@@ -993,4 +999,37 @@ pub fn review_owned(
             "observed_distinct_pieces":set_locations.len()});
     }
     Ok(result)
+}
+
+fn draft_selection(
+    target_slot: u32,
+    storage: &str,
+    container: Option<&str>,
+    slot: &str,
+    item_id: u64,
+) -> Option<crate::planning::EquipmentSelection> {
+    use crate::planning::{EquipmentSelection, ItemLocation};
+
+    let slot = slot.parse().ok()?;
+    let source = match storage {
+        "equipment" => ItemLocation::Equipment { slot },
+        "bags" => ItemLocation::Bag {
+            bag: container?.parse().ok()?,
+            slot,
+        },
+        "character_bank" => ItemLocation::CharacterBank {
+            container: container?.parse().ok()?,
+            slot,
+        },
+        "account_bank" => ItemLocation::AccountBank {
+            container: container?.parse().ok()?,
+            slot,
+        },
+        _ => return None,
+    };
+    Some(EquipmentSelection {
+        target_slot,
+        source,
+        expected_item_id: item_id.try_into().ok()?,
+    })
 }
