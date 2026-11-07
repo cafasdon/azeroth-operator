@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include the captured Forever player map name and parent map ID when available.
+
 - Filter saved Forever quest waypoints to the player map in the same capture.
 
 - Capture the Forever player's map ID and list quests with matching saved waypoints.

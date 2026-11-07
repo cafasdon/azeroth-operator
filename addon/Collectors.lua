@@ -225,9 +225,20 @@ AO.collectors.stats = function()
         end
     end
     if AO.family == "forever" then
+        local function accessible(value) return not issecretvalue or not issecretvalue(value) end
+        local function mapID(value)
+            return accessible(value) and type(value)=="number" and value%1==0 and value>=1 and value<=4294967295
+        end
         local ok,map=pcall(C_Map and C_Map.GetBestMapForUnit,"player")
-        if ok and (not issecretvalue or not issecretvalue(map)) and type(map)=="number"
-            and map%1==0 and map>=1 and map<=4294967295 then stats.map_id=map end
+        if ok and mapID(map) then
+            stats.map_id=map
+            local found,info=pcall(C_Map.GetMapInfo,map)
+            if found and accessible(info) and type(info)=="table" and mapID(info.mapID) and info.mapID==map then
+                local name,parent=info.name,info.parentMapID
+                if accessible(name) and type(name)=="string" and #name>0 and #name<=256 then stats.map_name=name end
+                if mapID(parent) and parent~=map then stats.map_parent_id=parent end
+            end
+        end
     end
     return stats
 end

@@ -282,6 +282,10 @@ from the same export. It does not measure distance or include coordinates.
 Missing map or quest data gives null. Update the importer and reader before
 syncing this field. [Forever map API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MapDocumentation.lua)
 
+When the client returns matching metadata, the summary also shows the
+localized `captured_map_name` and `captured_map_parent_id`. These fields
+can be unknown even when the map ID was observed.
+
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually
 exclusive with an explicit waypoint map ID. A missing captured map leaves

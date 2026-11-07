@@ -325,17 +325,34 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 items(slots, false)?;
             }
         }
-        "stats" => object(
-            value,
-            &[
-                ("level", "int", true),
-                ("class", "text", true),
-                ("race", "text", true),
-                ("faction", "faction_tag", false),
-                ("map_id", "positive", false),
-                ("client_version", "text", true),
-            ],
-        )?,
+        "stats" => {
+            object(
+                value,
+                &[
+                    ("level", "int", true),
+                    ("class", "text", true),
+                    ("race", "text", true),
+                    ("faction", "faction_tag", false),
+                    ("map_id", "positive", false),
+                    ("map_name", "text", false),
+                    ("map_parent_id", "positive", false),
+                    ("client_version", "text", true),
+                ],
+            )?;
+            let map_id = value["map_id"].as_u64();
+            if let Some(name) = value["map_name"].as_str() {
+                ensure!(
+                    map_id.is_some() && !name.is_empty() && name.len() <= 256,
+                    "Invalid captured map name"
+                );
+            }
+            if let Some(parent) = value["map_parent_id"].as_u64() {
+                ensure!(
+                    map_id.is_some_and(|id| id != parent),
+                    "Invalid captured parent map"
+                );
+            }
+        }
         "macros" => {
             entries(
                 value,

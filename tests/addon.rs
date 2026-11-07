@@ -401,7 +401,8 @@ pub fn verify_forever_capture_fixture(
         function UnitRace() return 'Orc','Orc' end
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
-        C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end}
+        C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
+            GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end}
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
         Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
@@ -717,6 +718,8 @@ pub fn verify_forever_capture_fixture(
     assert!(quests["43"].get("ready_for_turn_in").is_none());
     assert_eq!(quests["42"]["next_waypoint_map_id"], 1411);
     assert_eq!(snapshot.sections["stats"]["map_id"], 1411);
+    assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
+    assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quests_with_waypoint_on_captured_map"],
         serde_json::json!([42])
