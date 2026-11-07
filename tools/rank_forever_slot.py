@@ -73,7 +73,14 @@ async def slot_candidates(call, slot, multi, collapse_identical):
                 if not multi and not same_slot:
                     skipped.append({"selection": selection, "reason": "would_vacate_another_slot"})
                     continue
-            elif collapse_identical:
+            if conflict := row.get("catalogue_requirement_conflict"):
+                skipped.append({
+                    **({"selections": [selection]} if multi else {"selection": selection}),
+                    "reason": "catalogue_requirement_conflict",
+                    "conflicts": [conflict],
+                })
+                continue
+            if collapse_identical and source["kind"] != "equipment":
                 reference = row.get("catalogue_base_item") or {}
                 modifiers = row.get("catalogue_modifier_candidates") or {}
                 spec = modifiers.get("simulator_item_spec")

@@ -692,6 +692,51 @@ mod tests {
     }
 }
 
+fn requirement_check(
+    snapshot: &Snapshot,
+) -> impl Fn(&Value, &crate::planning::EquipmentSelection) -> Option<Value> {
+    use crate::planning::ItemLocation;
+    let stats = snapshot.sections.get("stats").unwrap_or(&Value::Null);
+    let level = stats["level"].as_u64().filter(|level| *level > 0);
+    // Class enum values from the pinned simulator common.proto.
+    let class_id = match stats["class"].as_str() {
+        Some("WARRIOR") => Some(1),
+        Some("PALADIN") => Some(2),
+        Some("HUNTER") => Some(3),
+        Some("ROGUE") => Some(4),
+        Some("PRIEST") => Some(5),
+        Some("SHAMAN") => Some(7),
+        Some("MAGE") => Some(8),
+        Some("WARLOCK") => Some(9),
+        Some("DRUID") => Some(11),
+        _ => None,
+    };
+    move |item, selection| {
+        if selection.source
+            == (ItemLocation::Equipment {
+                slot: selection.target_slot,
+            })
+        {
+            return None;
+        }
+        let level_conflict = level
+            .zip(item["reqLvl"].as_u64())
+            .is_some_and(|(level, required)| level < required);
+        let class_conflict =
+            class_id
+                .zip(item["classAllowlist"].as_array())
+                .is_some_and(|(class, allowed)| {
+                    !allowed.is_empty() && !allowed.iter().any(|id| id.as_u64() == Some(class))
+                });
+        (level_conflict || class_conflict).then(|| {
+            json!({
+                "slot":selection.target_slot,"item_id":selection.expected_item_id,
+                "below_required_level":level_conflict,"class_excluded":class_conflict
+            })
+        })
+    }
+}
+
 /// Checks catalogue slot fit and two-handed pairing in a validated equipment draft.
 pub fn review_equipment_catalogue(
     path: &Path,
@@ -766,49 +811,13 @@ pub fn review_equipment_catalogue(
             json!({"target_slot":selection.target_slot,"simulator_slot":target,"status":status})
         })
         .collect();
-    let stats = snapshot.sections.get("stats").unwrap_or(&Value::Null);
-    let level = stats["level"].as_u64().filter(|level| *level > 0);
-    // Class enum values from the pinned simulator common.proto.
-    let class_id = match stats["class"].as_str() {
-        Some("WARRIOR") => Some(1),
-        Some("PALADIN") => Some(2),
-        Some("HUNTER") => Some(3),
-        Some("ROGUE") => Some(4),
-        Some("PRIEST") => Some(5),
-        Some("SHAMAN") => Some(7),
-        Some("MAGE") => Some(8),
-        Some("WARLOCK") => Some(9),
-        Some("DRUID") => Some(11),
-        _ => None,
-    };
-    let mut requirement_conflicts = Vec::new();
-    for selection in selections {
-        if selection.source
-            == (ItemLocation::Equipment {
-                slot: selection.target_slot,
-            })
-        {
-            continue;
-        }
-        let Some(item) = find(u64::from(selection.expected_item_id)) else {
-            continue;
-        };
-        let level_conflict = level
-            .zip(item["reqLvl"].as_u64())
-            .is_some_and(|(level, required)| level < required);
-        let class_conflict =
-            class_id
-                .zip(item["classAllowlist"].as_array())
-                .is_some_and(|(class, allowed)| {
-                    !allowed.is_empty() && !allowed.iter().any(|id| id.as_u64() == Some(class))
-                });
-        if level_conflict || class_conflict {
-            requirement_conflicts.push(json!({
-                "slot":selection.target_slot,"item_id":selection.expected_item_id,
-                "below_required_level":level_conflict,"class_excluded":class_conflict
-            }));
-        }
-    }
+    let check_requirements = requirement_check(snapshot);
+    let requirement_conflicts: Vec<_> = selections
+        .iter()
+        .filter_map(|selection| {
+            check_requirements(find(u64::from(selection.expected_item_id))?, selection)
+        })
+        .collect();
     let mut unique_slots = BTreeMap::<u64, Vec<u32>>::new();
     let mut limit_categories = BTreeMap::<u64, Vec<Value>>::new();
     for slot in 1..=19 {
@@ -964,6 +973,7 @@ pub fn review_owned(
     let target_slot = simulator_slot.and_then(|target| {
         (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
     });
+    let check_requirements = requirement_check(snapshot);
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             coverage.insert(
@@ -1007,7 +1017,12 @@ pub fn review_owned(
                 let modifiers = link_modifiers(item);
                 let draft_selection = target_slot
                     .and_then(|target| draft_selection(target, storage, container, slot, item_id?));
+                let requirement_conflict = draft_selection
+                    .as_ref()
+                    .zip(reference)
+                    .and_then(|(selection, item)| check_requirements(item, selection));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                    "catalogue_requirement_conflict":requirement_conflict,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields, reference.copied())),
                     "link_modifiers":modifiers,

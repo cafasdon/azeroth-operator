@@ -134,7 +134,8 @@ requires the template's specialisation to agree with its declared class.
 
 The MCP also excludes a proposed swap from simulation when the pinned item
 record explicitly requires a higher level or excludes the captured class.
-Draft reviews and skipped ranker rows report the conflicting slots. These
+Slot-filtered owned-gear reviews expose the conflict before the ranker expands
+combinations. Draft reviews and skipped ranker rows report the conflicting slots. These
 checks use available snapshot stats and catalogue records. Full in-game
 eligibility remains unverified.
 
