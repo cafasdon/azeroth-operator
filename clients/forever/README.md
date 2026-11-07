@@ -287,6 +287,13 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+For `Default/Movement`, add
+`"movement":{"interval_seconds":10,"distance_yards":5}` to the encounter's
+`simulation` object. Intervals accept 1–3,600 seconds and distances accept
+0–100 yards. The override changes only those two target inputs. The pinned
+engine defers movement until a non-movable cast ends, so the export offers
+no reaction-time override. [Pinned movement engine](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/encounters/movement_ai.go#L78-L137)
+
 For a bounded shortlist check, add `--audit-shortlist` to a ranker command
 using the bulk adapter. The ranker runs every distinct gear input at the
 encounter export's fixed iteration count, then compares its top candidates

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Configure movement interval and distance in saved Forever simulator encounter inputs.
+
 - Audit staged Forever gear shortlists against a bounded fixed-iteration run.
 
 - Verify the Forever catalogue once per equipment review batch and index item lookups.

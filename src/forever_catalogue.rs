@@ -232,6 +232,17 @@ pub struct SimulationSettings {
     pub execute_proportion_35: f64,
     pub iterations: u32,
     pub seed: std::num::NonZeroU32,
+    /// Override the movement interval and distance for the Default/Movement preset.
+    pub movement: Option<MovementSettings>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MovementSettings {
+    /// Seconds between moves, from 1 to 3600.
+    pub interval_seconds: f64,
+    /// Distance per move, from 0 to 100 yards.
+    pub distance_yards: f64,
 }
 
 fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Value> {
@@ -247,14 +258,40 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
         .as_array()
         .filter(|targets| !targets.is_empty())
         .ok_or_else(|| anyhow::anyhow!("Encounter targets unavailable"))?;
-    let targets: Vec<_> = targets
+    let mut targets: Vec<_> = targets
         .iter()
         .map(|entry| {
             entry["target"]
                 .as_object()
+                .cloned()
                 .ok_or_else(|| anyhow::anyhow!("Invalid encounter target"))
         })
         .collect::<Result<_>>()?;
+    if let Some(movement) = &settings.movement {
+        ensure!(
+            record["path"] == "Default/Movement"
+                && (1.0..=3600.0).contains(&movement.interval_seconds)
+                && (0.0..=100.0).contains(&movement.distance_yards),
+            "Movement overrides require the movement preset and bounded interval and distance"
+        );
+        let [target] = targets.as_mut_slice() else {
+            anyhow::bail!("Expected one movement target");
+        };
+        let inputs = target
+            .get_mut("targetInputs")
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| anyhow::anyhow!("Missing movement inputs"))?;
+        for (index, label, amount) in [
+            (0, "Movement Interval", movement.interval_seconds),
+            (2, "Yards", movement.distance_yards),
+        ] {
+            let input = inputs
+                .get_mut(index)
+                .filter(|input| input["label"] == label && input["inputType"] == 1)
+                .ok_or_else(|| anyhow::anyhow!("Unexpected movement input layout"))?;
+            input["numberValue"] = json!(amount);
+        }
+    }
     Ok(json!({
         "encounter":{"duration":settings.duration_seconds,
             "durationVariation":settings.duration_variation_seconds,
