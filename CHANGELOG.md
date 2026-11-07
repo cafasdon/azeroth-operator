@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Distinguish captured enchant candidates that fit the base item under the pinned Forever simulator rules.
+
 - Match captured Forever modifier IDs to local catalogue candidates without assuming applicability.
 
 - Show raw enchant and random suffix IDs from captured Forever item links in owned-gear review.

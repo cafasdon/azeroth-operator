@@ -290,7 +290,34 @@ fn link_modifiers(item: &Value) -> Option<Value> {
     Some(json!({"enchant_id":enchant,"random_suffix_id":suffix}))
 }
 
-fn modifier_candidates(db: &Value, modifiers: &Value) -> Value {
+// Mirrors the pinned simulator's itemfit.EnchantFits. Distinct item
+// categories have disjoint slots, and weapon enchants cover both hands.
+fn enchant_type_fits(enchant: &Value, item: &Value, item_type: u64) -> bool {
+    let weapon = GearType::Weapon as u64;
+    let ranged = GearType::Ranged as u64;
+    let hand = item["handType"].as_u64().unwrap_or_default();
+    let weapon_type = item["weaponType"].as_u64().unwrap_or_default();
+    let ranged_type = item["rangedWeaponType"].as_u64().unwrap_or_default();
+    let enchant_type = enchant["enchantType"].as_u64().unwrap_or_default();
+    let primary = enchant["type"].as_u64();
+    let fits_category = primary == Some(item_type)
+        || enchant["extraTypes"]
+            .as_array()
+            .is_some_and(|types| types.iter().any(|kind| kind.as_u64() == Some(item_type)));
+    fits_category
+        && (item_type != weapon || (1..=4).contains(&hand))
+        && (enchant_type != 1 || hand == 4) // Two-handed.
+        && (enchant_type != 4 || weapon_type == 8) // Staff.
+        && ((enchant_type == 2) == (weapon_type == 7)) // Shield.
+        && ((enchant_type == 5) == (weapon_type == 5)) // Held off-hand.
+        && if primary == Some(ranged) {
+            (1..=3).contains(&ranged_type) // Bow, crossbow or gun.
+        } else {
+            matches!(ranged_type, 0 | 5) // No ranged subtype, or wand.
+        }
+}
+
+fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> Value {
     let matches = |section: &str, field: &str, id: Option<i64>| -> Vec<&Value> {
         let Some(id) = id.filter(|id| *id != 0) else {
             return Vec::new();
@@ -302,8 +329,22 @@ fn modifier_candidates(db: &Value, modifiers: &Value) -> Value {
             .filter(|record| record[field].as_i64() == Some(id))
             .collect()
     };
+    let enchants = matches("enchants", "effectId", modifiers["enchant_id"].as_i64());
+    let fitting_enchants = item.and_then(|item| {
+        let item_type = item["type"]
+            .as_u64()
+            .filter(|kind| (1..=14).contains(kind))?;
+        Some(
+            enchants
+                .iter()
+                .copied()
+                .filter(|enchant| enchant_type_fits(enchant, item, item_type))
+                .collect::<Vec<_>>(),
+        )
+    });
     json!({
-        "enchants":matches("enchants", "effectId", modifiers["enchant_id"].as_i64()),
+        "enchants":enchants,
+        "fitting_enchants":fitting_enchants,
         "random_suffixes":matches("randomSuffixes", "id", modifiers["random_suffix_id"].as_i64())
     })
 }
@@ -311,6 +352,24 @@ fn modifier_candidates(db: &Value, modifiers: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn distinguishes_weapon_enchant_rows_with_the_same_effect_id() {
+        let db = json!({"enchants":[
+            {"effectId":851,"type":13,"enchantType":1},
+            {"effectId":851,"type":13,"enchantType":2},
+            {"effectId":851,"type":6}
+        ]});
+        let modifiers = json!({"enchant_id":851});
+        let sword = json!({"type":13,"handType":4,"weaponType":9});
+        let shield = json!({"type":13,"handType":3,"weaponType":7});
+        for (item, index) in [(&sword, 0), (&shield, 1)] {
+            let result = modifier_candidates(&db, &modifiers, Some(item));
+            assert_eq!(result["enchants"], db["enchants"]);
+            assert_eq!(result["fitting_enchants"], json!([db["enchants"][index]]));
+        }
+        assert!(modifier_candidates(&db, &modifiers, None)["fitting_enchants"].is_null());
+    }
 
     #[test]
     fn reads_modifier_positions_without_guessing_from_short_or_mismatched_links() {
@@ -415,7 +474,7 @@ pub fn review_owned(
             if included >= offset && entries.len() < limit {
                 let modifiers = link_modifiers(item);
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
-                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields)),
+                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields, reference.copied())),
                     "link_modifiers":modifiers,
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],
