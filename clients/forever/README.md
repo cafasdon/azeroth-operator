@@ -142,7 +142,11 @@ set, which describes catalogue coverage only.
 `single_slot_set_projection` reports captured and projected piece counts
 for sets affected by a one-slot replacement. Uncatalogued equipped items
 make counts lower bounds, and missing equipment makes the projection null.
-The projection does not infer set bonus activation or other slot changes. Set
+The projection does not infer set bonus activation or other slot changes.
+Set `preserve_equipped_set: true` to exclude candidates that would remove
+the saved slot's recorded set piece. It requires a captured slot and, if
+occupied, a known catalogue item. A saved empty slot or an item without a
+recorded set applies no set restriction. Set
 `minimum_item_level_gain` to a positive number to keep only candidates
 meeting that gain before pagination. This filter requires a known equipped
 level in the requested slot. Use `minimum_stat_gain` with `stat_id` and

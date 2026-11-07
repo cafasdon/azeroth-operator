@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep Forever gear candidates that preserve the saved slot's recorded set membership.
+
 - Show projected set-piece counts for single-slot Forever catalogue gear swaps.
 
 - Compare recorded effect buff IDs with the saved Forever equipped item.

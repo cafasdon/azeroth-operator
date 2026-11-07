@@ -156,6 +156,9 @@ pub struct Query {
     pub set_id: Option<std::num::NonZeroU32>,
     /// Restrict items to catalogue placements for this simulator equipment slot.
     pub simulator_slot: Option<SimulatorSlot>,
+    /// Preserve any recorded set membership of the saved item in the requested slot.
+    #[serde(default)]
+    pub preserve_equipped_set: bool,
     /// Restrict items to at least this recorded item level at default scaling.
     pub minimum_item_level: Option<std::num::NonZeroU32>,
     /// Minimum recorded default weapon DPS.
@@ -356,6 +359,17 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         .zip(snapshot)
         .filter(|(_, snapshot)| snapshot.client.family == Family::Forever)
         .map(|(slot, snapshot)| equipped_slot(rows, snapshot, slot));
+    let protected_set = if query.preserve_equipped_set {
+        equipped
+            .as_ref()
+            .filter(|slot| slot.observed && (slot.item_id.is_none() || slot.item_catalogued))
+            .ok_or_else(|| {
+                anyhow::anyhow!("Set preservation requires a known saved equipment slot")
+            })?
+            .set_id
+    } else {
+        None
+    };
     let minimum_upgrade_level = if let Some(gain) = query.minimum_item_level_gain {
         Some(
             equipped
@@ -508,7 +522,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 });
             let matches_set = query
                 .set_id
-                .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
+                .is_none_or(|id| recorded_set_id(row) == Some(u64::from(id.get())))
+                && protected_set.is_none_or(|id| recorded_set_id(row) == Some(id));
             let matches_drop =
                 !drop_filter
                     || row["sources"].as_array().is_some_and(|sources| {
@@ -657,6 +672,7 @@ struct EquippedSlot {
     slot: SimulatorSlot,
     observed: bool,
     item_id: Option<u64>,
+    item_catalogued: bool,
     level: Option<i64>,
     weapon_dps: Option<f64>,
     effect_ids: Option<BTreeSet<u64>>,
@@ -787,6 +803,7 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
         slot,
         observed: equipment.is_some(),
         item_id,
+        item_catalogued: equipped.is_some(),
         level: equipped.and_then(default_item_level),
         weapon_dps: equipped.and_then(default_weapon_dps),
         effect_ids: equipped.and_then(recorded_effect_ids),
