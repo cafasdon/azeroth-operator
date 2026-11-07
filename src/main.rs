@@ -101,6 +101,9 @@ struct Compare {
     faction_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured quest by ID.
     quest_id: Option<std::num::NonZeroU32>,
+    /// Compare next waypoint maps for quests present in both Forever captures.
+    #[serde(default)]
+    quest_waypoints: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -741,7 +744,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever wallet, currency, reputation and tracked achievement comparisons.",
+        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever wallet, currency, reputation and tracked achievement comparisons. Forever quest comparisons can include waypoint map changes.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -760,6 +763,7 @@ impl Operator {
                     currency_id: args.currency_id.map(|id| id.get()),
                     faction_id: args.faction_id.map(|id| id.get()),
                     quest_id: args.quest_id.map(|id| id.get()),
+                    quest_waypoints: args.quest_waypoints,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,

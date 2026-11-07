@@ -425,6 +425,7 @@ pub struct ComparisonSelectors {
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
     pub quest_id: Option<u32>,
+    pub quest_waypoints: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -558,6 +559,39 @@ pub fn compare_observations(
             "ready_for_turn_in_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "ready_for_turn_in"),
             "failed_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "failed")
         });
+    }
+    if selectors.quest_waypoints {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Quest waypoint comparison requires Forever"
+        );
+        let quest_rows = before
+            .sections
+            .get("quests")
+            .and_then(Value::as_object)
+            .zip(after.sections.get("quests").and_then(Value::as_object));
+        comparison["quest_waypoint_changes"] = json!(quest_rows.map(|(old, new)| {
+            let mut changes = BTreeMap::new();
+            for (key, previous) in old {
+                let Some(current) = new.get(key) else {
+                    continue;
+                };
+                let Ok(id) = key.parse::<u32>() else { continue };
+                let from = previous["next_waypoint_map_id"].as_u64();
+                let to = current["next_waypoint_map_id"].as_u64();
+                let status = match (from, to) {
+                    (Some(a), Some(b)) if a != b => "map_changed",
+                    (None, Some(_)) => "map_became_observed",
+                    (Some(_), None) => "map_became_unknown",
+                    _ => continue,
+                };
+                changes.insert(
+                    id,
+                    json!({"quest_id":id,"before_map_id":from,"after_map_id":to,"status":status}),
+                );
+            }
+            changes.into_values().collect::<Vec<_>>()
+        }));
     }
     if let Some(achievement_id) = selectors.achievement_id {
         ensure!(

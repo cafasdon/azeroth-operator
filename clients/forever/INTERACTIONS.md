@@ -79,6 +79,12 @@ quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response
 also counts quests with an unknown waypoint map in the full capture.
 
+Use `quest_waypoints: true` with `compare_snapshots` to list changed
+next waypoint maps for quests present in both captures. A map becoming
+observed or unknown has its own status. If either quest log is unavailable,
+the comparison is null. Quests entering or leaving the log are outside
+this comparison.
+
 When the client exposes a quest's next waypoint during a player export,
 the capture can include its map ID. `character_summary` groups saved quest
 IDs by that map and lists quests whose waypoint map is unknown. The map

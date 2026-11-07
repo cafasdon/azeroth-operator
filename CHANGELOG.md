@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever quest waypoint maps and distinguish changes from missing observations.
+
 - Filter saved Forever quests and turn-in readiness by next waypoint map.
 
 - Capture saved Forever quest waypoint map IDs and group the quest log by map.
