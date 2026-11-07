@@ -40,9 +40,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIn("lookup_forever_catalogue", {t.name for t in (await session.list_tools()).tools})
                     caps = await session.call_tool("capabilities", {})
                     self.assertIn("lookup_forever_catalogue", json.loads(caps.content[0].text)["implemented"])
+                    self.assertIn("review_forever_owned_gear", json.loads(caps.content[0].text)["implemented"])
                     response = await session.call_tool("lookup_forever_catalogue", {"section":"items","key":"744"})
                     self.assertTrue(response.isError)
                     self.assertNotIn("Unverified", response.content[0].text)
+                    forever = fixture()
+                    forever["client"] = {"family":"forever","variant":"live","build":"70862","interface":16001}
+                    key = SnapshotStore(Path(folder)).ingest(forever)
+                    review = await session.call_tool("review_forever_owned_gear", {"snapshot_id":key})
+                    self.assertTrue(review.isError)
+                    self.assertNotIn("Unverified", review.content[0].text)
 
     async def test_snapshot_owner_scope(self):
         binary = Path(__file__).resolve().parents[1] / "target" / "debug" / (

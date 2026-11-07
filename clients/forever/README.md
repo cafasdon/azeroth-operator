@@ -2,6 +2,8 @@
 
 Owns Forever addon code, API adaptation, capability inventory and runtime qualification.
 
+See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.
@@ -41,6 +43,10 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 ### Simulation and optimisation
 
 **Owned gear capture.** The Forever exporter now records character-bank and account-bank containers separately when the bank is open and each visible bank's tab and free-slot counts reconcile. It retains item links and available GUIDs alongside the occupied slots. A closed or unreadable bank is unavailable, while an observed empty bank is reported as zero. The Rust MCP exposes both sections through `inspect_snapshot` and counts through `character_summary`. The updated reader and importer must be in place before using this addon with the hosted sync path.
+
+With the local catalogue configured, call `review_forever_owned_gear` with a saved `snapshot_id` and optional `offset` and `limit` (1–50). It reports storage coverage and joins each observed item location to its base catalogue ID. It preserves observed item links, distinguishes unmatched IDs, and reports totals across all pages. It does not treat a base-ID match as exact modifier data, equip legality or a ranking. Bank APIs still require live qualification. A zero-capacity purchased container currently makes that bank unavailable until native behaviour can distinguish an unequipped slot from an unloaded one.
+
+Offline verification used a synthetic Forever bank export, exact name/realm lookup and an actual stdio MCP call against the pinned catalogue. It checked missing and empty banks, malformed item metadata, cross-storage overlap, same-base-ID variants, pagination and owner scoping. The Forever `0.21.0-dev` candidate passed package round-trip and interface mismatch checks (SHA-256 `cd5770c8411113c6efcb5fc172bdf2e2bc549573b8312fb285ecbb1f5dcd3012`). It was not installed.
 
 **Character selection.** An explicitly requested character overrides the default. Use `list_snapshots` with `{"family":"forever","character":{"name":"Name","realm":"Realm"}}` to resolve saved snapshots for that character. Without an explicit target, use the currently played character only when a fresh, verified identity signal exists. SavedVariables persist on reload or logout, so the latest snapshot alone cannot establish who is in play. Automatic active-character resolution is pending.
 

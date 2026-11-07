@@ -387,7 +387,7 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         function date() return '2025-01-01T00:00:00Z' end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
-        Enum={BankType={Character=0,Account=1}}
+        Enum={BankType={Character=0,Account=2}}
         BankFrame={IsShown=function() return bankOpen end}
         C_Bank={
             CanViewBank=function(kind) return kind==0 or accountVisible end,

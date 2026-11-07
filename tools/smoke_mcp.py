@@ -18,7 +18,7 @@ async def smoke(command):
             expected = {"capabilities", "list_snapshots", "inspect_snapshot",
                         "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout"}
             if os.environ.get("AZEROTH_FOREVER_CATALOGUE"):
-                expected.add("lookup_forever_catalogue")
+                expected.update({"lookup_forever_catalogue", "review_forever_owned_gear"})
             assert {tool.name for tool in tools.tools} == expected
             for tool in tools.tools:
                 assert tool.annotations.readOnlyHint is True

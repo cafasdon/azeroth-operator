@@ -18,6 +18,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "review_equipment_selection",
     "captured_talent_loadout",
     "lookup_forever_catalogue",
+    "review_forever_owned_gear",
 ];
 
 #[derive(Clone)]
@@ -52,6 +53,14 @@ struct Compare {
 #[serde(deny_unknown_fields)]
 struct Summary {
     snapshot_id: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct OwnedGearReview {
+    snapshot_id: String,
+    offset: Option<usize>,
+    limit: Option<usize>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -306,6 +315,40 @@ impl Operator {
         }
     }
     #[tool(
+        description = "Review one saved Forever character's observed equipment, bags and banks with local catalogue matches by base item ID. Reports missing storage and preserves observed variants. No ranking, game commands or network.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn review_forever_owned_gear(
+        &self,
+        Parameters(args): Parameters<OwnedGearReview>,
+    ) -> CallToolResult {
+        let result = (|| {
+            let catalogue = self
+                .forever_catalogue
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            let mut review = azeroth_operator::forever_catalogue::review_owned(
+                catalogue,
+                &snapshot,
+                args.offset.unwrap_or(0),
+                args.limit.unwrap_or(20),
+            )?;
+            review["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            Ok::<_, anyhow::Error>(review)
+        })();
+        match result {
+            Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Owned gear review requires a valid Forever snapshot, a verified local catalogue and a limit from 1 to 50.",
+            )]),
+        }
+    }
+    #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",
         annotations(
             read_only_hint = true,
@@ -533,7 +576,10 @@ async fn main() -> anyhow::Result<()> {
     let mut tool_router = Operator::tool_router();
     for tool in tool_router.list_all() {
         if !OFFLINE_TOOLS.contains(&tool.name.as_ref())
-            || (tool.name == "lookup_forever_catalogue" && forever_catalogue.is_none())
+            || (matches!(
+                tool.name.as_ref(),
+                "lookup_forever_catalogue" | "review_forever_owned_gear"
+            ) && forever_catalogue.is_none())
         {
             tool_router.remove_route(&tool.name);
         }

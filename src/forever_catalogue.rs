@@ -1,9 +1,10 @@
+use crate::{Family, Snapshot};
 use anyhow::{Result, ensure};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{fs::File, io::Read, path::Path};
+use std::{collections::BTreeMap, fs::File, io::Read, path::Path};
 
 const MAX_BYTES: u64 = 8 * 1024 * 1024;
 const PIN: &str = include_str!("../clients/forever/catalogue.lock.json");
@@ -47,7 +48,7 @@ pub struct Query {
     pub key: Option<String>,
 }
 
-pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
+fn load(path: &Path) -> Result<(Value, Value)> {
     let provenance: Value = serde_json::from_str(PIN)?;
     ensure!(
         path.metadata()?.is_file(),
@@ -62,7 +63,11 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         provenance["sha256"] == format!("{:x}", Sha256::digest(&data)),
         "Catalogue checksum mismatch"
     );
-    let db: Value = serde_json::from_slice(&data)?;
+    Ok((serde_json::from_slice(&data)?, provenance))
+}
+
+pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
+    let (db, provenance) = load(path)?;
     let (section, identity) = query.section.fields();
     let rows = db[section]
         .as_array()
@@ -97,5 +102,76 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false}),
+    )
+}
+
+pub fn review_owned(
+    path: &Path,
+    snapshot: &Snapshot,
+    offset: usize,
+    limit: usize,
+) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    ensure!(
+        (1..=50).contains(&limit),
+        "Expected a limit between 1 and 50"
+    );
+    let (db, provenance) = load(path)?;
+    let items = db["items"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Missing catalogue items"))?;
+    let catalogue: BTreeMap<_, _> = items
+        .iter()
+        .filter_map(|item| Some((item["id"].as_u64()?, item)))
+        .collect();
+    ensure!(
+        catalogue.len() == items.len(),
+        "Catalogue IDs are missing or ambiguous"
+    );
+    let mut entries = Vec::new();
+    let mut coverage = serde_json::Map::new();
+    let mut total = 0usize;
+    let mut matched = 0usize;
+    for storage in ["equipment", "bags", "character_bank", "account_bank"] {
+        let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
+            coverage.insert(
+                storage.into(),
+                json!({"status":"unavailable","reason":snapshot.unavailable.get(storage)}),
+            );
+            continue;
+        };
+        let mut count = 0usize;
+        let mut record = |container: Option<&str>, slot: &str, item: &Value| {
+            let reference = item["item_id"].as_u64().and_then(|id| catalogue.get(&id));
+            if total >= offset && entries.len() < limit {
+                entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                    "catalogue_base_item":reference.map(|item| json!({"id":item["id"],"name":item["name"],"type":item["type"]}))}));
+            }
+            total += 1;
+            count += 1;
+            matched += usize::from(reference.is_some());
+        };
+        for (key, value) in section {
+            if storage == "equipment" {
+                record(None, key, value);
+            } else if let Some(slots) = value.as_object() {
+                for (slot, item) in slots {
+                    record(Some(key), slot, item);
+                }
+            }
+        }
+        coverage.insert(
+            storage.into(),
+            json!({"status":"observed","occupied_slots":count}),
+        );
+    }
+    Ok(
+        json!({"family":"forever","captured_at":snapshot.captured_at,"catalogue_source":provenance,
+        "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,
+        "items":entries,"has_more":total.saturating_sub(offset)>limit,
+        "live":false,"ranked":false,"equip_legality_verified":false}),
     )
 }
