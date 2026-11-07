@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show progress to the next standard Forever reputation rank from saved standings.
+
 - Capture the optional weekly earning flag for visible Forever currencies.
 
 - Report remaining amounts under observed Forever currency caps at snapshot time.

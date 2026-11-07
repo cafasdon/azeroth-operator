@@ -582,6 +582,40 @@ fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
         })
 }
 
+pub fn standard_reputation_progress(section: &Value) -> Value {
+    let Some(entries) = section["entries"].as_object() else {
+        return Value::Null;
+    };
+    Value::Object(
+        entries
+            .iter()
+            .filter_map(|(id, entry)| {
+                if entry["kind"] != "standard" {
+                    return None;
+                }
+                // Forever treats reaction 8 as capped for standard reputation.
+                let reaction = entry["reaction"].as_u64()?;
+                let progress = match reaction {
+                    8 => json!({"capped":true}),
+                    1..=7 => {
+                        let standing = entry["standing"].as_i64()?;
+                        let threshold = entry["threshold"].as_i64()?;
+                        let next = entry["next_threshold"].as_i64()?;
+                        if next <= threshold || !(threshold..=next).contains(&standing) {
+                            return None;
+                        }
+                        json!({"capped":false,"earned_in_rank":standing.checked_sub(threshold)?,
+                            "rank_width":next.checked_sub(threshold)?,
+                            "remaining_to_next_rank":next.checked_sub(standing)?})
+                    }
+                    _ => return None,
+                };
+                Some((id.clone(), progress))
+            })
+            .collect(),
+    )
+}
+
 pub fn currency_cap_headroom(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;

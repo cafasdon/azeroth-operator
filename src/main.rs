@@ -777,6 +777,9 @@ impl Operator {
                 if args.section.as_deref() == Some("currency_balances") {
                     value["currency_cap_headroom"] =
                         azeroth_operator::analysis::currency_cap_headroom(&value["data"]);
+                } else if args.section.as_deref() == Some("reputation") {
+                    value["standard_reputation_progress"] =
+                        azeroth_operator::analysis::standard_reputation_progress(&value["data"]);
                 }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }

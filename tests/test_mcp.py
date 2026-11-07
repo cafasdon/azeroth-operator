@@ -269,7 +269,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(wallet.isError)
                         self.assertEqual(json.loads(wallet.content[0].text)["data"], {"copper": 5_000_000_001})
                         reputation = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"reputation"})
-                        reputation_data = json.loads(reputation.content[0].text)["data"]
+                        reputation_result = json.loads(reputation.content[0].text)
+                        reputation_data = reputation_result["data"]
+                        self.assertEqual(reputation_result["standard_reputation_progress"], {
+                            "10": {"capped": False, "earned_in_rank": 50, "rank_width": 100,
+                                   "remaining_to_next_rank": 50},
+                        })
+                        more_factions = json.loads(json.dumps(forever))
+                        factions = more_factions["sections"]["reputation"]["entries"]
+                        factions["11"] = {**factions["10"], "reaction": 8, "next_threshold": 0}
+                        factions["12"] = {**factions["10"], "kind": "renown"}
+                        factions["13"] = {**factions["10"], "standing": -101}
+                        more_key = SnapshotStore(Path(folder)).ingest(more_factions)
+                        more = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": more_key, "section": "reputation"})
+                        progress = json.loads(more.content[0].text)["standard_reputation_progress"]
+                        self.assertEqual(set(progress), {"10", "11"})
+                        self.assertEqual(progress["11"], {"capped": True})
+                        missing = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": key, "section": "reputation"})
+                        self.assertIsNone(json.loads(missing.content[0].text)["standard_reputation_progress"])
                         self.assertEqual(reputation_data["coverage"], "visible_faction_rows_only")
                         self.assertEqual(reputation_data["entries"]["10"]["standing"], -50)
                         reputation_after = json.loads(json.dumps(forever))
