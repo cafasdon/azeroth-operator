@@ -15,6 +15,18 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
     review_recipe_with_inventory(snapshot, crafts, None)
 }
 
+pub fn recipe_tracking(snapshot: &Snapshot, recipe_id: u64) -> Value {
+    let tracked = snapshot.sections.get("tracked_recipes");
+    let key = recipe_id.to_string();
+    let membership = |group: &str| {
+        tracked?
+            .get(group)?
+            .as_object()
+            .map(|rows| rows.contains_key(&key))
+    };
+    json!({"tracked_as_craft":membership("crafts"),"tracked_as_recraft":membership("recrafts")})
+}
+
 pub fn plan_recipe(
     snapshot: &Snapshot,
     crafts: Option<u32>,
@@ -142,15 +154,9 @@ pub fn review_recipe_with_inventory(
             json!({"item_id":recipe["output_item_id"],"minimum":minimum * u64::from(crafts),
                 "maximum":maximum * u64::from(crafts)})
         });
-    let tracked = snapshot.sections.get("tracked_recipes");
-    let recipe_id = recipe["recipe_id"].as_u64().map(|id| id.to_string());
-    let membership = |group: &str| {
-        tracked?
-            .get(group)?
-            .as_object()
-            .zip(recipe_id.as_deref())
-            .map(|(rows, id)| rows.contains_key(id))
-    };
+    let recipe_id = recipe["recipe_id"]
+        .as_u64()
+        .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?;
     let charges = recipe["cooldown"]["charges"].as_u64();
     let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
     let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
@@ -165,7 +171,7 @@ pub fn review_recipe_with_inventory(
             })
     };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
-        "recipe_tracking":{"tracked_as_craft":membership("crafts"),"tracked_as_recraft":membership("recrafts")},
+        "recipe_tracking":recipe_tracking(snapshot, recipe_id),
         "base_output_if_completed":base_output_if_completed,
         "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),

@@ -182,6 +182,10 @@ enchant sources. It keeps reward positions and shows up to eight references
 per spell with the full match count. A match identifies a catalogue recipe
 association. The quest reward and the character's learned recipes remain
 separate observations.
+For a catalogue recipe match or an exact selected recipe ID, `observed_recipe`
+also reports saved tracking and any learned flag from the matching selected
+recipe in the same snapshot. Missing learned status stays unknown, even if
+the reward spell is present in the player's spellbook.
 
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same

@@ -2210,10 +2210,10 @@ impl EquipmentCatalogue {
             })
         };
         json!({"item_rewards":references("item_rewards"),"item_choices":references("item_choices"),
-            "spell_recipe_references":self.quest_spell_recipe_references(quest)})
+            "spell_recipe_references":self.quest_spell_recipe_references(quest, snapshot)})
     }
 
-    fn quest_spell_recipe_references(&self, quest: &Value) -> Value {
+    fn quest_spell_recipe_references(&self, quest: &Value, snapshot: &Snapshot) -> Value {
         let Some(rows) = quest["spell_rewards"].as_object() else {
             return Value::Null;
         };
@@ -2247,9 +2247,15 @@ impl EquipmentCatalogue {
                 .filter_map(|(position, row)| {
                     let id = row["spell_id"].as_u64()?;
                     let (count, references) = matches.get(&id)?;
+                    let selected = snapshot.sections.get("selected_recipe")
+                        .filter(|recipe| recipe["recipe_id"].as_u64() == Some(id));
+                    let observed_recipe = (*count > 0 || selected.is_some()).then(|| json!({
+                        "selected_recipe_learned":selected.and_then(|recipe| recipe["learned"].as_bool()),
+                        "tracking":crate::analysis::recipe_tracking(snapshot,id)
+                    }));
                     Some((
                         position,
-                        json!({"spell_id":id,"match_count":count,"references":references}),
+                        json!({"spell_id":id,"match_count":count,"references":references,"observed_recipe":observed_recipe}),
                     ))
                 })
                 .collect::<BTreeMap<_, _>>()

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved recipe tracking and exact learned observations for Forever quest reward recipe spells.
+
 - Find saved Forever quests by major-faction reward or spell reward ID.
 
 - Find saved Forever quests offering a specific fixed or optional currency reward.
