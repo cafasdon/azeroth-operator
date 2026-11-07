@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Combine conditional base output ranges by item across Forever crafting batches.
+
 - Show captured base item output ranges for requested Forever craft quantities.
 
 - Capture displayed Forever recipe difficulty and skill-up indicators for saved craft planning.

@@ -532,6 +532,10 @@ impl Operator {
                     azeroth_operator::analysis::combine_recipe_materials(
                         std::iter::once(&review).chain(&extra_reviews),
                     )?;
+                review["combined_base_output_if_completed"] =
+                    azeroth_operator::analysis::combine_recipe_outputs(
+                        std::iter::once(&review).chain(&extra_reviews),
+                    );
                 review["additional_recipe_reviews"] = serde_json::json!(extra_reviews);
                 if inventory.is_none() {
                     review["inventory_snapshot_id"] = serde_json::json!(args.snapshot_id);

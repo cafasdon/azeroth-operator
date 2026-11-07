@@ -169,6 +169,33 @@ pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) ->
     ))
 }
 
+pub fn combine_recipe_outputs<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
+    let mut totals = BTreeMap::<u64, Option<(u64, u64)>>::new();
+    let mut recipes_without_observed_output_item = 0;
+    for review in reviews {
+        let Some(item_id) = review["recipe"]["output_item_id"].as_u64() else {
+            recipes_without_observed_output_item += 1;
+            continue;
+        };
+        let output = &review["base_output_if_completed"];
+        let range = output["minimum"].as_u64().zip(output["maximum"].as_u64());
+        let total = totals.entry(item_id).or_insert(Some((0, 0)));
+        *total = total
+            .zip(range)
+            .and_then(|((a_min, a_max), (b_min, b_max))| {
+                Some((a_min.checked_add(b_min)?, a_max.checked_add(b_max)?))
+            });
+    }
+    let items: Vec<_> = totals
+        .into_iter()
+        .map(|(item_id, range)| {
+            json!({"item_id":item_id,"minimum":range.map(|(minimum, _)| minimum),
+                "maximum":range.map(|(_, maximum)| maximum)})
+        })
+        .collect();
+    json!({"items":items,"recipes_without_observed_output_item":recipes_without_observed_output_item})
+}
+
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),

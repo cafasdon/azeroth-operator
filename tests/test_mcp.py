@@ -560,6 +560,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIsNone(batch_data["base_output_if_completed"])
                         self.assertEqual(batch_data["additional_recipe_reviews"][0]["base_output_if_completed"],
                                          {"item_id": 456, "minimum": 4, "maximum": 6})
+                        self.assertEqual(batch_data["combined_base_output_if_completed"], {
+                            "items": [{"item_id": 456, "minimum": 4, "maximum": 6}],
+                            "recipes_without_observed_output_item": 1,
+                        })
+                        extra_output = json.loads(json.dumps(second_recipe))
+                        extra_output["sections"]["selected_recipe"]["recipe_id"] = 102
+                        extra_key = SnapshotStore(Path(folder)).ingest(extra_output)
+                        extra_request = {**batch_request, "additional_recipes": [
+                            *batch_request["additional_recipes"], {"snapshot_id": extra_key, "crafts": 1}]}
+                        async def combined_output(request):
+                            response = await session.call_tool("review_forever_recipe", request)
+                            self.assertFalse(response.isError)
+                            return json.loads(response.content[0].text)["combined_base_output_if_completed"]
+                        self.assertEqual((await combined_output(extra_request))["items"],
+                                         [{"item_id": 456, "minimum": 6, "maximum": 9}])
+                        del extra_output["sections"]["selected_recipe"]["base_output_quantity"]
+                        unknown_output_key = SnapshotStore(Path(folder)).ingest(extra_output)
+                        extra_request["additional_recipes"][-1]["snapshot_id"] = unknown_output_key
+                        self.assertEqual((await combined_output(extra_request))["items"],
+                                         [{"item_id": 456, "minimum": None, "maximum": None}])
                         duplicate = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
                         self.assertTrue(duplicate.isError)
