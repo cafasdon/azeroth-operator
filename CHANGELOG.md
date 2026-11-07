@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever gear by minimum regular base stat gain over a saved slot.
+
 - Compare default regular stat gains and losses with the saved Forever equipped slot.
 
 - Filter Forever catalogue gear by minimum item-level gain over a saved slot.

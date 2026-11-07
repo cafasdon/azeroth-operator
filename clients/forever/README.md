@@ -137,7 +137,10 @@ modifiers. The comparison uses base IDs and
 does not account for modifiers or measure damage. Set
 `minimum_item_level_gain` to a positive number to keep only candidates
 meeting that gain before pagination. This filter requires a known equipped
-level in the requested slot.
+level in the requested slot. Use `minimum_stat_gain` with `stat_id` and
+positive `minimum_gain` to filter by one regular base stat, such as Strength
+(ID 0). This requires a known default scaling record for the equipped item.
+A stat omitted from a present stat map counts as zero.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue

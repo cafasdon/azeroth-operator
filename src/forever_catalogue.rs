@@ -106,6 +106,15 @@ pub enum ObservedOwnership {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct StatGain {
+    /// Regular stat ID from the pinned simulator, including 0 for Strength.
+    stat_id: u32,
+    /// Positive gain over the saved slot's default base stat.
+    minimum_gain: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Query {
     pub section: Section,
     /// Exact numeric ID (enchant effect ID for enchants), encounter path, or name substring.
@@ -123,6 +132,8 @@ pub struct Query {
     pub minimum_item_level: Option<std::num::NonZeroU32>,
     /// Require this gain over the saved slot's default item level. Requires a known equipped baseline.
     pub minimum_item_level_gain: Option<std::num::NonZeroU32>,
+    /// Require a gain in one regular base stat over the saved equipped slot.
+    pub minimum_stat_gain: Option<StatGain>,
     /// Restrict items to records with a drop source for this NPC ID.
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
@@ -318,6 +329,21 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     } else {
         None
     };
+    let minimum_stat = if let Some(gain) = &query.minimum_stat_gain {
+        ensure!(
+            gain.stat_id <= 38 && gain.minimum_gain.is_finite() && gain.minimum_gain > 0.0,
+            "Expected a known regular stat ID and positive gain"
+        );
+        let id = gain.stat_id.to_string();
+        let baseline = equipped
+            .as_ref()
+            .and_then(|slot| slot.regular_stats.as_ref())
+            .and_then(|stats| stats.get(&id).map_or(Some(0.0), Value::as_f64))
+            .ok_or_else(|| anyhow::anyhow!("Stat gain requires known equipped base stats"))?;
+        Some((id, baseline, gain.minimum_gain))
+    } else {
+        None
+    };
     let item_filter = item_ids.is_some()
         || ownership.is_some()
         || check_requirements.is_some()
@@ -393,6 +419,14 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 })
                 && minimum_upgrade_level.is_none_or(|minimum| {
                     default_item_level(row).is_some_and(|level| level >= minimum)
+                })
+                && minimum_stat.as_ref().is_none_or(|(id, baseline, minimum)| {
+                    default_regular_stats(row)
+                        .and_then(|stats| stats.get(id).map_or(Some(0.0), Value::as_f64))
+                        .is_some_and(|candidate| {
+                            let delta = candidate - baseline;
+                            delta.is_finite() && delta >= *minimum
+                        })
                 });
             let matches_set = query
                 .set_id
