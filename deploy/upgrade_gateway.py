@@ -72,7 +72,7 @@ if __name__ == "__main__":
         wait_ready()
         run("python3", str(Path(__file__).with_name("probe_gateway.py")))
     except BaseException:
-        run("systemctl", "stop", "azeroth-mcp.service")
+        run("systemctl", "disable", "--now", "azeroth-mcp.service")
         print("Reader stopped after failed verification. Previous profile retained as evidence.", file=sys.stderr)
         raise
     print(json.dumps({"reader_image": args.image, "evidence": str(evidence), "loopback_probe": "passed"}))

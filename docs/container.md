@@ -58,5 +58,5 @@ The restricted importer retains sha256:5a3467d27b7c238a00d9113e0273881106bcfab0d
 checks the dedicated profile identity, exact old image, fixed read-only store and
 environment before replacing it. It retains before/after profiles under a private
 temporary directory, checks the imported tool allowlist, restarts only the dedicated
-service, waits for its socket and probes authentication/discovery. A failed verification stops the dedicated reader and retains the previous profile for diagnosis. Restoring the old write-code routes would bypass the policy gate.
+service, waits for its socket and probes authentication/discovery. A failed verification stops and disables the dedicated reader and retains the previous profile for diagnosis. Restoring the old write-code routes would bypass the policy gate.
 Run independent public readback before claiming release qualification.
