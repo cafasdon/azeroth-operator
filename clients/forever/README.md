@@ -130,7 +130,10 @@ the raw samples out of the output. It does not search the full owned inventory.
 
 `python -m tools.rank_forever_slot` ranks gear across any of the 17 simulator slots. Use the same
 engine, template and encounter arguments, plus `--mcp` for the absolute path
-to the trusted local MCP executable and `--snapshot-id`. Configure
+to the trusted local MCP executable and either `--snapshot-id` or
+`--character NAME REALM`. The latter selects the newest valid saved capture for
+the named Forever character and reports its ID and capture time. If the two
+newest captures share a timestamp, use an explicit snapshot ID. Configure
 the usual owner snapshot directory and pinned catalogue in the environment.
 Repeat `--slot` or use `--all-slots` to compare combinations, including keeping the
 current item in each slot. The command pages up to 256 matching captured locations

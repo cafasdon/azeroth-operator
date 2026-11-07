@@ -125,16 +125,30 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
-                  can_dual_wield=True):
+                  can_dual_wield=True, character=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
 
-        async def call(tool, **args):
-            result = await session.call_tool(tool, {"snapshot_id": snapshot_id, **args})
+        async def request(tool, **args):
+            result = await session.call_tool(tool, args)
             if result.isError:
                 raise ValueError("Local MCP rejected the snapshot or request")
             return json.loads(result.content[0].text)
+
+        selected_capture = None
+        if character is not None:
+            name, realm = character
+            listing = await request("list_snapshots", family="forever",
+                                    character={"name": name, "realm": realm}, limit=2)
+            rows = listing["snapshots"]
+            if not rows or (len(rows) > 1 and rows[0]["captured_at"] == rows[1]["captured_at"]):
+                raise ValueError("No unambiguous newest saved capture for this character")
+            snapshot_id = rows[0]["snapshot_id"]
+            selected_capture = {"snapshot_id": snapshot_id, "captured_at": rows[0]["captured_at"]}
+
+        async def call(tool, **args):
+            return await request(tool, snapshot_id=snapshot_id, **args)
 
         stats = await call("inspect_snapshot", section="stats")
         baseline = await call("review_equipment_selection", selections=[])
@@ -188,7 +202,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
             else:
                 skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
-        return drafts, skipped, coverage, stats.get("data") or {}
+        return drafts, skipped, coverage, stats.get("data") or {}, selected_capture
 
 
 def rank_encounter(args, template, encounter, drafts):
@@ -230,7 +244,10 @@ def weighted_ranking(rankings, weights):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mcp", type=Path, required=True, help="Absolute path to the trusted local MCP executable")
-    parser.add_argument("--snapshot-id", required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--snapshot-id")
+    target.add_argument("--character", nargs=2, metavar=("NAME", "REALM"),
+                        help="Use the newest saved Forever capture for this character and realm.")
     slots = parser.add_mutually_exclusive_group(required=True)
     slots.add_argument("--slot", action="append", choices=SIMULATOR_SLOTS, help="Simulator slot. Repeat for combinations.")
     slots.add_argument("--all-slots", action="store_const", const=SIMULATOR_SLOTS, dest="slot",
@@ -279,9 +296,9 @@ def main():
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
-            drafts, skipped, coverage, stats = asyncio.run(asyncio.wait_for(
+            drafts, skipped, coverage, stats, selected_capture = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
-                        args.collapse_identical_items, args.item_id, can_dual_wield), timeout=45,
+                        args.collapse_identical_items, args.item_id, can_dual_wield, args.character), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         if len(encounters) == 1:
@@ -304,6 +321,8 @@ def main():
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
+        if selected_capture is not None:
+            result["selected_capture"] = selected_capture
         if args.item_id:
             result["requested_item_ids"] = args.item_id
         if len(args.slot) == 1:

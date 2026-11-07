@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Select a saved Forever capture for gear ranking by explicit character and realm.
+
 - Screen proposed Forever off-hand weapons against the selected simulator specialisation.
 
 - Exclude Forever gear swaps that conflict with the pinned class equipment capabilities.
