@@ -139,6 +139,10 @@ combinations. Draft reviews and skipped ranker rows report the conflicting slots
 checks use available snapshot stats and catalogue records. Full in-game
 eligibility remains unverified.
 
+The ranker also skips locations whose saved links cannot produce a simulator
+item input before expanding combinations. Full drafts still go through the
+MCP because slot interactions can affect whether a complete set is usable.
+
 When the item requires a mapped profession and a professions section was
 captured, the check also excludes swaps if that skill line is absent.
 It reports the required skill-line ID. Missing profession observations leave

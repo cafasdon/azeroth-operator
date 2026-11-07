@@ -87,10 +87,17 @@ async def slot_candidates(call, slot, multi, collapse_identical):
                     "conflicts": [conflict],
                 })
                 continue
+            modifier_review = row.get("catalogue_modifier_candidates", {})
+            modifiers = modifier_review or {}
+            spec = modifiers.get("simulator_item_spec")
+            if modifier_review is None or ("simulator_item_spec" in modifiers and spec is None):
+                skipped.append({
+                    **({"selections": [selection]} if multi else {"selection": selection}),
+                    "reason": "unresolved_simulator_item",
+                })
+                continue
             if collapse_identical and source["kind"] != "equipment":
                 reference = row.get("catalogue_base_item") or {}
-                modifiers = row.get("catalogue_modifier_candidates") or {}
-                spec = modifiers.get("simulator_item_spec")
                 # Multi-slot items may need two physical copies in the same set.
                 if spec and reference.get("simulator_slots") == [slot]:
                     key = json.dumps(spec, sort_keys=True, separators=(",", ":"))

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prune unresolved Forever simulator item inputs before expanding gear combinations.
+
 - Capture Forever faction and use it to screen faction-restricted gear swaps.
 
 - Screen Forever gear swaps against mapped catalogue profession requirements.
