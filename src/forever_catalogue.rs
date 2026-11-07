@@ -121,6 +121,8 @@ pub struct Query {
     pub simulator_slot: Option<SimulatorSlot>,
     /// Restrict items to at least this recorded item level at default scaling.
     pub minimum_item_level: Option<std::num::NonZeroU32>,
+    /// Require this gain over the saved slot's default item level. Requires a known equipped baseline.
+    pub minimum_item_level_gain: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a drop source for this NPC ID.
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
@@ -298,6 +300,24 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     } else {
         None
     };
+    let equipped = query
+        .simulator_slot
+        .zip(snapshot)
+        .filter(|(_, snapshot)| snapshot.client.family == Family::Forever)
+        .map(|(slot, snapshot)| equipped_slot(rows, snapshot, slot));
+    let minimum_upgrade_level = if let Some(gain) = query.minimum_item_level_gain {
+        Some(
+            equipped
+                .as_ref()
+                .and_then(|baseline| baseline.level)
+                .and_then(|level| level.checked_add(i64::from(gain.get())))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Item level gain requires a known equipped baseline")
+                })?,
+        )
+    } else {
+        None
+    };
     let item_filter = item_ids.is_some()
         || ownership.is_some()
         || check_requirements.is_some()
@@ -370,6 +390,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                     row["scalingOptions"]["0"]["ilvl"]
                         .as_u64()
                         .is_some_and(|level| level >= u64::from(minimum.get()))
+                })
+                && minimum_upgrade_level.is_none_or(|minimum| {
+                    default_item_level(row).is_some_and(|level| level >= minimum)
                 });
             let matches_set = query
                 .set_id
@@ -465,11 +488,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
-    if let Some((slot, snapshot)) = query.simulator_slot.zip(snapshot)
-        && snapshot.client.family == Family::Forever
-    {
-        result["equipped_slot_comparison"] =
-            equipped_slot_comparison(rows, &records, snapshot, slot);
+    if let Some(equipped) = equipped {
+        result["equipped_slot_comparison"] = equipped.comparison(&records);
     }
     if query.include_source_references {
         result["source_references"] = source_references(db, &records);
@@ -489,42 +509,56 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     Ok(result)
 }
 
-fn equipped_slot_comparison(
-    catalogue: &[Value],
-    records: &[&Value],
-    snapshot: &Snapshot,
+struct EquippedSlot {
     slot: SimulatorSlot,
-) -> Value {
+    observed: bool,
+    item_id: Option<u64>,
+    level: Option<i64>,
+}
+
+fn default_item_level(item: &Value) -> Option<i64> {
+    item["scalingOptions"]["0"]["ilvl"]
+        .as_i64()
+        .filter(|level| *level > 0)
+}
+
+fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) -> EquippedSlot {
     let equipment = snapshot
         .sections
         .get("equipment")
         .and_then(Value::as_object);
-    let equipped_id = (1..=19)
+    let item_id = (1..=19)
         .find(|index| simulator_slot_for_equipment(*index) == Some(slot))
         .and_then(|index| equipment?.get(&index.to_string()))
         .and_then(|item| item["item_id"].as_u64());
-    let default_level = |item: &Value| {
-        item["scalingOptions"]["0"]["ilvl"]
-            .as_i64()
-            .filter(|level| *level > 0)
-    };
-    let equipped_level = equipped_id
+    let level = item_id
         .and_then(|id| {
             catalogue
                 .iter()
                 .find(|item| item["id"].as_u64() == Some(id))
         })
-        .and_then(default_level);
-    let items: Vec<_> = records
-        .iter()
-        .map(|item| {
-            let level = default_level(item);
-            json!({"item_id":item["id"],"default_item_level":level,
-                "delta_from_equipped":level.zip(equipped_level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped))})
-        })
-        .collect();
-    json!({"simulator_slot":slot,"equipment_observed":equipment.is_some(),"equipped_item_id":equipped_id,
-        "equipped_default_item_level":equipped_level,"items":items})
+        .and_then(default_item_level);
+    EquippedSlot {
+        slot,
+        observed: equipment.is_some(),
+        item_id,
+        level,
+    }
+}
+
+impl EquippedSlot {
+    fn comparison(&self, records: &[&Value]) -> Value {
+        let items: Vec<_> = records
+            .iter()
+            .map(|item| {
+                let level = default_item_level(item);
+                json!({"item_id":item["id"],"default_item_level":level,
+                    "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped))})
+            })
+            .collect();
+        json!({"simulator_slot":self.slot,"equipment_observed":self.observed,"equipped_item_id":self.item_id,
+            "equipped_default_item_level":self.level,"items":items})
+    }
 }
 
 fn observed_item_ids(snapshot: &Snapshot) -> (BTreeSet<u64>, bool) {

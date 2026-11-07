@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever catalogue gear by minimum item-level gain over a saved slot.
+
 - Compare Forever catalogue item levels with the saved item in the requested equipment slot.
 
 - Explain saved character requirement conflicts on Forever catalogue gear results.

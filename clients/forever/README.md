@@ -130,7 +130,10 @@ legality evaluated separately. With
 shows each returned item’s default catalogue level and the difference from
 the saved item in that slot. If the equipped item or its catalogue level
 is unavailable, the difference is null. The comparison uses base IDs and
-does not account for modifiers or measure damage.
+does not account for modifiers or measure damage. Set
+`minimum_item_level_gain` to a positive number to keep only candidates
+meeting that gain before pagination. This filter requires a known equipped
+level in the requested slot.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue
