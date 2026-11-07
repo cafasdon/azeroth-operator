@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include the game-reported Forever player map level range when available.
+
 - Capture open Forever flight map destinations and available fares for offline review.
 
 - Include the captured Forever player map name and parent map ID when available.

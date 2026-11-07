@@ -29,6 +29,12 @@ def validate_snapshot(value):
     sections = value.get("sections")
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
+    stats = sections.get("stats")
+    if isinstance(stats, dict) and {"map_min_level", "map_max_level"} & stats.keys():
+        map_id, low, high = (stats.get(key) for key in ("map_id", "map_min_level", "map_max_level"))
+        if (any(type(n) is not int for n in (map_id, low, high))
+                or not 1 <= map_id <= 4_294_967_295 or not 1 <= low <= high <= 255):
+            raise ValueError("Invalid captured map level range")
     if "wallet" in sections:
         wallet = sections["wallet"]
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}

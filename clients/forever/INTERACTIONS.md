@@ -285,6 +285,10 @@ syncing this field. [Forever map API](https://raw.githubusercontent.com/Gethe/wo
 When the client returns matching metadata, the summary also shows the
 localized `captured_map_name` and `captured_map_parent_id`. These fields
 can be unknown even when the map ID was observed.
+When the map API reports a positive, ordered player level range,
+`captured_map_min_level` and `captured_map_max_level` show that range.
+It describes the captured map and does not establish individual quest or
+instance eligibility. [Forever map API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MapDocumentation.lua)
 
 Export while the built-in flight map is open to inspect `flight_map` later.
 It records the viewed map ID, node names and IDs, recorded availability,

@@ -336,10 +336,21 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("map_id", "positive", false),
                     ("map_name", "text", false),
                     ("map_parent_id", "positive", false),
+                    ("map_min_level", "positive", false),
+                    ("map_max_level", "positive", false),
                     ("client_version", "text", true),
                 ],
             )?;
             let map_id = value["map_id"].as_u64();
+            let levels = (
+                value["map_min_level"].as_u64(),
+                value["map_max_level"].as_u64(),
+            );
+            ensure!(
+                (value.get("map_min_level").is_none() && value.get("map_max_level").is_none())
+                    || matches!(levels, (Some(min), Some(max)) if map_id.is_some() && min <= max && max <= 255),
+                "Invalid captured map level range"
+            );
             if let Some(name) = value["map_name"].as_str() {
                 ensure!(
                     map_id.is_some() && !name.is_empty() && name.len() <= 256,

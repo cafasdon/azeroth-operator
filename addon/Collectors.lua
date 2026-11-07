@@ -238,6 +238,11 @@ AO.collectors.stats = function()
                 if accessible(name) and type(name)=="string" and #name>0 and #name<=256 then stats.map_name=name end
                 if mapID(parent) and parent~=map then stats.map_parent_id=parent end
             end
+            local foundLevels,minLevel,maxLevel=pcall(C_Map.GetMapLevels,map)
+            if foundLevels and mapID(minLevel) and mapID(maxLevel) and minLevel<=maxLevel and maxLevel<=255 then
+                stats.map_min_level=minLevel
+                stats.map_max_level=maxLevel
+            end
         end
     end
     return stats

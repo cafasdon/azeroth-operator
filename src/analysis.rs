@@ -1535,6 +1535,8 @@ pub fn summary(s: &Snapshot) -> Value {
       "captured_map_id":captured_map,
       "captured_map_name":captured_map.and_then(|_| s.sections["stats"]["map_name"].as_str()),
       "captured_map_parent_id":captured_map.and_then(|_| s.sections["stats"]["map_parent_id"].as_u64()),
+      "captured_map_min_level":captured_map.and_then(|_| s.sections["stats"]["map_min_level"].as_u64()),
+      "captured_map_max_level":captured_map.and_then(|_| s.sections["stats"]["map_max_level"].as_u64()),
       "quests_with_waypoint_on_captured_map":quests_on_captured_map,
       "quest_money":quest_money,
       "observed_quest_timers":timed_quests,
