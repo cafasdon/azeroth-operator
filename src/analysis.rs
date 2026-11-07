@@ -113,11 +113,13 @@ pub fn review_recipe_with_inventory(
                 .zip(quantities)
                 .map(|(name, count)| (name, (!missing_storage.contains(&name)).then_some(count)))
                 .collect();
+            let by_storage = json!(by_storage);
+            let (bag_shortfall, withdrawals) = bag_restock(&by_storage, required);
             materials.push(json!({"item_id":item_id, "required":required,
                 "quantity_observed":(missing_storage.len()<storage.len()).then_some(available),
                 "shortfall_vs_observed":(missing_storage.len()<storage.len()).then_some(required.saturating_sub(available)),
                 "quantity_by_storage":by_storage,
-                "shortfall_vs_bags":by_storage["bags"].map(|count| required.saturating_sub(count)),
+                "shortfall_vs_bags":bag_shortfall,"suggested_bank_withdrawals":withdrawals,
                 "observed_stack_count":(missing_storage.len()<storage.len()).then_some(reagent.stack_count),
                 "observed_locations":reagent.locations}));
         }

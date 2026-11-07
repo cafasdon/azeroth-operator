@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Suggest saved bank withdrawals for individual Forever recipe reagents.
+
 - Combine captured material and charge limits in Forever recipe reviews.
 
 - Show saved craft and recraft tracking in individual and batch Forever recipe reviews.
