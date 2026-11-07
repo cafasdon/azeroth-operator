@@ -560,6 +560,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("earned_this_week", "uint", true),
                     ("total_earned", "uint", true),
                     ("cap_uses_total_earned", "bool", true),
+                    ("can_earn_per_week", "bool", false),
                 ],
             )?;
             let balances = value["entries"].as_object().unwrap();

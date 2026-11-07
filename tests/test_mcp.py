@@ -236,6 +236,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
                         currency_data = json.loads(currency.content[0].text)
                         self.assertEqual(currency_data["data"]["entries"]["100"]["quantity"], 0)
+                        self.assertNotIn("can_earn_per_week", currency_data["data"]["entries"]["100"])
                         self.assertEqual(currency_data["currency_cap_headroom"], {
                             "100": {"weekly_remaining": 30, "maximum_remaining": 40,
                                     "maximum_basis": "total_earned"},
@@ -244,16 +245,21 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             result = await session.call_tool("inspect_snapshot", {
                                 "snapshot_id": snapshot_id, "section": "currency_balances"})
                             self.assertFalse(result.isError)
-                            return json.loads(result.content[0].text)["currency_cap_headroom"]
-                        self.assertIsNone(await inspect_caps(key))
+                            return json.loads(result.content[0].text)
+                        self.assertIsNone((await inspect_caps(key))["currency_cap_headroom"])
                         other_caps = json.loads(json.dumps(forever))
                         entries = other_caps["sections"]["currency_balances"]["entries"]
-                        entries["100"].update(cap_uses_total_earned=False, max_weekly_quantity=0, quantity=101)
+                        entries["100"].update(cap_uses_total_earned=False, max_weekly_quantity=0, quantity=101,
+                                              can_earn_per_week=False)
                         entries["101"] = {**entries["100"], "max_quantity": 0}
                         entries["102"] = {**entries["101"], "inactive": True,
-                                          "max_weekly_quantity": 5, "earned_this_week": 6}
+                                          "max_weekly_quantity": 5, "earned_this_week": 6,
+                                          "can_earn_per_week": True}
                         other_key = SnapshotStore(Path(folder)).ingest(other_caps)
-                        self.assertEqual(await inspect_caps(other_key), {
+                        other_data = await inspect_caps(other_key)
+                        self.assertIs(other_data["data"]["entries"]["100"]["can_earn_per_week"], False)
+                        self.assertIs(other_data["data"]["entries"]["102"]["can_earn_per_week"], True)
+                        self.assertEqual(other_data["currency_cap_headroom"], {
                             "100": {"weekly_remaining": None, "maximum_remaining": 0,
                                     "maximum_basis": "quantity"},
                             "102": {"weekly_remaining": 0, "maximum_remaining": None,

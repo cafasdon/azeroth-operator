@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the optional weekly earning flag for visible Forever currencies.
+
 - Report remaining amounts under observed Forever currency caps at snapshot time.
 
 - Inspect a saved quest by ID and report remaining counts for its captured unfinished objectives.

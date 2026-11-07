@@ -551,6 +551,10 @@ AO.collectors.currency_balances = function()
                 max_quantity=row.maxQuantity,max_weekly_quantity=row.maxWeeklyQuantity,
                 earned_this_week=row.quantityEarnedThisWeek,total_earned=row.totalEarned,
                 cap_uses_total_earned=row.useTotalEarnedForMaxQty}
+            local weekly=row.canEarnPerWeek
+            if (not issecretvalue or not issecretvalue(weekly)) and type(weekly)=="boolean" then
+                rows[id].can_earn_per_week=weekly
+            end
         end
     end
     assert(api.GetCurrencyListSize()==count, "Currency rows changed")

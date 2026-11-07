@@ -476,9 +476,11 @@ pub fn verify_forever_capture_fixture(
             return "Private objective",0,index==1,index==1 and 2 or nil,2,"Private contributor",0,0,"Private quantity",300+index
         end
         local function currency(id)
+            local weekly=id==100
+            if missingWeekly then weekly=nil end
             return {currencyID=id,name="Currency "..id,isHeader=false,isTypeUnused=id==200,
                 quantity=0,maxQuantity=100,maxWeeklyQuantity=40,quantityEarnedThisWeek=10,
-                totalEarned=60,isAccountWide=id==100, useTotalEarnedForMaxQty=true}
+                totalEarned=60,isAccountWide=id==100, useTotalEarnedForMaxQty=true,canEarnPerWeek=weekly}
         end
         C_CurrencyInfo={
             GetCurrencyListSize=function() return 3 end,
@@ -587,8 +589,24 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(currencies["entries"]["100"]["cap_uses_total_earned"], true);
     assert_eq!(currencies["entries"]["100"]["total_earned"], 60);
     assert_eq!(currencies["entries"]["200"]["inactive"], true);
+    assert_eq!(currencies["entries"]["100"]["can_earn_per_week"], true);
+    assert_eq!(currencies["entries"]["200"]["can_earn_per_week"], false);
     lua.load("currencyReordered=true;AO.Capture()").exec()?;
     assert_eq!(&read()?.sections["currency_balances"], currencies);
+    lua.load("missingWeekly=true;AO.Capture()").exec()?;
+    let legacy = read()?;
+    assert!(
+        legacy.sections["currency_balances"]["entries"]["100"]
+            .get("can_earn_per_week")
+            .is_none()
+    );
+    lua.load(
+        "missingWeekly=false; issecretvalue=function(v) return v==true end;
+        local rows=AO.collectors.currency_balances().entries;
+        assert(rows['100'].can_earn_per_week==nil and rows['200'].can_earn_per_week==false);
+        issecretvalue=nil",
+    )
+    .exec()?;
     for setup in [
         "currencyReordered=false;duplicateCurrency=true",
         "missingCurrency=true",

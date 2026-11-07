@@ -22,6 +22,13 @@ The Windows release companion imported the complete synthetic Forever fixture. I
 
 The staged 0.28.0-dev package adds fixed-material review for selected enchant recipes using the existing snapshot format. SHA-256 `164c6442250d4f1a85c656c231de6e89bfe0c05aad91528ac349f3b2aaa9539a`. Packaged Lua round trip, changed-interface refusal and the synthetic Windows installer test passed offline.
 
+The staged 0.29.0-dev candidate adds the optional weekly currency earning
+flag. The archive is in `dist/forever-weekly-currency` with SHA-256
+`ce47230a500f3add4f9142eb5e82537e37f34c2755f4e05a27f95cf6282d3ad6`.
+The packaged Lua round trip passed, including false, missing and simulated
+restricted flags. Upgrade the Rust reader and importer before using this
+candidate with hosted sync.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
