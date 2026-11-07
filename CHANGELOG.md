@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever vendor items by recorded Alliance or Horde sale tags.
+
 - Find Forever vendor items by the zone recorded on their sale source.
 
 - Find Forever loot by recorded encounter or drop group label.

@@ -70,6 +70,13 @@ pub enum DropInstanceKind {
     Raid = 2,
 }
 
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum VendorFaction {
+    Alliance = 1,
+    Horde = 2,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
@@ -95,6 +102,8 @@ pub struct Query {
     pub vendor_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to sale sources in this zone. With an NPC filter, both must match the same sale.
     pub vendor_zone_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to sale sources with this recorded faction tag.
+    pub vendor_faction: Option<VendorFaction>,
     /// Restrict items to records with a reputation source for this reputation faction ID.
     pub reputation_faction_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with this type of acquisition source.
@@ -207,7 +216,9 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         || query.drop_zone_id.is_some()
         || query.drop_instance_kind.is_some()
         || drop_label.is_some();
-    let vendor_filter = query.vendor_npc_id.is_some() || query.vendor_zone_id.is_some();
+    let vendor_filter = query.vendor_npc_id.is_some()
+        || query.vendor_zone_id.is_some()
+        || query.vendor_faction.is_some();
     let item_filter = query.set_id.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
@@ -279,18 +290,20 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                         .any(|source| source["quest"]["id"].as_u64() == Some(u64::from(id.get())))
                 })
             });
-            let matches_vendor = !vendor_filter
-                || row["sources"].as_array().is_some_and(|sources| {
-                    sources.iter().any(|source| {
-                        let sale = &source["soldBy"];
-                        query
-                            .vendor_npc_id
-                            .is_none_or(|id| sale["npcId"].as_u64() == Some(u64::from(id.get())))
-                            && query.vendor_zone_id.is_none_or(|id| {
+            let matches_vendor =
+                !vendor_filter
+                    || row["sources"].as_array().is_some_and(|sources| {
+                        sources.iter().any(|source| {
+                            let sale = &source["soldBy"];
+                            query.vendor_npc_id.is_none_or(|id| {
+                                sale["npcId"].as_u64() == Some(u64::from(id.get()))
+                            }) && query.vendor_zone_id.is_none_or(|id| {
                                 sale["zoneId"].as_u64() == Some(u64::from(id.get()))
+                            }) && query.vendor_faction.is_none_or(|faction| {
+                                sale["faction"].as_u64() == Some(faction as u64)
                             })
-                    })
-                });
+                        })
+                    });
             let matches_reputation = query.reputation_faction_id.is_none_or(|id| {
                 row["sources"].as_array().is_some_and(|sources| {
                     sources.iter().any(|source| {
