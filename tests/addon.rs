@@ -133,7 +133,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         ActionButton2={action=2}
         issecretvalue=function(value) return value==123 end
         assert(not pcall(AO.collectors.action_bar_observation)); issecretvalue=nil
-        AO.family='forever'; assert(not pcall(AO.collectors.action_bar_observation)); AO.family='retail'
+        AO.family='classic'; assert(not pcall(AO.collectors.action_bar_observation)); AO.family='retail'
         ActionButton1=nil; ActionButton2=nil
         assert(not pcall(AO.collectors.action_bar_observation))
         ActionButton1={action=1}; ActionButton2={action=2}; MAX_ACTION_BUTTONS=180
@@ -515,6 +515,13 @@ pub fn verify_forever_capture_fixture(
             return "Private",0,1,1,true,118
         end
         GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
+        MAX_ACTION_BUTTONS=nil
+        NUM_ACTIONBAR_BUTTONS=2
+        ActionButtonUtil={ActionBarButtonNames={"ActionButton","MultiBarBottomLeftButton"}}
+        ActionButton1={action=1}
+        ActionButton2={action=2}
+        MultiBarBottomLeftButton1={action=1}
+        GetActionInfo=function(slot) if slot==1 then return "spell",101 end end
         Enum.SpellBookSpellBank={Player=0}
         Enum.SpellBookItemType={Spell=1,FutureSpell=2}
         C_Spell={GetSpellName=function(spell) if spell==101 then return "Fixture spell" end end}
@@ -661,6 +668,14 @@ pub fn verify_forever_capture_fixture(
     lua.load("SlashCmdList.AZEROTHOPERATOR()").exec()?;
     assert!(!read()?.unavailable.contains_key("wallet"));
     let quests = &snapshot.sections["quests"];
+    assert_eq!(
+        snapshot.sections["action_bar_observation"],
+        serde_json::json!({
+            "coverage":"loaded_builtin_buttons_only","observed_buttons":3,"missing_buttons":1,
+            "slots":{"1":{"empty":false,"kind":"spell","id":101},"2":{"empty":true}}
+        })
+    );
+    assert!(snapshot.unavailable.contains_key("action_bars"));
     assert_eq!(
         snapshot.sections["spellbook"],
         serde_json::json!({"coverage":"visible_player_spell_slots","entries":{"3":{"base_spell_id":100,"spell_id":101,"name":"Fixture spell","passive":false,"off_spec":true}}})

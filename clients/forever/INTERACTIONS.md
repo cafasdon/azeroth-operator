@@ -23,6 +23,13 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`inspect_snapshot` with `section: "action_bar_observation"` shows loaded
+built-in button slots, including observed empty slots and a count of missing
+buttons. Multiple buttons can reference the same slot. This works separately
+from the legacy `action_bars` collector and covers only the loaded built-in
+button families listed by the client. It does not enumerate hidden pages or
+custom bars. [Forever action button source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ActionBar/Shared/ActionButtonUtil.lua)
+
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
 On the Rust MCP, pass `profession_skill_line` with `section: "professions"`

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Export loaded built-in Forever action bar slots without requiring the legacy slot boundary.
+
 - Search saved Forever spellbook slots by captured spell name.
 
 - Filter saved Forever spellbook slots by observed passive and off-spec flags.

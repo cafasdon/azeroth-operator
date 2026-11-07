@@ -281,7 +281,7 @@ end
 -- Partial observations of Blizzard's loaded player action-button frames.
 -- Other pages, addon replacement bars and special pet/stance bars are not covered.
 AO.collectors.action_bar_observation = function()
-    assert(AO.family=="retail" and GetActionInfo and ActionButtonUtil
+    assert((AO.family=="retail" or AO.family=="forever") and GetActionInfo and ActionButtonUtil
         and type(ActionButtonUtil.ActionBarButtonNames)=="table", "Action button catalogue unavailable")
     assert(type(NUM_ACTIONBAR_BUTTONS)=="number" and NUM_ACTIONBAR_BUTTONS%1==0
         and NUM_ACTIONBAR_BUTTONS>=1 and NUM_ACTIONBAR_BUTTONS<=64, "Invalid button bound")
