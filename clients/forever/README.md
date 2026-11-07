@@ -106,10 +106,24 @@ progress, the quest XP projection, reward spell filtering and recipe
 observations over MCP stdio. Update the reader and importer before syncing
 this candidate. Native capture is pending.
 
+The staged `0.40.0-dev` candidate is in `dist/forever-action-review`, built
+from `0adbdc3` for interface `16001`. Its ZIP SHA-256 is
+`b498aa3de88f6859df5267f0b8345109a26205136cf9d5a54b92554d3b19efba`.
+The exact ZIP passed the packaged Lua fixture, changed-interface refusal
+and synthetic Windows installation with all four files verified. The
+installer preserved the existing directory on a second invocation.
+
+The matching Windows release companion is `dist/forever-action-review/azeroth-operator.exe`,
+SHA-256 `b4191c95c27ee3dee1ddcbe4aee8a425d1fa8f4c277ff9bd145a8b1685db5f55`.
+It imported synthetic spellbook and action bar captures and served name
+and hotkey searches, spellbook matches and hotkey changes over MCP stdio.
+Update the reader and importer before syncing this candidate. Native capture
+remains pending.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
-$manifest = (Resolve-Path 'dist/forever-progression/AzerothOperator-0.39.0-dev-forever-live.manifest.json').Path
+$manifest = (Resolve-Path 'dist/forever-action-review/AzerothOperator-0.40.0-dev-forever-live.manifest.json').Path
 python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
 ```
 
