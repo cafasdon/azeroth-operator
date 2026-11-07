@@ -190,6 +190,13 @@ milliseconds. To compare a specific pair, look up both IDs in one request.
 Groups cover the returned page and describe catalogue data. Live cooldowns
 and categories without a recorded positive duration are outside this view.
 
+Use `consumable_group_key` with the exact `groupKey` from a catalogue
+record to find alternatives in the same simulator buff group. It combines
+with saved ownership filters. Filtered results and restock plans list
+`simulator_exclusive_buff_groups` when two or more items on the returned
+page share a recorded group. The groups describe the pinned simulator's
+buff rules. Live stacking and ungrouped effects require separate evidence.
+
 For a restock plan, supply `consumable_targets` instead of lookup filters,
 for example `[{"item_id":118,"quantity":10}]` with the same section and
 snapshot. Use up to 20 distinct IDs. The plan compares each target against

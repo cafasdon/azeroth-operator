@@ -152,6 +152,8 @@ pub struct Query {
     pub item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Plan bag stock for up to 20 distinct consumables from the supplied snapshot.
     pub consumable_targets: Option<Vec<ConsumableTarget>>,
+    /// Match the exact groupKey recorded by the pinned simulator for consumable buffs.
+    pub consumable_group_key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
     /// Restrict items to this pinned catalogue set ID.
@@ -306,6 +308,16 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let key = query.key.as_deref().map(str::trim);
     if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
+    }
+    let consumable_group = query.consumable_group_key.as_deref().map(str::trim);
+    if let Some(group) = consumable_group {
+        ensure!(
+            matches!(query.section, Section::Consumables)
+                && query.consumable_targets.is_none()
+                && !group.is_empty()
+                && group.len() <= 160,
+            "Consumable group filtering requires a group key and no restock targets"
+        );
     }
     let item_ids = if let Some(targets) = &query.consumable_targets {
         ensure!(
@@ -464,8 +476,11 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         !inventory_filter || has_inventory_context,
         "Inventory filters require items or consumables"
     );
-    let filtered =
-        key.is_some() || query.recipe_spell_id.is_some() || item_filter || inventory_filter;
+    let filtered = key.is_some()
+        || query.recipe_spell_id.is_some()
+        || item_filter
+        || inventory_filter
+        || consumable_group.is_some();
     ensure!(
         !query.include_source_references || (matches!(query.section, Section::Items) && filtered),
         "Source references require a filtered item lookup"
@@ -497,6 +512,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             if let Some(ids) = &item_ids
                 && !row["id"].as_u64().is_some_and(|id| ids.contains(&id))
             {
+                continue;
+            }
+            if consumable_group.is_some_and(|group| row["groupKey"].as_str() != Some(group)) {
                 continue;
             }
             let matches = if key.is_none() {
@@ -684,6 +702,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "acquisition_verified":false});
     if matches!(query.section, Section::Consumables) && filtered {
         result["recorded_shared_cooldowns"] = shared_consumable_cooldowns(&records);
+        result["simulator_exclusive_buff_groups"] = exclusive_consumable_groups(&records);
     }
     if let Some(equipped) = equipped {
         result["equipped_slot_comparison"] = equipped.comparison(&records);
@@ -704,6 +723,26 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         result["simulation_input"] = encounter_input(record, settings)?;
     }
     Ok(result)
+}
+
+fn exclusive_consumable_groups(records: &[&Value]) -> Value {
+    let mut groups = BTreeMap::<&str, BTreeSet<u64>>::new();
+    for row in records {
+        if let Some((key, id)) = row["groupKey"]
+            .as_str()
+            .filter(|key| !key.is_empty())
+            .zip(row["id"].as_u64())
+        {
+            groups.entry(key).or_default().insert(id);
+        }
+    }
+    json!(
+        groups
+            .into_iter()
+            .filter(|(_, items)| items.len() > 1)
+            .map(|(key, items)| { json!({"group_key":key,"item_ids":items}) })
+            .collect::<Vec<_>>()
+    )
 }
 
 fn shared_consumable_cooldowns(records: &[&Value]) -> Value {

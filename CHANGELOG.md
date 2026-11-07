@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find WoW Forever consumables by simulator buff group and flag groups represented by multiple selected items.
+
 - Group Forever consumables with matching recorded on-use cooldown categories.
 
 - Plan Forever consumable bag stock and manual bank withdrawals from saved inventory.
