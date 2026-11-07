@@ -122,7 +122,11 @@ For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to fi
 
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
-filters and optional snapshot context apply to the matching records.
+filters and optional snapshot context apply to the matching records. With
+`acquisition_snapshot_id`, the response includes `owned_quantities_by_item_id`
+for returned item IDs. Counts group by base item ID across captured storage.
+An observed zero is distinct from an uncaptured storage section, which gives
+null. Slot locations and item links stay in the inventory tools.
 
 Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The other source categories are `crafted`, `drop`, `quest`, `vendor` and `reputation`. Filters combine at item level, so an item can match through multiple recorded sources. The catalogue PvP tag supplies no rank, cost or season data.
 

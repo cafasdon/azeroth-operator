@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved equipment, bag and bank quantities alongside Forever catalogue item results.
+
 - Look up up to 100 exact Forever catalogue item IDs in one paginated query.
 
 - Filter Forever reputation rewards by exact required rank and source faction tag.
