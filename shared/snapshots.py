@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -34,6 +34,17 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
                 or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
             raise ValueError("Invalid Forever wallet observation")
+    if "spellbook" in sections:
+        book = sections["spellbook"]
+        if (c["family"] != "forever" or not isinstance(book, dict) or set(book) != {"coverage", "entries"}
+                or book["coverage"] != "visible_player_spell_slots"
+                or not isinstance(book["entries"], dict) or len(book["entries"]) > 1024):
+            raise ValueError("Invalid Forever spellbook observation")
+        for slot, spell in book["entries"].items():
+            if (not isinstance(slot, str) or not re.fullmatch(r"[1-9][0-9]{0,3}", slot) or int(slot) > 4096
+                    or not isinstance(spell, dict) or set(spell) != {"base_spell_id", "spell_id"}
+                    or any(type(id) is not int or not 1 <= id <= 4_294_967_295 for id in spell.values())):
+                raise ValueError("Invalid Forever spellbook entry")
     if "experience" in sections:
         xp = sections["experience"]
         if (c["family"] != "forever" or not isinstance(xp, dict)

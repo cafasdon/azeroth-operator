@@ -516,10 +516,22 @@ pub fn verify_forever_capture_fixture(
         end
         GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
         Enum.SpellBookSpellBank={Player=0}
+        Enum.SpellBookItemType={Spell=1,FutureSpell=2}
         C_Spell={GetSpellName=function(spell) if spell==101 then return "Fixture spell" end end}
         C_SpellBook={IsSpellInSpellBook=function(spell,bank,overrides)
             assert(bank==0 and overrides==true)
             return spell==102
+        end,GetNumSpellBookSkillLines=function() return 3 end,
+        GetSpellBookSkillLineInfo=function(line)
+            if line==1 then return {isGuild=false,shouldHide=false,itemIndexOffset=2,numSpellBookItems=2} end
+            if line==2 then return {isGuild=true,shouldHide=false,itemIndexOffset=4,numSpellBookItems=1} end
+            if malformedSpellbook then return {isGuild=false,shouldHide=false,itemIndexOffset=2,numSpellBookItems=1} end
+            return {isGuild=false,shouldHide=true,itemIndexOffset=5,numSpellBookItems=1}
+        end,GetSpellBookItemInfo=function(slot,bank)
+            assert(bank==0)
+            if slot==3 then return {itemType=1,actionID=100,spellID=101} end
+            if slot==4 then return {itemType=2,actionID=102,spellID=102} end
+            error("Non-player line queried")
         end}
         C_QuestInfoSystem={GetQuestRewardSpells=function(id)
             if id==43 then return {} end
@@ -649,6 +661,13 @@ pub fn verify_forever_capture_fixture(
     lua.load("SlashCmdList.AZEROTHOPERATOR()").exec()?;
     assert!(!read()?.unavailable.contains_key("wallet"));
     let quests = &snapshot.sections["quests"];
+    assert_eq!(
+        snapshot.sections["spellbook"],
+        serde_json::json!({"coverage":"visible_player_spell_slots","entries":{"3":{"base_spell_id":100,"spell_id":101}}})
+    );
+    lua.load("malformedSpellbook=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("spellbook"));
+    lua.load("malformedSpellbook=false").exec()?;
     assert_eq!(
         snapshot.sections["experience"],
         serde_json::json!({"status":"progress","current_xp":0,"level_threshold_xp":1000,"xp_disabled":false,"rested_xp":200})

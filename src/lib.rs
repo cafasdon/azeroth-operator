@@ -38,6 +38,7 @@ const SECTIONS: &[&str] = &[
     "currency_balances",
     "wallet",
     "experience",
+    "spellbook",
     "tracked_achievements",
     "talents",
     "stats",
@@ -128,6 +129,7 @@ impl Snapshot {
                         | "tracked_achievements"
                         | "wallet"
                         | "experience"
+                        | "spellbook"
                 ) || self.client.family == Family::Forever,
                 "Observation requires Forever"
             );

@@ -51,6 +51,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="currency_balances"
         sectionNames[#sectionNames+1]="tracked_achievements"
         sectionNames[#sectionNames+1]="experience"
+        sectionNames[#sectionNames+1]="spellbook"
         if includeWallet then sectionNames[#sectionNames+1]="wallet" end
     end
     for _, name in ipairs(sectionNames) do

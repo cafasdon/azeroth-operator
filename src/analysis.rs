@@ -1349,6 +1349,7 @@ pub fn summary(s: &Snapshot) -> Value {
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
       "experience_progress":s.sections.get("experience").map(|xp|
           json!({"observed":xp,"xp_to_next_level":xp_to_next_level(xp)})),
+      "spellbook_slots_observed":s.sections.get("spellbook").and_then(|book|book["entries"].as_object()).map(|slots|slots.len()),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),

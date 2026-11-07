@@ -800,6 +800,41 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.spellbook = function()
+    local api=C_SpellBook
+    local bank,spellType=Enum.SpellBookSpellBank.Player,Enum.SpellBookItemType.Spell
+    assert(questRewardInteger(bank,0,4294967295) and questRewardInteger(spellType,0,4294967295), "Spellbook API unavailable")
+    local count=api.GetNumSpellBookSkillLines()
+    assert(questRewardInteger(count,0,64), "Invalid spellbook skill line count")
+    local entries,visited,total={},{},0
+    for line=1,count do
+        local skill=api.GetSpellBookSkillLineInfo(line)
+        assert(questRewardAccessible(skill) and type(skill)=="table", "Spellbook skill line unavailable")
+        local hidden,guild=skill.shouldHide,skill.isGuild
+        assert(questRewardAccessible(hidden) and type(hidden)=="boolean"
+            and questRewardAccessible(guild) and type(guild)=="boolean", "Invalid spellbook skill line")
+        if not hidden and not guild then
+            local offset,length=skill.itemIndexOffset,skill.numSpellBookItems
+            assert(questRewardInteger(offset,0,4096) and questRewardInteger(length,0,1024)
+                and offset+length<=4096 and total+length<=1024, "Invalid spellbook range")
+            total=total+length
+            for slot=offset+1,offset+length do
+                assert(not visited[slot], "Overlapping spellbook ranges")
+                visited[slot]=true
+                local item=api.GetSpellBookItemInfo(slot,bank)
+                assert(questRewardAccessible(item) and type(item)=="table"
+                    and questRewardInteger(item.itemType,0,4294967295), "Spellbook entry unavailable")
+                if item.itemType==spellType then
+                    assert(questRewardInteger(item.actionID,1,4294967295)
+                        and questRewardInteger(item.spellID,1,4294967295), "Invalid spellbook spell")
+                    entries[tostring(slot)]={base_spell_id=item.actionID,spell_id=item.spellID}
+                end
+            end
+        end
+    end
+    return {coverage="visible_player_spell_slots",entries=entries}
+end
+
 AO.collectors.experience = function()
     local function accessible(value)
         return not issecretvalue or not issecretvalue(value)

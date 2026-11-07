@@ -791,6 +791,27 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
+        "spellbook" => {
+            object(
+                value,
+                &[
+                    ("coverage", "visible_player_spell_slots", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[
+                    ("base_spell_id", "positive", true),
+                    ("spell_id", "positive", true),
+                ],
+            )?;
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(rows.len() <= 1024, "Too many spellbook observations");
+            for key in rows.keys() {
+                index(key, 1, 4096)?;
+            }
+        }
         "experience" => {
             object(
                 value,

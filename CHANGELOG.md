@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture visible Forever player spellbook slots and distinguish base and override spell IDs.
+
 - Filter saved Forever tracked crafts and recrafts by learned, unlearned or unknown status.
 
 - Compare known learned-status changes for tracked Forever crafts and recrafts separately.
