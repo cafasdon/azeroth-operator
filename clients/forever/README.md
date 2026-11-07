@@ -99,6 +99,15 @@ removed after the run. The template is explicit caller input, so results only
 represent the captured character when the template accurately describes that
 character. This command is separate from the MCP tool registry.
 
+Repeat `--equipment-review` to compare up to eight drafts against the same
+template and encounter. The first input is the baseline. Multi-review output
+keeps the original order and gives each result a one-based review index and
+its mean DPS delta from the baseline. Identical assembled requests run once
+within the comparison. The batch shares a 120-second simulation deadline and
+allows at most 100,000 requested iterations across distinct requests. Mean
+deltas are descriptive. This command does not estimate paired uncertainty or
+search the full owned inventory.
+
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
 `simulation` object. For example:
