@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "source": "fixture",
+  "captured_at": "2025-01-01T00:00:00Z",
+  "client": {"family": "forever", "variant": "live", "build": "qualification", "interface": 16001},
+  "character": {"name": "GatewayFixture", "realm": "Synthetic"},
+  "sections": {
+    "equipment": {"16": {"item_id": 744, "link": "item:744:7"}},
+    "bags": {"0": {"1": {"item_id": 100, "count": 2}}},
+    "character_bank": {"6": {"1": {"item_id": 100, "count": 1}}},
+    "account_bank": {},
+    "selected_recipe": {"recipe_id": 100, "name": "Fixture recipe", "learned": true, "output_item_id": 744,
+      "requirements": "fixed_items", "reagents": {"100": 2}},
+    "quests": {"42": {"title": "Fixture quest", "level": 10, "ready_for_turn_in": false, "failed": false,
+      "objectives": {"1": {"kind": "item", "finished": false, "fulfilled": 0, "required": 5}}}},
+    "reputation": {"coverage": "visible_faction_rows_only", "entries": {"10": {
+      "name": "Fixture faction", "kind": "standard", "account_wide": false, "reaction": 4,
+      "standing": -50, "threshold": -100, "next_threshold": 0}}},
+    "currency_balances": {"coverage": "visible_currency_ids_only", "entries": {"100": {
+      "name": "Fixture currency", "quantity": 0, "account_wide": true, "inactive": false,
+      "max_quantity": 100, "max_weekly_quantity": 40, "earned_this_week": 10, "total_earned": 60,
+      "cap_uses_total_earned": true}}},
+    "tracked_achievements": {"coverage": "tracked_player_achievements_only", "entries": {"101": {
+      "name": "Fixture achievement", "points": 5, "completed": false, "earned_by_character": false,
+      "account_wide": true, "criteria": {"1": {"criterion_id": 301, "completed": false, "quantity": 1, "required": 2}}}}}
+  }
+}

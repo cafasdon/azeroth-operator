@@ -20,8 +20,10 @@ def qualify(image):
                     "client":{"family":"retail","variant":"live","build":"qualification","interface":120105},
                     "character":{"name":"GatewayFixture","realm":"Synthetic"},"sections":{"equipment":{}}}
         ids = []
-        for extended in (False, True):
-            if extended:
+        for fixture in ("legacy", "retail_extended", "forever_extended"):
+            if fixture == "forever_extended":
+                snapshot = json.loads((Path(__file__).parent / "fixtures" / "forever-snapshot.json").read_text())
+            elif fixture == "retail_extended":
                 snapshot["sections"]["operation_receipts"] = {"a" * 64: {"status":"outcome_unknown", "kind":"move"}}
                 snapshot["sections"]["operation_receipts"]["b" * 64] = {"status":"already_selected", "kind":"set_binding"}
                 snapshot["sections"]["operation_receipts"]["c" * 64] = {"status":"applied", "kind":"equip_bag_item"}
@@ -75,8 +77,8 @@ def qualify(image):
                 ids.append(identifier)
             finally:
                 subprocess.run(["docker","rm","-f",name], capture_output=True, timeout=10, check=False)
-        if len(set(ids)) != 2:
-            raise ValueError("Expected distinct old/new schema fixtures")
+        if len(set(ids)) != 3:
+            raise ValueError("Expected distinct legacy, Retail and Forever fixtures")
 
 
 if __name__ == "__main__":
@@ -108,4 +110,4 @@ if __name__ == "__main__":
             pending.unlink(missing_ok=True)
         if config.read_text().strip()!=args.image or stat.S_IMODE(config.stat().st_mode)!=0o600:
             raise SystemExit("Importer pin readback failed")
-        print(json.dumps({"importer_image":args.image,"legacy_and_extended_fixtures":"passed"}))
+        print(json.dumps({"importer_image":args.image,"legacy_and_extended_fixtures":"passed","forever_fixture":"passed"}))
