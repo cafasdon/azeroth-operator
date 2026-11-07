@@ -292,8 +292,8 @@ with the owned gear ranker. The fixed comparison reports healing and
 applied shielding per second as counted by the pinned engine, its standard
 deviation, and average seconds out of mana. The single-player template
 supplies the rotation and healing targets, so the result covers that
-scenario. Bulk and weighted modes still use DPS. Paired error estimates
-apply to DPS.
+scenario. Bulk and weighted modes still use DPS. Add `--paired` to report
+the standard error of the HPS difference against the equipped baseline.
 
 To heal a simulated ally, set `raid.targetDummies` to an integer from 1 to
 24 in the template. Each active party has five slots, so a one-party
@@ -311,7 +311,8 @@ and the fraction of iterations with a simulated death. For owned gear, use
 commands the template must assign its first player as the sole tank and at
 least one encounter target must point to that tank. Comparisons also report
 changes from equipped gear. Bulk shortlists and weighted encounter
-rankings remain DPS modes. Paired error estimates apply to DPS. Death
+rankings remain DPS modes. Paired runs include DTPS and TPS standard
+errors against the baseline. Death
 frequency depends on the encounter and template's healing assumptions.
 Use `--rank-by death` to order the fixed comparison by fewest simulated
 deaths, with ties in input order. All tank rankings list

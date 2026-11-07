@@ -250,8 +250,10 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             "dps_standard_deviation": dps["stdev"],
             "engine_sha256": expected_hash.lower(),
         }
-        if tank_metrics:
+        paired_distributions = {"dps": dps} if paired else {}
+        if tank_metrics or healing_metrics:
             metrics = simulated_player_metrics(request["raid"], result["raidMetrics"])
+        if tank_metrics:
             for output, metric in (("dtps", "dtps"), ("tps", "threat")):
                 mean, deviation = metrics[metric]["avg"], metrics[metric]["stdev"]
                 if (not all(type(value) in (int, float) and math.isfinite(value)
@@ -260,6 +262,8 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                     raise ValueError("Simulator returned invalid tank metrics")
                 summary[f"mean_{output}"] = mean
                 summary[f"{output}_standard_deviation"] = deviation
+                if paired:
+                    paired_distributions[output] = metrics[metric]
             death_fraction = metrics["chanceOfDeath"]
             # The engine combines weighted shard fractions in floating point.
             if type(death_fraction) not in (int, float) or not 0 <= death_fraction <= 1 + 1e-9:
@@ -267,19 +271,20 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             summary["simulated_death_fraction"] = min(death_fraction, 1.0)
             summary["simulated_deaths"] = round(summary["simulated_death_fraction"] * summary["iterations"])
         if healing_metrics:
-            metrics = simulated_player_metrics(request["raid"], result["raidMetrics"])
             mean, deviation = metrics["hps"]["avg"], metrics["hps"]["stdev"]
             oom = metrics["secondsOomAvg"]
             if not all(type(value) in (int, float) and math.isfinite(value) and value >= 0
                        for value in (mean, deviation, oom)):
                 raise ValueError("Simulator returned invalid healing metrics")
             summary.update(mean_hps=mean, hps_standard_deviation=deviation, mean_seconds_oom=oom)
-        if paired:
-            values = dps["allValues"]
+            if paired:
+                paired_distributions["hps"] = metrics["hps"]
+        for metric, distribution in paired_distributions.items():
+            values = distribution["allValues"]
             if (not isinstance(values, list) or len(values) != summary["iterations"]
-                    or not all(math.isfinite(value) for value in values)):
+                    or not all(type(value) in (int, float) and math.isfinite(value) for value in values)):
                 raise ValueError("Simulator returned invalid paired samples")
-            summary["_dps_samples"] = values
+            summary[f"_{metric}_samples"] = values
         return summary
 
 
@@ -290,9 +295,11 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
     iterations = [request["simOptions"]["iterations"] for request in unique.values()]
     if sum(iterations) > 100_000:
         raise ValueError("Comparison iteration budget exceeded")
-    if paired and (not 2 <= iterations[0] <= 5000
-                   or any(request["simOptions"] != requests[0]["simOptions"] for request in unique.values())):
-        raise ValueError("Paired comparisons require one seed and 2 to 5000 matching iterations")
+    if paired and (not 2 <= iterations[0] <= 5000 or any(
+        request["simOptions"] != requests[0]["simOptions"] or request["encounter"] != requests[0]["encounter"]
+        for request in unique.values()
+    )):
+        raise ValueError("Paired comparisons require one encounter, one seed and 2 to 5000 matching iterations")
     deadline = time.monotonic() + 120
     results = {}
     for key, request in unique.items():
@@ -311,13 +318,19 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         for row in results.values():
             for field in ("mean_hps", "mean_seconds_oom"):
                 row[f"{field}_delta_from_baseline"] = row[field] - results[keys[0]][field]
-    paired_errors = {}
     if paired:
-        baseline_samples = results[keys[0]]["_dps_samples"]
-        for key, result in results.items():
-            samples = result.pop("_dps_samples")
-            differences = (value - reference for value, reference in zip(samples, baseline_samples, strict=True))
-            paired_errors[key] = statistics.stdev(differences) / math.sqrt(len(samples))
+        metrics = ["dps"]
+        if tank_metrics:
+            metrics.extend(("dtps", "tps"))
+        if healing_metrics:
+            metrics.append("hps")
+        for metric in metrics:
+            field = f"_{metric}_samples"
+            baseline_samples = results[keys[0]][field]
+            for result in results.values():
+                samples = result.pop(field)
+                differences = (value - reference for value, reference in zip(samples, baseline_samples, strict=True))
+                result[f"paired_{metric}_standard_error"] = statistics.stdev(differences) / math.sqrt(len(samples))
     if time.monotonic() >= deadline:
         raise ValueError("Comparison deadline exceeded")
     return {
@@ -325,8 +338,7 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         "baseline_review": 1,
         "results": [
             {"review": index, **results[key],
-             "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline,
-             **({"paired_dps_standard_error": paired_errors[key]} if paired else {})}
+             "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline}
             for index, key in enumerate(keys, 1)
         ],
     }
@@ -395,7 +407,7 @@ def main():
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--equipment-review", type=Path, action="append", required=True)
     parser.add_argument("--encounter-lookup", type=Path, required=True)
-    parser.add_argument("--paired", action="store_true", help="Report paired DPS standard errors for a comparison")
+    parser.add_argument("--paired", action="store_true", help="Report paired standard errors for a comparison")
     parser.add_argument("--tank-metrics", action="store_true",
                         help="Report damage taken, threat per second and simulated deaths for an explicit tank")
     parser.add_argument("--healing-metrics", action="store_true",

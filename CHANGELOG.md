@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report paired uncertainty for Forever healer and tank throughput comparisons.
+
 - Support simulated healing targets in Forever gear comparisons while attributing metrics to the equipped character.
 
 - Rank Forever healer gear by simulated healing per second and report time out of mana.
