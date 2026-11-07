@@ -12,7 +12,10 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from tools.run_forever_sim import CLASS_IDS, compare, compare_bulk, player_spec, read_object, request_from, single_player
+from tools.run_forever_sim import (
+    CLASS_IDS, ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
+    player_spec, read_object, request_from, single_player,
+)
 
 
 SIMULATOR_SLOTS = (
@@ -320,6 +323,7 @@ def main():
             if any(weight == 0 for weight in weights):
                 raise ValueError("Encounter weights are too far apart to normalise")
         template = read_object(args.template, 4 * 1024 * 1024)
+        check_consumable_groups(template)
         can_dual_wield = player_spec(single_player(template["raid"])) in DUAL_WIELD_SPECS
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
@@ -378,6 +382,8 @@ def main():
         else:
             result["slots"] = args.slot
         print(json.dumps(result, allow_nan=False))
+    except ConflictingConsumables:
+        parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
     except Exception as error:
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")

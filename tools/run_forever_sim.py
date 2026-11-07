@@ -2,14 +2,25 @@
 
 import argparse
 from copy import deepcopy
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
+import re
+import stat
 import statistics
 import subprocess
 import tempfile
 import time
+
+if __package__:
+    from .sync_exports import ordinary
+    from .sync_forever_catalogue import MAX_BYTES, verify
+else:
+    from sync_exports import ordinary
+    from sync_forever_catalogue import MAX_BYTES, verify
 
 # Class enum IDs from the pinned Forever common.proto.
 CLASS_IDS = {
@@ -24,6 +35,65 @@ SPEC_CLASSES = {
     "elementalShaman": "shaman", "enhancementShaman": "shaman", "restorationShaman": "shaman",
     "warlock": "warlock", "dpsWarrior": "warrior", "protectionWarrior": "warrior",
 }
+
+CONSUMABLE_FIELDS = (
+    "resource_pot_id", "defensive_pot_id", "offensive_pot_id", "flask_id",
+    "food_id", "conjured_id", "explosive_id", "ohImbue_id", "oh_weapon_imbue_id",
+    "mhImbue_id", "mh_weapon_imbue_id", "swap_oh_imbue_id",
+    "swap_oh_weapon_imbue_id", "swap_mh_imbue_id", "swap_mh_weapon_imbue_id",
+)
+CONSUMABLE_LIST_FIELDS = ("elixir_ids", "extra_ids", "potions", "conjured_items")
+JSON_NUMBER = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
+
+
+class ConflictingConsumables(ValueError):
+    pass
+
+
+def check_consumable_groups(template):
+    cache = os.environ.get("AZEROTH_FOREVER_CATALOGUE")
+    consumes = single_player(template["raid"]).get("consumables")
+    if not cache or consumes is None:
+        return
+    if not isinstance(consumes, dict):
+        raise ValueError("Expected consumable selections as an object")
+    selected = set()
+    for field in (*CONSUMABLE_FIELDS, *CONSUMABLE_LIST_FIELDS):
+        first, *rest = field.split("_")
+        camel = first + "".join(part[0].upper() + part[1:] for part in rest)
+        for name in dict.fromkeys((field, camel)):
+            value = consumes.get(name)
+            if value is None:
+                continue
+            values = value if field in CONSUMABLE_LIST_FIELDS else [value]
+            if not isinstance(values, list):
+                raise ValueError("Expected a list of consumable IDs")
+            for item in values:
+                if isinstance(item, str) and JSON_NUMBER.fullmatch(item):
+                    try:
+                        item = Decimal(item)
+                    except InvalidOperation:
+                        raise ValueError("Invalid consumable ID") from None
+                if (type(item) not in (int, float, Decimal) or not 0 <= item <= 2**31 - 1
+                        or item != int(item)):
+                    raise ValueError("Expected a nonnegative integer consumable ID")
+                if item:
+                    selected.add(int(item))
+    if len(selected) < 2:
+        return
+    path = ordinary(Path(cache).absolute())
+    if not stat.S_ISREG(path.stat().st_mode):
+        raise ValueError("Forever catalogue must be a regular file")
+    with path.open("rb") as stream:
+        data = stream.read(MAX_BYTES + 1)
+    verify(data)
+    seen = set()
+    for row in json.loads(data)["consumables"]:
+        group = row.get("groupKey")
+        if row["id"] in selected and group:
+            if group in seen:
+                raise ConflictingConsumables
+            seen.add(group)
 
 
 def read_object(path, limit):
@@ -259,12 +329,15 @@ def main():
             raise ValueError("Paired mode requires multiple equipment reviews")
         limit = 4 * 1024 * 1024
         template = read_object(args.template, limit)
+        check_consumable_groups(template)
         encounter = read_object(args.encounter_lookup, limit)
         requests = [request_from(template, read_object(path, limit), encounter)
                     for path in args.equipment_review]
         result = (run(args.engine, args.engine_sha256, requests[0]) if len(requests) == 1
                   else compare(args.engine, args.engine_sha256, requests, paired=args.paired))
         print(json.dumps(result, allow_nan=False))
+    except ConflictingConsumables:
+        parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 

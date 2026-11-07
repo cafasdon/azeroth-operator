@@ -196,6 +196,9 @@ with saved ownership filters. Filtered results and restock plans list
 `simulator_exclusive_buff_groups` when two or more items on the returned
 page share a recorded group. The groups describe the pinned simulator's
 buff rules. Live stacking and ungrouped effects require separate evidence.
+The local simulation and ranking commands check template selections against
+the same groups when `AZEROTH_FOREVER_CATALOGUE` is configured. They reject
+two distinct selected item IDs in one group before launching the simulator.
 
 For a restock plan, supply `consumable_targets` instead of lookup filters,
 for example `[{"item_id":118,"quantity":10}]` with the same section and

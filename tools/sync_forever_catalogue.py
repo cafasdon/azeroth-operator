@@ -7,7 +7,11 @@ from pathlib import Path
 import stat
 import subprocess
 import tempfile
-from tools.sync_exports import ordinary
+
+if __package__:
+    from .sync_exports import ordinary
+else:
+    from sync_exports import ordinary
 
 PIN = json.loads((Path(__file__).resolve().parents[1] / "clients/forever/catalogue.lock.json").read_text())
 MAX_BYTES = 8 * 1024 * 1024
