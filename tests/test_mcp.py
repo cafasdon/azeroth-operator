@@ -219,6 +219,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }])
                         self.assertFalse(recipe_data["craftability_verified"])
                         self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
+                        self.assertEqual(recipe_data["material_capacity"], {
+                            "bags": None,
+                            "all_observed_storage": {"supported_crafts": 0, "limiting_item_ids": [744]},
+                        })
+                        forever["sections"]["bags"] = {"0": {
+                            "1": {"item_id": 744, "count": 8},
+                            "2": {"item_id": 10, "count": 6},
+                        }}
+                        forever["sections"]["selected_recipe"]["reagents"] = {"744": 3, "10": 2}
+                        stocked_key = SnapshotStore(Path(folder)).ingest(forever)
+                        stocked = await session.call_tool("review_forever_recipe", {
+                            "snapshot_id": stocked_key, "crafts": 1})
+                        self.assertFalse(stocked.isError)
+                        self.assertEqual(json.loads(stocked.content[0].text)["material_capacity"], {
+                            "bags": {"supported_crafts": 2, "limiting_item_ids": [744]},
+                            "all_observed_storage": {"supported_crafts": 3, "limiting_item_ids": [10, 744]},
+                        })
                         for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},
                                     {"snapshot_id":key,"crafts":1}):
                             self.assertTrue((await session.call_tool("review_forever_recipe", bad)).isError)

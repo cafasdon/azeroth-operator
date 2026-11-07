@@ -38,31 +38,52 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
         }
     }
     let mut materials = Vec::new();
+    let mut bag_limits = Vec::new();
+    let mut observed_limits = Vec::new();
     if fixed {
         for (id, quantity) in recipe["reagents"]
             .as_object()
             .ok_or_else(|| anyhow::anyhow!("Invalid reagent data"))?
         {
-            let required = quantity
+            let per_craft = quantity
                 .as_u64()
-                .ok_or_else(|| anyhow::anyhow!("Invalid reagent quantity"))?
-                * u64::from(crafts);
+                .filter(|quantity| *quantity > 0)
+                .ok_or_else(|| anyhow::anyhow!("Invalid reagent quantity"))?;
+            let item_id = id.parse::<u32>()?;
+            let required = per_craft * u64::from(crafts);
             let quantities = observed.get(id.as_str()).copied().unwrap_or_default();
             let available: u64 = quantities.iter().sum();
+            bag_limits.push((item_id, quantities[0] / per_craft));
+            observed_limits.push((item_id, available / per_craft));
             let by_storage: BTreeMap<_, _> = storage
                 .into_iter()
                 .zip(quantities)
                 .map(|(name, count)| (name, (!missing_storage.contains(&name)).then_some(count)))
                 .collect();
-            materials.push(json!({"item_id":id.parse::<u32>()?, "required":required,
+            materials.push(json!({"item_id":item_id, "required":required,
                 "quantity_observed":(missing_storage.len()<storage.len()).then_some(available),
                 "shortfall_vs_observed":(missing_storage.len()<storage.len()).then_some(required.saturating_sub(available)),
                 "quantity_by_storage":by_storage}));
         }
     }
+    let capacity = |limits: &[(u32, u64)], observed| {
+        if observed && let Some(maximum) = limits.iter().map(|(_, count)| *count).min() {
+            let mut limiting_item_ids: Vec<_> = limits
+                .iter()
+                .filter_map(|(id, count)| (*count == maximum).then_some(*id))
+                .collect();
+            limiting_item_ids.sort_unstable();
+            return json!({"supported_crafts":maximum,"limiting_item_ids":limiting_item_ids});
+        }
+        Value::Null
+    };
     Ok(
         json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
+        "material_capacity":{
+            "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),
+            "all_observed_storage":capacity(&observed_limits, missing_storage.len() < storage.len())
+        },
         "craftability_verified":false,"game_execution":false}),
     )
 }

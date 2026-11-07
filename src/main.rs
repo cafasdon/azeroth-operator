@@ -373,7 +373,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare a saved Forever recipe's fixed required items with observed bags and banks for 1 to 1000 crafts. Reports uncaptured storage and unsupported requirements. Offline estimate only.",
+        description = "Compare a saved Forever recipe's fixed required items with observed bags and banks for 1 to 1000 crafts. Reports material capacity, bottleneck reagents, uncaptured storage and unsupported requirements. Offline estimate only.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
