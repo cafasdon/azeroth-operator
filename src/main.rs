@@ -64,6 +64,10 @@ struct Inspect {
     quest_reward_item_id: Option<std::num::NonZeroU32>,
     /// Keep saved Forever quests that offer this currency as a fixed reward or choice.
     quest_reward_currency_id: Option<std::num::NonZeroU32>,
+    /// Keep saved Forever quests with a recorded major-faction reward for this faction.
+    quest_reward_faction_id: Option<std::num::NonZeroU32>,
+    /// Keep saved Forever quests with this recorded reward spell.
+    quest_reward_spell_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
@@ -879,6 +883,33 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        let reward_filters: [(_, _, _, &[&str]); 4] = [
+            (
+                "item",
+                args.quest_reward_item_id,
+                "item_id",
+                &["item_rewards", "item_choices"],
+            ),
+            (
+                "currency",
+                args.quest_reward_currency_id,
+                "currency_id",
+                &["currency_rewards", "currency_choices"],
+            ),
+            (
+                "faction",
+                args.quest_reward_faction_id,
+                "faction_id",
+                &["renown_rewards"],
+            ),
+            (
+                "spell",
+                args.quest_reward_spell_id,
+                "spell_id",
+                &["spell_rewards"],
+            ),
+        ];
+        let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
         if args.quest_xp_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -926,8 +957,7 @@ impl Operator {
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
-                || args.quest_reward_item_id.is_some()
-                || args.quest_reward_currency_id.is_some()
+                || filter_rewards
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
@@ -978,8 +1008,7 @@ impl Operator {
                 "Quest timer selection requires the quests section without a quest ID",
             )]);
         }
-        if (args.quest_reward_item_id.is_some() || args.quest_reward_currency_id.is_some())
-            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        if filter_rewards && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest reward selection requires the quests section without a quest ID",
@@ -1111,8 +1140,7 @@ impl Operator {
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
-                    || args.quest_reward_item_id.is_some()
-                    || args.quest_reward_currency_id.is_some()
+                    || filter_rewards
                 {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
@@ -1169,30 +1197,23 @@ impl Operator {
                                 unknown
                             }));
                     }
-                    for (kind, id) in [
-                        ("item", args.quest_reward_item_id),
-                        ("currency", args.quest_reward_currency_id),
-                    ] {
+                    for (kind, id, id_field, fields) in reward_filters {
                         let Some(id) = id else { continue };
-                        let id_field = format!("{kind}_id");
-                        let fixed_field = format!("{kind}_rewards");
-                        let choice_field = format!("{kind}_choices");
                         value[format!("quest_reward_{kind}_id")] = serde_json::json!(id);
                         value[format!("quest_reward_{kind}_unknown_count")] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
                                 quests.retain(|_, quest| {
-                                    let lists = [
-                                        quest[&fixed_field].as_object(),
-                                        quest[&choice_field].as_object(),
-                                    ];
-                                    let matched = lists.iter().flatten().any(|rows| {
+                                    let lists =
+                                        fields.iter().map(|field| quest[*field].as_object());
+                                    let matched = lists.clone().flatten().any(|rows| {
                                         rows.values().any(|row| {
-                                            row[&id_field].as_u64() == Some(u64::from(id.get()))
+                                            row[id_field].as_u64() == Some(u64::from(id.get()))
                                         })
                                     });
-                                    unknown +=
-                                        usize::from(!matched && lists.iter().any(Option::is_none));
+                                    unknown += usize::from(
+                                        !matched && lists.into_iter().any(|list| list.is_none()),
+                                    );
                                     matched
                                 });
                                 unknown

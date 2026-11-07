@@ -223,6 +223,11 @@ unknown rewards. This filter requires the quests section without a quest ID.
 choices the same way. When combined with an item reward filter, quests must
 match both. The currency unknown count applies after the item filter.
 
+`quest_reward_faction_id` searches captured major-faction rewards and
+`quest_reward_spell_id` searches captured spell rewards. Missing lists count
+as unknown. When multiple reward filters are used, each narrows the previous
+results in item, currency, faction and spell order.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,

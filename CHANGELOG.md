@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever quests by major-faction reward or spell reward ID.
+
 - Find saved Forever quests offering a specific fixed or optional currency reward.
 
 - Find saved Forever quests offering a specific fixed or optional item reward.
