@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Break down Forever recipe materials by observed bag, character bank and account bank quantities.
+
 - Look up Forever item and enchant catalogue entries by their crafting recipe spell ID.
 
 - Exercise Forever's full saved capture fixture through the packaged `/aoexport` handler and require it in package verification.

@@ -213,7 +213,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)
-                        self.assertEqual(recipe_data["materials"], [{"item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5}])
+                        self.assertEqual(recipe_data["materials"], [{
+                            "item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5,
+                            "quantity_by_storage":{"bags":None,"character_bank":1,"account_bank":0},
+                        }])
                         self.assertFalse(recipe_data["craftability_verified"])
                         self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
                         for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},

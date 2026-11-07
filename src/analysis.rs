@@ -16,9 +16,9 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
         .ok_or_else(|| anyhow::anyhow!("Selected recipe was not captured"))?;
     let fixed = recipe["requirements"] == "fixed_items";
     let storage = ["bags", "character_bank", "account_bank"];
-    let mut observed: BTreeMap<&str, u64> = BTreeMap::new();
+    let mut observed: BTreeMap<&str, [u64; 3]> = BTreeMap::new();
     let mut missing_storage = Vec::new();
-    for name in storage {
+    for (index, name) in storage.into_iter().enumerate() {
         let Some(containers) = snapshot.sections.get(name).and_then(Value::as_object) else {
             missing_storage.push(name);
             continue;
@@ -33,7 +33,7 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
                     .as_object()
                     .and_then(|map| map.get_key_value(&id.to_string()))
             {
-                *observed.entry(key).or_default() += count;
+                observed.entry(key).or_default()[index] += count;
             }
         }
     }
@@ -47,10 +47,17 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
                 .as_u64()
                 .ok_or_else(|| anyhow::anyhow!("Invalid reagent quantity"))?
                 * u64::from(crafts);
-            let available = observed.get(id.as_str()).copied();
+            let quantities = observed.get(id.as_str()).copied().unwrap_or_default();
+            let available: u64 = quantities.iter().sum();
+            let by_storage: BTreeMap<_, _> = storage
+                .into_iter()
+                .zip(quantities)
+                .map(|(name, count)| (name, (!missing_storage.contains(&name)).then_some(count)))
+                .collect();
             materials.push(json!({"item_id":id.parse::<u32>()?, "required":required,
-                "quantity_observed":if missing_storage.len()==storage.len() {None} else {Some(available.unwrap_or(0))},
-                "shortfall_vs_observed":if missing_storage.len()==storage.len() {None} else {Some(required.saturating_sub(available.unwrap_or(0)))}}));
+                "quantity_observed":(missing_storage.len()<storage.len()).then_some(available),
+                "shortfall_vs_observed":(missing_storage.len()<storage.len()).then_some(required.saturating_sub(available)),
+                "quantity_by_storage":by_storage}));
         }
     }
     Ok(
