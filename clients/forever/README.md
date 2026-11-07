@@ -296,6 +296,34 @@ as the tie-breaker. The fixed run uses the existing comparison budgets.
 The runs may reach different precision, so a disagreement calls for closer
 comparison at higher precision.
 
+An offline two-slot audit used the public Hunter fixture with Icemail
+Jerkin and Brawler Gloves as alternatives. It compared four distinct gear
+sets including the baseline at 5,000 fixed iterations each. The real MCP
+exported `Default/Raid Target`, `Default/Movement` and
+`Default/Dynamic Adds` with a 90-second duration, five seconds of variation
+and seeds 20261107 and 20261108. All six runs agreed on the ordered top two.
+The bulk engine used one pass at 10,000 iterations in these cases, so the
+check compares encounter handling and ranks without exercising culling.
+
+A larger two-slot audit used the same baseline, eight chest alternatives
+and seven hand alternatives. Each list took the first catalogue rows in
+file order for level 60 or below, cloth, leather or mail, with no class,
+faction, profession, recorded effect, uniqueness or limit-category filter
+match. It excluded the equipped item in each slot. Both 90-second profiles
+used five seconds of variation. Fixed mode ran all 72 sets, including the
+baseline, at 1,000 iterations each. The bulk engine screened 71 candidates
+at 1,000 iterations and advanced five to 10,000 in both cases.
+
+| Preset | Seed | Fixed wall time | Bulk wall time | Fixed top five missed |
+| --- | ---: | ---: | ---: | ---: |
+| Default/Raid Target | 20261107 | 23.75 s | 6.65 s | 0 |
+| Default/Dynamic Adds | 20261108 | 23.12 s | 7.61 s | 0 |
+
+The ordered top five agreed in both cases, including a tie in the fixed
+point estimates. These are two fixture runs with different final iteration
+counts. They measure shortlist agreement on those inputs, including an
+actual cull. Near-tie recall on other gear pools remains unmeasured.
+
 The standalone `python -m tools.run_forever_sim` command combines saved
 equipment and encounter MCP responses with a trusted local WoWSims executable
 and a caller-supplied `RaidSimRequest` JSON template. Supply `--engine` as an
