@@ -252,7 +252,7 @@ pub fn ordered_recipe_materials<'a>(
     Ok(json!(starting_materials))
 }
 
-pub(crate) fn bag_restock(by_storage: &Value, required: u64) -> (Option<u64>, Option<Value>) {
+pub fn bag_restock(by_storage: &Value, required: u64) -> (Option<u64>, Option<Value>) {
     let bag_shortfall = by_storage["bags"]
         .as_u64()
         .map(|count| required.saturating_sub(count));

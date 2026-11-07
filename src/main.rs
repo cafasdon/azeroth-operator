@@ -947,10 +947,22 @@ impl Operator {
             let found = azeroth_operator::analysis::find_item(&snapshot, cost.item_id.get(), 0, 1)?;
             let stock = &found["quantity_by_storage"];
             let mut result = compare(cost.quantity.get(), stock["bags"].as_u64());
+            let (bag_shortfall, withdrawals) =
+                azeroth_operator::analysis::bag_restock(stock, cost.quantity.get());
+            let after_observed_withdrawals =
+                bag_shortfall
+                    .zip(withdrawals.as_ref())
+                    .map(|(shortfall, banks)| {
+                        shortfall
+                            - banks["character_bank"].as_u64().unwrap_or(0)
+                            - banks["account_bank"].as_u64().unwrap_or(0)
+                    });
             result["item_id"] = json!(cost.item_id);
             result["observed_bank_quantities"] = json!({
                 "character_bank":stock["character_bank"],"account_bank":stock["account_bank"]
             });
+            result["suggested_bank_withdrawals"] = json!(withdrawals);
+            result["shortfall_after_observed_withdrawals"] = json!(after_observed_withdrawals);
             item_balances.push(result);
         }
         let covered_by_observed_balances = if known_shortage {

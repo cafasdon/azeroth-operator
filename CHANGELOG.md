@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Suggest manual bank withdrawals for saved Forever item budgets.
+
 - Check carried item costs alongside gold and currencies in Forever spending budgets.
 
 - Compare explicit Forever spending budgets against saved gold and currency balances.

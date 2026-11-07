@@ -34,7 +34,11 @@ result compares captured amounts and carries available inactive and account
 scope flags. The budget response omits character names, currency names and
 other snapshot sections. Use `items` for up to 20 distinct `item_id` and
 `quantity` rows. These costs use carried bag stock by base item ID. Bank
-counts are shown separately where captured. Vendor eligibility, prices and
+counts are shown separately where captured. The budget suggests manual
+withdrawals from observed character bank stock first, then account bank
+stock. The remaining shortage reflects those observed withdrawals. Both
+fields are unknown when bags were unavailable. Overall coverage still
+uses carried stock. Vendor eligibility, prices and
 purchasing are separate.
 
 On the Rust MCP, add a positive `quest_id` to `inspect_snapshot` with
