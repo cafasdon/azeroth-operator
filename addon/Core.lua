@@ -46,6 +46,7 @@ function AO.Capture()
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"
+        sectionNames[#sectionNames+1]="reputation"
     end
     for _, name in ipairs(sectionNames) do
         local collector = AO.collectors and AO.collectors[name]

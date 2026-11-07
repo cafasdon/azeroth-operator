@@ -149,6 +149,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["reputation"] = {"coverage":"visible_faction_rows_only","entries":{
+                            "10":{"name":"Fixture faction","kind":"standard","account_wide":False,"reaction":4,
+                                  "standing":-50,"threshold":-100,"next_threshold":0}}}
                         forever["sections"]["selected_recipe"] = {"recipe_id":100,"name":"Fixture recipe","learned":True,
                             "requirements":"fixed_items","reagents":{"744":3}}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
@@ -165,6 +168,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         bank_summary_data = json.loads(bank_summary.content[0].text)
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
+                        self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
+                        reputation = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"reputation"})
+                        reputation_data = json.loads(reputation.content[0].text)["data"]
+                        self.assertEqual(reputation_data["coverage"], "visible_faction_rows_only")
+                        self.assertEqual(reputation_data["entries"]["10"]["standing"], -50)
+                        reputation_after = json.loads(json.dumps(forever))
+                        reputation_after["character"]["realm"] = "First"
+                        reputation_after["sections"]["reputation"]["entries"]["10"]["standing"] = -20
+                        after_key = SnapshotStore(Path(folder)).ingest(reputation_after)
+                        rep_diff = await session.call_tool("compare_snapshots", {"before_id":forever_key,"after_id":after_key})
+                        self.assertFalse(rep_diff.isError)
+                        self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
+                                         ["/entries/10/standing"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)

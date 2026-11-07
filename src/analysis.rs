@@ -186,6 +186,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),
+      "reputation_factions_observed":s.sections.get("reputation").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

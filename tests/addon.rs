@@ -416,6 +416,21 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         ProfessionsFrame={CraftingPage={SchematicForm={recipeSchematic=recipeSchematic,
             IsVisible=function() return recipeVisible end,GetRecipeInfo=function() return recipeInfo end}}}
         localCrafting=true;recipeVisible=true
+        local function faction(id)
+            return {factionID=id,name="Fixture "..id,isHeader=id==20,isHeaderWithRep=id==20,
+                isAccountWide=id==20,reaction=4,currentStanding=-50,currentReactionThreshold=-100,nextReactionThreshold=0}
+        end
+        C_Reputation={
+            GetNumFactions=function() return 3 end,
+            GetFactionDataByIndex=function(index)
+                if index==1 then return {isHeader=true,isHeaderWithRep=false} end
+                if index==2 then return faction(10) end
+                if not missingFaction then return faction(20) end
+            end,
+            IsMajorFaction=function(id) if classificationMissing then error("unavailable") end return id==20 end,
+            IsFactionParagonForCurrentPlayer=function() return false end,
+        }
+        C_GossipInfo={GetFriendshipReputation=function() return {friendshipFactionID=0} end}
         bankOpen=true;accountVisible=true;freeSlots=1
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
@@ -434,6 +449,22 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         )?)
     };
     let snapshot = read()?;
+    let factions = &snapshot.sections["reputation"]["entries"];
+    assert_eq!(factions["10"]["standing"], -50);
+    assert_eq!(factions["10"]["kind"], "standard");
+    assert_eq!(factions["20"]["kind"], "renown");
+    assert_eq!(factions["20"]["account_wide"], true);
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["reputation_factions_observed"],
+        2
+    );
+    lua.load("classificationMissing=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["reputation"]["entries"]["10"]["kind"],
+        "unknown"
+    );
+    lua.load("missingFaction=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("reputation"));
     assert_eq!(
         snapshot.sections["character_bank"]["6"]["1"]["guid"],
         "Item-Bank-Instance"

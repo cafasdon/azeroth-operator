@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture visible Forever faction standings and scope in saved snapshots for read-only MCP inspection and comparison.
+
 - Capture the selected Forever recipe and compare fixed required materials against observed inventory through a read-only MCP review.
 
 - Enforce a fail-closed offline MCP tool allowlist and remove Apply-code preparation from the hosted gateway profile.

@@ -33,6 +33,7 @@ const SECTIONS: &[&str] = &[
     "character_bank",
     "account_bank",
     "selected_recipe",
+    "reputation",
     "talents",
     "stats",
     "professions",
@@ -113,8 +114,9 @@ impl Snapshot {
         );
         for (name, value) in &self.sections {
             ensure!(
-                name != "selected_recipe" || self.client.family == Family::Forever,
-                "Selected recipe requires Forever"
+                !matches!(name.as_str(), "selected_recipe" | "reputation")
+                    || self.client.family == Family::Forever,
+                "Observation requires Forever"
             );
             schema::validate(name, value)?;
             ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");

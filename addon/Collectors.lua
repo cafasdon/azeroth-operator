@@ -465,3 +465,44 @@ AO.collectors.achievements = function()
     assert(GetTotalAchievementPoints, "Achievement API unavailable")
     return {coverage="points_only", total_points=GetTotalAchievementPoints()}
 end
+
+AO.collectors.reputation = function()
+    local api=C_Reputation
+    assert(api and api.GetNumFactions and api.GetFactionDataByIndex, "Reputation API unavailable")
+    local function integer(value, low, high)
+        return type(value)=="number" and value%1==0 and value>=low and value<=high
+    end
+    local count=api.GetNumFactions()
+    assert(integer(count,1,512), "Reputation rows unavailable")
+    local rows={}
+    for index=1,count do
+        local row=api.GetFactionDataByIndex(index)
+        assert(row and type(row.isHeader)=="boolean" and type(row.isHeaderWithRep)=="boolean",
+            "Reputation row unavailable")
+        if not row.isHeader or row.isHeaderWithRep then
+            assert(integer(row.factionID,1,4294967295) and type(row.name)=="string" and #row.name>=1
+                and #row.name<=256 and type(row.isAccountWide)=="boolean"
+                and integer(row.reaction,1,8) and integer(row.currentStanding,-2147483648,2147483647)
+                and integer(row.currentReactionThreshold,-2147483648,2147483647)
+                and integer(row.nextReactionThreshold,-2147483648,2147483647), "Invalid faction observation")
+            local id=tostring(row.factionID)
+            assert(not rows[id], "Duplicate faction observation")
+            local ok,kind=pcall(function()
+                local major=api.IsMajorFaction(row.factionID)
+                local paragon=api.IsFactionParagonForCurrentPlayer(row.factionID)
+                local friendship=C_GossipInfo.GetFriendshipReputation(row.factionID)
+                if type(major)=="boolean" and type(paragon)=="boolean"
+                    and friendship and type(friendship.friendshipFactionID)=="number" then
+                    if paragon then return "paragon" end
+                    if major then return "renown" end
+                    if friendship.friendshipFactionID>0 then return "friendship" end
+                    if friendship.friendshipFactionID==0 then return "standard" end
+                end
+            end)
+            rows[id]={name=row.name,kind=ok and kind or "unknown",account_wide=row.isAccountWide,reaction=row.reaction,
+                standing=row.currentStanding,threshold=row.currentReactionThreshold,next_threshold=row.nextReactionThreshold}
+        end
+    end
+    assert(api.GetNumFactions()==count, "Reputation rows changed")
+    return {coverage="visible_faction_rows_only",entries=rows}
+end

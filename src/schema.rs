@@ -450,6 +450,41 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 );
             }
         }
+        "reputation" => {
+            object(
+                value,
+                &[
+                    ("coverage", "visible_faction_rows_only", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[
+                    ("name", "text", true),
+                    ("kind", "text", true),
+                    ("account_wide", "bool", true),
+                    ("reaction", "positive", true),
+                    ("standing", "int", true),
+                    ("threshold", "int", true),
+                    ("next_threshold", "int", true),
+                ],
+            )?;
+            let factions = value["entries"].as_object().unwrap();
+            ensure!(factions.len() <= 512, "Too many reputation observations");
+            for faction in factions.values() {
+                ensure!(
+                    matches!(
+                        faction["kind"].as_str(),
+                        Some("standard" | "renown" | "friendship" | "paragon" | "unknown")
+                    ) && faction["reaction"].as_u64().is_some_and(|n| n <= 8)
+                        && faction["name"]
+                            .as_str()
+                            .is_some_and(|s| !s.is_empty() && s.len() <= 256),
+                    "Invalid reputation observation"
+                );
+            }
+        }
         "quests" => entries(value, &[("title", "text", true), ("level", "int", true)])?,
         "currencies" => {
             object(
