@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever owned-gear reviews by catalogue equipment category before paging.
+
 - Include catalogue equipment constraints and set identifiers in Forever owned-gear reviews.
 
 - Capture fixed reagent requirements for selected Forever enchant recipes.

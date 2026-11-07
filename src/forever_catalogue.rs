@@ -125,11 +125,32 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     )
 }
 
+/// Equipment categories from the pinned Forever catalogue's ItemType enum.
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GearType {
+    Head = 1,
+    Neck = 2,
+    Shoulder = 3,
+    Back = 4,
+    Chest = 5,
+    Wrist = 6,
+    Hands = 7,
+    Waist = 8,
+    Legs = 9,
+    Feet = 10,
+    Finger = 11,
+    Trinket = 12,
+    Weapon = 13,
+    Ranged = 14,
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
     offset: usize,
     limit: usize,
+    item_type: Option<GearType>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -155,6 +176,7 @@ pub fn review_owned(
     let mut coverage = serde_json::Map::new();
     let mut total = 0usize;
     let mut matched = 0usize;
+    let mut included = 0usize;
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             coverage.insert(
@@ -166,7 +188,15 @@ pub fn review_owned(
         let mut count = 0usize;
         let mut record = |container: Option<&str>, slot: &str, item: &Value| {
             let reference = item["item_id"].as_u64().and_then(|id| catalogue.get(&id));
-            if total >= offset && entries.len() < limit {
+            total += 1;
+            count += 1;
+            matched += usize::from(reference.is_some());
+            if item_type.is_some_and(|kind| {
+                reference.and_then(|item| item["type"].as_u64()) != Some(kind as u64)
+            }) {
+                return;
+            }
+            if included >= offset && entries.len() < limit {
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],
@@ -179,9 +209,7 @@ pub fn review_owned(
                         "randomSuffixOptions":item["randomSuffixOptions"]
                     }))}));
             }
-            total += 1;
-            count += 1;
-            matched += usize::from(reference.is_some());
+            included += 1;
         };
         for (key, value) in section {
             if storage == "equipment" {
@@ -200,7 +228,7 @@ pub fn review_owned(
     Ok(
         json!({"family":"forever","captured_at":snapshot.captured_at,"catalogue_source":provenance,
         "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,
-        "items":entries,"has_more":total.saturating_sub(offset)>limit,
+        "items":entries,"filtered_item_locations":included,"has_more":included.saturating_sub(offset)>limit,
         "live":false,"ranked":false,"equip_legality_verified":false}),
     )
 }

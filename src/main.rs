@@ -62,6 +62,8 @@ struct OwnedGearReview {
     snapshot_id: String,
     offset: Option<usize>,
     limit: Option<usize>,
+    /// Filter by the pinned catalogue category before paging. Unknown types are excluded when filtering.
+    item_type: Option<azeroth_operator::forever_catalogue::GearType>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -345,6 +347,7 @@ impl Operator {
                 &snapshot,
                 args.offset.unwrap_or(0),
                 args.limit.unwrap_or(20),
+                args.item_type,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
