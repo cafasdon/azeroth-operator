@@ -97,6 +97,25 @@ async def collect(binary, snapshot_id, slots, errlog):
         return drafts, skipped, coverage
 
 
+def rank_encounter(args, template, encounter, drafts):
+    requests = [request_from(template, draft, encounter) for _, draft in drafts]
+    result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
+              if args.bulk_engine else None)
+    if result is None:
+        result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+    for row in result["results"]:
+        selections, draft = drafts[row["review"] - 1]
+        cleared = draft["checks"].get("simulator_cleared_equipment_slots")
+        if cleared:
+            row["cleared_equipment_slots"] = cleared
+        if len(args.slot) == 1:
+            row["selection"] = selections[0] if selections else None
+        else:
+            row["selections"] = selections
+    result["results"].sort(key=lambda row: -row["mean_dps"])
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mcp", type=Path, required=True, help="Absolute path to the trusted local MCP executable")
@@ -105,7 +124,8 @@ def main():
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
-    parser.add_argument("--encounter-lookup", type=Path, required=True)
+    parser.add_argument("--encounter-lookup", type=Path, action="append", required=True,
+                        help="Encounter export. Repeat for separate rankings.")
     parser.add_argument("--paired", action="store_true")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
@@ -118,28 +138,32 @@ def main():
             raise ValueError("Provide up to four distinct slots")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
+        if len(args.encounter_lookup) > 4:
+            raise ValueError("Provide up to four encounter exports")
         template = read_object(args.template, 4 * 1024 * 1024)
-        encounter = read_object(args.encounter_lookup, 4 * 1024 * 1024)
+        encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog), timeout=45,
             ))
-        requests = [request_from(template, draft, encounter) for _, draft in drafts]
-        result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
-                  if args.bulk_engine else None)
-        if result is None:
-            result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
-        for row in result["results"]:
-            selections, draft = drafts[row["review"] - 1]
-            cleared = draft["checks"].get("simulator_cleared_equipment_slots")
-            if cleared:
-                row["cleared_equipment_slots"] = cleared
-            if len(args.slot) == 1:
-                row["selection"] = selections[0] if selections else None
-            else:
-                row["selections"] = selections
-        result["results"].sort(key=lambda row: -row["mean_dps"])
+        if len(encounters) == 1:
+            result = rank_encounter(args, template, encounters[0], drafts)
+        else:
+            for encounter in encounters:
+                request_from(template, drafts[0][1], encounter)
+            rankings = []
+            for index, encounter in enumerate(encounters, 1):
+                ranking = rank_encounter(args, template, encounter, drafts)
+                profile = encounter["simulation_input"]["encounter"]
+                ranking.update(
+                    encounter_index=index,
+                    duration_seconds=profile["duration"],
+                    duration_variation_seconds=profile["durationVariation"],
+                    target_count=len(profile["targets"]),
+                )
+                rankings.append(ranking)
+            result = {"encounters": rankings}
         result.update(skipped=skipped, storage_coverage=coverage)
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]

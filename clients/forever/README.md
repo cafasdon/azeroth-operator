@@ -143,6 +143,13 @@ and iteration counts and may use a single stage for small searches. The
 requested iteration count and the fixed mode's aggregate iteration cap apply
 to fixed mode, including the fallback when every set matches the baseline.
 
+Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
+separately for each encounter. Output uses an `encounters` array in input order,
+with a one-based encounter index, duration, duration variation and target count.
+Review IDs identify the same draft across profiles. A bulk shortlist can omit
+different drafts in different profiles. Each comparison has its own iteration
+and time limits. The command prints results after all comparisons succeed.
+
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
 `simulation` object. For example:
