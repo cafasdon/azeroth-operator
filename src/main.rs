@@ -1362,6 +1362,12 @@ impl Operator {
                         });
                     value["action_bar_slot"] = serde_json::json!(slot);
                     value["action_bar_slot_observed"] = serde_json::json!(observed);
+                    if let Some(rows) = value["data"]
+                        .get_mut("button_hotkeys")
+                        .and_then(serde_json::Value::as_object_mut)
+                    {
+                        rows.retain(|_, row| row["slot"].as_u64() == Some(u64::from(slot.get())));
+                    }
                 }
                 if args.action_bar_spellbook {
                     if value["client"]["family"] != "forever" {

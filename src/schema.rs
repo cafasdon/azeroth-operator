@@ -370,6 +370,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("slots", "map", true),
                     ("observed_buttons", "positive", true),
                     ("missing_buttons", "uint", true),
+                    ("button_hotkeys", "map", false),
                 ],
             )?;
             let observed = value["observed_buttons"].as_u64().unwrap();
@@ -380,6 +381,36 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 !slots.is_empty() && slots.len() as u64 <= observed,
                 "Invalid action coverage"
             );
+            if let Some(hotkeys) = value.get("button_hotkeys").filter(|v| !v.is_null()) {
+                entries(
+                    hotkeys,
+                    &[
+                        ("button", "text", true),
+                        ("slot", "positive", true),
+                        ("key1", "text", false),
+                        ("key2", "text", false),
+                    ],
+                )?;
+                let mut buttons = std::collections::BTreeSet::new();
+                for (key, row) in hotkeys.as_object().unwrap() {
+                    index(key, 1, observed as u32)?;
+                    let button = row["button"].as_str().unwrap();
+                    let slot = row["slot"].as_u64().unwrap();
+                    ensure!(
+                        slots.contains_key(&slot.to_string())
+                            && buttons.insert(button)
+                            && !button.is_empty()
+                            && button.len() <= 132
+                            && button
+                                .bytes()
+                                .all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                            && ["key1", "key2"].iter().all(|key| row[*key]
+                                .as_str()
+                                .is_none_or(|value| !value.is_empty() && value.len() <= 128)),
+                        "Invalid observed action button hotkeys"
+                    );
+                }
+            }
             for (slot, entry) in slots {
                 index(slot, 1, 4096)?;
                 object(

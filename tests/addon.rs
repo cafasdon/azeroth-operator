@@ -518,9 +518,13 @@ pub fn verify_forever_capture_fixture(
         MAX_ACTION_BUTTONS=nil
         NUM_ACTIONBAR_BUTTONS=2
         ActionButtonUtil={ActionBarButtonNames={"ActionButton","MultiBarBottomLeftButton"}}
-        ActionButton1={action=1}
-        ActionButton2={action=2}
-        MultiBarBottomLeftButton1={action=1}
+        ActionButton1={action=1,bindingAction="ACTIONBUTTON1"}
+        ActionButton2={action=2,bindingAction="ACTIONBUTTON2"}
+        MultiBarBottomLeftButton1={action=1,bindingAction="MULTIACTIONBAR1BUTTON1"}
+        GetBindingKey=function(command)
+            if command=="ACTIONBUTTON1" then return "1","SHIFT-1" end
+            if command=="CLICK MultiBarBottomLeftButton1:LeftButton" then return "ALT-1" end
+        end
         GetActionInfo=function(slot) if slot==1 then return "spell",101 end end
         Enum.SpellBookSpellBank={Player=0}
         Enum.SpellBookItemType={Spell=1,FutureSpell=2}
@@ -672,7 +676,9 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["action_bar_observation"],
         serde_json::json!({
             "coverage":"loaded_builtin_buttons_only","observed_buttons":3,"missing_buttons":1,
-            "slots":{"1":{"empty":false,"kind":"spell","id":101},"2":{"empty":true}}
+        "slots":{"1":{"empty":false,"kind":"spell","id":101},"2":{"empty":true}},
+        "button_hotkeys":{"1":{"button":"ActionButton1","slot":1,"key1":"1","key2":"SHIFT-1"},
+            "2":{"button":"ActionButton2","slot":2},"3":{"button":"MultiBarBottomLeftButton1","slot":1,"key1":"ALT-1"}}
         })
     );
     assert!(snapshot.unavailable.contains_key("action_bars"));

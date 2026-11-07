@@ -292,15 +292,34 @@ AO.collectors.action_bar_observation = function()
         assert(not issecretvalue or not issecretvalue(value), "Restricted action observation")
         return value
     end
+    local function hotkeys(button,name,slot)
+        local command=readable(button.bindingAction)
+        if type(command)~="string" or #command>128 or not command:match("^[A-Z0-9_]+$")
+            or #name>132 or not name:match("^[A-Za-z0-9_]+$") then return end
+        local first,second=GetBindingKey(command)
+        if readable(first)==nil then first,second=GetBindingKey("CLICK "..name..":LeftButton") end
+        local function key(value)
+            return value==nil or (type(value)=="string" and #value>0 and #value<=128)
+        end
+        if key(readable(first)) and key(readable(second)) then
+            return {button=name,slot=slot,key1=first,key2=second}
+        end
+    end
+    if AO.family=="forever" and type(GetBindingKey)=="function" then result.button_hotkeys={} end
     for _,prefix in ipairs(names) do
         assert(type(prefix)=="string" and #prefix<=128, "Invalid button prefix")
         for i=1,NUM_ACTIONBAR_BUTTONS do
-            local button=_G[prefix..i]
+            local name=prefix..i
+            local button=_G[name]
             local slot=button and readable(button.action)
             if slot==nil then result.missing_buttons=result.missing_buttons+1
             else
                 assert(type(slot)=="number" and slot%1==0 and slot>=1 and slot<=4096, "Invalid action slot")
                 result.observed_buttons=result.observed_buttons+1
+                if result.button_hotkeys then
+                    local ok,keys=pcall(hotkeys,button,name,slot)
+                    if ok then result.button_hotkeys[tostring(result.observed_buttons)]=keys end
+                end
                 local key=tostring(slot)
                 if not result.slots[key] then
                     local kind,id,subType=GetActionInfo(slot)
