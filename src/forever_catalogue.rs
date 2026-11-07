@@ -685,6 +685,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn class_proficiency_checks_known_types_and_preserves_unknowns() {
+        assert_eq!(
+            proficiency_conflict(3, &json!({"type":5,"armorType":4})),
+            Some("armor_type")
+        );
+        assert_eq!(
+            proficiency_conflict(3, &json!({"type":13,"weaponType":4})),
+            Some("weapon_type")
+        );
+        assert_eq!(
+            proficiency_conflict(4, &json!({"type":13,"weaponType":1,"handType":4})),
+            Some("two_hand_weapon_type")
+        );
+        assert_eq!(
+            proficiency_conflict(3, &json!({"type":14,"rangedWeaponType":5})),
+            Some("ranged_weapon_type")
+        );
+        assert_eq!(
+            proficiency_conflict(3, &json!({"type":13,"weaponType":8,"handType":4})),
+            None
+        );
+        assert_eq!(proficiency_conflict(3, &json!({"type":13})), None);
+        assert_eq!(
+            proficiency_conflict(0, &json!({"type":5,"armorType":4})),
+            None
+        );
+    }
+
+    #[test]
     fn simulator_slot_names_match_pinned_siml() {
         let slots = |item| json!(simulator_slots(&item));
         assert_eq!(slots(json!({"type":11})), json!(["finger1", "finger2"]));
@@ -811,6 +840,47 @@ mod tests {
     }
 }
 
+fn proficiency_conflict(class: u64, item: &Value) -> Option<&'static str> {
+    // Pinned capabilities_auto_gen.ts: max armour, melee, two-hand melee, ranged.
+    let (armour, melee, two_hand, ranged): (u64, &[u64], &[u64], &[u64]) = match class {
+        1 => (
+            4,
+            &[1, 2, 3, 4, 5, 6, 7, 8, 9],
+            &[1, 4, 6, 8, 9],
+            &[1, 2, 3, 4],
+        ),
+        2 => (4, &[1, 4, 5, 6, 7, 9], &[1, 4, 6, 9], &[7]),
+        3 => (3, &[1, 2, 3, 6, 8, 9], &[1, 6, 8, 9], &[1, 2, 3]),
+        4 => (2, &[1, 2, 3, 4, 5, 9], &[], &[1, 2, 3, 4]),
+        5 => (1, &[2, 4, 5, 8], &[8], &[5]),
+        7 => (3, &[1, 2, 3, 4, 5, 7, 8], &[1, 4, 8], &[8]),
+        8 | 9 => (1, &[2, 5, 8, 9], &[8], &[5]),
+        11 => (2, &[2, 3, 4, 5, 6, 8], &[4, 6, 8], &[6]),
+        _ => return None,
+    };
+    match item["type"].as_u64()? {
+        13 => {
+            let kind = item["weaponType"].as_u64()?;
+            if !(1..=9).contains(&kind) {
+                return None;
+            }
+            if !melee.contains(&kind) {
+                return Some("weapon_type");
+            }
+            (item["handType"] == 4 && !two_hand.contains(&kind)).then_some("two_hand_weapon_type")
+        }
+        14 => {
+            let kind = item["rangedWeaponType"].as_u64()?;
+            ((1..=9).contains(&kind) && !ranged.contains(&kind)).then_some("ranged_weapon_type")
+        }
+        1..=10 => {
+            let kind = item["armorType"].as_u64()?;
+            ((1..=4).contains(&kind) && kind > armour).then_some("armor_type")
+        }
+        _ => None,
+    }
+}
+
 fn requirement_check(
     snapshot: &Snapshot,
 ) -> impl Fn(&Value, &crate::planning::EquipmentSelection) -> Option<Value> {
@@ -881,10 +951,12 @@ fn requirement_check(
         };
         let faction_conflict =
             required_faction.filter(|required| faction.is_some_and(|actual| actual != *required));
+        let proficiency = class_id.and_then(|class| proficiency_conflict(class, item));
         (level_conflict
             || class_conflict
             || missing_skill_line.is_some()
-            || faction_conflict.is_some())
+            || faction_conflict.is_some()
+            || proficiency.is_some())
         .then(|| {
             let mut conflict = json!({
                 "slot":selection.target_slot,"item_id":selection.expected_item_id,
@@ -895,6 +967,9 @@ fn requirement_check(
             }
             if let Some(required) = faction_conflict {
                 conflict["required_faction"] = json!(required);
+            }
+            if let Some(kind) = proficiency {
+                conflict["class_proficiency_conflict"] = json!(kind);
             }
             conflict
         })

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exclude Forever gear swaps that conflict with the pinned class equipment capabilities.
+
 - Join Forever crafted item sources to the matching saved recipe and material capacity.
 
 - Join Forever item quest and reputation sources to observations in an explicitly selected snapshot.
