@@ -287,6 +287,13 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+For `Default/Dynamic Adds`, add
+`"dynamic_adds":{"spawn_delay_seconds":10,"lifetime_seconds":20,"respawn_seconds":10}`
+to the encounter's `simulation` object. A zero spawn delay starts the first
+wave immediately. A zero respawn delay starts the next wave immediately. Wave lifetime
+accepts 1–3,600 seconds and both delays accept 0–3,600 seconds. The preset's
+add count, on-kill effects and debuff rules still apply. [Pinned add-wave engine](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/encounters/dynamic_adds_ai.go#L160-L267)
+
 For `Default/Movement`, add
 `"movement":{"interval_seconds":10,"distance_yards":5}` to the encounter's
 `simulation` object. Intervals accept 1–3,600 seconds and distances accept

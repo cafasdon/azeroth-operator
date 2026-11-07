@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Configure first spawn, lifetime and respawn timing for Forever dynamic adds.
+
 - Configure movement interval and distance in saved Forever simulator encounter inputs.
 
 - Audit staged Forever gear shortlists against a bounded fixed-iteration run.

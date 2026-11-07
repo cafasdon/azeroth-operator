@@ -234,6 +234,8 @@ pub struct SimulationSettings {
     pub seed: std::num::NonZeroU32,
     /// Override the movement interval and distance for the Default/Movement preset.
     pub movement: Option<MovementSettings>,
+    /// Override the wave timing for the Default/Dynamic Adds preset.
+    pub dynamic_adds: Option<DynamicAddsSettings>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -243,6 +245,35 @@ pub struct MovementSettings {
     pub interval_seconds: f64,
     /// Distance per move, from 0 to 100 yards.
     pub distance_yards: f64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DynamicAddsSettings {
+    /// Seconds until the first wave, from 0 to 3600.
+    pub spawn_delay_seconds: f64,
+    /// Seconds each wave stays active, from 1 to 3600.
+    pub lifetime_seconds: f64,
+    /// Seconds between despawn and respawn, from 0 to 3600. Zero respawns immediately.
+    pub respawn_seconds: f64,
+}
+
+fn set_numeric_target_inputs(
+    target: &mut serde_json::Map<String, Value>,
+    updates: &[(usize, &str, f64)],
+) -> Result<()> {
+    let inputs = target
+        .get_mut("targetInputs")
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| anyhow::anyhow!("Missing encounter inputs"))?;
+    for &(index, label, amount) in updates {
+        let input = inputs
+            .get_mut(index)
+            .filter(|input| input["label"] == label && input["inputType"] == 1)
+            .ok_or_else(|| anyhow::anyhow!("Unexpected encounter input layout"))?;
+        input["numberValue"] = json!(amount);
+    }
+    Ok(())
 }
 
 fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Value> {
@@ -277,20 +308,33 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
         let [target] = targets.as_mut_slice() else {
             anyhow::bail!("Expected one movement target");
         };
-        let inputs = target
-            .get_mut("targetInputs")
-            .and_then(Value::as_array_mut)
-            .ok_or_else(|| anyhow::anyhow!("Missing movement inputs"))?;
-        for (index, label, amount) in [
-            (0, "Movement Interval", movement.interval_seconds),
-            (2, "Yards", movement.distance_yards),
-        ] {
-            let input = inputs
-                .get_mut(index)
-                .filter(|input| input["label"] == label && input["inputType"] == 1)
-                .ok_or_else(|| anyhow::anyhow!("Unexpected movement input layout"))?;
-            input["numberValue"] = json!(amount);
-        }
+        set_numeric_target_inputs(
+            target,
+            &[
+                (0, "Movement Interval", movement.interval_seconds),
+                (2, "Yards", movement.distance_yards),
+            ],
+        )?;
+    }
+    if let Some(adds) = &settings.dynamic_adds {
+        ensure!(
+            record["path"] == "Default/Dynamic Adds"
+                && (0.0..=3600.0).contains(&adds.spawn_delay_seconds)
+                && (1.0..=3600.0).contains(&adds.lifetime_seconds)
+                && (0.0..=3600.0).contains(&adds.respawn_seconds),
+            "Dynamic adds overrides require the dynamic adds preset and bounded wave timing"
+        );
+        let [boss, _] = targets.as_mut_slice() else {
+            anyhow::bail!("Expected one boss and one dynamic add");
+        };
+        set_numeric_target_inputs(
+            boss,
+            &[
+                (0, "Add(s) respawn Time", adds.respawn_seconds),
+                (1, "Add(s) lifetime", adds.lifetime_seconds),
+                (2, "Add(s) spawn delay", adds.spawn_delay_seconds),
+            ],
+        )?;
     }
     Ok(json!({
         "encounter":{"duration":settings.duration_seconds,
