@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever faction and use it to screen faction-restricted gear swaps.
+
 - Screen Forever gear swaps against mapped catalogue profession requirements.
 
 - Scan up to 256 captured locations per Forever gear slot before applying the existing draft limit.

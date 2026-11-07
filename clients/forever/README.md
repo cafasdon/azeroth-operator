@@ -146,6 +146,12 @@ this check unknown. The pinned item catalogue supplies the profession, with
 no required skill rank on these gear records.
 [Pinned WoWSims profession mapping](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/tools/database/dbc/maps.go)
 
+New Forever exports include the player faction in `stats` when the client
+returns a recognised faction tag. The MCP uses it to exclude explicit
+opposite-faction catalogue gear. Older captures or unavailable faction leave
+that check unknown. Use a compatible importer and reader before syncing the
+new field. [Forever Unit API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/UnitDocumentation.lua)
+
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
 storage copies before applying the combination and draft limits. This applies
 to items that fit exactly one simulator slot. Each skipped copy records its

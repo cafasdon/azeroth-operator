@@ -698,6 +698,7 @@ fn requirement_check(
     use crate::planning::ItemLocation;
     let stats = snapshot.sections.get("stats").unwrap_or(&Value::Null);
     let level = stats["level"].as_u64().filter(|level| *level > 0);
+    let faction = stats["faction"].as_str();
     // Class enum values from the pinned simulator common.proto.
     let class_id = match stats["class"].as_str() {
         Some("WARRIOR") => Some(1),
@@ -753,13 +754,28 @@ fn requirement_check(
                     .any(|row| row["skill_line"].as_u64() == Some(*id))
             })
         });
-        (level_conflict || class_conflict || missing_skill_line.is_some()).then(|| {
+        // FactionRestriction from the pinned simulator UIItem proto.
+        let required_faction = match item["factionRestriction"].as_u64() {
+            Some(1) => Some("Alliance"),
+            Some(2) => Some("Horde"),
+            _ => None,
+        };
+        let faction_conflict =
+            required_faction.filter(|required| faction.is_some_and(|actual| actual != *required));
+        (level_conflict
+            || class_conflict
+            || missing_skill_line.is_some()
+            || faction_conflict.is_some())
+        .then(|| {
             let mut conflict = json!({
                 "slot":selection.target_slot,"item_id":selection.expected_item_id,
                 "below_required_level":level_conflict,"class_excluded":class_conflict
             });
             if let Some(id) = missing_skill_line {
                 conflict["required_profession_not_observed"] = json!(id);
+            }
+            if let Some(required) = faction_conflict {
+                conflict["required_faction"] = json!(required);
             }
             conflict
         })

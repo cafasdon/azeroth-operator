@@ -396,6 +396,11 @@ pub fn verify_forever_capture_fixture(
         function date() return '2025-01-01T00:00:00Z' end
         walletCalls=0;walletCopper=0
         function GetMoney() walletCalls=walletCalls+1; return walletCopper end
+        function UnitLevel() return 60 end
+        function UnitClass() return 'Hunter','HUNTER' end
+        function UnitRace() return 'Orc','Orc' end
+        factionTag='Horde'
+        function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
         Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
@@ -516,6 +521,13 @@ pub fn verify_forever_capture_fixture(
         )?)
     };
     let snapshot = read()?;
+    assert_eq!(snapshot.sections["stats"]["faction"], "Horde");
+    lua.load("factionTag='Neutral';SlashCmdList.AZEROTHOPERATOR()")
+        .exec()?;
+    assert!(read()?.sections["stats"].get("faction").is_none());
+    lua.load("UnitFactionGroup=function() error('unavailable') end;SlashCmdList.AZEROTHOPERATOR()")
+        .exec()?;
+    assert_eq!(read()?.sections["stats"]["level"], 60);
     assert!(!snapshot.sections.contains_key("wallet"));
     assert_eq!(lua.globals().get::<u32>("walletCalls")?, 0);
     lua.load("SlashCmdList.AZEROTHOPERATOR('wallet')").exec()?;

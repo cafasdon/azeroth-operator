@@ -216,7 +216,15 @@ AO.collectors.account_bank = function() return bankItems("Account") end
 
 AO.collectors.stats = function()
     local version = GetBuildInfo()
-    return { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }
+    local stats = { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }
+    if AO.family == "forever" and UnitFactionGroup then
+        local ok, faction = pcall(UnitFactionGroup, "player")
+        if ok and (not issecretvalue or not issecretvalue(faction))
+            and (faction == "Alliance" or faction == "Horde") then
+            stats.faction = faction
+        end
+    end
+    return stats
 end
 
 
