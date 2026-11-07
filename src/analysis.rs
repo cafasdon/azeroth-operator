@@ -219,7 +219,7 @@ pub fn compare_with_item(
     after: &Snapshot,
     item_id: Option<u32>,
 ) -> Result<Value> {
-    compare_observations(before, after, item_id, None, None)
+    compare_observations(before, after, item_id, None, None, None, None)
 }
 
 pub fn compare_observations(
@@ -228,6 +228,8 @@ pub fn compare_observations(
     item_id: Option<u32>,
     currency_id: Option<u32>,
     faction_id: Option<u32>,
+    quest_id: Option<u32>,
+    achievement_id: Option<u32>,
 ) -> Result<Value> {
     ensure!(before.client == after.client, "Client/build mismatch");
     ensure!(
@@ -326,7 +328,54 @@ pub fn compare_observations(
             "faction_id":faction_id,"before":previous,"after":current,"standing_delta":standing_delta
         });
     }
+    if let Some(quest_id) = quest_id {
+        ensure!(quest_id > 0, "Expected a positive quest ID");
+        let key = quest_id.to_string();
+        let quest = |snapshot: &Snapshot| {
+            snapshot
+                .sections
+                .get("quests")
+                .and_then(|section| section.get(&key))
+                .cloned()
+        };
+        let previous = quest(before);
+        let current = quest(after);
+        comparison["quest_change"] = json!({
+            "quest_id":quest_id,"before":previous,"after":current,
+            "ready_for_turn_in_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "ready_for_turn_in"),
+            "failed_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "failed")
+        });
+    }
+    if let Some(achievement_id) = achievement_id {
+        ensure!(
+            before.client.family == crate::Family::Forever && achievement_id > 0,
+            "Tracked achievement comparisons require a Forever achievement ID"
+        );
+        let key = achievement_id.to_string();
+        let achievement = |snapshot: &Snapshot| {
+            snapshot
+                .sections
+                .get("tracked_achievements")
+                .and_then(|section| section["entries"].get(&key))
+                .cloned()
+        };
+        let previous = achievement(before);
+        let current = achievement(after);
+        let same_scope = previous
+            .as_ref()
+            .zip(current.as_ref())
+            .is_some_and(|(a, b)| a["account_wide"] == b["account_wide"]);
+        comparison["achievement_change"] = json!({
+            "achievement_id":achievement_id,"before":previous,"after":current,
+            "completed_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "completed")).flatten(),
+            "earned_by_character_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "earned_by_character")).flatten()
+        });
+    }
     Ok(comparison)
+}
+
+fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &str) -> Option<bool> {
+    Some(before?.get(key)?.as_bool()? != after?.get(key)?.as_bool()?)
 }
 
 fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {

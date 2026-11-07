@@ -221,6 +221,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "before_id":after_key,"after_id":renown_key,"faction_id":10})
                         self.assertFalse(renown.isError)
                         self.assertIsNone(json.loads(renown.content[0].text)["reputation_change"]["standing_delta"])
+                        reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
+                        reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
+                        progress_key = SnapshotStore(Path(folder)).ingest(reputation_after)
+                        progress = await session.call_tool("compare_snapshots", {
+                            "before_id": after_key, "after_id": progress_key, "quest_id": 42, "achievement_id": 101})
+                        self.assertFalse(progress.isError)
+                        progress_data = json.loads(progress.content[0].text)
+                        quest = progress_data["quest_change"]
+                        self.assertTrue(quest["ready_for_turn_in_changed"])
+                        self.assertIsNone(quest["failed_changed"])
+                        self.assertEqual(quest["after"]["objectives"]["1"]["fulfilled"], 2)
+                        achievement = progress_data["achievement_change"]
+                        self.assertTrue(achievement["completed_changed"])
+                        self.assertFalse(achievement["earned_by_character_changed"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)

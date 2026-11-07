@@ -56,6 +56,10 @@ struct Compare {
     currency_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever reputation faction by ID.
     faction_id: Option<std::num::NonZeroU32>,
+    /// Optionally compare one captured quest by ID.
+    quest_id: Option<std::num::NonZeroU32>,
+    /// Optionally compare one tracked Forever achievement by ID.
+    achievement_id: Option<std::num::NonZeroU32>,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -556,7 +560,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots. Returns bounded changed JSON paths with optional item, Forever currency and Forever reputation comparisons.",
+        description = "Compare same-character same-client snapshots. Returns bounded changed paths and optional item, quest, Forever currency, reputation and tracked achievement comparisons.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -573,6 +577,8 @@ impl Operator {
                 args.item_id.map(|id| id.get()),
                 args.currency_id.map(|id| id.get()),
                 args.faction_id.map(|id| id.get()),
+                args.quest_id.map(|id| id.get()),
+                args.achievement_id.map(|id| id.get()),
             )
         })();
         match result {
