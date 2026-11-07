@@ -256,6 +256,14 @@ pub struct DynamicAddsSettings {
     pub lifetime_seconds: f64,
     /// Seconds between despawn and respawn, from 0 to 3600. Zero respawns immediately.
     pub respawn_seconds: f64,
+    /// Chance that a despawning add counts as your kill, from 0 to 100 percent.
+    pub kill_share_percent: Option<f64>,
+    /// Apply configured raid debuffs to newly spawned adds.
+    pub apply_raid_debuffs: Option<bool>,
+    /// Seconds before configured raid debuffs land, from 0 to 3600.
+    pub debuff_delay_seconds: Option<f64>,
+    /// Maximum variation in the debuff delay, from 0 to 3600 seconds.
+    pub debuff_jitter_seconds: Option<f64>,
 }
 
 fn set_numeric_target_inputs(
@@ -321,20 +329,49 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
             record["path"] == "Default/Dynamic Adds"
                 && (0.0..=3600.0).contains(&adds.spawn_delay_seconds)
                 && (1.0..=3600.0).contains(&adds.lifetime_seconds)
-                && (0.0..=3600.0).contains(&adds.respawn_seconds),
-            "Dynamic adds overrides require the dynamic adds preset and bounded wave timing"
+                && (0.0..=3600.0).contains(&adds.respawn_seconds)
+                && adds
+                    .kill_share_percent
+                    .is_none_or(|value| (0.0..=100.0).contains(&value))
+                && [adds.debuff_delay_seconds, adds.debuff_jitter_seconds]
+                    .into_iter()
+                    .flatten()
+                    .all(|value| (0.0..=3600.0).contains(&value))
+                && (adds.apply_raid_debuffs != Some(false)
+                    || (adds.debuff_delay_seconds.is_none()
+                        && adds.debuff_jitter_seconds.is_none())),
+            "Dynamic adds overrides require the dynamic adds preset and compatible bounded settings"
         );
         let [boss, _] = targets.as_mut_slice() else {
             anyhow::bail!("Expected one boss and one dynamic add");
         };
-        set_numeric_target_inputs(
-            boss,
-            &[
-                (0, "Add(s) respawn Time", adds.respawn_seconds),
-                (1, "Add(s) lifetime", adds.lifetime_seconds),
-                (2, "Add(s) spawn delay", adds.spawn_delay_seconds),
-            ],
-        )?;
+        let mut numeric = vec![
+            (0, "Add(s) respawn Time", adds.respawn_seconds),
+            (1, "Add(s) lifetime", adds.lifetime_seconds),
+            (2, "Add(s) spawn delay", adds.spawn_delay_seconds),
+        ];
+        numeric.extend(
+            [
+                (3, "Kill share %", adds.kill_share_percent),
+                (5, "Debuff delay", adds.debuff_delay_seconds),
+                (6, "Debuff jitter", adds.debuff_jitter_seconds),
+            ]
+            .into_iter()
+            .filter_map(|(index, label, value)| Some((index, label, value?))),
+        );
+        set_numeric_target_inputs(boss, &numeric)?;
+        if let Some(apply) = adds.apply_raid_debuffs {
+            let input = boss
+                .get_mut("targetInputs")
+                .and_then(Value::as_array_mut)
+                .and_then(|inputs| inputs.get_mut(4))
+                .filter(|input| {
+                    input["label"] == "Apply debuffs to adds"
+                        && (input.get("inputType").is_none() || input["inputType"] == 0)
+                })
+                .ok_or_else(|| anyhow::anyhow!("Unexpected add debuff input layout"))?;
+            input["boolValue"] = json!(apply);
+        }
     }
     Ok(json!({
         "encounter":{"duration":settings.duration_seconds,

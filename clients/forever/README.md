@@ -292,7 +292,12 @@ For `Default/Dynamic Adds`, add
 to the encounter's `simulation` object. A zero spawn delay starts the first
 wave immediately. A zero respawn delay starts the next wave immediately. Wave lifetime
 accepts 1–3,600 seconds and both delays accept 0–3,600 seconds. The preset's
-add count, on-kill effects and debuff rules still apply. [Pinned add-wave engine](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/encounters/dynamic_adds_ai.go#L160-L267)
+add count stays fixed. Optional fields include `kill_share_percent` (0–100),
+`apply_raid_debuffs`, and `debuff_delay_seconds` and
+`debuff_jitter_seconds` (0–3,600). Omitted fields use preset defaults.
+Delay and jitter require raid debuffs to be enabled. These controls affect
+the raid's configured debuffs on adds. Debuffs cast by the simulated player
+still follow the rotation. [Pinned add-wave engine](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/encounters/dynamic_adds_ai.go#L160-L267)
 
 For `Default/Movement`, add
 `"movement":{"interval_seconds":10,"distance_yards":5}` to the encounter's
