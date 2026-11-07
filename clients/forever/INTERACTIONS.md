@@ -280,6 +280,10 @@ recipes only. `compare_snapshots` reports `tracked_recipe_changes` by ID for
 crafts and recrafts when both lists were captured. Name changes leave
 membership unchanged. If only one capture has tracked recipe data, the
 membership comparison is null.
+`tracked_recipe_learned_changes` separately lists changes where the same ID
+was tracked in the same list and both captures supplied a learned flag.
+An empty list means no known changes were found. One missing tracking
+section yields null. With both sections missing, the field is omitted.
 
 Pass `tracked_recipe_id` with `section: "tracked_recipes"` to check one
 recipe. `tracked_as_craft` and `tracked_as_recraft` are independent. False

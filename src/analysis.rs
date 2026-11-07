@@ -514,6 +514,12 @@ pub fn compare_observations(
                 })
             })
             .unwrap_or(Value::Null);
+        comparison["tracked_recipe_learned_changes"] = tracked_before
+            .zip(tracked_after)
+            .map(|(before, after)| json!({
+                "crafts":tracked_recipe_learned_changes(&before["crafts"], &after["crafts"]),
+                "recrafts":tracked_recipe_learned_changes(&before["recrafts"], &after["recrafts"])
+            })).unwrap_or(Value::Null);
     }
     if let Some(item_id) = selectors.item_id {
         comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
@@ -738,6 +744,24 @@ fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {
         "added_recipe_ids":after.difference(&before).collect::<Vec<_>>(),
         "removed_recipe_ids":before.difference(&after).collect::<Vec<_>>()
     }))
+}
+
+fn tracked_recipe_learned_changes(before: &Value, after: &Value) -> Option<Value> {
+    let after = after.as_object()?;
+    let mut changes = before
+        .as_object()?
+        .iter()
+        .filter_map(|(key, row)| {
+            let previous = row["learned"].as_bool()?;
+            let current = after.get(key)?["learned"].as_bool()?;
+            let id = key.parse::<u32>().ok()?;
+            (previous != current).then_some((id, previous, current))
+        })
+        .collect::<Vec<_>>();
+    changes.sort_unstable_by_key(|(id, _, _)| *id);
+    Some(json!(changes.into_iter().map(|(id, previous, current)|
+        json!({"recipe_id":id,"before_learned":previous,"after_learned":current})
+    ).collect::<Vec<_>>()))
 }
 
 fn remaining_renown_points(detail: &serde_json::Map<String, Value>) -> Option<u64> {

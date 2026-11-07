@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare known learned-status changes for tracked Forever crafts and recrafts separately.
+
 - Show separate tracked craft and recraft learned flags in Forever recipe and quest reward reviews.
 
 - Capture observed learned status for player-tracked Forever recipes.
