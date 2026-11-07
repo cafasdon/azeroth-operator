@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report paired DPS standard errors for local Forever gear comparisons on request.
+
 - Compare multiple Forever equipment drafts locally and reuse identical simulation inputs within the run.
 
 - Run a local Forever simulation from equipment and encounter MCP exports and an explicit single-player template.

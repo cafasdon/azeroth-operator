@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import statistics
 import subprocess
 import tempfile
 import time
@@ -76,7 +77,7 @@ def request_from(template, equipment_review, encounter_lookup):
     }
 
 
-def run(engine, expected_hash, request, deadline=None):
+def run(engine, expected_hash, request, deadline=None, paired=False):
     if not engine.is_absolute() or not engine.is_file():
         raise ValueError("Provide an absolute path to the trusted local engine")
     with engine.open("rb") as handle:
@@ -86,6 +87,8 @@ def run(engine, expected_hash, request, deadline=None):
         root = Path(folder)
         source = root / "request.json"
         result_path = root / "result.json"
+        if paired:
+            request = {**request, "simOptions": {**request["simOptions"], "saveAllValues": True}}
         source.write_text(json.dumps(request, allow_nan=False), encoding="utf-8")
         timeout = 120 if deadline is None else deadline - time.monotonic()
         if timeout <= 0:
@@ -101,34 +104,55 @@ def run(engine, expected_hash, request, deadline=None):
         dps = result["raidMetrics"]["dps"]
         if not all(math.isfinite(dps[key]) for key in ("avg", "stdev")):
             raise ValueError("Simulator returned invalid DPS metrics")
-        return {
+        summary = {
             "iterations": request["simOptions"]["iterations"],
             "seed": request["simOptions"]["randomSeed"],
             "mean_dps": dps["avg"],
             "dps_standard_deviation": dps["stdev"],
             "engine_sha256": expected_hash.lower(),
         }
+        if paired:
+            values = dps["allValues"]
+            if (not isinstance(values, list) or len(values) != summary["iterations"]
+                    or not all(math.isfinite(value) for value in values)):
+                raise ValueError("Simulator returned invalid paired samples")
+            summary["_dps_samples"] = values
+        return summary
 
 
-def compare(engine, expected_hash, requests):
+def compare(engine, expected_hash, requests, paired=False):
     keys = [json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False)
             for request in requests]
     unique = dict(zip(keys, requests))
-    if sum(request["simOptions"]["iterations"] for request in unique.values()) > 100_000:
+    iterations = [request["simOptions"]["iterations"] for request in unique.values()]
+    if sum(iterations) > 100_000:
         raise ValueError("Comparison iteration budget exceeded")
+    if paired and (not 2 <= iterations[0] <= 5000
+                   or any(request["simOptions"] != requests[0]["simOptions"] for request in unique.values())):
+        raise ValueError("Paired comparisons require one seed and 2 to 5000 matching iterations")
     deadline = time.monotonic() + 120
     results = {}
     for key, request in unique.items():
-        results[key] = run(engine, expected_hash, request, deadline=deadline)
+        results[key] = run(engine, expected_hash, request, deadline=deadline, paired=paired)
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
     baseline = results[keys[0]]["mean_dps"]
+    paired_errors = {}
+    if paired:
+        baseline_samples = results[keys[0]]["_dps_samples"]
+        for key, result in results.items():
+            samples = result.pop("_dps_samples")
+            differences = (value - reference for value, reference in zip(samples, baseline_samples, strict=True))
+            paired_errors[key] = statistics.stdev(differences) / math.sqrt(len(samples))
+    if time.monotonic() >= deadline:
+        raise ValueError("Comparison deadline exceeded")
     return {
         "unique_runs": len(results),
         "baseline_review": 1,
         "results": [
             {"review": index, **results[key],
-             "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline}
+             "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline,
+             **({"paired_dps_standard_error": paired_errors[key]} if paired else {})}
             for index, key in enumerate(keys, 1)
         ],
     }
@@ -141,17 +165,20 @@ def main():
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--equipment-review", type=Path, action="append", required=True)
     parser.add_argument("--encounter-lookup", type=Path, required=True)
+    parser.add_argument("--paired", action="store_true", help="Report paired DPS standard errors for a comparison")
     args = parser.parse_args()
     try:
         if len(args.equipment_review) > 8:
             raise ValueError("Use at most eight equipment reviews")
+        if args.paired and len(args.equipment_review) < 2:
+            raise ValueError("Paired mode requires multiple equipment reviews")
         limit = 4 * 1024 * 1024
         template = read_object(args.template, limit)
         encounter = read_object(args.encounter_lookup, limit)
         requests = [request_from(template, read_object(path, limit), encounter)
                     for path in args.equipment_review]
         result = (run(args.engine, args.engine_sha256, requests[0]) if len(requests) == 1
-                  else compare(args.engine, args.engine_sha256, requests))
+                  else compare(args.engine, args.engine_sha256, requests, paired=args.paired))
         print(json.dumps(result, allow_nan=False))
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")

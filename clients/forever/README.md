@@ -105,8 +105,10 @@ keeps the original order and gives each result a one-based review index and
 its mean DPS delta from the baseline. Identical assembled requests run once
 within the comparison. The batch shares a 120-second simulation deadline and
 allows at most 100,000 requested iterations across distinct requests. Mean
-deltas are descriptive. This command does not estimate paired uncertainty or
-search the full owned inventory.
+deltas are descriptive by default. Add `--paired` with 2–5,000 iterations to
+report the standard error of each DPS difference against the baseline. This
+pairs iteration samples using the same seed, template and encounter, and keeps
+the raw samples out of the output. It does not search the full owned inventory.
 
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
