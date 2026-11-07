@@ -81,6 +81,11 @@ lines, pet banks, future spells and flyouts. `character_summary` counts the
 observed slots, which can include the same spell more than once. Update
 the importer and reader before syncing this section. [Forever spellbook API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SpellBookDocumentation.lua)
 
+Pass `spellbook_spell_id` with the spellbook section to return matching
+slots by either ID. A false `spellbook_spell_observed` means no captured
+slot matched. Null means the spellbook capture was unavailable. The result
+describes visible slots and does not establish permanent learning.
+
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.
 `character_summary.experience_progress` also reports XP to the next level.

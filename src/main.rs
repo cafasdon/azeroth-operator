@@ -80,6 +80,8 @@ struct Inspect {
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
+    /// Find this base or reported spell ID in the saved Forever spellbook section.
+    spellbook_spell_id: Option<std::num::NonZeroU32>,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -981,6 +983,7 @@ impl Operator {
                 || args.achievement_id.is_some()
                 || args.profession_skill_line.is_some()
                 || args.tracked_recipe_id.is_some()
+                || args.spellbook_spell_id.is_some()
                 || args.tracked_recipe_learning.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -1052,6 +1055,11 @@ impl Operator {
         if args.profession_skill_line.is_some() && args.section.as_deref() != Some("professions") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Profession selection requires the professions section",
+            )]);
+        }
+        if args.spellbook_spell_id.is_some() && args.section.as_deref() != Some("spellbook") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Spellbook selection requires the spellbook section",
             )]);
         }
         if args.tracked_recipe_id.is_some() && args.section.as_deref() != Some("tracked_recipes") {
@@ -1295,6 +1303,26 @@ impl Operator {
                             }
                         }
                     }
+                }
+                if let Some(id) = args.spellbook_spell_id {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Spellbook selection requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let requested = Some(u64::from(id.get()));
+                    let observed = value["data"]
+                        .get_mut("entries")
+                        .and_then(serde_json::Value::as_object_mut)
+                        .map(|rows| {
+                            rows.retain(|_, row| {
+                                row["base_spell_id"].as_u64() == requested
+                                    || row["spell_id"].as_u64() == requested
+                            });
+                            !rows.is_empty()
+                        });
+                    value["spellbook_spell_id"] = serde_json::json!(id);
+                    value["spellbook_spell_observed"] = serde_json::json!(observed);
                 }
                 if args.section.as_deref() == Some("currency_balances") {
                     let headroom =
