@@ -456,6 +456,19 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    let tracked_before = before.sections.get("tracked_recipes");
+    let tracked_after = after.sections.get("tracked_recipes");
+    if tracked_before.is_some() || tracked_after.is_some() {
+        comparison["tracked_recipe_changes"] = tracked_before
+            .zip(tracked_after)
+            .map(|(before, after)| {
+                json!({
+                    "crafts":tracked_recipe_membership(&before["crafts"], &after["crafts"]),
+                    "recrafts":tracked_recipe_membership(&before["recrafts"], &after["recrafts"]),
+                })
+            })
+            .unwrap_or(Value::Null);
+    }
     if let Some(item_id) = selectors.item_id {
         comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
     }
@@ -599,6 +612,22 @@ pub fn compare_observations(
         });
     }
     Ok(comparison)
+}
+
+fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {
+    let ids = |group: &Value| -> Option<BTreeSet<u32>> {
+        group
+            .as_object()?
+            .keys()
+            .map(|id| id.parse().ok())
+            .collect()
+    };
+    let before = ids(before)?;
+    let after = ids(after)?;
+    Some(json!({
+        "added_recipe_ids":after.difference(&before).collect::<Vec<_>>(),
+        "removed_recipe_ids":before.difference(&after).collect::<Vec<_>>()
+    }))
 }
 
 fn remaining_renown_points(detail: &serde_json::Map<String, Value>) -> Option<u64> {

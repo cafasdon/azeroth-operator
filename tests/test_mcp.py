@@ -201,6 +201,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(tracked_recipes.isError)
                         self.assertEqual(json.loads(tracked_recipes.content[0].text)["data"],
                                          forever["sections"]["tracked_recipes"])
+                        tracked_after = json.loads(json.dumps(forever))
+                        tracked_after["character"]["realm"] = "First"
+                        tracked_after["captured_at"] = "2025-01-02T00:00:00Z"
+                        groups = tracked_after["sections"]["tracked_recipes"]
+                        groups["crafts"] = {"2": {}, "11": {}, "100": {"name": "Renamed fixture"}}
+                        groups["recrafts"] = {}
+                        after_tracking_key = SnapshotStore(Path(folder)).ingest(tracked_after)
+                        async def compare_tracking(after_id):
+                            response = await session.call_tool("compare_snapshots", {
+                                "before_id": forever_key, "after_id": after_id})
+                            self.assertFalse(response.isError)
+                            return json.loads(response.content[0].text)["tracked_recipe_changes"]
+                        self.assertEqual(await compare_tracking(after_tracking_key), {
+                            "crafts": {"added_recipe_ids": [2, 11], "removed_recipe_ids": [101]},
+                            "recrafts": {"added_recipe_ids": [], "removed_recipe_ids": [100]},
+                        })
+                        del tracked_after["sections"]["tracked_recipes"]
+                        missing_tracking_key = SnapshotStore(Path(folder)).ingest(tracked_after)
+                        self.assertIsNone(await compare_tracking(missing_tracking_key))
                         bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
                         bank_summary_data = json.loads(bank_summary.content[0].text)
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)

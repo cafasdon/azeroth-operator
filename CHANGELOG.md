@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare tracked Forever crafts and recrafts by recipe ID across saved captures.
+
 - Capture the player's tracked Forever crafts and recrafts for offline inspection.
 
 - Report observed unmet tools, stations and area conditions for saved Forever recipes.
