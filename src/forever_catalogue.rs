@@ -118,6 +118,7 @@ pub struct StatGain {
 pub enum ItemOrder {
     ItemLevelDesc,
     StatGainDesc,
+    WeaponDpsDesc,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -534,6 +535,13 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             ItemOrder::ItemLevelDesc => {
                 records.sort_by_cached_key(|item| std::cmp::Reverse(default_item_level(item)));
             }
+            ItemOrder::WeaponDpsDesc => {
+                records.sort_by(|a, b| {
+                    default_weapon_dps(b)
+                        .unwrap_or(0.0)
+                        .total_cmp(&default_weapon_dps(a).unwrap_or(0.0))
+                });
+            }
             ItemOrder::StatGainDesc => {
                 let (id, baseline, _) = minimum_stat.as_ref().ok_or_else(|| {
                     anyhow::anyhow!("Stat gain ordering requires a stat gain filter")
@@ -579,6 +587,7 @@ struct EquippedSlot {
     observed: bool,
     item_id: Option<u64>,
     level: Option<i64>,
+    weapon_dps: Option<f64>,
     regular_stats: Option<serde_json::Map<String, Value>>,
 }
 
@@ -586,6 +595,12 @@ fn default_item_level(item: &Value) -> Option<i64> {
     item["scalingOptions"]["0"]["ilvl"]
         .as_i64()
         .filter(|level| *level > 0)
+}
+
+fn default_weapon_dps(item: &Value) -> Option<f64> {
+    item["scalingOptions"]["0"]["unroundedDps"]
+        .as_f64()
+        .filter(|dps| dps.is_finite() && *dps > 0.0)
 }
 
 fn default_regular_stats(item: &Value) -> Option<serde_json::Map<String, Value>> {
@@ -647,6 +662,7 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
         observed: equipment.is_some(),
         item_id,
         level: equipped.and_then(default_item_level),
+        weapon_dps: equipped.and_then(default_weapon_dps),
         regular_stats: equipped.and_then(default_regular_stats),
     }
 }
@@ -657,17 +673,21 @@ impl EquippedSlot {
             .iter()
             .map(|item| {
                 let level = default_item_level(item);
+                let weapon_dps = default_weapon_dps(item);
+                let weapon_dps_delta = weapon_dps.zip(self.weapon_dps)
+                    .map(|(candidate, equipped)| candidate - equipped);
                 let stat_delta = self.regular_stats.as_ref().and_then(|equipped| {
                     let candidate = default_regular_stats(item)?;
                     regular_stat_delta(equipped, &candidate)
                 });
                 json!({"item_id":item["id"],"default_item_level":level,
                     "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped)),
-                    "default_regular_stat_delta":stat_delta})
+                    "default_regular_stat_delta":stat_delta,
+                    "default_weapon_dps":weapon_dps,"default_weapon_dps_delta":weapon_dps_delta})
             })
             .collect();
         json!({"simulator_slot":self.slot,"equipment_observed":self.observed,"equipped_item_id":self.item_id,
-            "equipped_default_item_level":self.level,"items":items})
+            "equipped_default_item_level":self.level,"equipped_default_weapon_dps":self.weapon_dps,"items":items})
     }
 }
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare and sort Forever weapons by their recorded default weapon DPS.
+
 - Order Forever catalogue searches by descending item level or selected stat gain before pagination.
 
 - Filter Forever gear by minimum regular base stat gain over a saved slot.

@@ -143,7 +143,11 @@ positive `minimum_gain` to filter by one regular base stat, such as Strength
 A stat omitted from a present stat map counts as zero. Use
 `order_by: "item_level_desc"` or `"stat_gain_desc"` to order matches before
 pagination. Stat ordering uses the stat in `minimum_stat_gain`. Equal values
-retain catalogue order. Missing item levels sort last.
+retain catalogue order. Missing item levels sort last. Use
+`order_by: "weapon_dps_desc"` to order by recorded default weapon DPS,
+with missing values last. Saved slot comparisons show the weapon DPS
+values and their difference where both are known. These use the pinned
+unrounded weapon DPS field and describe weapon damage per second only.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue
