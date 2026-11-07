@@ -453,6 +453,18 @@ impl Operator {
             let snapshot = self.store.read(&args.snapshot_id)?;
             let mut review =
                 azeroth_operator::planning::equipment_review(&snapshot, &args.selections)?;
+            if snapshot.client.family == Family::Forever
+                && let Some(path) = &self.forever_catalogue
+            {
+                review["checks"]["catalogue_two_hand_pairing"] = serde_json::json!(
+                    azeroth_operator::forever_catalogue::review_weapon_pairing(
+                        path,
+                        &snapshot,
+                        &args.selections,
+                    )
+                    .unwrap_or("unknown")
+                );
+            }
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
         })();

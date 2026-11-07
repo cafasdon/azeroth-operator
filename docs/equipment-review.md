@@ -49,6 +49,11 @@ ownership and performance are explicitly unknown. Snapshot schema 1 has no
 item GUID, account or region identity. The player must check current items and
 requirements in the appropriate client before making changes manually.
 
+Local Forever reviews with a configured catalogue add a separate
+`catalogue_two_hand_pairing` check. It flags the projected combination of a
+two-handed main-hand item and an occupied off-hand. The general weapon-pairing
+check remains unknown.
+
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
 and live client verification; this draft must not be presented as their substitute.

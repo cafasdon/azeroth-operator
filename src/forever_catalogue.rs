@@ -620,6 +620,43 @@ mod tests {
     }
 }
 
+/// Checks only the two-handed conflict in an already validated equipment draft.
+pub fn review_weapon_pairing(
+    path: &Path,
+    snapshot: &Snapshot,
+    selections: &[crate::planning::EquipmentSelection],
+) -> Result<&'static str> {
+    use crate::planning::ItemLocation;
+
+    let projected_item = |slot| {
+        if let Some(selection) = selections
+            .iter()
+            .find(|selection| selection.target_slot == slot)
+        {
+            return Some(u64::from(selection.expected_item_id));
+        }
+        if selections
+            .iter()
+            .any(|selection| selection.source == (ItemLocation::Equipment { slot }))
+        {
+            return None;
+        }
+        snapshot.sections.get("equipment")?[slot.to_string()]["item_id"].as_u64()
+    };
+    let (Some(main), Some(_)) = (projected_item(16), projected_item(17)) else {
+        return Ok("no_two_hand_conflict_observed");
+    };
+    let (db, _) = load(path)?;
+    let main_item = db["items"]
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["id"].as_u64() == Some(main)));
+    Ok(match main_item.and_then(|item| item["handType"].as_u64()) {
+        Some(4) => "two_hand_conflict",
+        Some(1 | 2 | 3) => "no_two_hand_conflict_observed",
+        _ => "unknown",
+    })
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
