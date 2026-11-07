@@ -182,6 +182,16 @@ pub fn summary(s: &Snapshot) -> Value {
         .get("talents")
         .and_then(|v| v.get("has_unspent"))
         .and_then(Value::as_bool);
+    let quest_turn_in = s.sections.get("quests").and_then(Value::as_object).map(|quests| {
+        let (mut ready, mut known) = (0, 0);
+        for quest in quests.values() {
+            if let Some(value) = quest["ready_for_turn_in"].as_bool() {
+                known += 1;
+                ready += usize::from(value);
+            }
+        }
+        json!({"ready_observed":ready,"status_observed":known,"status_unknown":quests.len()-known})
+    });
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
@@ -189,6 +199,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "reputation_factions_observed":s.sections.get("reputation").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "currency_balances_observed":s.sections.get("currency_balances").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "tracked_achievements_observed":s.sections.get("tracked_achievements").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
+      "quest_turn_in":quest_turn_in,
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

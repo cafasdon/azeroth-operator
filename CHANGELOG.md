@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest objective counts, failure and turn-in readiness in saved snapshots for read-only MCP review.
+
 - Capture saved Forever tracked-achievement completion and criterion counts, excluding guild and contributor details.
 
 - Capture Forever currency balances by stable ID with account scope and cap observations for offline MCP comparison.

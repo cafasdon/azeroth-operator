@@ -441,12 +441,58 @@ AO.collectors.selected_recipe = function()
     return result
 end
 
+local function questObjectives(api,id)
+    local rows=api.GetQuestObjectives(id)
+    local count=api.GetNumQuestObjectives(id)
+    assert(type(rows)=="table" and type(count)=="number" and count>=0 and count<=64 and #rows==count,
+        "Quest objectives unavailable")
+    local function uint(value,maximum)
+        return type(value)=="number" and value%1==0 and value>=0 and value<=maximum
+    end
+    local result,observed={},0
+    for index,row in pairs(rows) do
+        assert(uint(index,count) and index>0 and type(row.finished)=="boolean"
+            and type(row.type)=="string" and #row.type>=1 and #row.type<=64, "Invalid objective observation")
+        local counts=uint(row.numFulfilled,4294967295) and uint(row.numRequired,4294967295)
+        result[tostring(index)]={kind=row.type,finished=row.finished,
+            fulfilled=counts and row.numFulfilled or nil,required=counts and row.numRequired or nil}
+        observed=observed+1
+    end
+    assert(observed==count, "Quest objectives incomplete")
+    return result
+end
+
+local function questFlag(api,name,id)
+    local ok,value=pcall(api[name],id)
+    if ok and type(value)=="boolean" then return value end
+end
+
 AO.collectors.quests = function()
     assert(C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo, "Quest API unavailable")
     local result = {}
-    for index=1,C_QuestLog.GetNumQuestLogEntries() do
-        local info=C_QuestLog.GetInfo(index)
-        if info and not info.isHeader then result[tostring(info.questID)]={title=info.title,level=info.level} end
+    local api=C_QuestLog
+    local count=api.GetNumQuestLogEntries()
+    if AO.family=="forever" then
+        assert(type(count)=="number" and count%1==0 and count>=0 and count<=512, "Invalid quest log size")
+    end
+    for index=1,count do
+        local info=api.GetInfo(index)
+        if AO.family=="forever" then
+            assert(info and type(info.isHeader)=="boolean", "Quest log row unavailable")
+        end
+        if info and not info.isHeader then
+            local id=info.questID
+            local entry={title=info.title,level=info.level}
+            if AO.family=="forever" then
+                assert(type(id)=="number" and id%1==0 and id>=1 and id<=4294967295
+                    and not result[tostring(id)], "Invalid or duplicate quest ID")
+                entry.ready_for_turn_in=questFlag(api,"ReadyForTurnIn",id)
+                entry.failed=questFlag(api,"IsFailed",id)
+                local ok,objectives=pcall(questObjectives,api,id)
+                if ok then entry.objectives=objectives end
+            end
+            result[tostring(id)]=entry
+        end
     end
     return result
 end

@@ -417,6 +417,21 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         ProfessionsFrame={CraftingPage={SchematicForm={recipeSchematic=recipeSchematic,
             IsVisible=function() return recipeVisible end,GetRecipeInfo=function() return recipeInfo end}}}
         localCrafting=true;recipeVisible=true
+        C_QuestLog={
+            GetNumQuestLogEntries=function() return 3,2 end,
+            GetInfo=function(index)
+                if index==1 then return {isHeader=true} end
+                return {isHeader=false,questID=40+index,title="Fixture quest",level=10}
+            end,
+            ReadyForTurnIn=function(id) if id==42 then return false end end,
+            IsFailed=function() return false end,
+            GetNumQuestObjectives=function() return 1 end,
+            GetQuestObjectives=function(id)
+                if id==43 then return end
+                local objective={type="item",finished=false,numFulfilled=0,numRequired=5,text="Private text"}
+                return sparseObjectives and {[2]=objective} or {objective}
+            end,
+        }
         local function faction(id)
             return {factionID=id,name="Fixture "..id,isHeader=id==20,isHeaderWithRep=id==20,
                 isAccountWide=id==20,reaction=4,currentStanding=-50,currentReactionThreshold=-100,nextReactionThreshold=0}
@@ -475,6 +490,22 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         )?)
     };
     let snapshot = read()?;
+    let quests = &snapshot.sections["quests"];
+    assert_eq!(quests["42"]["ready_for_turn_in"], false);
+    assert_eq!(
+        quests["42"]["objectives"]["1"],
+        serde_json::json!({
+            "kind":"item","finished":false,"fulfilled":0,"required":5
+        })
+    );
+    assert!(quests["43"].get("objectives").is_none());
+    assert!(quests["43"].get("ready_for_turn_in").is_none());
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["quest_turn_in"],
+        serde_json::json!({"ready_observed":0,"status_observed":1,"status_unknown":1})
+    );
+    lua.load("sparseObjectives=true;AO.Capture()").exec()?;
+    assert!(read()?.sections["quests"]["42"].get("objectives").is_none());
     let achievements = &snapshot.sections["tracked_achievements"]["entries"];
     assert_eq!(achievements["101"]["account_wide"], true);
     assert_eq!(achievements["101"]["completed"], true);

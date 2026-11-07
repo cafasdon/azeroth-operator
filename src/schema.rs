@@ -485,7 +485,44 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 );
             }
         }
-        "quests" => entries(value, &[("title", "text", true), ("level", "int", true)])?,
+        "quests" => {
+            entries(
+                value,
+                &[
+                    ("title", "text", true),
+                    ("level", "int", true),
+                    ("ready_for_turn_in", "bool", false),
+                    ("failed", "bool", false),
+                    ("objectives", "map", false),
+                ],
+            )?;
+            for quest in value.as_object().unwrap().values() {
+                if let Some(objectives) = quest.get("objectives").filter(|value| !value.is_null()) {
+                    entries(
+                        objectives,
+                        &[
+                            ("kind", "text", true),
+                            ("finished", "bool", true),
+                            ("fulfilled", "uint", false),
+                            ("required", "uint", false),
+                        ],
+                    )?;
+                    let objectives = objectives.as_object().unwrap();
+                    ensure!(objectives.len() <= 64, "Too many quest objectives");
+                    for (key, objective) in objectives {
+                        index(key, 1, objectives.len() as u32)?;
+                        ensure!(
+                            objective["kind"]
+                                .as_str()
+                                .is_some_and(|value| !value.is_empty() && value.len() <= 64)
+                                && objective["fulfilled"].is_null()
+                                    == objective["required"].is_null(),
+                            "Invalid quest objective"
+                        );
+                    }
+                }
+            }
+        }
         "currencies" => {
             object(
                 value,
