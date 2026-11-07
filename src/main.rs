@@ -82,6 +82,10 @@ struct Inspect {
     tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Find this base or reported spell ID in the saved Forever spellbook section.
     spellbook_spell_id: Option<std::num::NonZeroU32>,
+    /// Keep saved spellbook slots with this observed passive flag.
+    spellbook_passive: Option<bool>,
+    /// Keep saved spellbook slots with this observed off-spec flag.
+    spellbook_off_spec: Option<bool>,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -934,6 +938,9 @@ impl Operator {
             ),
         ];
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
+        let filter_spellbook = args.spellbook_spell_id.is_some()
+            || args.spellbook_passive.is_some()
+            || args.spellbook_off_spec.is_some();
         if args.quest_xp_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -987,7 +994,7 @@ impl Operator {
                 || args.achievement_id.is_some()
                 || args.profession_skill_line.is_some()
                 || args.tracked_recipe_id.is_some()
-                || args.spellbook_spell_id.is_some()
+                || filter_spellbook
                 || args.tracked_recipe_learning.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -1061,7 +1068,7 @@ impl Operator {
                 "Profession selection requires the professions section",
             )]);
         }
-        if args.spellbook_spell_id.is_some() && args.section.as_deref() != Some("spellbook") {
+        if filter_spellbook && args.section.as_deref() != Some("spellbook") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Spellbook selection requires the spellbook section",
             )]);
@@ -1308,25 +1315,40 @@ impl Operator {
                         }
                     }
                 }
-                if let Some(id) = args.spellbook_spell_id {
+                if filter_spellbook {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Spellbook selection requires a saved Forever snapshot",
                         )]);
                     }
-                    let requested = Some(u64::from(id.get()));
                     let observed = value["data"]
                         .get_mut("entries")
                         .and_then(serde_json::Value::as_object_mut)
                         .map(|rows| {
                             rows.retain(|_, row| {
-                                row["base_spell_id"].as_u64() == requested
-                                    || row["spell_id"].as_u64() == requested
+                                args.spellbook_spell_id.is_none_or(|id| {
+                                    let requested = Some(u64::from(id.get()));
+                                    row["base_spell_id"].as_u64() == requested
+                                        || row["spell_id"].as_u64() == requested
+                                }) && args
+                                    .spellbook_passive
+                                    .is_none_or(|flag| row["passive"].as_bool() == Some(flag))
+                                    && args
+                                        .spellbook_off_spec
+                                        .is_none_or(|flag| row["off_spec"].as_bool() == Some(flag))
                             });
                             !rows.is_empty()
                         });
-                    value["spellbook_spell_id"] = serde_json::json!(id);
-                    value["spellbook_spell_observed"] = serde_json::json!(observed);
+                    if let Some(id) = args.spellbook_spell_id {
+                        value["spellbook_spell_id"] = serde_json::json!(id);
+                        value["spellbook_spell_observed"] = serde_json::json!(observed);
+                    }
+                    if let Some(passive) = args.spellbook_passive {
+                        value["spellbook_passive"] = serde_json::json!(passive);
+                    }
+                    if let Some(off_spec) = args.spellbook_off_spec {
+                        value["spellbook_off_spec"] = serde_json::json!(off_spec);
+                    }
                 }
                 if args.section.as_deref() == Some("currency_balances") {
                     let headroom =

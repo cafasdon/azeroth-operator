@@ -88,6 +88,11 @@ slots by either ID. A false `spellbook_spell_observed` means no captured
 slot matched. Null means the spellbook capture was unavailable. The result
 describes visible slots and does not establish permanent learning.
 
+Use `spellbook_passive` or `spellbook_off_spec` with true or false to match
+the corresponding observed flags. Missing flags do not match either value.
+These filters combine with each other and with the spell ID selector.
+When combined, `spellbook_spell_observed` reflects the filtered slots.
+
 Use `compare_snapshots` with `spellbook: true` to compare the observed base
 spell IDs and their reported IDs. Slot reordering and duplicate entries
 with the same IDs leave this comparison unchanged. Missing spellbook data
