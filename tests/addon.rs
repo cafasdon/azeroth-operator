@@ -459,6 +459,11 @@ pub fn verify_forever_capture_fixture(
             end,
             ReadyForTurnIn=function(id) if id==42 then return false end end,
             IsFailed=function() return false end,
+            GetNextWaypoint=function(id)
+                if id==43 then error("unavailable") end
+                if invalidQuestMap then return 0 end
+                return 1411,0.25,0.75
+            end,
             GetNumQuestObjectives=function() return 1 end,
             GetQuestObjectives=function(id)
                 if id==43 then return end
@@ -591,6 +596,18 @@ pub fn verify_forever_capture_fixture(
     );
     assert!(quests["43"].get("objectives").is_none());
     assert!(quests["43"].get("ready_for_turn_in").is_none());
+    assert_eq!(quests["42"]["next_waypoint_map_id"], 1411);
+    assert!(quests["43"].get("next_waypoint_map_id").is_none());
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["quest_waypoint_maps"],
+        serde_json::json!({"by_map_id":{"1411":[42]},"waypoint_map_unknown":[43]})
+    );
+    lua.load("invalidQuestMap=true;AO.Capture()").exec()?;
+    assert!(
+        read()?.sections["quests"]["42"]
+            .get("next_waypoint_map_id")
+            .is_none()
+    );
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quest_turn_in"],
         serde_json::json!({"ready_observed":0,"status_observed":1,"status_unknown":1})

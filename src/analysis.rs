@@ -1002,6 +1002,24 @@ fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     json!({"ready_for_turn_in":ready,"turn_in_not_ready":not_ready,"failed":failed,"turn_in_unknown":unknown})
 }
 
+fn quest_waypoint_maps(quests: &serde_json::Map<String, Value>) -> Value {
+    let mut maps = BTreeMap::<u64, Vec<u32>>::new();
+    let mut unknown = Vec::new();
+    for (key, quest) in quests {
+        let Ok(id) = key.parse::<u32>() else { continue };
+        if let Some(map) = quest["next_waypoint_map_id"].as_u64() {
+            maps.entry(map).or_default().push(id);
+        } else {
+            unknown.push(id);
+        }
+    }
+    for ids in maps.values_mut() {
+        ids.sort_unstable();
+    }
+    unknown.sort_unstable();
+    json!({"by_map_id":maps,"waypoint_map_unknown":unknown})
+}
+
 pub fn summary(s: &Snapshot) -> Value {
     let occupied = s
         .sections
@@ -1033,6 +1051,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "tracked_achievements_observed":s.sections.get("tracked_achievements").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "quest_turn_in":quest_turn_in,
       "quest_checklist":quests.map(quest_checklist),
+      "quest_waypoint_maps":if s.client.family == crate::Family::Forever { quests.map(quest_waypoint_maps) } else { None },
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

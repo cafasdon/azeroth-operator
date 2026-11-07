@@ -74,6 +74,13 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+When the client exposes a quest's next waypoint during a player export,
+the capture can include its map ID. `character_summary` groups saved quest
+IDs by that map and lists quests whose waypoint map is unknown. The map
+describes the next waypoint at capture time. Update the importer and reader
+before syncing captures with this field. The export omits coordinates
+and never sets a waypoint. [Forever quest waypoint API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
+
 Offline checks verified zero progress, false versus unavailable readiness, sparse objective rejection without losing the quest title, and real MCP inspection and comparison. Forever `0.26.0-dev` passed package verification (SHA-256 `f8d22f78bc7a87595534ebf7d4ef1a5b703a7687c4c4c87f89ecca3dd6776604`). Native capture remains pending.
 
 Use `inspect_snapshot` with `section: "tracked_achievements"` for Forever achievement progress. The addon reads the player's existing tracked list on export. The result includes completion flags and available criterion quantities. It omits contributor names, dates, guild entries and free-text criterion descriptions. Criterion keys are observed row numbers, with native criterion IDs included when present. Check the ID before interpreting a changed row as progress. The Rust MCP includes `tracked_achievement_work` keyed by achievement ID and then captured criterion row. It lists rows observed as unfinished, with the criterion ID and remaining count when available. An empty map for an achievement means no captured criterion row was unfinished. A missing tracked achievement section returns null. Use the separate achievement completion and character credit flags for completion status. An achievement absent from the tracked list has no completion implication. [Forever objective tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_AchievementObjectiveTracker.lua)

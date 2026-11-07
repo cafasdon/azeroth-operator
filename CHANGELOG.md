@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture saved Forever quest waypoint map IDs and group the quest log by map.
+
 - Rank Forever healer gear by least time out of mana and flag throughput trade-offs.
 
 - Report paired uncertainty for Forever healer and tank throughput comparisons.
