@@ -342,16 +342,57 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
                 .collect::<Vec<_>>(),
         )
     });
+    let suffixes = matches(
+        "randomSuffixes",
+        "id",
+        modifiers["random_suffix_id"].as_i64(),
+    );
+    let suffix_stats = item.and_then(|item| match suffixes.as_slice() {
+        [suffix] => scaled_suffix_stats(item, suffix),
+        _ => None,
+    });
     json!({
         "enchants":enchants,
         "fitting_enchants":fitting_enchants,
-        "random_suffixes":matches("randomSuffixes", "id", modifiers["random_suffix_id"].as_i64())
+        "random_suffixes":suffixes,
+        "default_scaling_suffix_allocation_delta":suffix_stats
     })
+}
+
+fn scaled_suffix_stats(item: &Value, suffix: &Value) -> Option<Value> {
+    let id = suffix["id"].as_i64()?;
+    let listed = item["randomSuffixOptions"]
+        .as_array()?
+        .iter()
+        .any(|option| option.as_i64() == Some(id));
+    if !listed {
+        return None;
+    }
+    let points = item["scalingOptions"]["0"]["randPropPoints"].as_i64()?;
+    let mut deltas = BTreeMap::new();
+    for (stat, allocation) in suffix["stats"].as_array()?.iter().enumerate() {
+        let delta = (allocation.as_f64()? * points as f64 / 10_000.0).round();
+        if delta != 0.0 {
+            deltas.insert(stat, delta);
+        }
+    }
+    Some(json!({"random_property_points":points,"by_simulator_stat_id":deltas}))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scales_listed_suffix_allocations_and_rounds_halves_away_from_zero() {
+        let item = json!({"randomSuffixOptions":[7],"scalingOptions":{"0":{"randPropPoints":6}}});
+        let suffix = json!({"id":7,"stats":[47500,-47500,0]});
+        assert_eq!(
+            scaled_suffix_stats(&item, &suffix),
+            Some(json!({"random_property_points":6,"by_simulator_stat_id":{"0":29.0,"1":-29.0}}))
+        );
+        assert!(scaled_suffix_stats(&item, &json!({"id":8,"stats":[47500]})).is_none());
+    }
 
     #[test]
     fn distinguishes_weapon_enchant_rows_with_the_same_effect_id() {

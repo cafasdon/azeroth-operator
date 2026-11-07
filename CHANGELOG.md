@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Estimate Forever random-suffix stat deltas at the simulator's default item scaling.
+
 - Distinguish captured enchant candidates that fit the base item under the pinned Forever simulator rules.
 
 - Match captured Forever modifier IDs to local catalogue candidates without assuming applicability.
