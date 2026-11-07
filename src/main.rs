@@ -40,7 +40,7 @@ struct Inspect {
     /// Compare captured quest currency rewards against caps from the same snapshot.
     #[serde(default)]
     quest_currency_projection: bool,
-    /// Resolve captured quest reward item IDs in the pinned local Forever catalogue.
+    /// Resolve captured quest reward items and recipe spell references in the pinned local Forever catalogue.
     #[serde(default)]
     quest_item_catalogue: bool,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.

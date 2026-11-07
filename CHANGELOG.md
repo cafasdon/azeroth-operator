@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Match saved Forever quest reward spell IDs to local item and enchant recipe references.
+
 - Capture Forever quest reward spell IDs and available panel classification.
 
 - Compare saved Forever quest renown rewards with captured progress to the next faction rank.

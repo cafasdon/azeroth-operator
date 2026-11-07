@@ -142,6 +142,11 @@ with a null name has no catalogue match.
 reward's base level. The delta is null if either level is unavailable.
 This measures item level and does not rank gear or account for scaling,
 modifiers, set bonuses or combat performance.
+`spell_recipe_references` uses exact spell IDs to match crafted item and
+enchant sources. It keeps reward positions and shows up to eight references
+per spell with the full match count. A match identifies a catalogue recipe
+association. The quest reward and the character's learned recipes remain
+separate observations.
 
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same

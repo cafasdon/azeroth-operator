@@ -2209,7 +2209,51 @@ impl EquipmentCatalogue {
                     .collect::<BTreeMap<_, _>>()
             })
         };
-        json!({"item_rewards":references("item_rewards"),"item_choices":references("item_choices")})
+        json!({"item_rewards":references("item_rewards"),"item_choices":references("item_choices"),
+            "spell_recipe_references":self.quest_spell_recipe_references(quest)})
+    }
+
+    fn quest_spell_recipe_references(&self, quest: &Value) -> Value {
+        let Some(rows) = quest["spell_rewards"].as_object() else {
+            return Value::Null;
+        };
+        let mut matches = rows
+            .values()
+            .filter_map(|row| row["spell_id"].as_u64())
+            .map(|id| (id, (0usize, Vec::new())))
+            .collect::<BTreeMap<_, _>>();
+        if !matches.is_empty() {
+            for (section, identity) in [("items", "id"), ("enchants", "effectId")] {
+                for record in self.db[section].as_array().into_iter().flatten() {
+                    let recipe_ids = record["sources"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|source| source["crafted"]["spellId"].as_u64())
+                        .collect::<std::collections::BTreeSet<_>>();
+                    for id in recipe_ids {
+                        if let Some((count, references)) = matches.get_mut(&id) {
+                            *count += 1;
+                            if references.len() < 8 {
+                                references.push(json!({"section":section,"id":record[identity],"name":record["name"]}));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        json!(
+            rows.iter()
+                .filter_map(|(position, row)| {
+                    let id = row["spell_id"].as_u64()?;
+                    let (count, references) = matches.get(&id)?;
+                    Some((
+                        position,
+                        json!({"spell_id":id,"match_count":count,"references":references}),
+                    ))
+                })
+                .collect::<BTreeMap<_, _>>()
+        )
     }
 }
 
