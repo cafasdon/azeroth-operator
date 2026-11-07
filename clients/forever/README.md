@@ -148,6 +148,9 @@ retain catalogue order. Missing item levels sort last. Use
 with missing values last. Saved slot comparisons show the weapon DPS
 values and their difference where both are known. These use the pinned
 unrounded weapon DPS field and describe weapon damage per second only.
+Use `minimum_weapon_dps`, `minimum_weapon_speed` and
+`maximum_weapon_speed` for inclusive limits. Speed is seconds per swing.
+A record missing a requested value is excluded.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue

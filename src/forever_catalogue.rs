@@ -138,6 +138,12 @@ pub struct Query {
     pub simulator_slot: Option<SimulatorSlot>,
     /// Restrict items to at least this recorded item level at default scaling.
     pub minimum_item_level: Option<std::num::NonZeroU32>,
+    /// Minimum recorded default weapon DPS.
+    pub minimum_weapon_dps: Option<f64>,
+    /// Minimum recorded weapon swing time in seconds (inclusive).
+    pub minimum_weapon_speed: Option<f64>,
+    /// Maximum recorded weapon swing time in seconds (inclusive).
+    pub maximum_weapon_speed: Option<f64>,
     /// Require this gain over the saved slot's default item level. Requires a known equipped baseline.
     pub minimum_item_level_gain: Option<std::num::NonZeroU32>,
     /// Require a gain in one regular base stat over the saved equipped slot.
@@ -354,12 +360,29 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     } else {
         None
     };
+    let weapon_filter = [
+        query.minimum_weapon_dps,
+        query.minimum_weapon_speed,
+        query.maximum_weapon_speed,
+    ];
+    ensure!(
+        weapon_filter
+            .iter()
+            .flatten()
+            .all(|value| value.is_finite() && *value > 0.0)
+            && query
+                .minimum_weapon_speed
+                .zip(query.maximum_weapon_speed)
+                .is_none_or(|(min, max)| min <= max),
+        "Expected positive weapon filters and an ordered speed range"
+    );
     let item_filter = item_ids.is_some()
         || ownership.is_some()
         || check_requirements.is_some()
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
+        || weapon_filter.iter().any(Option::is_some)
         || query.order_by.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
@@ -437,6 +460,15 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                         delta.is_finite() && delta >= *minimum
                     })
                 });
+            let matches_weapon = query
+                .minimum_weapon_dps
+                .is_none_or(|minimum| default_weapon_dps(row).is_some_and(|dps| dps >= minimum))
+                && query
+                    .minimum_weapon_speed
+                    .is_none_or(|minimum| weapon_speed(row).is_some_and(|speed| speed >= minimum))
+                && query
+                    .maximum_weapon_speed
+                    .is_none_or(|maximum| weapon_speed(row).is_some_and(|speed| speed <= maximum));
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
@@ -507,6 +539,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 && matches_recipe
                 && matches_set
                 && matches_gear
+                && matches_weapon
                 && matches_drop
                 && matches_quest
                 && matches_vendor
@@ -595,6 +628,12 @@ fn default_item_level(item: &Value) -> Option<i64> {
     item["scalingOptions"]["0"]["ilvl"]
         .as_i64()
         .filter(|level| *level > 0)
+}
+
+fn weapon_speed(item: &Value) -> Option<f64> {
+    item["weaponSpeed"]
+        .as_f64()
+        .filter(|speed| speed.is_finite() && *speed > 0.0)
 }
 
 fn default_weapon_dps(item: &Value) -> Option<f64> {
