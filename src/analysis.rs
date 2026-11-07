@@ -1042,6 +1042,28 @@ pub fn quest_renown_projection(quest: Option<&Value>, reputation: &Value) -> Val
     }).collect::<BTreeMap<_, _>>())
 }
 
+fn xp_to_next_level(xp: &Value) -> Option<u64> {
+    xp["level_threshold_xp"]
+        .as_u64()?
+        .checked_sub(xp["current_xp"].as_u64()?)
+}
+
+pub fn quest_xp_projection(quest: Option<&Value>, experience: Option<&Value>) -> Value {
+    let Some(quest) = quest else {
+        return Value::Null;
+    };
+    let reward = quest["reward_amounts"]["xp"].as_u64();
+    let remaining = experience.and_then(xp_to_next_level);
+    let disabled = experience.and_then(|xp| xp["xp_disabled"].as_bool());
+    let estimate = remaining.zip(reward).filter(|_| disabled != Some(true));
+    json!({
+        "reward_xp":reward,"experience_status":experience.and_then(|xp| xp["status"].as_str()),
+        "xp_disabled":disabled,"xp_to_next_level":remaining,
+        "covers_recorded_xp_threshold":estimate.map(|(remaining,reward)| reward >= remaining),
+        "xp_shortfall_after_reward":estimate.map(|(remaining,reward)| remaining.saturating_sub(reward))
+    })
+}
+
 pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;
@@ -1241,11 +1263,8 @@ pub fn summary(s: &Snapshot) -> Value {
         json!({"ready_observed":ready,"status_observed":known,"status_unknown":quests.len()-known})
     });
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
-      "experience_progress":s.sections.get("experience").map(|xp| {
-          let remaining = xp["level_threshold_xp"].as_u64().zip(xp["current_xp"].as_u64())
-              .and_then(|(threshold,current)| threshold.checked_sub(current));
-          json!({"observed":xp,"xp_to_next_level":remaining})
-      }),
+      "experience_progress":s.sections.get("experience").map(|xp|
+          json!({"observed":xp,"xp_to_next_level":xp_to_next_level(xp)})),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),

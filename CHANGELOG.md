@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever quest XP rewards with the captured next-level threshold.
+
 - Capture Forever character XP progress, rested XP and observed caps.
 
 - Suggest saved bank withdrawals for individual Forever recipe reagents.

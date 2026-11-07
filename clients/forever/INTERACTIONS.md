@@ -81,6 +81,12 @@ Effective level caps and trial caps have separate statuses and omit numeric
 progress. The addon reads the player only and omits trial banked XP. Update
 the importer and reader before syncing this section. [Forever experience bar](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StatusTrackingBar/Shared/ExpBar.lua)
 
+Set `quest_xp_projection: true` when inspecting a saved Forever quest by ID.
+The tool compares its captured reward with the XP remaining in the same
+snapshot. The comparison is unknown for capped or explicitly XP-disabled
+characters and when reward or progress data is missing. It covers one
+recorded level threshold and does not predict bonus XP or later eligibility.
+
 `elite` and `suggested_group_size` are separate quest log observations.
 `character_summary.observed_quest_difficulty` lists observed elite quests
 and quests with a suggested group size above one. Missing fields mean the
