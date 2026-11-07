@@ -553,7 +553,10 @@ pub fn review_owned(
                         "factionRestriction":item["factionRestriction"],"requiredProfession":item["requiredProfession"],
                         "unique":item["unique"],"limitCategory":item["limitCategory"],
                         "setId":item["setId"],"setName":item["setName"],
-                        "randomSuffixOptions":item["randomSuffixOptions"]
+                        "randomSuffixOptions":item["randomSuffixOptions"],
+                        "simulator_default_scaling":item["scalingOptions"]["0"],
+                        "weaponSpeed":item["weaponSpeed"],
+                        "itemEffects":item["itemEffects"]
                     }))}));
             }
             included += 1;

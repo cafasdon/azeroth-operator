@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show pinned default base stats, weapon profiles and item effects in Forever owned-gear review.
+
 - Show flat pseudo-stat and replacement weapon-damage effects of a captured Forever suffix at default simulator scaling.
 
 - Estimate Forever random-suffix stat deltas at the simulator's default item scaling.
