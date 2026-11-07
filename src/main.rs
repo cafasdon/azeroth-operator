@@ -40,6 +40,9 @@ struct Inspect {
     /// Compare captured quest currency rewards against caps from the same snapshot.
     #[serde(default)]
     quest_currency_projection: bool,
+    /// Resolve captured quest reward item IDs in the pinned local Forever catalogue.
+    #[serde(default)]
+    quest_item_catalogue: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
@@ -842,6 +845,13 @@ impl Operator {
                 "Quest currency projection requires a quest ID and the quests section",
             )]);
         }
+        if args.quest_item_catalogue
+            && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest item catalogue requires a quest ID and the quests section",
+            )]);
+        }
         if args.currency_reward_quantity.is_some() && args.currency_id.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Currency reward comparison requires a currency ID",
@@ -913,6 +923,23 @@ impl Operator {
                         serde_json::json!(quests.as_object().map(|_| quest.is_some()));
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
+                    if args.quest_item_catalogue {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest item catalogue requires a saved Forever snapshot",
+                            )]);
+                        }
+                        let catalogue = self.forever_catalogue.as_deref().and_then(|path| {
+                            azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path).ok()
+                        });
+                        value["quest_item_catalogue_available"] =
+                            serde_json::json!(catalogue.is_some());
+                        value["quest_item_catalogue"] = quest
+                            .zip(catalogue.as_ref())
+                            .map_or(serde_json::Value::Null, |(quest, catalogue)| {
+                                catalogue.quest_item_references(quest)
+                            });
+                    }
                     if args.quest_currency_projection {
                         if value["client"]["family"] != "forever" {
                             return CallToolResult::error(vec![ContentBlock::text(

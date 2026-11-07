@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Resolve saved Forever quest reward item names and simulator slots from the local catalogue.
+
 - Capture fixed item rewards and item choices for the selected Forever quest.
 
 - Compare saved Forever quest currency rewards and individual choices against recorded cap headroom.

@@ -2163,6 +2163,23 @@ impl EquipmentCatalogue {
         });
         Ok(Self { db, items })
     }
+
+    pub fn quest_item_references(&self, quest: &Value) -> Value {
+        let references = |field: &str| {
+            quest[field].as_object().map(|rows| {
+                rows.iter()
+                    .map(|(position, row)| {
+                        let item = row["item_id"].as_u64().and_then(|id| self.items.get(&id));
+                        (position.clone(), item.map(|item| json!({
+                        "item_id":item["id"],"name":item["name"],"required_level":item["reqLvl"],
+                        "simulator_slots":simulator_slots(item)
+                    })))
+                    })
+                    .collect::<BTreeMap<_, _>>()
+            })
+        };
+        json!({"item_rewards":references("item_rewards"),"item_choices":references("item_choices")})
+    }
 }
 
 /// Checks catalogue slot fit and two-handed pairing in a validated equipment draft.

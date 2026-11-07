@@ -97,6 +97,13 @@ list as currency choices. Empty maps represent observed empty lists. Missing
 maps mean the quest was unselected or that list could not be read. Update
 the importer and reader before syncing these fields.
 
+Set `quest_item_catalogue: true` when inspecting a saved Forever quest by ID
+to look up item names, required levels and simulator slots in the verified
+local catalogue. References keep their captured reward positions. A null row
+means the base item ID has no catalogue match. The original reward quantities
+stay in `data`. The slot list describes simulator placement and does not
+establish equip eligibility or identify item modifiers.
+
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same
 capture. Rows for the same currency are summed. Each currency choice is
