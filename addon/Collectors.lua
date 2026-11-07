@@ -613,6 +613,10 @@ AO.collectors.reputation = function()
     local function integer(value, low, high)
         return type(value)=="number" and value%1==0 and value>=low and value<=high
     end
+    local function accessible(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted reputation observation")
+        return value
+    end
     local count=api.GetNumFactions()
     assert(integer(count,1,512), "Reputation rows unavailable")
     local rows={}
@@ -628,26 +632,23 @@ AO.collectors.reputation = function()
                 and integer(row.nextReactionThreshold,-2147483648,2147483647), "Invalid faction observation")
             local id=tostring(row.factionID)
             assert(not rows[id], "Duplicate faction observation")
-            local ok,kind=pcall(function()
+            local ok,kind,friendship=pcall(function()
                 local major=api.IsMajorFaction(row.factionID)
                 local paragon=api.IsFactionParagonForCurrentPlayer(row.factionID)
-                local friendship=C_GossipInfo.GetFriendshipReputation(row.factionID)
+                local friendship=accessible(C_GossipInfo.GetFriendshipReputation(row.factionID))
+                local friendshipID=friendship and accessible(friendship.friendshipFactionID)
                 if type(major)=="boolean" and type(paragon)=="boolean"
-                    and friendship and type(friendship.friendshipFactionID)=="number" then
+                    and type(friendshipID)=="number" then
                     if paragon then return "paragon" end
                     if major then return "renown" end
-                    if friendship.friendshipFactionID>0 then return "friendship" end
-                    if friendship.friendshipFactionID==0 then return "standard" end
+                    if friendshipID>0 then return "friendship",friendship end
+                    if friendshipID==0 then return "standard" end
                 end
             end)
             rows[id]={name=row.name,kind=ok and kind or "unknown",account_wide=row.isAccountWide,reaction=row.reaction,
                 standing=row.currentStanding,threshold=row.currentReactionThreshold,next_threshold=row.nextReactionThreshold}
             if rows[id].kind=="renown" then
                 local observed,progress=pcall(function()
-                    local function accessible(value)
-                        assert(not issecretvalue or not issecretvalue(value), "Restricted renown observation")
-                        return value
-                    end
                     local data=accessible(C_MajorFactions.GetMajorFactionData(row.factionID))
                     local capped=accessible(C_MajorFactions.HasMaximumRenown(row.factionID))
                     if type(data)~="table" or type(capped)~="boolean" then return end
@@ -660,6 +661,20 @@ AO.collectors.reputation = function()
                     end
                 end)
                 if observed then rows[id].renown=progress end
+            elseif rows[id].kind=="friendship" then
+                local observed,progress=pcall(function()
+                    local standing=accessible(friendship.standing)
+                    local threshold=accessible(friendship.reactionThreshold)
+                    local nextThreshold=accessible(friendship.nextThreshold)
+                    local function points(value)
+                        return integer(value,-2147483648,2147483647)
+                    end
+                    if points(standing) and points(threshold)
+                        and (nextThreshold==nil or points(nextThreshold)) then
+                        return {standing=standing,threshold=threshold,next_threshold=nextThreshold}
+                    end
+                end)
+                if observed then rows[id].friendship=progress end
             end
         end
     end

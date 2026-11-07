@@ -35,6 +35,12 @@ archive is in `dist/forever-renown` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with these fields.
 
+The staged 0.31.0-dev candidate adds optional friendship reputation
+observations. The archive is in `dist/forever-friendship` with SHA-256
+`2860263ba501b4a4319e08a524da1054abde6471c16d19cf5c8da36eb3fd8b90`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with these fields.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

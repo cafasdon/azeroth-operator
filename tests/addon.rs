@@ -462,7 +462,15 @@ pub fn verify_forever_capture_fixture(
             IsMajorFaction=function(id) if classificationMissing then error("unavailable") end return id==20 end,
             IsFactionParagonForCurrentPlayer=function() return false end,
         }
-        C_GossipInfo={GetFriendshipReputation=function() return {friendshipFactionID=0} end}
+        C_GossipInfo={GetFriendshipReputation=function(id)
+            if id==10 and friendshipEnabled then
+                local nextThreshold
+                if not friendshipCapped then nextThreshold=100 end
+                return {friendshipFactionID=15,standing=35,reactionThreshold=20,
+                    nextThreshold=nextThreshold,text="Private dialogue"}
+            end
+            return {friendshipFactionID=0}
+        end}
         C_MajorFactions={
             GetMajorFactionData=function(id)
                 assert(id==20)
@@ -660,6 +668,25 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["reputation_factions_observed"],
         2
+    );
+    lua.load("friendshipEnabled=true;AO.Capture()").exec()?;
+    let friendship = read()?;
+    let faction = &friendship.sections["reputation"]["entries"]["10"];
+    assert_eq!(faction["kind"], "friendship");
+    assert_eq!(
+        faction["friendship"],
+        serde_json::json!({"standing":35,"threshold":20,"next_threshold":100})
+    );
+    lua.load(
+        "issecretvalue=function(v) return v==35 end;
+        local row=AO.collectors.reputation().entries['10'];
+        assert(row.kind=='friendship' and row.friendship==nil);
+        issecretvalue=nil;friendshipCapped=true;AO.Capture()",
+    )
+    .exec()?;
+    assert_eq!(
+        read()?.sections["reputation"]["entries"]["10"]["friendship"],
+        serde_json::json!({"standing":35,"threshold":20})
     );
     lua.load("classificationMissing=true;AO.Capture()").exec()?;
     assert_eq!(

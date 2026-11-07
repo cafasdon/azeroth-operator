@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture visible Forever friendship standings and rank thresholds.
+
 - Capture level, progress and maximum-rank status for visible Forever renown factions.
 
 - Show progress to the next standard Forever reputation rank from saved standings.

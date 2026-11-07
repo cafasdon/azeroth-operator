@@ -472,6 +472,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("threshold", "int", true),
                     ("next_threshold", "int", true),
                     ("renown", "map", false),
+                    ("friendship", "map", false),
                 ],
             )?;
             let factions = value["entries"].as_object().unwrap();
@@ -496,6 +497,21 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             ("earned_in_level", "uint", true),
                             ("level_threshold", "uint", true),
                             ("capped", "bool", true),
+                        ],
+                    )?;
+                }
+                if let Some(friendship) = faction.get("friendship").filter(|value| !value.is_null())
+                {
+                    ensure!(
+                        faction["kind"] == "friendship",
+                        "Unexpected friendship observation"
+                    );
+                    object(
+                        friendship,
+                        &[
+                            ("standing", "int", true),
+                            ("threshold", "int", true),
+                            ("next_threshold", "int", false),
                         ],
                     )?;
                 }
