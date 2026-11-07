@@ -426,7 +426,7 @@ pub fn verify_forever_capture_fixture(
         C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end}
         local recipeInfo={recipeID=100,name='Fixture recipe',learned=true,
             relativeDifficulty=0,canSkillUp=true,numSkillUps=2}
-        recipeSchematic={recipeID=100,outputItemID=456,isRecraft=false,recipeType=1,reagentSlotSchematics={
+        recipeSchematic={recipeID=100,outputItemID=456,quantityMin=2,quantityMax=3,isRecraft=false,recipeType=1,reagentSlotSchematics={
             {required=true,reagents={{itemID=744}},quantityRequired=2,variableQuantities={}},
             {required=true,reagents={{itemID=744}},quantityRequired=1,variableQuantities={}},
             {required=false,reagents={{itemID=999}},quantityRequired=5,variableQuantities={}}
@@ -732,12 +732,25 @@ pub fn verify_forever_capture_fixture(
     );
     let recipe = azeroth_operator::analysis::review_recipe(&snapshot, 2)?;
     assert_eq!(recipe["materials"][0]["required"], 6);
+    assert_eq!(
+        recipe["base_output_if_completed"],
+        serde_json::json!({
+            "item_id":456,"minimum":4,"maximum":6
+        })
+    );
     assert_eq!(recipe["materials"][0]["quantity_observed"], 1);
     assert_eq!(recipe["materials"][0]["shortfall_vs_observed"], 5);
     assert_eq!(recipe["craftability_verified"], false);
     assert_eq!(recipe["recipe"]["relative_difficulty"], "optimal");
     assert_eq!(recipe["recipe"]["can_skill_up"], true);
     assert_eq!(recipe["recipe"]["skill_ups_reported"], 2);
+    lua.load(
+        "issecretvalue=function(v) return v==3 end;
+        local recipe=AO.collectors.selected_recipe();
+        assert(recipe.output_item_id==456 and recipe.base_output_quantity==nil);
+        issecretvalue=nil",
+    )
+    .exec()?;
     lua.load(
         "issecretvalue=function(v) return v==2 end;
         local recipe=AO.collectors.selected_recipe();
@@ -749,6 +762,7 @@ pub fn verify_forever_capture_fixture(
         .exec()?;
     let enchant = azeroth_operator::analysis::review_recipe(&read()?, 2)?;
     assert!(enchant["recipe"].get("output_item_id").is_none());
+    assert!(enchant["base_output_if_completed"].is_null());
     assert_eq!(enchant["materials"], recipe["materials"]);
     assert_eq!(enchant["craftability_verified"], false);
     lua.load("recipeSchematic.recipeType=1").exec()?;

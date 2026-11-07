@@ -432,6 +432,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("can_skill_up", "bool", false),
                     ("skill_ups_reported", "uint", false),
                     ("output_item_id", "positive", false),
+                    ("base_output_quantity", "map", false),
                     ("requirements", "text", true),
                     ("reagents", "map", true),
                 ],
@@ -446,6 +447,20 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ),
                 "Invalid recipe difficulty"
             );
+            if let Some(quantity) = value
+                .get("base_output_quantity")
+                .filter(|value| !value.is_null())
+            {
+                object(
+                    quantity,
+                    &[("minimum", "positive", true), ("maximum", "positive", true)],
+                )?;
+                ensure!(
+                    value["output_item_id"].as_u64().is_some()
+                        && quantity["minimum"].as_u64() <= quantity["maximum"].as_u64(),
+                    "Invalid recipe output range"
+                );
+            }
             let reagents = value["reagents"].as_object().unwrap();
             ensure!(reagents.len() <= 64, "Too many required reagents");
             ensure!(

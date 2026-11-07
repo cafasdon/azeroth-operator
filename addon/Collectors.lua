@@ -433,6 +433,13 @@ AO.collectors.selected_recipe = function()
     local function accessible(value)
         return not issecretvalue or not issecretvalue(value)
     end
+    if recipeType==types.Item and result.output_item_id then
+        local minimum,maximum=schematic.quantityMin,schematic.quantityMax
+        if accessible(minimum) and accessible(maximum) and positive(minimum)
+            and positive(maximum) and minimum<=maximum then
+            result.base_output_quantity={minimum=minimum,maximum=maximum}
+        end
+    end
     local difficulty=info.relativeDifficulty
     if accessible(difficulty) and (difficulty==0 or positive(difficulty)) then
         local labels={[0]="optimal","medium","easy","trivial"}

@@ -53,6 +53,12 @@ The archive is in `dist/forever-recipe-training` with SHA-256
 The packaged Lua round trip passed. Update the Rust reader and importer before
 syncing captures with these fields.
 
+The staged 0.34.0-dev candidate adds optional base item output ranges.
+The archive is in `dist/forever-recipe-yield` with SHA-256
+`97fbbaa3368091213ce859bbd02194c01b75600c76901f4b37296b0da97c67d5`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with this field.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

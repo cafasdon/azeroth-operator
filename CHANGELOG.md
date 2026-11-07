@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show captured base item output ranges for requested Forever craft quantities.
+
 - Capture displayed Forever recipe difficulty and skill-up indicators for saved craft planning.
 
 - Show skill points remaining to observed profession caps in saved captures.

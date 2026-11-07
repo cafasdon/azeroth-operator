@@ -108,7 +108,15 @@ pub fn review_recipe_with_inventory(
         }
         Value::Null
     };
+    let base_output_if_completed = recipe["base_output_quantity"]["minimum"]
+        .as_u64()
+        .zip(recipe["base_output_quantity"]["maximum"].as_u64())
+        .map(|(minimum, maximum)| {
+            json!({"item_id":recipe["output_item_id"],"minimum":minimum * u64::from(crafts),
+                "maximum":maximum * u64::from(crafts)})
+        });
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
+        "base_output_if_completed":base_output_if_completed,
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
         "material_capacity":{
             "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),
