@@ -67,6 +67,8 @@ For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to fi
 
 For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve NPC names through the `npcs` section first. Results include only items with an explicit matching NPC drop in the pinned catalogue. For zone loot, use `drop_zone_id` to include both NPC and unattributed drops recorded for that zone. When both filters are supplied, they must match the same drop source. Missing entries provide no evidence about live loot availability.
 
+For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.
+
 For quest rewards, pass `{"section":"items","reward_quest_id":53}` using the quest ID from a saved quest observation or other reference. Results cover reward associations recorded in the pinned catalogue. Character eligibility and live availability require separate evidence.
 
 For a public set reference, pass `{"section":"items","set_id":495}`. For a character comparison, call `review_forever_owned_gear` with the same `set_id` and a saved snapshot ID. Its `set_observation` lists each catalogue piece, whether its base ID was observed, and the number of occupied locations by storage. Duplicate copies count once toward distinct pieces. The summary spans the whole snapshot regardless of page or equipment category. Use storage coverage to see which sections contributed. An unseen piece may be in uncaptured storage. Set bonuses, acquisition and pieces in uncaptured storage need separate evidence.
