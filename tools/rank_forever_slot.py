@@ -84,7 +84,10 @@ async def collect(binary, snapshot_id, slots, errlog):
             if len(sources) != len(selections):
                 skipped.append({"selections": selections, "reason": "reused_source_location"})
                 continue
-            draft = await call("review_equipment_selection", selections=selections)
+            draft_args = {"selections": selections}
+            if 16 in targets and 17 not in targets:
+                draft_args["allow_two_hand_off_hand_clear"] = True
+            draft = await call("review_equipment_selection", **draft_args)
             if draft["checks"]["simulator_equipment_spec"]:
                 drafts.append((selections, draft))
             elif multi:
@@ -128,7 +131,10 @@ def main():
         if result is None:
             result = compare(args.engine, args.engine_sha256, requests, paired=args.paired)
         for row in result["results"]:
-            selections, _ = drafts[row["review"] - 1]
+            selections, draft = drafts[row["review"] - 1]
+            cleared = draft["checks"].get("simulator_cleared_equipment_slots")
+            if cleared:
+                row["cleared_equipment_slots"] = cleared
             if len(args.slot) == 1:
                 row["selection"] = selections[0] if selections else None
             else:

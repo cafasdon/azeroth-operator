@@ -85,6 +85,9 @@ struct EquipmentReview {
     snapshot_id: String,
     /// Exact saved selections. An empty list reviews the captured Forever baseline with a local catalogue.
     selections: Vec<azeroth_operator::planning::EquipmentSelection>,
+    /// Allow a selected two-handed main-hand item to clear the captured off-hand in the simulator draft.
+    #[serde(default)]
+    allow_two_hand_off_hand_clear: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -456,6 +459,20 @@ impl Operator {
                 !args.selections.is_empty() || self.forever_catalogue.is_some(),
                 "An empty baseline requires a local Forever catalogue"
             );
+            anyhow::ensure!(
+                !args.allow_two_hand_off_hand_clear
+                    || (snapshot.client.family == Family::Forever
+                        && self.forever_catalogue.is_some()
+                        && args
+                            .selections
+                            .iter()
+                            .any(|selection| selection.target_slot == 16)
+                        && args
+                            .selections
+                            .iter()
+                            .all(|selection| selection.target_slot != 17)),
+                "Clearing the off-hand requires a Forever catalogue and a main-hand selection without an off-hand selection"
+            );
             let mut review =
                 azeroth_operator::planning::equipment_review(&snapshot, &args.selections)?;
             if snapshot.client.family == Family::Forever
@@ -465,9 +482,10 @@ impl Operator {
                     path,
                     &snapshot,
                     &args.selections,
+                    args.allow_two_hand_off_hand_clear,
                 )
                 .or_else(|error| {
-                    if args.selections.is_empty() {
+                    if args.selections.is_empty() || args.allow_two_hand_off_hand_clear {
                         return Err(error);
                     }
                     Ok(serde_json::json!({
@@ -490,7 +508,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Equipment review rejected: invalid or unavailable snapshot/locations, or an empty baseline without a verified Forever catalogue",
+                "Equipment review rejected: check the snapshot, selected locations, projection options and Forever catalogue",
             )]),
         }
     }

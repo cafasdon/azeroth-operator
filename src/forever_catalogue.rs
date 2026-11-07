@@ -697,6 +697,7 @@ pub fn review_equipment_catalogue(
     path: &Path,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
+    allow_two_hand_off_hand_clear: bool,
 ) -> Result<Value> {
     use crate::planning::ItemLocation;
 
@@ -705,7 +706,7 @@ pub fn review_equipment_catalogue(
         .get("equipment")
         .and_then(Value::as_object)
         .ok_or_else(|| anyhow::anyhow!("Equipment observation unavailable"))?;
-    let projected_observation = |slot| {
+    let selected_observation = |slot| {
         if let Some(selection) = selections
             .iter()
             .find(|selection| selection.target_slot == slot)
@@ -720,12 +721,25 @@ pub fn review_equipment_catalogue(
         }
         equipment.get(&slot.to_string())
     };
-    let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
     let (db, _) = load(path)?;
     let items = db["items"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Missing catalogue items"))?;
     let find = |id| items.iter().find(|item| item["id"].as_u64() == Some(id));
+    let clear_off_hand = allow_two_hand_off_hand_clear
+        && selected_observation(17).is_some()
+        && selected_observation(16)
+            .and_then(|item| item["item_id"].as_u64())
+            .and_then(find)
+            .is_some_and(|item| item["handType"] == 4);
+    let projected_observation = |slot| {
+        if clear_off_hand && slot == 17 {
+            None
+        } else {
+            selected_observation(slot)
+        }
+    };
+    let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
     let pairing = match (projected_item(16), projected_item(17)) {
         (Some(main), Some(_)) => match find(main).and_then(|item| item["handType"].as_u64()) {
             Some(4) => "two_hand_conflict",
@@ -836,6 +850,7 @@ pub fn review_equipment_catalogue(
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
         "simulator_equipment_spec":equipment_spec,
+        "simulator_cleared_equipment_slots": if clear_off_hand { vec![17] } else { vec![] },
         "simulator_equipment_unresolved_slots":blockers
     }))
 }

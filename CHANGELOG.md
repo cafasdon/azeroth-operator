@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include two-handed Forever upgrades that clear an occupied off-hand in the local simulator draft.
+
 - Add an opt-in adaptive WoWSims bulk shortlist for local Forever gear ranking.
 
 - Compare bounded combinations of captured Forever gear across multiple slots.
