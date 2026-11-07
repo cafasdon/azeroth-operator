@@ -30,6 +30,12 @@ to return one currency and its cap headroom. The observation flag is false
 when the saved list lacks that ID and null when the list is unavailable.
 An observed balance of zero remains zero.
 
+Add `currency_reward_quantity` to compare a proposed reward against the
+tightest recorded cap. An explicit `can_earn_per_week: false` excludes the
+weekly limit from the projection. If no applicable positive cap was recorded,
+both projected amounts are unknown. This uses the captured counters and does
+not advance resets or establish reward eligibility.
+
 On the Rust MCP, use `inspect_snapshot` with a Forever snapshot ID and `spending_budget`
 to check explicit costs. A budget can include `wallet_copper` and up to 20
 distinct `currencies` rows with `currency_id` and `quantity`. Omit section

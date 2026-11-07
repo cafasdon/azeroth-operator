@@ -39,6 +39,8 @@ struct Inspect {
     quest_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
+    /// Compare a proposed reward against this currency's recorded cap headroom.
+    currency_reward_quantity: Option<std::num::NonZeroU64>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -814,7 +816,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select a quest or Forever currency by ID, or compare explicit Forever costs against saved gold, currencies and carried items. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select a quest or Forever currency by ID, compare a proposed currency reward against recorded caps, or check explicit costs against saved balances. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -822,6 +824,11 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.currency_reward_quantity.is_some() && args.currency_id.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Currency reward comparison requires a currency ID",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.section.is_some() || args.quest_id.is_some() || args.currency_id.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -880,6 +887,20 @@ impl Operator {
                         value["data"] = row.cloned().unwrap_or_default();
                         value["currency_cap_headroom"] =
                             headroom.get(&key).cloned().unwrap_or_default();
+                        if let Some(quantity) = args.currency_reward_quantity {
+                            let caps = &value["currency_cap_headroom"];
+                            let maximum = caps["maximum_remaining"].as_u64();
+                            let weekly = caps["weekly_remaining"].as_u64().filter(|_| {
+                                value["data"]["can_earn_per_week"].as_bool() != Some(false)
+                            });
+                            let limit = maximum.into_iter().chain(weekly).min();
+                            let proposed = quantity.get();
+                            value["currency_reward_projection"] = serde_json::json!({
+                                "proposed_quantity":proposed,
+                                "quantity_within_recorded_headroom":limit.map(|cap| proposed.min(cap)),
+                                "quantity_above_recorded_headroom":limit.map(|cap| proposed.saturating_sub(cap))
+                            });
+                        }
                     } else {
                         value["currency_cap_headroom"] = headroom;
                     }

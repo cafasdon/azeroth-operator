@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare proposed Forever currency rewards against recorded cap headroom.
+
 - Inspect a single saved Forever currency and its recorded cap headroom by ID.
 
 - Suggest manual bank withdrawals for saved Forever item budgets.
