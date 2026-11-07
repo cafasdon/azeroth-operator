@@ -282,6 +282,11 @@ from the same export. It does not measure distance or include coordinates.
 Missing map or quest data gives null. Update the importer and reader before
 syncing this field. [Forever map API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MapDocumentation.lua)
 
+Set `quest_on_captured_map: true` to use that map directly in quest
+inspection. It combines with the other quest list filters and is mutually
+exclusive with an explicit waypoint map ID. A missing captured map leaves
+the filtered quest data and checklist unknown.
+
 Add `quest_difficulty: "elite"` or `quest_difficulty: "suggested_group"`
 to filter by observed elite status or a suggested group size above one.
 The checklist reflects the filtered quests. Unknown difficulty counts apply

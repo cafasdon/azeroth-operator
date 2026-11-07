@@ -54,6 +54,9 @@ struct Inspect {
     quest_xp_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
+    /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
+    #[serde(default)]
+    quest_on_captured_map: bool,
     /// Filter saved Forever quests to observed elite or suggested-group quests.
     quest_difficulty: Option<QuestDifficulty>,
     /// Filter saved Forever quests by captured turn-in readiness.
@@ -951,6 +954,12 @@ impl Operator {
             ),
         ];
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
+        let filter_quest_map = args.quest_waypoint_map_id.is_some() || args.quest_on_captured_map;
+        if args.quest_waypoint_map_id.is_some() && args.quest_on_captured_map {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Choose either an explicit waypoint map or the captured map",
+            )]);
+        }
         let filter_spellbook = args.spellbook_spell_id.is_some()
             || args.spellbook_passive.is_some()
             || args.spellbook_off_spec.is_some()
@@ -1024,7 +1033,7 @@ impl Operator {
         if let Some(budget) = args.spending_budget {
             if args.section.is_some()
                 || args.quest_id.is_some()
-                || args.quest_waypoint_map_id.is_some()
+                || filter_quest_map
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
@@ -1053,7 +1062,7 @@ impl Operator {
                 "Quest selection requires the quests section",
             )]);
         }
-        if args.quest_waypoint_map_id.is_some()
+        if filter_quest_map
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1222,7 +1231,7 @@ impl Operator {
                     }
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
-                if args.quest_waypoint_map_id.is_some()
+                if filter_quest_map
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
@@ -1234,7 +1243,28 @@ impl Operator {
                         )]);
                     }
                     let mut data = value["data"].take();
-                    if let Some(map) = args.quest_waypoint_map_id {
+                    let map = if args.quest_on_captured_map {
+                        let snapshot = match self.store.read(&args.snapshot_id) {
+                            Ok(snapshot) => snapshot,
+                            Err(_) => {
+                                return CallToolResult::error(vec![ContentBlock::text(
+                                    "Could not read the captured player map",
+                                )]);
+                            }
+                        };
+                        let map = snapshot
+                            .sections
+                            .get("stats")
+                            .and_then(|stats| stats["map_id"].as_u64());
+                        value["quest_on_captured_map"] = serde_json::json!(true);
+                        if map.is_none() {
+                            data = serde_json::Value::Null;
+                        }
+                        map
+                    } else {
+                        args.quest_waypoint_map_id.map(|map| u64::from(map.get()))
+                    };
+                    if filter_quest_map {
                         value["quest_waypoint_map_id"] = serde_json::json!(map);
                         value["quest_waypoint_map_unknown_count"] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
@@ -1243,8 +1273,7 @@ impl Operator {
                                     .filter(|quest| quest["next_waypoint_map_id"].is_null())
                                     .count();
                                 quests.retain(|_, quest| {
-                                    quest["next_waypoint_map_id"].as_u64()
-                                        == Some(u64::from(map.get()))
+                                    quest["next_waypoint_map_id"].as_u64() == map
                                 });
                                 unknown
                             }));

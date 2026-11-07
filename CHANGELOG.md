@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever quest waypoints to the player map in the same capture.
+
 - Capture the Forever player's map ID and list quests with matching saved waypoints.
 
 - Find captured Forever built-in action buttons and slots by exact hotkey.
