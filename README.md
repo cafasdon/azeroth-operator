@@ -52,6 +52,12 @@ Import a JSON snapshot or the addon's narrow SavedVariables export with `target/
 
 Analysis tools: `character_summary` reports observed counts and unknowns; `compare_snapshots` requires the same character and exact client/build, rejects reversed capture order, and returns at most 100 changed JSON paths per section with truncation metadata. Missing sections are not treated as empty inventories. These are snapshot observations, not recommendations about optimal equipment.
 
+Pass an optional `item_id` to `compare_snapshots` for that base item's before
+and after quantities and signed change by storage. A storage change requires
+both captures to include that storage. The net change requires all supported
+storage sections in both captures. The comparison reports quantity changes
+without inferring which individual copies moved.
+
 `review_equipment_selection` creates a player-review JSON draft bound to one
 `snapshot_id`. Supply 1–19 `selections`, each with `target_slot`, `expected_item_id`
 and a `source`: either `{"kind":"bag","bag":0,"slot":1}` or

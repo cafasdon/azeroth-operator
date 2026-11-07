@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured item quantities by storage across two same-character snapshots.
+
 - Find captured item copies across equipment, bags and supported banks without a simulator catalogue.
 
 - Show where fixed Forever recipe reagents were observed in bags and banks.

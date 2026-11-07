@@ -265,6 +265,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             {"storage": "character_bank", "container": "6", "slot": "1", "count": 1}])
                         self.assertFalse(tail["has_more"])
                         self.assertTrue((await session.call_tool("find_snapshot_item", {**search, "limit": 51})).isError)
+                        forever["sections"]["bags"]["0"]["1"]["count"] = 1
+                        forever["sections"]["character_bank"]["6"]["1"]["count"] = 2
+                        moved_key = SnapshotStore(Path(folder)).ingest(forever)
+                        changes = {"before_id": capped_key, "after_id": moved_key, "item_id": 744}
+                        compared = await session.call_tool("compare_snapshots", changes)
+                        self.assertFalse(compared.isError)
+                        item_change = json.loads(compared.content[0].text)["item_quantity_change"]
+                        self.assertEqual(item_change["net_delta"], 0)
+                        self.assertEqual(item_change["by_storage"]["bags"], {"before": 42, "after": 41, "delta": -1})
+                        self.assertEqual(item_change["by_storage"]["character_bank"], {"before": 1, "after": 2, "delta": 1})
+                        del forever["sections"]["bags"]
+                        partial_key = SnapshotStore(Path(folder)).ingest(forever)
+                        partial = await session.call_tool("compare_snapshots", {**changes, "after_id": partial_key})
+                        item_change = json.loads(partial.content[0].text)["item_quantity_change"]
+                        self.assertIsNone(item_change["net_delta"])
+                        self.assertEqual(item_change["by_storage"]["bags"], {"before": 42, "after": None, "delta": None})
+                        mismatch = await session.call_tool("compare_snapshots", {**changes, "after_id": forever_key})
+                        self.assertTrue(mismatch.isError)
                         for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},
                                     {"snapshot_id":key,"crafts":1}):
                             self.assertTrue((await session.call_tool("review_forever_recipe", bad)).isError)

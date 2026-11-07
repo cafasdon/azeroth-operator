@@ -154,6 +154,24 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
     }))
 }
 
+fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Value> {
+    let before = find_item(before, item_id, 0, 1)?;
+    let after = find_item(after, item_id, 0, 1)?;
+    let quantities = after["quantity_by_storage"].as_object().unwrap();
+    let mut net_delta = Some(0i64);
+    let mut by_storage = BTreeMap::new();
+    for (storage, current) in quantities {
+        let previous = &before["quantity_by_storage"][storage];
+        let delta = previous.as_i64().zip(current.as_i64()).map(|(a, b)| b - a);
+        net_delta = net_delta.zip(delta).map(|(total, change)| total + change);
+        by_storage.insert(
+            storage,
+            json!({"before":previous,"after":current,"delta":delta}),
+        );
+    }
+    Ok(json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta}))
+}
+
 fn carried_items(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();
@@ -193,6 +211,14 @@ fn carried_items(snapshot: &Snapshot) -> Option<Value> {
 }
 
 pub fn compare(before: &Snapshot, after: &Snapshot) -> Result<Value> {
+    compare_with_item(before, after, None)
+}
+
+pub fn compare_with_item(
+    before: &Snapshot,
+    after: &Snapshot,
+    item_id: Option<u32>,
+) -> Result<Value> {
     ensure!(before.client == after.client, "Client/build mismatch");
     ensure!(
         before.character.name == after.character.name
@@ -225,9 +251,13 @@ pub fn compare(before: &Snapshot, after: &Snapshot) -> Result<Value> {
         };
         sections.insert(name.clone(), result);
     }
-    Ok(
-        json!({"client":after.client,"character":after.character,"before_captured_at":before.captured_at,"after_captured_at":after.captured_at,"live":false,"sections":sections}),
-    )
+    let mut comparison = json!({"client":after.client,"character":after.character,
+        "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
+        "live":false,"sections":sections});
+    if let Some(item_id) = item_id {
+        comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
+    }
+    Ok(comparison)
 }
 
 fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {
