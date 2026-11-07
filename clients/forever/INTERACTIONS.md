@@ -300,6 +300,11 @@ for that recipe. Update the importer and reader before syncing this field.
 combined with the character and output item filters. Only captures with an
 exact observed profession ID match. Older captures may lack that field.
 
+Use `recipe_id` with `list_snapshots` to locate captures of a specific
+selected recipe, then pass the snapshot ID to `review_forever_recipe`.
+This matches the selected schematic, including older captures without
+profession metadata. A tracking entry alone does not match.
+
 `material_and_charge_capacity` shows the smaller of the observed material
 limit and saved recipe charges, with the shortfall against the requested
 craft count. It reports bags and all observed storage separately. Either

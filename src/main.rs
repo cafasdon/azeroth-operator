@@ -134,6 +134,8 @@ struct List {
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
     recipe_profession_id: Option<std::num::NonZeroU32>,
+    /// Filter Forever snapshots by the exact captured selected recipe ID.
+    recipe_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -849,7 +851,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can find selected recipes by output item or profession ID. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can find selected recipes by recipe, output item or profession ID. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -866,8 +868,11 @@ impl Operator {
         match self.store.list_matching_recipes(
             family,
             args.character.as_ref(),
-            args.recipe_output_item_id,
-            args.recipe_profession_id,
+            azeroth_operator::RecipeCaptureFilters {
+                recipe_id: args.recipe_id,
+                output_item_id: args.recipe_output_item_id,
+                profession_id: args.recipe_profession_id,
+            },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
         ) {

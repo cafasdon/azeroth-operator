@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever schematic captures by exact recipe ID for material review.
+
 - Find saved Forever recipe captures by the recorded profession ID.
 
 - Capture the selected Forever recipe's profession, observed rank and cap.

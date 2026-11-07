@@ -176,6 +176,13 @@ pub struct Store {
     pub root: PathBuf,
 }
 
+#[derive(Default)]
+pub struct RecipeCaptureFilters {
+    pub recipe_id: Option<std::num::NonZeroU32>,
+    pub output_item_id: Option<std::num::NonZeroU32>,
+    pub profession_id: Option<std::num::NonZeroU32>,
+}
+
 impl Store {
     pub fn list(&self, family: Family, offset: usize, limit: usize) -> Result<Value> {
         self.list_matching(family, None, offset, limit)
@@ -202,8 +209,10 @@ impl Store {
         self.list_matching_recipes(
             family,
             character,
-            recipe_output_item_id,
-            None,
+            RecipeCaptureFilters {
+                output_item_id: recipe_output_item_id,
+                ..Default::default()
+            },
             offset,
             limit,
         )
@@ -213,12 +222,13 @@ impl Store {
         &self,
         family: Family,
         character: Option<&Character>,
-        recipe_output_item_id: Option<std::num::NonZeroU32>,
-        recipe_profession_id: Option<std::num::NonZeroU32>,
+        filters: RecipeCaptureFilters,
         offset: usize,
         limit: usize,
     ) -> Result<Value> {
-        let filter_recipes = recipe_output_item_id.is_some() || recipe_profession_id.is_some();
+        let filter_recipes = filters.recipe_id.is_some()
+            || filters.output_item_id.is_some()
+            || filters.profession_id.is_some();
         ensure!(
             !filter_recipes || family == Family::Forever,
             "Recipe filtering requires Forever"
@@ -259,12 +269,17 @@ impl Store {
             match Self::read_in_root(&root, id) {
                 Ok(s)
                     if s.client.family == family
-                        && recipe_output_item_id.is_none_or(|id| {
+                        && filters.recipe_id.is_none_or(|id| {
+                            s.sections.get("selected_recipe").is_some_and(|recipe| {
+                                recipe["recipe_id"].as_u64() == Some(u64::from(id.get()))
+                            })
+                        })
+                        && filters.output_item_id.is_none_or(|id| {
                             s.sections.get("selected_recipe").is_some_and(|recipe| {
                                 recipe["output_item_id"].as_u64() == Some(u64::from(id.get()))
                             })
                         })
-                        && recipe_profession_id.is_none_or(|id| {
+                        && filters.profession_id.is_none_or(|id| {
                             s.sections.get("selected_recipe").is_some_and(|recipe| {
                                 recipe["profession"]["profession_id"].as_u64()
                                     == Some(u64::from(id.get()))
@@ -282,7 +297,7 @@ impl Store {
                             "recipe_id":recipe["recipe_id"],"learned":recipe["learned"],
                             "output_item_id":recipe["output_item_id"]
                         });
-                        if recipe_profession_id.is_some() {
+                        if filters.profession_id.is_some() {
                             summary["selected_recipe"]["profession_id"] =
                                 recipe["profession"]["profession_id"].clone();
                         }
