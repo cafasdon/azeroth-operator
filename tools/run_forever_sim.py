@@ -11,12 +11,19 @@ import subprocess
 import tempfile
 import time
 
-SPECS = frozenset((
-    "balanceDruid", "feralCatDruid", "feralBearDruid", "restorationDruid",
-    "hunter", "mage", "holyPaladin", "protectionPaladin", "retributionPaladin",
-    "dpsPriest", "healerPriest", "rogue", "elementalShaman", "enhancementShaman",
-    "restorationShaman", "warlock", "dpsWarrior", "protectionWarrior",
-))
+# Class enum IDs from the pinned Forever common.proto.
+CLASS_IDS = {
+    "warrior": 1, "paladin": 2, "hunter": 3, "rogue": 4, "priest": 5,
+    "shaman": 7, "mage": 8, "warlock": 9, "druid": 11,
+}
+SPEC_CLASSES = {
+    "balanceDruid": "druid", "feralCatDruid": "druid", "feralBearDruid": "druid",
+    "restorationDruid": "druid", "hunter": "hunter", "mage": "mage",
+    "holyPaladin": "paladin", "protectionPaladin": "paladin", "retributionPaladin": "paladin",
+    "dpsPriest": "priest", "healerPriest": "priest", "rogue": "rogue",
+    "elementalShaman": "shaman", "enhancementShaman": "shaman", "restorationShaman": "shaman",
+    "warlock": "warlock", "dpsWarrior": "warrior", "protectionWarrior": "warrior",
+}
 
 
 def read_object(path, limit):
@@ -30,23 +37,32 @@ def read_object(path, limit):
     return value
 
 
-def request_from(template, equipment_review, encounter_lookup):
-    raid = deepcopy(template["raid"])
+def single_player(raid):
     players = [player for party in raid["parties"] for player in party.get("players", [])]
     if len(players) != 1:
         raise ValueError("Provide exactly one player")
-    player = players[0]
+    return players[0]
+
+
+def request_from(template, equipment_review, encounter_lookup):
+    raid = deepcopy(template["raid"])
+    player = single_player(raid)
     rotation = player["rotation"]
     if rotation.get("type") != "TypeAPL" or not any(
         entry.get("action") for entry in rotation.get("priorityList", [])
     ):
         raise ValueError("Provide a single-player template with an explicit APL")
-    specs = SPECS & player.keys()
+    specs = SPEC_CLASSES.keys() & player.keys()
     if (len(specs) != 1 or not isinstance(player[next(iter(specs))], dict)
             or not isinstance(player.get("talentsString"), str)
             or not player.get("class") or player["class"] == "ClassUnknown"
             or not player.get("race") or player["race"] == "RaceUnknown"):
         raise ValueError("Provide an explicit class, race, spec and talent string")
+    spec_class = SPEC_CLASSES[next(iter(specs))]
+    declared_class = player["class"]
+    if not (declared_class == f"Class{spec_class.capitalize()}"
+            or type(declared_class) is int and declared_class == CLASS_IDS[spec_class]):
+        raise ValueError("Simulator template class and specialisation disagree")
     if player.get("enableItemSwap") or player.get("enable_item_swap"):
         raise ValueError("Disable template item swapping")
     equipment = equipment_review["checks"]["simulator_equipment_spec"]

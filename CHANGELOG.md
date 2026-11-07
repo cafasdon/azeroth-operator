@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Check Forever gear ranker templates against the captured character class and race.
+
 - Compare captured Forever wallet balances on explicit request.
 
 - Add an explicit Forever wallet export and owner-scoped MCP readback.

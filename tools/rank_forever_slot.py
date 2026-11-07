@@ -12,7 +12,7 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from tools.run_forever_sim import compare, compare_bulk, read_object, request_from
+from tools.run_forever_sim import CLASS_IDS, compare, compare_bulk, read_object, request_from, single_player
 
 
 SIMULATOR_SLOTS = (
@@ -20,6 +20,35 @@ SIMULATOR_SLOTS = (
     "legs", "feet", "finger1", "finger2", "trinket1", "trinket2",
     "main_hand", "off_hand", "ranged",
 )
+# Race enum IDs from the pinned Forever common.proto.
+CAPTURED_RACES = {
+    "bloodelf": 1, "dwarf": 2, "gnome": 3, "human": 4, "nightelf": 5,
+    "orc": 6, "tauren": 7, "troll": 8, "undead": 9,
+    "highorderskyborne": 10, "windshaperskyborne": 11,
+}
+
+
+def check_template_identity(template, stats):
+    player = single_player(template["raid"])
+    captured_class = (stats.get("class") or "").lower()
+    captured_race = (stats.get("race") or "").lower()
+    if captured_race == "scourge":
+        captured_race = "undead"
+    checks = {}
+    for field, token, known in (("class", captured_class, CLASS_IDS),
+                                ("race", captured_race, CAPTURED_RACES)):
+        if token in known:
+            expected = player.get(field, "")
+            if isinstance(expected, str):
+                matches = expected.removeprefix(field.capitalize()).lower() == token
+            else:
+                matches = type(expected) is int and expected == known[token]
+            if not matches:
+                raise ValueError("Simulator template disagrees with captured character identity")
+            checks[field] = "matches"
+        else:
+            checks[field] = "unverified"
+    return checks
 
 
 async def slot_candidates(call, slot, multi, collapse_identical):
@@ -78,6 +107,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
                 raise ValueError("Local MCP rejected the snapshot or request")
             return json.loads(result.content[0].text)
 
+        stats = await call("inspect_snapshot", section="stats")
         baseline = await call("review_equipment_selection", selections=[])
         if not baseline["checks"]["simulator_equipment_spec"]:
             raise ValueError("Captured baseline has unresolved equipment")
@@ -121,7 +151,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
                 skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
             else:
                 skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
-        return drafts, skipped, coverage
+        return drafts, skipped, coverage, stats.get("data") or {}
 
 
 def rank_encounter(args, template, encounter, drafts):
@@ -206,9 +236,10 @@ def main():
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
-            drafts, skipped, coverage = asyncio.run(asyncio.wait_for(
+            drafts, skipped, coverage, stats = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog, args.collapse_identical_items), timeout=45,
             ))
+        identity = check_template_identity(template, stats)
         if len(encounters) == 1:
             result = rank_encounter(args, template, encounters[0], drafts)
         else:
@@ -228,7 +259,7 @@ def main():
             result = {"encounters": rankings}
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
-        result.update(skipped=skipped, storage_coverage=coverage)
+        result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]
         else:

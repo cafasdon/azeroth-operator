@@ -125,6 +125,13 @@ coverage and skipped candidates. Multi-slot output uses `slots` and a
 `selections` array per result. Character eligibility and complete-inventory
 optimisation remain separate checks.
 
+The ranker checks the template's class and race against the saved stats when
+it recognises the captured tokens. A known mismatch stops the run. Missing
+or unmapped observations are reported as `unverified` in `template_identity`.
+The check uses the pinned simulator enum mapping. The simulator request also
+requires the template's specialisation to agree with its declared class.
+[WoWSims Forever enum definitions](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)
+
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
 storage copies before applying the combination and draft limits. This applies
 to items that fit exactly one simulator slot. Each skipped copy records its
