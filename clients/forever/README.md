@@ -161,6 +161,11 @@ verify complete-set legality or live equip eligibility. With snapshot context,
 returned gear can include reasons in `observed_requirement_conflicts_by_item_id`.
 An omitted ID means no conflict was found in the available observations.
 
+Use `item_effect_buff_id` to find items with a recorded buff spell ID, including a nested stacking aura ID.
+`item_effect_trigger` accepts `on_use`, `proc`, `stack_proc` or
+`stacking_aura`. When both filters are supplied they must match the same
+effect. These are catalogue labels and do not predict in-game activation.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With

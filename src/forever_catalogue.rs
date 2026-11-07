@@ -122,6 +122,26 @@ pub enum ItemOrder {
 }
 
 #[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemEffectTrigger {
+    OnUse,
+    Proc,
+    StackProc,
+    StackingAura,
+}
+
+impl ItemEffectTrigger {
+    fn field(&self) -> &'static str {
+        match self {
+            Self::OnUse => "onUse",
+            Self::Proc => "proc",
+            Self::StackProc => "stackProc",
+            Self::StackingAura => "stackingAura",
+        }
+    }
+}
+
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
     pub section: Section,
@@ -144,6 +164,10 @@ pub struct Query {
     pub minimum_weapon_speed: Option<f64>,
     /// Maximum recorded weapon swing time in seconds (inclusive).
     pub maximum_weapon_speed: Option<f64>,
+    /// Restrict items to a recorded effect with this buff spell ID.
+    pub item_effect_buff_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to this recorded effect trigger, on the same effect as any buff ID.
+    pub item_effect_trigger: Option<ItemEffectTrigger>,
     /// Require this gain over the saved slot's default item level. Requires a known equipped baseline.
     pub minimum_item_level_gain: Option<std::num::NonZeroU32>,
     /// Require a gain in one regular base stat over the saved equipped slot.
@@ -376,6 +400,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 .is_none_or(|(min, max)| min <= max),
         "Expected positive weapon filters and an ordered speed range"
     );
+    let effect_filter = query.item_effect_buff_id.is_some() || query.item_effect_trigger.is_some();
     let item_filter = item_ids.is_some()
         || ownership.is_some()
         || check_requirements.is_some()
@@ -383,6 +408,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
         || weapon_filter.iter().any(Option::is_some)
+        || effect_filter
         || query.order_by.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
@@ -469,6 +495,19 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 && query
                     .maximum_weapon_speed
                     .is_none_or(|maximum| weapon_speed(row).is_some_and(|speed| speed <= maximum));
+            let matches_effect = !effect_filter
+                || row["itemEffects"].as_array().is_some_and(|effects| {
+                    effects.iter().any(|effect| {
+                        query.item_effect_buff_id.is_none_or(|id| {
+                            let id = Some(u64::from(id.get()));
+                            effect["buffId"].as_u64() == id
+                                || effect["stackingAura"]["buffId"].as_u64() == id
+                        }) && query
+                            .item_effect_trigger
+                            .as_ref()
+                            .is_none_or(|trigger| effect[trigger.field()].is_object())
+                    })
+                });
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
@@ -540,6 +579,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 && matches_set
                 && matches_gear
                 && matches_weapon
+                && matches_effect
                 && matches_drop
                 && matches_quest
                 && matches_vendor
