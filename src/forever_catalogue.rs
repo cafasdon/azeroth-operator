@@ -40,6 +40,30 @@ impl Section {
 }
 
 #[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemSource {
+    Crafted,
+    Drop,
+    Quest,
+    Vendor,
+    Reputation,
+    Pvp,
+}
+
+impl ItemSource {
+    fn field(&self) -> &'static str {
+        match self {
+            Self::Crafted => "crafted",
+            Self::Drop => "drop",
+            Self::Quest => "quest",
+            Self::Vendor => "soldBy",
+            Self::Reputation => "rep",
+            Self::Pvp => "pvp",
+        }
+    }
+}
+
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
     pub section: Section,
@@ -60,6 +84,8 @@ pub struct Query {
     pub vendor_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a reputation source for this reputation faction ID.
     pub reputation_faction_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to records with this type of acquisition source.
+    pub source_kind: Option<ItemSource>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
 }
@@ -105,7 +131,8 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         || query.drop_zone_id.is_some()
         || query.reward_quest_id.is_some()
         || query.vendor_npc_id.is_some()
-        || query.reputation_faction_id.is_some();
+        || query.reputation_faction_id.is_some()
+        || query.source_kind.is_some();
     ensure!(
         !item_filter || matches!(query.section, Section::Items),
         "Set and acquisition source filters are supported for items only"
@@ -170,6 +197,13 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                     })
                 })
             });
+            let matches_source = query.source_kind.as_ref().is_none_or(|kind| {
+                row["sources"].as_array().is_some_and(|sources| {
+                    sources
+                        .iter()
+                        .any(|source| source[kind.field()].is_object())
+                })
+            });
             if matches
                 && matches_recipe
                 && matches_set
@@ -177,6 +211,7 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                 && matches_quest
                 && matches_vendor
                 && matches_reputation
+                && matches_source
             {
                 if remaining_offset > 0 {
                     remaining_offset -= 1;

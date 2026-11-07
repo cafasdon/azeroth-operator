@@ -65,6 +65,8 @@ The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinn
 
 For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to find catalogue items associated with that recipe. The `enchants` section supports the same filter for enchant references. A supplied `key` further narrows the matches. These associations come from the pinned simulator catalogue and can be incomplete or list several variants. Use the saved recipe observation for reagent requirements.
 
+Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The other source categories are `crafted`, `drop`, `quest`, `vendor` and `reputation`. Filters combine at item level, so an item can match through multiple recorded sources. The catalogue PvP tag supplies no rank, cost or season data.
+
 For recorded loot sources, pass `{"section":"items","drop_npc_id":644}`. Resolve NPC names through the `npcs` section first. Results include only items with an explicit matching NPC drop in the pinned catalogue. For zone loot, use `drop_zone_id` to include both NPC and unattributed drops recorded for that zone. When both filters are supplied, they must match the same drop source. Missing entries provide no evidence about live loot availability.
 
 For vendor references, pass `{"section":"items","vendor_npc_id":1297}`. Matching sale records can include the vendor name, zone and faction. Current stock, prices and purchase eligibility require separate evidence.

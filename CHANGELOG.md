@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Browse Forever items by recorded acquisition source, including PvP.
+
 - Look up Forever catalogue items by reputation faction ID.
 
 - Find Forever catalogue items by recorded vendor NPC ID.
