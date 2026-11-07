@@ -8,6 +8,8 @@ The MCP registers an explicit offline allowlist. Snapshot listing, inspection, c
 
 Offline tools may use saved observations and a verified local catalogue. They must never drive input, broadcast commands across accounts, attach to a game process, intercept traffic, bypass protected or secret values, run arbitrary game code, or create a live game connection. A new route needs source review for its inputs, outputs and side effects before admission. Player involvement, technical feasibility and API availability do not establish Blizzard authorisation. Check applicable regional terms and source-specific data rights before enabling new acquisition or game-facing features.
 
+Each stdio process binds one explicit, existing, absolute snapshot directory at startup. Configure it under the owner's OS account with private filesystem permissions. Request arguments cannot select a store. The hosted gateway authenticates with the dedicated owner's bearer credential and mounts only that owner's store read-only. Treat that credential as access to the owner's records. A separate installation or principal needs its own credential and store. The reference catalogue is separate and its sync never sends snapshot data.
+
 This is a conservative project control. It does not establish Blizzard approval or cover pre-existing installations of the standalone addon or older MCP binaries. The historical matrix below records implementation and qualification evidence, not which write-related routes the current MCP exposes.
 
 ## Published sources

@@ -2,6 +2,7 @@ import os
 import asyncio
 import json
 import sys
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,6 +43,30 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     response = await session.call_tool("lookup_forever_catalogue", {"section":"items","key":"744"})
                     self.assertTrue(response.isError)
                     self.assertNotIn("Unverified", response.content[0].text)
+
+    async def test_snapshot_owner_scope(self):
+        binary = Path(__file__).resolve().parents[1] / "target" / "debug" / (
+            "azeroth-operator.exe" if os.name == "nt" else "azeroth-operator")
+        binary = Path(os.environ.get("AZEROTH_TEST_BINARY", binary)).resolve(strict=True)
+        env = dict(os.environ)
+        env.pop("AZEROTH_DATA_DIR", None)
+        missing = subprocess.run([str(binary)], env=env, stdin=subprocess.DEVNULL,
+                                 capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("AZEROTH_DATA_DIR", missing.stderr)
+        self.assertEqual(missing.stdout, "")
+        with tempfile.TemporaryDirectory() as owner_a, tempfile.TemporaryDirectory() as owner_b:
+            key = SnapshotStore(Path(owner_a)).ingest(fixture())
+            env["AZEROTH_DATA_DIR"] = owner_b
+            params = StdioServerParameters(command=str(binary), env=env)
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    result = await session.call_tool("inspect_snapshot", {"snapshot_id":key})
+                    self.assertTrue(result.isError)
+                    self.assertNotIn(owner_a, result.content[0].text)
+                    listed = await session.call_tool("list_snapshots", {"family":"retail"})
+                    self.assertEqual(json.loads(listed.content[0].text)["snapshots"], [])
 
     async def check_stdio_server(self, rust_binary):
         with tempfile.TemporaryDirectory() as folder:

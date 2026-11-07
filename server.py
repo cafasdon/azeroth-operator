@@ -5,7 +5,10 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from shared.snapshots import SnapshotStore
 
-store = SnapshotStore(Path(os.environ.get("AZEROTH_DATA_DIR", Path(__file__).parent / "local-data" / "snapshots")))
+configured_root = os.environ.get("AZEROTH_DATA_DIR")
+if not configured_root or not Path(configured_root).is_absolute() or not Path(configured_root).is_dir():
+    raise SystemExit("AZEROTH_DATA_DIR must name an existing absolute owner snapshot directory")
+store = SnapshotStore(Path(configured_root))
 mcp = FastMCP("Azeroth Operator")
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 

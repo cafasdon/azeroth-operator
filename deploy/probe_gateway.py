@@ -54,6 +54,7 @@ if __name__ == "__main__":
     capabilities = json.loads(result["result"]["content"][0]["text"])
     assert capabilities["policy"]["mode"] == "offline_analysis"
     assert capabilities["policy"]["generated_game_imports"] is False
+    assert capabilities["policy"]["snapshot_scope"] == "configured_owner_store"
     blocked = ("macro", "binding", "equipment", "bag", "talent", "action", "equipment_set")
     for request_id, operation in enumerate(blocked, start=5):
         code, result, _ = request({"jsonrpc": "2.0", "id": request_id, "method": "tools/call",

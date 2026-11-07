@@ -279,7 +279,7 @@ impl Operator {
             .map(|tool| tool.name)
             .collect();
         implemented.sort_unstable();
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","reviewed_on":"2026-11-07","sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-07","sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
     }
     #[tool(
         description = "Look up gear, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. Omit key for the section count. No network, live acquisition validation or simulation execution.",
@@ -469,9 +469,7 @@ impl ServerHandler for Operator {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let root = std::env::var_os("AZEROTH_DATA_DIR")
-        .map(Into::into)
-        .unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
+    let root = std::env::var_os("AZEROTH_DATA_DIR").map(std::path::PathBuf::from);
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if !args.is_empty() {
         if args.len() == 4 && args[0] == "sync" {
@@ -506,9 +504,18 @@ async fn main() -> anyhow::Result<()> {
                 "Usage: azeroth-operator [import <file> | import-stdin | upload <file> | sync <family> <file> <receipt-dir>]"
             );
         };
+        let root = root.unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
         println!("{}", Store { root }.ingest(&snapshot)?);
         return Ok(());
     }
+    let root = root.ok_or_else(|| {
+        anyhow::anyhow!("AZEROTH_DATA_DIR must name the owner's absolute snapshot directory")
+    })?;
+    anyhow::ensure!(root.is_absolute(), "AZEROTH_DATA_DIR must be absolute");
+    let root = root
+        .canonicalize()
+        .map_err(|_| anyhow::anyhow!("Owner snapshot directory unavailable"))?;
+    anyhow::ensure!(root.is_dir(), "Owner snapshot directory unavailable");
     let forever_catalogue =
         std::env::var_os("AZEROTH_FOREVER_CATALOGUE").map(std::path::PathBuf::from);
     anyhow::ensure!(

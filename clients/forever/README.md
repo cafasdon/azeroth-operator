@@ -27,6 +27,7 @@ Run from the repository root:
 
 ```powershell
 python -m tools.sync_forever_catalogue --output local-data/forever/catalogue.json
+# Set AZEROTH_DATA_DIR to your existing private, absolute snapshot directory.
 $env:AZEROTH_FOREVER_CATALOGUE = (Resolve-Path local-data/forever/catalogue.json).Path
 .\target\debug\azeroth-operator.exe
 ```
