@@ -149,18 +149,35 @@ pub fn review_recipe_with_inventory(
             .zip(recipe_id.as_deref())
             .map(|(rows, id)| rows.contains_key(id))
     };
+    let charges = recipe["cooldown"]["charges"].as_u64();
+    let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
+    let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
+    let combined_capacity = |materials: &Value| {
+        materials["supported_crafts"]
+            .as_u64()
+            .zip(charges)
+            .map(|(material_limit, charges)| {
+                let supported = material_limit.min(charges);
+                json!({"supported_crafts":supported,
+                "shortfall_vs_requested":u64::from(crafts).saturating_sub(supported)})
+            })
+    };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "recipe_tracking":{"tracked_as_craft":membership("crafts"),"tracked_as_recraft":membership("recrafts")},
         "base_output_if_completed":base_output_if_completed,
-        "shortfall_vs_observed_recipe_charges":recipe["cooldown"]["charges"].as_u64()
+        "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),
         "unmet_crafting_conditions":recipe["crafting_conditions"].as_object().map(|conditions|
             conditions.iter().filter(|(_, condition)| condition["met"].as_bool() == Some(false))
                 .collect::<BTreeMap<_, _>>()),
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
         "material_capacity":{
-            "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),
-            "all_observed_storage":capacity(&observed_limits, missing_storage.len() < storage.len())
+            "bags":bags_capacity,
+            "all_observed_storage":observed_capacity
+        },
+        "material_and_charge_capacity":{
+            "bags":combined_capacity(&bags_capacity),
+            "all_observed_storage":combined_capacity(&observed_capacity)
         },
         "craftability_verified":false,"game_execution":false});
     if let Some(inventory) = inventory {
