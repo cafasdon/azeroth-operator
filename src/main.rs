@@ -52,6 +52,8 @@ struct Compare {
     after_id: String,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
+    /// Optionally compare one captured Forever currency balance by ID.
+    currency_id: Option<std::num::NonZeroU32>,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -552,7 +554,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots. Returns bounded changed JSON paths and optional per-storage quantities for one item ID.",
+        description = "Compare same-character same-client snapshots. Returns bounded changed JSON paths and optional item quantities or a Forever currency balance.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -563,7 +565,12 @@ impl Operator {
         let result = (|| {
             let a = self.store.read(&args.before_id)?;
             let b = self.store.read(&args.after_id)?;
-            azeroth_operator::analysis::compare_with_item(&a, &b, args.item_id.map(|id| id.get()))
+            azeroth_operator::analysis::compare_observations(
+                &a,
+                &b,
+                args.item_id.map(|id| id.get()),
+                args.currency_id.map(|id| id.get()),
+            )
         })();
         match result {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),

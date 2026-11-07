@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare an observed Forever currency balance across two same-character snapshots.
+
 - Compare captured item quantities by storage across two same-character snapshots.
 
 - Find captured item copies across equipment, bags and supported banks without a simulator catalogue.

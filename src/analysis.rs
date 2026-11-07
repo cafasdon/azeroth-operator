@@ -219,6 +219,15 @@ pub fn compare_with_item(
     after: &Snapshot,
     item_id: Option<u32>,
 ) -> Result<Value> {
+    compare_observations(before, after, item_id, None)
+}
+
+pub fn compare_observations(
+    before: &Snapshot,
+    after: &Snapshot,
+    item_id: Option<u32>,
+    currency_id: Option<u32>,
+) -> Result<Value> {
     ensure!(before.client == after.client, "Client/build mismatch");
     ensure!(
         before.character.name == after.character.name
@@ -256,6 +265,37 @@ pub fn compare_with_item(
         "live":false,"sections":sections});
     if let Some(item_id) = item_id {
         comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
+    }
+    if let Some(currency_id) = currency_id {
+        ensure!(
+            before.client.family == crate::Family::Forever && currency_id > 0,
+            "Currency balance comparisons require a Forever currency ID"
+        );
+        let key = currency_id.to_string();
+        let balance = |snapshot: &Snapshot| {
+            snapshot
+                .sections
+                .get("currency_balances")
+                .and_then(|section| section["entries"].get(&key))
+                .cloned()
+        };
+        let previous = balance(before);
+        let current = balance(after);
+        let change = previous.as_ref().zip(current.as_ref()).and_then(|(a, b)| {
+            if a["account_wide"] != b["account_wide"] {
+                return None;
+            }
+            let from = a["quantity"].as_u64()?;
+            let to = b["quantity"].as_u64()?;
+            let direction = match to.cmp(&from) {
+                std::cmp::Ordering::Greater => "increased",
+                std::cmp::Ordering::Less => "decreased",
+                std::cmp::Ordering::Equal => "unchanged",
+            };
+            Some(json!({"direction":direction,"amount":to.abs_diff(from)}))
+        });
+        comparison["currency_balance_change"] =
+            json!({"currency_id":currency_id,"before":previous,"after":current,"change":change});
     }
     Ok(comparison)
 }
