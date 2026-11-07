@@ -177,6 +177,9 @@ struct Compare {
     /// Compare captured Forever experience and level observations.
     #[serde(default)]
     experience: bool,
+    /// Compare saved Forever spellbook observations by base spell ID.
+    #[serde(default)]
+    spellbook: bool,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -834,6 +837,7 @@ impl Operator {
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,
                     experience: args.experience,
+                    spellbook: args.spellbook,
                 },
             )
         })();

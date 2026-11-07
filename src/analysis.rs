@@ -469,6 +469,7 @@ pub struct ComparisonSelectors {
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
     pub experience: bool,
+    pub spellbook: bool,
 }
 
 pub fn compare_observations(
@@ -680,6 +681,13 @@ pub fn compare_observations(
             "before":previous,"after":current,"rank_delta":rank_delta
         });
     }
+    if selectors.spellbook {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Spellbook comparisons require Forever snapshots"
+        );
+        comparison["spellbook_change"] = compare_spellbook(before, after);
+    }
     if selectors.experience {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -728,6 +736,32 @@ pub fn compare_observations(
         });
     }
     Ok(comparison)
+}
+
+fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
+    fn by_base(snapshot: &Snapshot) -> Option<BTreeMap<u64, BTreeSet<u64>>> {
+        let rows = snapshot.sections.get("spellbook")?["entries"].as_object()?;
+        let mut spells = BTreeMap::<u64, BTreeSet<u64>>::new();
+        for row in rows.values() {
+            spells
+                .entry(row["base_spell_id"].as_u64()?)
+                .or_default()
+                .insert(row["spell_id"].as_u64()?);
+        }
+        Some(spells)
+    }
+    let previous = by_base(before);
+    let current = by_base(after);
+    let changes = previous.as_ref().zip(current.as_ref()).map(|(a,b)| {
+        let added = b.keys().filter(|id| !a.contains_key(id)).collect::<Vec<_>>();
+        let removed = a.keys().filter(|id| !b.contains_key(id)).collect::<Vec<_>>();
+        let changed = a.iter().filter_map(|(id, old)| {
+            let new = b.get(id)?;
+            (old != new).then(|| json!({"base_spell_id":id,"before_reported_spell_ids":old,"after_reported_spell_ids":new}))
+        }).collect::<Vec<_>>();
+        json!({"added_base_spell_ids":added,"removed_base_spell_ids":removed,"reported_spell_id_changes":changed})
+    });
+    json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
 fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {

@@ -86,6 +86,12 @@ slots by either ID. A false `spellbook_spell_observed` means no captured
 slot matched. Null means the spellbook capture was unavailable. The result
 describes visible slots and does not establish permanent learning.
 
+Use `compare_snapshots` with `spellbook: true` to compare the observed base
+spell IDs and their reported IDs. Slot reordering and duplicate entries
+with the same IDs leave this comparison unchanged. Missing spellbook data
+on either side leaves changes unknown. Additions and removals describe the
+observed slots and do not establish permanent learning or unlearning.
+
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.
 `character_summary.experience_progress` also reports XP to the next level.

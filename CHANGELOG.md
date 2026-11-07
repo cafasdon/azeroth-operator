@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever spellbook base IDs and reported overrides across captures.
+
 - Find saved Forever spellbook slots by exact base or reported spell ID.
 
 - Capture visible Forever player spellbook slots and distinguish base and override spell IDs.
