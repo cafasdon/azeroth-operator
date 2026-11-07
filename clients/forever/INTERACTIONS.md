@@ -102,6 +102,12 @@ and `honor`. Zero is observed, and missing amounts are unknown. These are
 reward panel values at export time. `required_copper` remains a separate
 cost observation. Update the importer and reader before syncing this field.
 
+`renown_rewards` lists major-faction reputation rewards by row, with faction
+ID and reputation points. This covers the dedicated major-faction API.
+An absent list means the client supplied no usable observation. An empty
+list is an observed empty result. Update the importer and reader before
+syncing this field. [Forever quest API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
+
 Set `quest_wallet_projection: true` when inspecting a saved Forever quest
 by ID to compare its captured coin reward and required payment. The net
 amount requires both observations. The upfront shortfall uses the optional

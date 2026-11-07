@@ -461,6 +461,10 @@ pub fn verify_forever_capture_fixture(
             IsFailed=function() return false end,
             GetSelectedQuest=function() return 42 end,
             ShouldShowQuestRewards=function(id) return id==42 end,
+            GetQuestLogMajorFactionReputationRewards=function(id)
+                assert(id==42)
+                return {{factionID=20,rewardAmount=invalidItemChoice and -1 or 75}}
+            end,
             GetQuestRewardCurrencyInfo=function(id,index,isChoice)
                 assert(id==42 and index==2 and isChoice==true)
                 return {currencyID=18,totalRewardAmount=50}
@@ -650,8 +654,18 @@ pub fn verify_forever_capture_fixture(
         serde_json::json!({"copper":123,"xp":456,"honor":0})
     );
     assert!(quests["43"].get("reward_amounts").is_none());
+    assert_eq!(
+        quests["42"]["renown_rewards"],
+        serde_json::json!({"1":{"faction_id":20,"quantity":75}})
+    );
+    assert!(quests["43"].get("renown_rewards").is_none());
     lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
     let partial = read()?;
+    assert!(
+        partial.sections["quests"]["42"]
+            .get("renown_rewards")
+            .is_none()
+    );
     assert_eq!(
         partial.sections["quests"]["42"]["reward_amounts"],
         serde_json::json!({"copper":123,"honor":0})

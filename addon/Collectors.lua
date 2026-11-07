@@ -611,6 +611,26 @@ local function questCurrencyRewards(id)
     return result
 end
 
+local function questRenownRewards(api,id)
+    local show=api.ShouldShowQuestRewards(id)
+    if not questRewardAccessible(show) or show~=true then return nil end
+    local rows=api.GetQuestLogMajorFactionReputationRewards(id)
+    assert(questRewardAccessible(rows) and type(rows)=="table", "Quest renown rewards unavailable")
+    local result,count={},#rows
+    assert(count<=32, "Too many quest renown rewards")
+    local observed=0
+    for index,row in pairs(rows) do
+        assert(questRewardInteger(index,1,count) and questRewardAccessible(row)
+            and type(row)=="table", "Invalid quest renown reward row")
+        assert(questRewardInteger(row.factionID,1,4294967295)
+            and questRewardInteger(row.rewardAmount,1,4294967295), "Invalid quest renown reward")
+        result[tostring(index)]={faction_id=row.factionID,quantity=row.rewardAmount}
+        observed=observed+1
+    end
+    assert(observed==count, "Incomplete quest renown rewards")
+    return result
+end
+
 local function questItemReward(query,index)
     local _,_,quantity,_,_,itemID=query(index)
     assert(questRewardInteger(itemID,1,4294967295)
@@ -691,6 +711,8 @@ AO.collectors.quests = function()
                 entry.required_copper=questRequiredCopper(api,id)
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
+                local renownOk,renown=pcall(questRenownRewards,api,id)
+                if renownOk then entry.renown_rewards=renown end
                 local selectedOk,currencyChoices,itemChoices,itemRewards,rewardAmounts=pcall(questSelectedRewards,api,id)
                 if selectedOk then
                     entry.currency_choices=currencyChoices

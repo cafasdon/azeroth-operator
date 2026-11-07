@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest major-faction reputation rewards when the quest log exposes them.
+
 - Project saved Forever quest coin rewards, required payments and wallet shortfalls.
 
 - Capture coin, experience and honor reward amounts for the selected Forever quest.

@@ -648,6 +648,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("item_choices", "map", false),
                     ("item_rewards", "map", false),
                     ("reward_amounts", "map", false),
+                    ("renown_rewards", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
@@ -673,6 +674,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("currency_choices", "currency_id", true),
                     ("item_rewards", "item_id", false),
                     ("item_choices", "item_id", true),
+                    ("renown_rewards", "faction_id", false),
                 ] {
                     let Some(rewards) = quest.get(field).filter(|value| !value.is_null()) else {
                         continue;
