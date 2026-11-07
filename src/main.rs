@@ -11,6 +11,7 @@ use serde::Deserialize;
 #[derive(Clone)]
 struct Operator {
     store: Store,
+    forever_catalogue: Option<std::path::PathBuf>,
     tool_router: ToolRouter<Self>,
 }
 
@@ -259,7 +260,37 @@ impl Operator {
         )
     )]
     fn capabilities(&self) -> String {
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":["capabilities","inspect_snapshot","list_snapshots","compare_snapshots","character_summary","review_equipment_selection","captured_talent_loadout","prepare_macro_operation","prepare_binding_operation","prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"],"game_execution":false,"live_client_qualified":[]}).to_string()
+        let mut implemented: Vec<_> = self
+            .tool_router
+            .list_all()
+            .into_iter()
+            .map(|tool| tool.name)
+            .collect();
+        implemented.sort_unstable();
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[]}).to_string()
+    }
+    #[tool(
+        description = "Look up gear, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. Omit key for the section count. No network, live acquisition validation or simulation execution.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn lookup_forever_catalogue(
+        &self,
+        Parameters(query): Parameters<azeroth_operator::forever_catalogue::Query>,
+    ) -> CallToolResult {
+        let result = self
+            .forever_catalogue
+            .as_deref()
+            .and_then(|path| azeroth_operator::forever_catalogue::lookup(path, &query).ok());
+        match result {
+            Some(data) => CallToolResult::success(vec![ContentBlock::text(data.to_string())]),
+            None => CallToolResult::error(vec![ContentBlock::text(
+                "Forever catalogue lookup failed: invalid key or missing, unreadable or unverified cache. Run sync_forever_catalogue for the configured file.",
+            )]),
+        }
     }
     #[tool(
         description = "Compile an explicit Retail macro create/edit/delete/scope move into data for player review and application in the addon. Existing macros are bound to captured name, icon and body. Does not execute in game or relocate action-bar references.",
@@ -466,9 +497,22 @@ async fn main() -> anyhow::Result<()> {
         println!("{}", Store { root }.ingest(&snapshot)?);
         return Ok(());
     }
+    let forever_catalogue =
+        std::env::var_os("AZEROTH_FOREVER_CATALOGUE").map(std::path::PathBuf::from);
+    anyhow::ensure!(
+        forever_catalogue
+            .as_ref()
+            .is_none_or(|path| path.is_absolute()),
+        "AZEROTH_FOREVER_CATALOGUE must be an absolute path"
+    );
+    let mut tool_router = Operator::tool_router();
+    if forever_catalogue.is_none() {
+        tool_router.remove_route("lookup_forever_catalogue");
+    }
     let service = Operator {
         store: Store { root },
-        tool_router: Operator::tool_router(),
+        forever_catalogue,
+        tool_router,
     }
     .serve(rmcp::transport::stdio())
     .await?;

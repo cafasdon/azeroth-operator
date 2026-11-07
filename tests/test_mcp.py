@@ -24,6 +24,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
     async def test_python_reference_server(self):
         await asyncio.wait_for(self.check_stdio_server(None), timeout=60)
 
+    async def test_forever_catalogue_configuration(self):
+        binary = Path(__file__).resolve().parents[1] / "target" / "debug" / (
+            "azeroth-operator.exe" if os.name == "nt" else "azeroth-operator")
+        binary = Path(os.environ.get("AZEROTH_TEST_BINARY", binary)).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder) / "catalogue.json"
+            cache.write_text('{"items":[{"id":744,"name":"Unverified"}]}')
+            params = StdioServerParameters(command=str(binary), env={
+                **os.environ, "AZEROTH_DATA_DIR": folder, "AZEROTH_FOREVER_CATALOGUE": str(cache)})
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    self.assertIn("lookup_forever_catalogue", {t.name for t in (await session.list_tools()).tools})
+                    caps = await session.call_tool("capabilities", {})
+                    self.assertIn("lookup_forever_catalogue", json.loads(caps.content[0].text)["implemented"])
+                    response = await session.call_tool("lookup_forever_catalogue", {"section":"items","key":"744"})
+                    self.assertTrue(response.isError)
+                    self.assertNotIn("Unverified", response.content[0].text)
+
     async def check_stdio_server(self, rust_binary):
         with tempfile.TemporaryDirectory() as folder:
             sample = fixture()
@@ -55,9 +74,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
             sample["sections"]["equipment_sets"]["entries"]["1"]=json.loads(json.dumps(sample["sections"]["equipment_sets"]["entries"]["0"]))
             sample["sections"]["equipment_sets"]["entries"]["1"].update({"name":"Displaced","assigned_spec":1})
             spec_key=SnapshotStore(Path(folder)).ingest(sample)
+            env = {**os.environ, "AZEROTH_DATA_DIR": folder}
+            env.pop("AZEROTH_FOREVER_CATALOGUE", None)
             params = StdioServerParameters(command=rust_binary or sys.executable,
                 args=[] if rust_binary else [str(Path(__file__).resolve().parents[1] / "server.py")],
-                env={**os.environ, "AZEROTH_DATA_DIR": folder})
+                env=env)
             async with stdio_client(params) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()

@@ -21,6 +21,24 @@ The first native milestone is a persisted read-only snapshot and a coverage repo
 
 ## External data and gear
 
+### Local catalogue
+
+Run from the repository root:
+
+```powershell
+python -m tools.sync_forever_catalogue --output local-data/forever/catalogue.json
+$env:AZEROTH_FOREVER_CATALOGUE = (Resolve-Path local-data/forever/catalogue.json).Path
+.\target\debug\azeroth-operator.exe
+```
+
+Set the same environment variable in the local stdio MCP client's server configuration. The optional `lookup_forever_catalogue` tool reads that file only. For example, use `{"section":"items","key":"744"}` for an item, `{"section":"npcs","key":"ragna"}` for a name search, or `{"section":"encounters","key":"Default/Raid Target"}` for a simulator encounter preset. Omit `key` for a section count. Names return at most 20 matches and `has_more` flags truncation.
+
+The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinned in `catalogue.lock.json` and replaces the destination atomically after verification. A matching cache skips the network. Upgrading data requires reviewing and updating the revision and hash in the pin, rebuilding the companion, and rerunning sync. The catalogue includes simulator reference zones, NPCs and factions. For a wider world mirror, qualify an exportable Forever source independently for coverage, build identity and redistribution terms before adding it.
+
+Verified on 7 November 2026: the actual sync command returned `synced` then `unchanged`; a bad download preserved the destination. The Rust stdio MCP returned exact pinned records across all nine lookup sections. The unconfigured server retained 14 tools. Caller and failure review caught the lack of a total HTTP deadline in the initial implementation. The revised command has a 30-second transfer deadline and a 35-second process timeout. Jev advisory triage classified the finding as material (model `jev-1.14.0`, request `b3f8fe8728dbc6193bf06ddff54922a80d21c1f0980322deea9af094d055e3fb`, 422 input/46 output tokens, 0.304 seconds).
+
+### Simulation and optimisation
+
 - **Simulation.** [WoWSims Forever](https://github.com/wowsims/forever) is the first engine candidate. Pinned source `9dc32ac8ca0d8d1b76337861d38b93c0f884af11` contains a CLI that accepts a RaidSimRequest JSON or SIML setup. Its source warns that browser-generated rotations without explicit APL rows can run without a rotation. The latest-release endpoint returned 404 and Go was unavailable in the checked Windows and Debian shells. No simulation run was verified. First acceptance check is a supported spec and synthetic baseline with explicit APL, encounter, buffs, duration, iterations and seed, compared against the same request in the upstream engine.
 - **Catalogue.** The [pinned WoWSims database](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/assets/database/db.json) parsed locally with 6,043 distinct item IDs. Only 3,945 have source records, and all carry phase value 1. SHA-256 `5ca68229623b8bc1f9a085ed3b5f564ab82ff66055503749e324d640ac04640e`. Use item data for simulator compatibility and provenance-aware lookup. Use separately verified acquisition evidence such as [ForeverDiff](https://foreverdiff.gg/) and official unlocks for obtainable-gear claims. Blizzard lists the first three raids for 9 December. [Blizzard raid overview](https://worldofwarcraft.blizzard.com/en-us/news/24303009/world-of-warcraft-forever-raid-overview-locations-raid-sizes-and-attunement)
 - **Optimisation.** Keep three candidate sets explicit: equipped gear, owned gear and obtainable upgrades. Filter by level, class, faction, weapon and off-hand rules, unique-equipped limits, profession and content availability. Evaluate full sets so set bonuses, caps, enchants, suffixes and procs can affect the result. Label unobserved inventory and unknown acquisition separately. Report the baseline, assumptions, coverage, tested candidate count and uncertainty with rankings. A bounded search result applies only to the evaluated candidates and encounter.
