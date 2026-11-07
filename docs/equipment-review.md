@@ -60,6 +60,11 @@ items and slots outside the simulator, such as shirts and tabards, report
 `unknown`. The entire slot result is null if catalogue verification fails.
 Character eligibility and full slot legality remain unverified.
 
+`catalogue_unique_item_duplicates` lists repeated base item IDs marked unique
+in the projected equipment, with their target slots. Shared limit categories
+and items missing from the catalogue need separate checks. A null result means
+the catalogue could not be verified.
+
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
 and live client verification; this draft must not be presented as their substitute.

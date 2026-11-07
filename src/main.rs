@@ -456,15 +456,20 @@ impl Operator {
             if snapshot.client.family == Family::Forever
                 && let Some(path) = &self.forever_catalogue
             {
-                let (pairing, fit) =
+                let (pairing, fit, duplicates) =
                     azeroth_operator::forever_catalogue::review_equipment_catalogue(
                         path,
                         &snapshot,
                         &args.selections,
                     )
-                    .unwrap_or(("unknown", serde_json::Value::Null));
+                    .unwrap_or((
+                        "unknown",
+                        serde_json::Value::Null,
+                        serde_json::Value::Null,
+                    ));
                 review["checks"]["catalogue_two_hand_pairing"] = serde_json::json!(pairing);
                 review["checks"]["catalogue_slot_fit"] = fit;
+                review["checks"]["catalogue_unique_item_duplicates"] = duplicates;
             }
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

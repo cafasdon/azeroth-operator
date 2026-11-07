@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Flag duplicate catalogue-marked unique items in projected Forever equipment drafts.
+
 - Flag simulator slot mismatches in local Forever equipment drafts.
 
 - Flag projected two-handed weapon and off-hand conflicts in local Forever equipment drafts.

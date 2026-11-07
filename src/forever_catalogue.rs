@@ -625,7 +625,7 @@ pub fn review_equipment_catalogue(
     path: &Path,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
-) -> Result<(&'static str, Value)> {
+) -> Result<(&'static str, Value, Value)> {
     use crate::planning::ItemLocation;
 
     let projected_item = |slot| {
@@ -674,7 +674,20 @@ pub fn review_equipment_catalogue(
             json!({"target_slot":selection.target_slot,"simulator_slot":target,"status":status})
         })
         .collect();
-    Ok((pairing, json!(fit)))
+    let mut unique_slots = BTreeMap::<u64, Vec<u32>>::new();
+    for slot in 1..=19 {
+        if let Some(id) = projected_item(slot)
+            && find(id).is_some_and(|item| item["unique"] == true)
+        {
+            unique_slots.entry(id).or_default().push(slot);
+        }
+    }
+    let duplicates: Vec<_> = unique_slots
+        .into_iter()
+        .filter(|(_, slots)| slots.len() > 1)
+        .map(|(id, slots)| json!({"item_id":id,"slots":slots}))
+        .collect();
+    Ok((pairing, json!(fit), json!(duplicates)))
 }
 
 fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {
