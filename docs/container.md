@@ -60,3 +60,24 @@ environment before replacing it. It retains before/after profiles under a privat
 temporary directory, checks the imported tool allowlist, restarts only the dedicated
 service, waits for its socket and probes authentication/discovery. A failed verification stops and disables the dedicated reader and retains the previous profile for diagnosis. Restoring the old write-code routes would bypass the policy gate.
 Run independent public readback before claiming release qualification.
+
+## Offline policy and owner-scope cutover, 7 November 2026
+
+The dedicated personal pylon CT290 reader was built from `89a7ce0` as image
+`sha256:5b8ad4e538bf6493eadb490531895cf8f7a0eaa4b7f1e42498f9ad216cba4d4c`.
+The network-disabled candidate passed stdio checks. The guarded upgrade and
+public TLS probe passed with seven offline tools, seven direct preparation-route
+denials, and HTTP 401 for missing and incorrect credentials. The authenticated
+reader listed its configured owner store. Its mount remained read-only, the
+snapshot directory was mode 0750, and the credential file was mode 0600.
+The service was active and enabled after cutover. No importer image or game
+client was changed. The prior profile retained under
+`/var/tmp/azeroth-reader-upgrade-vulz9ffy` is evidence only and would reintroduce
+the retired routes if restored.
+
+Adversarial review exercised callers and failure/security paths. The fixes
+covered reboot-safe denial after failed deployment, explicit unknown-tool
+verification and suppression of filesystem paths in Python reference errors.
+Jev advisory triage for the cutover findings used `jev-1.14.0`, request
+`65ecad06b92d09613492f36afda365541681235ba660a3b4437c39696ac49713`, 450 input
+and 46 output tokens, 0.281 seconds.
