@@ -271,6 +271,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"reputation"})
                         reputation_result = json.loads(reputation.content[0].text)
                         reputation_data = reputation_result["data"]
+                        self.assertEqual(reputation_result["special_reputation_progress"], {})
                         self.assertEqual(reputation_result["standard_reputation_progress"], {
                             "10": {"capped": False, "earned_in_rank": 50, "rank_width": 100,
                                    "remaining_to_next_rank": 50},
@@ -289,6 +290,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "current_value": 250, "reward_threshold": 100, "reward_quest_id": 314,
                             "reward_pending": True, "level_too_low": False,
                         }}
+                        factions["16"] = {**factions["15"], "paragon": {
+                            **factions["15"]["paragon"], "level_too_low": True,
+                        }}
+                        factions["17"] = {**factions["14"], "friendship": {
+                            "standing": 100, "threshold": 100,
+                        }}
+                        factions["18"] = {**factions["12"], "renown": {
+                            **factions["12"]["renown"], "capped": True,
+                        }}
+                        factions["19"] = {**factions["15"], "paragon": {
+                            **factions["15"]["paragon"], "reward_pending": False,
+                        }}
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
                         more = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": more_key, "section": "reputation"})
@@ -296,12 +309,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(more_data["data"]["entries"]["12"]["renown"], factions["12"]["renown"])
                         self.assertEqual(more_data["data"]["entries"]["14"]["friendship"], factions["14"]["friendship"])
                         self.assertEqual(more_data["data"]["entries"]["15"]["paragon"], factions["15"]["paragon"])
+                        self.assertEqual(more_data["special_reputation_progress"], {
+                            "12": {"kind": "renown", "capped": False, "remaining_to_next_rank": 88},
+                            "14": {"kind": "friendship", "capped": False, "remaining_to_next_rank": 65},
+                            "15": {"kind": "paragon", "reward_status": "pending"},
+                            "16": {"kind": "paragon", "reward_status": "pending_level_restricted"},
+                            "17": {"kind": "friendship", "capped": True, "remaining_to_next_rank": None},
+                            "18": {"kind": "renown", "capped": True, "remaining_to_next_rank": None},
+                            "19": {"kind": "paragon", "reward_status": "no_pending_reward"},
+                        })
                         progress = more_data["standard_reputation_progress"]
                         self.assertEqual(set(progress), {"10", "11"})
                         self.assertEqual(progress["11"], {"capped": True})
                         missing = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": key, "section": "reputation"})
-                        self.assertIsNone(json.loads(missing.content[0].text)["standard_reputation_progress"])
+                        missing_data = json.loads(missing.content[0].text)
+                        self.assertIsNone(missing_data["standard_reputation_progress"])
+                        self.assertIsNone(missing_data["special_reputation_progress"])
                         self.assertEqual(reputation_data["coverage"], "visible_faction_rows_only")
                         self.assertEqual(reputation_data["entries"]["10"]["standing"], -50)
                         reputation_after = json.loads(json.dumps(forever))

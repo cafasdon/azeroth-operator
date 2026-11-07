@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved Forever renown and friendship progress alongside paragon reward status.
+
 - Capture visible Forever paragon reputation and pending reward observations.
 
 - Capture visible Forever friendship standings and rank thresholds.

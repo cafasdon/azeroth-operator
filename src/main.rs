@@ -780,6 +780,8 @@ impl Operator {
                 } else if args.section.as_deref() == Some("reputation") {
                     value["standard_reputation_progress"] =
                         azeroth_operator::analysis::standard_reputation_progress(&value["data"]);
+                    value["special_reputation_progress"] =
+                        azeroth_operator::analysis::special_reputation_progress(&value["data"]);
                 }
                 CallToolResult::success(vec![ContentBlock::text(value.to_string())])
             }

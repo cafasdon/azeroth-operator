@@ -616,6 +616,58 @@ pub fn standard_reputation_progress(section: &Value) -> Value {
     )
 }
 
+pub fn special_reputation_progress(section: &Value) -> Value {
+    let Some(entries) = section["entries"].as_object() else {
+        return Value::Null;
+    };
+    Value::Object(
+        entries
+            .iter()
+            .filter_map(|(id, entry)| {
+                let kind = entry["kind"].as_str()?;
+                let detail = entry.get(kind)?.as_object()?;
+                let progress = match kind {
+                    "renown" => {
+                        let capped = detail.get("capped")?.as_bool()?;
+                        let remaining = if capped {
+                            None
+                        } else {
+                            let threshold = detail.get("level_threshold")?.as_u64()?;
+                            let earned = detail.get("earned_in_level")?.as_u64()?;
+                            threshold.checked_sub(earned).filter(|_| threshold > 0)
+                        };
+                        json!({"kind":kind,"capped":capped,"remaining_to_next_rank":remaining})
+                    }
+                    "friendship" => {
+                        let next = detail.get("next_threshold").and_then(Value::as_i64);
+                        let remaining = next.and_then(|next| {
+                            let threshold = detail.get("threshold")?.as_i64()?;
+                            let standing = detail.get("standing")?.as_i64()?;
+                            if next <= threshold || !(threshold..=next).contains(&standing) {
+                                return None;
+                            }
+                            next.checked_sub(standing)
+                        });
+                        json!({"kind":kind,"capped":next.is_none(),"remaining_to_next_rank":remaining})
+                    }
+                    "paragon" => {
+                        let pending = detail.get("reward_pending")?.as_bool()?;
+                        let too_low = detail.get("level_too_low")?.as_bool()?;
+                        let status = match (pending, too_low) {
+                            (true, false) => "pending",
+                            (true, true) => "pending_level_restricted",
+                            (false, _) => "no_pending_reward",
+                        };
+                        json!({"kind":kind,"reward_status":status})
+                    }
+                    _ => return None,
+                };
+                Some((id.clone(), progress))
+            })
+            .collect(),
+    )
+}
+
 pub fn currency_cap_headroom(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
