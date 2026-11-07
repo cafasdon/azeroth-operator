@@ -259,6 +259,16 @@ def audit_shortlist(staged, fixed, requests, top):
     }
 
 
+def tank_tradeoff_reviews(rows):
+    scores = [(row["simulated_deaths"], row["mean_dtps"], -row["mean_tps"]) for row in rows]
+    return [
+        row["review"]
+        for row, score in zip(rows, scores, strict=True)
+        if not any(other != score and all(a <= b for a, b in zip(other, score, strict=True))
+                   for other in scores)
+    ]
+
+
 def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     start = monotonic()
@@ -293,10 +303,12 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
             row["selection"] = selections[0] if selections else None
         else:
             row["selections"] = selections
-    metric = f"mean_{args.rank_by}"
+    metric = "simulated_deaths" if args.rank_by == "death" else f"mean_{args.rank_by}"
     if args.rank_by != "dps":
         result["ranked_by"] = metric
-    result["results"].sort(key=lambda row: row[metric], reverse=args.rank_by != "dtps")
+    result["results"].sort(key=lambda row: row[metric], reverse=args.rank_by in ("dps", "tps"))
+    if args.rank_by != "dps":
+        result["tank_tradeoff_reviews"] = tank_tradeoff_reviews(result["results"])
     return result
 
 
@@ -348,8 +360,8 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
-    parser.add_argument("--rank-by", choices=("dps", "dtps", "tps"), default="dps",
-                        help="Rank by highest damage dealt, lowest damage taken, or highest threat per second")
+    parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death"), default="dps",
+                        help="Rank by damage dealt, damage taken, threat per second, or fewest simulated deaths")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
     parser.add_argument("--top", type=int, default=5, help="Distinct gear sets to return in bulk mode")

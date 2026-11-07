@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank Forever tank gear by fewest simulated deaths and flag threat and survival trade-offs.
+
 - Report simulated tank threat and death frequency, and rank Forever gear by mean TPS.
 
 - Report simulated tank damage taken and rank Forever equipment by lowest mean DTPS in fixed comparisons.

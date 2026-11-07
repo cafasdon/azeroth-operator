@@ -296,6 +296,12 @@ least one encounter target must point to that tank. Comparisons also report
 changes from equipped gear. Bulk shortlists and weighted encounter
 rankings remain DPS modes. Paired error estimates apply to DPS. Death
 frequency depends on the encounter and template's healing assumptions.
+Use `--rank-by death` to order the fixed comparison by fewest simulated
+deaths, with ties in input order. All tank rankings list
+`tank_tradeoff_reviews`, the review IDs for which no other tested row
+has at least as much threat, at most as much damage taken, and at most as
+many simulated deaths while improving at least one metric. Equal scores
+are kept. The list compares point estimates and includes equipped gear.
 
 For `Default/Custom Boss`, add `custom_boss` to the `simulation` object
 with any combination of `thrash`, `cleave` and `magic_spell`. Thrash takes `extra_attacks`,

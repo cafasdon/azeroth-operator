@@ -234,6 +234,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             if type(death_fraction) not in (int, float) or not 0 <= death_fraction <= 1 + 1e-9:
                 raise ValueError("Simulator returned an invalid death fraction")
             summary["simulated_death_fraction"] = min(death_fraction, 1.0)
+            summary["simulated_deaths"] = round(summary["simulated_death_fraction"] * summary["iterations"])
         if paired:
             values = dps["allValues"]
             if (not isinstance(values, list) or len(values) != summary["iterations"]
