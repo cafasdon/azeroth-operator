@@ -287,6 +287,14 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+Use `--healing-metrics` with the standalone simulator or `--rank-by hps`
+with the owned gear ranker. The fixed comparison reports healing and
+applied shielding per second as counted by the pinned engine, its standard
+deviation, and average seconds out of mana. The single-player template
+supplies the rotation and healing targets, so the result covers that
+scenario. Bulk and weighted modes still use DPS. Paired error estimates
+apply to DPS.
+
 Use `--tank-metrics` with the standalone simulator to report mean damage
 taken per second (DTPS), threat per second (TPS), their standard deviations
 and the fraction of iterations with a simulated death. For owned gear, use

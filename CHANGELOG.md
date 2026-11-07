@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank Forever healer gear by simulated healing per second and report time out of mana.
+
 - Rank Forever tank gear by fewest simulated deaths and flag threat and survival trade-offs.
 
 - Report simulated tank threat and death frequency, and rank Forever gear by mean TPS.
