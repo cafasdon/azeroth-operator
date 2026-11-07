@@ -16,6 +16,8 @@ The `0.20.0-dev` Forever package passed byte and manifest verification, a packag
 
 Forever `0.27.0-dev` contains only the adapter, collectors, export core and TOC. The ZIP SHA-256 is `e6190ec5842b0d273a029b7e87bb57ab5622890d9dff78104f40a2f1bd87a803`. The exact package passed a Lua export/import round trip, interface mismatch refusal and absence of the Apply handler. Retail and Classic package entries were verified byte-identical against the previous packager.
 
+Package verification now runs the detailed Forever fixture against the actual staged Lua files through the registered `/aoexport` command. This covers banks, selected recipes, faction standings, currencies, tracked achievements and quest progress, including malformed and unavailable cases. The same ZIP was first-installed and hash-verified on a synthetic Windows client. Retail and Classic fixture packages passed the unchanged verification path. These are offline checks.
+
 The Windows release companion imported the complete synthetic Forever fixture. Its executable SHA-256 `aae7f17c0762d54a42ff76cc92aad4dbb5f27d7b00d84577931d92db6ba86550` was verified and selected in the existing sync configuration. The previous configuration is backed up in `local-data/sync/config-before-forever-capture.json`. The scheduled runner matches its source and ran at 16:15:41 SAST on 7 November 2026 with result 0. Forever returned `waiting_for_export` and Retail returned `unchanged` from its cached acknowledgement. The task reported no live game access.
 
 After closing Forever, first-install the reviewed capture package from the repository root:

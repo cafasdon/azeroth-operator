@@ -36,6 +36,8 @@ def verify(directory, verifier):
             result = json.loads(run.stdout)
         if result.get("live_qualified") is not False or result.get("packaged_lua51_roundtrip") is not True:
             raise ValueError("Invalid fixture result")
+        if receipt["family"] == "forever" and result.get("forever_capture_fixture") is not True:
+            raise ValueError("Missing Forever capture fixture result")
         results.append({**result, "archive": receipt["archive"], "sha256": receipt["sha256"]})
     return results
 

@@ -376,11 +376,20 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
 #[test]
 fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
 -> Result<(), Box<dyn std::error::Error>> {
+    verify_forever_capture_fixture(None, 16001)
+}
+
+pub fn verify_forever_capture_fixture(
+    staged: Option<&std::path::Path>,
+    interface: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
     let lua = Lua::new();
+    lua.globals().set("expected_interface", interface)?;
     lua.load(r#"
-        AO={family='forever',variant='live',interface=16001};SlashCmdList={}
+        AO={family='forever',variant='live',interface=expected_interface};SlashCmdList={}
+        function print(message) export_notice=message end
         function InCombatLockdown() return false end
-        function GetBuildInfo() return '1.60.1','70862','',16001 end
+        function GetBuildInfo() return '1.60.1','70862','',expected_interface end
         function UnitName() return 'Example' end
         function GetRealmName() return 'Test' end
         function GetServerTime() return 1735689600 end
@@ -475,14 +484,29 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         bankOpen=true;accountVisible=true;freeSlots=1
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
-    for source in [
-        include_str!("../addon/Collectors.lua"),
-        include_str!("../addon/Core.lua"),
+    if let Some(root) = staged {
+        lua.load(std::fs::read_to_string(root.join("Adapter.lua"))?)
+            .call::<()>(("AzerothOperator", ao.clone()))?;
+    }
+    for (name, source) in [
+        ("Collectors.lua", include_str!("../addon/Collectors.lua")),
+        ("Core.lua", include_str!("../addon/Core.lua")),
     ] {
+        let source = match staged {
+            Some(root) => std::fs::read_to_string(root.join(name))?,
+            None => source.to_owned(),
+        };
         lua.load(source)
             .call::<()>(("AzerothOperator", ao.clone()))?;
     }
-    lua.load("AO.Capture()").exec()?;
+    lua.load(
+        r#"
+        assert(SlashCmdList.AZEROTHOPERATOR and not SlashCmdList.AZEROTHOPERATORMACROS)
+        SlashCmdList.AZEROTHOPERATOR()
+        assert(export_notice:find("snapshot captured",1,true))
+    "#,
+    )
+    .exec()?;
     let read = || -> Result<azeroth_operator::Snapshot, Box<dyn std::error::Error>> {
         let hex: String = lua.globals().get("AzerothOperatorExport")?;
         Ok(decode(

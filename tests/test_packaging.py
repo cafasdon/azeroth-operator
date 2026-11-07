@@ -1,11 +1,24 @@
 import tempfile
 import unittest
 import zipfile
+import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
 from tools.package_addon import package
+from tools.verify_addon_packages import verify
 
 
 class PackagingTests(unittest.TestCase):
+    def test_forever_verification_requires_extended_fixture(self):
+        with tempfile.TemporaryDirectory() as folder:
+            package("forever", "live", 16001, "0.27.0-dev", folder)
+            old_report = {"packaged_lua51_roundtrip": True, "live_qualified": False}
+            with patch("tools.verify_addon_packages.subprocess.run") as runner:
+                runner.return_value.stdout = json.dumps(old_report).encode()
+                with self.assertRaisesRegex(ValueError, "Missing Forever capture fixture"):
+                    verify(folder, sys.executable)
+
     def test_repeatable_and_isolated(self):
         with tempfile.TemporaryDirectory() as folder:
             a, receipt = package("retail", "live", 120105, "0.1.0-dev", folder)
