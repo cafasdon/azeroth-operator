@@ -193,10 +193,11 @@ that check unknown. Use a compatible importer and reader before syncing the
 new field. [Forever Unit API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/UnitDocumentation.lua)
 
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
-storage copies before applying the combination and draft limits. This applies
-to items that fit exactly one simulator slot. Each skipped copy records its
-representative location. Equipped items and items that can fit multiple slots
-keep their separate locations so a draft can still use two physical copies.
+storage copies before applying the combination and draft limits. It keeps one
+copy for a single slot, or two physical ring or trinket copies when both
+paired slots are selected. Each skipped copy records its retained replacement
+locations. Equipped items and weapons that can fill either hand keep their
+separate locations.
 
 For adaptive bulk ranking, build the local adapter from the pinned WoWSims
 checkout with its generated protobuf files and embedded database:

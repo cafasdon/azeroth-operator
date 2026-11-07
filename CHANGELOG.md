@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reduce equivalent Forever ring and trinket copies while preserving paired-slot combinations.
+
 - Select a saved Forever capture for gear ranking by explicit character and realm.
 
 - Screen proposed Forever off-hand weapons against the selected simulator specialisation.

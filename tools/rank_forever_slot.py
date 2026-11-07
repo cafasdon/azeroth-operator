@@ -53,7 +53,8 @@ def check_template_identity(template, stats):
     return checks
 
 
-async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True):
+async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
+                          selected_slots=None):
     candidates = []
     skipped = []
     offset = 0
@@ -109,15 +110,20 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
                 })
                 continue
             if collapse_identical and source["kind"] != "equipment":
-                # Multi-slot items may need two physical copies in the same set.
-                if spec and reference.get("simulator_slots") == [slot]:
+                eligible_slots = reference.get("simulator_slots")
+                if spec and eligible_slots in ([slot], ["finger1", "finger2"], ["trinket1", "trinket2"]):
+                    targets = selected_slots if selected_slots is not None else (eligible_slots if multi else [slot])
+                    copies_needed = max(1, len(set(eligible_slots).intersection(targets)))
                     key = json.dumps(spec, sort_keys=True, separators=(",", ":"))
-                    representative = representatives.get(key)
-                    if representative is not None:
-                        skipped.append({"selection": selection, "reason": "equivalent_simulator_item",
-                                        "representative": representative})
+                    kept = representatives.setdefault(key, [])
+                    if len(kept) == copies_needed:
+                        skipped.append({
+                            "selection": selection, "reason": "equivalent_simulator_item",
+                            "representative": kept[0],
+                            **({"retained_copies": kept} if copies_needed > 1 else {}),
+                        })
                         continue
-                    representatives[key] = selection
+                    kept.append(selection)
             candidates.append(selection)
         offset = next_offset
         if not page["has_more"]:
@@ -161,7 +167,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         multi = len(slots) > 1
         for slot in slots:
             candidates, exclusions, coverage = await slot_candidates(
-                call, slot, multi, collapse_identical, item_ids, can_dual_wield,
+                call, slot, multi, collapse_identical, item_ids, can_dual_wield, slots,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
@@ -253,7 +259,7 @@ def main():
     slots.add_argument("--all-slots", action="store_const", const=SIMULATOR_SLOTS, dest="slot",
                        help="Consider all 17 simulator slots within the search limits.")
     parser.add_argument("--collapse-identical-items", action="store_true",
-                        help="Use one storage copy of each equivalent single-slot simulator item.")
+                        help="Keep only the storage copies needed to fill equivalent simulator slots.")
     parser.add_argument("--item-id", type=int, action="append",
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--engine", type=Path, required=True)
