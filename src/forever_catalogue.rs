@@ -54,6 +54,8 @@ pub struct Query {
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
     pub drop_zone_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to records with a reward source for this quest ID.
+    pub reward_quest_id: Option<std::num::NonZeroU32>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
 }
@@ -94,17 +96,15 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             "Expected a positive recipe spell ID for items or enchants"
         );
     }
-    ensure!(
-        (query.set_id.is_none() && query.drop_npc_id.is_none() && query.drop_zone_id.is_none())
-            || matches!(query.section, Section::Items),
-        "Set and drop filters are supported for items only"
-    );
-    if key.is_some()
-        || query.recipe_spell_id.is_some()
-        || query.set_id.is_some()
+    let item_filter = query.set_id.is_some()
         || query.drop_npc_id.is_some()
         || query.drop_zone_id.is_some()
-    {
+        || query.reward_quest_id.is_some();
+    ensure!(
+        !item_filter || matches!(query.section, Section::Items),
+        "Set, drop and quest reward filters are supported for items only"
+    );
+    if key.is_some() || query.recipe_spell_id.is_some() || item_filter {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
         let mut remaining_offset = query.offset.unwrap_or_default();
@@ -143,7 +143,14 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                             })
                     })
                 });
-            if matches && matches_recipe && matches_set && matches_drop {
+            let matches_quest = query.reward_quest_id.is_none_or(|id| {
+                row["sources"].as_array().is_some_and(|sources| {
+                    sources
+                        .iter()
+                        .any(|source| source["quest"]["id"].as_u64() == Some(u64::from(id.get())))
+                })
+            });
+            if matches && matches_recipe && matches_set && matches_drop && matches_quest {
                 if remaining_offset > 0 {
                     remaining_offset -= 1;
                     continue;

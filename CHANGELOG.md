@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever item rewards recorded for a quest ID in the pinned catalogue.
+
 - Find Forever catalogue drops by zone, including sources without an NPC ID, and page through lookup results.
 
 - Look up Forever catalogue items associated with drops from a specific NPC.
