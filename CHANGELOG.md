@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest currency receive rows separately from reward choices.
+
 - Capture Forever quest copper requirements and show per-quest wallet shortfalls in saved character summaries.
 
 - Compare saved Forever quest waypoint maps and distinguish changes from missing observations.

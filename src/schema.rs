@@ -643,10 +643,28 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("failed", "bool", false),
                     ("next_waypoint_map_id", "positive", false),
                     ("required_copper", "wallet_copper", false),
+                    ("currency_rewards", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
+                if let Some(rewards) = quest
+                    .get("currency_rewards")
+                    .filter(|value| !value.is_null())
+                {
+                    entries(
+                        rewards,
+                        &[
+                            ("currency_id", "positive", true),
+                            ("quantity", "positive", true),
+                        ],
+                    )?;
+                    let rewards = rewards.as_object().unwrap();
+                    ensure!(rewards.len() <= 32, "Too many quest currency rewards");
+                    for key in rewards.keys() {
+                        index(key, 1, rewards.len() as u32)?;
+                    }
+                }
                 if let Some(objectives) = quest.get("objectives").filter(|value| !value.is_null()) {
                     entries(
                         objectives,

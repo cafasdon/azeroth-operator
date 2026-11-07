@@ -74,6 +74,15 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+The selected quest can include `currency_rewards`, indexed by reward row.
+Each row contains `currency_id` and the panel's `totalRewardAmount` as
+`quantity`. This covers the panel's receive list. Choice rewards use a
+separate client path. The amount can include a contextual bonus and does
+not establish what a later turn-in will award after caps or eligibility
+checks. An empty object is an observed empty list. An absent field means
+the list was unavailable or unreadable. Update the importer and reader
+before syncing the new field. [Forever quest panel](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/QuestInfo.lua)
+
 Pass `quest_waypoint_map_id` with `section: "quests"` to return only
 quests whose next waypoint was recorded on that map. The filtered checklist
 separates ready, not ready, failed and unknown turn-in status. The response

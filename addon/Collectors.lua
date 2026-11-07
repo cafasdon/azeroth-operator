@@ -580,6 +580,29 @@ local function questRequiredCopper(api,id)
     end
 end
 
+local function questCurrencyRewards(id)
+    local rows=C_QuestInfoSystem.GetQuestRewardCurrencies(id)
+    local function accessible(value)
+        return not issecretvalue or not issecretvalue(value)
+    end
+    local function positive(value,maximum)
+        return accessible(value) and type(value)=="number" and value%1==0 and value>=1 and value<=maximum
+    end
+    assert(accessible(rows) and type(rows)=="table", "Quest currencies unavailable")
+    local result,count={},#rows
+    assert(count<=32, "Too many quest currencies")
+    local observed=0
+    for index,row in pairs(rows) do
+        assert(positive(index,count) and accessible(row) and type(row)=="table", "Invalid quest currency row")
+        assert(positive(row.currencyID,4294967295) and positive(row.totalRewardAmount,4294967295),
+            "Invalid quest currency reward")
+        result[tostring(index)]={currency_id=row.currencyID,quantity=row.totalRewardAmount}
+        observed=observed+1
+    end
+    assert(observed==count, "Incomplete quest currency rewards")
+    return result
+end
+
 AO.collectors.quests = function()
     assert(C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo, "Quest API unavailable")
     local result = {}
@@ -603,6 +626,8 @@ AO.collectors.quests = function()
                 entry.failed=questFlag(api,"IsFailed",id)
                 entry.next_waypoint_map_id=questWaypointMap(api,id)
                 entry.required_copper=questRequiredCopper(api,id)
+                local rewardsOk,rewards=pcall(questCurrencyRewards,id)
+                if rewardsOk then entry.currency_rewards=rewards end
                 local ok,objectives=pcall(questObjectives,api,id)
                 if ok then entry.objectives=objectives end
             end

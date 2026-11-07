@@ -475,6 +475,11 @@ pub fn verify_forever_capture_fixture(
                 return sparseObjectives and {[2]=objective} or {objective}
             end,
         }
+        C_QuestInfoSystem={GetQuestRewardCurrencies=function(id)
+            if id==43 then return {} end
+            local row={currencyID=17,totalRewardAmount=25,name="Do not export"}
+            return invalidQuestReward and {row,{currencyID=18}} or {row}
+        end}
         local function faction(id)
             return {factionID=id,name="Fixture "..id,isHeader=id==20,isHeaderWithRep=id==20,
                 isAccountWide=id==20,reaction=4,currentStanding=-50,currentReactionThreshold=-100,nextReactionThreshold=0}
@@ -604,6 +609,11 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(quests["42"]["required_copper"], 250);
     assert_eq!(quests["43"]["required_copper"], 0);
     assert_eq!(
+        quests["42"]["currency_rewards"],
+        serde_json::json!({"1":{"currency_id":17,"quantity":25}})
+    );
+    assert_eq!(quests["43"]["currency_rewards"], serde_json::json!({}));
+    assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quest_money"],
         serde_json::json!({"quests_with_cost":{"42":{"required_copper":250,"shortfall_copper":null}},"cost_unknown_count":0})
     );
@@ -612,8 +622,13 @@ pub fn verify_forever_capture_fixture(
         azeroth_operator::analysis::summary(&snapshot)["quest_waypoint_maps"],
         serde_json::json!({"by_map_id":{"1411":[42]},"waypoint_map_unknown":[43]})
     );
-    lua.load("invalidQuestMap=true;invalidQuestMoney=true;AO.Capture()")
+    lua.load("invalidQuestMap=true;invalidQuestMoney=true;invalidQuestReward=true;AO.Capture()")
         .exec()?;
+    assert!(
+        read()?.sections["quests"]["42"]
+            .get("currency_rewards")
+            .is_none()
+    );
     assert!(
         read()?.sections["quests"]["42"]
             .get("required_copper")
