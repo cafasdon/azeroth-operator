@@ -113,6 +113,13 @@ by ID to total its rewards by faction and compare them with captured renown
 progress. A capped faction or missing progress has no next-rank estimate.
 The calculation covers the next recorded threshold only.
 
+`spell_rewards` lists spell IDs in the order returned by the quest reward API,
+before the panel groups or filters them. When
+available it also includes the client's numeric `reward_type` and
+`is_spell_learned` reward flag. That flag describes the reward and does not
+query the character's spellbook. An empty object is an observed empty list.
+Update the importer and reader before syncing this field. [Forever quest reward API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestInfoSystemDocumentation.lua)
+
 Set `quest_wallet_projection: true` when inspecting a saved Forever quest
 by ID to compare its captured coin reward and required payment. The net
 amount requires both observations. The upfront shortfall uses the optional

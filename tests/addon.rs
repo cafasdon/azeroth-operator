@@ -497,7 +497,14 @@ pub fn verify_forever_capture_fixture(
             return "Private",0,1,1,true,118
         end
         GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
-        C_QuestInfoSystem={GetQuestRewardCurrencies=function(id)
+        C_QuestInfoSystem={GetQuestRewardSpells=function(id)
+            if id==43 then return {} end
+            return invalidItemChoice and {101,0} or {101,102}
+        end,GetQuestRewardSpellInfo=function(id,spell)
+            assert(id==42)
+            if spell==102 then error("Not loaded") end
+            return {type=0,isSpellLearned=false,name="Private"}
+        end,GetQuestRewardCurrencies=function(id)
             if id==43 then return {} end
             local row={currencyID=17,totalRewardAmount=25,name="Do not export"}
             return invalidQuestReward and {row,{currencyID=18}} or {row}
@@ -659,8 +666,18 @@ pub fn verify_forever_capture_fixture(
         serde_json::json!({"1":{"faction_id":20,"quantity":75}})
     );
     assert!(quests["43"].get("renown_rewards").is_none());
+    assert_eq!(
+        quests["42"]["spell_rewards"],
+        serde_json::json!({"1":{"spell_id":101,"reward_type":0,"is_spell_learned":false},"2":{"spell_id":102}})
+    );
+    assert_eq!(quests["43"]["spell_rewards"], serde_json::json!({}));
     lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
     let partial = read()?;
+    assert!(
+        partial.sections["quests"]["42"]
+            .get("spell_rewards")
+            .is_none()
+    );
     assert!(
         partial.sections["quests"]["42"]
             .get("renown_rewards")

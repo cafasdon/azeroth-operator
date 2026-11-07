@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest reward spell IDs and available panel classification.
+
 - Compare saved Forever quest renown rewards with captured progress to the next faction rank.
 
 - Capture Forever quest major-faction reputation rewards when the quest log exposes them.

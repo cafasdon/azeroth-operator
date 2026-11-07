@@ -649,10 +649,26 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("item_rewards", "map", false),
                     ("reward_amounts", "map", false),
                     ("renown_rewards", "map", false),
+                    ("spell_rewards", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
+                if let Some(spells) = quest.get("spell_rewards").filter(|v| !v.is_null()) {
+                    entries(
+                        spells,
+                        &[
+                            ("spell_id", "positive", true),
+                            ("reward_type", "uint", false),
+                            ("is_spell_learned", "bool", false),
+                        ],
+                    )?;
+                    let spells = spells.as_object().unwrap();
+                    ensure!(spells.len() <= 32, "Too many quest spell rewards");
+                    for key in spells.keys() {
+                        index(key, 1, spells.len() as u32)?;
+                    }
+                }
                 if let Some(amounts) = quest.get("reward_amounts").filter(|v| !v.is_null()) {
                     object(
                         amounts,

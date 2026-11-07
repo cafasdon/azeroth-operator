@@ -631,6 +631,32 @@ local function questRenownRewards(api,id)
     return result
 end
 
+local function questSpellRewards(id)
+    local api=C_QuestInfoSystem
+    local rows=api.GetQuestRewardSpells(id)
+    assert(questRewardAccessible(rows) and type(rows)=="table", "Quest spell rewards unavailable")
+    local result,count={},#rows
+    assert(count<=32, "Too many quest spell rewards")
+    local observed=0
+    for index,spellID in pairs(rows) do
+        assert(questRewardInteger(index,1,count) and questRewardInteger(spellID,1,4294967295),
+            "Invalid quest spell reward")
+        local entry={spell_id=spellID}
+        local ok,info=pcall(api.GetQuestRewardSpellInfo,id,spellID)
+        if ok and questRewardAccessible(info) and type(info)=="table" then
+            local kind,learned=info.type,info.isSpellLearned
+            if questRewardInteger(kind,0,4294967295) then entry.reward_type=kind end
+            if questRewardAccessible(learned) and type(learned)=="boolean" then
+                entry.is_spell_learned=learned
+            end
+        end
+        result[tostring(index)]=entry
+        observed=observed+1
+    end
+    assert(observed==count, "Incomplete quest spell rewards")
+    return result
+end
+
 local function questItemReward(query,index)
     local _,_,quantity,_,_,itemID=query(index)
     assert(questRewardInteger(itemID,1,4294967295)
@@ -713,6 +739,8 @@ AO.collectors.quests = function()
                 if rewardsOk then entry.currency_rewards=rewards end
                 local renownOk,renown=pcall(questRenownRewards,api,id)
                 if renownOk then entry.renown_rewards=renown end
+                local spellsOk,spells=pcall(questSpellRewards,id)
+                if spellsOk then entry.spell_rewards=spells end
                 local selectedOk,currencyChoices,itemChoices,itemRewards,rewardAmounts=pcall(questSelectedRewards,api,id)
                 if selectedOk then
                     entry.currency_choices=currencyChoices
