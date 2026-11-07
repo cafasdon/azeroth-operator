@@ -287,6 +287,14 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+For `Default/Custom Boss`, add `custom_boss` to the `simulation` object
+with `thrash`, `cleave`, or both. Thrash takes `extra_attacks`,
+`proc_chance_percent` and `cooldown_seconds`. Cleave takes
+`cooldown_seconds` and `bonus_damage_percent`. A 50% cleave bonus means
+150% of the rolled weapon damage before mitigation. Cooldowns use whole
+seconds. Configure a tank in the simulator template to measure incoming
+damage from these attacks. [Pinned custom boss engine](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/encounters/custom_boss_ai.go)
+
 For `Default/Dynamic Adds`, add
 `"dynamic_adds":{"spawn_delay_seconds":10,"lifetime_seconds":20,"respawn_seconds":10}`
 to the encounter's `simulation` object. A zero spawn delay starts the first

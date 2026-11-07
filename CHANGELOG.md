@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Configure thrash and cleave for the Forever custom boss simulator.
+
 - Configure kill credit and raid debuffs for simulated Forever add waves.
 
 - Configure first spawn, lifetime and respawn timing for Forever dynamic adds.

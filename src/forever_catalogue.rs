@@ -236,6 +236,8 @@ pub struct SimulationSettings {
     pub movement: Option<MovementSettings>,
     /// Override the wave timing for the Default/Dynamic Adds preset.
     pub dynamic_adds: Option<DynamicAddsSettings>,
+    /// Enable custom boss attacks for the Default/Custom Boss preset.
+    pub custom_boss: Option<CustomBossSettings>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -264,6 +266,51 @@ pub struct DynamicAddsSettings {
     pub debuff_delay_seconds: Option<f64>,
     /// Maximum variation in the debuff delay, from 0 to 3600 seconds.
     pub debuff_jitter_seconds: Option<f64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CustomBossSettings {
+    pub thrash: Option<BossThrash>,
+    pub cleave: Option<BossCleave>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BossThrash {
+    /// Extra swings per proc, from 1 to 10.
+    pub extra_attacks: u32,
+    /// Proc chance as a percentage, from 0 to 100.
+    pub proc_chance_percent: f64,
+    /// Internal cooldown in whole seconds, from 1 to 3600.
+    pub cooldown_seconds: u32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BossCleave {
+    /// Internal cooldown in whole seconds, from 1 to 3600.
+    pub cooldown_seconds: u32,
+    /// Additional weapon damage as a percentage, from 0 to 1000.
+    pub bonus_damage_percent: f64,
+}
+
+fn set_boolean_target_input(
+    target: &mut serde_json::Map<String, Value>,
+    index: usize,
+    label: &str,
+    value: bool,
+) -> Result<()> {
+    let input = target
+        .get_mut("targetInputs")
+        .and_then(Value::as_array_mut)
+        .and_then(|inputs| inputs.get_mut(index))
+        .filter(|input| {
+            input["label"] == label && (input.get("inputType").is_none() || input["inputType"] == 0)
+        })
+        .ok_or_else(|| anyhow::anyhow!("Unexpected encounter boolean input layout"))?;
+    input["boolValue"] = json!(value);
+    Ok(())
 }
 
 fn set_numeric_target_inputs(
@@ -361,16 +408,53 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
         );
         set_numeric_target_inputs(boss, &numeric)?;
         if let Some(apply) = adds.apply_raid_debuffs {
-            let input = boss
-                .get_mut("targetInputs")
-                .and_then(Value::as_array_mut)
-                .and_then(|inputs| inputs.get_mut(4))
-                .filter(|input| {
-                    input["label"] == "Apply debuffs to adds"
-                        && (input.get("inputType").is_none() || input["inputType"] == 0)
-                })
-                .ok_or_else(|| anyhow::anyhow!("Unexpected add debuff input layout"))?;
-            input["boolValue"] = json!(apply);
+            set_boolean_target_input(boss, 4, "Apply debuffs to adds", apply)?;
+        }
+    }
+    if let Some(custom) = &settings.custom_boss {
+        ensure!(
+            record["path"] == "Default/Custom Boss"
+                && (custom.thrash.is_some() || custom.cleave.is_some()),
+            "Custom attacks require the custom boss preset and at least one attack"
+        );
+        let [boss] = targets.as_mut_slice() else {
+            anyhow::bail!("Expected one custom boss");
+        };
+        if let Some(thrash) = &custom.thrash {
+            ensure!(
+                (1..=10).contains(&thrash.extra_attacks)
+                    && (0.0..=100.0).contains(&thrash.proc_chance_percent)
+                    && (1..=3600).contains(&thrash.cooldown_seconds),
+                "Invalid thrash settings"
+            );
+            set_numeric_target_inputs(
+                boss,
+                &[
+                    (1, "Extra attack count", f64::from(thrash.extra_attacks)),
+                    (2, "Extra attack proc chance %", thrash.proc_chance_percent),
+                    (
+                        3,
+                        "Extra attack cooldown",
+                        f64::from(thrash.cooldown_seconds),
+                    ),
+                ],
+            )?;
+            set_boolean_target_input(boss, 0, "Has Extra Attacks", true)?;
+        }
+        if let Some(cleave) = &custom.cleave {
+            ensure!(
+                (1..=3600).contains(&cleave.cooldown_seconds)
+                    && (0.0..=1000.0).contains(&cleave.bonus_damage_percent),
+                "Invalid cleave settings"
+            );
+            set_numeric_target_inputs(
+                boss,
+                &[
+                    (5, "Cleave cooldown", f64::from(cleave.cooldown_seconds)),
+                    (6, "Cleave damage multiplier", cleave.bonus_damage_percent),
+                ],
+            )?;
+            set_boolean_target_input(boss, 4, "Has Cleave", true)?;
         }
     }
     Ok(json!({
