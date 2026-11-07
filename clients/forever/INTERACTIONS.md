@@ -296,6 +296,10 @@ cap. The review reports `profession_points_to_observed_cap` when a positive
 cap and consistent rank were captured. This describes the profession reported
 for that recipe. Update the importer and reader before syncing this field.
 
+`list_snapshots` accepts `recipe_profession_id` for Forever. It can be
+combined with the character and output item filters. Only captures with an
+exact observed profession ID match. Older captures may lack that field.
+
 `material_and_charge_capacity` shows the smaller of the observed material
 limit and saved recipe charges, with the shortfall against the requested
 craft count. It reports bags and all observed storage separately. Either

@@ -199,9 +199,29 @@ impl Store {
         offset: usize,
         limit: usize,
     ) -> Result<Value> {
+        self.list_matching_recipes(
+            family,
+            character,
+            recipe_output_item_id,
+            None,
+            offset,
+            limit,
+        )
+    }
+
+    pub fn list_matching_recipes(
+        &self,
+        family: Family,
+        character: Option<&Character>,
+        recipe_output_item_id: Option<std::num::NonZeroU32>,
+        recipe_profession_id: Option<std::num::NonZeroU32>,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Value> {
+        let filter_recipes = recipe_output_item_id.is_some() || recipe_profession_id.is_some();
         ensure!(
-            recipe_output_item_id.is_none() || family == Family::Forever,
-            "Recipe output filtering requires Forever"
+            !filter_recipes || family == Family::Forever,
+            "Recipe filtering requires Forever"
         );
         ensure!((1..=100).contains(&limit), "Limit must be 1..100");
         if let Some(character) = character {
@@ -244,6 +264,12 @@ impl Store {
                                 recipe["output_item_id"].as_u64() == Some(u64::from(id.get()))
                             })
                         })
+                        && recipe_profession_id.is_none_or(|id| {
+                            s.sections.get("selected_recipe").is_some_and(|recipe| {
+                                recipe["profession"]["profession_id"].as_u64()
+                                    == Some(u64::from(id.get()))
+                            })
+                        })
                         && character.is_none_or(|target| {
                             s.character.name.to_lowercase() == target.name.to_lowercase()
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
@@ -251,13 +277,15 @@ impl Store {
                 {
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
-                    if recipe_output_item_id.is_some()
-                        && let Some(recipe) = s.sections.get("selected_recipe")
-                    {
+                    if filter_recipes && let Some(recipe) = s.sections.get("selected_recipe") {
                         summary["selected_recipe"] = json!({
                             "recipe_id":recipe["recipe_id"],"learned":recipe["learned"],
                             "output_item_id":recipe["output_item_id"]
                         });
+                        if recipe_profession_id.is_some() {
+                            summary["selected_recipe"]["profession_id"] =
+                                recipe["profession"]["profession_id"].clone();
+                        }
                     }
                     rows.push((s.captured_at, id.to_owned(), summary));
                 }

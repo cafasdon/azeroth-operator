@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever recipe captures by the recorded profession ID.
+
 - Capture the selected Forever recipe's profession, observed rank and cap.
 
 - Show saved recipe tracking and exact learned observations for Forever quest reward recipe spells.
