@@ -229,6 +229,12 @@ Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include
 all observed stacks. These are locations in the saved export.
 
+Pass `inventory_snapshot_id` to review a saved recipe against a separate
+inventory capture from the same character and exact client/build. It must be
+at least as recent as the recipe capture. Reagents come from the recipe
+capture, while counts, locations and storage coverage come from the inventory
+capture. The response includes both capture times. Missing storage stays unknown.
+
 Use `find_snapshot_item` with a saved `snapshot_id` and a base `item_id` to
 find captured copies in equipment, bags and banks without a simulator
 catalogue. Use `offset` and `limit` (1–50, default 20) to page through matching

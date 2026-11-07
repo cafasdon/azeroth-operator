@@ -263,6 +263,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "bags": {"supported_crafts": 2, "limiting_item_ids": [744]},
                             "all_observed_storage": {"supported_crafts": 3, "limiting_item_ids": [10, 744]},
                         })
+                        refreshed = json.loads(json.dumps(forever))
+                        refreshed["captured_at"] = "2025-01-02T00:00:00Z"
+                        del refreshed["sections"]["selected_recipe"]
+                        del refreshed["sections"]["character_bank"]
+                        refreshed["sections"]["bags"]["0"]["1"]["count"] = 12
+                        inventory_key = SnapshotStore(Path(folder)).ingest(refreshed)
+                        recipe_request = {"snapshot_id": stocked_key, "crafts": 1,
+                                          "inventory_snapshot_id": inventory_key}
+                        refreshed_review = await session.call_tool("review_forever_recipe", recipe_request)
+                        self.assertFalse(refreshed_review.isError)
+                        refresh = json.loads(refreshed_review.content[0].text)
+                        self.assertEqual(refresh["inventory_snapshot_id"], inventory_key)
+                        self.assertEqual(refresh["inventory_captured_at"], "2025-01-02T00:00:00Z")
+                        self.assertEqual(refresh["captured_at"], forever["captured_at"])
+                        self.assertEqual(refresh["unobserved_storage"], ["character_bank"])
+                        self.assertEqual(next(row["quantity_observed"] for row in refresh["materials"]
+                                              if row["item_id"] == 744), 12)
+                        mismatch = await session.call_tool("review_forever_recipe", {
+                            **recipe_request, "inventory_snapshot_id": forever_key})
+                        self.assertTrue(mismatch.isError)
                         forever["sections"]["bags"]["0"] = {
                             str(slot): {"item_id": 744, "count": 2} for slot in range(1, 22)
                         }

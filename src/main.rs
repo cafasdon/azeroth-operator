@@ -88,6 +88,8 @@ struct OwnedGearReview {
 struct RecipeReview {
     snapshot_id: String,
     crafts: u32,
+    /// Optional same-character and same-build capture, at least as recent as the recipe.
+    inventory_snapshot_id: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -420,7 +422,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare a saved Forever recipe's fixed required items with observed bags and banks for 1 to 1000 crafts. Reports material capacity, bottleneck reagents, uncaptured storage and unsupported requirements. Offline estimate only.",
+        description = "Compare a saved Forever recipe's fixed reagents with observed bags and banks for 1 to 1000 crafts. Optionally use a newer compatible inventory snapshot. Offline estimate only.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -428,14 +430,27 @@ impl Operator {
         )
     )]
     fn review_forever_recipe(&self, Parameters(args): Parameters<RecipeReview>) -> CallToolResult {
-        let result = self
-            .store
-            .read(&args.snapshot_id)
-            .and_then(|snapshot| azeroth_operator::analysis::review_recipe(&snapshot, args.crafts));
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            let inventory = args
+                .inventory_snapshot_id
+                .as_deref()
+                .map(|id| self.store.read(id))
+                .transpose()?;
+            let mut review = azeroth_operator::analysis::review_recipe_with_inventory(
+                &snapshot,
+                args.crafts,
+                inventory.as_ref(),
+            )?;
+            if let Some(id) = args.inventory_snapshot_id {
+                review["inventory_snapshot_id"] = serde_json::json!(id);
+            }
+            Ok::<_, anyhow::Error>(review)
+        })();
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe review requires a valid Forever snapshot with a selected recipe and 1 to 1000 crafts.",
+                "Recipe review requires a saved Forever recipe, 1 to 1000 crafts and compatible inventory if supplied.",
             )]),
         }
     }

@@ -12,6 +12,14 @@ struct ObservedReagent {
 }
 
 pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
+    review_recipe_with_inventory(snapshot, crafts, None)
+}
+
+pub fn review_recipe_with_inventory(
+    snapshot: &Snapshot,
+    crafts: u32,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
@@ -21,12 +29,16 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
         .sections
         .get("selected_recipe")
         .ok_or_else(|| anyhow::anyhow!("Selected recipe was not captured"))?;
+    if let Some(inventory) = inventory {
+        ensure_comparable(snapshot, inventory)?;
+    }
+    let stock = inventory.unwrap_or(snapshot);
     let fixed = recipe["requirements"] == "fixed_items";
     let storage = ["bags", "character_bank", "account_bank"];
     let mut observed: BTreeMap<&str, ObservedReagent> = BTreeMap::new();
     let mut missing_storage = Vec::new();
     for (index, name) in storage.into_iter().enumerate() {
-        let Some(containers) = snapshot.sections.get(name).and_then(Value::as_object) else {
+        let Some(containers) = stock.sections.get(name).and_then(Value::as_object) else {
             missing_storage.push(name);
             continue;
         };
@@ -95,15 +107,17 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
         }
         Value::Null
     };
-    Ok(
-        json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
+    let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "materials":materials,"unobserved_storage":missing_storage,"live":false,
         "material_capacity":{
             "bags":capacity(&bag_limits, !missing_storage.contains(&"bags")),
             "all_observed_storage":capacity(&observed_limits, missing_storage.len() < storage.len())
         },
-        "craftability_verified":false,"game_execution":false}),
-    )
+        "craftability_verified":false,"game_execution":false});
+    if let Some(inventory) = inventory {
+        review["inventory_captured_at"] = json!(inventory.captured_at);
+    }
+    Ok(review)
 }
 
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
@@ -231,16 +245,7 @@ pub fn compare_observations(
     quest_id: Option<u32>,
     achievement_id: Option<u32>,
 ) -> Result<Value> {
-    ensure!(before.client == after.client, "Client/build mismatch");
-    ensure!(
-        before.character.name == after.character.name
-            && before.character.realm == after.character.realm,
-        "Character mismatch"
-    );
-    ensure!(
-        before.captured_at <= after.captured_at,
-        "Snapshots are reversed"
-    );
+    ensure_comparable(before, after)?;
     let names: BTreeSet<_> = before
         .sections
         .keys()
@@ -376,6 +381,20 @@ pub fn compare_observations(
 
 fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &str) -> Option<bool> {
     Some(before?.get(key)?.as_bool()? != after?.get(key)?.as_bool()?)
+}
+
+fn ensure_comparable(before: &Snapshot, after: &Snapshot) -> Result<()> {
+    ensure!(before.client == after.client, "Client/build mismatch");
+    ensure!(
+        before.character.name == after.character.name
+            && before.character.realm == after.character.realm,
+        "Character mismatch"
+    );
+    ensure!(
+        before.captured_at <= after.captured_at,
+        "Snapshots are reversed"
+    );
+    Ok(())
 }
 
 fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {
