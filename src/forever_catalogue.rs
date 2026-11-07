@@ -711,6 +711,10 @@ fn requirement_check(
         Some("DRUID") => Some(11),
         _ => None,
     };
+    let professions = snapshot
+        .sections
+        .get("professions")
+        .and_then(Value::as_object);
     move |item, selection| {
         if selection.source
             == (ItemLocation::Equipment {
@@ -728,11 +732,36 @@ fn requirement_check(
                 .is_some_and(|(class, allowed)| {
                     !allowed.is_empty() && !allowed.iter().any(|id| id.as_u64() == Some(class))
                 });
-        (level_conflict || class_conflict).then(|| {
-            json!({
+        // Reverse the pinned simulator's DBC skill-line to Profession mapping.
+        let required_skill_line = match item["requiredProfession"].as_u64() {
+            Some(1) => Some(171),
+            Some(2) => Some(164),
+            Some(3) => Some(333),
+            Some(4) => Some(202),
+            Some(5) => Some(182),
+            Some(6) => Some(773),
+            Some(8) => Some(165),
+            Some(9) => Some(186),
+            Some(10) => Some(393),
+            Some(11) => Some(197),
+            _ => None,
+        };
+        let missing_skill_line = required_skill_line.filter(|id| {
+            professions.is_some_and(|rows| {
+                !rows
+                    .values()
+                    .any(|row| row["skill_line"].as_u64() == Some(*id))
+            })
+        });
+        (level_conflict || class_conflict || missing_skill_line.is_some()).then(|| {
+            let mut conflict = json!({
                 "slot":selection.target_slot,"item_id":selection.expected_item_id,
                 "below_required_level":level_conflict,"class_excluded":class_conflict
-            })
+            });
+            if let Some(id) = missing_skill_line {
+                conflict["required_profession_not_observed"] = json!(id);
+            }
+            conflict
         })
     }
 }

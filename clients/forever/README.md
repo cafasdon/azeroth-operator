@@ -139,6 +139,13 @@ combinations. Draft reviews and skipped ranker rows report the conflicting slots
 checks use available snapshot stats and catalogue records. Full in-game
 eligibility remains unverified.
 
+When the item requires a mapped profession and a professions section was
+captured, the check also excludes swaps if that skill line is absent.
+It reports the required skill-line ID. Missing profession observations leave
+this check unknown. The pinned item catalogue supplies the profession, with
+no required skill rank on these gear records.
+[Pinned WoWSims profession mapping](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/tools/database/dbc/maps.go)
+
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
 storage copies before applying the combination and draft limits. This applies
 to items that fit exactly one simulator slot. Each skipped copy records its

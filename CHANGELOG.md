@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Screen Forever gear swaps against mapped catalogue profession requirements.
+
 - Scan up to 256 captured locations per Forever gear slot before applying the existing draft limit.
 
 - Prune Forever class and level conflicts before expanding gear combinations.
