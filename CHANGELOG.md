@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Enforce a fail-closed offline MCP tool allowlist and remove Apply-code preparation from the hosted gateway profile.
+
 - Sync a pinned WoWSims Forever catalogue to disk and optionally expose offline gear, world-reference and encounter lookups through the local MCP.
 
 - Add source-only full-stack merge executor with exact identities, stable native capacity checks and read-only quantity-conservation verification. Transport, player review integration, packaging and native qualification remain pending.

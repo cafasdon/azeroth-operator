@@ -16,7 +16,9 @@ async def smoke(command):
             await session.initialize()
             tools = await session.list_tools()
             expected = {"capabilities", "list_snapshots", "inspect_snapshot",
-                        "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"}
+                        "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout"}
+            if os.environ.get("AZEROTH_FOREVER_CATALOGUE"):
+                expected.add("lookup_forever_catalogue")
             assert {tool.name for tool in tools.tools} == expected
             for tool in tools.tools:
                 assert tool.annotations.readOnlyHint is True

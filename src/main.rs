@@ -8,6 +8,18 @@ use rmcp::{
 use schemars::JsonSchema;
 use serde::Deserialize;
 
+// New routes are unavailable until their inputs and effects pass policy review.
+const OFFLINE_TOOLS: &[&str] = &[
+    "capabilities",
+    "inspect_snapshot",
+    "list_snapshots",
+    "compare_snapshots",
+    "character_summary",
+    "review_equipment_selection",
+    "captured_talent_loadout",
+    "lookup_forever_catalogue",
+];
+
 #[derive(Clone)]
 struct Operator {
     store: Store,
@@ -267,7 +279,7 @@ impl Operator {
             .map(|tool| tool.name)
             .collect();
         implemented.sort_unstable();
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[]}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","reviewed_on":"2026-11-07","sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
     }
     #[tool(
         description = "Look up gear, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. Omit key for the section count. No network, live acquisition validation or simulation execution.",
@@ -506,8 +518,12 @@ async fn main() -> anyhow::Result<()> {
         "AZEROTH_FOREVER_CATALOGUE must be an absolute path"
     );
     let mut tool_router = Operator::tool_router();
-    if forever_catalogue.is_none() {
-        tool_router.remove_route("lookup_forever_catalogue");
+    for tool in tool_router.list_all() {
+        if !OFFLINE_TOOLS.contains(&tool.name.as_ref())
+            || (tool.name == "lookup_forever_catalogue" && forever_catalogue.is_none())
+        {
+            tool_router.remove_route(&tool.name);
+        }
     }
     let service = Operator {
         store: Store { root },

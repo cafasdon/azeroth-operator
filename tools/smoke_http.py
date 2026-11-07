@@ -16,7 +16,7 @@ async def smoke(snapshot=None, expect_loadout=False, expect_bags=False):
         async with ClientSession(reader, writer) as session:
             await session.initialize()
             tools = await session.list_tools()
-            assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "prepare_macro_operation", "prepare_binding_operation", "prepare_equipment_operation", "prepare_bag_operation", "prepare_talent_operation", "prepare_action_operation", "prepare_equipment_set_operation"}
+            assert {t.name for t in tools.tools} == {"capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout"}
             if snapshot:
                 result = await session.call_tool("list_snapshots", {"family": "retail", "limit": 100})
                 assert not result.isError

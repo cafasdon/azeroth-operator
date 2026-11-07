@@ -72,8 +72,7 @@ if __name__ == "__main__":
         wait_ready()
         run("python3", str(Path(__file__).with_name("probe_gateway.py")))
     except BaseException:
-        run("docker", "mcp", "profile", "import", str(before))
-        run("systemctl", "restart", "azeroth-mcp.service")
-        print("Previous profile restored; inspect rollback health", file=sys.stderr)
+        run("systemctl", "stop", "azeroth-mcp.service")
+        print("Reader stopped after failed verification. Previous profile retained as evidence.", file=sys.stderr)
         raise
     print(json.dumps({"reader_image": args.image, "evidence": str(evidence), "loopback_probe": "passed"}))

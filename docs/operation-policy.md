@@ -2,7 +2,18 @@
 
 Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; macro creation is live-qualified; other player-applied mutations have separate qualification gaps. ADR006 supersedes the original blanket read-only implementation target.
 
+## MCP enforcement, 7 November 2026
+
+The MCP registers an explicit offline allowlist. Snapshot listing, inspection, comparisons, character summaries, data-only equipment review, the original captured talent string and a configured Forever catalogue lookup can be exposed. It denies all seven legacy preparation routes that generated addon Apply codes, even if a client calls one directly. There is no runtime override. The separate hosted gateway profile also lists only the approved read routes.
+
+Offline tools may use saved observations and a verified local catalogue. They must never drive input, broadcast commands across accounts, attach to a game process, intercept traffic, bypass protected or secret values, run arbitrary game code, or create a live game connection. A new route needs source review for its inputs, outputs and side effects before admission. Player involvement, technical feasibility and API availability do not establish Blizzard authorisation. Check applicable regional terms and source-specific data rights before enabling new acquisition or game-facing features.
+
+This is a conservative project control. It does not establish Blizzard approval or cover pre-existing installations of the standalone addon or older MCP binaries. The historical matrix below records implementation and qualification evidence, not which write-related routes the current MCP exposes.
+
 ## Published sources
+
+- [May 2021 input broadcasting update](https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613), official announcement extending the restriction to software and hardware that mirror commands or automate or streamline multiboxing.
+- [Blizzard EU/UK EULA](https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement), official indexed clauses reviewed on 7 November 2026. The direct request was refused. The reviewed clauses cover unauthorised automation, data mining and connections.
 
 - [Blizzard UI Add-On Development Policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534), official Kaivax opening post, read directly. Addons must be free with visible code, avoid detrimental effects, advertising and in-game donation requests, and comply with the EULA. Blizzard can disable functionality. Community replies are not policy evidence.
 - [Blizzard EULA](https://www.blizzard.com/en-us/legal/08b946df-660a-40e4-a072-1fbde65173b1/blizzard-end-user-license-agreement), official indexed search text retrieved; direct page fetch returned HTTP403. The retrieved clauses prohibit unauthorised automated game control and unauthorised data collection, with third-party UI exceptions at Blizzard's discretion. Full current regional/account terms were not verified. Do not describe this as a complete legal review or an express authorisation for this project.
@@ -48,7 +59,5 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 ## Requirements for any future enabled action
 
 Record the exact operation, client family/variant/build/interface, official policy/API evidence, player interaction required, combat/protected/secret-value restrictions, data prerequisites and observed result. Unknown evidence must remain explicit. A working fixture or successful API call is not enough to enable execution. Preserve original scope: supporting a review draft does not fulfil an equip/build/item-management request.
-
-Actual enforcement today is structural: fourteen MCP tools operating on captured data, a reader container with a read-only owner store, and a separate bounded importer. The macro compiler returns data; the installed addon accepts an explicit player paste/review/apply and checks client/character/combat/preimage before ordinary macro API calls. It does not evaluate imported Lua, simulate input or execute macro bodies. Inspect `src/main.rs`, `addon/MacroImport.lua`, `addon/MacroOperations.lua`, `addon/MacroUI.lua` and the deployed profile. Annotations and this document alone are not enforcement.
 
 No game action is newly enabled by this record. Live qualification, operation-specific policy evidence and feature implementation remain outstanding in ROADMAP.md.
