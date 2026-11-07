@@ -263,6 +263,13 @@ The report gives the direction and amount of the balance change when both
 records have the same account scope. An unseen ID or changed account scope
 leaves the change unknown. Weekly earnings are shown as captured values.
 
+Use `/aoexport wallet` to include the current character's carried money in
+copper. Regular `/aoexport` omits it. The optional value is part of the saved
+snapshot and follows its configured sync path. Read it with `inspect_snapshot`
+and `section: "wallet"`. The capture uses Blizzard's `GetMoney` UI API.
+Use a wallet-aware importer and reader before syncing these exports.
+[Generated Forever UI documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/PlayerScriptDocumentation.lua)
+
 Pass `faction_id` to `compare_snapshots` for captured reputation before and
 after. The signed standing change is available when both records have standard
 standing and the same account scope. Friendship, renown, paragon and unknown

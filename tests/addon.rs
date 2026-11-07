@@ -394,6 +394,8 @@ pub fn verify_forever_capture_fixture(
         function GetRealmName() return 'Test' end
         function GetServerTime() return 1735689600 end
         function date() return '2025-01-01T00:00:00Z' end
+        walletCalls=0;walletCopper=0
+        function GetMoney() walletCalls=walletCalls+1; return walletCopper end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
         Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
@@ -514,6 +516,18 @@ pub fn verify_forever_capture_fixture(
         )?)
     };
     let snapshot = read()?;
+    assert!(!snapshot.sections.contains_key("wallet"));
+    assert_eq!(lua.globals().get::<u32>("walletCalls")?, 0);
+    lua.load("SlashCmdList.AZEROTHOPERATOR('wallet')").exec()?;
+    assert_eq!(read()?.sections["wallet"]["copper"], 0);
+    lua.load("walletCopper=9999999999999;SlashCmdList.AZEROTHOPERATOR('wallet')")
+        .exec()?;
+    assert_eq!(read()?.sections["wallet"]["copper"], 9_999_999_999_999u64);
+    lua.load("walletCopper=-1;SlashCmdList.AZEROTHOPERATOR('wallet')")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("wallet"));
+    lua.load("SlashCmdList.AZEROTHOPERATOR()").exec()?;
+    assert!(!read()?.unavailable.contains_key("wallet"));
     let quests = &snapshot.sections["quests"];
     assert_eq!(quests["42"]["ready_for_turn_in"], false);
     assert_eq!(

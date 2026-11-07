@@ -149,6 +149,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["wallet"] = {"copper": 5_000_000_001}
                         forever["sections"]["professions"] = {
                             "1": {"name": "Fixture profession", "rank": 20, "max_rank": 75, "skill_line": 164}}
                         forever["sections"]["quests"] = {
@@ -193,6 +194,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
                         self.assertEqual(json.loads(currency.content[0].text)["data"]["entries"]["100"]["quantity"], 0)
+                        wallet = await session.call_tool("inspect_snapshot", {"snapshot_id": forever_key, "section": "wallet"})
+                        self.assertFalse(wallet.isError)
+                        self.assertEqual(json.loads(wallet.content[0].text)["data"], {"copper": 5_000_000_001})
                         reputation = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"reputation"})
                         reputation_data = json.loads(reputation.content[0].text)["data"]
                         self.assertEqual(reputation_data["coverage"], "visible_faction_rows_only")

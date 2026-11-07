@@ -509,6 +509,14 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.wallet = function()
+    local copper = GetMoney()
+    assert(not issecretvalue or not issecretvalue(copper), "Wallet value restricted")
+    assert(type(copper)=="number" and copper>=0 and copper<=9999999999999
+        and copper==math.floor(copper), "Invalid wallet balance")
+    return {copper=copper}
+end
+
 AO.collectors.currency_balances = function()
     local api=C_CurrencyInfo
     assert(api and api.GetCurrencyListSize and api.GetCurrencyListInfo, "Currency API unavailable")

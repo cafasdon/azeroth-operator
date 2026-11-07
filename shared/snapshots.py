@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "reputation", "currency_balances", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "reputation", "currency_balances", "wallet", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -29,6 +29,11 @@ def validate_snapshot(value):
     sections = value.get("sections")
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
+    if "wallet" in sections:
+        wallet = sections["wallet"]
+        if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
+                or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
+            raise ValueError("Invalid Forever wallet observation")
     return value
 
 

@@ -70,6 +70,7 @@ fn object(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
         let valid = match *kind {
             "text" => v.as_str().is_some_and(|s| s.len() <= 16384),
             "uint" => v.as_u64().is_some_and(|n| n <= u32::MAX as u64),
+            "wallet_copper" => v.as_u64().is_some_and(|n| n <= 9_999_999_999_999),
             "positive" => v.as_u64().is_some_and(|n| n > 0 && n <= u32::MAX as u64),
             "int" => v.as_i64().is_some_and(|n| i32::try_from(n).is_ok()),
             "bool" => v.is_boolean(),
@@ -536,6 +537,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 &[("name", "text", true), ("quantity", "uint", true)],
             )?;
         }
+        "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
         "currency_balances" => {
             object(
                 value,

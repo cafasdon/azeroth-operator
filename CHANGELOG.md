@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an explicit Forever wallet export and owner-scoped MCP readback.
+
 - Find an item across up to eight explicitly selected snapshots without combining shared bank totals.
 
 - Compare tracked Forever achievement criteria by stable ID across reordered captures.

@@ -32,7 +32,7 @@ local function json(value, encoded)
     return '{' .. table.concat(parts, ',') .. '}'
 end
 
-function AO.Capture()
+function AO.Capture(includeWallet)
     assert(not InCombatLockdown(), "Export unavailable in combat")
     local version, build, _, interface = GetBuildInfo()
     assert(AO.family and AO.variant, "Client adapter missing")
@@ -49,6 +49,7 @@ function AO.Capture()
         sectionNames[#sectionNames+1]="reputation"
         sectionNames[#sectionNames+1]="currency_balances"
         sectionNames[#sectionNames+1]="tracked_achievements"
+        if includeWallet then sectionNames[#sectionNames+1]="wallet" end
     end
     for _, name in ipairs(sectionNames) do
         local collector = AO.collectors and AO.collectors[name]
@@ -76,8 +77,8 @@ function AO.Capture()
 end
 
 SLASH_AZEROTHOPERATOR1 = "/aoexport"
-SlashCmdList.AZEROTHOPERATOR = function()
-    local ok, result = pcall(AO.Capture)
+SlashCmdList.AZEROTHOPERATOR = function(message)
+    local ok, result = pcall(AO.Capture, message == "wallet")
     if ok then
         print("Azeroth Operator: snapshot captured. Use /reload or log out to save it to disk.")
     else
