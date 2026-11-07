@@ -55,8 +55,9 @@ pub struct EquipmentSelection {
 pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) -> Result<Value> {
     snapshot.validate()?;
     ensure!(
-        !selections.is_empty() && selections.len() <= 19,
-        "Expected 1 to 19 selections"
+        selections.len() <= 19
+            && (!selections.is_empty() || snapshot.client.family == crate::Family::Forever),
+        "Expected 1 to 19 selections, or an empty Forever baseline"
     );
     let equipment = snapshot
         .sections

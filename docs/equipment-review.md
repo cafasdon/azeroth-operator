@@ -78,6 +78,11 @@ move a lone item from the second ring or trinket slot, or move a flexible
 off-hand weapon to an empty main hand. Character eligibility, encounter
 configuration and actual equip legality require separate evidence.
 
+For a captured Forever baseline, call `review_equipment_selection` with its
+snapshot ID and `"selections":[]` on the local catalogue-enabled MCP. The review
+lists no requested changes or vacated slots and applies the same simulator
+resolution checks to the captured equipment.
+
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
 and live client verification; this draft must not be presented as their substitute.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Export captured Forever equipment as a simulator baseline with an empty selection list.
+
 - Build positional Forever simulator equipment inputs from resolved saved drafts.
 
 - Expose pinned Forever simulator item inputs for resolved captured gear.

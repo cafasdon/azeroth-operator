@@ -83,6 +83,7 @@ struct RecipeReview {
 #[serde(deny_unknown_fields)]
 struct EquipmentReview {
     snapshot_id: String,
+    /// Exact saved selections. An empty list reviews the captured Forever baseline with a local catalogue.
     selections: Vec<azeroth_operator::planning::EquipmentSelection>,
 }
 
@@ -451,6 +452,10 @@ impl Operator {
     ) -> CallToolResult {
         let result = (|| {
             let snapshot = self.store.read(&args.snapshot_id)?;
+            anyhow::ensure!(
+                !args.selections.is_empty() || self.forever_catalogue.is_some(),
+                "An empty baseline requires a local Forever catalogue"
+            );
             let mut review =
                 azeroth_operator::planning::equipment_review(&snapshot, &args.selections)?;
             if snapshot.client.family == Family::Forever
@@ -461,16 +466,19 @@ impl Operator {
                     &snapshot,
                     &args.selections,
                 )
-                .unwrap_or_else(|_| {
-                    serde_json::json!({
+                .or_else(|error| {
+                    if args.selections.is_empty() {
+                        return Err(error);
+                    }
+                    Ok(serde_json::json!({
                         "catalogue_two_hand_pairing":"unknown",
                         "catalogue_slot_fit":null,
                         "catalogue_unique_item_duplicates":null,
                         "catalogue_shared_limit_categories":null,
                         "simulator_equipment_spec":null,
                         "simulator_equipment_unresolved_slots":null
-                    })
-                });
+                    }))
+                })?;
                 review["checks"]
                     .as_object_mut()
                     .unwrap()
@@ -482,7 +490,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Equipment review rejected: snapshot/locations unavailable, mismatched, duplicated or invalid",
+                "Equipment review rejected: invalid or unavailable snapshot/locations, or an empty baseline without a verified Forever catalogue",
             )]),
         }
     }

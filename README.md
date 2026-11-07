@@ -63,6 +63,9 @@ requirements, capacity and current ownership remain unknown. Schema version 1
 does not identify item GUIDs, account or region. This tool is included in the deployed seven-tool
 server release; see the dated verification log for deployed qualification.
 
+With a verified local Forever catalogue, an empty selection list reviews the
+captured equipment as a simulator baseline.
+
 Synthetic performance baseline: `cargo run --release --locked --example benchmark` measures warm-cache listing and inspection over 200 generated snapshots. It uses no account data.
 
 The 2026-11-03 paired Windows benchmark measured listing medians of 91.6ms before
