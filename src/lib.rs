@@ -35,6 +35,7 @@ const SECTIONS: &[&str] = &[
     "selected_recipe",
     "reputation",
     "currency_balances",
+    "tracked_achievements",
     "talents",
     "stats",
     "professions",
@@ -117,7 +118,7 @@ impl Snapshot {
             ensure!(
                 !matches!(
                     name.as_str(),
-                    "selected_recipe" | "reputation" | "currency_balances"
+                    "selected_recipe" | "reputation" | "currency_balances" | "tracked_achievements"
                 ) || self.client.family == Family::Forever,
                 "Observation requires Forever"
             );

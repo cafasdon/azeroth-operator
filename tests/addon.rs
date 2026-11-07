@@ -387,7 +387,8 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         function date() return '2025-01-01T00:00:00Z' end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
-        Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2}}
+        Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2},
+            ContentTrackingType={Achievement=2}}
         BankFrame={IsShown=function() return bankOpen end}
         C_Bank={
             CanViewBank=function(kind) return kind==0 or accountVisible end,
@@ -431,6 +432,18 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
             IsFactionParagonForCurrentPlayer=function() return false end,
         }
         C_GossipInfo={GetFriendshipReputation=function() return {friendshipFactionID=0} end}
+        ACHIEVEMENT_FLAGS_ACCOUNT=131072
+        bit={band=function(flags,mask) return math.floor(flags/mask)%2*mask end}
+        tracked={101,102}
+        C_ContentTracking={GetTrackedIDs=function(kind) assert(kind==Enum.ContentTrackingType.Achievement); return tracked end}
+        function GetAchievementInfo(id)
+            return id,"Fixture achievement",5,true,1,1,2025,"Description",ACHIEVEMENT_FLAGS_ACCOUNT,0,"Reward",id==102,false,"Private character"
+        end
+        function GetAchievementNumCriteria(id) assert(id==101);return 2 end
+        function GetAchievementCriteriaInfo(id,index)
+            assert(id==101)
+            return "Private objective",0,index==1,index==1 and 2 or nil,2,"Private contributor",0,0,"Private quantity",300+index
+        end
         local function currency(id)
             return {currencyID=id,name="Currency "..id,isHeader=false,isTypeUnused=id==200,
                 quantity=0,maxQuantity=100,maxWeeklyQuantity=40,quantityEarnedThisWeek=10,
@@ -462,6 +475,31 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         )?)
     };
     let snapshot = read()?;
+    let achievements = &snapshot.sections["tracked_achievements"]["entries"];
+    assert_eq!(achievements["101"]["account_wide"], true);
+    assert_eq!(achievements["101"]["completed"], true);
+    assert_eq!(achievements["101"]["earned_by_character"], false);
+    assert_eq!(
+        achievements["101"]["criteria"]["1"],
+        serde_json::json!({
+            "criterion_id":301,"completed":true,"quantity":2,"required":2
+        })
+    );
+    assert_eq!(
+        achievements["101"]["criteria"]["2"],
+        serde_json::json!({
+            "criterion_id":302,"completed":false
+        })
+    );
+    assert!(achievements.get("102").is_none());
+    assert!(!achievements.to_string().contains("Private"));
+    lua.load("tracked={[2]=101};AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("tracked_achievements"));
+    lua.load("tracked={};AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["tracked_achievements"]["entries"],
+        serde_json::json!({})
+    );
     let currencies = &snapshot.sections["currency_balances"];
     assert_eq!(currencies["entries"]["100"]["quantity"], 0);
     assert_eq!(currencies["entries"]["100"]["account_wide"], true);

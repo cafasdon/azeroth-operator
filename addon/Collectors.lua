@@ -498,6 +498,47 @@ AO.collectors.achievements = function()
     return {coverage="points_only", total_points=GetTotalAchievementPoints()}
 end
 
+AO.collectors.tracked_achievements = function()
+    local function uint(value, maximum)
+        return type(value)=="number" and value%1==0 and value>=0 and value<=maximum
+    end
+    local ids=C_ContentTracking.GetTrackedIDs(Enum.ContentTrackingType.Achievement)
+    assert(type(ids)=="table" and #ids<=32, "Tracked achievement list unavailable")
+    local count=0
+    for index in pairs(ids) do
+        assert(uint(index,#ids) and index>0, "Invalid tracked achievement index")
+        count=count+1
+    end
+    assert(count==#ids, "Tracked achievement list incomplete")
+    local seen,rows={},{}
+    for _,id in ipairs(ids) do
+        assert(uint(id,4294967295) and id>0 and not seen[id], "Invalid tracked achievement ID")
+        seen[id]=true
+        local observedID,name,points,completed,_,_,_,_,flags,_,_,isGuild,earnedByCharacter=GetAchievementInfo(id)
+        assert(observedID==id and type(isGuild)=="boolean", "Tracked achievement unavailable")
+        if not isGuild then
+            assert(type(name)=="string" and #name>=1 and #name<=256 and uint(points,4294967295)
+                and type(completed)=="boolean" and type(earnedByCharacter)=="boolean"
+                and uint(flags,4294967295) and uint(ACHIEVEMENT_FLAGS_ACCOUNT,4294967295)
+                and ACHIEVEMENT_FLAGS_ACCOUNT>0, "Invalid achievement observation")
+            local criteriaCount=GetAchievementNumCriteria(id)
+            assert(uint(criteriaCount,128), "Achievement criteria unavailable")
+            local criteria={}
+            for index=1,criteriaCount do
+                local _,_,done,quantity,required,_,_,_,_,criteriaID=GetAchievementCriteriaInfo(id,index)
+                assert(type(done)=="boolean", "Achievement criterion unavailable")
+                local quantitiesValid=uint(quantity,4294967295) and uint(required,4294967295)
+                criteria[tostring(index)]={completed=done,
+                    criterion_id=uint(criteriaID,4294967295) and criteriaID>0 and criteriaID or nil,
+                    quantity=quantitiesValid and quantity or nil,required=quantitiesValid and required or nil}
+            end
+            rows[tostring(id)]={name=name,points=points,completed=completed,earned_by_character=earnedByCharacter,
+                account_wide=bit.band(flags,ACHIEVEMENT_FLAGS_ACCOUNT)==ACHIEVEMENT_FLAGS_ACCOUNT,criteria=criteria}
+        end
+    end
+    return {coverage="tracked_player_achievements_only",entries=rows}
+end
+
 AO.collectors.reputation = function()
     local api=C_Reputation
     assert(api and api.GetNumFactions and api.GetFactionDataByIndex, "Reputation API unavailable")

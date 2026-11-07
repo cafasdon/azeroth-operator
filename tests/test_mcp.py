@@ -149,6 +149,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["tracked_achievements"] = {"coverage":"tracked_player_achievements_only","entries":{
+                            "101":{"name":"Fixture achievement","points":5,"completed":False,"earned_by_character":False,
+                                   "account_wide":True,"criteria":{"1":{"criterion_id":301,"completed":False,"quantity":1,"required":2}}}}}
                         forever["sections"]["currency_balances"] = {"coverage":"visible_currency_ids_only","entries":{
                             "100":{"name":"Fixture currency","quantity":0,"account_wide":True,"inactive":False,"max_quantity":100,
                                    "max_weekly_quantity":40,"earned_this_week":10,"total_earned":60,
@@ -173,6 +176,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
+                        self.assertEqual(bank_summary_data["tracked_achievements_observed"], 1)
+                        achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
+                        self.assertEqual(json.loads(achievement.content[0].text)["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
                         self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
                         self.assertEqual(json.loads(currency.content[0].text)["data"]["entries"]["100"]["quantity"], 0)
@@ -184,6 +190,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after["character"]["realm"] = "First"
                         reputation_after["sections"]["reputation"]["entries"]["10"]["standing"] = -20
                         reputation_after["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 3
+                        reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]["1"]["quantity"] = 2
                         after_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         rep_diff = await session.call_tool("compare_snapshots", {"before_id":forever_key,"after_id":after_key})
                         self.assertFalse(rep_diff.isError)
@@ -191,6 +198,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                          ["/entries/10/standing"])
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["currency_balances"]["changed_paths"],
                                          ["/entries/100/quantity"])
+                        self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["tracked_achievements"]["changed_paths"],
+                                         ["/entries/101/criteria/1/quantity"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)

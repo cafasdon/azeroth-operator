@@ -537,6 +537,55 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("total_points", "uint", true),
             ],
         )?,
+        "tracked_achievements" => {
+            object(
+                value,
+                &[
+                    ("coverage", "tracked_player_achievements_only", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[
+                    ("name", "text", true),
+                    ("points", "uint", true),
+                    ("completed", "bool", true),
+                    ("earned_by_character", "bool", true),
+                    ("account_wide", "bool", true),
+                    ("criteria", "map", true),
+                ],
+            )?;
+            let achievements = value["entries"].as_object().unwrap();
+            ensure!(achievements.len() <= 32, "Too many tracked achievements");
+            for achievement in achievements.values() {
+                ensure!(
+                    achievement["name"]
+                        .as_str()
+                        .is_some_and(|s| !s.is_empty() && s.len() <= 256),
+                    "Invalid achievement name"
+                );
+                let criteria = &achievement["criteria"];
+                entries(
+                    criteria,
+                    &[
+                        ("completed", "bool", true),
+                        ("criterion_id", "positive", false),
+                        ("quantity", "uint", false),
+                        ("required", "uint", false),
+                    ],
+                )?;
+                let criteria = criteria.as_object().unwrap();
+                ensure!(criteria.len() <= 128, "Too many achievement criteria");
+                for (key, criterion) in criteria {
+                    index(key, 1, criteria.len() as u32)?;
+                    ensure!(
+                        criterion["quantity"].is_null() == criterion["required"].is_null(),
+                        "Incomplete criterion quantities"
+                    );
+                }
+            }
+        }
         "talents" => {
             object(
                 value,
