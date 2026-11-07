@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Combine default base stats with a resolved Forever suffix in owned-gear review.
+
 - Show pinned default base stats, weapon profiles and item effects in Forever owned-gear review.
 
 - Show flat pseudo-stat and replacement weapon-damage effects of a captured Forever suffix at default simulator scaling.

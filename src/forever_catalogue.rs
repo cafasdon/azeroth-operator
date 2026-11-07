@@ -351,13 +351,39 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
         [suffix] => scaled_suffix_effects(item, suffix),
         _ => None,
     });
+    let regular_stats = item.and_then(|item| {
+        let scaling = item["scalingOptions"]["0"].as_object()?;
+        let base = match scaling.get("stats") {
+            Some(stats) => stats.as_object()?.clone(),
+            None => serde_json::Map::new(),
+        };
+        match modifiers["random_suffix_id"].as_i64()? {
+            0 => Some(Value::Object(base)),
+            _ => {
+                let (allocation, _) = suffix_effects.as_ref()?;
+                combine_regular_stats(base, &allocation["by_simulator_stat_id"])
+            }
+        }
+    });
     json!({
         "enchants":enchants,
         "fitting_enchants":fitting_enchants,
         "random_suffixes":suffixes,
+        "default_scaling_regular_stats_before_enchant":regular_stats,
         "default_scaling_suffix_allocation_delta":suffix_effects.as_ref().map(|(stats, _)| stats),
         "default_scaling_suffix_extra_effects":suffix_effects.as_ref().map(|(_, extra)| extra)
     })
+}
+
+fn combine_regular_stats(
+    mut stats: serde_json::Map<String, Value>,
+    suffix: &Value,
+) -> Option<Value> {
+    for (id, delta) in suffix.as_object()? {
+        let base_value = stats.get(id).map_or(Some(0.0), Value::as_f64)?;
+        stats.insert(id.clone(), json!(base_value + delta.as_f64()?));
+    }
+    Some(Value::Object(stats))
 }
 
 fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)> {
@@ -402,6 +428,21 @@ fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn combines_base_and_suffix_regular_stat_ids() {
+        assert_eq!(
+            combine_regular_stats(
+                json!({"0":4,"2":9}).as_object().unwrap().clone(),
+                &json!({"0":7,"1":3})
+            ),
+            Some(json!({"0":11.0,"1":3.0,"2":9}))
+        );
+        assert_eq!(
+            combine_regular_stats(serde_json::Map::new(), &json!({"0":7})),
+            Some(json!({"0":7.0}))
+        );
+    }
 
     #[test]
     fn scales_listed_suffix_allocations_and_rounds_halves_away_from_zero() {
