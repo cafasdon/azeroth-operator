@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare bounded combinations of captured Forever gear across multiple slots.
+
 - Rank resolved single-slot Forever swaps from captured storage using local MCP and WoWSims.
 
 - Return exact equipment draft selections alongside slot-filtered Forever gear candidates.

@@ -110,18 +110,21 @@ report the standard error of each DPS difference against the baseline. This
 pairs iteration samples using the same seed, template and encounter, and keeps
 the raw samples out of the output. It does not search the full owned inventory.
 
-`python -m tools.rank_forever_slot` automates a one-slot search. Use the same
+`python -m tools.rank_forever_slot` ranks gear across one to four slots. Use the same
 engine, template and encounter arguments, plus `--mcp` for the absolute path
 to the trusted local MCP executable, `--snapshot-id` and `--slot`. Configure
 the usual owner snapshot directory and pinned catalogue in the environment.
-The command pages all matching captured locations up to 64, checks each draft,
+Repeat `--slot` to compare combinations, including keeping the current item in
+each slot. The command pages up to 64 matching captured locations per slot and
+rejects searches with more than 64 proposed changes to the baseline. It skips
+combinations that reuse a physical source location, checks each remaining draft,
 and sorts resolved results by mean DPS against the captured baseline.
 `--paired` adds uncertainty against that baseline. Results include storage
-coverage and skipped candidates. Equipment already in another slot is skipped
-because moving it would change two slots. The same iteration and runtime
-budgets apply. This is a single-slot comparison on one saved character and
-encounter. Character eligibility and complete-inventory optimisation remain
-separate checks.
+coverage and skipped candidates. Moving equipped items requires the same
+combination to fill their original slots. Multi-slot output uses `slots` and a
+`selections` array per result. The same iteration and runtime budgets apply to
+the comparison on one saved character and encounter. Character eligibility and
+complete-inventory optimisation remain separate checks.
 
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
