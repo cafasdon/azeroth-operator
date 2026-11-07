@@ -117,6 +117,10 @@ pub struct Query {
     pub recipe_spell_id: Option<u32>,
     /// Restrict items to this pinned catalogue set ID.
     pub set_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to catalogue placements for this simulator equipment slot.
+    pub simulator_slot: Option<SimulatorSlot>,
+    /// Restrict items to at least this recorded item level at default scaling.
+    pub minimum_item_level: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a drop source for this NPC ID.
     pub drop_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
@@ -284,6 +288,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let item_filter = item_ids.is_some()
         || ownership.is_some()
         || query.set_id.is_some()
+        || query.simulator_slot.is_some()
+        || query.minimum_item_level.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
         || vendor_filter
@@ -291,7 +297,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || query.source_kind.is_some();
     ensure!(
         !item_filter || matches!(query.section, Section::Items),
-        "Set and acquisition source filters are supported for items only"
+        "Item filters are supported for items only"
     );
     ensure!(
         !(query.include_source_references || query.acquisition_snapshot_id.is_some())
@@ -343,6 +349,14 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                     })
                 })
             });
+            let matches_gear = query
+                .simulator_slot
+                .is_none_or(|slot| simulator_slots(row).contains(&slot))
+                && query.minimum_item_level.is_none_or(|minimum| {
+                    row["scalingOptions"]["0"]["ilvl"]
+                        .as_u64()
+                        .is_some_and(|level| level >= u64::from(minimum.get()))
+                });
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
@@ -412,6 +426,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             if matches
                 && matches_recipe
                 && matches_set
+                && matches_gear
                 && matches_drop
                 && matches_quest
                 && matches_vendor

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter Forever catalogue searches by simulator equipment slot and minimum recorded item level.
+
 - Filter Forever catalogue items by observed ownership in a saved inventory.
 
 - Show saved equipment, bag and bank quantities alongside Forever catalogue item results.
