@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cross-reference saved Forever action bar spells against captured spellbook base and override IDs.
+
 - Export loaded built-in Forever action bar slots without requiring the legacy slot boundary.
 
 - Search saved Forever spellbook slots by captured spell name.

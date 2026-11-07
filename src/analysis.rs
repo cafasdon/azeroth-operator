@@ -738,6 +738,33 @@ pub fn compare_observations(
     Ok(comparison)
 }
 
+pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value {
+    let book = spellbook.and_then(|book| book["entries"].as_object());
+    let mut base_ids = BTreeSet::new();
+    let mut reported_ids = BTreeSet::new();
+    for row in book.into_iter().flat_map(|rows| rows.values()) {
+        base_ids.extend(row["base_spell_id"].as_u64());
+        reported_ids.extend(row["spell_id"].as_u64());
+    }
+    let slots = actions["slots"].as_object().map(|slots| {
+        slots
+            .iter()
+            .filter(|(_, row)| row["kind"] == "spell")
+            .map(|(slot, row)| {
+                let id = row["id"].as_u64();
+                let observed = id.filter(|_| book.is_some());
+                (
+                    slot,
+                    json!({"action_spell_id":id,
+                "matches_base_spell_id":observed.map(|id| base_ids.contains(&id)),
+                "matches_reported_spell_id":observed.map(|id| reported_ids.contains(&id))}),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+    json!({"spellbook_available":book.is_some(),"spell_slots":slots})
+}
+
 fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
     fn by_base(snapshot: &Snapshot) -> Option<BTreeMap<u64, BTreeSet<u64>>> {
         let rows = snapshot.sections.get("spellbook")?["entries"].as_object()?;

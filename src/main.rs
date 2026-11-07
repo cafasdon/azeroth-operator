@@ -88,6 +88,9 @@ struct Inspect {
     spellbook_off_spec: Option<bool>,
     /// Match a case-insensitive substring of the captured spell name.
     spellbook_name: Option<String>,
+    /// Match observed built-in action bar spells to the same saved Forever spellbook.
+    #[serde(default)]
+    action_bar_spellbook: bool,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -944,6 +947,11 @@ impl Operator {
             || args.spellbook_passive.is_some()
             || args.spellbook_off_spec.is_some()
             || args.spellbook_name.is_some();
+        if args.action_bar_spellbook && args.section.as_deref() != Some("action_bar_observation") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar spellbook review requires the action_bar_observation section",
+            )]);
+        }
         let spellbook_name = args.spellbook_name.as_deref().map(str::trim);
         if spellbook_name.is_some_and(|name| name.is_empty() || name.len() > 256) {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1324,6 +1332,26 @@ impl Operator {
                             }
                         }
                     }
+                }
+                if args.action_bar_spellbook {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Action bar spellbook review requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let snapshot = match self.store.read(&args.snapshot_id) {
+                        Ok(snapshot) => snapshot,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Could not read captured spellbook",
+                            )]);
+                        }
+                    };
+                    value["action_bar_spellbook"] =
+                        azeroth_operator::analysis::action_bar_spellbook(
+                            &value["data"],
+                            snapshot.sections.get("spellbook"),
+                        );
                 }
                 if filter_spellbook {
                     if value["client"]["family"] != "forever" {
