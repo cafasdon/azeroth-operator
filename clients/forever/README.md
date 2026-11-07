@@ -96,6 +96,15 @@ A second offline check ran the pinned Hunter defaults and `turret.apl.siml` usin
 
 The duration change shifted both DPS estimates and their precision. The order stayed the same and the individual intervals overlapped in both scenarios. These are per-profile intervals, with no paired-difference estimate or claim that the gear sets are tied. P1 CLI wall time was 0.273–0.309 s for 45 seconds and 0.504–0.519 s for 180 seconds. This synthetic check covers duration only. It adds no evidence about add waves, movement or native encounter accuracy.
 
+An offline bulk pilot exercised the pinned Go `BulkSimAsync` entry point on the same Hunter defaults and turret rotation. It replaced only the chest piece with the first 48 matching catalogue rows in file order. The filter included cloth, leather or mail chest pieces with a level requirement at most 60 and no class, faction or profession restriction, excluding the baseline chest. Both modes used seed 20261107. The isolated harness lowered the stage floors to 40, 160 and 1,000 and set target errors to 5%, 2% and 1%. These are pilot settings.
+
+| Duration | Staged top five | Exhaustive all results | Ordered top-five chest IDs in both modes |
+| --- | ---: | ---: | --- |
+| 45 s | 0.419 s | 7.135 s | 1981, 4082, 2041, 6773, 7063 |
+| 180 s | 1.186 s | 16.761 s | 1981, 4082, 2041, 6773, 7063 |
+
+Staged mode screened 48 candidates at 160 iterations and advanced five to 1,000. Exhaustive mode simulated all 48 at 1,000 and then refined all 48 to 4,000 iterations. The timing compares different search and refinement budgets. Two executions with the same seed reproduced the reported 180-second exhaustive ranking and the 45-second staged ranking. The captured comparison covers one seed, two durations and one changed slot. Default-budget runs, multi-slot searches and near-tie recall still need qualification.
+
 With a configured local catalogue, `review_equipment_selection` checks whether the draft leaves an item in the off-hand while placing or retaining a catalogue two-handed main-hand item. The check overlays requested targets and removes moved sources from their original slots. It covers that single conflict. Full weapon pairing and equip legality remain unknown.
 
 **Owned gear capture.** The Forever exporter now records character-bank and account-bank containers separately when the bank is open and each visible bank's tab and free-slot counts reconcile. It retains item links and available GUIDs alongside the occupied slots. A closed or unreadable bank is unavailable, while an observed empty bank is reported as zero. The Rust MCP exposes both sections through `inspect_snapshot` and counts through `character_summary`. The updated reader and importer must be in place before using this addon with the hosted sync path.
