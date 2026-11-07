@@ -154,9 +154,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "1": {"name": "Fixture profession", "rank": 20, "max_rank": 75, "skill_line": 164}}
                         forever["sections"]["quests"] = {
                             "42":{"title":"Fixture quest","level":10,"ready_for_turn_in":False,
-                                  "objectives":{"1":{"kind":"item","finished":False,"fulfilled":0,"required":5}}},
+                                  "objectives":{
+                                      "1":{"kind":"item","finished":False,"fulfilled":0,"required":5},
+                                      "2":{"kind":"event","finished":False},
+                                      "3":{"kind":"item","finished":True,"fulfilled":5,"required":5},
+                                      "4":{"kind":"item","finished":False,"fulfilled":6,"required":5},
+                                  }},
                             "43":{"title":"Legacy quest","level":10},
-                            "10":{"title":"Turn-in quest","level":10,"ready_for_turn_in":True},
+                            "10":{"title":"Turn-in quest","level":10,"ready_for_turn_in":True,
+                                  "objectives":{"1":{"kind":"event","finished":True}}},
                             "2":{"title":"Another turn-in","level":10,"ready_for_turn_in":True},
                             "44":{"title":"Failed quest","level":10,"ready_for_turn_in":False,"failed":True}}
                         forever["sections"]["tracked_achievements"] = {"coverage":"tracked_player_achievements_only","entries":{
@@ -203,6 +209,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         quests = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"quests"})
                         self.assertEqual(json.loads(quests.content[0].text)["data"]["42"]["objectives"]["1"]["fulfilled"], 0)
+                        async def inspect_quest(snapshot_id, quest_id):
+                            response = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": snapshot_id, "section": "quests", "quest_id": quest_id})
+                            self.assertFalse(response.isError)
+                            return json.loads(response.content[0].text)
+                        quest_detail = await inspect_quest(forever_key, 42)
+                        self.assertTrue(quest_detail["quest_observed"])
+                        self.assertEqual(quest_detail["data"]["title"], "Fixture quest")
+                        self.assertEqual(quest_detail["unfinished_objectives"], {
+                            "1": {"kind": "item", "remaining_count": 5},
+                            "2": {"kind": "event", "remaining_count": None},
+                            "4": {"kind": "item", "remaining_count": 0},
+                        })
+                        self.assertEqual((await inspect_quest(forever_key, 10))["unfinished_objectives"], {})
+                        self.assertIsNone((await inspect_quest(forever_key, 43))["unfinished_objectives"])
+                        self.assertFalse((await inspect_quest(empty_key, 42))["quest_observed"])
+                        self.assertIsNone((await inspect_quest(key, 42))["quest_observed"])
+                        bad_selector = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "equipment", "quest_id": 42})
+                        self.assertTrue(bad_selector.isError)
                         self.assertEqual(bank_summary_data["tracked_achievements_observed"], 1)
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         self.assertEqual(json.loads(achievement.content[0].text)["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)

@@ -582,6 +582,28 @@ fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
         })
 }
 
+pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
+    let Some(objectives) = quest.and_then(|quest| quest["objectives"].as_object()) else {
+        return Value::Null;
+    };
+    Value::Object(
+        objectives
+            .iter()
+            .filter(|(_, objective)| objective["finished"].as_bool() == Some(false))
+            .map(|(index, objective)| {
+                let remaining = objective["required"]
+                    .as_u64()
+                    .zip(objective["fulfilled"].as_u64())
+                    .map(|(required, fulfilled)| required.saturating_sub(fulfilled));
+                (
+                    index.clone(),
+                    json!({"kind":objective["kind"],"remaining_count":remaining}),
+                )
+            })
+            .collect(),
+    )
+}
+
 fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     let (mut ready, mut not_ready, mut failed, mut unknown) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());

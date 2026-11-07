@@ -35,6 +35,8 @@ struct Operator {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Select one saved quest by ID. Requires section "quests".
+    quest_id: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -744,7 +746,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age; never live state",
+        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID in the quests section for its remaining objective work. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -752,11 +754,28 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.quest_id.is_some() && args.section.as_deref() != Some("quests") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest selection requires the quests section",
+            )]);
+        }
         match self
             .store
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
-            Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+            Ok(mut value) => {
+                if let Some(id) = args.quest_id {
+                    let quests = value["data"].take();
+                    let quest = quests.get(id.to_string());
+                    value["quest_id"] = serde_json::json!(id.get());
+                    value["quest_observed"] =
+                        serde_json::json!(quests.as_object().map(|_| quest.is_some()));
+                    value["unfinished_objectives"] =
+                        azeroth_operator::analysis::unfinished_quest_objectives(quest);
+                    value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
+                }
+                CallToolResult::success(vec![ContentBlock::text(value.to_string())])
+            }
             Err(_) => {
                 CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
             }

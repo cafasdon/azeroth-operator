@@ -25,6 +25,14 @@ New MCP routes are denied until reviewed for data source, owner scope, outputs a
 
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
+On the Rust MCP, add a positive `quest_id` to `inspect_snapshot` with
+`section: "quests"` to inspect only that quest. The result reports whether
+the quest was observed and lists unfinished objectives by captured row.
+Remaining counts use captured required and fulfilled values. A null count
+means the client supplied no quantities. A null objective list means objective
+details were unavailable, while an empty object means no captured rows were unfinished.
+Use the saved readiness flag separately for turn-ins.
+
 Offline checks verified zero progress, false versus unavailable readiness, sparse objective rejection without losing the quest title, and real MCP inspection and comparison. Forever `0.26.0-dev` passed package verification (SHA-256 `f8d22f78bc7a87595534ebf7d4ef1a5b703a7687c4c4c87f89ecca3dd6776604`). Native capture remains pending.
 
 Use `inspect_snapshot` with `section: "tracked_achievements"` for Forever achievement progress. The addon reads the player's existing tracked list on export. The result includes completion flags and available criterion quantities. It omits contributor names, dates, guild entries and free-text criterion descriptions. Criterion keys are observed row numbers, with native criterion IDs included when present. Check the ID before interpreting a changed row as progress. An achievement absent from the tracked list has no completion implication. [Forever objective tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_AchievementObjectiveTracker.lua)

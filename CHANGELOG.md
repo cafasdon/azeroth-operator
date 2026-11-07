@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect a saved quest by ID and report remaining counts for its captured unfinished objectives.
+
 - Group saved quest IDs by observed turn-in status and failure in character summaries.
 
 - Show bag shortfalls and storage counts for Forever crafting batches so shared reagent needs can be gathered before crafting.
