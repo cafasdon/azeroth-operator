@@ -463,6 +463,15 @@ pub fn verify_forever_capture_fixture(
             IsFactionParagonForCurrentPlayer=function() return false end,
         }
         C_GossipInfo={GetFriendshipReputation=function() return {friendshipFactionID=0} end}
+        C_MajorFactions={
+            GetMajorFactionData=function(id)
+                assert(id==20)
+                if not missingRenown then
+                    return {renownLevel=5,renownReputationEarned=12,renownLevelThreshold=100}
+                end
+            end,
+            HasMaximumRenown=function(id) assert(id==20);return renownCapped==true end,
+        }
         ACHIEVEMENT_FLAGS_ACCOUNT=131072
         bit={band=function(flags,mask) return math.floor(flags/mask)%2*mask end}
         tracked={101,102}
@@ -619,6 +628,35 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(factions["10"]["kind"], "standard");
     assert_eq!(factions["20"]["kind"], "renown");
     assert_eq!(factions["20"]["account_wide"], true);
+    assert_eq!(
+        factions["20"]["renown"],
+        serde_json::json!({
+            "level":5,"earned_in_level":12,"level_threshold":100,"capped":false
+        })
+    );
+    lua.load("renownCapped=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["reputation"]["entries"]["20"]["renown"]["capped"],
+        true
+    );
+    lua.load(
+        "issecretvalue=function(v) return v==12 end;
+        local rows=AO.collectors.reputation().entries;
+        assert(rows['20'].kind=='renown' and rows['20'].renown==nil);
+        issecretvalue=nil",
+    )
+    .exec()?;
+    lua.load("missingRenown=true;AO.Capture()").exec()?;
+    let without_renown = read()?;
+    assert_eq!(
+        without_renown.sections["reputation"]["entries"]["20"]["kind"],
+        "renown"
+    );
+    assert!(
+        without_renown.sections["reputation"]["entries"]["20"]
+            .get("renown")
+            .is_none()
+    );
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["reputation_factions_observed"],
         2

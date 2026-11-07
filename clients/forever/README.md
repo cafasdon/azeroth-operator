@@ -29,6 +29,12 @@ The packaged Lua round trip passed, including false, missing and simulated
 restricted flags. Upgrade the Rust reader and importer before using this
 candidate with hosted sync.
 
+The staged 0.30.0-dev candidate adds optional renown observations. The
+archive is in `dist/forever-renown` with SHA-256
+`cc97e809be65742533bfe6bc8073cbb695601efe868c50d28380f4b82d3fc2e6`.
+The packaged Lua round trip passed. Update the Rust reader and importer before
+syncing captures with these fields.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell

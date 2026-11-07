@@ -642,6 +642,25 @@ AO.collectors.reputation = function()
             end)
             rows[id]={name=row.name,kind=ok and kind or "unknown",account_wide=row.isAccountWide,reaction=row.reaction,
                 standing=row.currentStanding,threshold=row.currentReactionThreshold,next_threshold=row.nextReactionThreshold}
+            if rows[id].kind=="renown" then
+                local observed,progress=pcall(function()
+                    local function accessible(value)
+                        assert(not issecretvalue or not issecretvalue(value), "Restricted renown observation")
+                        return value
+                    end
+                    local data=accessible(C_MajorFactions.GetMajorFactionData(row.factionID))
+                    local capped=accessible(C_MajorFactions.HasMaximumRenown(row.factionID))
+                    if type(data)~="table" or type(capped)~="boolean" then return end
+                    local level=accessible(data.renownLevel)
+                    local earned=accessible(data.renownReputationEarned)
+                    local threshold=accessible(data.renownLevelThreshold)
+                    if integer(level,0,4294967295) and integer(earned,0,4294967295)
+                        and integer(threshold,0,4294967295) then
+                        return {level=level,earned_in_level=earned,level_threshold=threshold,capped=capped}
+                    end
+                end)
+                if observed then rows[id].renown=progress end
+            end
         end
     end
     assert(api.GetNumFactions()==count, "Reputation rows changed")

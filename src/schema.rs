@@ -471,6 +471,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("standing", "int", true),
                     ("threshold", "int", true),
                     ("next_threshold", "int", true),
+                    ("renown", "map", false),
                 ],
             )?;
             let factions = value["entries"].as_object().unwrap();
@@ -486,6 +487,18 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             .is_some_and(|s| !s.is_empty() && s.len() <= 256),
                     "Invalid reputation observation"
                 );
+                if let Some(renown) = faction.get("renown").filter(|value| !value.is_null()) {
+                    ensure!(faction["kind"] == "renown", "Unexpected renown observation");
+                    object(
+                        renown,
+                        &[
+                            ("level", "uint", true),
+                            ("earned_in_level", "uint", true),
+                            ("level_threshold", "uint", true),
+                            ("capped", "bool", true),
+                        ],
+                    )?;
+                }
             }
         }
         "quests" => {

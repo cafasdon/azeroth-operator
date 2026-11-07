@@ -278,12 +278,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         more_factions = json.loads(json.dumps(forever))
                         factions = more_factions["sections"]["reputation"]["entries"]
                         factions["11"] = {**factions["10"], "reaction": 8, "next_threshold": 0}
-                        factions["12"] = {**factions["10"], "kind": "renown"}
+                        factions["12"] = {**factions["10"], "kind": "renown", "renown": {
+                            "level": 5, "earned_in_level": 12, "level_threshold": 100, "capped": False,
+                        }}
                         factions["13"] = {**factions["10"], "standing": -101}
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
                         more = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": more_key, "section": "reputation"})
-                        progress = json.loads(more.content[0].text)["standard_reputation_progress"]
+                        more_data = json.loads(more.content[0].text)
+                        self.assertEqual(more_data["data"]["entries"]["12"]["renown"], factions["12"]["renown"])
+                        progress = more_data["standard_reputation_progress"]
                         self.assertEqual(set(progress), {"10", "11"})
                         self.assertEqual(progress["11"], {"capped": True})
                         missing = await session.call_tool("inspect_snapshot", {
