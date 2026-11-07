@@ -420,7 +420,9 @@ pub fn compare_observations(
         comparison["achievement_change"] = json!({
             "achievement_id":achievement_id,"before":previous,"after":current,
             "completed_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "completed")).flatten(),
-            "earned_by_character_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "earned_by_character")).flatten()
+            "earned_by_character_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "earned_by_character")).flatten(),
+            "criterion_comparison":previous.as_ref().zip(current.as_ref()).filter(|_| same_scope)
+                .map(|(a, b)| compare_criteria(&a["criteria"], &b["criteria"]))
         });
     }
     if let Some(skill_line) = selectors.profession_skill_line {
@@ -436,6 +438,45 @@ pub fn compare_observations(
         });
     }
     Ok(comparison)
+}
+
+fn criteria_by_id(criteria: &Value) -> BTreeMap<u64, Option<&Value>> {
+    let mut indexed = BTreeMap::new();
+    for entry in criteria
+        .as_object()
+        .into_iter()
+        .flat_map(|rows| rows.values())
+    {
+        if let Some(id) = entry["criterion_id"].as_u64() {
+            indexed
+                .entry(id)
+                .and_modify(|value| *value = None)
+                .or_insert(Some(entry));
+        }
+    }
+    indexed
+}
+
+fn compare_criteria(before: &Value, after: &Value) -> Value {
+    let before = criteria_by_id(before);
+    let after = criteria_by_id(after);
+    let mut matched = 0;
+    let mut changes = Vec::new();
+    for (id, previous) in before {
+        let Some((previous, current)) = previous.zip(after.get(&id).copied().flatten()) else {
+            continue;
+        };
+        matched += 1;
+        if previous != current {
+            let quantity_delta = (previous["required"] == current["required"])
+                .then(|| Some(current["quantity"].as_i64()? - previous["quantity"].as_i64()?))
+                .flatten();
+            changes.push(json!({
+                "criterion_id":id,"before":previous,"after":current,"quantity_delta":quantity_delta
+            }));
+        }
+    }
+    json!({"matched_criterion_count":matched,"changes":changes})
 }
 
 fn profession_by_skill_line(

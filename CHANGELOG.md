@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare tracked Forever achievement criteria by stable ID across reordered captures.
+
 - Compare captured profession ranks by skill line across snapshot slot changes.
 
 - Plan fixed materials for up to eight saved Forever recipes against shared inventory.

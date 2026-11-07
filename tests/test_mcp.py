@@ -157,7 +157,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "43":{"title":"Legacy quest","level":10}}
                         forever["sections"]["tracked_achievements"] = {"coverage":"tracked_player_achievements_only","entries":{
                             "101":{"name":"Fixture achievement","points":5,"completed":False,"earned_by_character":False,
-                                   "account_wide":True,"criteria":{"1":{"criterion_id":301,"completed":False,"quantity":1,"required":2}}}}}
+                                   "account_wide":True,"criteria":{
+                                       "1":{"criterion_id":301,"completed":False,"quantity":1,"required":5},
+                                       "2":{"criterion_id":302,"completed":True}}}}}
                         forever["sections"]["currency_balances"] = {"coverage":"visible_currency_ids_only","entries":{
                             "100":{"name":"Fixture currency","quantity":0,"account_wide":True,"inactive":False,"max_quantity":100,
                                    "max_weekly_quantity":40,"earned_this_week":10,"total_earned":60,
@@ -225,6 +227,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIsNone(json.loads(renown.content[0].text)["reputation_change"]["standing_delta"])
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
+                        criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
+                        criteria["1"], criteria["2"] = criteria["2"], criteria["1"]
+                        criteria["2"]["quantity"] = 3
                         profession = reputation_after["sections"]["professions"].pop("1")
                         profession["rank"] = 25
                         reputation_after["sections"]["professions"]["2"] = profession
@@ -241,6 +246,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         achievement = progress_data["achievement_change"]
                         self.assertTrue(achievement["completed_changed"])
                         self.assertFalse(achievement["earned_by_character_changed"])
+                        comparison = achievement["criterion_comparison"]
+                        self.assertEqual(comparison["matched_criterion_count"], 2)
+                        self.assertEqual(len(comparison["changes"]), 1)
+                        self.assertEqual(comparison["changes"][0]["criterion_id"], 301)
+                        self.assertEqual(comparison["changes"][0]["quantity_delta"], 1)
                         profession_change = progress_data["profession_change"]
                         self.assertEqual(profession_change["rank_delta"], 5)
                         self.assertEqual(profession_change["before_status"], "observed")
