@@ -52,6 +52,10 @@ pub struct Query {
     pub set_id: Option<std::num::NonZeroU32>,
     /// Restrict items to records with a drop source for this NPC ID.
     pub drop_npc_id: Option<std::num::NonZeroU32>,
+    /// Restrict items to drop sources in this zone. With an NPC filter, both must match the same source.
+    pub drop_zone_id: Option<std::num::NonZeroU32>,
+    /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
+    pub offset: Option<usize>,
 }
 
 fn load(path: &Path) -> Result<(Value, Value)> {
@@ -91,17 +95,19 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         );
     }
     ensure!(
-        (query.set_id.is_none() && query.drop_npc_id.is_none())
+        (query.set_id.is_none() && query.drop_npc_id.is_none() && query.drop_zone_id.is_none())
             || matches!(query.section, Section::Items),
-        "Set and drop NPC filters are supported for items only"
+        "Set and drop filters are supported for items only"
     );
     if key.is_some()
         || query.recipe_spell_id.is_some()
         || query.set_id.is_some()
         || query.drop_npc_id.is_some()
+        || query.drop_zone_id.is_some()
     {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
+        let mut remaining_offset = query.offset.unwrap_or_default();
         for row in rows {
             let matches = if key.is_none() {
                 true
@@ -125,14 +131,23 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             let matches_set = query
                 .set_id
                 .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
-            let matches_drop_npc = query.drop_npc_id.is_none_or(|id| {
-                row["sources"].as_array().is_some_and(|sources| {
-                    sources
-                        .iter()
-                        .any(|source| source["drop"]["npcId"].as_u64() == Some(u64::from(id.get())))
-                })
-            });
-            if matches && matches_recipe && matches_set && matches_drop_npc {
+            let matches_drop = (query.drop_npc_id.is_none() && query.drop_zone_id.is_none())
+                || row["sources"].as_array().is_some_and(|sources| {
+                    sources.iter().any(|source| {
+                        let drop = &source["drop"];
+                        query
+                            .drop_npc_id
+                            .is_none_or(|id| drop["npcId"].as_u64() == Some(u64::from(id.get())))
+                            && query.drop_zone_id.is_none_or(|id| {
+                                drop["zoneId"].as_u64() == Some(u64::from(id.get()))
+                            })
+                    })
+                });
+            if matches && matches_recipe && matches_set && matches_drop {
+                if remaining_offset > 0 {
+                    remaining_offset -= 1;
+                    continue;
+                }
                 if records.len() == 20 {
                     has_more = true;
                     break;

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever catalogue drops by zone, including sources without an NPC ID, and page through lookup results.
+
 - Look up Forever catalogue items associated with drops from a specific NPC.
 
 - Compare catalogue set pieces against all observed Forever storage in one owned-gear review.
