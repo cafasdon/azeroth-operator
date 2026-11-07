@@ -459,6 +459,8 @@ pub fn verify_forever_capture_fixture(
             end,
             ReadyForTurnIn=function(id) if id==42 then return false end end,
             IsFailed=function() return false end,
+            IsEliteQuest=function(id) return id==42 end,
+            GetSuggestedGroupSize=function(id) return id==42 and 3 or 0 end,
             GetSelectedQuest=function() return 42 end,
             ShouldShowQuestRewards=function(id) return id==42 end,
             GetQuestLogMajorFactionReputationRewards=function(id)
@@ -642,6 +644,13 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(quests["42"]["next_waypoint_map_id"], 1411);
     assert_eq!(quests["42"]["required_copper"], 250);
     assert_eq!(quests["43"]["required_copper"], 0);
+    assert_eq!(quests["42"]["suggested_group_size"], 3);
+    assert_eq!(quests["43"]["suggested_group_size"], 0);
+    assert_eq!(quests["43"]["elite"], false);
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["observed_quest_difficulty"],
+        serde_json::json!({"suggested_groups":[{"quest_id":42,"suggested_group_size":3}],"elite_quest_ids":[42]})
+    );
     assert_eq!(
         quests["42"]["timer"],
         serde_json::json!({"total_seconds":100,"remaining_seconds":74})

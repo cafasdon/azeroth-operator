@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest elite status and suggested group size for saved planning.
+
 - Capture Forever quest timers and list recorded time remaining in character summaries.
 
 - Match saved Forever quest reward spell IDs to local item and enchant recipe references.

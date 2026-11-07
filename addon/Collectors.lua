@@ -563,7 +563,7 @@ end
 
 local function questFlag(api,name,id)
     local ok,value=pcall(api[name],id)
-    if ok and type(value)=="boolean" then return value end
+    if ok and (not issecretvalue or not issecretvalue(value)) and type(value)=="boolean" then return value end
 end
 
 local function questWaypointMap(api,id)
@@ -744,6 +744,9 @@ AO.collectors.quests = function()
                 entry.next_waypoint_map_id=questWaypointMap(api,id)
                 entry.required_copper=questRequiredCopper(api,id)
                 entry.timer=questTimer(api,id)
+                entry.elite=questFlag(api,"IsEliteQuest",id)
+                local groupOk,group=pcall(api.GetSuggestedGroupSize,id)
+                if groupOk and questRewardInteger(group,0,4294967295) then entry.suggested_group_size=group end
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
                 local renownOk,renown=pcall(questRenownRewards,api,id)

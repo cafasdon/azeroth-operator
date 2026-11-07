@@ -74,6 +74,13 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+`elite` and `suggested_group_size` are separate quest log observations.
+`character_summary.observed_quest_difficulty` lists observed elite quests
+and quests with a suggested group size above one. Missing fields mean the
+client supplied no usable value. An omitted quest in the summary is not
+evidence it can be completed solo. Update the importer and reader before
+syncing these fields. [Forever quest API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
+
 `timer` records the quest's total and remaining seconds at export time,
 rounded down. `character_summary.observed_quest_timers` lists observed timers
 with the least time left first. A missing timer means no usable timer was

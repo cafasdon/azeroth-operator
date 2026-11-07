@@ -644,6 +644,8 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("next_waypoint_map_id", "positive", false),
                     ("required_copper", "wallet_copper", false),
                     ("timer", "map", false),
+                    ("elite", "bool", false),
+                    ("suggested_group_size", "uint", false),
                     ("currency_rewards", "map", false),
                     ("currency_choices", "map", false),
                     ("item_choices", "map", false),

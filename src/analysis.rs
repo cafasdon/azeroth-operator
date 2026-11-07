@@ -1163,6 +1163,20 @@ pub fn summary(s: &Snapshot) -> Value {
         rows.sort_unstable();
         rows.into_iter().map(|(remaining_seconds, quest_id)| json!({"quest_id":quest_id,"remaining_seconds":remaining_seconds})).collect::<Vec<_>>()
     });
+    let group_quests = quests.filter(|_| s.client.family == crate::Family::Forever).map(|quests| {
+        let mut groups = Vec::new();
+        let mut elite = Vec::new();
+        for (key, quest) in quests {
+            let Ok(id) = key.parse::<u32>() else { continue };
+            if let Some(size) = quest["suggested_group_size"].as_u64().filter(|size| *size > 1) {
+                groups.push((id, size));
+            }
+            if quest["elite"].as_bool() == Some(true) { elite.push(id); }
+        }
+        groups.sort_unstable();
+        elite.sort_unstable();
+        json!({"suggested_groups":groups.into_iter().map(|(quest_id,size)| json!({"quest_id":quest_id,"suggested_group_size":size})).collect::<Vec<_>>(),"elite_quest_ids":elite})
+    });
     let quest_money = quests
         .filter(|_| s.client.family == crate::Family::Forever)
         .map(|quests| {
@@ -1209,6 +1223,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "quest_waypoint_maps":if s.client.family == crate::Family::Forever { quests.map(quest_waypoint_maps) } else { None },
       "quest_money":quest_money,
       "observed_quest_timers":timed_quests,
+      "observed_quest_difficulty":group_quests,
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})
