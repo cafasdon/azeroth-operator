@@ -150,6 +150,14 @@ Review IDs identify the same draft across profiles. A bulk shortlist can omit
 different drafts in different profiles. Each comparison has its own iteration
 and time limits. The command prints results after all comparisons succeed.
 
+For a combined ranking, repeat `--encounter-weight` once per encounter in input
+order. Use positive weights such as `--encounter-weight 70 --encounter-weight 30`.
+The ranker normalises the weights and averages each draft's percentage DPS change
+from its encounter baseline. This keeps a high-DPS encounter from dominating
+solely because of its DPS scale. The combined view requires fixed mode so every
+draft is evaluated in every encounter, and each baseline must have positive DPS.
+It reports weighted point estimates with the original per-encounter results.
+
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a
 `simulation` object. For example:

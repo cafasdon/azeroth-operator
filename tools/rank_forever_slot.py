@@ -5,7 +5,7 @@ import asyncio
 from itertools import product
 import json
 import logging
-from math import prod
+from math import fsum, isfinite, prod
 import os
 from pathlib import Path
 
@@ -116,6 +116,23 @@ def rank_encounter(args, template, encounter, drafts):
     return result
 
 
+def weighted_ranking(rankings, weights):
+    gains = {}
+    for ranking, weight in zip(rankings, weights, strict=True):
+        rows = ranking["results"]
+        baseline = next(row["mean_dps"] for row in rows if row["review"] == ranking["baseline_review"])
+        if baseline <= 0:
+            raise ValueError("Weighted ranking requires positive baseline DPS in every encounter")
+        for row in rows:
+            gains.setdefault(row["review"], []).append(weight * (row["mean_dps_delta_from_baseline"] / baseline))
+    if any(len(parts) != len(weights) for parts in gains.values()):
+        raise ValueError("Weighted ranking requires every draft in every encounter")
+    results = [{"review": review, "weighted_dps_gain_pct": 100 * fsum(parts)}
+               for review, parts in gains.items()]
+    results.sort(key=lambda row: (-row["weighted_dps_gain_pct"], row["review"]))
+    return {"encounter_weights": weights, "results": results}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mcp", type=Path, required=True, help="Absolute path to the trusted local MCP executable")
@@ -126,6 +143,8 @@ def main():
     parser.add_argument("--template", type=Path, required=True)
     parser.add_argument("--encounter-lookup", type=Path, action="append", required=True,
                         help="Encounter export. Repeat for separate rankings.")
+    parser.add_argument("--encounter-weight", type=float, action="append",
+                        help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
@@ -140,6 +159,17 @@ def main():
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         if len(args.encounter_lookup) > 4:
             raise ValueError("Provide up to four encounter exports")
+        weights = args.encounter_weight
+        if weights is not None:
+            if (args.bulk_engine or len(weights) < 2 or len(weights) != len(args.encounter_lookup)
+                    or any(not isfinite(weight) or weight <= 0 for weight in weights)):
+                raise ValueError("Provide one positive finite weight per encounter in fixed mode")
+            largest = max(weights)
+            scaled = [weight / largest for weight in weights]
+            total = fsum(scaled)
+            weights = [weight / total for weight in scaled]
+            if any(weight == 0 for weight in weights):
+                raise ValueError("Encounter weights are too far apart to normalise")
         template = read_object(args.template, 4 * 1024 * 1024)
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
         logging.disable(logging.CRITICAL)
@@ -164,6 +194,8 @@ def main():
                 )
                 rankings.append(ranking)
             result = {"encounters": rankings}
+            if weights is not None:
+                result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage)
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank Forever gear across fights using player-supplied weights and encounter-relative DPS gains.
+
 - Compare saved Forever gear drafts across multiple encounter profiles in one local run.
 
 - Include two-handed Forever upgrades that clear an occupied off-hand in the local simulator draft.
