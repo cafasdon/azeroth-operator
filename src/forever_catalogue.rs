@@ -88,6 +88,49 @@ pub struct Query {
     pub source_kind: Option<ItemSource>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
+    /// Build simulator inputs for an exact encounter preset path.
+    pub simulation: Option<SimulationSettings>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SimulationSettings {
+    pub duration_seconds: u32,
+    pub duration_variation_seconds: u32,
+    pub execute_proportion_20: f64,
+    pub execute_proportion_35: f64,
+    pub iterations: u32,
+    pub seed: std::num::NonZeroU32,
+}
+
+fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Value> {
+    ensure!(
+        (1..=3600).contains(&settings.duration_seconds)
+            && settings.duration_variation_seconds < settings.duration_seconds
+            && (0.0..=1.0).contains(&settings.execute_proportion_35)
+            && (0.0..=settings.execute_proportion_35).contains(&settings.execute_proportion_20)
+            && (1..=100_000).contains(&settings.iterations),
+        "Invalid simulation settings"
+    );
+    let targets = record["targets"]
+        .as_array()
+        .filter(|targets| !targets.is_empty())
+        .ok_or_else(|| anyhow::anyhow!("Encounter targets unavailable"))?;
+    let targets: Vec<_> = targets
+        .iter()
+        .map(|entry| {
+            entry["target"]
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Invalid encounter target"))
+        })
+        .collect::<Result<_>>()?;
+    Ok(json!({
+        "encounter":{"duration":settings.duration_seconds,
+            "durationVariation":settings.duration_variation_seconds,
+            "executeProportion20":settings.execute_proportion_20,
+            "executeProportion35":settings.execute_proportion_35,"targets":targets},
+        "simOptions":{"iterations":settings.iterations,"randomSeed":settings.seed.get().to_string()}
+    }))
 }
 
 fn load(path: &Path) -> Result<(Value, Value)> {
@@ -225,11 +268,22 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             }
         }
     }
-    Ok(
-        json!({"family":"forever","source":provenance,"section":section,
+    let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
-        "acquisition_verified":false}),
-    )
+        "acquisition_verified":false});
+    if let Some(settings) = &query.simulation {
+        ensure!(
+            matches!(query.section, Section::Encounters)
+                && key.is_some()
+                && query.offset.unwrap_or_default() == 0,
+            "Simulation settings require an exact encounter path without pagination"
+        );
+        let [record] = records.as_slice() else {
+            anyhow::bail!("Expected one matching encounter preset");
+        };
+        result["simulation_input"] = encounter_input(record, settings)?;
+    }
+    Ok(result)
 }
 
 /// Equipment categories from the pinned Forever catalogue's ItemType enum.

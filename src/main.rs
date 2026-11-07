@@ -327,7 +327,7 @@ impl Operator {
         match result {
             Some(data) => CallToolResult::success(vec![ContentBlock::text(data.to_string())]),
             None => CallToolResult::error(vec![ContentBlock::text(
-                "Forever catalogue lookup failed: invalid key or missing, unreadable or unverified cache. Run sync_forever_catalogue for the configured file.",
+                "Forever catalogue lookup failed: invalid filters or simulation settings, unmatched simulation preset, or missing or unverified cache.",
             )]),
         }
     }

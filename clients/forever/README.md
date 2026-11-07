@@ -81,6 +81,21 @@ Verified on 7 November 2026: the actual sync command returned `synced` then `unc
 
 ### Simulation and optimisation
 
+To build an encounter and iteration input, call `lookup_forever_catalogue`
+with `section:"encounters"`, the exact preset path as `key`, and a
+`simulation` object. For example:
+
+```json
+{"section":"encounters","key":"Default/Raid Target","simulation":{"duration_seconds":180,"duration_variation_seconds":5,"execute_proportion_20":0.2,"execute_proportion_35":0.35,"iterations":1000,"seed":20261107}}
+```
+
+The response includes `simulation_input.encounter` and
+`simulation_input.simOptions` in the pinned engine's protobuf JSON format.
+The projection keeps preset target order and target inputs. It requires explicit
+duration, variation, execute fractions, iteration count and seed. It supplies
+inputs only. The preset models and the character's rotation still determine
+which mechanics the simulation represents.
+
 The local owned-gear review can return `catalogue_modifier_candidates.simulator_item_spec`, a proto-JSON item input containing the base ID, enchant effect ID and suffix ID. It requires a known simulator slot and resolved captured modifiers. Explicit zeros are preserved. Unknown, ambiguous or unsupported observations return null. This supplies one item input. Complete equipment, character and encounter inputs require separate validation.
 
 An iteration repeats a specified fight with a new random outcome. Keep encounter, rotation, buffs and seed policy fixed when comparing gear. Fight duration, target count and timing, execute windows, movement and downtime can change which set wins when those mechanics are implemented in the engine. Record unsupported mechanics explicitly. Report separate rankings for distinct encounter profiles unless the player supplies weights for combining them. [SimulationCraft raid events](https://github.com/simulationcraft/simc/wiki/RaidEvents)
