@@ -46,7 +46,7 @@ It never triggers exports or reloads: run `/aoexport` and reload/log out in WoW
 to persist a new snapshot. Remove the task with
 `Unregister-ScheduledTask -TaskName AzerothOperator-ExportSync -Confirm:$false`.
 
-The companion is Rust; in-game adapters use Lua. Build with `cargo build --locked`. Run `target/debug/azeroth-operator.exe` for stdio MCP. Set `AZEROTH_DATA_DIR` to the existing absolute snapshot directory private to this installation’s owner. The MCP refuses to start without it. Local CLI import still defaults to `local-data/snapshots` unless configured. Tools: `capabilities`, `inspect_snapshot`, `list_snapshots` (explicit family, optional offset/limit).
+The companion is Rust; in-game adapters use Lua. Build with `cargo build --locked`. Run `target/debug/azeroth-operator.exe` for stdio MCP. Set `AZEROTH_DATA_DIR` to the existing absolute snapshot directory private to this installation’s owner. The MCP and local import CLI require this setting. Tools: `capabilities`, `inspect_snapshot`, `list_snapshots` (explicit family, optional offset/limit).
 
 Import a JSON snapshot or the addon's narrow SavedVariables export with `target/debug/azeroth-operator.exe import <export-file>`. Import is a local CLI operation, not an arbitrary-path MCP tool. It reads data only; never executes Lua. See `addon/README.md` for the export workflow and outstanding live-client qualification.
 

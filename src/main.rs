@@ -504,7 +504,10 @@ async fn main() -> anyhow::Result<()> {
                 "Usage: azeroth-operator [import <file> | import-stdin | upload <file> | sync <family> <file> <receipt-dir>]"
             );
         };
-        let root = root.unwrap_or_else(|| std::path::PathBuf::from("local-data/snapshots"));
+        let root = root.ok_or_else(|| {
+            anyhow::anyhow!("AZEROTH_DATA_DIR must name the owner's absolute snapshot directory")
+        })?;
+        anyhow::ensure!(root.is_absolute(), "AZEROTH_DATA_DIR must be absolute");
         println!("{}", Store { root }.ingest(&snapshot)?);
         return Ok(());
     }
