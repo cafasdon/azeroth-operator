@@ -213,6 +213,12 @@ timer at or below the given number of seconds. Zero matches recorded zero
 seconds. Quests without a usable timer are counted separately after any
 waypoint, difficulty or readiness filters. This uses the timer at export.
 
+Use `quest_reward_item_id` to find quests with a matching fixed item reward
+or item choice in the saved log. The unknown count covers quests left by
+earlier filters that had no match and at least one unavailable item list.
+Item lists are captured for the selected quest, so other quests may have
+unknown rewards. This filter requires the quests section without a quest ID.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,

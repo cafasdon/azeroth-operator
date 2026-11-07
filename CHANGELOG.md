@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever quests offering a specific fixed or optional item reward.
+
 - Filter saved Forever quests by recorded time remaining.
 
 - Filter saved Forever quests by captured turn-in readiness alongside waypoint and difficulty.
