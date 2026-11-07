@@ -128,6 +128,11 @@ for returned item IDs. Counts group by base item ID across captured storage.
 An observed zero is distinct from an uncaptured storage section, which gives
 null. Slot locations and item links stay in the inventory tools.
 
+With `acquisition_snapshot_id`, use `observed_ownership` to filter by base
+item ID before pagination. `owned` requires a captured copy. `absent`
+requires all four storage sections and no captured copy. `unknown` means no
+copy was captured and at least one storage section was unavailable.
+
 Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The other source categories are `crafted`, `drop`, `quest`, `vendor` and `reputation`. Filters combine at item level, so an item can match through multiple recorded sources. The catalogue PvP tag supplies no rank, cost or season data.
 
 Use `drop_instance_kind: "dungeon"` or `"raid"` to filter recorded

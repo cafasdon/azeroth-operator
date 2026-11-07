@@ -96,6 +96,14 @@ pub enum ReputationTier {
     Exalted = 8,
 }
 
+#[derive(Clone, Copy, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ObservedOwnership {
+    Owned,
+    Absent,
+    Unknown,
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Query {
@@ -138,6 +146,8 @@ pub struct Query {
     pub include_source_references: bool,
     /// Optional owner-scoped Forever snapshot for observed quest, reputation and crafted source progress.
     pub acquisition_snapshot_id: Option<String>,
+    /// Filter by base item presence in the supplied snapshot. Absent requires all four storage sections.
+    pub observed_ownership: Option<ObservedOwnership>,
     /// Skip this many matching records before returning up to 20 records. Requires a filter to return records.
     pub offset: Option<usize>,
     /// Build simulator inputs for an exact encounter preset path.
@@ -212,7 +222,7 @@ fn load(path: &Path) -> Result<(&'static Value, Value)> {
     Ok((db, provenance))
 }
 
-pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
+pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
     let (db, provenance) = load(path)?;
     let (section, identity) = query.section.fields();
     let rows = db[section]
@@ -260,7 +270,19 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     let reputation_filter = query.reputation_faction_id.is_some()
         || query.reputation_required_tier.is_some()
         || query.reputation_source_faction.is_some();
+    let ownership = if let Some(wanted) = query.observed_ownership {
+        let snapshot = snapshot
+            .filter(|snapshot| snapshot.client.family == Family::Forever)
+            .ok_or_else(|| {
+                anyhow::anyhow!("Ownership filtering requires a saved Forever snapshot")
+            })?;
+        let (owned, complete) = observed_item_ids(snapshot);
+        Some((wanted, owned, complete))
+    } else {
+        None
+    };
     let item_filter = item_ids.is_some()
+        || ownership.is_some()
         || query.set_id.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
@@ -282,6 +304,21 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         let name = key.map(str::to_lowercase);
         let mut remaining_offset = query.offset.unwrap_or_default();
         for row in rows {
+            if let Some((wanted, owned, complete)) = &ownership {
+                let Some(id) = row["id"].as_u64() else {
+                    continue;
+                };
+                let observed = if owned.contains(&id) {
+                    ObservedOwnership::Owned
+                } else if *complete {
+                    ObservedOwnership::Absent
+                } else {
+                    ObservedOwnership::Unknown
+                };
+                if observed != *wanted {
+                    continue;
+                }
+            }
             if let Some(ids) = &item_ids
                 && !row["id"].as_u64().is_some_and(|id| ids.contains(&id))
             {
@@ -412,6 +449,28 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         result["simulation_input"] = encounter_input(record, settings)?;
     }
     Ok(result)
+}
+
+fn observed_item_ids(snapshot: &Snapshot) -> (BTreeSet<u64>, bool) {
+    let mut owned = BTreeSet::new();
+    let mut complete = true;
+    for storage in ["equipment", "bags", "character_bank", "account_bank"] {
+        let Some(rows) = snapshot.sections.get(storage).and_then(Value::as_object) else {
+            complete = false;
+            continue;
+        };
+        if storage == "equipment" {
+            owned.extend(rows.values().filter_map(|item| item["item_id"].as_u64()));
+        } else {
+            owned.extend(
+                rows.values()
+                    .filter_map(Value::as_object)
+                    .flat_map(|slots| slots.values())
+                    .filter_map(|item| item["item_id"].as_u64()),
+            );
+        }
+    }
+    (owned, complete)
 }
 
 fn source_references(db: &Value, items: &[&Value]) -> Value {

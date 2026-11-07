@@ -376,9 +376,14 @@ impl Operator {
                 .forever_catalogue
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
-            let mut data = azeroth_operator::forever_catalogue::lookup(path, &query)?;
-            if let Some(id) = query.acquisition_snapshot_id {
-                let snapshot = self.store.read(&id)?;
+            let snapshot = query
+                .acquisition_snapshot_id
+                .as_deref()
+                .map(|id| self.store.read(id))
+                .transpose()?;
+            let mut data =
+                azeroth_operator::forever_catalogue::lookup(path, &query, snapshot.as_ref())?;
+            if let Some((id, snapshot)) = query.acquisition_snapshot_id.zip(snapshot) {
                 let mut progress = azeroth_operator::forever_catalogue::acquisition_progress(
                     &snapshot,
                     &data["records"],
