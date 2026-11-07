@@ -92,6 +92,7 @@ pub fn review_recipe_with_inventory(
                 "quantity_observed":(missing_storage.len()<storage.len()).then_some(available),
                 "shortfall_vs_observed":(missing_storage.len()<storage.len()).then_some(required.saturating_sub(available)),
                 "quantity_by_storage":by_storage,
+                "shortfall_vs_bags":by_storage["bags"].map(|count| required.saturating_sub(count)),
                 "observed_stack_count":(missing_storage.len()<storage.len()).then_some(reagent.stack_count),
                 "observed_locations":reagent.locations}));
         }
@@ -122,7 +123,7 @@ pub fn review_recipe_with_inventory(
 
 /// Combine demands from reviews already validated against the same inventory capture.
 pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) -> Result<Value> {
-    let mut totals = BTreeMap::<u64, (u64, Option<u64>)>::new();
+    let mut totals = BTreeMap::<u64, (u64, Option<u64>, &Value)>::new();
     for review in reviews {
         if review["recipe"]["requirements"] != "fixed_items" {
             return Ok(Value::Null);
@@ -135,8 +136,12 @@ pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) ->
                 .as_u64()
                 .ok_or_else(|| anyhow::anyhow!("Missing reagent quantity"))?;
             let observed = material["quantity_observed"].as_u64();
-            let total = totals.entry(id).or_insert((0, observed));
-            ensure!(total.1 == observed, "Inventory observations differ");
+            let by_storage = &material["quantity_by_storage"];
+            let total = totals.entry(id).or_insert((0, observed, by_storage));
+            ensure!(
+                total.1 == observed && total.2 == by_storage,
+                "Inventory observations differ"
+            );
             total.0 = total
                 .0
                 .checked_add(required)
@@ -146,9 +151,11 @@ pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) ->
     Ok(json!(
         totals
             .into_iter()
-            .map(|(item_id, (required, observed))| json!({
+            .map(|(item_id, (required, observed, by_storage))| json!({
                 "item_id":item_id,"required":required,"quantity_observed":observed,
-                "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity))
+                "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity)),
+                "quantity_by_storage":by_storage,
+                "shortfall_vs_bags":by_storage["bags"].as_u64().map(|count| required.saturating_sub(count))
             }))
             .collect::<Vec<_>>()
     ))

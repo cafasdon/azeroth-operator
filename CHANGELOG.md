@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show bag shortfalls and storage counts for Forever crafting batches so shared reagent needs can be gathered before crafting.
+
 - Reuse identical Forever encounter simulations within a single multi-encounter gear ranking while preserving each input and weight.
 
 - Reuse the parsed Forever catalogue across gear reviews while checking the configured file against its pinned checksum on every read.

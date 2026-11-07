@@ -328,6 +328,10 @@ The primary capture provides the inventory if no separate capture is supplied.
 `combined_materials` sums fixed demand and counts the shared stock once.
 It is null if any recipe has unsupported requirements. The plan uses captured
 stock and does not credit outputs from other planned crafts.
+Single recipes and batches report `shortfall_vs_bags` separately from the
+shortfall across observed storage. Each combined material includes
+`quantity_by_storage` from the shared capture. Uncaptured storage has a null
+quantity, and an uncaptured bag section gives a null bag shortfall.
 
 Use `find_snapshot_item` with a saved `snapshot_id` and a base `item_id` to
 find captured copies in equipment, bags and banks without a simulator

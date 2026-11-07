@@ -279,6 +279,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(recipe_data["materials"], [{
                             "item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5,
                             "quantity_by_storage":{"bags":None,"character_bank":1,"account_bank":0},
+                            "shortfall_vs_bags":None,
                             "observed_stack_count":1,
                             "observed_locations":[{"storage":"character_bank","container":"6","slot":"1","count":1}],
                         }])
@@ -332,7 +333,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         batch_data = json.loads(batch.content[0].text)
                         combined = {row["item_id"]: row for row in batch_data["combined_materials"]}
                         self.assertEqual(combined[744], {
-                            "item_id": 744, "required": 13, "quantity_observed": 12, "shortfall_vs_observed": 1})
+                            "item_id": 744, "required": 13, "quantity_observed": 12, "shortfall_vs_observed": 1,
+                            "quantity_by_storage": {"bags": 12, "character_bank": None, "account_bank": 0},
+                            "shortfall_vs_bags": 1,
+                        })
+                        self.assertEqual(combined[10]["shortfall_vs_bags"], 0)
+                        bank_batch = await session.call_tool("review_forever_recipe", {
+                            **batch_request, "inventory_snapshot_id": stocked_key, "crafts": 2,
+                            "additional_recipes": [{"snapshot_id": second_key, "crafts": 1}]})
+                        self.assertFalse(bank_batch.isError)
+                        bank_data = json.loads(bank_batch.content[0].text)
+                        bank_materials = {row["item_id"]: row for row in bank_data["combined_materials"]}
+                        self.assertEqual(bank_materials[744]["quantity_by_storage"]["character_bank"], 1)
+                        self.assertEqual(bank_materials[744]["shortfall_vs_bags"], 3)
+                        self.assertEqual(bank_materials[744]["shortfall_vs_observed"], 2)
                         self.assertEqual(batch_data["additional_recipe_reviews"][0]["snapshot_id"], second_key)
                         duplicate = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "additional_recipes": [{"snapshot_id": stocked_key, "crafts": 2}]})
