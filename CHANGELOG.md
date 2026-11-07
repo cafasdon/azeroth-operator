@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include regular enchant stats in the Forever item estimate when exactly one catalogue row fits.
+
 - Combine default base stats with a resolved Forever suffix in owned-gear review.
 
 - Show pinned default base stats, weapon profiles and item effects in Forever owned-gear review.

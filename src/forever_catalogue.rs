@@ -365,14 +365,37 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
             }
         }
     });
+    let regular_stats_with_enchant = regular_stats.as_ref().and_then(|stats| {
+        if modifiers["enchant_id"].as_u64()? == 0 {
+            return Some(stats.clone());
+        }
+        let [enchant] = fitting_enchants.as_deref()? else {
+            return None;
+        };
+        add_enchant_regular_stats(stats, enchant)
+    });
     json!({
         "enchants":enchants,
         "fitting_enchants":fitting_enchants,
         "random_suffixes":suffixes,
         "default_scaling_regular_stats_before_enchant":regular_stats,
+        "default_scaling_regular_stats_with_enchant":regular_stats_with_enchant,
         "default_scaling_suffix_allocation_delta":suffix_effects.as_ref().map(|(stats, _)| stats),
         "default_scaling_suffix_extra_effects":suffix_effects.as_ref().map(|(_, extra)| extra)
     })
+}
+
+fn add_enchant_regular_stats(base: &Value, enchant: &Value) -> Option<Value> {
+    let mut stats = base.as_object()?.clone();
+    for (id, delta) in enchant["stats"].as_array()?.iter().enumerate() {
+        let delta = delta.as_f64()?;
+        if delta != 0.0 {
+            let id = id.to_string();
+            let base_value = stats.get(&id).map_or(Some(0.0), Value::as_f64)?;
+            stats.insert(id, json!(base_value + delta));
+        }
+    }
+    Some(Value::Object(stats))
 }
 
 fn combine_regular_stats(
@@ -428,6 +451,32 @@ fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adds_regular_enchant_stats_only_for_a_unique_fit_or_explicit_zero() {
+        let db = json!({"enchants":[
+            {"effectId":7,"type":5,"stats":[2,0,4]},
+            {"effectId":8,"type":5,"stats":[7]},
+            {"effectId":8,"type":5,"stats":[8]},
+            {"effectId":9,"type":6,"stats":[10]}
+        ]});
+        let item = json!({"type":5,"scalingOptions":{"0":{"stats":{"0":3}}}});
+        for (enchant, expected) in [
+            (json!(7), json!({"0":5.0,"2":4.0})),
+            (json!(0), json!({"0":3})),
+            (json!(8), Value::Null),
+            (json!(9), Value::Null),
+            (json!(10), Value::Null),
+            (Value::Null, Value::Null),
+        ] {
+            let modifiers = json!({"enchant_id":enchant,"random_suffix_id":0});
+            let result = modifier_candidates(&db, &modifiers, Some(&item));
+            assert_eq!(
+                result["default_scaling_regular_stats_with_enchant"],
+                expected
+            );
+        }
+    }
 
     #[test]
     fn combines_base_and_suffix_regular_stat_ids() {
