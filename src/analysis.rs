@@ -779,6 +779,32 @@ fn compare_action_bar_slots(before: &Snapshot, after: &Snapshot) -> Value {
             "before_only_slots":a.keys().filter(|slot| !b.contains_key(slot)).collect::<Vec<_>>(),
             "after_only_slots":b.keys().filter(|slot| !a.contains_key(slot)).collect::<Vec<_>>()})
     });
+    json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes,
+        "button_hotkey_changes":compare_action_bar_hotkeys(before, after)})
+}
+
+fn compare_action_bar_hotkeys(before: &Snapshot, after: &Snapshot) -> Value {
+    fn buttons(snapshot: &Snapshot) -> Option<BTreeMap<&str, &Value>> {
+        snapshot.sections.get("action_bar_observation")?["button_hotkeys"]
+            .as_object()?
+            .values()
+            .map(|row| Some((row["button"].as_str()?, row)))
+            .collect()
+    }
+    let previous = buttons(before);
+    let current = buttons(after);
+    let changes = previous.as_ref().zip(current.as_ref()).map(|(a,b)| {
+        let shared = a.iter().filter_map(|(button, from)| {
+            let to = b.get(button)?;
+            let keys_changed = from["key1"] != to["key1"] || from["key2"] != to["key2"];
+            let slot_changed = from["slot"] != to["slot"];
+            (keys_changed || slot_changed).then(|| json!({"button":button,"keys_changed":keys_changed,
+                "slot_changed":slot_changed,"before":from,"after":to}))
+        }).collect::<Vec<_>>();
+        json!({"changed_shared_buttons":shared,
+            "before_only_buttons":a.keys().filter(|button| !b.contains_key(*button)).collect::<Vec<_>>(),
+            "after_only_buttons":b.keys().filter(|button| !a.contains_key(*button)).collect::<Vec<_>>()})
+    });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever button hotkeys separately from changes to their action slot references.
+
 - Capture up to two binding keys for each observed Forever built-in action button.
 
 - Inspect one saved Forever built-in action bar slot, optionally with its spellbook match.
