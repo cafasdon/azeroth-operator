@@ -15,6 +15,31 @@ pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
     review_recipe_with_inventory(snapshot, crafts, None)
 }
 
+pub fn plan_recipe(
+    snapshot: &Snapshot,
+    crafts: Option<u32>,
+    target_output_quantity: Option<std::num::NonZeroU32>,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
+    match (crafts, target_output_quantity) {
+        (Some(crafts), None) => review_recipe_with_inventory(snapshot, crafts, inventory),
+        (None, Some(target)) => {
+            let minimum = snapshot
+                .sections
+                .get("selected_recipe")
+                .and_then(|recipe| recipe["base_output_quantity"]["minimum"].as_u64())
+                .and_then(|quantity| u32::try_from(quantity).ok())
+                .filter(|quantity| *quantity > 0)
+                .ok_or_else(|| anyhow::anyhow!("Recipe base output range unavailable"))?;
+            let crafts = target.get().div_ceil(minimum);
+            let mut review = review_recipe_with_inventory(snapshot, crafts, inventory)?;
+            review["target_output_quantity"] = json!(target.get());
+            Ok(review)
+        }
+        _ => anyhow::bail!("Supply one craft count or target output quantity"),
+    }
+}
+
 pub fn review_recipe_with_inventory(
     snapshot: &Snapshot,
     crafts: u32,

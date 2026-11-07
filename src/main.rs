@@ -96,7 +96,10 @@ struct OwnedGearReview {
 #[serde(deny_unknown_fields)]
 struct RecipeReview {
     snapshot_id: String,
-    crafts: u32,
+    /// Number of crafts. Supply exactly one of crafts or target_output_quantity.
+    crafts: Option<u32>,
+    /// Desired base item quantity, using the captured minimum per craft.
+    target_output_quantity: Option<std::num::NonZeroU32>,
     /// Optional same-character and same-build capture, at least as recent as the recipe.
     inventory_snapshot_id: Option<String>,
     /// Up to seven other saved recipes checked against the same inventory capture.
@@ -107,7 +110,10 @@ struct RecipeReview {
 #[serde(deny_unknown_fields)]
 struct RecipeBatchEntry {
     snapshot_id: String,
-    crafts: u32,
+    /// Number of crafts. Supply exactly one of crafts or target_output_quantity.
+    crafts: Option<u32>,
+    /// Desired base item quantity, using the captured minimum per craft.
+    target_output_quantity: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -501,9 +507,10 @@ impl Operator {
                 .as_deref()
                 .map(|id| self.store.read(id))
                 .transpose()?;
-            let mut review = azeroth_operator::analysis::review_recipe_with_inventory(
+            let mut review = azeroth_operator::analysis::plan_recipe(
                 &snapshot,
                 args.crafts,
+                args.target_output_quantity,
                 inventory.as_ref(),
             )?;
             if let Some(id) = args.inventory_snapshot_id {
@@ -516,9 +523,10 @@ impl Operator {
                     std::collections::BTreeSet::from([review["recipe"]["recipe_id"].as_u64()]);
                 for entry in additional {
                     let saved = self.store.read(&entry.snapshot_id)?;
-                    let mut extra = azeroth_operator::analysis::review_recipe_with_inventory(
+                    let mut extra = azeroth_operator::analysis::plan_recipe(
                         &saved,
                         entry.crafts,
+                        entry.target_output_quantity,
                         Some(stock),
                     )?;
                     anyhow::ensure!(
@@ -546,7 +554,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe review requires up to eight distinct saved Forever recipes, 1 to 1000 crafts each and a compatible inventory capture.",
+                "Recipe review requires up to eight distinct saved Forever recipes and a compatible inventory capture. Supply crafts or a supported target output quantity per recipe, within 1 to 1000 crafts.",
             )]),
         }
     }

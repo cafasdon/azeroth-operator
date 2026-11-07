@@ -564,6 +564,30 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "items": [{"item_id": 456, "minimum": 4, "maximum": 6}],
                             "recipes_without_observed_output_item": 1,
                         })
+                        target = await session.call_tool("review_forever_recipe", {
+                            "snapshot_id": second_key, "target_output_quantity": 5})
+                        self.assertFalse(target.isError)
+                        target_data = json.loads(target.content[0].text)
+                        self.assertEqual(target_data["target_output_quantity"], 5)
+                        self.assertEqual(target_data["requested_crafts"], 3)
+                        self.assertEqual(target_data["materials"][0]["required"], 15)
+                        self.assertEqual(target_data["base_output_if_completed"],
+                                         {"item_id": 456, "minimum": 6, "maximum": 9})
+                        target_batch = await session.call_tool("review_forever_recipe", {
+                            **batch_request, "additional_recipes": [
+                                {"snapshot_id": second_key, "target_output_quantity": 3}]})
+                        self.assertFalse(target_batch.isError)
+                        target_batch_data = json.loads(target_batch.content[0].text)
+                        self.assertEqual(target_batch_data["combined_materials"], batch_data["combined_materials"])
+                        self.assertEqual(target_batch_data["additional_recipe_reviews"][0]["target_output_quantity"], 3)
+                        for invalid in ({}, {"target_output_quantity": 0}, {"target_output_quantity": 2001},
+                                        {"target_output_quantity": 1, "crafts": 1}):
+                            rejected = await session.call_tool("review_forever_recipe", {
+                                "snapshot_id": second_key, **invalid})
+                            self.assertTrue(rejected.isError)
+                        unavailable_output = await session.call_tool("review_forever_recipe", {
+                            "snapshot_id": stocked_key, "target_output_quantity": 1})
+                        self.assertTrue(unavailable_output.isError)
                         extra_output = json.loads(json.dumps(second_recipe))
                         extra_output["sections"]["selected_recipe"]["recipe_id"] = 102
                         extra_key = SnapshotStore(Path(folder)).ingest(extra_output)

@@ -359,8 +359,12 @@ at least as recent as the recipe capture. Reagents come from the recipe
 capture, while counts, locations and storage coverage come from the inventory
 capture. The response includes both capture times. Missing storage stays unknown.
 
+Use `target_output_quantity` in place of `crafts` when the recipe has a
+captured base output range. The review rounds up using the minimum output
+per craft, and the usual 1,000-craft limit applies.
+
 Supply up to seven `additional_recipes`, each with a saved `snapshot_id` and
-`crafts`, to plan multiple distinct recipes against one inventory capture.
+either `crafts` or `target_output_quantity`, to plan multiple distinct recipes against one inventory capture.
 The primary capture provides the inventory if no separate capture is supplied.
 `combined_materials` sums fixed demand and counts the shared stock once.
 It is null if any recipe has unsupported requirements. The plan uses captured
