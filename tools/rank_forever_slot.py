@@ -271,7 +271,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     audit = audit_shortlist(result, fixed, requests, args.top) if fixed is not None else None
     if result is None:
         result = fixed if fixed is not None else compare(
-            args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.rank_by == "dtps")
+            args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.rank_by != "dps")
     if audit is not None:
         audit["fixed_wall_seconds"] = after_fixed - start
         audit["staged_wall_seconds"] = staged_wall
@@ -293,11 +293,10 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
             row["selection"] = selections[0] if selections else None
         else:
             row["selections"] = selections
-    if args.rank_by == "dtps":
-        result["ranked_by"] = "mean_dtps"
-        result["results"].sort(key=lambda row: row["mean_dtps"])
-    else:
-        result["results"].sort(key=lambda row: -row["mean_dps"])
+    metric = f"mean_{args.rank_by}"
+    if args.rank_by != "dps":
+        result["ranked_by"] = metric
+    result["results"].sort(key=lambda row: row[metric], reverse=args.rank_by != "dtps")
     return result
 
 
@@ -349,8 +348,8 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
-    parser.add_argument("--rank-by", choices=("dps", "dtps"), default="dps",
-                        help="Rank by highest damage dealt or lowest damage taken per second")
+    parser.add_argument("--rank-by", choices=("dps", "dtps", "tps"), default="dps",
+                        help="Rank by highest damage dealt, lowest damage taken, or highest threat per second")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
     parser.add_argument("--top", type=int, default=5, help="Distinct gear sets to return in bulk mode")
@@ -371,8 +370,8 @@ def main():
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         if args.audit_shortlist and not args.bulk_engine:
             raise ValueError("Shortlist audit requires the bulk adapter")
-        if args.rank_by == "dtps" and (args.bulk_engine or args.encounter_weight is not None):
-            raise ValueError("Tank damage ranking requires fixed, unweighted encounter comparisons")
+        if args.rank_by != "dps" and (args.bulk_engine or args.encounter_weight is not None):
+            raise ValueError("Tank ranking requires fixed, unweighted encounter comparisons")
         if not 1 <= args.max_drafts <= 128:
             raise ValueError("Draft limit is out of range")
         if len(args.encounter_lookup) > 4:

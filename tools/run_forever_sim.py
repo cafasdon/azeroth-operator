@@ -220,12 +220,20 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
             "engine_sha256": expected_hash.lower(),
         }
         if tank_metrics:
-            metrics = single_player(result["raidMetrics"])["dtps"]
-            mean, deviation = metrics["avg"], metrics["stdev"]
-            if not all(type(value) in (int, float) and math.isfinite(value) and value >= 0
-                       for value in (mean, deviation)):
-                raise ValueError("Simulator returned invalid tank damage metrics")
-            summary.update(mean_dtps=mean, dtps_standard_deviation=deviation)
+            metrics = single_player(result["raidMetrics"])
+            for output, metric in (("dtps", "dtps"), ("tps", "threat")):
+                mean, deviation = metrics[metric]["avg"], metrics[metric]["stdev"]
+                if (not all(type(value) in (int, float) and math.isfinite(value)
+                            for value in (mean, deviation))
+                        or deviation < 0 or (output == "dtps" and mean < 0)):
+                    raise ValueError("Simulator returned invalid tank metrics")
+                summary[f"mean_{output}"] = mean
+                summary[f"{output}_standard_deviation"] = deviation
+            death_fraction = metrics["chanceOfDeath"]
+            # The engine combines weighted shard fractions in floating point.
+            if type(death_fraction) not in (int, float) or not 0 <= death_fraction <= 1 + 1e-9:
+                raise ValueError("Simulator returned an invalid death fraction")
+            summary["simulated_death_fraction"] = min(death_fraction, 1.0)
         if paired:
             values = dps["allValues"]
             if (not isinstance(values, list) or len(values) != summary["iterations"]
@@ -253,9 +261,9 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False):
             raise ValueError("Comparison deadline exceeded")
     baseline = results[keys[0]]["mean_dps"]
     if tank_metrics:
-        baseline_dtps = results[keys[0]]["mean_dtps"]
         for row in results.values():
-            row["mean_dtps_delta_from_baseline"] = row["mean_dtps"] - baseline_dtps
+            for field in ("mean_dtps", "mean_tps", "simulated_death_fraction"):
+                row[f"{field}_delta_from_baseline"] = row[field] - results[keys[0]][field]
     paired_errors = {}
     if paired:
         baseline_samples = results[keys[0]]["_dps_samples"]
@@ -341,7 +349,8 @@ def main():
     parser.add_argument("--equipment-review", type=Path, action="append", required=True)
     parser.add_argument("--encounter-lookup", type=Path, required=True)
     parser.add_argument("--paired", action="store_true", help="Report paired DPS standard errors for a comparison")
-    parser.add_argument("--tank-metrics", action="store_true", help="Report damage taken per second for an explicit tank")
+    parser.add_argument("--tank-metrics", action="store_true",
+                        help="Report damage taken, threat per second and simulated deaths for an explicit tank")
     args = parser.parse_args()
     try:
         if len(args.equipment_review) > 8:
