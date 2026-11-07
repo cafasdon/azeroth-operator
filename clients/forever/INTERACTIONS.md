@@ -87,6 +87,12 @@ snapshot. The comparison is unknown for capped or explicitly XP-disabled
 characters and when reward or progress data is missing. It covers one
 recorded level threshold and does not predict bonus XP or later eligibility.
 
+Use `compare_snapshots` with `experience: true` for two saved captures of
+the same Forever character and build. It reports captured levels and XP
+before and after. The within-level XP difference requires matching levels
+and thresholds. After a level change it remains unknown, since the two XP
+counters describe different levels.
+
 `elite` and `suggested_group_size` are separate quest log observations.
 `character_summary.observed_quest_difficulty` lists observed elite quests
 and quests with a suggested group size above one. Missing fields mean the

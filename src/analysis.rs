@@ -458,6 +458,7 @@ pub struct ComparisonSelectors {
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
+    pub experience: bool,
 }
 
 pub fn compare_observations(
@@ -661,6 +662,35 @@ pub fn compare_observations(
         comparison["profession_change"] = json!({
             "skill_line":skill_line,"before_status":before_status,"after_status":after_status,
             "before":previous,"after":current,"rank_delta":rank_delta
+        });
+    }
+    if selectors.experience {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Experience comparisons require Forever snapshots"
+        );
+        let previous = before.sections.get("experience");
+        let current = after.sections.get("experience");
+        let before_level = before
+            .sections
+            .get("stats")
+            .and_then(|stats| stats["level"].as_i64());
+        let after_level = after
+            .sections
+            .get("stats")
+            .and_then(|stats| stats["level"].as_i64());
+        let levels = before_level.zip(after_level);
+        let within_level = previous.zip(current).and_then(|(a, b)| {
+            let (before_level, after_level) = levels?;
+            let threshold = a["level_threshold_xp"].as_u64()?;
+            if before_level != after_level || b["level_threshold_xp"].as_u64() != Some(threshold) {
+                return None;
+            }
+            Some(b["current_xp"].as_i64()? - a["current_xp"].as_i64()?)
+        });
+        comparison["experience_change"] = json!({
+            "before":previous,"after":current,"before_level":before_level,"after_level":after_level,
+            "level_delta":levels.and_then(|(a,b)| b.checked_sub(a)),"within_level_xp_delta":within_level
         });
     }
     if selectors.wallet {

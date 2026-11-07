@@ -146,6 +146,9 @@ struct Compare {
     /// Include a net change in captured Forever wallet copper.
     #[serde(default)]
     wallet: bool,
+    /// Compare captured Forever experience and level observations.
+    #[serde(default)]
+    experience: bool,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -802,6 +805,7 @@ impl Operator {
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,
+                    experience: args.experience,
                 },
             )
         })();
