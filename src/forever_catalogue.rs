@@ -152,6 +152,8 @@ pub struct Query {
     pub item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Plan bag stock for up to 20 distinct consumables from the supplied snapshot.
     pub consumable_targets: Option<Vec<ConsumableTarget>>,
+    /// Up to eight saved learned recipe captures for confirmed consumable restock shortages.
+    pub restock_recipe_snapshot_ids: Option<Vec<String>>,
     /// Match the exact groupKey recorded by the pinned simulator for consumable buffs.
     pub consumable_group_key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
@@ -297,6 +299,12 @@ pub struct ConsumableTarget {
 }
 
 pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
+    if let Some(ids) = &query.restock_recipe_snapshot_ids {
+        ensure!(
+            query.consumable_targets.is_some() && (1..=8).contains(&ids.len()),
+            "Restock recipes require consumable targets and one to eight captures"
+        );
+    }
     let (db, provenance) = load(path)?;
     let (section, identity) = query.section.fields();
     let has_inventory_context = matches!(query.section, Section::Items | Section::Consumables);

@@ -218,6 +218,15 @@ recipe ID and the observed learned flag. Pass a matching capture ID to
 when the schematic captured a supported yield. Recipes without captured
 output IDs are outside this search.
 
+Add `restock_recipe_snapshot_ids` to a consumable restock request to
+calculate crafts for confirmed shortages after observed bank stock. Supply
+up to eight compatible captures with learned fixed-material recipes and
+known yields, one per shortage. Recipe captures must be for the same
+character and client build and be at least as old as the inventory.
+The combined ingredient list counts shared stock once. The request rejects
+a recipe that would consume an item reserved as another restock target.
+Crafting and bank withdrawals remain player actions.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With

@@ -401,6 +401,9 @@ impl Operator {
                         &data["records"],
                     )?
                 };
+                if let Some(recipe_ids) = query.restock_recipe_snapshot_ids {
+                    self.add_restock_crafting(&snapshot, &mut progress, recipe_ids)?;
+                }
                 progress["snapshot_id"] = serde_json::json!(id);
                 data["acquisition_progress"] = progress;
             }
@@ -409,7 +412,7 @@ impl Operator {
         match result {
             Ok(data) => CallToolResult::success(vec![ContentBlock::text(data.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Forever catalogue lookup failed: check filters, simulation settings, the optional snapshot and the local cache.",
+                "Forever catalogue lookup failed: check filters, simulation settings, the local cache and compatible saved captures. Restock recipes require learned fixed-material recipes with a recorded yield for distinct confirmed shortages.",
             )]),
         }
     }
@@ -831,6 +834,79 @@ impl Operator {
                 CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
             }
         }
+    }
+}
+
+impl Operator {
+    fn add_restock_crafting(
+        &self,
+        inventory: &azeroth_operator::Snapshot,
+        progress: &mut serde_json::Value,
+        recipe_ids: Vec<String>,
+    ) -> anyhow::Result<()> {
+        use azeroth_operator::analysis::{combine_recipe_materials, plan_recipe};
+        use serde_json::json;
+        use std::collections::BTreeMap;
+        use std::num::NonZeroU32;
+
+        let mut shortages: BTreeMap<_, _> = progress["restock_plan"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| {
+                Some((
+                    row["item_id"].as_u64()?,
+                    row["confirmed_shortfall"].as_u64()?,
+                ))
+            })
+            .collect();
+        let mut reviews = Vec::new();
+        let mut plans = Vec::new();
+        for id in recipe_ids {
+            let saved = self.store.read(&id)?;
+            let recipe = saved
+                .sections
+                .get("selected_recipe")
+                .ok_or_else(|| anyhow::anyhow!("Missing selected recipe"))?;
+            anyhow::ensure!(
+                recipe["learned"].as_bool() == Some(true)
+                    && recipe["requirements"] == "fixed_items",
+                "Expected a learned fixed-material recipe"
+            );
+            let item = recipe["output_item_id"]
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Missing recipe output"))?;
+            let quantity = shortages
+                .remove(&item)
+                .and_then(|quantity| u32::try_from(quantity).ok())
+                .and_then(NonZeroU32::new)
+                .ok_or_else(|| anyhow::anyhow!("Expected a distinct confirmed shortage"))?;
+            let review = plan_recipe(&saved, None, Some(quantity), Some(inventory))?;
+            plans.push(json!({
+                "recipe_snapshot_id":id,"recipe_id":recipe["recipe_id"],"item_id":item,
+                "target_output_quantity":quantity,"requested_crafts":review["requested_crafts"],
+                "base_output_if_completed":review["base_output_if_completed"],
+                "observed_cooldown":recipe["cooldown"],
+                "shortfall_vs_observed_recipe_charges":review["shortfall_vs_observed_recipe_charges"],
+                "unmet_crafting_conditions":review["unmet_crafting_conditions"]
+            }));
+            reviews.push(review);
+        }
+        let materials = combine_recipe_materials(reviews.iter())?;
+        anyhow::ensure!(
+            materials.as_array().into_iter().flatten().all(|material| {
+                progress["restock_plan"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .all(|target| target["item_id"] != material["item_id"])
+            }),
+            "A restock target also serves as a reagent"
+        );
+        progress["crafting_plan"] = json!({
+            "recipes":plans,"combined_materials":materials,"craftability_verified":false
+        });
+        Ok(())
     }
 }
 
