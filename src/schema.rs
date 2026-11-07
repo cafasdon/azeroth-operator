@@ -762,6 +762,36 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
+        "experience" => {
+            object(
+                value,
+                &[
+                    ("status", "text", true),
+                    ("current_xp", "uint", false),
+                    ("level_threshold_xp", "positive", false),
+                    ("xp_disabled", "bool", false),
+                    ("rested_xp", "uint", false),
+                ],
+            )?;
+            let current = value["current_xp"].as_u64();
+            let threshold = value["level_threshold_xp"].as_u64();
+            match value["status"].as_str() {
+                Some("progress") => ensure!(
+                    current
+                        .zip(threshold)
+                        .is_some_and(|(current, threshold)| current <= threshold),
+                    "Invalid XP progress"
+                ),
+                Some("trial_capped" | "level_capped") => ensure!(
+                    current.is_none()
+                        && threshold.is_none()
+                        && value["xp_disabled"].is_null()
+                        && value["rested_xp"].is_null(),
+                    "Unexpected capped XP details"
+                ),
+                _ => anyhow::bail!("Unknown XP status"),
+            }
+        }
         "currency_balances" => {
             object(
                 value,

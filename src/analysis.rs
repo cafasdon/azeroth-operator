@@ -1241,6 +1241,11 @@ pub fn summary(s: &Snapshot) -> Value {
         json!({"ready_observed":ready,"status_observed":known,"status_unknown":quests.len()-known})
     });
     json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
+      "experience_progress":s.sections.get("experience").map(|xp| {
+          let remaining = xp["level_threshold_xp"].as_u64().zip(xp["current_xp"].as_u64())
+              .and_then(|(threshold,current)| threshold.checked_sub(current));
+          json!({"observed":xp,"xp_to_next_level":remaining})
+      }),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),

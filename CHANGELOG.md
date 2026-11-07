@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever character XP progress, rested XP and observed caps.
+
 - Suggest saved bank withdrawals for individual Forever recipe reagents.
 
 - Combine captured material and charge limits in Forever recipe reviews.

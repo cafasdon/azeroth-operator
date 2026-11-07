@@ -74,6 +74,13 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+`inspect_snapshot` with `section: "experience"` shows the saved character's
+XP, level threshold and any observed rested XP or XP-disabled flag.
+`character_summary.experience_progress` also reports XP to the next level.
+Effective level caps and trial caps have separate statuses and omit numeric
+progress. The addon reads the player only and omits trial banked XP. Update
+the importer and reader before syncing this section. [Forever experience bar](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StatusTrackingBar/Shared/ExpBar.lua)
+
 `elite` and `suggested_group_size` are separate quest log observations.
 `character_summary.observed_quest_difficulty` lists observed elite quests
 and quests with a suggested group size above one. Missing fields mean the

@@ -451,6 +451,13 @@ pub fn verify_forever_capture_fixture(
         ProfessionsFrame={CraftingPage={SchematicForm={recipeSchematic=recipeSchematic,
             IsVisible=function() return recipeVisible end,GetRecipeInfo=function() return recipeInfo end}}}
         localCrafting=true;recipeVisible=true
+        GameLimitedMode_IsBankedXPActive=function() return trialXP==true end
+        GameLimitedMode_GetLevelLimit=function() return 20 end
+        GameRulesUtil={IsPlayerAtEffectiveMaxLevel=function() return cappedXP==true end}
+        UnitXP=function(unit) assert(unit=="player"); return 0 end
+        UnitXPMax=function(unit) assert(unit=="player"); return 1000 end
+        IsXPUserDisabled=function() return false end
+        GetXPExhaustion=function() return 200 end
         C_QuestLog={
             GetNumQuestLogEntries=function() return 3,2 end,
             GetInfo=function(index)
@@ -632,6 +639,22 @@ pub fn verify_forever_capture_fixture(
     lua.load("SlashCmdList.AZEROTHOPERATOR()").exec()?;
     assert!(!read()?.unavailable.contains_key("wallet"));
     let quests = &snapshot.sections["quests"];
+    assert_eq!(
+        snapshot.sections["experience"],
+        serde_json::json!({"status":"progress","current_xp":0,"level_threshold_xp":1000,"xp_disabled":false,"rested_xp":200})
+    );
+    lua.load("cappedXP=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["experience"],
+        serde_json::json!({"status":"level_capped"})
+    );
+    lua.load("cappedXP=false;trialXP=true;AO.Capture()")
+        .exec()?;
+    assert_eq!(
+        read()?.sections["experience"],
+        serde_json::json!({"status":"trial_capped"})
+    );
+    lua.load("trialXP=false").exec()?;
     assert_eq!(quests["42"]["ready_for_turn_in"], false);
     assert_eq!(
         quests["42"]["objectives"]["1"],

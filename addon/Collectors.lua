@@ -779,6 +779,33 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.experience = function()
+    local function accessible(value)
+        return not issecretvalue or not issecretvalue(value)
+    end
+    local function uint(value)
+        return accessible(value) and type(value)=="number" and value%1==0 and value>=0 and value<=4294967295
+    end
+    local trial=GameLimitedMode_IsBankedXPActive()
+    assert(accessible(trial) and type(trial)=="boolean", "Trial XP status unavailable")
+    if trial then
+        local level,limit=UnitLevel("player"),GameLimitedMode_GetLevelLimit()
+        assert(uint(level) and uint(limit) and limit>0, "Trial XP level unavailable")
+        if level>=limit then return {status="trial_capped"} end
+    end
+    local capped=GameRulesUtil.IsPlayerAtEffectiveMaxLevel()
+    assert(accessible(capped) and type(capped)=="boolean", "XP cap status unavailable")
+    if capped then return {status="level_capped"} end
+    local current,threshold=UnitXP("player"),UnitXPMax("player")
+    assert(uint(current) and uint(threshold) and threshold>0 and current<=threshold, "Invalid XP observation")
+    local result={status="progress",current_xp=current,level_threshold_xp=threshold}
+    local ok,disabled=pcall(IsXPUserDisabled)
+    if ok and accessible(disabled) and type(disabled)=="boolean" then result.xp_disabled=disabled end
+    local restedOk,rested=pcall(GetXPExhaustion)
+    if restedOk and uint(rested) then result.rested_xp=rested end
+    return result
+end
+
 AO.collectors.wallet = function()
     local copper = GetMoney()
     assert(not issecretvalue or not issecretvalue(copper), "Wallet value restricted")

@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -34,6 +34,23 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
                 or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
             raise ValueError("Invalid Forever wallet observation")
+    if "experience" in sections:
+        xp = sections["experience"]
+        if (c["family"] != "forever" or not isinstance(xp, dict)
+                or set(xp) - {"status", "current_xp", "level_threshold_xp", "xp_disabled", "rested_xp"}):
+            raise ValueError("Invalid Forever experience observation")
+        status = xp.get("status")
+        current, threshold = xp.get("current_xp"), xp.get("level_threshold_xp")
+        disabled, rested = xp.get("xp_disabled"), xp.get("rested_xp")
+        if status == "progress":
+            if (type(current) is not int or type(threshold) is not int
+                    or not 0 <= current <= threshold <= 4_294_967_295 or threshold == 0
+                    or (disabled is not None and type(disabled) is not bool)
+                    or (rested is not None and (type(rested) is not int or not 0 <= rested <= 4_294_967_295))):
+                raise ValueError("Invalid XP progress")
+        elif status not in ("trial_capped", "level_capped") or any(
+                field is not None for field in (current, threshold, disabled, rested)):
+            raise ValueError("Invalid capped XP observation")
     if "tracked_recipes" in sections:
         recipes = sections["tracked_recipes"]
         if (c["family"] != "forever" or not isinstance(recipes, dict)
