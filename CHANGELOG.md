@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect one saved Forever built-in action bar slot, optionally with its spellbook match.
+
 - Compare saved Forever action slots and distinguish slot changes from coverage changes.
 
 - Identify saved active-spec, non-passive spells without a matching observed built-in action.

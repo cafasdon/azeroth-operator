@@ -47,6 +47,11 @@ Forever action bar observations. A shared slot can be filled, cleared or
 have different recorded action data. Slots seen in only one capture are
 listed separately. Missing action bar data leaves the comparison unknown.
 
+Pass `action_bar_slot` with `action_bar_observation` to inspect one slot.
+`action_bar_slot_observed` is false for an unobserved slot and null for an
+unavailable section. An observed empty slot has `empty: true`. You can
+include its spellbook match, but the reverse list requires the full capture.
+
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
 On the Rust MCP, pass `profession_skill_line` with `section: "professions"`

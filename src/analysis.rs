@@ -782,7 +782,11 @@ fn compare_action_bar_slots(before: &Snapshot, after: &Snapshot) -> Value {
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
-pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value {
+pub fn action_bar_spellbook(
+    actions: &Value,
+    spellbook: Option<&Value>,
+    include_reverse: bool,
+) -> Value {
     let book = spellbook.and_then(|book| book["entries"].as_object());
     let mut base_ids = BTreeSet::new();
     let mut reported_ids = BTreeSet::new();
@@ -807,6 +811,10 @@ pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value
             })
             .collect::<BTreeMap<_, _>>()
     });
+    let mut review = json!({"spellbook_available":book.is_some(),"spell_slots":slots});
+    if !include_reverse {
+        return review;
+    }
     let unslotted = book.zip(action_slots).map(|(book, actions)| {
         let slotted = actions
             .values()
@@ -823,8 +831,8 @@ pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value
             })
             .collect::<BTreeMap<_, _>>()
     });
-    json!({"spellbook_available":book.is_some(),"spell_slots":slots,
-        "active_spellbook_slots_without_observed_action":unslotted})
+    review["active_spellbook_slots_without_observed_action"] = json!(unslotted);
+    review
 }
 
 fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
