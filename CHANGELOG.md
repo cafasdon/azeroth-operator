@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Batch local Forever equipment draft reviews for faster owned-gear ranking.
+
 - Inspect a saved profession and its observed rank cap by stable skill-line ID.
 
 - Verify current snapshot inspection parameters during a hosted reader upgrade.

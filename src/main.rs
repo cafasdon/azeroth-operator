@@ -175,6 +175,16 @@ struct EquipmentReview {
     /// Allow a selected two-handed main-hand item to clear the captured off-hand in the simulator draft.
     #[serde(default)]
     allow_two_hand_off_hand_clear: bool,
+    /// Review up to seven more Forever drafts against this same snapshot.
+    additional_drafts: Option<Vec<EquipmentDraft>>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct EquipmentDraft {
+    selections: Vec<azeroth_operator::planning::EquipmentSelection>,
+    #[serde(default)]
+    allow_two_hand_off_hand_clear: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -671,7 +681,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Review player-selected equipment from exact exported locations. Returns a JSON draft; does not equip, optimise, validate game legality or generate a game import.",
+        description = "Review player-selected equipment from exact exported locations. Forever reviews can batch up to eight drafts against the same snapshot. Does not equip, optimise, validate game legality or generate a game import.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -684,55 +694,34 @@ impl Operator {
     ) -> CallToolResult {
         let result = (|| {
             let snapshot = self.store.read(&args.snapshot_id)?;
+            let additional = args.additional_drafts.unwrap_or_default();
             anyhow::ensure!(
-                !args.selections.is_empty() || self.forever_catalogue.is_some(),
-                "An empty baseline requires a local Forever catalogue"
+                additional.len() <= 7
+                    && (additional.is_empty()
+                        || (snapshot.client.family == Family::Forever
+                            && self.forever_catalogue.is_some())),
+                "Additional drafts require a Forever catalogue and a bounded batch"
             );
-            anyhow::ensure!(
-                !args.allow_two_hand_off_hand_clear
-                    || (snapshot.client.family == Family::Forever
-                        && self.forever_catalogue.is_some()
-                        && args
-                            .selections
-                            .iter()
-                            .any(|selection| selection.target_slot == 16)
-                        && args
-                            .selections
-                            .iter()
-                            .all(|selection| selection.target_slot != 17)),
-                "Clearing the off-hand requires a Forever catalogue and a main-hand selection without an off-hand selection"
-            );
-            let mut review =
-                azeroth_operator::planning::equipment_review(&snapshot, &args.selections)?;
-            if snapshot.client.family == Family::Forever
-                && let Some(path) = &self.forever_catalogue
-            {
-                let checks = azeroth_operator::forever_catalogue::review_equipment_catalogue(
-                    path,
-                    &snapshot,
-                    &args.selections,
-                    args.allow_two_hand_off_hand_clear,
-                )
-                .or_else(|error| {
-                    if args.selections.is_empty() || args.allow_two_hand_off_hand_clear {
-                        return Err(error);
-                    }
-                    Ok(serde_json::json!({
-                        "catalogue_two_hand_pairing":"unknown",
-                        "catalogue_slot_fit":null,
-                        "catalogue_requirement_conflicts":null,
-                        "catalogue_unique_item_duplicates":null,
-                        "catalogue_shared_limit_categories":null,
-                        "simulator_equipment_spec":null,
-                        "simulator_equipment_unresolved_slots":null
-                    }))
-                })?;
-                review["checks"]
-                    .as_object_mut()
-                    .unwrap()
-                    .extend(checks.as_object().unwrap().clone());
+            let mut review = self.review_equipment_draft(
+                &snapshot,
+                &args.snapshot_id,
+                &args.selections,
+                args.allow_two_hand_off_hand_clear,
+            )?;
+            if !additional.is_empty() {
+                let extra = additional
+                    .into_iter()
+                    .map(|draft| {
+                        self.review_equipment_draft(
+                            &snapshot,
+                            &args.snapshot_id,
+                            &draft.selections,
+                            draft.allow_two_hand_off_hand_clear,
+                        )
+                    })
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                review["additional_draft_reviews"] = serde_json::json!(extra);
             }
-            review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
         })();
         match result {
@@ -1012,6 +1001,62 @@ impl Operator {
 }
 
 impl Operator {
+    fn review_equipment_draft(
+        &self,
+        snapshot: &azeroth_operator::Snapshot,
+        snapshot_id: &str,
+        selections: &[azeroth_operator::planning::EquipmentSelection],
+        allow_two_hand_off_hand_clear: bool,
+    ) -> anyhow::Result<serde_json::Value> {
+        anyhow::ensure!(
+            !selections.is_empty() || self.forever_catalogue.is_some(),
+            "An empty baseline requires a local Forever catalogue"
+        );
+        anyhow::ensure!(
+            !allow_two_hand_off_hand_clear
+                || (snapshot.client.family == Family::Forever
+                    && self.forever_catalogue.is_some()
+                    && selections
+                        .iter()
+                        .any(|selection| selection.target_slot == 16)
+                    && selections
+                        .iter()
+                        .all(|selection| selection.target_slot != 17)),
+            "Clearing the off-hand requires a Forever catalogue and a main-hand selection without an off-hand selection"
+        );
+        let mut review = azeroth_operator::planning::equipment_review(snapshot, selections)?;
+        if snapshot.client.family == Family::Forever
+            && let Some(path) = &self.forever_catalogue
+        {
+            let checks = azeroth_operator::forever_catalogue::review_equipment_catalogue(
+                path,
+                snapshot,
+                selections,
+                allow_two_hand_off_hand_clear,
+            )
+            .or_else(|error| {
+                if selections.is_empty() || allow_two_hand_off_hand_clear {
+                    return Err(error);
+                }
+                Ok(serde_json::json!({
+                    "catalogue_two_hand_pairing":"unknown",
+                    "catalogue_slot_fit":null,
+                    "catalogue_requirement_conflicts":null,
+                    "catalogue_unique_item_duplicates":null,
+                    "catalogue_shared_limit_categories":null,
+                    "simulator_equipment_spec":null,
+                    "simulator_equipment_unresolved_slots":null
+                }))
+            })?;
+            review["checks"]
+                .as_object_mut()
+                .unwrap()
+                .extend(checks.as_object().unwrap().clone());
+        }
+        review["snapshot_id"] = serde_json::json!(snapshot_id);
+        Ok(review)
+    }
+
     fn review_spending_budget(
         &self,
         snapshot_id: &str,

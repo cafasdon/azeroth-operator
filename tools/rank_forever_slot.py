@@ -203,9 +203,23 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             proposed.append(draft_args)
             if len(proposed) > max_drafts:
                 raise ValueError("Slot combinations exceed the configured draft limit")
-        for draft_args in proposed:
+        batch_size = 1
+        if len(proposed) > 1:
+            tools = (await session.list_tools()).tools
+            if any(tool.name == "review_equipment_selection"
+                   and "additional_drafts" in tool.inputSchema.get("properties", {}) for tool in tools):
+                batch_size = 8
+        reviews = []
+        for start in range(0, len(proposed), batch_size):
+            primary, *additional = proposed[start:start + batch_size]
+            arguments = {**primary, "additional_drafts": additional} if additional else primary
+            review = await call("review_equipment_selection", **arguments)
+            extra = review.pop("additional_draft_reviews", [])
+            if not isinstance(extra, list) or len(extra) != len(additional):
+                raise ValueError("Local MCP returned an incomplete equipment review batch")
+            reviews.extend([review, *extra])
+        for draft_args, draft in zip(proposed, reviews, strict=True):
             selections = draft_args["selections"]
-            draft = await call("review_equipment_selection", **draft_args)
             if draft["checks"]["simulator_equipment_spec"]:
                 drafts.append((selections, draft))
             elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):

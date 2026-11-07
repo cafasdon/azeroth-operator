@@ -355,6 +355,15 @@ counts, with bonus effects evaluated by the simulator.
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
 or unmapped observations are reported as `unverified` in `template_identity`.
+The ranker reviews up to eight drafts per MCP call when the local server
+advertises `additional_drafts`. Each batch uses one saved snapshot and
+keeps input order. Older servers receive individual reviews.
+
+An offline Windows check used 71 chest and hands candidates plus the
+baseline. One run per binary returned identical collection results in
+14.15 seconds with the older debug server and 5.55 seconds with batching.
+Timing covers snapshot and draft collection before simulation.
+
 The check uses the pinned simulator enum mapping. The simulator request also
 requires the template's specialisation to agree with its declared class.
 [WoWSims Forever enum definitions](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)
