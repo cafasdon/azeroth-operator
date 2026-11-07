@@ -34,6 +34,7 @@ const SECTIONS: &[&str] = &[
     "account_bank",
     "selected_recipe",
     "reputation",
+    "currency_balances",
     "talents",
     "stats",
     "professions",
@@ -114,8 +115,10 @@ impl Snapshot {
         );
         for (name, value) in &self.sections {
             ensure!(
-                !matches!(name.as_str(), "selected_recipe" | "reputation")
-                    || self.client.family == Family::Forever,
+                !matches!(
+                    name.as_str(),
+                    "selected_recipe" | "reputation" | "currency_balances"
+                ) || self.client.family == Family::Forever,
                 "Observation requires Forever"
             );
             schema::validate(name, value)?;

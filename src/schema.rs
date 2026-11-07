@@ -499,6 +499,37 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 &[("name", "text", true), ("quantity", "uint", true)],
             )?;
         }
+        "currency_balances" => {
+            object(
+                value,
+                &[
+                    ("coverage", "visible_currency_ids_only", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[
+                    ("name", "text", true),
+                    ("quantity", "uint", true),
+                    ("account_wide", "bool", true),
+                    ("inactive", "bool", true),
+                    ("max_quantity", "uint", true),
+                    ("max_weekly_quantity", "uint", true),
+                    ("earned_this_week", "uint", true),
+                    ("total_earned", "uint", true),
+                    ("cap_uses_total_earned", "bool", true),
+                ],
+            )?;
+            let balances = value["entries"].as_object().unwrap();
+            ensure!(balances.len() <= 512, "Too many currency observations");
+            ensure!(
+                balances.values().all(|entry| entry["name"]
+                    .as_str()
+                    .is_some_and(|s| !s.is_empty() && s.len() <= 256)),
+                "Invalid currency name"
+            );
+        }
         "achievements" => object(
             value,
             &[

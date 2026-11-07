@@ -461,6 +461,38 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.currency_balances = function()
+    local api=C_CurrencyInfo
+    assert(api and api.GetCurrencyListSize and api.GetCurrencyListInfo, "Currency API unavailable")
+    local function uint(value, maximum)
+        return type(value)=="number" and value%1==0 and value>=0 and value<=maximum
+    end
+    local count=api.GetCurrencyListSize()
+    assert(uint(count,512) and count>0, "Currency rows unavailable")
+    local rows={}
+    for index=1,count do
+        local row=api.GetCurrencyListInfo(index)
+        assert(row and type(row.isHeader)=="boolean", "Currency row unavailable")
+        if not row.isHeader then
+            assert(uint(row.currencyID,4294967295) and row.currencyID>0
+                and type(row.name)=="string" and #row.name>=1 and #row.name<=256
+                and type(row.isAccountWide)=="boolean" and type(row.useTotalEarnedForMaxQty)=="boolean"
+                and type(row.isTypeUnused)=="boolean", "Currency identity or scope unavailable")
+            for _,field in ipairs({"quantity","maxQuantity","maxWeeklyQuantity","quantityEarnedThisWeek","totalEarned"}) do
+                assert(uint(row[field],4294967295), "Currency quantity unavailable")
+            end
+            local id=tostring(row.currencyID)
+            assert(not rows[id], "Duplicate currency observation")
+            rows[id]={name=row.name,quantity=row.quantity,account_wide=row.isAccountWide,inactive=row.isTypeUnused,
+                max_quantity=row.maxQuantity,max_weekly_quantity=row.maxWeeklyQuantity,
+                earned_this_week=row.quantityEarnedThisWeek,total_earned=row.totalEarned,
+                cap_uses_total_earned=row.useTotalEarnedForMaxQty}
+        end
+    end
+    assert(api.GetCurrencyListSize()==count, "Currency rows changed")
+    return {coverage="visible_currency_ids_only",entries=rows}
+end
+
 AO.collectors.achievements = function()
     assert(GetTotalAchievementPoints, "Achievement API unavailable")
     return {coverage="points_only", total_points=GetTotalAchievementPoints()}

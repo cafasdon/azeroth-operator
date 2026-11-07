@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever currency balances by stable ID with account scope and cap observations for offline MCP comparison.
+
 - Capture visible Forever faction standings and scope in saved snapshots for read-only MCP inspection and comparison.
 
 - Capture the selected Forever recipe and compare fixed required materials against observed inventory through a read-only MCP review.

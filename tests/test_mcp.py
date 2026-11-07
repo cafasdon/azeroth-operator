@@ -149,6 +149,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["currency_balances"] = {"coverage":"visible_currency_ids_only","entries":{
+                            "100":{"name":"Fixture currency","quantity":0,"account_wide":True,"inactive":False,"max_quantity":100,
+                                   "max_weekly_quantity":40,"earned_this_week":10,"total_earned":60,
+                                   "cap_uses_total_earned":True}}}
                         forever["sections"]["reputation"] = {"coverage":"visible_faction_rows_only","entries":{
                             "10":{"name":"Fixture faction","kind":"standard","account_wide":False,"reaction":4,
                                   "standing":-50,"threshold":-100,"next_threshold":0}}}
@@ -169,6 +173,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
+                        self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
+                        currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
+                        self.assertEqual(json.loads(currency.content[0].text)["data"]["entries"]["100"]["quantity"], 0)
                         reputation = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"reputation"})
                         reputation_data = json.loads(reputation.content[0].text)["data"]
                         self.assertEqual(reputation_data["coverage"], "visible_faction_rows_only")
@@ -176,11 +183,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after = json.loads(json.dumps(forever))
                         reputation_after["character"]["realm"] = "First"
                         reputation_after["sections"]["reputation"]["entries"]["10"]["standing"] = -20
+                        reputation_after["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 3
                         after_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         rep_diff = await session.call_tool("compare_snapshots", {"before_id":forever_key,"after_id":after_key})
                         self.assertFalse(rep_diff.isError)
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
                                          ["/entries/10/standing"])
+                        self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["currency_balances"]["changed_paths"],
+                                         ["/entries/100/quantity"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)

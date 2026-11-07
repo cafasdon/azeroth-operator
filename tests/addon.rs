@@ -431,6 +431,19 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
             IsFactionParagonForCurrentPlayer=function() return false end,
         }
         C_GossipInfo={GetFriendshipReputation=function() return {friendshipFactionID=0} end}
+        local function currency(id)
+            return {currencyID=id,name="Currency "..id,isHeader=false,isTypeUnused=id==200,
+                quantity=0,maxQuantity=100,maxWeeklyQuantity=40,quantityEarnedThisWeek=10,
+                totalEarned=60,isAccountWide=id==100, useTotalEarnedForMaxQty=true}
+        end
+        C_CurrencyInfo={
+            GetCurrencyListSize=function() return 3 end,
+            GetCurrencyListInfo=function(index)
+                if index==1 then return {isHeader=true} end
+                if index==2 then return currency(currencyReordered and 200 or 100) end
+                if not missingCurrency then return currency((currencyReordered or duplicateCurrency) and 100 or 200) end
+            end,
+        }
         bankOpen=true;accountVisible=true;freeSlots=1
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
@@ -449,6 +462,21 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         )?)
     };
     let snapshot = read()?;
+    let currencies = &snapshot.sections["currency_balances"];
+    assert_eq!(currencies["entries"]["100"]["quantity"], 0);
+    assert_eq!(currencies["entries"]["100"]["account_wide"], true);
+    assert_eq!(currencies["entries"]["100"]["cap_uses_total_earned"], true);
+    assert_eq!(currencies["entries"]["100"]["total_earned"], 60);
+    assert_eq!(currencies["entries"]["200"]["inactive"], true);
+    lua.load("currencyReordered=true;AO.Capture()").exec()?;
+    assert_eq!(&read()?.sections["currency_balances"], currencies);
+    for setup in [
+        "currencyReordered=false;duplicateCurrency=true",
+        "missingCurrency=true",
+    ] {
+        lua.load(format!("{setup};AO.Capture()")).exec()?;
+        assert!(read()?.unavailable.contains_key("currency_balances"));
+    }
     let factions = &snapshot.sections["reputation"]["entries"];
     assert_eq!(factions["10"]["standing"], -50);
     assert_eq!(factions["10"]["kind"], "standard");
