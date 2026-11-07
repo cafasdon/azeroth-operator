@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose pinned Forever simulator item inputs for resolved captured gear.
+
 - Report shared catalogue limit categories in projected Forever equipment drafts.
 
 - Flag duplicate catalogue-marked unique items in projected Forever equipment drafts.

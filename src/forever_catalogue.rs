@@ -423,10 +423,20 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
         };
         add_enchant_regular_stats(stats, enchant)
     });
+    let simulator_item_spec = item.and_then(|item| {
+        if simulator_slots(item).is_empty() || regular_stats_with_enchant.is_none() {
+            return None;
+        }
+        let id = i32::try_from(item["id"].as_i64()?).ok()?;
+        let enchant = i32::try_from(modifiers["enchant_id"].as_i64()?).ok()?;
+        let suffix = i32::try_from(modifiers["random_suffix_id"].as_i64()?).ok()?;
+        Some(json!({"id":id,"enchant":enchant,"randomSuffix":suffix}))
+    });
     json!({
         "enchants":enchants,
         "fitting_enchants":fitting_enchants,
         "random_suffixes":suffixes,
+        "simulator_item_spec":simulator_item_spec,
         "default_scaling_regular_stats_before_enchant":regular_stats,
         "default_scaling_regular_stats_with_enchant":regular_stats_with_enchant,
         "default_scaling_suffix_allocation_delta":suffix_effects.as_ref().map(|(stats, _)| stats),
@@ -521,7 +531,7 @@ mod tests {
             {"effectId":8,"type":5,"stats":[8]},
             {"effectId":9,"type":6,"stats":[10]}
         ]});
-        let item = json!({"type":5,"scalingOptions":{"0":{"stats":{"0":3}}}});
+        let item = json!({"id":42,"type":5,"scalingOptions":{"0":{"stats":{"0":3}}}});
         for (enchant, expected) in [
             (json!(7), json!({"0":5.0,"2":4.0})),
             (json!(0), json!({"0":3})),
@@ -536,6 +546,14 @@ mod tests {
                 result["default_scaling_regular_stats_with_enchant"],
                 expected
             );
+            if expected.is_null() {
+                assert!(result["simulator_item_spec"].is_null());
+            } else {
+                assert_eq!(
+                    result["simulator_item_spec"],
+                    json!({"id":42,"enchant":enchant,"randomSuffix":0})
+                );
+            }
         }
     }
 
