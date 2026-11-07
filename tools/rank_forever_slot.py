@@ -15,6 +15,13 @@ from mcp.client.stdio import stdio_client
 from tools.run_forever_sim import compare, compare_bulk, read_object, request_from
 
 
+SIMULATOR_SLOTS = (
+    "head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist",
+    "legs", "feet", "finger1", "finger2", "trinket1", "trinket2",
+    "main_hand", "off_hand", "ranged",
+)
+
+
 async def slot_candidates(call, slot, multi):
     candidates = []
     skipped = []
@@ -69,8 +76,9 @@ async def collect(binary, snapshot_id, slots, errlog):
             candidates, exclusions, coverage = await slot_candidates(call, slot, multi)
             skipped.extend(exclusions)
             options.append([None, *candidates])
-        if prod(map(len, options)) > 65:
-            raise ValueError("Slot combinations exceed the 64-draft ranking limit")
+        if prod(map(len, options)) > 1024:
+            raise ValueError("Slot combinations exceed the 1024-combination scan limit")
+        proposed = []
         for combination in product(*options):
             selections = [choice for choice in combination if choice is not None]
             if not selections:
@@ -87,6 +95,11 @@ async def collect(binary, snapshot_id, slots, errlog):
             draft_args = {"selections": selections}
             if 16 in targets and 17 not in targets:
                 draft_args["allow_two_hand_off_hand_clear"] = True
+            proposed.append(draft_args)
+            if len(proposed) > 64:
+                raise ValueError("Slot combinations exceed the 64-draft ranking limit")
+        for draft_args in proposed:
+            selections = draft_args["selections"]
             draft = await call("review_equipment_selection", **draft_args)
             if draft["checks"]["simulator_equipment_spec"]:
                 drafts.append((selections, draft))
@@ -137,7 +150,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mcp", type=Path, required=True, help="Absolute path to the trusted local MCP executable")
     parser.add_argument("--snapshot-id", required=True)
-    parser.add_argument("--slot", action="append", required=True, help="Simulator slot. Repeat for combinations.")
+    slots = parser.add_mutually_exclusive_group(required=True)
+    slots.add_argument("--slot", action="append", choices=SIMULATOR_SLOTS, help="Simulator slot. Repeat for combinations.")
+    slots.add_argument("--all-slots", action="store_const", const=SIMULATOR_SLOTS, dest="slot",
+                       help="Consider all 17 simulator slots within the search limits.")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -153,8 +169,8 @@ def main():
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
-        if len(args.slot) > 4 or len(set(args.slot)) != len(args.slot):
-            raise ValueError("Provide up to four distinct slots")
+        if len(set(args.slot)) != len(args.slot):
+            raise ValueError("Provide distinct slots")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         if len(args.encounter_lookup) > 4:

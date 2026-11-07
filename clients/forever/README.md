@@ -110,18 +110,18 @@ report the standard error of each DPS difference against the baseline. This
 pairs iteration samples using the same seed, template and encounter, and keeps
 the raw samples out of the output. It does not search the full owned inventory.
 
-`python -m tools.rank_forever_slot` ranks gear across one to four slots. Use the same
+`python -m tools.rank_forever_slot` ranks gear across any of the 17 simulator slots. Use the same
 engine, template and encounter arguments, plus `--mcp` for the absolute path
-to the trusted local MCP executable, `--snapshot-id` and `--slot`. Configure
+to the trusted local MCP executable and `--snapshot-id`. Configure
 the usual owner snapshot directory and pinned catalogue in the environment.
-Repeat `--slot` to compare combinations, including keeping the current item in
-each slot. The command pages up to 64 matching captured locations per slot and
-rejects searches with more than 64 proposed changes to the baseline. It skips
-combinations that reuse a physical source location, checks each remaining draft,
-and sorts resolved results by mean DPS against the captured baseline.
+Repeat `--slot` or use `--all-slots` to compare combinations, including keeping the
+current item in each slot. The command pages up to 64 matching captured locations
+per slot and scans at most 1,024 combinations, including the baseline. It skips
+combinations that reuse a physical source or leave a moved item's slot unfilled.
+It checks up to 64 remaining changes, rejects larger searches and sorts resolved
+results by mean DPS against the captured baseline.
 `--paired` adds uncertainty against that baseline. Results include storage
-coverage and skipped candidates. Moving equipped items requires the same
-combination to fill their original slots. Multi-slot output uses `slots` and a
+coverage and skipped candidates. Multi-slot output uses `slots` and a
 `selections` array per result. Character eligibility and complete-inventory
 optimisation remain separate checks.
 

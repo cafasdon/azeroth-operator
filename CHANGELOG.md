@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search all 17 Forever simulator slots and exclude impossible combinations before applying the draft limit.
+
 - Rank Forever gear across fights using player-supplied weights and encounter-relative DPS gains.
 
 - Compare saved Forever gear drafts across multiple encounter profiles in one local run.
