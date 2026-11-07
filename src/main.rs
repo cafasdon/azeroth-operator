@@ -189,6 +189,9 @@ struct Compare {
     /// Compare saved Forever spellbook observations by base spell ID.
     #[serde(default)]
     spellbook: bool,
+    /// Compare loaded built-in action bar observations in two Forever captures.
+    #[serde(default)]
+    action_bar_slots: bool,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -847,6 +850,7 @@ impl Operator {
                     wallet: args.wallet,
                     experience: args.experience,
                     spellbook: args.spellbook,
+                    action_bar_slots: args.action_bar_slots,
                 },
             )
         })();

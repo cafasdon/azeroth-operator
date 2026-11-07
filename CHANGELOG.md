@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever action slots and distinguish slot changes from coverage changes.
+
 - Identify saved active-spec, non-passive spells without a matching observed built-in action.
 
 - Cross-reference saved Forever action bar spells against captured spellbook base and override IDs.

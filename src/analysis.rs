@@ -470,6 +470,7 @@ pub struct ComparisonSelectors {
     pub wallet: bool,
     pub experience: bool,
     pub spellbook: bool,
+    pub action_bar_slots: bool,
 }
 
 pub fn compare_observations(
@@ -681,6 +682,13 @@ pub fn compare_observations(
             "before":previous,"after":current,"rank_delta":rank_delta
         });
     }
+    if selectors.action_bar_slots {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Action bar slot comparisons require Forever snapshots"
+        );
+        comparison["action_bar_slot_changes"] = compare_action_bar_slots(before, after);
+    }
     if selectors.spellbook {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -736,6 +744,42 @@ pub fn compare_observations(
         });
     }
     Ok(comparison)
+}
+
+fn compare_action_bar_slots(before: &Snapshot, after: &Snapshot) -> Value {
+    fn slots(snapshot: &Snapshot) -> Option<BTreeMap<u32, &Value>> {
+        snapshot.sections.get("action_bar_observation")?["slots"]
+            .as_object()?
+            .iter()
+            .map(|(slot, row)| Some((slot.parse().ok()?, row)))
+            .collect()
+    }
+    let previous = slots(before);
+    let current = slots(after);
+    let changes = previous.as_ref().zip(current.as_ref()).map(|(a, b)| {
+        let shared_changes = a
+            .iter()
+            .filter_map(|(slot, from)| {
+                let to = b.get(slot)?;
+                if ["empty", "kind", "id", "sub_type"]
+                    .iter()
+                    .all(|field| from[*field] == to[*field])
+                {
+                    return None;
+                }
+                let status = match (from["empty"].as_bool(), to["empty"].as_bool()) {
+                    (Some(true), Some(false)) => "filled",
+                    (Some(false), Some(true)) => "cleared",
+                    _ => "observation_changed",
+                };
+                Some(json!({"slot":slot,"status":status,"before":from,"after":to}))
+            })
+            .collect::<Vec<_>>();
+        json!({"changed_shared_slots":shared_changes,
+            "before_only_slots":a.keys().filter(|slot| !b.contains_key(slot)).collect::<Vec<_>>(),
+            "after_only_slots":b.keys().filter(|slot| !a.contains_key(slot)).collect::<Vec<_>>()})
+    });
+    json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
 pub fn action_bar_spellbook(actions: &Value, spellbook: Option<&Value>) -> Value {
