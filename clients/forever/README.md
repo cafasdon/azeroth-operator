@@ -120,6 +120,10 @@ The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinn
 
 For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to find catalogue items associated with that recipe. The `enchants` section supports the same filter for enchant references. A supplied `key` further narrows the matches. These associations come from the pinned simulator catalogue and can be incomplete or list several variants. Use the saved recipe observation for reagent requirements.
 
+Use `item_ids` in place of `key` to look up up to 100 distinct positive
+item IDs. Results keep catalogue order and existing pagination. Source
+filters and optional snapshot context apply to the matching records.
+
 Use `{"section":"items","source_kind":"pvp"}` to browse PvP-tagged items. The other source categories are `crafted`, `drop`, `quest`, `vendor` and `reputation`. Filters combine at item level, so an item can match through multiple recorded sources. The catalogue PvP tag supplies no rank, cost or season data.
 
 Use `drop_instance_kind: "dungeon"` or `"raid"` to filter recorded

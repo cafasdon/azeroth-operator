@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up up to 100 exact Forever catalogue item IDs in one paginated query.
+
 - Filter Forever reputation rewards by exact required rank and source faction tag.
 
 - Filter Forever vendor items by recorded Alliance or Horde sale tags.

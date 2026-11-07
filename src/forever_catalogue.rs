@@ -4,7 +4,13 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, fs::File, io::Read, path::Path, sync::OnceLock};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs::File,
+    io::Read,
+    path::Path,
+    sync::OnceLock,
+};
 
 const MAX_BYTES: u64 = 8 * 1024 * 1024;
 const PIN: &str = include_str!("../clients/forever/catalogue.lock.json");
@@ -97,6 +103,8 @@ pub struct Query {
     /// Exact numeric ID (enchant effect ID for enchants), encounter path, or name substring.
     /// Omit all filters to get the section count without records.
     pub key: Option<String>,
+    /// Up to 100 distinct exact item IDs, in place of key. Results follow catalogue order.
+    pub item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
     /// Restrict items to this pinned catalogue set ID.
@@ -216,6 +224,19 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
     }
+    let item_ids = if let Some(ids) = &query.item_ids {
+        ensure!(
+            matches!(query.section, Section::Items)
+                && key.is_none()
+                && (1..=100).contains(&ids.len()),
+            "Expected 1 to 100 item IDs in place of a catalogue key"
+        );
+        let distinct: BTreeSet<_> = ids.iter().map(|id| u64::from(id.get())).collect();
+        ensure!(distinct.len() == ids.len(), "Item IDs must be distinct");
+        Some(distinct)
+    } else {
+        None
+    };
     if let Some(recipe) = query.recipe_spell_id {
         ensure!(
             recipe != 0 && matches!(query.section, Section::Items | Section::Enchants),
@@ -239,7 +260,8 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
     let reputation_filter = query.reputation_faction_id.is_some()
         || query.reputation_required_tier.is_some()
         || query.reputation_source_faction.is_some();
-    let item_filter = query.set_id.is_some()
+    let item_filter = item_ids.is_some()
+        || query.set_id.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
         || vendor_filter
@@ -260,6 +282,11 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         let name = key.map(str::to_lowercase);
         let mut remaining_offset = query.offset.unwrap_or_default();
         for row in rows {
+            if let Some(ids) = &item_ids
+                && !row["id"].as_u64().is_some_and(|id| ids.contains(&id))
+            {
+                continue;
+            }
             let matches = if key.is_none() {
                 true
             } else if identity == "path" {
