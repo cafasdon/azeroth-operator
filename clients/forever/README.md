@@ -295,6 +295,12 @@ supplies the rotation and healing targets, so the result covers that
 scenario. Bulk and weighted modes still use DPS. Add `--paired` to report
 the standard error of the HPS difference against the equipped baseline.
 
+Use `--rank-by oom` for lowest average time out of mana. Both healer
+rankings list `healing_tradeoff_reviews`, the review IDs for which no other
+tested loadout has at least as much healing and at most as much time out of
+mana while improving either metric. Equal scores are kept. The list
+includes equipped gear and uses point estimates for the specified rotation.
+
 To heal a simulated ally, set `raid.targetDummies` to an integer from 1 to
 24 in the template. Each active party has five slots, so a one-party
 template has room for four dummies. Include additional empty party

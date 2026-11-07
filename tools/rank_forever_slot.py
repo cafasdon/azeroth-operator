@@ -259,8 +259,8 @@ def audit_shortlist(staged, fixed, requests, top):
     }
 
 
-def tank_tradeoff_reviews(rows):
-    scores = [(row["simulated_deaths"], row["mean_dtps"], -row["mean_tps"]) for row in rows]
+def tradeoff_reviews(rows, score_for):
+    scores = [score_for(row) for row in rows]
     return [
         row["review"]
         for row, score in zip(rows, scores, strict=True)
@@ -272,6 +272,7 @@ def tank_tradeoff_reviews(rows):
 def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     tank_ranking = args.rank_by in ("dtps", "tps", "death")
+    healing_ranking = args.rank_by in ("hps", "oom")
     start = monotonic()
     fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired)
              if args.audit_shortlist else None)
@@ -283,7 +284,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     if result is None:
         result = fixed if fixed is not None else compare(
             args.engine, args.engine_sha256, requests, paired=args.paired,
-            tank_metrics=tank_ranking, healing_metrics=args.rank_by == "hps")
+            tank_metrics=tank_ranking, healing_metrics=healing_ranking)
     if audit is not None:
         audit["fixed_wall_seconds"] = after_fixed - start
         audit["staged_wall_seconds"] = staged_wall
@@ -305,12 +306,16 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
             row["selection"] = selections[0] if selections else None
         else:
             row["selections"] = selections
-    metric = "simulated_deaths" if args.rank_by == "death" else f"mean_{args.rank_by}"
+    metric = {"death": "simulated_deaths", "oom": "mean_seconds_oom"}.get(args.rank_by, f"mean_{args.rank_by}")
     if args.rank_by != "dps":
         result["ranked_by"] = metric
     result["results"].sort(key=lambda row: row[metric], reverse=args.rank_by in ("dps", "tps", "hps"))
     if tank_ranking:
-        result["tank_tradeoff_reviews"] = tank_tradeoff_reviews(result["results"])
+        result["tank_tradeoff_reviews"] = tradeoff_reviews(
+            result["results"], lambda row: (row["simulated_deaths"], row["mean_dtps"], -row["mean_tps"]))
+    if healing_ranking:
+        result["healing_tradeoff_reviews"] = tradeoff_reviews(
+            result["results"], lambda row: (row["mean_seconds_oom"], -row["mean_hps"]))
     return result
 
 
@@ -362,8 +367,8 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
-    parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps"), default="dps",
-                        help="Rank by damage dealt, damage taken, threat, simulated deaths or healing")
+    parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",
+                        help="Rank by damage dealt, damage taken, threat, deaths, healing or time out of mana")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
     parser.add_argument("--bulk-engine-sha256")
     parser.add_argument("--top", type=int, default=5, help="Distinct gear sets to return in bulk mode")

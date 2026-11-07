@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank Forever healer gear by least time out of mana and flag throughput trade-offs.
+
 - Report paired uncertainty for Forever healer and tank throughput comparisons.
 
 - Support simulated healing targets in Forever gear comparisons while attributing metrics to the equipped character.
