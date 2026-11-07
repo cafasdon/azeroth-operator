@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reuse the parsed Forever catalogue across gear reviews while checking the configured file against its pinned checksum on every read.
+
 - Allow adaptive bulk Forever searches with up to 128 explicitly requested drafts.
 
 - Allow up to 128 Forever gear drafts in explicitly expanded fixed-iteration searches.

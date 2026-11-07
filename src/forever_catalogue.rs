@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, fs::File, io::Read, path::Path};
+use std::{collections::BTreeMap, fs::File, io::Read, path::Path, sync::OnceLock};
 
 const MAX_BYTES: u64 = 8 * 1024 * 1024;
 const PIN: &str = include_str!("../clients/forever/catalogue.lock.json");
@@ -138,7 +138,8 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
     }))
 }
 
-fn load(path: &Path) -> Result<(Value, Value)> {
+fn load(path: &Path) -> Result<(&'static Value, Value)> {
+    static PARSED: OnceLock<Value> = OnceLock::new();
     let provenance: Value = serde_json::from_str(PIN)?;
     ensure!(
         path.metadata()?.is_file(),
@@ -153,7 +154,15 @@ fn load(path: &Path) -> Result<(Value, Value)> {
         provenance["sha256"] == format!("{:x}", Sha256::digest(&data)),
         "Catalogue checksum mismatch"
     );
-    Ok((serde_json::from_slice(&data)?, provenance))
+    // Every caller verifies the configured file against the same embedded pin.
+    let db = match PARSED.get() {
+        Some(db) => db,
+        None => {
+            let parsed = serde_json::from_slice(&data)?;
+            PARSED.get_or_init(|| parsed)
+        }
+    };
+    Ok((db, provenance))
 }
 
 pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
@@ -283,7 +292,7 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
     if query.include_source_references {
-        result["source_references"] = source_references(&db, &records);
+        result["source_references"] = source_references(db, &records);
     }
     if let Some(settings) = &query.simulation {
         ensure!(
@@ -1118,7 +1127,7 @@ pub fn review_equipment_catalogue(
                 _ => {}
             }
             let modifiers = link_modifiers(observed)?;
-            let mut candidates = modifier_candidates(&db, &modifiers, Some(item));
+            let mut candidates = modifier_candidates(db, &modifiers, Some(item));
             candidates
                 .as_object_mut()?
                 .remove("simulator_item_spec")
@@ -1271,7 +1280,7 @@ pub fn review_owned(
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "catalogue_requirement_conflict":requirement_conflict,
                     "draft_selection":draft_selection,
-                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields, reference.copied())),
+                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),
                     "link_modifiers":modifiers,
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],
