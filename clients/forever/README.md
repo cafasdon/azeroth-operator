@@ -137,6 +137,9 @@ absent from the capture has unknown progress. The result reports captured
 standing and source requirements separately, leaving acquisition unverified.
 
 For a crafted source, the same lookup checks the saved selected recipe's ID.
+It also reports whether the source recipe ID was tracked as a craft or recraft
+when the matching lists were captured. Missing lists give null status. Tracking
+is an observation about the recipe ID, independent of output matching or learning.
 When the recipe matches and any observed output agrees, it reports learned
 status and material capacity from that capture. An absent output ID leaves
 output matching unknown. An explicit mismatch suppresses learned status and

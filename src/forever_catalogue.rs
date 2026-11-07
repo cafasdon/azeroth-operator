@@ -356,6 +356,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         .get("reputation")
         .and_then(|section| section["entries"].as_object());
     let selected_recipe = snapshot.sections.get("selected_recipe");
+    let tracked_recipes = snapshot.sections.get("tracked_recipes");
     let mut recipe_review = None;
     let mut sources = Vec::new();
     for item in records
@@ -384,6 +385,12 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                 }));
             }
             if let Some(id) = source["crafted"]["spellId"].as_u64().filter(|id| *id > 0) {
+                let key = id.to_string();
+                let tracked = |group: &str| {
+                    tracked_recipes
+                        .and_then(|section| section[group].as_object())
+                        .map(|rows| rows.contains_key(&key))
+                };
                 let recipe = selected_recipe.filter(|row| row["recipe_id"].as_u64() == Some(id));
                 let output_matches = recipe
                     .and_then(|row| row["output_item_id"].as_u64())
@@ -400,6 +407,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                 sources.push(json!({
                     "item_id":item["id"],"source_index":index+1,"recipe_spell_id":id,
                     "recipe_observed":recipe.is_some(),"output_matches":output_matches,
+                    "tracked_as_craft":tracked("crafts"),"tracked_as_recraft":tracked("recrafts"),
                     "learned":matched_recipe.and_then(|row| row["learned"].as_bool()),
                     "material_capacity":review.and_then(|value| value.get("material_capacity")),
                     "unobserved_storage":review.and_then(|value| value.get("unobserved_storage"))
@@ -410,6 +418,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
     Ok(
         json!({"captured_at":snapshot.captured_at,"quests_available":quests.is_some(),
         "reputation_available":factions.is_some(),"selected_recipe_available":selected_recipe.is_some(),
+        "tracked_recipes_available":tracked_recipes.is_some(),
         "sources":sources}),
     )
 }
@@ -692,6 +701,33 @@ fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crafted_sources_distinguish_missing_and_observed_recipe_tracking() {
+        let mut snapshot: Snapshot = serde_json::from_value(json!({
+            "schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z",
+            "client":{"family":"forever","variant":"live","build":"70862","interface":16001},
+            "character":{"name":"Example","realm":"Test"},"sections":{}
+        }))
+        .unwrap();
+        let records = json!([{"id":2870,"sources":[{"crafted":{"spellId":2675}}]}]);
+        let absent = acquisition_progress(&snapshot, &records).unwrap();
+        assert_eq!(absent["tracked_recipes_available"], false);
+        assert!(absent["sources"][0]["tracked_as_craft"].is_null());
+        snapshot.sections.insert(
+            "tracked_recipes".into(),
+            json!({
+                "coverage":"player_tracked_recipes_only",
+                "crafts":{"2675":{"name":"Fixture only"}},"recrafts":{"2676":{}}
+            }),
+        );
+        let observed = acquisition_progress(&snapshot, &records).unwrap();
+        assert_eq!(observed["tracked_recipes_available"], true);
+        assert_eq!(observed["sources"][0]["tracked_as_craft"], true);
+        assert_eq!(observed["sources"][0]["tracked_as_recraft"], false);
+        assert!(observed["sources"][0]["learned"].is_null());
+        assert!(!observed.to_string().contains("Fixture only"));
+    }
 
     #[test]
     fn class_proficiency_checks_known_types_and_preserves_unknowns() {

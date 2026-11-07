@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show saved recipe tracking status on Forever catalogue crafting sources.
+
 - Compare tracked Forever crafts and recrafts by recipe ID across saved captures.
 
 - Capture the player's tracked Forever crafts and recrafts for offline inspection.
