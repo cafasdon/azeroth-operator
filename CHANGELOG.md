@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Scan up to 256 captured locations per Forever gear slot before applying the existing draft limit.
+
 - Prune Forever class and level conflicts before expanding gear combinations.
 
 - Exclude Forever simulator swaps with explicit catalogue class or level conflicts.

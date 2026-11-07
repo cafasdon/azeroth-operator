@@ -115,7 +115,7 @@ engine, template and encounter arguments, plus `--mcp` for the absolute path
 to the trusted local MCP executable and `--snapshot-id`. Configure
 the usual owner snapshot directory and pinned catalogue in the environment.
 Repeat `--slot` or use `--all-slots` to compare combinations, including keeping the
-current item in each slot. The command pages up to 64 matching captured locations
+current item in each slot. The command pages up to 256 matching captured locations
 per slot and scans at most 1,024 combinations, including the baseline. It skips
 combinations that reuse a physical source or leave a moved item's slot unfilled.
 It checks up to 64 remaining changes, rejects larger searches and sorts resolved

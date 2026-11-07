@@ -56,12 +56,19 @@ async def slot_candidates(call, slot, multi, collapse_identical):
     skipped = []
     offset = 0
     representatives = {}
+    count = None
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50)
-        count = page["filtered_item_locations"]
-        if count > 64:
-            raise ValueError("Slot exceeds the 64-location ranking limit")
-        for row in page["items"]:
+        if count is None:
+            count = page["filtered_item_locations"]
+            if not 0 <= count <= 256:
+                raise ValueError("Slot exceeds the 256-location scan limit")
+        rows = page["items"]
+        next_offset = offset + len(rows)
+        if (page["filtered_item_locations"] != count or len(rows) != min(50, count - offset)
+                or page["has_more"] != (next_offset < count)):
+            raise ValueError("Invalid candidate pagination")
+        for row in rows:
             selection = row["draft_selection"]
             if selection is None:
                 raise ValueError("Local MCP did not supply a draft selection")
@@ -94,13 +101,9 @@ async def slot_candidates(call, slot, multi, collapse_identical):
                         continue
                     representatives[key] = selection
             candidates.append(selection)
-        offset += len(page["items"])
+        offset = next_offset
         if not page["has_more"]:
-            if offset != count:
-                raise ValueError("Incomplete candidate listing")
             return candidates, skipped, page["coverage"]
-        if not page["items"] or offset >= count:
-            raise ValueError("Invalid candidate pagination")
 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
