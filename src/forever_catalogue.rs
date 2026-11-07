@@ -766,6 +766,49 @@ pub fn review_equipment_catalogue(
             json!({"target_slot":selection.target_slot,"simulator_slot":target,"status":status})
         })
         .collect();
+    let stats = snapshot.sections.get("stats").unwrap_or(&Value::Null);
+    let level = stats["level"].as_u64().filter(|level| *level > 0);
+    // Class enum values from the pinned simulator common.proto.
+    let class_id = match stats["class"].as_str() {
+        Some("WARRIOR") => Some(1),
+        Some("PALADIN") => Some(2),
+        Some("HUNTER") => Some(3),
+        Some("ROGUE") => Some(4),
+        Some("PRIEST") => Some(5),
+        Some("SHAMAN") => Some(7),
+        Some("MAGE") => Some(8),
+        Some("WARLOCK") => Some(9),
+        Some("DRUID") => Some(11),
+        _ => None,
+    };
+    let mut requirement_conflicts = Vec::new();
+    for selection in selections {
+        if selection.source
+            == (ItemLocation::Equipment {
+                slot: selection.target_slot,
+            })
+        {
+            continue;
+        }
+        let Some(item) = find(u64::from(selection.expected_item_id)) else {
+            continue;
+        };
+        let level_conflict = level
+            .zip(item["reqLvl"].as_u64())
+            .is_some_and(|(level, required)| level < required);
+        let class_conflict =
+            class_id
+                .zip(item["classAllowlist"].as_array())
+                .is_some_and(|(class, allowed)| {
+                    !allowed.is_empty() && !allowed.iter().any(|id| id.as_u64() == Some(class))
+                });
+        if level_conflict || class_conflict {
+            requirement_conflicts.push(json!({
+                "slot":selection.target_slot,"item_id":selection.expected_item_id,
+                "below_required_level":level_conflict,"class_excluded":class_conflict
+            }));
+        }
+    }
     let mut unique_slots = BTreeMap::<u64, Vec<u32>>::new();
     let mut limit_categories = BTreeMap::<u64, Vec<Value>>::new();
     for slot in 1..=19 {
@@ -840,6 +883,7 @@ pub fn review_equipment_catalogue(
         }
     }
     let equipment_spec = (blockers.is_empty()
+        && requirement_conflicts.is_empty()
         && pairing != "two_hand_conflict"
         && duplicates.is_empty()
         && shared_categories.is_empty())
@@ -847,6 +891,7 @@ pub fn review_equipment_catalogue(
     Ok(json!({
         "catalogue_two_hand_pairing":pairing,
         "catalogue_slot_fit":fit,
+        "catalogue_requirement_conflicts":requirement_conflicts,
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
         "simulator_equipment_spec":equipment_spec,

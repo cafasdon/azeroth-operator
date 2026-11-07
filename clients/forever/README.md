@@ -132,6 +132,12 @@ The check uses the pinned simulator enum mapping. The simulator request also
 requires the template's specialisation to agree with its declared class.
 [WoWSims Forever enum definitions](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)
 
+The MCP also excludes a proposed swap from simulation when the pinned item
+record explicitly requires a higher level or excludes the captured class.
+Draft reviews and skipped ranker rows report the conflicting slots. These
+checks use available snapshot stats and catalogue records. Full in-game
+eligibility remains unverified.
+
 Use `--collapse-identical-items` to collapse resolved simulator-equivalent
 storage copies before applying the combination and draft limits. This applies
 to items that fit exactly one simulator slot. Each skipped copy records its

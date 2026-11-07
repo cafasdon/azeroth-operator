@@ -147,6 +147,12 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
             draft = await call("review_equipment_selection", **draft_args)
             if draft["checks"]["simulator_equipment_spec"]:
                 drafts.append((selections, draft))
+            elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):
+                skipped.append({
+                    **({"selections": selections} if multi else {"selection": selections[0]}),
+                    "reason": "catalogue_requirement_conflict",
+                    "conflicts": conflicts,
+                })
             elif multi:
                 skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
             else:

@@ -616,6 +616,7 @@ impl Operator {
                     Ok(serde_json::json!({
                         "catalogue_two_hand_pairing":"unknown",
                         "catalogue_slot_fit":null,
+                        "catalogue_requirement_conflicts":null,
                         "catalogue_unique_item_duplicates":null,
                         "catalogue_shared_limit_categories":null,
                         "simulator_equipment_spec":null,
