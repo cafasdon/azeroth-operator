@@ -396,6 +396,27 @@ point estimates. These are two fixture runs with different final iteration
 counts. They measure shortlist agreement on those inputs, including an
 actual cull. Near-tie recall on other gear pools remains unmeasured.
 
+A separate cutoff check used 48 chest alternatives from the public Hunter
+fixture, one target, three seconds of duration variation and 1,000 fixed
+iterations per distinct gear set. It ran each profile with both `--top 5`
+and `--top 10` and checked whether either shortlist contained all five of
+the fixed run's highest-ranked distinct alternatives.
+
+| Duration | Seed | Staged top five | Staged top ten | Fixed top five missed by either shortlist |
+| --- | ---: | ---: | ---: | ---: |
+| 45 s | 20261107 | 6.88 s | 29.87 s | 0 |
+| 45 s | 20261108 | 6.86 s | 28.73 s | 0 |
+| 90 s | 20261109 | 5.87 s | 25.52 s | 0 |
+
+The pinned engine already uses uncertainty when deciding which candidates to
+keep. With five requested results it screens against the leader, including
+equipped gear. With ten it screens against the tenth candidate, giving more
+sets a chance to advance. On this fixture that cost over four times as much
+without recovering an additional fixed-run top-five set. Keep the default
+for this workload. These results measure shortlist membership against a
+finite-iteration reference. A larger gear pool or another encounter can
+change the trade-off. [Pinned cutoff rules](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/core/bulk/statistics.go)
+
 The standalone `python -m tools.run_forever_sim` command combines saved
 equipment and encounter MCP responses with a trusted local WoWSims executable
 and a caller-supplied `RaidSimRequest` JSON template. Supply `--engine` as an
