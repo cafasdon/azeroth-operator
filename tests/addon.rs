@@ -482,6 +482,13 @@ pub fn verify_forever_capture_fixture(
             end,
         }
         GetNumQuestLogChoices=function(id,all) assert(id==42 and all==true); return 2 end
+        GetNumQuestLogRewards=function() return 1 end
+        GetQuestLogRewardInfo=function(index) assert(index==1); return "Private",0,3,1,true,117 end
+        GetQuestLogChoiceInfo=function(index)
+            assert(index==1)
+            if invalidItemChoice then return end
+            return "Private",0,1,1,true,118
+        end
         GetQuestLogChoiceInfoLootType=function(index) return invalidQuestReward and 2 or index-1 end
         C_QuestInfoSystem={GetQuestRewardCurrencies=function(id)
             if id==43 then return {} end
@@ -626,6 +633,26 @@ pub fn verify_forever_capture_fixture(
         serde_json::json!({"2":{"currency_id":18,"quantity":50}})
     );
     assert!(quests["43"].get("currency_choices").is_none());
+    assert_eq!(
+        quests["42"]["item_rewards"],
+        serde_json::json!({"1":{"item_id":117,"quantity":3}})
+    );
+    assert_eq!(
+        quests["42"]["item_choices"],
+        serde_json::json!({"1":{"item_id":118,"quantity":1}})
+    );
+    assert!(quests["43"].get("item_rewards").is_none());
+    lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
+    let partial = read()?;
+    assert!(
+        partial.sections["quests"]["42"]
+            .get("item_choices")
+            .is_none()
+    );
+    assert_eq!(
+        partial.sections["quests"]["42"]["currency_choices"],
+        quests["42"]["currency_choices"]
+    );
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quest_money"],
         serde_json::json!({"quests_with_cost":{"42":{"required_copper":250,"shortfall_copper":null}},"cost_unknown_count":0})

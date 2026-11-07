@@ -611,23 +611,48 @@ local function questCurrencyRewards(id)
     return result
 end
 
-local function questCurrencyChoices(api,id)
+local function questItemReward(query,index)
+    local _,_,quantity,_,_,itemID=query(index)
+    assert(questRewardInteger(itemID,1,4294967295)
+        and questRewardInteger(quantity,1,4294967295), "Invalid quest item reward")
+    return {item_id=itemID,quantity=quantity}
+end
+
+local function questFixedItems()
+    local count=GetNumQuestLogRewards()
+    assert(questRewardInteger(count,0,32), "Invalid quest item reward count")
+    local result={}
+    for index=1,count do result[tostring(index)]=questItemReward(GetQuestLogRewardInfo,index) end
+    return result
+end
+
+local function questSelectedRewards(api,id)
     local selected=api.GetSelectedQuest()
     if not questRewardInteger(selected,1,4294967295) or selected~=id then return nil end
     local show=api.ShouldShowQuestRewards(id)
     if not questRewardAccessible(show) or show~=true then return nil end
-    local count=GetNumQuestLogChoices(id,true)
-    assert(questRewardInteger(count,0,32), "Invalid quest choice count")
-    local result={}
-    for index=1,count do
-        local kind=GetQuestLogChoiceInfoLootType(index)
-        assert(questRewardInteger(kind,0,1), "Unknown quest choice type")
-        if kind==1 then
-            result[tostring(index)]=questCurrencyRow(api.GetQuestRewardCurrencyInfo(id,index,true))
+    local fixedOk,fixed=pcall(questFixedItems)
+    local choicesOk,currencies,items=pcall(function()
+        local count=GetNumQuestLogChoices(id,true)
+        assert(questRewardInteger(count,0,32), "Invalid quest choice count")
+        local currencies,items={},{}
+        for index=1,count do
+            local kind=GetQuestLogChoiceInfoLootType(index)
+            assert(questRewardInteger(kind,0,1), "Unknown quest choice type")
+            if kind==1 and currencies then
+                local ok,row=pcall(function() return questCurrencyRow(api.GetQuestRewardCurrencyInfo(id,index,true)) end)
+                if ok then currencies[tostring(index)]=row else currencies=nil end
+            elseif kind==0 and items then
+                local ok,row=pcall(questItemReward,GetQuestLogChoiceInfo,index)
+                if ok then items[tostring(index)]=row else items=nil end
+            end
         end
-    end
+        return currencies,items
+    end)
     selected=api.GetSelectedQuest()
-    if questRewardInteger(selected,1,4294967295) and selected==id then return result end
+    if questRewardInteger(selected,1,4294967295) and selected==id then
+        return choicesOk and currencies or nil,choicesOk and items or nil,fixedOk and fixed or nil
+    end
 end
 
 AO.collectors.quests = function()
@@ -655,8 +680,12 @@ AO.collectors.quests = function()
                 entry.required_copper=questRequiredCopper(api,id)
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
-                local choicesOk,choices=pcall(questCurrencyChoices,api,id)
-                if choicesOk then entry.currency_choices=choices end
+                local selectedOk,currencyChoices,itemChoices,itemRewards=pcall(questSelectedRewards,api,id)
+                if selectedOk then
+                    entry.currency_choices=currencyChoices
+                    entry.item_choices=itemChoices
+                    entry.item_rewards=itemRewards
+                end
                 local ok,objectives=pcall(questObjectives,api,id)
                 if ok then entry.objectives=objectives end
             end

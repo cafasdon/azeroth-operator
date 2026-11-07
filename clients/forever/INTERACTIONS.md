@@ -91,6 +91,12 @@ were observed for the selected quest. Other quests and unreadable choices
 omit the field. The addon does not change selection or choose a reward.
 Update the importer and reader before syncing this field.
 
+The selected quest can also include `item_rewards` and `item_choices`, with
+base item IDs and quantities. Item choices keep their positions in the same
+list as currency choices. Empty maps represent observed empty lists. Missing
+maps mean the quest was unselected or that list could not be read. Update
+the importer and reader before syncing these fields.
+
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same
 capture. Rows for the same currency are summed. Each currency choice is

@@ -645,28 +645,28 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("required_copper", "wallet_copper", false),
                     ("currency_rewards", "map", false),
                     ("currency_choices", "map", false),
+                    ("item_choices", "map", false),
+                    ("item_rewards", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
-                for field in ["currency_rewards", "currency_choices"] {
+                for (field, id, is_choice) in [
+                    ("currency_rewards", "currency_id", false),
+                    ("currency_choices", "currency_id", true),
+                    ("item_rewards", "item_id", false),
+                    ("item_choices", "item_id", true),
+                ] {
                     let Some(rewards) = quest.get(field).filter(|value| !value.is_null()) else {
                         continue;
                     };
                     entries(
                         rewards,
-                        &[
-                            ("currency_id", "positive", true),
-                            ("quantity", "positive", true),
-                        ],
+                        &[(id, "positive", true), ("quantity", "positive", true)],
                     )?;
                     let rewards = rewards.as_object().unwrap();
-                    ensure!(rewards.len() <= 32, "Too many quest currency rewards");
-                    let max_index = if field == "currency_rewards" {
-                        rewards.len() as u32
-                    } else {
-                        32
-                    };
+                    ensure!(rewards.len() <= 32, "Too many quest rewards");
+                    let max_index = if is_choice { 32 } else { rewards.len() as u32 };
                     for key in rewards.keys() {
                         index(key, 1, max_index)?;
                     }
