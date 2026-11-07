@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Select observed character-bank and account-bank items in Forever equipment drafts.
+
 - Report paired DPS standard errors for local Forever gear comparisons on request.
 
 - Compare multiple Forever equipment drafts locally and reuse identical simulation inputs within the run.

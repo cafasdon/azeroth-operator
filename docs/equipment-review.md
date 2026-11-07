@@ -28,7 +28,10 @@ Every selected location must exist in that snapshot and contain the expected
 item ID. A source location cannot be selected twice. Target slots cannot repeat.
 Different locations containing the same item ID remain distinct observations;
 this does not prove that both can legally be equipped. Equipment and carried-bag
-sources are supported. Bank, mail and unobserved items are not inferred.
+sources are supported. Forever also accepts observed bank sources, for example
+`{"kind":"character_bank","container":6,"slot":1}` or
+`{"kind":"account_bank","container":13,"slot":1}`. These reference saved item
+locations only. Live access to banked gear and mail remains outside the draft.
 
 The response has format `azeroth_operator.equipment_review.v1`, the exact
 `snapshot_id`, client/character/capture identity, changes sorted by target slot,

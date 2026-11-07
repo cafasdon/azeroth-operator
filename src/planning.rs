@@ -41,6 +41,35 @@ pub fn captured_loadout(snapshot: &Snapshot) -> Result<Value> {
 pub enum ItemLocation {
     Equipment { slot: u32 },
     Bag { bag: u32, slot: u32 },
+    CharacterBank { container: u32, slot: u32 },
+    AccountBank { container: u32, slot: u32 },
+}
+
+impl ItemLocation {
+    pub(crate) fn observed_in<'a>(&self, snapshot: &'a Snapshot) -> Option<&'a Value> {
+        let (section, container, slot) = match *self {
+            Self::Equipment { slot } => {
+                return snapshot.sections.get("equipment")?.get(slot.to_string());
+            }
+            Self::Bag { bag, slot } => ("bags", bag, slot),
+            Self::CharacterBank { container, slot }
+                if snapshot.client.family == crate::Family::Forever =>
+            {
+                ("character_bank", container, slot)
+            }
+            Self::AccountBank { container, slot }
+                if snapshot.client.family == crate::Family::Forever =>
+            {
+                ("account_bank", container, slot)
+            }
+            _ => return None,
+        };
+        snapshot
+            .sections
+            .get(section)?
+            .get(container.to_string())?
+            .get(slot.to_string())
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -81,25 +110,13 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             sources.insert(selection.source.clone()),
             "Source location reused"
         );
-        let item = match &selection.source {
-            ItemLocation::Equipment { slot } => {
-                ensure!((1..=19).contains(slot), "Invalid equipment source slot");
-                moved_equipment.insert(*slot);
-                equipment.get(&slot.to_string())
-            }
-            ItemLocation::Bag { bag, slot } => {
-                ensure!(
-                    *bag <= 64 && (1..=1024).contains(slot),
-                    "Invalid bag source"
-                );
-                snapshot
-                    .sections
-                    .get("bags")
-                    .and_then(|bags| bags.get(bag.to_string()))
-                    .and_then(|bag| bag.get(slot.to_string()))
-            }
+        if let ItemLocation::Equipment { slot } = selection.source {
+            moved_equipment.insert(slot);
         }
-        .ok_or_else(|| anyhow::anyhow!("Source item not observed"))?;
+        let item = selection
+            .source
+            .observed_in(snapshot)
+            .ok_or_else(|| anyhow::anyhow!("Source item not observed"))?;
         ensure!(
             item["item_id"].as_u64() == Some(selection.expected_item_id as u64),
             "Source item mismatch"

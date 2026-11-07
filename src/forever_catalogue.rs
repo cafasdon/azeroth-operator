@@ -710,14 +710,7 @@ pub fn review_equipment_catalogue(
             .iter()
             .find(|selection| selection.target_slot == slot)
         {
-            return match selection.source {
-                ItemLocation::Equipment { slot } => equipment.get(&slot.to_string()),
-                ItemLocation::Bag { bag, slot } => snapshot
-                    .sections
-                    .get("bags")?
-                    .get(bag.to_string())?
-                    .get(slot.to_string()),
-            };
+            return selection.source.observed_in(snapshot);
         }
         if selections
             .iter()

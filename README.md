@@ -65,6 +65,8 @@ server release; see the dated verification log for deployed qualification.
 
 With a verified local Forever catalogue, an empty selection list reviews the
 captured equipment as a simulator baseline.
+Forever drafts can also reference observed character-bank and account-bank
+locations. See the [equipment review guide](docs/equipment-review.md).
 
 Synthetic performance baseline: `cargo run --release --locked --example benchmark` measures warm-cache listing and inspection over 200 generated snapshots. It uses no account data.
 
