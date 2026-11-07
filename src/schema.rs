@@ -453,6 +453,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("relative_difficulty", "text", false),
                     ("can_skill_up", "bool", false),
                     ("skill_ups_reported", "uint", false),
+                    ("profession", "map", false),
                     ("cooldown", "map", false),
                     ("crafting_conditions", "map", false),
                     ("output_item_id", "positive", false),
@@ -463,6 +464,23 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
             let name = value["name"].as_str().unwrap();
             ensure!(!name.is_empty() && name.len() <= 256, "Invalid recipe name");
+            if let Some(profession) = value.get("profession").filter(|v| !v.is_null()) {
+                object(
+                    profession,
+                    &[
+                        ("profession_id", "positive", true),
+                        ("name", "text", true),
+                        ("rank", "uint", true),
+                        ("max_rank", "uint", true),
+                    ],
+                )?;
+                ensure!(
+                    profession["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid recipe profession name"
+                );
+            }
             ensure!(
                 value["relative_difficulty"].is_null()
                     || matches!(

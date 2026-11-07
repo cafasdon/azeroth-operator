@@ -291,6 +291,11 @@ Tracking comes from that recipe's own capture, including when the review
 uses another snapshot for material counts. It remains separate from the
 recipe's captured learned status.
 
+A selected recipe can include its observed `profession` ID, name, rank and
+cap. The review reports `profession_points_to_observed_cap` when a positive
+cap and consistent rank were captured. This describes the profession reported
+for that recipe. Update the importer and reader before syncing this field.
+
 `material_and_charge_capacity` shows the smaller of the observed material
 limit and saved recipe charges, with the shortfall against the requested
 craft count. It reports bags and all observed storage separately. Either

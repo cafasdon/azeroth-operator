@@ -172,6 +172,8 @@ pub fn review_recipe_with_inventory(
     };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "recipe_tracking":recipe_tracking(snapshot, recipe_id),
+        "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)
+            .zip(recipe["profession"]["rank"].as_u64()).and_then(|(cap, rank)| cap.checked_sub(rank)),
         "base_output_if_completed":base_output_if_completed,
         "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),

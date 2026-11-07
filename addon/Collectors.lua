@@ -485,6 +485,14 @@ AO.collectors.selected_recipe = function()
     if accessible(skillUps) and (skillUps==0 or positive(skillUps)) then
         result.skill_ups_reported=skillUps
     end
+    local professionOk,profession=pcall(C_TradeSkillUI.GetProfessionInfoByRecipeID,info.recipeID)
+    if professionOk and accessible(profession) and type(profession)=="table" then
+        local id,name,rank,cap=profession.professionID,profession.professionName,profession.skillLevel,profession.maxSkillLevel
+        if accessible(id) and positive(id) and accessible(name) and type(name)=="string" and #name>0 and #name<=256
+            and accessible(rank) and (rank==0 or positive(rank)) and accessible(cap) and (cap==0 or positive(cap)) then
+            result.profession={profession_id=id,name=name,rank=rank,max_rank=cap}
+        end
+    end
     if info.learned then
         local ok,cooldown=pcall(function()
             local seconds,daily,charges,maximum=C_TradeSkillUI.GetRecipeCooldown(info.recipeID)

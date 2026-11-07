@@ -435,6 +435,10 @@ pub fn verify_forever_capture_fixture(
                 if id==102 then error("Unavailable metadata") end
             end,
             GetRecipeCooldown=function(id) assert(id==100); return 12.1,false,1,3 end,
+            GetProfessionInfoByRecipeID=function(id)
+                assert(id==100)
+                return {professionID=164,professionName="Blacksmithing",skillLevel=12,maxSkillLevel=75}
+            end,
             GetRecipeRequirements=function(id)
                 assert(id==100)
                 if malformedRequirements then return {[2]={name="Fixture area",met=false,type=2}} end
@@ -977,6 +981,8 @@ pub fn verify_forever_capture_fixture(
         })
     );
     assert_eq!(recipe["shortfall_vs_observed_recipe_charges"], 1);
+    assert_eq!(recipe["profession_points_to_observed_cap"], 63);
+    assert_eq!(recipe["recipe"]["profession"]["profession_id"], 164);
     assert_eq!(
         recipe["unmet_crafting_conditions"],
         serde_json::json!({
