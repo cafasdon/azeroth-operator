@@ -54,6 +54,12 @@ Local Forever reviews with a configured catalogue add a separate
 two-handed main-hand item and an occupied off-hand. The general weapon-pairing
 check remains unknown.
 
+The same catalogue adds `catalogue_slot_fit` for each requested target. A
+match means the pinned simulator lists that slot for the base item. Unknown
+items and slots outside the simulator, such as shirts and tabards, report
+`unknown`. The entire slot result is null if catalogue verification fails.
+Character eligibility and full slot legality remain unverified.
+
 An equipment optimiser and legal game import format remain separate, unfinished
 features. They require richer item metadata, operation-specific policy evidence
 and live client verification; this draft must not be presented as their substitute.

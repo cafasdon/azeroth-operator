@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Flag simulator slot mismatches in local Forever equipment drafts.
+
 - Flag projected two-handed weapon and off-hand conflicts in local Forever equipment drafts.
 
 - Filter captured Forever gear candidates by simulator slot before paging.

@@ -620,12 +620,12 @@ mod tests {
     }
 }
 
-/// Checks only the two-handed conflict in an already validated equipment draft.
-pub fn review_weapon_pairing(
+/// Checks catalogue slot fit and two-handed pairing in a validated equipment draft.
+pub fn review_equipment_catalogue(
     path: &Path,
     snapshot: &Snapshot,
     selections: &[crate::planning::EquipmentSelection],
-) -> Result<&'static str> {
+) -> Result<(&'static str, Value)> {
     use crate::planning::ItemLocation;
 
     let projected_item = |slot| {
@@ -643,18 +643,63 @@ pub fn review_weapon_pairing(
         }
         snapshot.sections.get("equipment")?[slot.to_string()]["item_id"].as_u64()
     };
-    let (Some(main), Some(_)) = (projected_item(16), projected_item(17)) else {
-        return Ok("no_two_hand_conflict_observed");
-    };
     let (db, _) = load(path)?;
-    let main_item = db["items"]
+    let items = db["items"]
         .as_array()
-        .and_then(|items| items.iter().find(|item| item["id"].as_u64() == Some(main)));
-    Ok(match main_item.and_then(|item| item["handType"].as_u64()) {
-        Some(4) => "two_hand_conflict",
-        Some(1 | 2 | 3) => "no_two_hand_conflict_observed",
-        _ => "unknown",
-    })
+        .ok_or_else(|| anyhow::anyhow!("Missing catalogue items"))?;
+    let find = |id| items.iter().find(|item| item["id"].as_u64() == Some(id));
+    let pairing = match (projected_item(16), projected_item(17)) {
+        (Some(main), Some(_)) => match find(main).and_then(|item| item["handType"].as_u64()) {
+            Some(4) => "two_hand_conflict",
+            Some(1 | 2 | 3) => "no_two_hand_conflict_observed",
+            _ => "unknown",
+        },
+        _ => "no_two_hand_conflict_observed",
+    };
+    let fit: Vec<_> = selections
+        .iter()
+        .map(|selection| {
+            let target = simulator_slot_for_equipment(selection.target_slot);
+            let candidates = find(u64::from(selection.expected_item_id)).map(simulator_slots);
+            let status = match (target, candidates) {
+                (Some(target), Some(slots)) if !slots.is_empty() => {
+                    if slots.contains(&target) {
+                        "matches"
+                    } else {
+                        "mismatch"
+                    }
+                }
+                _ => "unknown",
+            };
+            json!({"target_slot":selection.target_slot,"simulator_slot":target,"status":status})
+        })
+        .collect();
+    Ok((pairing, json!(fit)))
+}
+
+fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {
+    use SimulatorSlot::*;
+    // The game inventory has a shirt and tabard; SIML has neither.
+    match slot {
+        1 => Some(Head),
+        2 => Some(Neck),
+        3 => Some(Shoulder),
+        5 => Some(Chest),
+        6 => Some(Waist),
+        7 => Some(Legs),
+        8 => Some(Feet),
+        9 => Some(Wrist),
+        10 => Some(Hands),
+        11 => Some(Finger1),
+        12 => Some(Finger2),
+        13 => Some(Trinket1),
+        14 => Some(Trinket2),
+        15 => Some(Back),
+        16 => Some(MainHand),
+        17 => Some(OffHand),
+        18 => Some(Ranged),
+        _ => None,
+    }
 }
 
 pub fn review_owned(
