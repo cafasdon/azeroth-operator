@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare Forever catalogue item levels with the saved item in the requested equipment slot.
+
 - Explain saved character requirement conflicts on Forever catalogue gear results.
 
 - Exclude gear with observed character requirement conflicts from Forever catalogue searches.

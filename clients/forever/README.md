@@ -125,7 +125,12 @@ The minimum uses the item level from the catalogue's default scaling record.
 Both filters combine with source and ownership filters before pagination. Slot
 matching uses the pinned simulator's item placement rules. This gives
 candidate gear for the slot, with character eligibility and complete-set
-legality evaluated separately.
+legality evaluated separately. With
+`acquisition_snapshot_id` and `simulator_slot`, `equipped_slot_comparison`
+shows each returned item’s default catalogue level and the difference from
+the saved item in that slot. If the equipped item or its catalogue level
+is unavailable, the difference is null. The comparison uses base IDs and
+does not account for modifiers or measure damage.
 
 With a Forever `acquisition_snapshot_id`, set
 `exclude_observed_requirement_conflicts: true` to keep equippable catalogue

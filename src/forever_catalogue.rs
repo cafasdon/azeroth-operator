@@ -465,6 +465,12 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if let Some((slot, snapshot)) = query.simulator_slot.zip(snapshot)
+        && snapshot.client.family == Family::Forever
+    {
+        result["equipped_slot_comparison"] =
+            equipped_slot_comparison(rows, &records, snapshot, slot);
+    }
     if query.include_source_references {
         result["source_references"] = source_references(db, &records);
     }
@@ -481,6 +487,44 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         result["simulation_input"] = encounter_input(record, settings)?;
     }
     Ok(result)
+}
+
+fn equipped_slot_comparison(
+    catalogue: &[Value],
+    records: &[&Value],
+    snapshot: &Snapshot,
+    slot: SimulatorSlot,
+) -> Value {
+    let equipment = snapshot
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object);
+    let equipped_id = (1..=19)
+        .find(|index| simulator_slot_for_equipment(*index) == Some(slot))
+        .and_then(|index| equipment?.get(&index.to_string()))
+        .and_then(|item| item["item_id"].as_u64());
+    let default_level = |item: &Value| {
+        item["scalingOptions"]["0"]["ilvl"]
+            .as_i64()
+            .filter(|level| *level > 0)
+    };
+    let equipped_level = equipped_id
+        .and_then(|id| {
+            catalogue
+                .iter()
+                .find(|item| item["id"].as_u64() == Some(id))
+        })
+        .and_then(default_level);
+    let items: Vec<_> = records
+        .iter()
+        .map(|item| {
+            let level = default_level(item);
+            json!({"item_id":item["id"],"default_item_level":level,
+                "delta_from_equipped":level.zip(equipped_level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped))})
+        })
+        .collect();
+    json!({"simulator_slot":slot,"equipment_observed":equipment.is_some(),"equipped_item_id":equipped_id,
+        "equipped_default_item_level":equipped_level,"items":items})
 }
 
 fn observed_item_ids(snapshot: &Snapshot) -> (BTreeSet<u64>, bool) {
