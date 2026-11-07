@@ -290,6 +290,24 @@ fn link_modifiers(item: &Value) -> Option<Value> {
     Some(json!({"enchant_id":enchant,"random_suffix_id":suffix}))
 }
 
+fn modifier_candidates(db: &Value, modifiers: &Value) -> Value {
+    let matches = |section: &str, field: &str, id: Option<i64>| -> Vec<&Value> {
+        let Some(id) = id.filter(|id| *id != 0) else {
+            return Vec::new();
+        };
+        db[section]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|record| record[field].as_i64() == Some(id))
+            .collect()
+    };
+    json!({
+        "enchants":matches("enchants", "effectId", modifiers["enchant_id"].as_i64()),
+        "random_suffixes":matches("randomSuffixes", "id", modifiers["random_suffix_id"].as_i64())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -395,8 +413,10 @@ pub fn review_owned(
                 return;
             }
             if included >= offset && entries.len() < limit {
+                let modifiers = link_modifiers(item);
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
-                    "link_modifiers":link_modifiers(item),
+                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(&db, fields)),
+                    "link_modifiers":modifiers,
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],
                         "armorType":item["armorType"],"weaponType":item["weaponType"],

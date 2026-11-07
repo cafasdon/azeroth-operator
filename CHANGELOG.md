@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Match captured Forever modifier IDs to local catalogue candidates without assuming applicability.
+
 - Show raw enchant and random suffix IDs from captured Forever item links in owned-gear review.
 
 - Find all observed copies of a Forever item by ID, including items absent from the catalogue.
