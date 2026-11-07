@@ -286,6 +286,14 @@ When the client returns matching metadata, the summary also shows the
 localized `captured_map_name` and `captured_map_parent_id`. These fields
 can be unknown even when the map ID was observed.
 
+Export while the built-in flight map is open to inspect `flight_map` later.
+It records the viewed map ID, node names and IDs, recorded availability,
+map transition markers and available fares for reachable destinations.
+The capture omits coordinates and leaves opening the map and travelling
+to the player. It covers the open flight map, so availability and fares
+can differ at another flight master. Update the importer and reader before
+syncing this section. [Forever flight map source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_FlightMap/FM_FlightPathDataProvider.lua)
+
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually
 exclusive with an explicit waypoint map ID. A missing captured map leaves

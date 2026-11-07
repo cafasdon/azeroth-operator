@@ -529,6 +529,15 @@ pub fn verify_forever_capture_fixture(
         end
         GetActionInfo=function(slot) if slot==1 then return "spell",101 end end
         Enum.SpellBookSpellBank={Player=0}
+        Enum.FlightPathState={Current=0,Reachable=1,Unreachable=2}
+        FlightMapFrame={IsVisible=function() return not closedFlightMap end,GetMapID=function() return 1414 end}
+        C_TaxiMap={GetAllTaxiNodes=function(map)
+            assert(map==1414 and not closedFlightMap)
+            return {{slotIndex=1,nodeID=12,name="Fixture Origin",state=0,isMapLayerTransition=false},
+                {slotIndex=3,nodeID=14,name="Fixture Stop",state=1,isMapLayerTransition=false,position={x=1,y=2}},
+                {slotIndex=4,nodeID=15,name="Fixture Layer",state=1,isMapLayerTransition=true}}
+        end}
+        TaxiNodeCost=function(slot) assert(slot==3); return 250 end
         Enum.SpellBookItemType={Spell=1,FutureSpell=2}
         C_Spell={GetSpellName=function(spell) if spell==101 then return "Fixture spell" end end}
         C_SpellBook={IsSpellInSpellBook=function(spell,bank,overrides)
@@ -674,6 +683,17 @@ pub fn verify_forever_capture_fixture(
     lua.load("SlashCmdList.AZEROTHOPERATOR()").exec()?;
     assert!(!read()?.unavailable.contains_key("wallet"));
     let quests = &snapshot.sections["quests"];
+    assert_eq!(
+        snapshot.sections["flight_map"],
+        serde_json::json!({"map_id":1414,"entries":{
+            "1":{"node_id":12,"name":"Fixture Origin","state":"current","map_transition":false},
+            "3":{"node_id":14,"name":"Fixture Stop","state":"reachable","map_transition":false,"fare_copper":250},
+            "4":{"node_id":15,"name":"Fixture Layer","state":"reachable","map_transition":true}
+        }})
+    );
+    lua.load("closedFlightMap=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("flight_map"));
+    lua.load("closedFlightMap=false").exec()?;
     assert_eq!(
         snapshot.sections["action_bar_observation"],
         serde_json::json!({

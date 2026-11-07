@@ -835,6 +835,39 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.flight_map = function()
+    local frame=FlightMapFrame
+    assert(frame and frame:IsVisible(), "Flight map is not open")
+    local map=frame:GetMapID()
+    assert(questRewardInteger(map,1,4294967295), "Flight map ID unavailable")
+    local rows=C_TaxiMap.GetAllTaxiNodes(map)
+    assert(questRewardAccessible(rows) and type(rows)=="table" and #rows<=512, "Flight destinations unavailable")
+    local states=Enum.FlightPathState
+    local labels={[states.Current]="current",[states.Reachable]="reachable",[states.Unreachable]="unreachable"}
+    local entries,observed={},0
+    for index,row in pairs(rows) do
+        assert(questRewardInteger(index,1,#rows) and questRewardAccessible(row) and type(row)=="table", "Invalid flight destination row")
+        local slot,id,name,state,transition=row.slotIndex,row.nodeID,row.name,row.state,row.isMapLayerTransition
+        assert(questRewardInteger(slot,1,4096) and questRewardInteger(id,1,4294967295)
+            and questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
+            and questRewardInteger(state,0,4294967295) and labels[state]
+            and questRewardAccessible(transition) and type(transition)=="boolean", "Invalid flight destination")
+        local key=tostring(slot)
+        assert(not entries[key], "Duplicate flight destination slot")
+        local entry={node_id=id,name=name,state=labels[state],map_transition=transition}
+        if state==states.Reachable and not transition then
+            local ok,cost=pcall(TaxiNodeCost,slot)
+            if ok and questRewardInteger(cost,0,9999999999999) then entry.fare_copper=cost end
+        end
+        entries[key]=entry
+        observed=observed+1
+    end
+    assert(observed==#rows and frame:IsVisible(), "Flight map changed during capture")
+    local current=frame:GetMapID()
+    assert(questRewardInteger(current,1,4294967295) and current==map, "Flight map changed during capture")
+    return {map_id=map,entries=entries}
+end
+
 AO.collectors.spellbook = function()
     local api=C_SpellBook
     local bank,spellType=Enum.SpellBookSpellBank.Player,Enum.SpellBookItemType.Spell

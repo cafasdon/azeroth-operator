@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture open Forever flight map destinations and available fares for offline review.
+
 - Include the captured Forever player map name and parent map ID when available.
 
 - Filter saved Forever quest waypoints to the player map in the same capture.

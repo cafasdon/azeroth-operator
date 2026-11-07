@@ -840,6 +840,39 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
+        "flight_map" => {
+            object(
+                value,
+                &[("map_id", "positive", true), ("entries", "map", true)],
+            )?;
+            entries(
+                &value["entries"],
+                &[
+                    ("node_id", "positive", true),
+                    ("name", "text", true),
+                    ("state", "text", true),
+                    ("map_transition", "bool", true),
+                    ("fare_copper", "wallet_copper", false),
+                ],
+            )?;
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(rows.len() <= 512, "Too many flight map observations");
+            for (key, row) in rows {
+                index(key, 1, 4096)?;
+                ensure!(
+                    row["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256)
+                        && matches!(
+                            row["state"].as_str(),
+                            Some("current" | "reachable" | "unreachable")
+                        )
+                        && (row["fare_copper"].is_null()
+                            || (row["state"] == "reachable" && row["map_transition"] == false)),
+                    "Invalid flight destination"
+                );
+            }
+        }
         "spellbook" => {
             object(
                 value,

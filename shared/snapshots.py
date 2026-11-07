@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -34,6 +34,24 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
                 or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
             raise ValueError("Invalid Forever wallet observation")
+    if "flight_map" in sections:
+        flight_map = sections["flight_map"]
+        if (c["family"] != "forever" or not isinstance(flight_map, dict) or set(flight_map) != {"map_id", "entries"}
+                or type(flight_map["map_id"]) is not int or not 1 <= flight_map["map_id"] <= 4_294_967_295
+                or not isinstance(flight_map["entries"], dict) or len(flight_map["entries"]) > 512):
+            raise ValueError("Invalid Forever flight map")
+        for slot, row in flight_map["entries"].items():
+            required = {"node_id", "name", "state", "map_transition"}
+            if (not isinstance(slot, str) or not re.fullmatch(r"[1-9][0-9]{0,3}", slot) or int(slot) > 4096
+                    or not isinstance(row, dict) or not required <= row.keys() or set(row) - required - {"fare_copper"}
+                    or type(row["node_id"]) is not int or not 1 <= row["node_id"] <= 4_294_967_295
+                    or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode("utf-8")) <= 256
+                    or row["state"] not in ("current", "reachable", "unreachable") or type(row["map_transition"]) is not bool):
+                raise ValueError("Invalid Forever flight destination")
+            fare = row.get("fare_copper")
+            if fare is not None and (type(fare) is not int or not 0 <= fare <= 9_999_999_999_999
+                                     or row["state"] != "reachable" or row["map_transition"]):
+                raise ValueError("Invalid Forever flight fare")
     if "spellbook" in sections:
         book = sections["spellbook"]
         if (c["family"] != "forever" or not isinstance(book, dict) or set(book) != {"coverage", "entries"}
