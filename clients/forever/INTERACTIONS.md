@@ -103,6 +103,10 @@ local catalogue. References keep their captured reward positions. A null row
 means the base item ID has no catalogue match. The original reward quantities
 stay in `data`. The slot list describes simulator placement and does not
 establish equip eligibility or identify item modifiers.
+Each matched reward also lists the captured items in its compatible slots.
+A null `equipped_slots` means equipment was unavailable. A null item ID
+means the slot was empty in the captured equipment section. A known ID
+with a null name has no catalogue match.
 
 Set `quest_currency_projection: true` when inspecting a saved Forever
 quest by ID to compare its receive rewards with currency caps from the same

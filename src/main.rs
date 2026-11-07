@@ -923,12 +923,25 @@ impl Operator {
                         serde_json::json!(quests.as_object().map(|_| quest.is_some()));
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
+                    let review_snapshot =
+                        if args.quest_item_catalogue || args.quest_currency_projection {
+                            if value["client"]["family"] != "forever" {
+                                return CallToolResult::error(vec![ContentBlock::text(
+                                    "Quest reward review requires a saved Forever snapshot",
+                                )]);
+                            }
+                            match self.store.read(&args.snapshot_id) {
+                                Ok(snapshot) => Some(snapshot),
+                                Err(_) => {
+                                    return CallToolResult::error(vec![ContentBlock::text(
+                                        "Could not read the captured quest reward context",
+                                    )]);
+                                }
+                            }
+                        } else {
+                            None
+                        };
                     if args.quest_item_catalogue {
-                        if value["client"]["family"] != "forever" {
-                            return CallToolResult::error(vec![ContentBlock::text(
-                                "Quest item catalogue requires a saved Forever snapshot",
-                            )]);
-                        }
                         let catalogue = self.forever_catalogue.as_deref().and_then(|path| {
                             azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path).ok()
                         });
@@ -936,24 +949,15 @@ impl Operator {
                             serde_json::json!(catalogue.is_some());
                         value["quest_item_catalogue"] = quest
                             .zip(catalogue.as_ref())
-                            .map_or(serde_json::Value::Null, |(quest, catalogue)| {
-                                catalogue.quest_item_references(quest)
+                            .zip(review_snapshot.as_ref())
+                            .map_or(serde_json::Value::Null, |((quest, catalogue), snapshot)| {
+                                catalogue.quest_item_references(quest, snapshot)
                             });
                     }
-                    if args.quest_currency_projection {
-                        if value["client"]["family"] != "forever" {
-                            return CallToolResult::error(vec![ContentBlock::text(
-                                "Quest currency projection requires a saved Forever snapshot",
-                            )]);
-                        }
-                        let snapshot = match self.store.read(&args.snapshot_id) {
-                            Ok(snapshot) => snapshot,
-                            Err(_) => {
-                                return CallToolResult::error(vec![ContentBlock::text(
-                                    "Could not read captured currency balances",
-                                )]);
-                            }
-                        };
+                    if let Some(snapshot) = review_snapshot
+                        .as_ref()
+                        .filter(|_| args.quest_currency_projection)
+                    {
                         value["quest_currency_projection"] =
                             azeroth_operator::analysis::quest_currency_projection(
                                 quest,

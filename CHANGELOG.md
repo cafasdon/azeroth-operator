@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show captured equipped items alongside compatible Forever quest rewards.
+
 - Resolve saved Forever quest reward item names and simulator slots from the local catalogue.
 
 - Capture fixed item rewards and item choices for the selected Forever quest.
