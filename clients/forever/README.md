@@ -243,6 +243,9 @@ from its encounter baseline. This keeps a high-DPS encounter from dominating
 solely because of its DPS scale. The combined view requires fixed mode so every
 draft is evaluated in every encounter, and each baseline must have positive DPS.
 It reports weighted point estimates with the original per-encounter results.
+Within one command, matching encounter and simulator options reuse the first
+result. The repeated row reports `reused_encounter_index` and keeps its own
+weight and position. Different seeds or iteration counts run separately.
 
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a

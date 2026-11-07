@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reuse identical Forever encounter simulations within a single multi-encounter gear ranking while preserving each input and weight.
+
 - Reuse the parsed Forever catalogue across gear reviews while checking the configured file against its pinned checksum on every read.
 
 - Allow adaptive bulk Forever searches with up to 128 explicitly requested drafts.

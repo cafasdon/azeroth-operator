@@ -335,11 +335,24 @@ def main():
         if len(encounters) == 1:
             result = rank_encounter(args, template, encounters[0], drafts, set_piece_ids)
         else:
+            # Validate every export before running any simulations. Within this command
+            # only the encounter and simulator options vary across profiles.
+            keys = []
             for encounter in encounters:
-                request_from(template, drafts[0][1], encounter)
+                request = request_from(template, drafts[0][1], encounter)
+                keys.append(json.dumps(
+                    (request["encounter"], request["simOptions"]),
+                    sort_keys=True, separators=(",", ":"), allow_nan=False,
+                ))
             rankings = []
-            for index, encounter in enumerate(encounters, 1):
-                ranking = rank_encounter(args, template, encounter, drafts, set_piece_ids)
+            simulated = {}
+            for index, (encounter, key) in enumerate(zip(encounters, keys, strict=True), 1):
+                previous = simulated.get(key)
+                if previous is None:
+                    ranking = rank_encounter(args, template, encounter, drafts, set_piece_ids)
+                    simulated[key] = index
+                else:
+                    ranking = {**rankings[previous - 1], "reused_encounter_index": previous}
                 profile = encounter["simulation_input"]["encounter"]
                 ranking.update(
                     encounter_index=index,
