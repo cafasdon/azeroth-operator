@@ -273,6 +273,30 @@ pub struct DynamicAddsSettings {
 pub struct CustomBossSettings {
     pub thrash: Option<BossThrash>,
     pub cleave: Option<BossCleave>,
+    pub magic_spell: Option<BossMagicSpell>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum BossMagicSchool {
+    Arcane,
+    Fire,
+    Frost,
+    Holy,
+    Nature,
+    Shadow,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BossMagicSpell {
+    pub school: BossMagicSchool,
+    /// Cast time in whole seconds, from 0 to 3600.
+    pub cast_seconds: u32,
+    /// Cooldown in whole seconds, from 1 to 3600.
+    pub cooldown_seconds: u32,
+    pub minimum_damage: u32,
+    pub maximum_damage: u32,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -414,7 +438,9 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
     if let Some(custom) = &settings.custom_boss {
         ensure!(
             record["path"] == "Default/Custom Boss"
-                && (custom.thrash.is_some() || custom.cleave.is_some()),
+                && (custom.thrash.is_some()
+                    || custom.cleave.is_some()
+                    || custom.magic_spell.is_some()),
             "Custom attacks require the custom boss preset and at least one attack"
         );
         let [boss] = targets.as_mut_slice() else {
@@ -455,6 +481,52 @@ fn encounter_input(record: &Value, settings: &SimulationSettings) -> Result<Valu
                 ],
             )?;
             set_boolean_target_input(boss, 4, "Has Cleave", true)?;
+        }
+        if let Some(spell) = &custom.magic_spell {
+            ensure!(
+                spell.cast_seconds <= 3600
+                    && (1..=3600).contains(&spell.cooldown_seconds)
+                    && spell.minimum_damage <= spell.maximum_damage
+                    && spell.maximum_damage <= 1_000_000,
+                "Invalid custom boss magic spell settings"
+            );
+            set_numeric_target_inputs(
+                boss,
+                &[
+                    (8, "Magic spell cast time", f64::from(spell.cast_seconds)),
+                    (9, "Magic spell cooldown", f64::from(spell.cooldown_seconds)),
+                    (
+                        10,
+                        "Magic spell min damage",
+                        f64::from(spell.minimum_damage),
+                    ),
+                    (
+                        11,
+                        "Magic spell max damage",
+                        f64::from(spell.maximum_damage),
+                    ),
+                ],
+            )?;
+            let (index, label) = match spell.school {
+                BossMagicSchool::Arcane => (0, "Arcane"),
+                BossMagicSchool::Fire => (1, "Fire"),
+                BossMagicSchool::Frost => (2, "Frost"),
+                BossMagicSchool::Holy => (3, "Holy"),
+                BossMagicSchool::Nature => (4, "Nature"),
+                BossMagicSchool::Shadow => (5, "Shadow"),
+            };
+            let school = boss
+                .get_mut("targetInputs")
+                .and_then(Value::as_array_mut)
+                .and_then(|inputs| inputs.get_mut(12))
+                .filter(|input| {
+                    input["label"] == "Magic Spell School"
+                        && input["inputType"] == 2
+                        && input["enumOptions"][index] == label
+                })
+                .ok_or_else(|| anyhow::anyhow!("Unexpected magic spell school layout"))?;
+            school["enumValue"] = json!(index);
+            set_boolean_target_input(boss, 7, "Has Magic spell", true)?;
         }
     }
     Ok(json!({

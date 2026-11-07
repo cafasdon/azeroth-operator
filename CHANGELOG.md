@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Configure magic school, cast time, cooldown and damage for the Forever custom boss.
+
 - Configure thrash and cleave for the Forever custom boss simulator.
 
 - Configure kill credit and raid debuffs for simulated Forever add waves.
