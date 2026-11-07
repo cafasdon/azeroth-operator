@@ -642,6 +642,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("ready_for_turn_in", "bool", false),
                     ("failed", "bool", false),
                     ("next_waypoint_map_id", "positive", false),
+                    ("required_copper", "wallet_copper", false),
                     ("objectives", "map", false),
                 ],
             )?;

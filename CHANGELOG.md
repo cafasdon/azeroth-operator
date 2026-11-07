@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest copper requirements and show per-quest wallet shortfalls in saved character summaries.
+
 - Compare saved Forever quest waypoint maps and distinguish changes from missing observations.
 
 - Filter saved Forever quests and turn-in readiness by next waypoint map.

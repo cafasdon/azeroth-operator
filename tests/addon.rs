@@ -459,6 +459,10 @@ pub fn verify_forever_capture_fixture(
             end,
             ReadyForTurnIn=function(id) if id==42 then return false end end,
             IsFailed=function() return false end,
+            GetRequiredMoney=function(id)
+                if invalidQuestMoney then return -1 end
+                return id==42 and 250 or 0
+            end,
             GetNextWaypoint=function(id)
                 if id==43 then error("unavailable") end
                 if invalidQuestMap then return 0 end
@@ -597,12 +601,24 @@ pub fn verify_forever_capture_fixture(
     assert!(quests["43"].get("objectives").is_none());
     assert!(quests["43"].get("ready_for_turn_in").is_none());
     assert_eq!(quests["42"]["next_waypoint_map_id"], 1411);
+    assert_eq!(quests["42"]["required_copper"], 250);
+    assert_eq!(quests["43"]["required_copper"], 0);
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["quest_money"],
+        serde_json::json!({"quests_with_cost":{"42":{"required_copper":250,"shortfall_copper":null}},"cost_unknown_count":0})
+    );
     assert!(quests["43"].get("next_waypoint_map_id").is_none());
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["quest_waypoint_maps"],
         serde_json::json!({"by_map_id":{"1411":[42]},"waypoint_map_unknown":[43]})
     );
-    lua.load("invalidQuestMap=true;AO.Capture()").exec()?;
+    lua.load("invalidQuestMap=true;invalidQuestMoney=true;AO.Capture()")
+        .exec()?;
+    assert!(
+        read()?.sections["quests"]["42"]
+            .get("required_copper")
+            .is_none()
+    );
     assert!(
         read()?.sections["quests"]["42"]
             .get("next_waypoint_map_id")

@@ -1066,6 +1066,30 @@ pub fn summary(s: &Snapshot) -> Value {
         .and_then(|v| v.get("has_unspent"))
         .and_then(Value::as_bool);
     let quests = s.sections.get("quests").and_then(Value::as_object);
+    let quest_money = quests
+        .filter(|_| s.client.family == crate::Family::Forever)
+        .map(|quests| {
+            let wallet = s
+                .sections
+                .get("wallet")
+                .and_then(|wallet| wallet["copper"].as_u64());
+            let mut unknown = 0;
+            let mut costs = BTreeMap::new();
+            for (id, quest) in quests {
+                match quest["required_copper"].as_u64() {
+                    Some(0) => (),
+                    Some(cost) => {
+                        costs.insert(
+                            id,
+                            json!({"required_copper":cost,
+                        "shortfall_copper":wallet.map(|balance| cost.saturating_sub(balance))}),
+                        );
+                    }
+                    None => unknown += 1,
+                }
+            }
+            json!({"quests_with_cost":costs,"cost_unknown_count":unknown})
+        });
     let quest_turn_in = quests.map(|quests| {
         let (mut ready, mut known) = (0, 0);
         for quest in quests.values() {
@@ -1086,6 +1110,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "quest_turn_in":quest_turn_in,
       "quest_checklist":quests.map(quest_checklist),
       "quest_waypoint_maps":if s.client.family == crate::Family::Forever { quests.map(quest_waypoint_maps) } else { None },
+      "quest_money":quest_money,
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

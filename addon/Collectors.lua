@@ -572,6 +572,14 @@ local function questWaypointMap(api,id)
     if type(map)=="number" and map%1==0 and map>=1 and map<=4294967295 then return map end
 end
 
+local function questRequiredCopper(api,id)
+    local ok,copper=pcall(api.GetRequiredMoney,id)
+    if not ok or (issecretvalue and issecretvalue(copper)) then return nil end
+    if type(copper)=="number" and copper%1==0 and copper>=0 and copper<=9999999999999 then
+        return copper
+    end
+end
+
 AO.collectors.quests = function()
     assert(C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo, "Quest API unavailable")
     local result = {}
@@ -594,6 +602,7 @@ AO.collectors.quests = function()
                 entry.ready_for_turn_in=questFlag(api,"ReadyForTurnIn",id)
                 entry.failed=questFlag(api,"IsFailed",id)
                 entry.next_waypoint_map_id=questWaypointMap(api,id)
+                entry.required_copper=questRequiredCopper(api,id)
                 local ok,objectives=pcall(questObjectives,api,id)
                 if ok then entry.objectives=objectives end
             end

@@ -85,6 +85,12 @@ observed or unknown has its own status. If either quest log is unavailable,
 the comparison is null. Quests entering or leaving the log are outside
 this comparison.
 
+`character_summary.quest_money` lists saved positive quest copper requirements
+and counts quests with an unknown cost. If the same export includes the
+optional wallet, each entry shows its shortfall against that balance. These
+are individual comparisons against the captured balance. Update the importer
+and reader before syncing captures from the new addon.
+
 When the client exposes a quest's next waypoint during a player export,
 the capture can include its map ID. `character_summary` groups saved quest
 IDs by that map and lists quests whose waypoint map is unknown. The map
