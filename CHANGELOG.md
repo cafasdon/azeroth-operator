@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare full-stack merges over the local MCP and connect the strict decoder, player review/Apply and receipt round trip in source. Offline verified. Packaging, deployment and native qualification remain pending.
+
 - Add source-only full-stack merge executor with exact identities, stable native capacity checks and read-only quantity-conservation verification. Transport, player review integration, packaging and native qualification remain pending.
 
 - Deploy compatible bag-preflight services/companion and Retail0.20.0-dev. Public minimum-version/regression checks and all36 installed hashes passed; native qualification deferred.

@@ -39,7 +39,8 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 | Move carried items | Development implementation deployed | Disabled | Disabled | Exact-instance move to explicit empty slot; first live attempt outcome_unknown, no replay; timing fixes fixture-tested |
 | Split carried stacks | Development implementation deployed | Disabled | Disabled | Explicit amount, empty destination, source conservation and distinct destination identity; live unqualified |
 | Swap distinct carried item IDs | Development implementation deployed | Disabled | Disabled | Exact two-item identities; no retry/cursor clearing; strict transport and review/receipts implemented; requires 0.20.0-dev with both-direction bag metadata preflight; public synthetic checks passed; native unqualified |
-| Sort/merge/same-ID swaps, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
+| Merge complete carried stacks | Source-only development | Disabled | Disabled | Exact stack identities, matching item IDs and links, native capacity checks on Apply, and read-only receipt reconciliation. Packaging and native qualification pending |
+| Sort/partial merge/same-ID swaps, bank/mail transfers, sell/delete/disenchant | Disabled | Disabled | Disabled | Not yet implemented or exposed |
 | Auction bids/listings, purchases, crafting, trade or chat sends | Disabled | Disabled | Disabled | No transaction or messaging tools |
 | Graphics/CVar configuration proposals | Not implemented | Not implemented | Not implemented | Requires exact client settings, hardware evidence and bounded file-change workflow |
 | Combat, movement, targeting, quests, queues, farming, anti-AFK | Excluded | Excluded | Excluded | User's rules-only scope; no autonomous gameplay or input automation |

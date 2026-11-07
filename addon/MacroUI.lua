@@ -179,8 +179,9 @@ local function open()
             end
             lines[#lines+1]="Both slots and macro contents are checked again. No action body is executed."
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. On failure inspect the cursor; do not retry."
-        elseif op.kind=="swap_bag_items" then
-            lines[#lines+1]="Swap both complete item stacks."
+        elseif op.kind=="swap_bag_items" or op.kind=="merge_bag_items" then
+            local merging=op.kind=="merge_bag_items"
+            lines[#lines+1]=merging and "Merge the complete source stack into the target." or "Swap both complete item stacks."
             for _,entry in ipairs({{"Source",op.source},{"Target",op.target}}) do
                 local item=entry[2]
                 lines[#lines+1]=entry[1].." bag/slot: "..item.bag.." / "..item.slot
@@ -189,6 +190,9 @@ local function open()
                 lines[#lines+1]="Item link: "..item.link
             end
             lines[#lines+1]="Both item identities and quantities are checked again."
+            if merging then
+                lines[#lines+1]="Expected result: empty source; target count "..(op.source.count+op.target.count)..". Capacity is checked on Apply."
+            end
             lines[#lines+1]="After completion, /aoexport within 60 seconds, then /reload. On failure inspect the cursor; do not retry."
         elseif op.kind=="move_bag_item" or op.kind=="split_bag_item" then
             lines[#lines+1]="Source bag/slot: "..op.bag.." / "..op.slot
@@ -228,7 +232,9 @@ local function open()
         apply:Disable()
         local ok,receipt,applied,detail=pcall(AO.ApplyReviewedMacro,input:GetText())
         if not ok then status:SetText("Refused: "..reason(receipt))
-        elseif not applied then status:SetText("Outcome unknown: "..reason(detail).." Inspect current state before retrying.")
+        elseif not applied then
+            local guidance=receipt.kind=="merge_bag_items" and " Inspect the cursor and both slots. Do not retry." or " Inspect current state before retrying."
+            status:SetText("Outcome unknown: "..reason(detail)..guidance)
         elseif receipt.status=="outcome_unknown" then status:SetText("Operation unconfirmed. After it finishes, /aoexport within 60 seconds, then /reload. Do not retry.")
         else status:SetText("Result: "..receipt.status..". Export and reload to save a checkpoint.") end
     end)

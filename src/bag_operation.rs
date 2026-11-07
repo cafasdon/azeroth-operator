@@ -11,6 +11,7 @@ pub enum BagOperation {
     #[default]
     Move,
     Swap,
+    Merge,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -68,17 +69,18 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         request.bag != request.target_bag || request.slot != request.target_slot,
         "Source equals destination"
     );
-    if request.operation == BagOperation::Swap {
+    if request.operation != BagOperation::Move {
+        let merging = request.operation == BagOperation::Merge;
         ensure!(
             request.amount.is_none() && !request.expect_empty_target,
-            "Swap cannot split or expect an empty target"
+            "Swap or merge cannot split or expect an empty target"
         );
         let target = snapshot
             .sections
             .get("bags")
             .and_then(|b| b.get(request.target_bag.to_string()))
             .and_then(|b| b.get(request.target_slot.to_string()))
-            .ok_or_else(|| anyhow::anyhow!("Swap target not captured"))?;
+            .ok_or_else(|| anyhow::anyhow!("Occupied target not captured"))?;
         for value in [
             &snapshot.client.variant,
             &snapshot.client.build,
@@ -87,11 +89,16 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
         ] {
             ensure!(
                 !value.bytes().any(|b| b.is_ascii_control()),
-                "Control character in swap identity"
+                "Control character in operation identity"
             );
         }
         let mut fields = vec![
-            "AO-BAGSWAP-1".into(),
+            if merging {
+                "AO-BAGMERGE-1"
+            } else {
+                "AO-BAGSWAP-1"
+            }
+            .into(),
             String::new(),
             snapshot_id.into(),
             "retail".into(),
@@ -137,17 +144,36 @@ pub fn compile(snapshot: &Snapshot, snapshot_id: &str, request: &BagRequest) -> 
             );
         }
         ensure!(
-            entries[0]["guid"] != entries[1]["guid"]
-                && entries[0]["item_id"] != entries[1]["item_id"],
-            "Swap identities must differ; same-item stack compatibility unsupported"
+            entries[0]["guid"] != entries[1]["guid"],
+            "Stack instances must differ"
         );
+        let kind = if merging {
+            ensure!(
+                entries[0]["item_id"] == entries[1]["item_id"]
+                    && entries[0]["link"] == entries[1]["link"],
+                "Merge requires matching item IDs and exact links"
+            );
+            ensure!(
+                entries[0]["count"].as_u64().unwrap() + entries[1]["count"].as_u64().unwrap()
+                    <= i32::MAX as u64,
+                "Combined count exceeds supported stack capacity"
+            );
+            "merge_bag_items"
+        } else {
+            ensure!(
+                entries[0]["item_id"] != entries[1]["item_id"],
+                "Swap requires distinct item IDs"
+            );
+            "swap_bag_items"
+        };
         fields[1] = format!("{:x}", Sha256::digest(fields.join(":").as_bytes()));
         let code = fields.join(":");
-        ensure!(code.len() <= 8192, "Swap exceeds import limit");
+        ensure!(code.len() <= 8192, "Operation exceeds import limit");
         return Ok(
-            json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":"swap_bag_items",
+            json!({"operation_id":fields[1],"snapshot_id":snapshot_id,"kind":kind,
             "source":entries[0],"target":entries[1],"import_code":code,"requires_player_apply":true,
-            "game_execution":false,"live_qualified":false,"addon_execution_enabled":true,"requires_addon_version":"0.20.0-dev"}),
+            "game_execution":false,"live_qualified":false,"addon_execution_enabled":!merging,
+            "requires_addon_version":if merging { None } else { Some("0.20.0-dev") }}),
         );
     }
     let count = source["count"]

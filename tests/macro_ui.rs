@@ -57,7 +57,7 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
             end
             if text=='set_modify' or text=='set_delete' then return {kind=text=='set_modify' and 'modify_equipment_set' or 'delete_equipment_set',character='Test',realm='Realm',family='retail',variant='live',build='123',set_id=0,name='New Set',icon=123,expected={name='Old|Set',icon=134400,assigned_spec=2,num_items=18,num_lost=1,num_ignored=1}} end
             if text=='binding' then return {kind='set_binding',character='Test',realm='Realm',family='retail',variant='live',build='123',key='CTRL-1',context=0,binding_set=2,expected='',desired='ACTIONBUTTON1'} end
-            if text=='bag_swap' then return {kind='swap_bag_items',character='Test',realm='Realm',family='retail',variant='live',build='123',source={bag=0,slot=1,item_id=123,count=2,guid='One',link='Source|link'},target={bag=1,slot=2,item_id=456,count=3,guid='Two',link='Target|link'}} end
+            if text=='bag_swap' or text=='bag_merge' then return {kind=text=='bag_merge' and 'merge_bag_items' or 'swap_bag_items',character='Test',realm='Realm',family='retail',variant='live',build='123',source={bag=0,slot=1,item_id=123,count=2,guid='One',link='Source|link'},target={bag=1,slot=2,item_id=456,count=3,guid='Two',link='Target|link'}} end
             if text=='bag' or text=='split' then return {kind=text=='split' and 'split_bag_item' or 'move_bag_item',character='Test',realm='Realm',family='retail',variant='live',build='123',bag=0,slot=1,target_bag=2,target_slot=3,item_id=123,count=20,amount=text=='split' and 5 or nil,source_guid='Item-Source'} end
             if text=='talent' then return {kind='load_talent_config',character='Test',realm='Realm',family='retail',variant='live',build='123',spec_id=263,target_config_id=9,expected_selected_config_id=8,desired_name='Saved Build',uses_shared_action_bars=false} end
             if text=='action' or text=='action_copy' then return {kind=text=='action_copy' and 'copy_action_slot' or 'move_action_slot',character='Test',realm='Realm',family='retail',variant='live',build='123',source_slot=1,target_slot=2,source={empty=false,kind='macro',id=121,macro={name='My Macro',icon=134400,body='/cast Test'}},target={empty=true}} end
@@ -100,6 +100,14 @@ fn player_review_apply_and_input_invalidation() -> mlua::Result<()> {
         assert(frames[5].text:find('Swap both complete item stacks.',1,true))
         assert(frames[5].text:find('Target bag/slot: 1 / 2',1,true))
         assert(frames[5].text:find('Instance: Two',1,true))
+        input:SetText('bag_merge'); review.scripts.OnClick()
+        assert(apply.enabled and frames[5].text:find('Merge the complete source stack into the target.',1,true))
+        assert(frames[5].text:find('Expected result: empty source; target count 5.',1,true))
+        local previousApply=AO.ApplyReviewedMacro
+        function AO.ApplyReviewedMacro() return {kind='merge_bag_items',status='outcome_unknown'},false,'Pickup failed' end
+        apply.scripts.OnClick()
+        assert(not apply.enabled and fonts[2].text:find('Inspect the cursor and both slots. Do not retry.',1,true))
+        AO.ApplyReviewedMacro=previousApply
         input:SetText('action_copy'); review.scripts.OnClick()
         assert(frames[5].text:find('Copy to captured empty slot; keep the source action.',1,true))
         input:SetText('action'); review.scripts.OnClick()

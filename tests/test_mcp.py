@@ -37,6 +37,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                                      "2": {"item_id": 123, "count": 4, "guid":"Item-Stack"}}}
             sample["sections"]["bags"]["0"]["4"]={"item_id":456,"count":2,"guid":"Item-Swap","link":"target"}
             sample["sections"]["bags"]["0"]["1"]["link"]="source"
+            sample["sections"]["bags"]["0"]["2"]["link"]="source"
             sample["sections"]["talents"] = {"config_id":7,"nodes":{},"loadout_export":{
                 "status":"available","format":"blizzard_traits","import_string":"QUJDRA==",
                 "spec_id":263,"serialization_version":2,"staged_changes":False}}
@@ -154,6 +155,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(swap_data["addon_execution_enabled"])
                         self.assertEqual(swap_data["requires_addon_version"],"0.20.0-dev")
                         self.assertEqual(swap_data["target"]["guid"],"Item-Swap")
+                        merge_operation={"operation":"merge","bag":0,"slot":1,"target_bag":0,"target_slot":2}
+                        merge=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":merge_operation})
+                        self.assertFalse(merge.isError)
+                        draft=json.loads(merge.content[0].text)
+                        self.assertEqual(draft["kind"],"merge_bag_items")
+                        self.assertTrue(draft["import_code"].startswith("AO-BAGMERGE-1:"))
+                        self.assertEqual(draft["target"]["guid"],"Item-Stack")
+                        self.assertFalse(draft["addon_execution_enabled"])
+                        for override in ({"target_slot":4},{"target_slot":3},{"amount":1},{"expect_empty_target":True}):
+                            refused=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":merge_operation | override})
+                            self.assertTrue(refused.isError)
                         split=await session.call_tool("prepare_bag_operation",{"snapshot_id":key,"operation":{"bag":0,"slot":2,"target_bag":0,"target_slot":3,"expect_empty_target":True,"amount":2}})
                         self.assertFalse(split.isError)
                         self.assertEqual(json.loads(split.content[0].text)["kind"],"split_bag_item")

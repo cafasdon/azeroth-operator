@@ -81,6 +81,7 @@ fn export_assignment(text: &str) -> Result<&str> {
                                     | "move_action_slot"
                                     | "copy_action_slot"
                                     | "swap_bag_items"
+                                    | "merge_bag_items"
                                     | "modify_equipment_set"
                                     | "delete_equipment_set"
                                     | "use_equipment_set"
