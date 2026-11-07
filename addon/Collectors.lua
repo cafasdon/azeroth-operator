@@ -840,6 +840,20 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.durability_alerts = function()
+    local disabled=C_GameRules.IsGameRuleActive(Enum.GameRule.RepairArmorDisabled)
+    assert(questRewardAccessible(disabled) and disabled==false, "Durability alerts unavailable")
+    local slots={"head","shoulders","chest","waist","legs","feet","wrists","hands","main_hand","off_hand","ranged"}
+    local result={}
+    for index,slot in ipairs(slots) do
+        local status=GetInventoryAlertStatus(index)
+        assert(questRewardInteger(status,0,2), "Unknown durability alert")
+        if status==1 then result[slot]="low" end
+        if status==2 then result[slot]="broken" end
+    end
+    return result
+end
+
 AO.collectors.flight_map = function()
     local frame=FlightMapFrame
     assert(frame and frame:IsVisible(), "Flight map is not open")

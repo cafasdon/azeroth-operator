@@ -539,6 +539,15 @@ pub fn verify_forever_capture_fixture(
                 {slotIndex=4,nodeID=15,name="Fixture Layer",state=1,isMapLayerTransition=true}}
         end}
         TaxiNodeCost=function(slot) assert(slot==3); return 250 end
+        Enum.GameRule={RepairArmorDisabled=42}
+        C_GameRules={IsGameRuleActive=function(rule) assert(rule==42); return repairsDisabled==true end}
+        GetInventoryAlertStatus=function(index)
+            assert(index>=1 and index<=11)
+            if clearDurability then return 0 end
+            if index==3 then return 1 end
+            if index==10 then return 2 end
+            return 0
+        end
         Enum.SpellBookItemType={Spell=1,FutureSpell=2}
         C_Spell={GetSpellName=function(spell) if spell==101 then return "Fixture spell" end end}
         C_SpellBook={IsSpellInSpellBook=function(spell,bank,overrides)
@@ -695,6 +704,16 @@ pub fn verify_forever_capture_fixture(
     lua.load("closedFlightMap=true;AO.Capture()").exec()?;
     assert!(read()?.unavailable.contains_key("flight_map"));
     lua.load("closedFlightMap=false").exec()?;
+    assert_eq!(
+        snapshot.sections["durability_alerts"],
+        serde_json::json!({"chest":"low","off_hand":"broken"})
+    );
+    lua.load("clearDurability=true;AO.Capture()").exec()?;
+    assert_eq!(read()?.sections["durability_alerts"], serde_json::json!({}));
+    lua.load("repairsDisabled=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("durability_alerts"));
+    lua.load("repairsDisabled=false;clearDurability=false")
+        .exec()?;
     assert_eq!(
         snapshot.sections["action_bar_observation"],
         serde_json::json!({

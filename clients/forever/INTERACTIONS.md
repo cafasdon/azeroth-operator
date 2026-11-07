@@ -23,6 +23,13 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+Inspect the `durability_alerts` section for saved equipment slots flagged
+`low` or `broken` by the built-in durability display. An empty map means
+the checked slots raised no alert. Exact durability, repair prices and
+repairs are outside this capture. Disabled repairs or an unavailable
+alert API leave the section unavailable. Update the importer and reader
+before syncing this section. [Forever durability display](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_DurabilityFrame/DurabilityFrame.lua)
+
 `inspect_snapshot` with `section: "action_bar_observation"` shows loaded
 built-in button slots, including observed empty slots and a count of missing
 buttons. Multiple buttons can reference the same slot. This works separately

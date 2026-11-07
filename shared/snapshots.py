@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -40,6 +40,13 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(wallet, dict) or set(wallet) != {"copper"}
                 or type(wallet["copper"]) is not int or not 0 <= wallet["copper"] <= 9_999_999_999_999):
             raise ValueError("Invalid Forever wallet observation")
+    if "durability_alerts" in sections:
+        alerts = sections["durability_alerts"]
+        slots = {"head", "shoulders", "chest", "waist", "legs", "feet", "wrists", "hands",
+                 "main_hand", "off_hand", "ranged"}
+        if (c["family"] != "forever" or not isinstance(alerts, dict)
+                or any(slot not in slots or alert not in ("low", "broken") for slot, alert in alerts.items())):
+            raise ValueError("Invalid durability alert")
     if "flight_map" in sections:
         flight_map = sections["flight_map"]
         if (c["family"] != "forever" or not isinstance(flight_map, dict) or set(flight_map) != {"map_id", "entries"}

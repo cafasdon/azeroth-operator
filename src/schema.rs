@@ -851,6 +851,30 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
+        "durability_alerts" => {
+            let alerts = value
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Expected durability alert map"))?;
+            for (slot, alert) in alerts {
+                ensure!(
+                    matches!(
+                        slot.as_str(),
+                        "head"
+                            | "shoulders"
+                            | "chest"
+                            | "waist"
+                            | "legs"
+                            | "feet"
+                            | "wrists"
+                            | "hands"
+                            | "main_hand"
+                            | "off_hand"
+                            | "ranged"
+                    ) && matches!(alert.as_str(), Some("low" | "broken")),
+                    "Invalid durability alert"
+                );
+            }
+        }
         "flight_map" => {
             object(
                 value,

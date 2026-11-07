@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Save the built-in Forever low and broken equipment durability alerts for offline inspection.
+
 - Compare captured Forever flight fares with the wallet balance from the same snapshot.
 
 - Include the game-reported Forever player map level range when available.
