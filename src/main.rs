@@ -44,6 +44,8 @@ struct Inspect {
 struct List {
     family: String,
     character: Option<azeroth_operator::Character>,
+    /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
+    recipe_output_item_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -752,7 +754,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can find captures of selected recipes by output item ID. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -766,15 +768,16 @@ impl Operator {
             "forever" => Family::Forever,
             _ => return CallToolResult::error(vec![ContentBlock::text("Unknown family")]),
         };
-        match self.store.list_matching(
+        match self.store.list_matching_recipe_output(
             family,
             args.character.as_ref(),
+            args.recipe_output_item_id,
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed or character or limit invalid",
+                "Snapshot listing failed: check the character, recipe output filter and limit",
             )]),
         }
     }

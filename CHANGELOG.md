@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever recipe captures by output item ID for local crafting and consumable restock.
+
 - Reject conflicting simulator consumable selections before local ranking when the pinned catalogue is configured.
 
 - Find WoW Forever consumables by simulator buff group and flag groups represented by multiple selected items.

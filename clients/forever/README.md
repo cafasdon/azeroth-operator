@@ -209,6 +209,15 @@ shortage is confirmed only when bags and both banks were captured. Without
 bag coverage, withdrawal suggestions are unknown. Unmatched catalogue IDs
 are listed separately in the plan with `catalogue_match: false`.
 
+To find a saved schematic for an item you need, call `list_snapshots`
+with `family: "forever"`, `recipe_output_item_id`, and the crafter's
+`character` name and realm. The list returns captures where the selected
+recipe recorded that output, newest first. Its recipe metadata includes the
+recipe ID and the observed learned flag. Pass a matching capture ID to
+`review_forever_recipe` with `target_output_quantity` to plan ingredients
+when the schematic captured a supported yield. Recipes without captured
+output IDs are outside this search.
+
 Use `item_ids` in place of `key` to look up up to 100 distinct positive
 item IDs. Results keep catalogue order and existing pagination. Source
 filters and optional snapshot context apply to the matching records. With

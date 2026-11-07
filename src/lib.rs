@@ -186,6 +186,21 @@ impl Store {
         offset: usize,
         limit: usize,
     ) -> Result<Value> {
+        self.list_matching_recipe_output(family, character, None, offset, limit)
+    }
+
+    pub fn list_matching_recipe_output(
+        &self,
+        family: Family,
+        character: Option<&Character>,
+        recipe_output_item_id: Option<std::num::NonZeroU32>,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Value> {
+        ensure!(
+            recipe_output_item_id.is_none() || family == Family::Forever,
+            "Recipe output filtering requires Forever"
+        );
         ensure!((1..=100).contains(&limit), "Limit must be 1..100");
         if let Some(character) = character {
             ensure!(
@@ -222,13 +237,26 @@ impl Store {
             match Self::read_in_root(&root, id) {
                 Ok(s)
                     if s.client.family == family
+                        && recipe_output_item_id.is_none_or(|id| {
+                            s.sections.get("selected_recipe").is_some_and(|recipe| {
+                                recipe["output_item_id"].as_u64() == Some(u64::from(id.get()))
+                            })
+                        })
                         && character.is_none_or(|target| {
                             s.character.name.to_lowercase() == target.name.to_lowercase()
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
                     // Retain metadata only: listing must not hold every inventory payload.
-                    let summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if recipe_output_item_id.is_some()
+                        && let Some(recipe) = s.sections.get("selected_recipe")
+                    {
+                        summary["selected_recipe"] = json!({
+                            "recipe_id":recipe["recipe_id"],"learned":recipe["learned"],
+                            "output_item_id":recipe["output_item_id"]
+                        });
+                    }
                     rows.push((s.captured_at, id.to_owned(), summary));
                 }
                 Ok(_) => (),
