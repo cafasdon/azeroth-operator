@@ -219,6 +219,10 @@ Offline verification used a synthetic Forever bank export, exact name/realm look
 
 **Profession planning.** Select a recipe in the player's own Forever crafting panel, then export a snapshot. Once imported, `review_forever_recipe` accepts its `snapshot_id` and `crafts` (1–1000). The MCP multiplies fixed required reagents by the requested craft count and reports observed stock, shortfall and uncaptured storage. Unsupported required slots suppress the estimate. Native capture is pending qualification. Use the updated companion and importer before sending the new schema through hosted sync.
 
+Use `profession_skill_line` with `compare_snapshots` to see captured rank and
+rank cap before and after. It matches the skill-line ID across profession
+slots. If either capture lacks an unambiguous row, the rank change is unknown.
+
 `material_capacity` estimates how many crafts the observed fixed reagents
 support and lists all limiting item IDs. It reports bags alone and all observed
 storage separately. Unobserved storage, unsupported requirements and recipes

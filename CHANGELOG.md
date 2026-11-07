@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured profession ranks by skill line across snapshot slot changes.
+
 - Plan fixed materials for up to eight saved Forever recipes against shared inventory.
 
 - Review a saved Forever recipe against a newer same-character inventory capture.

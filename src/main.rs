@@ -60,6 +60,8 @@ struct Compare {
     quest_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
+    /// Optionally compare one captured profession by its skill-line ID.
+    profession_skill_line: Option<std::num::NonZeroU32>,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -614,7 +616,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots. Returns bounded changed paths and optional item, quest, Forever currency, reputation and tracked achievement comparisons.",
+        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever currency, reputation and tracked achievement comparisons.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -628,11 +630,14 @@ impl Operator {
             azeroth_operator::analysis::compare_observations(
                 &a,
                 &b,
-                args.item_id.map(|id| id.get()),
-                args.currency_id.map(|id| id.get()),
-                args.faction_id.map(|id| id.get()),
-                args.quest_id.map(|id| id.get()),
-                args.achievement_id.map(|id| id.get()),
+                azeroth_operator::analysis::ComparisonSelectors {
+                    item_id: args.item_id.map(|id| id.get()),
+                    currency_id: args.currency_id.map(|id| id.get()),
+                    faction_id: args.faction_id.map(|id| id.get()),
+                    quest_id: args.quest_id.map(|id| id.get()),
+                    achievement_id: args.achievement_id.map(|id| id.get()),
+                    profession_skill_line: args.profession_skill_line.map(|id| id.get()),
+                },
             )
         })();
         match result {

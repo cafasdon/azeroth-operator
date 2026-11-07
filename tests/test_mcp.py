@@ -149,6 +149,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["professions"] = {
+                            "1": {"name": "Fixture profession", "rank": 20, "max_rank": 75, "skill_line": 164}}
                         forever["sections"]["quests"] = {
                             "42":{"title":"Fixture quest","level":10,"ready_for_turn_in":False,
                                   "objectives":{"1":{"kind":"item","finished":False,"fulfilled":0,"required":5}}},
@@ -223,9 +225,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIsNone(json.loads(renown.content[0].text)["reputation_change"]["standing_delta"])
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
+                        profession = reputation_after["sections"]["professions"].pop("1")
+                        profession["rank"] = 25
+                        reputation_after["sections"]["professions"]["2"] = profession
                         progress_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         progress = await session.call_tool("compare_snapshots", {
-                            "before_id": after_key, "after_id": progress_key, "quest_id": 42, "achievement_id": 101})
+                            "before_id": after_key, "after_id": progress_key, "quest_id": 42,
+                            "achievement_id": 101, "profession_skill_line": 164})
                         self.assertFalse(progress.isError)
                         progress_data = json.loads(progress.content[0].text)
                         quest = progress_data["quest_change"]
@@ -235,6 +241,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         achievement = progress_data["achievement_change"]
                         self.assertTrue(achievement["completed_changed"])
                         self.assertFalse(achievement["earned_by_character_changed"])
+                        profession_change = progress_data["profession_change"]
+                        self.assertEqual(profession_change["rank_delta"], 5)
+                        self.assertEqual(profession_change["before_status"], "observed")
+                        self.assertEqual(profession_change["after"]["rank"], 25)
+                        reputation_after["sections"]["professions"]["1"] = dict(profession, rank=30)
+                        ambiguous_key = SnapshotStore(Path(folder)).ingest(reputation_after)
+                        ambiguous = await session.call_tool("compare_snapshots", {
+                            "before_id": progress_key, "after_id": ambiguous_key, "profession_skill_line": 164})
+                        self.assertFalse(ambiguous.isError)
+                        ambiguous_profession = json.loads(ambiguous.content[0].text)["profession_change"]
+                        self.assertEqual(ambiguous_profession["after_status"], "ambiguous")
+                        self.assertIsNone(ambiguous_profession["rank_delta"])
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)

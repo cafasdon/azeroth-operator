@@ -267,17 +267,30 @@ pub fn compare_with_item(
     after: &Snapshot,
     item_id: Option<u32>,
 ) -> Result<Value> {
-    compare_observations(before, after, item_id, None, None, None, None)
+    compare_observations(
+        before,
+        after,
+        ComparisonSelectors {
+            item_id,
+            ..ComparisonSelectors::default()
+        },
+    )
+}
+
+#[derive(Default)]
+pub struct ComparisonSelectors {
+    pub item_id: Option<u32>,
+    pub currency_id: Option<u32>,
+    pub faction_id: Option<u32>,
+    pub quest_id: Option<u32>,
+    pub achievement_id: Option<u32>,
+    pub profession_skill_line: Option<u32>,
 }
 
 pub fn compare_observations(
     before: &Snapshot,
     after: &Snapshot,
-    item_id: Option<u32>,
-    currency_id: Option<u32>,
-    faction_id: Option<u32>,
-    quest_id: Option<u32>,
-    achievement_id: Option<u32>,
+    selectors: ComparisonSelectors,
 ) -> Result<Value> {
     ensure_comparable(before, after)?;
     let names: BTreeSet<_> = before
@@ -305,10 +318,10 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
-    if let Some(item_id) = item_id {
+    if let Some(item_id) = selectors.item_id {
         comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
     }
-    if let Some(currency_id) = currency_id {
+    if let Some(currency_id) = selectors.currency_id {
         ensure!(
             before.client.family == crate::Family::Forever && currency_id > 0,
             "Currency balance comparisons require a Forever currency ID"
@@ -339,7 +352,7 @@ pub fn compare_observations(
         comparison["currency_balance_change"] =
             json!({"currency_id":currency_id,"before":previous,"after":current,"change":change});
     }
-    if let Some(faction_id) = faction_id {
+    if let Some(faction_id) = selectors.faction_id {
         ensure!(
             before.client.family == crate::Family::Forever && faction_id > 0,
             "Reputation comparisons require a Forever faction ID"
@@ -367,7 +380,7 @@ pub fn compare_observations(
             "faction_id":faction_id,"before":previous,"after":current,"standing_delta":standing_delta
         });
     }
-    if let Some(quest_id) = quest_id {
+    if let Some(quest_id) = selectors.quest_id {
         ensure!(quest_id > 0, "Expected a positive quest ID");
         let key = quest_id.to_string();
         let quest = |snapshot: &Snapshot| {
@@ -385,7 +398,7 @@ pub fn compare_observations(
             "failed_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "failed")
         });
     }
-    if let Some(achievement_id) = achievement_id {
+    if let Some(achievement_id) = selectors.achievement_id {
         ensure!(
             before.client.family == crate::Family::Forever && achievement_id > 0,
             "Tracked achievement comparisons require a Forever achievement ID"
@@ -410,7 +423,43 @@ pub fn compare_observations(
             "earned_by_character_changed":same_scope.then(|| observed_flag_changed(previous.as_ref(), current.as_ref(), "earned_by_character")).flatten()
         });
     }
+    if let Some(skill_line) = selectors.profession_skill_line {
+        ensure!(skill_line > 0, "Expected a positive profession skill line");
+        let (before_status, previous) = profession_by_skill_line(before, skill_line);
+        let (after_status, current) = profession_by_skill_line(after, skill_line);
+        let rank_delta = previous
+            .zip(current)
+            .and_then(|(a, b)| Some(b["rank"].as_i64()? - a["rank"].as_i64()?));
+        comparison["profession_change"] = json!({
+            "skill_line":skill_line,"before_status":before_status,"after_status":after_status,
+            "before":previous,"after":current,"rank_delta":rank_delta
+        });
+    }
     Ok(comparison)
+}
+
+fn profession_by_skill_line(
+    snapshot: &Snapshot,
+    skill_line: u32,
+) -> (&'static str, Option<&Value>) {
+    let Some(professions) = snapshot
+        .sections
+        .get("professions")
+        .and_then(Value::as_object)
+    else {
+        return ("unavailable", None);
+    };
+    let mut matching = professions
+        .values()
+        .filter(|entry| entry["skill_line"].as_u64() == Some(u64::from(skill_line)));
+    let Some(entry) = matching.next() else {
+        return ("not_observed", None);
+    };
+    if matching.next().is_some() {
+        ("ambiguous", None)
+    } else {
+        ("observed", Some(entry))
+    }
 }
 
 fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &str) -> Option<bool> {
