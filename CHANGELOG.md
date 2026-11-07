@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the selected Forever recipe and compare fixed required materials against observed inventory through a read-only MCP review.
+
 - Enforce a fail-closed offline MCP tool allowlist and remove Apply-code preparation from the hosted gateway profile.
 - Capture observed Forever character and account bank slots, expose bank coverage through the MCP, and support filtering saved snapshots by character name and realm.
 - Add a local-only Forever owned-gear review that joins observed item locations to the pinned catalogue and reports missing storage and unmatched items.

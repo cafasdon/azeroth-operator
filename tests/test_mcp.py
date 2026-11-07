@@ -117,7 +117,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout"})
+                        expected.update({"list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         self.assertEqual(set(TOOLS), expected)
@@ -149,6 +149,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["character"] = {"name":"Example","realm":"First"}
                         forever["sections"]["character_bank"] = {"6":{"1":{"item_id":744,"count":1,"link":"item:744:7"}}}
                         forever["sections"]["account_bank"] = {}
+                        forever["sections"]["selected_recipe"] = {"recipe_id":100,"name":"Fixture recipe","learned":True,
+                            "requirements":"fixed_items","reagents":{"744":3}}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
                         SnapshotStore(Path(folder)).ingest(forever)
@@ -163,6 +165,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         bank_summary_data = json.loads(bank_summary.content[0].text)
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
+                        recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
+                        self.assertFalse(recipe.isError)
+                        recipe_data = json.loads(recipe.content[0].text)
+                        self.assertEqual(recipe_data["materials"], [{"item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5}])
+                        self.assertFalse(recipe_data["craftability_verified"])
+                        self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
+                        for bad in ({"snapshot_id":forever_key,"crafts":0},{"snapshot_id":forever_key,"crafts":1001},
+                                    {"snapshot_id":key,"crafts":1}):
+                            self.assertTrue((await session.call_tool("review_forever_recipe", bad)).isError)
                         comparison = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": key})
                         self.assertEqual(json.loads(comparison.content[0].text)["sections"]["equipment"]["status"], "unchanged")
                         summary = await session.call_tool("character_summary", {"snapshot_id": key})

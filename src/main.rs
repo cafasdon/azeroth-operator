@@ -19,6 +19,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "captured_talent_loadout",
     "lookup_forever_catalogue",
     "review_forever_owned_gear",
+    "review_forever_recipe",
 ];
 
 #[derive(Clone)]
@@ -61,6 +62,13 @@ struct OwnedGearReview {
     snapshot_id: String,
     offset: Option<usize>,
     limit: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct RecipeReview {
+    snapshot_id: String,
+    crafts: u32,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -345,6 +353,26 @@ impl Operator {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
                 "Owned gear review requires a valid Forever snapshot, a verified local catalogue and a limit from 1 to 50.",
+            )]),
+        }
+    }
+    #[tool(
+        description = "Compare a saved Forever recipe's fixed required items with observed bags and banks for 1 to 1000 crafts. Reports uncaptured storage and unsupported requirements. Offline estimate only.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn review_forever_recipe(&self, Parameters(args): Parameters<RecipeReview>) -> CallToolResult {
+        let result = self
+            .store
+            .read(&args.snapshot_id)
+            .and_then(|snapshot| azeroth_operator::analysis::review_recipe(&snapshot, args.crafts));
+        match result {
+            Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Recipe review requires a valid Forever snapshot with a selected recipe and 1 to 1000 crafts.",
             )]),
         }
     }

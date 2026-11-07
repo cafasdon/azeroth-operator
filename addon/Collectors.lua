@@ -395,6 +395,52 @@ AO.collectors.professions = function()
     return result
 end
 
+AO.collectors.selected_recipe = function()
+    local page=ProfessionsFrame and ProfessionsFrame.CraftingPage
+    local form=page and page.SchematicForm
+    assert(form and form:IsVisible() and Professions.InLocalCraftingMode()
+        and not form.isInspection and not C_TradeSkillUI.IsNPCCrafting(), "Local recipe is not open")
+    local info,schematic=form:GetRecipeInfo(),form.recipeSchematic
+    assert(info and schematic and schematic.recipeID==info.recipeID and schematic.isRecraft==false
+        and schematic.recipeType==Enum.TradeskillRecipeType.Item,
+        "Selected recipe is unavailable")
+    local function positive(value)
+        return type(value)=="number" and value%1==0 and value>=1 and value<=4294967295
+    end
+    assert(positive(info.recipeID) and type(info.name)=="string" and #info.name>=1 and #info.name<=256
+        and type(info.learned)=="boolean", "Recipe identity unavailable")
+    local slots=schematic.reagentSlotSchematics
+    assert(type(slots)=="table" and #slots<=64, "Recipe reagents unavailable")
+    local slotCount=0
+    for index in pairs(slots) do
+        assert(positive(index) and index<=#slots, "Invalid reagent slot index")
+        slotCount=slotCount+1
+    end
+    assert(slotCount==#slots, "Recipe reagent slots incomplete")
+    local result={recipe_id=info.recipeID,name=info.name,learned=info.learned,
+        output_item_id=positive(schematic.outputItemID) and schematic.outputItemID or nil,
+        requirements="fixed_items",reagents={}}
+    for _,slot in ipairs(slots) do
+        assert(type(slot.required)=="boolean", "Reagent requirement unavailable")
+        if slot.required then
+            local item=slot.reagents and #slot.reagents==1 and slot.reagents[1]
+            if not (item and next(slot.reagents)==1 and next(slot.reagents, 1)==nil
+                and positive(item.itemID) and item.currencyID==nil
+                and type(slot.variableQuantities)=="table" and next(slot.variableQuantities)==nil
+                and positive(slot.quantityRequired)) then
+                result.requirements="unsupported_required_slots"
+                result.reagents={}
+                break
+            end
+            local id=tostring(item.itemID)
+            local count=(result.reagents[id] or 0)+slot.quantityRequired
+            assert(positive(count), "Recipe reagent quantity exceeds limit")
+            result.reagents[id]=count
+        end
+    end
+    return result
+end
+
 AO.collectors.quests = function()
     assert(C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo, "Quest API unavailable")
     local result = {}

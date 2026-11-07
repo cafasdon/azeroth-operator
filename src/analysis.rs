@@ -4,6 +4,62 @@ use anyhow::{Result, ensure};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
+pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    ensure!((1..=1000).contains(&crafts), "Craft count out of range");
+    let recipe = snapshot
+        .sections
+        .get("selected_recipe")
+        .ok_or_else(|| anyhow::anyhow!("Selected recipe was not captured"))?;
+    let fixed = recipe["requirements"] == "fixed_items";
+    let storage = ["bags", "character_bank", "account_bank"];
+    let mut observed: BTreeMap<&str, u64> = BTreeMap::new();
+    let mut missing_storage = Vec::new();
+    for name in storage {
+        let Some(containers) = snapshot.sections.get(name).and_then(Value::as_object) else {
+            missing_storage.push(name);
+            continue;
+        };
+        for item in containers
+            .values()
+            .filter_map(Value::as_object)
+            .flat_map(|slots| slots.values())
+        {
+            if let (Some(id), Some(count)) = (item["item_id"].as_u64(), item["count"].as_u64())
+                && let Some((key, _)) = recipe["reagents"]
+                    .as_object()
+                    .and_then(|map| map.get_key_value(&id.to_string()))
+            {
+                *observed.entry(key).or_default() += count;
+            }
+        }
+    }
+    let mut materials = Vec::new();
+    if fixed {
+        for (id, quantity) in recipe["reagents"]
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("Invalid reagent data"))?
+        {
+            let required = quantity
+                .as_u64()
+                .ok_or_else(|| anyhow::anyhow!("Invalid reagent quantity"))?
+                * u64::from(crafts);
+            let available = observed.get(id.as_str()).copied();
+            materials.push(json!({"item_id":id.parse::<u32>()?, "required":required,
+                "quantity_observed":if missing_storage.len()==storage.len() {None} else {Some(available.unwrap_or(0))},
+                "shortfall_vs_observed":if missing_storage.len()==storage.len() {None} else {Some(required.saturating_sub(available.unwrap_or(0)))}}));
+        }
+    }
+    Ok(
+        json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
+        "materials":materials,"unobserved_storage":missing_storage,"live":false,
+        "craftability_verified":false,"game_execution":false}),
+    )
+}
+
 fn carried_items(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();

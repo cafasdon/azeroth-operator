@@ -32,6 +32,7 @@ const SECTIONS: &[&str] = &[
     "bags",
     "character_bank",
     "account_bank",
+    "selected_recipe",
     "talents",
     "stats",
     "professions",
@@ -111,6 +112,10 @@ impl Snapshot {
             "Capture timestamp is in the future"
         );
         for (name, value) in &self.sections {
+            ensure!(
+                name != "selected_recipe" || self.client.family == Family::Forever,
+                "Selected recipe requires Forever"
+            );
             schema::validate(name, value)?;
             ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");
             ensure!(

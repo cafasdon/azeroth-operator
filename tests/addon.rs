@@ -387,7 +387,7 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         function date() return '2025-01-01T00:00:00Z' end
         function GetInventoryItemID() end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
-        Enum={BankType={Character=0,Account=2}}
+        Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2}}
         BankFrame={IsShown=function() return bankOpen end}
         C_Bank={
             CanViewBank=function(kind) return kind==0 or accountVisible end,
@@ -405,6 +405,17 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         }
         ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end}
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
+        Professions={InLocalCraftingMode=function() return localCrafting end}
+        C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end}
+        local recipeInfo={recipeID=100,name='Fixture recipe',learned=true}
+        recipeSchematic={recipeID=100,outputItemID=456,isRecraft=false,recipeType=1,reagentSlotSchematics={
+            {required=true,reagents={{itemID=744}},quantityRequired=2,variableQuantities={}},
+            {required=true,reagents={{itemID=744}},quantityRequired=1,variableQuantities={}},
+            {required=false,reagents={{itemID=999}},quantityRequired=5,variableQuantities={}}
+        }}
+        ProfessionsFrame={CraftingPage={SchematicForm={recipeSchematic=recipeSchematic,
+            IsVisible=function() return recipeVisible end,GetRecipeInfo=function() return recipeInfo end}}}
+        localCrafting=true;recipeVisible=true
         bankOpen=true;accountVisible=true;freeSlots=1
     "#).exec()?;
     let ao: mlua::Table = lua.globals().get("AO")?;
@@ -432,6 +443,41 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
         "item:744:7"
     );
     assert_eq!(snapshot.sections["account_bank"], serde_json::json!({}));
+    assert_eq!(
+        snapshot.sections["selected_recipe"]["reagents"],
+        serde_json::json!({"744":3})
+    );
+    let recipe = azeroth_operator::analysis::review_recipe(&snapshot, 2)?;
+    assert_eq!(recipe["materials"][0]["required"], 6);
+    assert_eq!(recipe["materials"][0]["quantity_observed"], 1);
+    assert_eq!(recipe["materials"][0]["shortfall_vs_observed"], 5);
+    assert_eq!(recipe["craftability_verified"], false);
+    lua.load("recipeSchematic.reagentSlotSchematics[1].reagents[2]={itemID=745};AO.Capture()")
+        .exec()?;
+    let unsupported = read()?;
+    assert_eq!(
+        unsupported.sections["selected_recipe"]["requirements"],
+        "unsupported_required_slots"
+    );
+    assert_eq!(
+        azeroth_operator::analysis::review_recipe(&unsupported, 1)?["materials"],
+        serde_json::json!([])
+    );
+    lua.load("local reagents=recipeSchematic.reagentSlotSchematics[1].reagents; reagents[2]=nil; reagents.alternative={itemID=745};AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["selected_recipe"]["requirements"],
+        "unsupported_required_slots"
+    );
+    for setup in [
+        "recipeSchematic.recipeType=2",
+        "recipeSchematic.recipeType=1;recipeSchematic.reagentSlotSchematics[1]=nil",
+        "recipeVisible=false",
+        "recipeVisible=true;localCrafting=false",
+        "localCrafting=true;npcCrafting=true",
+    ] {
+        lua.load(format!("{setup};AO.Capture()")).exec()?;
+        assert!(read()?.unavailable.contains_key("selected_recipe"));
+    }
     let summary = azeroth_operator::analysis::summary(&snapshot);
     assert_eq!(summary["character_bank_item_slots_observed"], 1);
     assert_eq!(summary["account_bank_item_slots_observed"], 0);

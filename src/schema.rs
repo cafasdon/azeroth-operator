@@ -418,6 +418,38 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ("skill_line", "positive", true),
             ],
         )?,
+        "selected_recipe" => {
+            object(
+                value,
+                &[
+                    ("recipe_id", "positive", true),
+                    ("name", "text", true),
+                    ("learned", "bool", true),
+                    ("output_item_id", "positive", false),
+                    ("requirements", "text", true),
+                    ("reagents", "map", true),
+                ],
+            )?;
+            let name = value["name"].as_str().unwrap();
+            ensure!(!name.is_empty() && name.len() <= 256, "Invalid recipe name");
+            let reagents = value["reagents"].as_object().unwrap();
+            ensure!(reagents.len() <= 64, "Too many required reagents");
+            ensure!(
+                value["requirements"] == "fixed_items"
+                    || (value["requirements"] == "unsupported_required_slots"
+                        && reagents.is_empty()),
+                "Invalid recipe requirements"
+            );
+            for (id, quantity) in reagents {
+                index(id, 1, u32::MAX)?;
+                ensure!(
+                    quantity
+                        .as_u64()
+                        .is_some_and(|n| (1..=u32::MAX as u64).contains(&n)),
+                    "Invalid reagent quantity"
+                );
+            }
+        }
         "quests" => entries(value, &[("title", "text", true), ("level", "int", true)])?,
         "currencies" => {
             object(
