@@ -514,12 +514,44 @@ struct EquippedSlot {
     observed: bool,
     item_id: Option<u64>,
     level: Option<i64>,
+    regular_stats: Option<serde_json::Map<String, Value>>,
 }
 
 fn default_item_level(item: &Value) -> Option<i64> {
     item["scalingOptions"]["0"]["ilvl"]
         .as_i64()
         .filter(|level| *level > 0)
+}
+
+fn default_regular_stats(item: &Value) -> Option<serde_json::Map<String, Value>> {
+    let scaling = item["scalingOptions"]["0"].as_object()?;
+    match scaling.get("stats") {
+        Some(stats) => stats.as_object().cloned(),
+        None => Some(serde_json::Map::new()),
+    }
+}
+
+fn regular_stat_delta(
+    equipped: &serde_json::Map<String, Value>,
+    candidate: &serde_json::Map<String, Value>,
+) -> Option<BTreeMap<String, f64>> {
+    let mut deltas = BTreeMap::new();
+    for id in equipped
+        .keys()
+        .chain(candidate.keys())
+        .collect::<BTreeSet<_>>()
+    {
+        let before = equipped.get(id).map_or(Some(0.0), Value::as_f64)?;
+        let after = candidate.get(id).map_or(Some(0.0), Value::as_f64)?;
+        let delta = after - before;
+        if !delta.is_finite() {
+            return None;
+        }
+        if delta != 0.0 {
+            deltas.insert(id.clone(), delta);
+        }
+    }
+    Some(deltas)
 }
 
 fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) -> EquippedSlot {
@@ -531,18 +563,17 @@ fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) 
         .find(|index| simulator_slot_for_equipment(*index) == Some(slot))
         .and_then(|index| equipment?.get(&index.to_string()))
         .and_then(|item| item["item_id"].as_u64());
-    let level = item_id
-        .and_then(|id| {
-            catalogue
-                .iter()
-                .find(|item| item["id"].as_u64() == Some(id))
-        })
-        .and_then(default_item_level);
+    let equipped = item_id.and_then(|id| {
+        catalogue
+            .iter()
+            .find(|item| item["id"].as_u64() == Some(id))
+    });
     EquippedSlot {
         slot,
         observed: equipment.is_some(),
         item_id,
-        level,
+        level: equipped.and_then(default_item_level),
+        regular_stats: equipped.and_then(default_regular_stats),
     }
 }
 
@@ -552,8 +583,13 @@ impl EquippedSlot {
             .iter()
             .map(|item| {
                 let level = default_item_level(item);
+                let stat_delta = self.regular_stats.as_ref().and_then(|equipped| {
+                    let candidate = default_regular_stats(item)?;
+                    regular_stat_delta(equipped, &candidate)
+                });
                 json!({"item_id":item["id"],"default_item_level":level,
-                    "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped))})
+                    "delta_from_equipped":level.zip(self.level).and_then(|(candidate, equipped)| candidate.checked_sub(equipped)),
+                    "default_regular_stat_delta":stat_delta})
             })
             .collect();
         json!({"simulator_slot":self.slot,"equipment_observed":self.observed,"equipped_item_id":self.item_id,
@@ -924,11 +960,7 @@ fn modifier_candidates(db: &Value, modifiers: &Value, item: Option<&Value>) -> V
         _ => None,
     });
     let regular_stats = item.and_then(|item| {
-        let scaling = item["scalingOptions"]["0"].as_object()?;
-        let base = match scaling.get("stats") {
-            Some(stats) => stats.as_object()?.clone(),
-            None => serde_json::Map::new(),
-        };
+        let base = default_regular_stats(item)?;
         match modifiers["random_suffix_id"].as_i64()? {
             0 => Some(Value::Object(base)),
             _ => {

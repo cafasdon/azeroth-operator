@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare default regular stat gains and losses with the saved Forever equipped slot.
+
 - Filter Forever catalogue gear by minimum item-level gain over a saved slot.
 
 - Compare Forever catalogue item levels with the saved item in the requested equipment slot.
