@@ -1156,6 +1156,13 @@ pub fn summary(s: &Snapshot) -> Value {
         .and_then(|v| v.get("has_unspent"))
         .and_then(Value::as_bool);
     let quests = s.sections.get("quests").and_then(Value::as_object);
+    let timed_quests = quests.filter(|_| s.client.family == crate::Family::Forever).map(|quests| {
+        let mut rows = quests.iter().filter_map(|(id, quest)| {
+            Some((quest["timer"]["remaining_seconds"].as_u64()?, id.parse::<u32>().ok()?))
+        }).collect::<Vec<_>>();
+        rows.sort_unstable();
+        rows.into_iter().map(|(remaining_seconds, quest_id)| json!({"quest_id":quest_id,"remaining_seconds":remaining_seconds})).collect::<Vec<_>>()
+    });
     let quest_money = quests
         .filter(|_| s.client.family == crate::Family::Forever)
         .map(|quests| {
@@ -1201,6 +1208,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "quest_checklist":quests.map(quest_checklist),
       "quest_waypoint_maps":if s.client.family == crate::Family::Forever { quests.map(quest_waypoint_maps) } else { None },
       "quest_money":quest_money,
+      "observed_quest_timers":timed_quests,
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})

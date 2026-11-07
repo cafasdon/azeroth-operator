@@ -473,6 +473,11 @@ pub fn verify_forever_capture_fixture(
                 if invalidQuestMoney then return -1 end
                 return id==42 and 250 or 0
             end,
+            GetTimeAllowed=function(id)
+                if id==43 then return end
+                if invalidItemChoice then return 100,105 end
+                return 100,25.5
+            end,
             GetNextWaypoint=function(id)
                 if id==43 then error("unavailable") end
                 if invalidQuestMap then return 0 end
@@ -638,6 +643,15 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(quests["42"]["required_copper"], 250);
     assert_eq!(quests["43"]["required_copper"], 0);
     assert_eq!(
+        quests["42"]["timer"],
+        serde_json::json!({"total_seconds":100,"remaining_seconds":74})
+    );
+    assert!(quests["43"].get("timer").is_none());
+    assert_eq!(
+        azeroth_operator::analysis::summary(&snapshot)["observed_quest_timers"],
+        serde_json::json!([{"quest_id":42,"remaining_seconds":74}])
+    );
+    assert_eq!(
         quests["42"]["currency_rewards"],
         serde_json::json!({"1":{"currency_id":17,"quantity":25}})
     );
@@ -673,6 +687,10 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(quests["43"]["spell_rewards"], serde_json::json!({}));
     lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
     let partial = read()?;
+    assert_eq!(
+        partial.sections["quests"]["42"]["timer"]["remaining_seconds"],
+        0
+    );
     assert!(
         partial.sections["quests"]["42"]
             .get("spell_rewards")

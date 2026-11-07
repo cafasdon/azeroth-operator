@@ -643,6 +643,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("failed", "bool", false),
                     ("next_waypoint_map_id", "positive", false),
                     ("required_copper", "wallet_copper", false),
+                    ("timer", "map", false),
                     ("currency_rewards", "map", false),
                     ("currency_choices", "map", false),
                     ("item_choices", "map", false),
@@ -654,6 +655,19 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
+                if let Some(timer) = quest.get("timer").filter(|v| !v.is_null()) {
+                    object(
+                        timer,
+                        &[
+                            ("total_seconds", "positive", true),
+                            ("remaining_seconds", "uint", true),
+                        ],
+                    )?;
+                    ensure!(
+                        timer["remaining_seconds"].as_u64() <= timer["total_seconds"].as_u64(),
+                        "Invalid quest timer"
+                    );
+                }
                 if let Some(spells) = quest.get("spell_rewards").filter(|v| !v.is_null()) {
                     entries(
                         spells,

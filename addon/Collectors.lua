@@ -584,6 +584,14 @@ local function questRewardAccessible(value)
     return not issecretvalue or not issecretvalue(value)
 end
 
+local function questTimer(api,id)
+    local ok,total,elapsed=pcall(api.GetTimeAllowed,id)
+    if not ok or not questRewardAccessible(total) or not questRewardAccessible(elapsed) then return nil end
+    if type(total)~="number" or type(elapsed)~="number" or not (total>=1 and total<=4294967295)
+        or not (elapsed>=0 and elapsed<math.huge) then return nil end
+    return {total_seconds=math.floor(total),remaining_seconds=math.floor(math.max(0,total-elapsed))}
+end
+
 local function questRewardInteger(value,minimum,maximum)
     return questRewardAccessible(value) and type(value)=="number" and value%1==0
         and value>=minimum and value<=maximum
@@ -735,6 +743,7 @@ AO.collectors.quests = function()
                 entry.failed=questFlag(api,"IsFailed",id)
                 entry.next_waypoint_map_id=questWaypointMap(api,id)
                 entry.required_copper=questRequiredCopper(api,id)
+                entry.timer=questTimer(api,id)
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
                 local renownOk,renown=pcall(questRenownRewards,api,id)

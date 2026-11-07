@@ -74,6 +74,12 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+`timer` records the quest's total and remaining seconds at export time,
+rounded down. `character_summary.observed_quest_timers` lists observed timers
+with the least time left first. A missing timer means no usable timer was
+returned. These are saved observations and do not count down after export.
+Update the importer and reader before syncing the new field. [Forever quest tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_QuestObjectiveTracker.lua)
+
 The selected quest can include `currency_rewards`, indexed by reward row.
 Each row contains `currency_id` and the panel's `totalRewardAmount` as
 `quantity`. This covers the panel's receive list. Choice rewards use a

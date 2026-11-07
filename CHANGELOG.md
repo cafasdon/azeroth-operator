@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever quest timers and list recorded time remaining in character summaries.
+
 - Match saved Forever quest reward spell IDs to local item and enchant recipe references.
 
 - Capture Forever quest reward spell IDs and available panel classification.
