@@ -93,6 +93,8 @@ struct Inspect {
     action_bar_spellbook: bool,
     /// Select one captured Forever built-in action slot, numbered 1 to 4096.
     action_bar_slot: Option<std::num::NonZeroU32>,
+    /// Match an exact key on captured Forever built-in action buttons.
+    action_bar_hotkey: Option<String>,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -953,9 +955,16 @@ impl Operator {
             || args.spellbook_passive.is_some()
             || args.spellbook_off_spec.is_some()
             || args.spellbook_name.is_some();
-        if (args.action_bar_spellbook || args.action_bar_slot.is_some())
-            && args.section.as_deref() != Some("action_bar_observation")
-        {
+        let action_bar_hotkey = args.action_bar_hotkey.as_deref().map(str::trim);
+        if action_bar_hotkey.is_some_and(|key| key.is_empty() || key.len() > 128) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar hotkey requires 1 to 128 UTF-8 bytes",
+            )]);
+        }
+        let review_action_bar = args.action_bar_spellbook
+            || args.action_bar_slot.is_some()
+            || action_bar_hotkey.is_some();
+        if review_action_bar && args.section.as_deref() != Some("action_bar_observation") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Action bar slot and spellbook review require the action_bar_observation section",
             )]);
@@ -1346,12 +1355,12 @@ impl Operator {
                         }
                     }
                 }
+                if review_action_bar && value["client"]["family"] != "forever" {
+                    return CallToolResult::error(vec![ContentBlock::text(
+                        "Action bar review requires a saved Forever snapshot",
+                    )]);
+                }
                 if let Some(slot) = args.action_bar_slot {
-                    if value["client"]["family"] != "forever" {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Action bar slot review requires a saved Forever snapshot",
-                        )]);
-                    }
                     let key = slot.to_string();
                     let observed = value["data"]
                         .get_mut("slots")
@@ -1369,12 +1378,39 @@ impl Operator {
                         rows.retain(|_, row| row["slot"].as_u64() == Some(u64::from(slot.get())));
                     }
                 }
-                if args.action_bar_spellbook {
-                    if value["client"]["family"] != "forever" {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Action bar spellbook review requires a saved Forever snapshot",
-                        )]);
+                if let Some(key) = action_bar_hotkey {
+                    let data = &mut value["data"];
+                    let matches = data
+                        .get_mut("button_hotkeys")
+                        .and_then(serde_json::Value::as_object_mut)
+                        .map(|buttons| {
+                            buttons.retain(|_, row| {
+                                ["key1", "key2"].iter().any(|field| {
+                                    row[*field]
+                                        .as_str()
+                                        .is_some_and(|observed| observed.eq_ignore_ascii_case(key))
+                                })
+                            });
+                            let slots = buttons
+                                .values()
+                                .filter_map(|row| row["slot"].as_u64())
+                                .collect::<std::collections::BTreeSet<_>>();
+                            (buttons.len(), slots)
+                        });
+                    if let Some(slots) = data
+                        .get_mut("slots")
+                        .and_then(serde_json::Value::as_object_mut)
+                    {
+                        slots.retain(|slot, _| {
+                            matches.as_ref().is_some_and(|(_, ids)| {
+                                slot.parse::<u64>().is_ok_and(|slot| ids.contains(&slot))
+                            })
+                        });
                     }
+                    value["action_bar_hotkey_match_count"] =
+                        serde_json::json!(matches.map(|(count, _)| count));
+                }
+                if args.action_bar_spellbook {
                     let snapshot = match self.store.read(&args.snapshot_id) {
                         Ok(snapshot) => snapshot,
                         Err(_) => {
@@ -1387,7 +1423,7 @@ impl Operator {
                         azeroth_operator::analysis::action_bar_spellbook(
                             &value["data"],
                             snapshot.sections.get("spellbook"),
-                            args.action_bar_slot.is_none(),
+                            args.action_bar_slot.is_none() && action_bar_hotkey.is_none(),
                         );
                 }
                 if filter_spellbook {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured Forever built-in action buttons and slots by exact hotkey.
+
 - Compare saved Forever button hotkeys separately from changes to their action slot references.
 
 - Capture up to two binding keys for each observed Forever built-in action button.
