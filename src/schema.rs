@@ -647,10 +647,27 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("currency_choices", "map", false),
                     ("item_choices", "map", false),
                     ("item_rewards", "map", false),
+                    ("reward_amounts", "map", false),
                     ("objectives", "map", false),
                 ],
             )?;
             for quest in value.as_object().unwrap().values() {
+                if let Some(amounts) = quest.get("reward_amounts").filter(|v| !v.is_null()) {
+                    object(
+                        amounts,
+                        &[
+                            ("copper", "wallet_copper", false),
+                            ("xp", "uint", false),
+                            ("honor", "uint", false),
+                        ],
+                    )?;
+                    ensure!(
+                        ["copper", "xp", "honor"]
+                            .iter()
+                            .any(|key| amounts[*key].is_u64()),
+                        "No observed quest reward amounts"
+                    );
+                }
                 for (field, id, is_choice) in [
                     ("currency_rewards", "currency_id", false),
                     ("currency_choices", "currency_id", true),

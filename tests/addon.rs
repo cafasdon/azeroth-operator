@@ -483,6 +483,9 @@ pub fn verify_forever_capture_fixture(
         }
         GetNumQuestLogChoices=function(id,all) assert(id==42 and all==true); return 2 end
         GetNumQuestLogRewards=function() return 1 end
+        GetQuestLogRewardMoney=function() return 123 end
+        GetQuestLogRewardXP=function() return invalidItemChoice and -1 or 456 end
+        GetQuestLogRewardHonor=function() return 0 end
         GetQuestLogRewardInfo=function(index) assert(index==1); return "Private",0,3,1,true,117 end
         GetQuestLogChoiceInfo=function(index)
             assert(index==1)
@@ -642,8 +645,17 @@ pub fn verify_forever_capture_fixture(
         serde_json::json!({"1":{"item_id":118,"quantity":1}})
     );
     assert!(quests["43"].get("item_rewards").is_none());
+    assert_eq!(
+        quests["42"]["reward_amounts"],
+        serde_json::json!({"copper":123,"xp":456,"honor":0})
+    );
+    assert!(quests["43"].get("reward_amounts").is_none());
     lua.load("invalidItemChoice=true;AO.Capture()").exec()?;
     let partial = read()?;
+    assert_eq!(
+        partial.sections["quests"]["42"]["reward_amounts"],
+        serde_json::json!({"copper":123,"honor":0})
+    );
     assert!(
         partial.sections["quests"]["42"]
             .get("item_choices")

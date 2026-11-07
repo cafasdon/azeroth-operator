@@ -626,12 +626,22 @@ local function questFixedItems()
     return result
 end
 
+local function questRewardAmount(query,maximum)
+    local ok,value=pcall(query)
+    if ok and questRewardInteger(value,0,maximum) then return value end
+end
+
 local function questSelectedRewards(api,id)
     local selected=api.GetSelectedQuest()
     if not questRewardInteger(selected,1,4294967295) or selected~=id then return nil end
     local show=api.ShouldShowQuestRewards(id)
     if not questRewardAccessible(show) or show~=true then return nil end
     local fixedOk,fixed=pcall(questFixedItems)
+    local amounts={
+        copper=questRewardAmount(GetQuestLogRewardMoney,9999999999999),
+        xp=questRewardAmount(GetQuestLogRewardXP,4294967295),
+        honor=questRewardAmount(GetQuestLogRewardHonor,4294967295),
+    }
     local choicesOk,currencies,items=pcall(function()
         local count=GetNumQuestLogChoices(id,true)
         assert(questRewardInteger(count,0,32), "Invalid quest choice count")
@@ -651,7 +661,8 @@ local function questSelectedRewards(api,id)
     end)
     selected=api.GetSelectedQuest()
     if questRewardInteger(selected,1,4294967295) and selected==id then
-        return choicesOk and currencies or nil,choicesOk and items or nil,fixedOk and fixed or nil
+        return choicesOk and currencies or nil,choicesOk and items or nil,fixedOk and fixed or nil,
+            next(amounts) and amounts or nil
     end
 end
 
@@ -680,11 +691,12 @@ AO.collectors.quests = function()
                 entry.required_copper=questRequiredCopper(api,id)
                 local rewardsOk,rewards=pcall(questCurrencyRewards,id)
                 if rewardsOk then entry.currency_rewards=rewards end
-                local selectedOk,currencyChoices,itemChoices,itemRewards=pcall(questSelectedRewards,api,id)
+                local selectedOk,currencyChoices,itemChoices,itemRewards,rewardAmounts=pcall(questSelectedRewards,api,id)
                 if selectedOk then
                     entry.currency_choices=currencyChoices
                     entry.item_choices=itemChoices
                     entry.item_rewards=itemRewards
+                    entry.reward_amounts=rewardAmounts
                 end
                 local ok,objectives=pcall(questObjectives,api,id)
                 if ok then entry.objectives=objectives end

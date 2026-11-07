@@ -97,6 +97,11 @@ list as currency choices. Empty maps represent observed empty lists. Missing
 maps mean the quest was unselected or that list could not be read. Update
 the importer and reader before syncing these fields.
 
+The selected quest's `reward_amounts` can contain displayed `copper`, `xp`
+and `honor`. Zero is observed, and missing amounts are unknown. These are
+reward panel values at export time. `required_copper` remains a separate
+cost observation. Update the importer and reader before syncing this field.
+
 Set `quest_item_catalogue: true` when inspecting a saved Forever quest by ID
 to look up item names, required levels and simulator slots in the verified
 local catalogue. References keep their captured reward positions. A null row
