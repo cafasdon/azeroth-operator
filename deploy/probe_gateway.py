@@ -7,6 +7,27 @@ import urllib.request
 
 URL = "http://127.0.0.1:8823/mcp"
 
+CURRENT_INSPECTION_FIELDS = {
+    "quest_id", "currency_id", "currency_reward_quantity", "faction_id",
+    "achievement_id", "spending_budget",
+}
+
+
+def verify_current_inspection_schema(tools):
+    inspection = next(tool for tool in tools if tool["name"] == "inspect_snapshot")
+    schema = inspection["inputSchema"]
+    properties = schema.get("properties")
+    if schema.get("type") != "object" or not isinstance(properties, dict):
+        raise ValueError("Gateway inspection schema must describe an object")
+    expected = CURRENT_INSPECTION_FIELDS | {"snapshot_id", "section"}
+    missing = expected - properties.keys()
+    if missing:
+        raise ValueError("Gateway inspection schema missing: " + ", ".join(sorted(missing)))
+    if schema.get("required") != ["snapshot_id"]:
+        raise ValueError("Gateway inspection schema changed required inputs")
+    if not all(isinstance(properties[field], dict) and properties[field] for field in expected):
+        raise ValueError("Gateway inspection schema contains invalid field definitions")
+
 
 def request(payload, token=None, session=None):
     headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream",
@@ -32,6 +53,7 @@ def request(payload, token=None, session=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--public", action="store_true")
+    parser.add_argument("--require-current-inspection", action="store_true")
     args = parser.parse_args()
     if args.public:
         URL = "https://mcp.cafas.com.br/scopes/azeroth/mcp"
@@ -47,7 +69,10 @@ if __name__ == "__main__":
     code, result, session = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, token, session)
     assert code == 200 and {t["name"] for t in result["result"]["tools"]} == {
         "capabilities", "inspect_snapshot", "list_snapshots", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "find_snapshot_item"}
-    tool_count=len(result["result"]["tools"])
+    tools = result["result"]["tools"]
+    tool_count = len(tools)
+    if args.require_current_inspection:
+        verify_current_inspection_schema(tools)
     code, result, _ = request({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
                               "params": {"name": "capabilities", "arguments": {}}}, token, session)
     assert code == 200 and not result["result"].get("isError", False)

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Verify current snapshot inspection parameters during a hosted reader upgrade.
+
 - Inspect one saved Forever tracked achievement and its remaining work by ID.
 
 - Inspect one saved Forever faction and its reputation progress by ID.

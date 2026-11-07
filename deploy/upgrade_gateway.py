@@ -70,7 +70,7 @@ if __name__ == "__main__":
         run("systemctl", "restart", "azeroth-mcp.service")
         run("systemctl", "is-active", "--quiet", "azeroth-mcp.service")
         wait_ready()
-        run("python3", str(Path(__file__).with_name("probe_gateway.py")))
+        run("python3", str(Path(__file__).with_name("probe_gateway.py")), "--require-current-inspection")
         run("systemctl", "enable", "azeroth-mcp.service")
         run("systemctl", "is-enabled", "--quiet", "azeroth-mcp.service")
     except BaseException:
