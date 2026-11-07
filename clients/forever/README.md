@@ -153,6 +153,10 @@ IDs in the selected slots and the observed storage. MCP callers can use
 `item_ids` on `review_forever_owned_gear` instead of the single-ID
 `item_id` option.
 
+Use `--set-id` to restrict alternatives to pieces of one pinned catalogue
+set. This can be combined with `--item-id`, in which case a candidate must
+match both filters. The complete equipped baseline is still included.
+
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
 or unmapped observations are reported as `unverified` in `template_identity`.

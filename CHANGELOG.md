@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank owned Forever gear combinations from a selected catalogue set.
+
 - Collapse equivalent Forever one-handed storage copies while preserving dual-wield combinations.
 
 - Reduce equivalent Forever ring and trinket copies while preserving paired-slot combinations.

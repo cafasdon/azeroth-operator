@@ -54,13 +54,15 @@ def check_template_identity(template, stats):
 
 
 async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
-                          selected_slots=None):
+                          selected_slots=None, set_id=None):
     candidates = []
     skipped = []
     offset = 0
     representatives = {}
     count = None
     filters = {"item_ids": item_ids} if item_ids else {}
+    if set_id is not None:
+        filters["set_id"] = set_id
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
@@ -133,7 +135,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
-                  can_dual_wield=True, character=None):
+                  can_dual_wield=True, character=None, set_id=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -169,7 +171,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         multi = len(slots) > 1
         for slot in slots:
             candidates, exclusions, coverage = await slot_candidates(
-                call, slot, multi, collapse_identical, item_ids, can_dual_wield, slots,
+                call, slot, multi, collapse_identical, item_ids, can_dual_wield, slots, set_id,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
@@ -264,6 +266,7 @@ def main():
                         help="Keep only the storage copies needed to fill equivalent simulator slots.")
     parser.add_argument("--item-id", type=int, action="append",
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
+    parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -284,6 +287,8 @@ def main():
         if args.item_id and (len(args.item_id) > 16 or len(set(args.item_id)) != len(args.item_id)
                              or any(not 1 <= item_id <= 2**32 - 1 for item_id in args.item_id)):
             raise ValueError("Provide at most sixteen distinct positive item IDs")
+        if args.set_id is not None and not 1 <= args.set_id <= 2**32 - 1:
+            raise ValueError("Provide a positive catalogue set ID")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         if len(args.encounter_lookup) > 4:
@@ -306,7 +311,8 @@ def main():
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage, stats, selected_capture = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
-                        args.collapse_identical_items, args.item_id, can_dual_wield, args.character), timeout=45,
+                        args.collapse_identical_items, args.item_id, can_dual_wield,
+                        args.character, args.set_id), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         if len(encounters) == 1:
@@ -333,6 +339,8 @@ def main():
             result["selected_capture"] = selected_capture
         if args.item_id:
             result["requested_item_ids"] = args.item_id
+        if args.set_id is not None:
+            result["requested_set_id"] = args.set_id
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]
         else:
