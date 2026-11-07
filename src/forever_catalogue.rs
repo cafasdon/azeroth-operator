@@ -44,10 +44,12 @@ impl Section {
 pub struct Query {
     pub section: Section,
     /// Exact numeric ID (enchant effect ID for enchants), encounter path, or name substring.
-    /// Omit both filters to get the section count without records.
+    /// Omit all filters to get the section count without records.
     pub key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
+    /// Restrict items to this pinned catalogue set ID.
+    pub set_id: Option<std::num::NonZeroU32>,
 }
 
 fn load(path: &Path) -> Result<(Value, Value)> {
@@ -86,7 +88,11 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
             "Expected a positive recipe spell ID for items or enchants"
         );
     }
-    if key.is_some() || query.recipe_spell_id.is_some() {
+    ensure!(
+        query.set_id.is_none() || matches!(query.section, Section::Items),
+        "Set ID is supported for items only"
+    );
+    if key.is_some() || query.recipe_spell_id.is_some() || query.set_id.is_some() {
         let id = key.and_then(|key| key.parse::<u32>().ok());
         let name = key.map(str::to_lowercase);
         for row in rows {
@@ -109,7 +115,10 @@ pub fn lookup(path: &Path, query: &Query) -> Result<Value> {
                     })
                 })
             });
-            if matches && matches_recipe {
+            let matches_set = query
+                .set_id
+                .is_none_or(|id| row["setId"].as_u64() == Some(u64::from(id.get())));
+            if matches && matches_recipe && matches_set {
                 if records.len() == 20 {
                     has_more = true;
                     break;

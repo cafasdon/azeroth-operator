@@ -59,11 +59,13 @@ $env:AZEROTH_FOREVER_CATALOGUE = (Resolve-Path local-data/forever/catalogue.json
 .\target\debug\azeroth-operator.exe
 ```
 
-Set the same environment variable in the local stdio MCP client's server configuration. The optional `lookup_forever_catalogue` tool reads that file only. For example, use `{"section":"items","key":"744"}` for an item, `{"section":"npcs","key":"ragna"}` for a name search, or `{"section":"encounters","key":"Default/Raid Target"}` for a simulator encounter preset. Omit `key` for a section count. Names return at most 20 matches and `has_more` flags truncation.
+Set the same environment variable in the local stdio MCP client's server configuration. The optional `lookup_forever_catalogue` tool reads that file only. For example, use `{"section":"items","key":"744"}` for an item, `{"section":"npcs","key":"ragna"}` for a name search, or `{"section":"encounters","key":"Default/Raid Target"}` for a simulator encounter preset. Omit all filters for a section count. Lookups return at most 20 matches and `has_more` flags truncation.
 
 The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinned in `catalogue.lock.json` and replaces the destination atomically after verification. A matching cache skips the network. Upgrading data requires reviewing and updating the revision and hash in the pin, rebuilding the companion, and rerunning sync. The catalogue includes simulator reference zones, NPCs and factions. For a wider world mirror, qualify an exportable Forever source independently for coverage, build identity and redistribution terms before adding it.
 
 For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to find catalogue items associated with that recipe. The `enchants` section supports the same filter for enchant references. A supplied `key` further narrows the matches. These associations come from the pinned simulator catalogue and can be incomplete or list several variants. Use the saved recipe observation for reagent requirements.
+
+For a set reference, pass `{"section":"items","set_id":495}`. Compare those catalogue item IDs with `review_forever_owned_gear` using the same `set_id`. The result covers membership in the pinned catalogue. Set bonuses, acquisition and pieces in uncaptured storage need separate evidence.
 
 Verified on 7 November 2026: the actual sync command returned `synced` then `unchanged`; a bad download preserved the destination. The Rust stdio MCP returned exact pinned records across all nine lookup sections. The unconfigured server retained 14 tools. Caller and failure review caught the lack of a total HTTP deadline in the initial implementation. The revised command has a 30-second transfer deadline and a 35-second process timeout. Jev advisory triage classified the finding as material (model `jev-1.14.0`, request `b3f8fe8728dbc6193bf06ddff54922a80d21c1f0980322deea9af094d055e3fb`, 422 input/46 output tokens, 0.304 seconds).
 

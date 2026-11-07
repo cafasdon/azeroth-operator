@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- List Forever catalogue item records by set ID for comparison against observed gear.
+
 - Find observed Forever gear by catalogue set ID, optionally combined with equipment category.
 
 - Filter Forever owned-gear reviews by catalogue equipment category before paging.

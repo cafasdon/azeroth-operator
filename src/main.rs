@@ -304,7 +304,7 @@ impl Operator {
         serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-07","sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
     }
     #[tool(
-        description = "Look up gear, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. Omit key for the section count. No network, live acquisition validation or simulation execution.",
+        description = "Look up gear, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. Omit all filters for the section count. No network, live acquisition validation or simulation execution.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
