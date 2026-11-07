@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare explicit Forever spending budgets against saved gold and currency balances.
+
 - Plan crafting and combined reagent needs for confirmed Forever consumable restock shortages.
 
 - Find saved Forever recipe captures by output item ID for local crafting and consumable restock.

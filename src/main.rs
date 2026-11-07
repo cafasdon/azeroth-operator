@@ -37,6 +37,24 @@ struct Inspect {
     section: Option<String>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
+    /// Compare an explicit basket of costs against one saved Forever inventory.
+    spending_budget: Option<SpendingBudget>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct SpendingBudget {
+    /// Total gold cost expressed in copper.
+    wallet_copper: Option<std::num::NonZeroU64>,
+    /// Up to 20 distinct currency costs.
+    currencies: Option<Vec<CurrencyCost>>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct CurrencyCost {
+    currency_id: std::num::NonZeroU32,
+    quantity: std::num::NonZeroU64,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -785,7 +803,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID in the quests section for its remaining objective work. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID for remaining objectives, or compare explicit Forever costs against saved wallet and currency balances. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -793,6 +811,19 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if let Some(budget) = args.spending_budget {
+            if args.section.is_some() || args.quest_id.is_some() {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Spending budgets cannot be combined with section or quest selection",
+                )]);
+            }
+            return match self.review_spending_budget(&args.snapshot_id, budget) {
+                Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+                Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                    "Spending budget requires a saved Forever snapshot and bounded distinct costs",
+                )]),
+            };
+        }
         if args.quest_id.is_some() && args.section.as_deref() != Some("quests") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest selection requires the quests section",
@@ -838,6 +869,77 @@ impl Operator {
 }
 
 impl Operator {
+    fn review_spending_budget(
+        &self,
+        snapshot_id: &str,
+        budget: SpendingBudget,
+    ) -> anyhow::Result<serde_json::Value> {
+        use serde_json::json;
+        use std::collections::BTreeSet;
+
+        let currencies = budget.currencies.unwrap_or_default();
+        anyhow::ensure!(
+            currencies.len() <= 20 && (budget.wallet_copper.is_some() || !currencies.is_empty()),
+            "Expected at least one cost and at most 20 currencies"
+        );
+        let mut seen = BTreeSet::new();
+        anyhow::ensure!(
+            currencies.iter().all(|cost| seen.insert(cost.currency_id)),
+            "Currency IDs must be distinct"
+        );
+        let snapshot = self.store.read(snapshot_id)?;
+        anyhow::ensure!(
+            snapshot.client.family == Family::Forever,
+            "Expected Forever"
+        );
+        let mut known_shortage = false;
+        let mut unknown = false;
+        let mut compare = |required: u64, observed: Option<u64>| {
+            let shortfall = observed.map(|quantity| required.saturating_sub(quantity));
+            known_shortage |= shortfall.is_some_and(|quantity| quantity > 0);
+            unknown |= shortfall.is_none();
+            json!({"required":required,"observed":observed,"shortfall":shortfall})
+        };
+        let wallet = budget.wallet_copper.map(|cost| {
+            let observed = snapshot
+                .sections
+                .get("wallet")
+                .and_then(|row| row["copper"].as_u64());
+            compare(cost.get(), observed)
+        });
+        let currencies: Vec<_> = currencies
+            .into_iter()
+            .map(|cost| {
+                let row = snapshot
+                    .sections
+                    .get("currency_balances")
+                    .and_then(|section| section["entries"].get(cost.currency_id.to_string()));
+                let mut result = compare(
+                    cost.quantity.get(),
+                    row.and_then(|entry| entry["quantity"].as_u64()),
+                );
+                result["currency_id"] = json!(cost.currency_id);
+                result["account_wide"] =
+                    json!(row.and_then(|entry| entry["account_wide"].as_bool()));
+                result["inactive"] = json!(row.and_then(|entry| entry["inactive"].as_bool()));
+                result
+            })
+            .collect();
+        let covered_by_observed_balances = if known_shortage {
+            Some(false)
+        } else if unknown {
+            None
+        } else {
+            Some(true)
+        };
+        Ok(json!({
+            "snapshot_id":snapshot_id,"captured_at":snapshot.captured_at,"live":false,
+            "age_seconds":(chrono::Utc::now()-snapshot.captured_at).num_seconds(),
+            "spending_budget":{"wallet_copper":wallet,"currencies":currencies,
+                "covered_by_observed_balances":covered_by_observed_balances}
+        }))
+    }
+
     fn add_restock_crafting(
         &self,
         inventory: &azeroth_operator::Snapshot,
