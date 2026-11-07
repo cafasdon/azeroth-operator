@@ -125,6 +125,13 @@ coverage and skipped candidates. Multi-slot output uses `slots` and a
 `selections` array per result. Character eligibility and complete-inventory
 optimisation remain separate checks.
 
+Repeat `--item-id` to restrict alternatives to up to 16 distinct base item
+IDs. The filter is applied before paging. The equipped baseline still uses
+the complete captured equipment. The result applies only to the requested
+IDs in the selected slots and the observed storage. MCP callers can use
+`item_ids` on `review_forever_owned_gear` instead of the single-ID
+`item_id` option.
+
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
 or unmapped observations are reported as `unverified` in `template_identity`.

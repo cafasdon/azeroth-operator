@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rank a targeted shortlist of up to sixteen owned Forever item IDs.
+
 - Prune unresolved Forever simulator item inputs before expanding gear combinations.
 
 - Capture Forever faction and use it to screen faction-restricted gear swaps.

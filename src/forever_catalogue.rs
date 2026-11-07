@@ -986,7 +986,7 @@ pub fn review_owned(
     limit: usize,
     item_type: Option<GearType>,
     set_id: Option<std::num::NonZeroU32>,
-    observed_item_id: Option<std::num::NonZeroU32>,
+    observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
 ) -> Result<Value> {
     ensure!(
@@ -996,6 +996,14 @@ pub fn review_owned(
     ensure!(
         (1..=50).contains(&limit),
         "Expected a limit between 1 and 50"
+    );
+    let item_filter: std::collections::BTreeSet<_> = observed_item_ids
+        .iter()
+        .map(|id| u64::from(id.get()))
+        .collect();
+    ensure!(
+        observed_item_ids.len() <= 16 && item_filter.len() == observed_item_ids.len(),
+        "Expected at most sixteen distinct item IDs"
     );
     let (db, provenance) = load(path)?;
     let items = db["items"]
@@ -1051,7 +1059,7 @@ pub fn review_owned(
                     .or_default() += 1;
             }
             let wrong_item =
-                observed_item_id.is_some_and(|id| item_id != Some(u64::from(id.get())));
+                !item_filter.is_empty() && !item_id.is_some_and(|id| item_filter.contains(&id));
             let wrong_slot = simulator_slot.is_some_and(|slot| {
                 !reference.is_some_and(|item| simulator_slots(item).contains(&slot))
             });

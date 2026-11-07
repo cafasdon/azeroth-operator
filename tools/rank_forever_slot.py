@@ -51,14 +51,15 @@ def check_template_identity(template, stats):
     return checks
 
 
-async def slot_candidates(call, slot, multi, collapse_identical):
+async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None):
     candidates = []
     skipped = []
     offset = 0
     representatives = {}
     count = None
+    filters = {"item_ids": item_ids} if item_ids else {}
     while True:
-        page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50)
+        page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
             count = page["filtered_item_locations"]
             if not 0 <= count <= 256:
@@ -113,7 +114,7 @@ async def slot_candidates(call, slot, multi, collapse_identical):
             return candidates, skipped, page["coverage"]
 
 
-async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
+async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -134,7 +135,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False):
         coverage = None
         multi = len(slots) > 1
         for slot in slots:
-            candidates, exclusions, coverage = await slot_candidates(call, slot, multi, collapse_identical)
+            candidates, exclusions, coverage = await slot_candidates(call, slot, multi, collapse_identical, item_ids)
             skipped.extend(exclusions)
             options.append([None, *candidates])
         if prod(map(len, options)) > 1024:
@@ -223,6 +224,8 @@ def main():
                        help="Consider all 17 simulator slots within the search limits.")
     parser.add_argument("--collapse-identical-items", action="store_true",
                         help="Use one storage copy of each equivalent single-slot simulator item.")
+    parser.add_argument("--item-id", type=int, action="append",
+                        help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--engine-sha256", required=True)
     parser.add_argument("--template", type=Path, required=True)
@@ -240,6 +243,9 @@ def main():
             raise ValueError("Provide an absolute local MCP executable path")
         if len(set(args.slot)) != len(args.slot):
             raise ValueError("Provide distinct slots")
+        if args.item_id and (len(args.item_id) > 16 or len(set(args.item_id)) != len(args.item_id)
+                             or any(not 1 <= item_id <= 2**32 - 1 for item_id in args.item_id)):
+            raise ValueError("Provide at most sixteen distinct positive item IDs")
         if bool(args.bulk_engine) != bool(args.bulk_engine_sha256) or not 1 <= args.top <= 64:
             raise ValueError("Provide both bulk adapter arguments and a bounded shortlist")
         if len(args.encounter_lookup) > 4:
@@ -260,7 +266,8 @@ def main():
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage, stats = asyncio.run(asyncio.wait_for(
-                collect(args.mcp, args.snapshot_id, args.slot, errlog, args.collapse_identical_items), timeout=45,
+                collect(args.mcp, args.snapshot_id, args.slot, errlog,
+                        args.collapse_identical_items, args.item_id), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         if len(encounters) == 1:
@@ -283,6 +290,8 @@ def main():
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
+        if args.item_id:
+            result["requested_item_ids"] = args.item_id
         if len(args.slot) == 1:
             result["slot"] = args.slot[0]
         else:

@@ -84,6 +84,8 @@ struct OwnedGearReview {
     set_id: Option<std::num::NonZeroU32>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
+    /// Find observed copies of up to sixteen distinct base item IDs. Exclusive with item_id.
+    item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Filter candidates by a pinned simulator slot before paging.
     simulator_slot: Option<azeroth_operator::forever_catalogue::SimulatorSlot>,
 }
@@ -390,6 +392,18 @@ impl Operator {
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
             let snapshot = self.store.read(&args.snapshot_id)?;
+            anyhow::ensure!(
+                args.item_id.is_none() || args.item_ids.is_none(),
+                "Choose item_id or item_ids"
+            );
+            let item_ids = args
+                .item_ids
+                .as_deref()
+                .unwrap_or_else(|| args.item_id.as_slice());
+            anyhow::ensure!(
+                args.item_ids.is_none() || !item_ids.is_empty(),
+                "Expected at least one item ID"
+            );
             let mut review = azeroth_operator::forever_catalogue::review_owned(
                 catalogue,
                 &snapshot,
@@ -397,7 +411,7 @@ impl Operator {
                 args.limit.unwrap_or(20),
                 args.item_type,
                 args.set_id,
-                args.item_id,
+                item_ids,
                 args.simulator_slot,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
