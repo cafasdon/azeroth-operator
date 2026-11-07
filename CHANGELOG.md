@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Inspect a single saved Forever currency and its recorded cap headroom by ID.
+
 - Suggest manual bank withdrawals for saved Forever item budgets.
 
 - Check carried item costs alongside gold and currencies in Forever spending budgets.

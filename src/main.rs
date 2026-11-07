@@ -37,6 +37,8 @@ struct Inspect {
     section: Option<String>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
+    /// Select one saved Forever currency by ID. Requires section "currency_balances".
+    currency_id: Option<std::num::NonZeroU32>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -812,7 +814,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Read a stored snapshot by hash, with capture age. Select one quest by ID for remaining objectives, or compare explicit Forever costs against saved gold, currencies and carried items. Never live state.",
+        description = "Read a stored snapshot by hash, with capture age. Select a quest or Forever currency by ID, or compare explicit Forever costs against saved gold, currencies and carried items. Never live state.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -821,9 +823,9 @@ impl Operator {
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
         if let Some(budget) = args.spending_budget {
-            if args.section.is_some() || args.quest_id.is_some() {
+            if args.section.is_some() || args.quest_id.is_some() || args.currency_id.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Spending budgets cannot be combined with section or quest selection",
+                    "Spending budgets cannot be combined with section, quest or currency selection",
                 )]);
             }
             return match self.review_spending_budget(&args.snapshot_id, budget) {
@@ -836,6 +838,11 @@ impl Operator {
         if args.quest_id.is_some() && args.section.as_deref() != Some("quests") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest selection requires the quests section",
+            )]);
+        }
+        if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Currency selection requires the currency_balances section",
             )]);
         }
         match self
@@ -854,8 +861,28 @@ impl Operator {
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
                 if args.section.as_deref() == Some("currency_balances") {
-                    value["currency_cap_headroom"] =
+                    let headroom =
                         azeroth_operator::analysis::currency_cap_headroom(&value["data"]);
+                    if let Some(id) = args.currency_id {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Currency selection requires a saved Forever snapshot",
+                            )]);
+                        }
+                        let key = id.to_string();
+                        let section = value["data"].take();
+                        let entries = section["entries"].as_object();
+                        let row = entries.and_then(|entries| entries.get(&key));
+                        value["currency_id"] = serde_json::json!(id);
+                        value["currency_observed"] =
+                            serde_json::json!(entries.map(|_| row.is_some()));
+                        value["coverage"] = section["coverage"].clone();
+                        value["data"] = row.cloned().unwrap_or_default();
+                        value["currency_cap_headroom"] =
+                            headroom.get(&key).cloned().unwrap_or_default();
+                    } else {
+                        value["currency_cap_headroom"] = headroom;
+                    }
                 } else if args.section.as_deref() == Some("reputation") {
                     value["standard_reputation_progress"] =
                         azeroth_operator::analysis::standard_reputation_progress(&value["data"]);

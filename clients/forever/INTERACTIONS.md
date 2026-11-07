@@ -25,6 +25,11 @@ New MCP routes are denied until reviewed for data source, owner scope, outputs a
 
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
+On the Rust MCP, pass `currency_id` with `section: "currency_balances"`
+to return one currency and its cap headroom. The observation flag is false
+when the saved list lacks that ID and null when the list is unavailable.
+An observed balance of zero remains zero.
+
 On the Rust MCP, use `inspect_snapshot` with a Forever snapshot ID and `spending_budget`
 to check explicit costs. A budget can include `wallet_copper` and up to 20
 distinct `currencies` rows with `currency_id` and `quantity`. Omit section
