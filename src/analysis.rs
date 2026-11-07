@@ -1184,6 +1184,29 @@ pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     )
 }
 
+#[derive(
+    Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum QuestReadiness {
+    Ready,
+    NotReady,
+    Failed,
+    Unknown,
+}
+
+pub fn quest_readiness(quest: &Value) -> QuestReadiness {
+    if quest["failed"].as_bool() == Some(true) {
+        QuestReadiness::Failed
+    } else {
+        match quest["ready_for_turn_in"].as_bool() {
+            Some(true) => QuestReadiness::Ready,
+            Some(false) => QuestReadiness::NotReady,
+            None => QuestReadiness::Unknown,
+        }
+    }
+}
+
 pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     let (mut ready, mut not_ready, mut failed, mut unknown) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());
@@ -1191,14 +1214,11 @@ pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
         let Ok(id) = key.parse::<u32>() else {
             continue;
         };
-        if quest["failed"].as_bool() == Some(true) {
-            failed.push(id);
-        } else {
-            match quest["ready_for_turn_in"].as_bool() {
-                Some(true) => ready.push(id),
-                Some(false) => not_ready.push(id),
-                None => unknown.push(id),
-            }
+        match quest_readiness(quest) {
+            QuestReadiness::Ready => ready.push(id),
+            QuestReadiness::NotReady => not_ready.push(id),
+            QuestReadiness::Failed => failed.push(id),
+            QuestReadiness::Unknown => unknown.push(id),
         }
     }
     for ids in [&mut ready, &mut not_ready, &mut failed, &mut unknown] {

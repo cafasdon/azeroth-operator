@@ -56,6 +56,8 @@ struct Inspect {
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter saved Forever quests to observed elite or suggested-group quests.
     quest_difficulty: Option<QuestDifficulty>,
+    /// Filter saved Forever quests by captured turn-in readiness.
+    quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
@@ -916,6 +918,7 @@ impl Operator {
                 || args.quest_id.is_some()
                 || args.quest_waypoint_map_id.is_some()
                 || args.quest_difficulty.is_some()
+                || args.quest_readiness.is_some()
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
@@ -950,6 +953,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest difficulty selection requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_readiness.is_some()
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest readiness selection requires the quests section without a quest ID",
             )]);
         }
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
@@ -1074,7 +1084,10 @@ impl Operator {
                     }
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
-                if args.quest_waypoint_map_id.is_some() || args.quest_difficulty.is_some() {
+                if args.quest_waypoint_map_id.is_some()
+                    || args.quest_difficulty.is_some()
+                    || args.quest_readiness.is_some()
+                {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Quest filters require a saved Forever snapshot",
@@ -1108,6 +1121,14 @@ impl Operator {
                                 });
                                 unknown
                             }));
+                    }
+                    if let Some(readiness) = args.quest_readiness {
+                        value["quest_readiness"] = serde_json::json!(readiness);
+                        if let Some(quests) = data.as_object_mut() {
+                            quests.retain(|_, quest| {
+                                azeroth_operator::analysis::quest_readiness(quest) == readiness
+                            });
+                        }
                     }
                     value["quest_checklist"] =
                         data.as_object().map_or(serde_json::Value::Null, |quests| {

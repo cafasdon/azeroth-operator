@@ -203,6 +203,11 @@ after the optional waypoint filter, while the waypoint unknown count still
 describes the full capture. These filters require the quests section without
 a quest ID.
 
+Use `quest_readiness` with `ready`, `not_ready`, `failed` or `unknown` to
+return only quests in that checklist category. A captured failure takes
+precedence over the ready flag. This filter combines with waypoint and
+difficulty filters and requires the quests section without a quest ID.
+
 Use `quest_waypoints: true` with `compare_snapshots` to list changed
 next waypoint maps for quests present in both captures. A map becoming
 observed or unknown has its own status. If either quest log is unavailable,
