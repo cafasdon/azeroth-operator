@@ -25,7 +25,10 @@ def capabilities() -> dict:
 @mcp.tool(annotations=READ)
 def inspect_snapshot(snapshot_id: str, section: str | None = None) -> dict:
     """Inspect a stored snapshot by content hash. Always reports capture age, never claims live state."""
-    return store.inspect(snapshot_id, section)
+    try:
+        return store.inspect(snapshot_id, section)
+    except (OSError, ValueError, KeyError, TypeError):
+        raise ValueError("Snapshot unavailable or invalid") from None
 
 
 if __name__ == "__main__":

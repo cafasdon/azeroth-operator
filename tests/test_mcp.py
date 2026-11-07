@@ -172,5 +172,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(result.isError)
                     payload = json.loads(result.content[0].text)
                     self.assertFalse(payload["live"])
+                    missing = await session.call_tool("inspect_snapshot", {"snapshot_id": "f" * 64})
+                    self.assertTrue(missing.isError)
+                    self.assertNotIn(folder, missing.content[0].text)
                     rejected = await session.call_tool("inspect_snapshot", {"snapshot_id": "../secret"})
                     self.assertTrue(rejected.isError)
