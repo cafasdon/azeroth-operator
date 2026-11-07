@@ -979,7 +979,7 @@ pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     )
 }
 
-fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
+pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     let (mut ready, mut not_ready, mut failed, mut unknown) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());
     for (key, quest) in quests {

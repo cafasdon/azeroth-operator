@@ -74,6 +74,11 @@ means the client supplied no quantities. A null objective list means objective
 details were unavailable, while an empty object means no captured rows were unfinished.
 Use the saved readiness flag separately for turn-ins.
 
+Pass `quest_waypoint_map_id` with `section: "quests"` to return only
+quests whose next waypoint was recorded on that map. The filtered checklist
+separates ready, not ready, failed and unknown turn-in status. The response
+also counts quests with an unknown waypoint map in the full capture.
+
 When the client exposes a quest's next waypoint during a player export,
 the capture can include its map ID. `character_summary` groups saved quest
 IDs by that map and lists quests whose waypoint map is unknown. The map

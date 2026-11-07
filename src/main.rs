@@ -37,6 +37,8 @@ struct Inspect {
     section: Option<String>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
+    /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
+    quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
@@ -834,6 +836,7 @@ impl Operator {
         if let Some(budget) = args.spending_budget {
             if args.section.is_some()
                 || args.quest_id.is_some()
+                || args.quest_waypoint_map_id.is_some()
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
@@ -853,6 +856,13 @@ impl Operator {
         if args.quest_id.is_some() && args.section.as_deref() != Some("quests") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest selection requires the quests section",
+            )]);
+        }
+        if args.quest_waypoint_map_id.is_some()
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest waypoint map selection requires the quests section without a quest ID",
             )]);
         }
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
@@ -890,6 +900,31 @@ impl Operator {
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
+                }
+                if let Some(map) = args.quest_waypoint_map_id {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Quest waypoint map selection requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["quest_waypoint_map_id"] = serde_json::json!(map);
+                    let mut data = value["data"].take();
+                    if let Some(quests) = data.as_object_mut() {
+                        let unknown = quests
+                            .values()
+                            .filter(|quest| quest["next_waypoint_map_id"].is_null())
+                            .count();
+                        quests.retain(|_, quest| {
+                            quest["next_waypoint_map_id"].as_u64() == Some(u64::from(map.get()))
+                        });
+                        value["quest_checklist"] =
+                            azeroth_operator::analysis::quest_checklist(quests);
+                        value["quest_waypoint_map_unknown_count"] = serde_json::json!(unknown);
+                    } else {
+                        value["quest_checklist"] = serde_json::Value::Null;
+                        value["quest_waypoint_map_unknown_count"] = serde_json::Value::Null;
+                    }
+                    value["data"] = data;
                 }
                 if args.section.as_deref() == Some("currency_balances") {
                     let headroom =
