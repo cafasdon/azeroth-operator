@@ -62,6 +62,25 @@ def _validate_action_bar_observation(observation):
         buttons.add(button)
 
 
+def _validate_currency_balances(observation):
+    if (not isinstance(observation, dict) or set(observation) != {"coverage", "entries"}
+            or observation["coverage"] != "visible_currency_ids_only"
+            or not isinstance(observation["entries"], dict) or len(observation["entries"]) > 512):
+        raise ValueError("Invalid currency balances")
+    counters = {"quantity", "max_quantity", "max_weekly_quantity", "earned_this_week", "total_earned"}
+    flags = {"account_wide", "inactive", "cap_uses_total_earned"}
+    required = counters | flags | {"name"}
+    for key, row in observation["entries"].items():
+        if (not isinstance(key, str) or not 1 <= len(key) <= 10 or not key.isascii()
+                or not key.isdecimal() or key.startswith("0") or int(key) > 4_294_967_295
+                or not isinstance(row, dict) or set(row) - {"can_earn_per_week"} != required
+                or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
+                or any(type(row[field]) is not int or not 0 <= row[field] <= 4_294_967_295 for field in counters)
+                or any(type(row[field]) is not bool for field in flags)
+                or (row.get("can_earn_per_week") is not None and type(row["can_earn_per_week"]) is not bool)):
+            raise ValueError("Invalid currency balance entry")
+
+
 def validate_snapshot(value):
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("Expected snapshot schema_version 1")
@@ -80,6 +99,10 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "currency_balances" in sections:
+        if c["family"] != "forever":
+            raise ValueError("Currency balances require Forever")
+        _validate_currency_balances(sections["currency_balances"])
     stats = sections.get("stats")
     if isinstance(stats, dict) and {"hearthstone_item_id", "hearthstone_cooldown_seconds"} & stats.keys():
         item = stats.get("hearthstone_item_id")

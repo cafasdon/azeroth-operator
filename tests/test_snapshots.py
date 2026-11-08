@@ -28,6 +28,27 @@ class SnapshotTests(unittest.TestCase):
         self.assertGreater(result["age_seconds"], 0)
         self.assertFalse(self.store.inspect(key, "bags")["available"])
 
+    def test_forever_currency_balance_requires_observed_counters(self):
+        sample = fixture()
+        sample["client"].update(family="forever", build="70862", interface=16001)
+        row = {
+            "name": "Fixture currency", "quantity": 0, "max_quantity": 0,
+            "max_weekly_quantity": 5, "earned_this_week": 0, "total_earned": 0,
+            "account_wide": False, "inactive": False, "cap_uses_total_earned": False,
+        }
+        sample["sections"]["currency_balances"] = {
+            "coverage": "visible_currency_ids_only", "entries": {"1": row},
+        }
+        key = self.store.ingest(sample)
+        self.assertEqual(self.store.read(key)["sections"]["currency_balances"]["entries"]["1"], row)
+        del row["earned_this_week"]
+        with self.assertRaisesRegex(ValueError, "Invalid currency balance entry"):
+            self.store.ingest(sample)
+        for invalid in (None, True, -1, 2**32):
+            row["earned_this_week"] = invalid
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "Invalid currency balance entry"):
+                self.store.ingest(sample)
+
     def test_action_bar_requires_at_least_one_observed_slot(self):
         sample = fixture()
         observation = {

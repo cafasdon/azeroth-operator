@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject malformed Forever currency balance captures in the Python importer before storage.
+
 - Summarise reached and nearly filled weekly currency caps in Forever captures.
 
 - Distinguish captured achievement completion from Forever character credit.
