@@ -903,6 +903,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(context["hearthstone_item_changed"])
                         self.assertEqual(context["hearthstone_cooldown_seconds_delta"], -30)
                         self.assertNotIn("class", context["after"])
+                        missing_space = travel_changes["carried_bag_space_change"]
+                        self.assertIsNone(missing_space["family_space_changes"])
+                        self.assertIsNone(missing_space["unknown_family_free_slots_delta"])
+                        travel["sections"]["bag_capacity"] = {
+                            "0": {"total_slots": 16, "free_slots": 1, "family_mask": 0},
+                            "1": {"total_slots": 8, "free_slots": 2, "family_mask": 32},
+                            "2": {"total_slots": 8, "free_slots": 4, "family_mask": 96},
+                            "3": {"total_slots": 0, "free_slots": 0},
+                            "4": {"total_slots": 0, "free_slots": 0},
+                        }
+                        changed_space_id = SnapshotStore(Path(folder)).ingest(travel)
+                        changed_space = await session.call_tool("compare_snapshots", {
+                            "before_id": travel_before, "after_id": changed_space_id,
+                        })
+                        self.assertFalse(changed_space.isError)
+                        space = json.loads(changed_space.content[0].text)["carried_bag_space_change"]
+                        self.assertEqual(space["unknown_family_free_slots_delta"], -4)
+                        self.assertEqual(space["family_space_changes"], {
+                            "32": {"before_free_slots": 5, "after_free_slots": 2, "free_slots_delta": -3},
+                            "96": {"before_free_slots": None, "after_free_slots": 4, "free_slots_delta": None},
+                        })
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
                                          ["/entries/10/standing"])
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["currency_balances"]["changed_paths"],

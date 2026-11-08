@@ -798,9 +798,34 @@ pub fn compare_observations(
                     - previous_space.as_ref()?[field].as_i64()?,
             )
         };
+        let family_changes = previous_space
+            .as_ref()
+            .zip(current_space.as_ref())
+            .and_then(|(before, after)| {
+                let previous = before["free_slots_by_family_mask"].as_object()?;
+                let current = after["free_slots_by_family_mask"].as_object()?;
+                Some(
+                    previous
+                        .keys()
+                        .chain(current.keys())
+                        .collect::<BTreeSet<_>>()
+                        .into_iter()
+                        .filter_map(|mask| {
+                            let old = previous.get(mask).and_then(Value::as_i64);
+                            let new = current.get(mask).and_then(Value::as_i64);
+                            (old != new).then(|| (mask, json!({
+                            "before_free_slots":old,"after_free_slots":new,
+                            "free_slots_delta":old.zip(new).map(|(before, after)| after - before),
+                        })))
+                        })
+                        .collect::<BTreeMap<_, _>>(),
+                )
+            });
         comparison["carried_bag_space_change"] = json!({
             "total_slots_delta":delta("total_slots"),
             "free_slots_delta":delta("free_slots"),
+            "unknown_family_free_slots_delta":delta("unknown_family_free_slots"),
+            "family_space_changes":family_changes,
             "before":previous_space,
             "after":current_space,
         });

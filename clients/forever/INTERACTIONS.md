@@ -271,6 +271,10 @@ Update the importer and reader before syncing this section. [Forever container A
 changes in total and free slots. If one capture lacks capacity data, its
 side and both changes are unknown. General-purpose counts are shown per
 capture because a change in bag-family visibility can change those counts.
+The comparison lists changed exact masks in `family_space_changes`.
+A mask seen in only one capture has a null count on the other side and
+no delta. `unknown_family_free_slots_delta` tracks changes in the
+unclassified count, which can also reflect changes in visibility.
 The carried-item review flags whether free slots were captured and leaves
 stack compatibility unknown.
 
