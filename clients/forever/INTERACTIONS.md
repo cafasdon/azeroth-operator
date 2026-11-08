@@ -404,6 +404,13 @@ Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured
 together. A zero shortfall means the saved balance covered the saved price.
 
+Use `list_snapshots` with `family: "forever"` and
+`repair_max_quote_copper` to find a repair-all quote at or below a limit.
+`repair_affordable_only` requires a quote and a wallet recorded on the
+same visit, with enough copper to cover the quote. The filters can be
+combined with location or character selectors. Results report the
+matched quote without returning the wallet balance.
+
 `inspect_snapshot` with `section: "action_bar_observation"` shows loaded
 built-in button slots, including observed empty slots and a count of missing
 buttons. Multiple buttons can reference the same slot. This works separately

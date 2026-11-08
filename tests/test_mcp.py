@@ -780,6 +780,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "hearthstone_item_id": 6948, "hearthstone_cooldown_seconds": 30,
                         }
                         travel["sections"]["flight_map"]["entries"]["2"]["fare_copper"] = 1
+                        travel["sections"]["repair_quote"] = {"copper": 1}
                         travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
@@ -789,6 +790,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "hearthstone_cooldown_seconds": 0,
                         })
                         travel_after = SnapshotStore(Path(folder)).ingest(travel)
+                        repair_query = {"family": "forever", "repair_max_quote_copper": 1,
+                                        "repair_affordable_only": True}
+                        repairs = await session.call_tool("list_snapshots", repair_query)
+                        self.assertFalse(repairs.isError)
+                        repair_rows = json.loads(repairs.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in repair_rows], [travel_before])
+                        self.assertEqual(repair_rows[0]["repair_quote_match"], {"copper": 1})
+                        self.assertNotIn("wallet", repair_rows[0])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **repair_query, "family": "retail",
+                        })).isError)
                         map_query = {"family": "forever", "player_parent_map_id": 100}
                         maps = await session.call_tool("list_snapshots", {**map_query, "limit": 1})
                         self.assertFalse(maps.isError)

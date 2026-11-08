@@ -260,6 +260,11 @@ struct List {
     player_map_id: Option<std::num::NonZeroU32>,
     /// Match the recorded immediate parent of the player's map in a saved Forever capture.
     player_parent_map_id: Option<std::num::NonZeroU32>,
+    /// Find saved Forever visits with a repair-all quote at or below this amount.
+    repair_max_quote_copper: Option<u64>,
+    /// Require the repair-all quote to fit the wallet recorded on the same visit.
+    #[serde(default)]
+    repair_affordable_only: bool,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1108,7 +1113,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, repair quote, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1144,6 +1149,8 @@ impl Operator {
                 },
                 player_map_id: args.player_map_id,
                 player_parent_map_id: args.player_parent_map_id,
+                repair_max_quote_copper: args.repair_max_quote_copper,
+                repair_affordable_only: args.repair_affordable_only,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_max_price_copper: args.merchant_max_price_copper,

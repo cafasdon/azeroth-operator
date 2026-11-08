@@ -306,6 +306,8 @@ pub struct CaptureFilters<'a> {
     pub instance: InstanceCaptureFilters<'a>,
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
+    pub repair_max_quote_copper: Option<u64>,
+    pub repair_affordable_only: bool,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
@@ -417,6 +419,8 @@ impl Store {
             instance,
             player_map_id,
             player_parent_map_id,
+            repair_max_quote_copper,
+            repair_affordable_only,
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
@@ -544,6 +548,12 @@ impl Store {
         );
         let instance_name = instance.name.map(str::to_lowercase);
         let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
+        let filter_repair = repair_max_quote_copper.is_some() || repair_affordable_only;
+        ensure!(
+            (!filter_repair || family == Family::Forever)
+                && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999),
+            "Repair quote filtering requires Forever and a valid copper amount"
+        );
         ensure!(
             !filter_player_map || family == Family::Forever,
             "Player map filtering requires Forever"
@@ -623,6 +633,25 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let repair_quote = if filter_repair {
+                        let quote = s
+                            .sections
+                            .get("repair_quote")
+                            .and_then(|row| row["copper"].as_u64());
+                        let Some(quote) = quote.filter(|quote| {
+                            repair_max_quote_copper.is_none_or(|maximum| *quote <= maximum)
+                                && (!repair_affordable_only
+                                    || s.sections
+                                        .get("wallet")
+                                        .and_then(|wallet| wallet["copper"].as_u64())
+                                        .is_some_and(|balance| *quote <= balance))
+                        }) else {
+                            continue;
+                        };
+                        Some(quote)
+                    } else {
+                        None
+                    };
                     let player_map = s.sections.get("stats").filter(|stats| {
                         player_map_id
                             .is_none_or(|id| stats["map_id"].as_u64() == Some(u64::from(id.get())))
@@ -777,6 +806,9 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(quote) = repair_quote {
+                        summary["repair_quote_match"] = json!({"copper":quote});
+                    }
                     if filter_player_map && let Some(stats) = player_map {
                         summary["player_map_match"] = json!({
                             "map_id":stats["map_id"],"map_name":stats["map_name"],
