@@ -256,6 +256,8 @@ struct List {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever trainer visits by a case-insensitive lesson name substring.
     trainer_service_name: Option<String>,
+    /// Find saved Forever trainer visits with a lesson recorded as available, unavailable or used.
+    trainer_service_status: Option<String>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
     /// Narrow the flight destination search to this captured departure node.
@@ -1093,6 +1095,7 @@ impl Operator {
                 },
                 merchant_item_id: args.merchant_item_id,
                 trainer_service_name: args.trainer_service_name.as_deref(),
+                trainer_service_status: args.trainer_service_status.as_deref(),
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,

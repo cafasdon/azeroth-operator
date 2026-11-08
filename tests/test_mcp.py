@@ -206,6 +206,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
                         trainers = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": " PoTiOn ",
+                            "trainer_service_status": "available",
                             "character": {"name": "example", "realm": "FIRST"}, "limit": 1,
                         })
                         self.assertFalse(trainers.isError)
@@ -214,6 +215,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(visits[0]["trainer_match"], {
                             "lesson_count": 1, "kind": "tradeskills", "captured_player_map_id": None,
                         })
+                        crossed = await session.call_tool("list_snapshots", {
+                            "family": "forever", "trainer_service_name": "Potion",
+                            "trainer_service_status": "used",
+                        })
+                        self.assertFalse(crossed.isError)
+                        self.assertEqual(json.loads(crossed.content[0].text)["snapshots"], [])
                         flight = await session.call_tool("list_snapshots", {
                             "family": "forever", "character": {"name": "example", "realm": "FIRST"},
                             "flight_origin_node_id": 12, "flight_destination_node_id": 14,

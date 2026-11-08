@@ -276,6 +276,7 @@ pub struct CaptureFilters<'a> {
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub trainer_service_name: Option<&'a str>,
+    pub trainer_service_status: Option<&'a str>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
@@ -371,6 +372,7 @@ impl Store {
             instance,
             merchant_item_id,
             trainer_service_name,
+            trainer_service_status,
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
@@ -378,11 +380,13 @@ impl Store {
             flight_affordable_only,
         } = query;
         let trainer_service_name = trainer_service_name.map(str::trim);
+        let filter_trainer = trainer_service_name.is_some() || trainer_service_status.is_some();
         ensure!(
-            trainer_service_name.is_none_or(|name| {
-                family == Family::Forever && !name.is_empty() && name.len() <= 256
-            }),
-            "Trainer filtering requires Forever and a valid lesson name"
+            (!filter_trainer || family == Family::Forever)
+                && trainer_service_name.is_none_or(|name| !name.is_empty() && name.len() <= 256)
+                && trainer_service_status
+                    .is_none_or(|status| matches!(status, "available" | "unavailable" | "used")),
+            "Trainer filtering requires Forever and valid lesson filters"
         );
         let trainer_service_name = trainer_service_name.map(str::to_lowercase);
         ensure!(
@@ -531,15 +535,20 @@ impl Store {
                     if merchant_matches == Some(0) {
                         continue;
                     }
-                    let trainer_match = trainer_service_name.as_ref().and_then(|name| {
+                    let trainer_match = filter_trainer.then(|| {
                         let trainer = s.sections.get("trainer_services")?;
                         let count = trainer["entries"].as_object()?.values()
-                            .filter(|row| row["name"].as_str().is_some_and(|lesson| lesson.to_lowercase().contains(name)))
+                            .filter(|row| {
+                                trainer_service_status.is_none_or(|status| row["status"] == status)
+                                    && trainer_service_name.as_ref().is_none_or(|name| {
+                                        row["name"].as_str().is_some_and(|lesson| lesson.to_lowercase().contains(name))
+                                    })
+                            })
                             .count();
                         (count > 0).then(|| json!({"lesson_count":count,"kind":trainer["kind"],
                             "captured_player_map_id":s.sections.get("stats").and_then(|stats| stats["map_id"].as_u64())}))
-                    });
-                    if trainer_service_name.is_some() && trainer_match.is_none() {
+                    }).flatten();
+                    if filter_trainer && trainer_match.is_none() {
                         continue;
                     }
                     let flight_match = flight_destination_node_id.and_then(|node| {

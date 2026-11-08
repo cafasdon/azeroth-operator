@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever trainer visits by observed lesson status.
+
 - Find saved Forever trainer visits by captured lesson name.
 
 - Price reagent purchases through the first uncovered Forever crafting step.
