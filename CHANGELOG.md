@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the Forever resting flag alongside saved XP progress.
+
 - Report the saved Forever new-mail indicator without reading mail details.
 
 - Compare saved Forever carried bag capacity and free slots across two captures.

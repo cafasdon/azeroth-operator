@@ -976,6 +976,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("level_threshold_xp", "positive", false),
                     ("xp_disabled", "bool", false),
                     ("rested_xp", "uint", false),
+                    ("resting", "bool", false),
                 ],
             )?;
             let current = value["current_xp"].as_u64();
@@ -991,7 +992,8 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     current.is_none()
                         && threshold.is_none()
                         && value["xp_disabled"].is_null()
-                        && value["rested_xp"].is_null(),
+                        && value["rested_xp"].is_null()
+                        && value["resting"].is_null(),
                     "Unexpected capped XP details"
                 ),
                 _ => anyhow::bail!("Unknown XP status"),

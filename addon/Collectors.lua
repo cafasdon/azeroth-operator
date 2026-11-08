@@ -985,6 +985,8 @@ AO.collectors.experience = function()
     if ok and accessible(disabled) and type(disabled)=="boolean" then result.xp_disabled=disabled end
     local restedOk,rested=pcall(GetXPExhaustion)
     if restedOk and uint(rested) then result.rested_xp=rested end
+    local restingOk,resting=pcall(IsResting)
+    if restingOk and accessible(resting) and type(resting)=="boolean" then result.resting=resting end
     return result
 end
 

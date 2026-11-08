@@ -23,6 +23,11 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+The `experience` section records the game's `resting` flag alongside
+XP progress when available. The flag describes the character at capture
+time. The separately observed `rested_xp` is the saved XP bonus pool.
+Update the importer and reader before syncing new captures. [Player frame source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UnitFrame/Mainline/PlayerFrame.lua)
+
 `character_summary` reports the saved `new_mail_indicator` when the
 client exposes it. This is the game's new-mail flag at export time. A
 clear indicator can coexist with mail in the inbox. The export reads

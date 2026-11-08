@@ -476,6 +476,7 @@ pub fn verify_forever_capture_fixture(
         UnitXPMax=function(unit) assert(unit=="player"); return 1000 end
         IsXPUserDisabled=function() return false end
         GetXPExhaustion=function() return 200 end
+        IsResting=function() return fixtureResting==true end
         C_QuestLog={
             GetNumQuestLogEntries=function() return 3,2 end,
             GetInfo=function(index)
@@ -762,8 +763,12 @@ pub fn verify_forever_capture_fixture(
     lua.load("malformedSpellbook=false").exec()?;
     assert_eq!(
         snapshot.sections["experience"],
-        serde_json::json!({"status":"progress","current_xp":0,"level_threshold_xp":1000,"xp_disabled":false,"rested_xp":200})
+        serde_json::json!({"status":"progress","current_xp":0,"level_threshold_xp":1000,"xp_disabled":false,"rested_xp":200,"resting":false})
     );
+    lua.load("fixtureResting=true;AO.Capture()").exec()?;
+    assert_eq!(read()?.sections["experience"]["resting"], true);
+    lua.load("IsResting=nil;AO.Capture()").exec()?;
+    assert!(read()?.sections["experience"].get("resting").is_none());
     lua.load("cappedXP=true;AO.Capture()").exec()?;
     assert_eq!(
         read()?.sections["experience"],

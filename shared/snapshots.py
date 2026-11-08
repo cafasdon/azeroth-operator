@@ -103,19 +103,21 @@ def validate_snapshot(value):
     if "experience" in sections:
         xp = sections["experience"]
         if (c["family"] != "forever" or not isinstance(xp, dict)
-                or set(xp) - {"status", "current_xp", "level_threshold_xp", "xp_disabled", "rested_xp"}):
+                or set(xp) - {"status", "current_xp", "level_threshold_xp", "xp_disabled", "rested_xp", "resting"}):
             raise ValueError("Invalid Forever experience observation")
         status = xp.get("status")
         current, threshold = xp.get("current_xp"), xp.get("level_threshold_xp")
         disabled, rested = xp.get("xp_disabled"), xp.get("rested_xp")
+        resting = xp.get("resting")
         if status == "progress":
             if (type(current) is not int or type(threshold) is not int
                     or not 0 <= current <= threshold <= 4_294_967_295 or threshold == 0
                     or (disabled is not None and type(disabled) is not bool)
+                    or (resting is not None and type(resting) is not bool)
                     or (rested is not None and (type(rested) is not int or not 0 <= rested <= 4_294_967_295))):
                 raise ValueError("Invalid XP progress")
         elif status not in ("trial_capped", "level_capped") or any(
-                field is not None for field in (current, threshold, disabled, rested)):
+                field is not None for field in (current, threshold, disabled, rested, resting)):
             raise ValueError("Invalid capped XP observation")
     if "tracked_recipes" in sections:
         recipes = sections["tracked_recipes"]
