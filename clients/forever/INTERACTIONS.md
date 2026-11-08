@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Owned-gear `inventory_evidence` records observed and unavailable storage sections
+plus catalogue-unmatched base IDs across the whole capture, independently of
+query filters and pagination. All sections observed is distinct from complete
+ownership, exact simulator resolution and best-in-slot coverage.
+[Offline evidence](../../docs/owned-inventory-evidence-verification-2026-11-08.md).
+
 `resolve_character` accepts an explicit client family and optional name/realm.
 An explicit target resolves its newest valid saved capture; no target returns
 unknown active identity without selecting another saved character. It does not

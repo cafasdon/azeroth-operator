@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever owned-gear reviews include `inventory_evidence`: observed/unavailable
+storage sections and bounded IDs missing from the base-item catalogue, counted
+before filtering or paging. Seeing all sections does not prove complete ownership,
+exact simulator resolution or best-in-slot coverage.
+[Offline evidence](docs/owned-inventory-evidence-verification-2026-11-08.md).
+
 `resolve_character` resolves an explicitly named saved character within the
 configured owner's store and client family. Without an explicit character it
 returns `active_identity_unavailable`, with no selection. Saved recency never

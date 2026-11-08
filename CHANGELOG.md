@@ -1,5 +1,8 @@
 # Changelog
 
+- Report unfiltered storage and base-catalogue gaps in owned-gear review, with
+  bounded missing IDs and explicit limits on completeness claims.
+
 - Add read-only `resolve_character` for explicit owner-local saved character
   selection, with an unknown default until active identity can be verified.
 

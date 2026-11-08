@@ -2844,6 +2844,9 @@ pub fn review_owned(
     let mut coverage = serde_json::Map::new();
     let mut total = 0usize;
     let mut matched = 0usize;
+    let mut unmatched_ids = std::collections::BTreeSet::new();
+    let mut observed_storage = Vec::new();
+    let mut unavailable_storage = Vec::new();
     let mut included = 0usize;
     let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
     let target_slot = simulator_slot.and_then(|target| {
@@ -2853,12 +2856,14 @@ pub fn review_owned(
     let check_item_requirements = item_requirement_check(snapshot);
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
+            unavailable_storage.push(storage);
             coverage.insert(
                 storage.into(),
                 json!({"status":"unavailable","reason":snapshot.unavailable.get(storage)}),
             );
             continue;
         };
+        observed_storage.push(storage);
         let mut count = 0usize;
         let mut record = |container: Option<&str>, slot: &str, item: &Value| {
             let item_id = item["item_id"].as_u64();
@@ -2866,6 +2871,11 @@ pub fn review_owned(
             total += 1;
             count += 1;
             matched += usize::from(reference.is_some());
+            if reference.is_none()
+                && let Some(id) = item_id
+            {
+                unmatched_ids.insert(id);
+            }
             let wrong_type = item_type.is_some_and(|kind| {
                 reference.and_then(|item| item["type"].as_u64()) != Some(kind as u64)
             });
@@ -2979,6 +2989,19 @@ pub fn review_owned(
         "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,
         "items":entries,"filtered_item_locations":included,"has_more":included.saturating_sub(offset)>limit,
         "live":false,"ranked":false,"equip_legality_verified":false});
+    result["inventory_evidence"] = json!({
+        "scope":"all_observed_storage_before_filters",
+        "observed_storage_sections":observed_storage,
+        "unavailable_storage_sections":unavailable_storage,
+        "all_storage_sections_observed":unavailable_storage.is_empty(),
+        "catalogue_unmatched_item_locations":total - matched,
+        "catalogue_unmatched_distinct_item_ids":unmatched_ids.len(),
+        "catalogue_unmatched_item_ids":unmatched_ids.iter().take(50).collect::<Vec<_>>(),
+        "catalogue_unmatched_item_ids_truncated":unmatched_ids.len() > 50,
+        "complete_ownership_verified":false,
+        "complete_simulator_resolution_verified":false,
+        "best_in_slot_verified":false
+    });
     if let Some(set_id) = set_id {
         let pieces: Vec<_> = catalogue
             .iter()
