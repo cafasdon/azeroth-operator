@@ -256,7 +256,19 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
             else:
                 skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
-        return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation
+        search = {
+            "candidate_locations_by_slot": {
+                slot: len(choices) - 1 for slot, choices in zip(slots, options, strict=True)
+            },
+            "combinations_including_baseline": combination_count,
+            "proposed_alternative_drafts": len(proposed),
+            "resolved_drafts_including_baseline": len(drafts),
+            "distinct_simulator_gear_sets": len({
+                json.dumps(draft["checks"]["simulator_equipment_spec"], sort_keys=True)
+                for _, draft in drafts
+            }),
+        }
+        return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation, search
 
 
 def audit_shortlist(staged, fixed, requests, top):
@@ -458,7 +470,7 @@ def main():
         encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup or []]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
-            drafts, skipped, coverage, stats, selected_capture, set_observation = asyncio.run(asyncio.wait_for(
+            drafts, skipped, coverage, stats, selected_capture, set_observation, search = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
@@ -500,7 +512,8 @@ def main():
             result = {"encounters": rankings}
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
-        result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
+        result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity,
+                      gear_search=search)
         if args.storage is not None:
             result["requested_storage"] = args.storage
         if args.max_swaps is not None:

@@ -603,6 +603,10 @@ the existing 1,024-combination scan cap and the configured draft limit.
 Use `--plan-only` with the template, snapshot and slot options to inspect
 resolved draft locations, projected slot clears, exclusions and storage
 coverage before committing CPU time. Omit engine and encounter arguments.
+Both modes include `gear_search` counts for retained candidate locations,
+combinations before draft validation, submitted alternatives and resolved
+drafts. The distinct simulator gear-set count collapses identical inputs
+and includes the equipped baseline.
 
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
