@@ -61,8 +61,11 @@ def validate_snapshot(value):
         for key, row in skills.items():
             if (not isinstance(key, str) or not 1 <= len(key) <= 10 or not key.isascii()
                     or not key.isdecimal() or key.startswith("0") or int(key) > 4_294_967_295
-                    or not isinstance(row, dict) or set(row) - {"name", "rank", "max_rank", "category_id"}):
+                    or not isinstance(row, dict) or set(row) - {"name", "rank", "max_rank", "category_id", "modifier", "temporary_points"}):
                 raise ValueError("Invalid skill line")
+            for field in ("modifier", "temporary_points"):
+                if field in row and (type(row[field]) is not int or not -2_147_483_648 <= row[field] <= 2_147_483_647):
+                    raise ValueError("Invalid skill modifier")
             name, rank, cap = row.get("name"), row.get("rank"), row.get("max_rank")
             category = row.get("category_id")
             if (not isinstance(name, str) or not 1 <= len(name.encode()) <= 256

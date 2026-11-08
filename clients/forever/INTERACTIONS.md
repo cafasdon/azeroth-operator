@@ -26,7 +26,9 @@ New MCP routes are denied until reviewed for data source, owner scope, outputs a
 `skill_lines` records the game-exposed skill names, base ranks, rank caps
 and category IDs when available. Rows use stable skill-line IDs. The
 export leaves collapsed headers as they are, so missing rows do not
-establish that a skill is unlearned. Temporary modifiers are excluded.
+establish that a skill is unlearned. Readable `modifier` and
+`temporary_points` values are saved separately as reported by the skill
+API. They are not added together or used to change base-rank comparisons.
 Update the importer and reader before syncing new captures. [Forever skill API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SkillInfoDocumentation.lua)
 
 `compare_snapshots` reports signed rank and cap changes under

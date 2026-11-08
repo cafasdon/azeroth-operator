@@ -942,6 +942,8 @@ AO.collectors.skill_lines = function()
             assert(not entries[key], "Duplicate skill line")
             local entry={name=name,rank=rank,max_rank=maximum}
             if questRewardInteger(row.skillLineCategoryID,1,4294967295) then entry.category_id=row.skillLineCategoryID end
+            if questRewardInteger(row.modifier,-2147483648,2147483647) then entry.modifier=row.modifier end
+            if questRewardInteger(row.tempPoints,-2147483648,2147483647) then entry.temporary_points=row.tempPoints end
             entries[key]=entry
         end
     end

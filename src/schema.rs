@@ -874,6 +874,8 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("rank", "uint", true),
                     ("max_rank", "uint", true),
                     ("category_id", "positive", false),
+                    ("modifier", "int", false),
+                    ("temporary_points", "int", false),
                 ],
             )?;
             let rows = value.as_object().unwrap();
@@ -884,7 +886,9 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         .as_str()
                         .is_some_and(|name| !name.is_empty() && name.len() <= 256)
                         && row["rank"].as_u64() <= row["max_rank"].as_u64()
-                        && row.get("category_id").is_none_or(|id| !id.is_null()),
+                        && ["category_id", "modifier", "temporary_points"]
+                            .iter()
+                            .all(|field| row.get(*field).is_none_or(|value| !value.is_null())),
                     "Invalid skill line"
                 );
             }

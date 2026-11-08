@@ -404,8 +404,8 @@ pub fn verify_forever_capture_fixture(
         function HasNewMail() return fixtureNewMail end
         C_SkillInfo={GetNumSkillLines=function() return 3 end,GetSkillLineInfo=function(index)
             if index==1 then return {isHeader=true,isCollapsed=true} end
-            if index==2 then return {isHeader=false,skillID=45,name="Bows",rank=25,maxRank=35,skillLineCategoryID=6,tempPoints=10} end
-            return {isHeader=false,skillID=fixtureDuplicateSkill and 45 or 95,name="Defense",rank=35,maxRank=35}
+            if index==2 then return {isHeader=false,skillID=45,name="Bows",rank=25,maxRank=35,skillLineCategoryID=6,tempPoints=10,modifier=-2} end
+            return {isHeader=false,skillID=fixtureDuplicateSkill and 45 or 95,name="Defense",rank=35,maxRank=35,modifier=0}
         end}
         function GetBindLocation() return fixtureBindName or "Fixture Inn" end
         function GetInstanceInfo() return "Fixture Dungeon",fixtureInstanceKind or "party",1,"Normal",5,nil,nil,123 end
@@ -929,8 +929,8 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(
         snapshot.sections["skill_lines"],
         serde_json::json!({
-            "45":{"name":"Bows","rank":25,"max_rank":35,"category_id":6},
-            "95":{"name":"Defense","rank":35,"max_rank":35}
+            "45":{"name":"Bows","rank":25,"max_rank":35,"category_id":6,"temporary_points":10,"modifier":-2},
+            "95":{"name":"Defense","rank":35,"max_rank":35,"modifier":0}
         })
     );
     lua.load("fixtureDuplicateSkill=true;AO.Capture()").exec()?;
