@@ -58,7 +58,7 @@ def check_template_identity(template, stats):
 
 
 async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
-                          selected_slots=None, set_id=None):
+                          selected_slots=None, set_id=None, storage=None):
     candidates = []
     skipped = []
     offset = 0
@@ -67,6 +67,8 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
     filters = {"item_ids": item_ids} if item_ids else {}
     if set_id is not None:
         filters["set_id"] = set_id
+    if storage is not None:
+        filters["storage"] = storage
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
@@ -139,7 +141,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
-                  can_dual_wield=True, character=None, set_id=None, max_drafts=64):
+                  can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -178,7 +180,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         multi = len(slots) > 1
         for slot in slots:
             candidates, exclusions, coverage = await slot_candidates(
-                call, slot, multi, collapse_identical, item_ids, can_dual_wield, slots, set_id,
+                call, slot, multi, collapse_identical, item_ids, can_dual_wield, slots, set_id, storage,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
@@ -363,6 +365,8 @@ def main():
     parser.add_argument("--item-id", type=int, action="append",
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
+    parser.add_argument("--storage", choices=("equipment", "bags", "character_bank", "account_bank"),
+                        help="Restrict alternatives to one captured storage section.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
     parser.add_argument("--engine", type=Path, required=True)
@@ -421,7 +425,7 @@ def main():
             drafts, skipped, coverage, stats, selected_capture, set_observation = asyncio.run(asyncio.wait_for(
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
-                        args.character, args.set_id, args.max_drafts), timeout=45,
+                        args.character, args.set_id, args.max_drafts, args.storage), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
@@ -450,6 +454,8 @@ def main():
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
+        if args.storage is not None:
+            result["requested_storage"] = args.storage
         if selected_capture is not None:
             result["selected_capture"] = selected_capture
         if args.item_id:

@@ -588,6 +588,10 @@ set, including retained equipment. The response also reports catalogue piece
 count and distinct pieces observed across storage. These are set membership
 counts, with bonus effects evaluated by the simulator.
 
+Use `--storage` with `equipment`, `bags`, `character_bank` or `account_bank`
+to restrict alternatives before draft expansion. The equipped set remains
+the baseline, and storage coverage still describes the full capture.
+
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
 or unmapped observations are reported as `unverified` in `template_identity`.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Scope local Forever gear ranking alternatives to one captured storage section.
+
 - Search owned Forever gear within equipment, bags, character bank or account bank.
 
 - Filter owned Forever gear to omit known requirement conflicts against the captured character.
