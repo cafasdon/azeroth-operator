@@ -207,6 +207,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         trainers = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": " PoTiOn ",
                             "trainer_service_status": "available",
+                            "trainer_max_price_copper": 10,
                             "character": {"name": "example", "realm": "FIRST"}, "limit": 1,
                         })
                         self.assertFalse(trainers.isError)
@@ -221,6 +222,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(crossed.isError)
                         self.assertEqual(json.loads(crossed.content[0].text)["snapshots"], [])
+                        too_expensive = await session.call_tool("list_snapshots", {
+                            "family": "forever", "trainer_service_name": "Potion",
+                            "trainer_max_price_copper": 9,
+                        })
+                        self.assertFalse(too_expensive.isError)
+                        self.assertEqual(json.loads(too_expensive.content[0].text)["snapshots"], [])
                         flight = await session.call_tool("list_snapshots", {
                             "family": "forever", "character": {"name": "example", "realm": "FIRST"},
                             "flight_origin_node_id": 12, "flight_destination_node_id": 14,

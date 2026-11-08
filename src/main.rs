@@ -258,6 +258,10 @@ struct List {
     trainer_service_name: Option<String>,
     /// Find saved Forever trainer visits with a lesson recorded as available, unavailable or used.
     trainer_service_status: Option<String>,
+    /// Match trainer lessons with an observed copper price at or below this amount.
+    trainer_max_price_copper: Option<u64>,
+    /// Match pet trainer lessons with an observed point price at or below this amount.
+    trainer_max_price_points: Option<u32>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
     /// Narrow the flight destination search to this captured departure node.
@@ -1096,6 +1100,8 @@ impl Operator {
                 merchant_item_id: args.merchant_item_id,
                 trainer_service_name: args.trainer_service_name.as_deref(),
                 trainer_service_status: args.trainer_service_status.as_deref(),
+                trainer_max_price_copper: args.trainer_max_price_copper,
+                trainer_max_price_points: args.trainer_max_price_points,
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,

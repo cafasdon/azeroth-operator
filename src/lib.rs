@@ -277,6 +277,8 @@ pub struct CaptureFilters<'a> {
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub trainer_service_name: Option<&'a str>,
     pub trainer_service_status: Option<&'a str>,
+    pub trainer_max_price_copper: Option<u64>,
+    pub trainer_max_price_points: Option<u32>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
@@ -373,6 +375,8 @@ impl Store {
             merchant_item_id,
             trainer_service_name,
             trainer_service_status,
+            trainer_max_price_copper,
+            trainer_max_price_points,
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
@@ -380,7 +384,20 @@ impl Store {
             flight_affordable_only,
         } = query;
         let trainer_service_name = trainer_service_name.map(str::trim);
-        let filter_trainer = trainer_service_name.is_some() || trainer_service_status.is_some();
+        ensure!(
+            trainer_max_price_copper.is_none_or(
+                |copper| copper <= 9_999_999_999_999 && trainer_max_price_points.is_none()
+            ),
+            "Specify one valid trainer price ceiling"
+        );
+        let trainer_price = trainer_max_price_copper
+            .map(|amount| ("price_copper", amount))
+            .or_else(|| {
+                trainer_max_price_points.map(|amount| ("price_training_points", u64::from(amount)))
+            });
+        let filter_trainer = trainer_service_name.is_some()
+            || trainer_service_status.is_some()
+            || trainer_price.is_some();
         ensure!(
             (!filter_trainer || family == Family::Forever)
                 && trainer_service_name.is_none_or(|name| !name.is_empty() && name.len() <= 256)
@@ -540,6 +557,9 @@ impl Store {
                         let count = trainer["entries"].as_object()?.values()
                             .filter(|row| {
                                 trainer_service_status.is_none_or(|status| row["status"] == status)
+                                    && trainer_price.is_none_or(|(field, maximum)| {
+                                        row[field].as_u64().is_some_and(|price| price <= maximum)
+                                    })
                                     && trainer_service_name.as_ref().is_none_or(|name| {
                                         row["name"].as_str().is_some_and(|lesson| lesson.to_lowercase().contains(name))
                                     })

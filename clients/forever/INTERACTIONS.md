@@ -148,6 +148,10 @@ captures include the trainer kind, lesson count and player map if known.
 Results describe the trainer list and filters recorded at capture time.
 `trainer_service_status` works alone or alongside the name filter.
 When both are supplied, the same captured lesson must match both.
+Use one price ceiling, `trainer_max_price_copper` for ordinary lessons
+or `trainer_max_price_points` for pet training. A zero ceiling matches
+free lessons in that price type. Unknown prices are excluded. Any name
+or status filter must match the same lesson as the price ceiling.
 Use `trainer_service_slots` to select up to 32 exact slots from the same
 capture. Slots missing from that capture are reported separately from rows
 excluded by the name or status filters.
