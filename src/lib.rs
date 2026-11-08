@@ -276,6 +276,7 @@ pub struct CaptureFilters<'a> {
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
+    pub merchant_max_price_copper: Option<u64>,
     pub trainer_service_name: Option<&'a str>,
     pub trainer_service_status: Option<&'a str>,
     pub trainer_max_price_copper: Option<u64>,
@@ -376,6 +377,7 @@ impl Store {
             instance,
             merchant_item_id,
             merchant_currency_id,
+            merchant_max_price_copper,
             trainer_service_name,
             trainer_service_status,
             trainer_max_price_copper,
@@ -442,6 +444,11 @@ impl Store {
         let merchant_product = merchant_item_id
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
+        ensure!(
+            merchant_max_price_copper
+                .is_none_or(|price| merchant_product.is_some() && price <= 9_999_999_999_999),
+            "Merchant price filtering requires a product ID and a valid copper amount"
+        );
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
@@ -553,7 +560,14 @@ impl Store {
                             .map_or(0, |offers| {
                                 offers
                                     .values()
-                                    .filter(|offer| offer[field].as_u64() == Some(u64::from(id)))
+                                    .filter(|offer| {
+                                        offer[field].as_u64() == Some(u64::from(id))
+                                            && merchant_max_price_copper.is_none_or(|maximum| {
+                                                offer["price_copper"]
+                                                    .as_u64()
+                                                    .is_some_and(|price| price <= maximum)
+                                            })
+                                    })
                                     .count()
                             })
                     });

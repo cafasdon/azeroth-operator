@@ -376,6 +376,9 @@ to search across captures. Supply only one product ID. Results include the match
 the player's captured map when known. This is the map at export, so it
 does not identify the merchant or verify current stock. The filter
 combines with the character, recipe and instance filters before pagination.
+Set `merchant_max_price_copper` with a product ID to limit the captured
+copper price per bundle. A zero ceiling matches zero-copper offers.
+Stock and extended costs are separate from this price filter.
 
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper

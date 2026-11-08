@@ -256,6 +256,8 @@ struct List {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
+    /// Limit the captured copper component per bundle of a matching merchant offer.
+    merchant_max_price_copper: Option<u64>,
     /// Find saved Forever trainer visits by a case-insensitive lesson name substring.
     trainer_service_name: Option<String>,
     /// Find saved Forever trainer visits with a lesson recorded as available, unavailable or used.
@@ -1104,6 +1106,7 @@ impl Operator {
                 },
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
+                merchant_max_price_copper: args.merchant_max_price_copper,
                 trainer_service_name: args.trainer_service_name.as_deref(),
                 trainer_service_status: args.trainer_service_status.as_deref(),
                 trainer_max_price_copper: args.trainer_max_price_copper,

@@ -807,7 +807,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         merchant_key = SnapshotStore(Path(folder)).ingest(merchant)
                         currency_visits = await session.call_tool("list_snapshots", {
-                            "family": "forever", "merchant_currency_id": 744,
+                            "family": "forever", "merchant_currency_id": 744, "merchant_max_price_copper": 2,
                         })
                         self.assertFalse(currency_visits.isError)
                         visits = json.loads(currency_visits.content[0].text)["snapshots"]
@@ -819,6 +819,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "forever", "merchant_item_id": 744, "merchant_currency_id": 744,
                         })).isError)
+                        above_ceiling = await session.call_tool("list_snapshots", {
+                            "family": "forever", "merchant_currency_id": 744, "merchant_max_price_copper": 1,
+                        })
+                        self.assertFalse(above_ceiling.isError)
+                        self.assertEqual(json.loads(above_ceiling.content[0].text)["snapshots"], [])
                         priced_inventory = json.loads(json.dumps(refreshed))
                         priced_inventory["sections"]["wallet"] = {"copper": 11}
                         priced_inventory_key = SnapshotStore(Path(folder)).ingest(priced_inventory)
