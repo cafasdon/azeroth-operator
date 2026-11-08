@@ -43,6 +43,9 @@ struct Inspect {
     /// Keep captured reachable flight destinations and exclude map-transition nodes.
     #[serde(default)]
     flight_reachable_only: bool,
+    /// Keep reachable flights with a recorded fare covered by the wallet in this capture.
+    #[serde(default)]
+    flight_affordable_only: bool,
     /// Budget all lessons marked available in the saved Forever trainer list.
     #[serde(default)]
     trainer_wallet_projection: bool,
@@ -1120,7 +1123,9 @@ impl Operator {
                 "Merchant review requires merchant_stock, a slot from 1 to 256 and up to 1000 bundles",
             )]);
         }
-        let filter_flight = args.flight_node_id.is_some() || args.flight_reachable_only;
+        let filter_flight = args.flight_node_id.is_some()
+            || args.flight_reachable_only
+            || args.flight_affordable_only;
         if (args.flight_wallet_projection || filter_flight)
             && args.section.as_deref() != Some("flight_map")
         {
@@ -1486,7 +1491,28 @@ impl Operator {
                         "Flight review requires a saved Forever snapshot",
                     )]);
                 }
+                let flight_context = if args.flight_wallet_projection || args.flight_affordable_only
+                {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured flight wallet context",
+                        )]);
+                    };
+                    Some(snapshot)
+                } else {
+                    None
+                };
+                let flight_wallet = flight_context
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.sections.get("wallet"));
                 if filter_flight {
+                    let balance = flight_wallet.and_then(|wallet| wallet["copper"].as_u64());
+                    if args.flight_affordable_only {
+                        value["flight_wallet_observed"] = serde_json::json!(balance.is_some());
+                        if balance.is_none() {
+                            value["data"] = serde_json::Value::Null;
+                        }
+                    }
                     let count = value["data"]
                         .get_mut("entries")
                         .and_then(serde_json::Value::as_object_mut)
@@ -1494,24 +1520,24 @@ impl Operator {
                             entries.retain(|_, node| {
                                 args.flight_node_id.is_none_or(|id| {
                                     node["node_id"].as_u64() == Some(u64::from(id.get()))
-                                }) && (!args.flight_reachable_only
+                                }) && (!(args.flight_reachable_only || args.flight_affordable_only)
                                     || (node["state"] == "reachable"
                                         && node["map_transition"] == false))
+                                    && (!args.flight_affordable_only
+                                        || node["fare_copper"]
+                                            .as_u64()
+                                            .zip(balance)
+                                            .is_some_and(|(fare, balance)| fare <= balance))
                             });
                             entries.len()
                         });
                     value["flight_match_count"] = serde_json::json!(count);
                 }
                 if args.flight_wallet_projection {
-                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Could not read the captured flight wallet context",
-                        )]);
-                    };
                     value["flight_wallet_projection"] =
                         azeroth_operator::analysis::flight_wallet_projection(
                             &value["data"],
-                            snapshot.sections.get("wallet"),
+                            flight_wallet,
                         );
                 }
                 if let Some(id) = args.quest_id {

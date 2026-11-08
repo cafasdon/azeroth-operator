@@ -544,6 +544,9 @@ syncing this section. [Forever flight map source](https://raw.githubusercontent.
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters
 apply before the fare projection and preserve original row keys.
+Use `flight_affordable_only` to keep reachable destinations with a recorded
+fare at or below the same capture's wallet. Unknown fares are excluded,
+and an unavailable wallet leaves the filtered result unknown.
 
 Set `flight_wallet_projection: true` with `section: "flight_map"` in
 `inspect_snapshot` for affordability and copper shortfall by captured
