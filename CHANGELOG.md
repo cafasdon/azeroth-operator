@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show individual affordability for captured Forever trainer and pet trainer lessons.
+
 - Show the affordable prefix and first copper shortfall in the suggested Forever quest turn-in order.
 
 - Suggest a turn-in order that minimises upfront copper for ready Forever quests with known costs and rewards.

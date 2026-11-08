@@ -117,6 +117,10 @@ Set `trainer_points_projection: true` for pet trainer captures. It budgets
 matching lessons marked available, with a training-point shortfall when
 all their costs and the active pet's balance were observed. The projection
 uses the saved pet and leaves training to the player.
+Both projections include `individual_lesson_affordability` keyed by
+captured slot. Each available lesson is compared independently with the
+recorded balance, in copper or training points respectively. Missing
+prices or balances leave the comparison unknown.
 
 With the same section, `trainer_service_name` matches a case-insensitive
 substring and `trainer_service_status` matches `available`, `unavailable`
