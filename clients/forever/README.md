@@ -516,11 +516,20 @@ match both. These records identify catalogue outputs, and recipe
 availability still depends on separate evidence.
 With an item lookup and `acquisition_snapshot_id`, enable
 `only_observed_learned_recipe` to restrict results to the capture's
-explicitly learned selected recipe. A recorded output item must agree.
-Tracking alone is insufficient, and an empty result describes that capture.
+positive selected-recipe or filtered profession-list learning observations,
+joined by exact recipe spell ID. Conflicting known learning flags or a selected
+output that contradicts the catalogue prevent a positive match. Unlisted or
+unknown rows do not prove a recipe is unlearned. Tracking alone is insufficient,
+and an empty result describes that capture.
 The same filter works for enchants. It matches the crafting spell ID
 and reports the capture ID under `recipe_observation`. When both sides
 record an output item ID, those IDs must agree.
+Crafted acquisition sources include `recipe_learning` with both observations,
+their conflict flag and combined nullable learning result. The existing source
+`learned`, material capacity, output yield and cooldown fields continue to use
+only the compatible selected schematic; a learned list row supplies none of
+those crafting details. These searches do not establish current craftability.
+[Offline evidence](../../docs/catalogue-recipe-learning-verification-2026-11-08.md).
 For enchant lookups, supply `enchant_target_item_id` to keep effects that
 fit the specified base item under the pinned simulator rules. It combines
 with crafting filters and does not require a character capture.

@@ -1,5 +1,8 @@
 # Changelog
 
+- Join saved profession-list learning to local crafted item/enchant searches,
+  preserving conflicting observations and selected-schematic planning boundaries.
+
 - Preserve inventory gaps and search provenance in local ranking reports;
   reject changing inventory evidence and keep absolute best-in-slot unverified.
 

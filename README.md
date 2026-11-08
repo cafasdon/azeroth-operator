@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Catalogue crafting searches can use exact-ID learning observations from saved
+profession recipe lists as well as the selected schematic. Conflicts and known
+output mismatches remain unknown; list observations do not supply materials,
+cooldowns or proof of craftability.
+[Offline evidence](docs/catalogue-recipe-learning-verification-2026-11-08.md).
+
 Forever owned-gear reviews include `inventory_evidence`: observed/unavailable
 storage sections and bounded IDs missing from the base-item catalogue, counted
 before filtering or paging. Seeing all sections does not prove complete ownership,

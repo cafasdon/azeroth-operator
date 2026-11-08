@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Local crafted-output searches can match positive saved recipe-list learning by
+exact spell ID. Selected/list conflicts and selected output mismatches prevent
+positive learned matches. Crafted acquisition sources retain both observations;
+material and cooldown planning still requires a compatible selected schematic.
+[Offline evidence](../../docs/catalogue-recipe-learning-verification-2026-11-08.md).
+
 Owned-gear `inventory_evidence` records observed and unavailable storage sections
 plus catalogue-unmatched base IDs across the whole capture, independently of
 query filters and pagination. All sections observed is distinct from complete

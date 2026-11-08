@@ -170,7 +170,7 @@ pub struct Query {
     pub suffix_target_item_id: Option<std::num::NonZeroU32>,
     /// List items that explicitly reference this random suffix ID.
     pub item_random_suffix_id: Option<std::num::NonZeroI32>,
-    /// Match items or enchants to the learned recipe explicitly observed in the supplied acquisition snapshot.
+    /// Match crafted sources to consistent positive selected-recipe or filtered recipe-list learning observations.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
@@ -724,7 +724,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     );
     let learned_enchant_filter =
         query.only_observed_learned_recipe && matches!(query.section, Section::Enchants);
-    let learned_recipe = if query.only_observed_learned_recipe {
+    let learned_snapshot = if query.only_observed_learned_recipe {
         ensure!(
             matches!(query.section, Section::Items | Section::Enchants)
                 && query.acquisition_snapshot_id.is_some(),
@@ -735,10 +735,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             snapshot.client.family == Family::Forever,
             "Expected a Forever snapshot"
         );
-        snapshot
-            .sections
-            .get("selected_recipe")
-            .filter(|row| row["learned"] == true)
+        Some(snapshot)
     } else {
         None
     };
@@ -941,20 +938,21 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                                     == Some(u64::from(profession.get()))
                             })
                             && (!query.only_observed_learned_recipe
-                                || learned_recipe.is_some_and(|recipe| {
-                                    source["crafted"]["spellId"]
-                                        .as_u64()
-                                        .is_some_and(|id| recipe["recipe_id"].as_u64() == Some(id))
-                                        && recipe["output_item_id"].as_u64().is_none_or(|id| {
-                                            if learned_enchant_filter {
-                                                row["itemId"]
-                                                    .as_u64()
-                                                    .filter(|item| *item > 0)
-                                                    .is_none_or(|item| item == id)
-                                            } else {
-                                                row["id"].as_u64() == Some(id)
-                                            }
-                                        })
+                                || learned_snapshot.is_some_and(|snapshot| {
+                                    source["crafted"]["spellId"].as_u64().is_some_and(|id| {
+                                        let output = if learned_enchant_filter {
+                                            &row["itemId"]
+                                        } else {
+                                            &row["id"]
+                                        };
+                                        recipe_learning(
+                                            snapshot,
+                                            id,
+                                            output.as_u64().filter(|id| *id > 0),
+                                        )
+                                        .learned
+                                            == Some(true)
+                                    })
                                 }))
                     })
                 });
@@ -1559,6 +1557,50 @@ fn owned_quantities(
     Ok(quantities)
 }
 
+#[derive(serde::Serialize)]
+struct RecipeLearning {
+    selected_recipe_observed: bool,
+    selected_recipe_learned: Option<bool>,
+    recipe_list_observed: bool,
+    recipe_list_learned: Option<bool>,
+    learning_conflict: bool,
+    selected_output_matches_catalogue: Option<bool>,
+    learned: Option<bool>,
+}
+
+fn recipe_learning(snapshot: &Snapshot, recipe_id: u64, output_id: Option<u64>) -> RecipeLearning {
+    let selected = snapshot
+        .sections
+        .get("selected_recipe")
+        .filter(|row| row["recipe_id"].as_u64() == Some(recipe_id));
+    let listed = snapshot
+        .sections
+        .get("profession_recipe_view")
+        .and_then(|view| view["entries"].get(recipe_id.to_string()));
+    let selected_learned = selected.and_then(|row| row["learned"].as_bool());
+    let listed_learned = listed.and_then(|row| row["learned"].as_bool());
+    let output_matches = selected
+        .and_then(|row| row["output_item_id"].as_u64())
+        .zip(output_id)
+        .map(|(observed, expected)| observed == expected);
+    let conflict = selected_learned
+        .zip(listed_learned)
+        .is_some_and(|(a, b)| a != b);
+    RecipeLearning {
+        selected_recipe_observed: selected.is_some(),
+        selected_recipe_learned: selected_learned,
+        recipe_list_observed: listed.is_some(),
+        recipe_list_learned: listed_learned,
+        learning_conflict: conflict,
+        selected_output_matches_catalogue: output_matches,
+        learned: if conflict || output_matches == Some(false) {
+            None
+        } else {
+            selected_learned.or(listed_learned)
+        },
+    }
+}
+
 pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -1672,6 +1714,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                 };
                 sources.push(json!({
                     "item_id":item["id"],"source_index":index+1,"recipe_spell_id":id,
+                    "recipe_learning":recipe_learning(snapshot, id, item["id"].as_u64()),
                     "recipe_observed":recipe.is_some(),"output_matches":output_matches,
                     "tracked_as_craft":tracked("crafts"),"tracked_as_recraft":tracked("recrafts"),
                     "learned":matched_recipe.and_then(|row| row["learned"].as_bool()),
