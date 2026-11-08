@@ -126,6 +126,12 @@ offers retain their original slots for later budget review. A zero match
 count means the stock was captured and had no matching offers. Unknown
 stock gives an unknown match count.
 
+Use `merchant_item_id` with `family: "forever"` in `list_snapshots`
+to search across captures. Results include the matching offer count and
+the player's captured map when known. This is the map at export, so it
+does not identify the merchant or verify current stock. The filter
+combines with the character, recipe and instance filters before pagination.
+
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured

@@ -183,6 +183,8 @@ struct List {
     instance_difficulty_id: Option<u32>,
     /// Filter by the saved Forever instance map ID, independent of the localized name.
     instance_map_id: Option<std::num::NonZeroU32>,
+    /// Find Forever snapshots whose captured merchant sold this exact item ID.
+    merchant_item_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -906,7 +908,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe or instance context. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe, instance context or merchant item. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -920,26 +922,29 @@ impl Operator {
             "forever" => Family::Forever,
             _ => return CallToolResult::error(vec![ContentBlock::text("Unknown family")]),
         };
-        match self.store.list_matching_captures(
+        match self.store.list_filtered(
             family,
             args.character.as_ref(),
-            azeroth_operator::RecipeCaptureFilters {
-                recipe_id: args.recipe_id,
-                output_item_id: args.recipe_output_item_id,
-                profession_id: args.recipe_profession_id,
-            },
-            azeroth_operator::InstanceCaptureFilters {
-                kind: args.instance_kind.as_deref(),
-                name: args.instance_name.as_deref(),
-                difficulty_id: args.instance_difficulty_id,
-                map_id: args.instance_map_id,
+            azeroth_operator::CaptureFilters {
+                recipe: azeroth_operator::RecipeCaptureFilters {
+                    recipe_id: args.recipe_id,
+                    output_item_id: args.recipe_output_item_id,
+                    profession_id: args.recipe_profession_id,
+                },
+                instance: azeroth_operator::InstanceCaptureFilters {
+                    kind: args.instance_kind.as_deref(),
+                    name: args.instance_name.as_deref(),
+                    difficulty_id: args.instance_difficulty_id,
+                    map_id: args.instance_map_id,
+                },
+                merchant_item_id: args.merchant_item_id,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed: check the character, recipe or instance filters and limit",
+                "Snapshot listing failed: check the character, recipe, instance or merchant filters and limit",
             )]),
         }
     }

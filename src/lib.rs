@@ -233,6 +233,13 @@ pub struct InstanceCaptureFilters<'a> {
     pub map_id: Option<std::num::NonZeroU32>,
 }
 
+#[derive(Default)]
+pub struct CaptureFilters<'a> {
+    pub recipe: RecipeCaptureFilters,
+    pub instance: InstanceCaptureFilters<'a>,
+    pub merchant_item_id: Option<std::num::NonZeroU32>,
+}
+
 impl Store {
     pub fn list(&self, family: Family, offset: usize, limit: usize) -> Result<Value> {
         self.list_matching(family, None, offset, limit)
@@ -295,6 +302,36 @@ impl Store {
         offset: usize,
         limit: usize,
     ) -> Result<Value> {
+        self.list_filtered(
+            family,
+            character,
+            CaptureFilters {
+                recipe: filters,
+                instance,
+                ..Default::default()
+            },
+            offset,
+            limit,
+        )
+    }
+
+    pub fn list_filtered(
+        &self,
+        family: Family,
+        character: Option<&Character>,
+        query: CaptureFilters<'_>,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Value> {
+        let CaptureFilters {
+            recipe: filters,
+            instance,
+            merchant_item_id,
+        } = query;
+        ensure!(
+            merchant_item_id.is_none() || family == Family::Forever,
+            "Merchant filtering requires Forever"
+        );
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
@@ -399,8 +436,33 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let merchant_matches = merchant_item_id.map(|id| {
+                        s.sections
+                            .get("merchant_stock")
+                            .and_then(Value::as_object)
+                            .map_or(0, |offers| {
+                                offers
+                                    .values()
+                                    .filter(|offer| {
+                                        offer["item_id"].as_u64() == Some(u64::from(id.get()))
+                                    })
+                                    .count()
+                            })
+                    });
+                    if merchant_matches == Some(0) {
+                        continue;
+                    }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(count) = merchant_matches {
+                        let stats = s.sections.get("stats");
+                        summary["merchant_match"] = json!({
+                            "item_id":merchant_item_id.map(std::num::NonZeroU32::get),
+                            "offer_count":count,
+                            "captured_player_map_id":stats.and_then(|stats| stats["map_id"].as_u64()),
+                            "captured_player_map_name":stats.and_then(|stats| stats["map_name"].as_str()),
+                        });
+                    }
                     if filter_instance {
                         summary["instance_context"] = s.sections["instance_context"].clone();
                         if let Some(context) = summary["instance_context"].as_object_mut() {

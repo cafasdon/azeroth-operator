@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures whose observed merchant offered a requested item.
+
 - Find saved Forever merchant offers by the item or currency they sell.
 
 - Budget saved Forever merchant bundles against the captured wallet and carried item tokens.
