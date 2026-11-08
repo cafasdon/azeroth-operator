@@ -11,6 +11,31 @@ struct ObservedReagent {
     locations: Vec<Value>,
 }
 
+#[derive(
+    Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeCooldownState {
+    Available,
+    Waiting,
+    Unknown,
+}
+
+pub fn recipe_cooldown_state(recipe: &Value) -> RecipeCooldownState {
+    if let Some(charges) = recipe["cooldown"]["charges"].as_u64() {
+        return if charges > 0 {
+            RecipeCooldownState::Available
+        } else {
+            RecipeCooldownState::Waiting
+        };
+    }
+    match recipe["cooldown"]["remaining_seconds"].as_u64() {
+        Some(0) => RecipeCooldownState::Available,
+        Some(_) => RecipeCooldownState::Waiting,
+        None => RecipeCooldownState::Unknown,
+    }
+}
+
 pub fn review_recipe(snapshot: &Snapshot, crafts: u32) -> Result<Value> {
     review_recipe_with_inventory(snapshot, crafts, None)
 }
@@ -226,6 +251,7 @@ pub fn review_recipe_with_inventory(
             })
     };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
+        "captured_cooldown_state":recipe_cooldown_state(recipe),
         "recipe_tracking":recipe_tracking(snapshot, recipe_id),
         "captured_preparation":preparation_checks.into_iter().collect::<BTreeMap<_, _>>(),
         "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)

@@ -260,6 +260,7 @@ pub struct RecipeCaptureFilters {
     pub recipe_id: Option<std::num::NonZeroU32>,
     pub output_item_id: Option<std::num::NonZeroU32>,
     pub profession_id: Option<std::num::NonZeroU32>,
+    pub cooldown_state: Option<analysis::RecipeCooldownState>,
 }
 
 #[derive(Default)]
@@ -662,7 +663,8 @@ impl Store {
             .transpose()?;
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
-            || filters.profession_id.is_some();
+            || filters.profession_id.is_some()
+            || filters.cooldown_state.is_some();
         let filter_tracking = tracked_recipe_id.is_some()
             || tracked_recipe_kind.is_some()
             || tracked_recipe_learning.is_some();
@@ -858,6 +860,11 @@ impl Store {
                         && filters.recipe_id.is_none_or(|id| {
                             s.sections.get("selected_recipe").is_some_and(|recipe| {
                                 recipe["recipe_id"].as_u64() == Some(u64::from(id.get()))
+                            })
+                        })
+                        && filters.cooldown_state.is_none_or(|state| {
+                            s.sections.get("selected_recipe").is_some_and(|recipe| {
+                                analysis::recipe_cooldown_state(recipe) == state
                             })
                         })
                         && filters.output_item_id.is_none_or(|id| {
@@ -1397,6 +1404,11 @@ impl Store {
                         if filters.profession_id.is_some() {
                             summary["selected_recipe"]["profession_id"] =
                                 recipe["profession"]["profession_id"].clone();
+                        }
+                        if filters.cooldown_state.is_some() {
+                            summary["selected_recipe"]["cooldown_state"] =
+                                json!(analysis::recipe_cooldown_state(recipe));
+                            summary["selected_recipe"]["cooldown"] = recipe["cooldown"].clone();
                         }
                     }
                     rows.push((s.captured_at, id.to_owned(), summary));

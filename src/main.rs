@@ -257,6 +257,8 @@ struct List {
     profession_min_rank: Option<u32>,
     /// Filter Forever snapshots by the exact captured selected recipe ID.
     recipe_id: Option<std::num::NonZeroU32>,
+    /// Match the selected recipe's recorded cooldown state, not overall craftability.
+    recipe_cooldown_state: Option<azeroth_operator::analysis::RecipeCooldownState>,
     /// Filter saved Forever instance context by kind, including "none" for outside an instance.
     instance_kind: Option<String>,
     /// Filter saved Forever instance context by exact, case-insensitive name.
@@ -1199,6 +1201,7 @@ impl Operator {
                     recipe_id: args.recipe_id,
                     output_item_id: args.recipe_output_item_id,
                     profession_id: args.recipe_profession_id,
+                    cooldown_state: args.recipe_cooldown_state,
                 },
                 tracked_recipe_id: args.tracked_recipe_id,
                 tracked_recipe_kind: args.tracked_recipe_kind,

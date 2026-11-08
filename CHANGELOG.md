@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever selected recipes by recorded cooldown availability, sharing the state with recipe reviews.
+
 - Report each gear draft's observed DPS gains and losses across encounter profiles.
 
 - Reuse exact bulk Forever shortlists across commands with the per-user simulation cache.

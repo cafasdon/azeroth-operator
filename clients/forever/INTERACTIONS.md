@@ -46,6 +46,18 @@ Add `reward_quest_readiness` to match the linked reward quest in the
 same capture. It accepts `ready`, `not_ready`, `failed` or `unknown`.
 The quest must be observed even for an unknown-readiness match.
 
+Use `recipe_cooldown_state` with `available`, `waiting` or `unknown`
+to find saved selected recipes by their recorded cooldown state. It combines
+with `recipe_id`, `recipe_output_item_id`, `recipe_profession_id`, character
+filters and newest-capture selection. Available charges take precedence over
+a running recharge timer. Zero charges mean waiting. Without a charge count,
+zero remaining seconds means available and a positive timer means waiting.
+A selected recipe without either observation is unknown; an absent selected
+recipe does not match. Recipe reviews return the same classification in
+`captured_cooldown_state`. This describes the recipe capture, not current time
+or full craftability. Learning, materials, tools and other conditions remain
+separate checks, and no game action is performed.
+
 Use `tracked_achievement` with `achievement_id` and optional
 `completed` or `earned_by_character` flags to search saved Forever
 tracked achievements. Flags must match the same recorded achievement.
