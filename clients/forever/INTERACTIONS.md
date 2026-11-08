@@ -562,6 +562,10 @@ A missing quest does not match. Results return the ID and recorded status.
 Omit `quest_id` to find captures with any quest in the requested state.
 The result reports `quest_count` for that state. Empty or unavailable
 logs do not match, including when searching for unknown readiness.
+Add `quest_waypoint_map_id` to match the next waypoint recorded for
+the same quest. It can be used alone or with readiness and a quest ID.
+Without an ID, the result counts quests satisfying all supplied filters.
+This uses the quest waypoint, independently of the player's captured map.
 
 Use `quest_readiness_changes: true` in `compare_snapshots` to compare
 the readiness of quests present in both Forever logs. IDs seen on only

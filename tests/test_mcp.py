@@ -154,6 +154,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "1": {"name": "Fixture profession", "rank": 20, "max_rank": 75, "skill_line": 164}}
                         forever["sections"]["quests"] = {
                             "42":{"title":"Fixture quest","level":10,"ready_for_turn_in":False,
+                                  "next_waypoint_map_id":1414,
                                   "timer":{"total_seconds":100,"remaining_seconds":74},
                                   "objectives":{
                                       "1":{"kind":"item","finished":False,"fulfilled":0,"required":5},
@@ -163,6 +164,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                   }},
                             "43":{"title":"Legacy quest","level":10},
                             "10":{"title":"Turn-in quest","level":10,"ready_for_turn_in":True,
+                                  "next_waypoint_map_id":1415,
                                   "objectives":{"1":{"kind":"event","finished":True}}},
                             "2":{"title":"Another turn-in","level":10,"ready_for_turn_in":True},
                             "44":{"title":"Failed quest","level":10,"ready_for_turn_in":False,"failed":True}}
@@ -255,6 +257,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "retail", "quest_id": 10,
                         })).isError)
+                        for extra, expected in [
+                            ({}, [forever_key]),
+                            ({"quest_readiness": "not_ready"}, [forever_key]),
+                            ({"quest_readiness": "ready"}, []),
+                            ({"quest_id": 10}, []),
+                            ({"quest_id": 42}, [forever_key]),
+                        ]:
+                            mapped = await session.call_tool("list_snapshots", {
+                                **quest_history, "quest_waypoint_map_id": 1414, **extra,
+                            })
+                            self.assertFalse(mapped.isError)
+                            mapped_rows = json.loads(mapped.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in mapped_rows], expected)
+                            if mapped_rows:
+                                self.assertEqual(mapped_rows[0]["quest_match"]["waypoint_map_id"], 1414)
+                                if "quest_id" not in extra:
+                                    self.assertEqual(mapped_rows[0]["quest_match"]["quest_count"], 1)
                         trainers = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": " PoTiOn ",
                             "trainer_service_status": "available",

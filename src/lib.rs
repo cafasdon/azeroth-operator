@@ -325,6 +325,7 @@ pub struct CaptureFilters<'a> {
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_readiness: Option<analysis::QuestReadiness>,
+    pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
@@ -459,6 +460,7 @@ impl Store {
             xp_gain_enabled_only,
             quest_id,
             quest_readiness,
+            quest_waypoint_map_id,
             merchant_item_id,
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
@@ -651,7 +653,8 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
         ensure!(
-            (quest_id.is_none() && quest_readiness.is_none()) || family == Family::Forever,
+            (quest_id.is_none() && quest_readiness.is_none() && quest_waypoint_map_id.is_none())
+                || family == Family::Forever,
             "Quest filtering requires Forever"
         );
         let quest_key = quest_id.map(|id| id.to_string());
@@ -743,32 +746,30 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let matches_quest = |quest: &Value| {
+                        quest_readiness
+                            .is_none_or(|expected| analysis::quest_readiness(quest) == expected)
+                            && quest_waypoint_map_id.is_none_or(|map| {
+                                quest["next_waypoint_map_id"].as_u64() == Some(u64::from(map.get()))
+                            })
+                    };
                     let quest_match = quest_key.as_ref().and_then(|key| {
                         let quest = s.sections.get("quests")?.get(key)?;
-                        let readiness = analysis::quest_readiness(quest);
-                        quest_readiness
-                            .is_none_or(|expected| readiness == expected)
-                            .then_some(readiness)
+                        matches_quest(quest).then(|| analysis::quest_readiness(quest))
                     });
                     if quest_key.is_some() && quest_match.is_none() {
                         continue;
                     }
-                    let quest_count =
-                        quest_readiness
-                            .filter(|_| quest_key.is_none())
-                            .map(|expected| {
-                                s.sections.get("quests").and_then(Value::as_object).map_or(
-                                    0,
-                                    |quests| {
-                                        quests
-                                            .values()
-                                            .filter(|quest| {
-                                                analysis::quest_readiness(quest) == expected
-                                            })
-                                            .count()
-                                    },
-                                )
-                            });
+                    let quest_count = (quest_key.is_none()
+                        && (quest_readiness.is_some() || quest_waypoint_map_id.is_some()))
+                    .then(|| {
+                        s.sections
+                            .get("quests")
+                            .and_then(Value::as_object)
+                            .map_or(0, |quests| {
+                                quests.values().filter(|quest| matches_quest(quest)).count()
+                            })
+                    });
                     if quest_count == Some(0) {
                         continue;
                     }
@@ -1055,6 +1056,9 @@ impl Store {
                     if let Some(count) = quest_count {
                         summary["quest_match"] =
                             json!({"readiness":quest_readiness,"quest_count":count});
+                    }
+                    if let Some(map) = quest_waypoint_map_id {
+                        summary["quest_match"]["waypoint_map_id"] = json!(map);
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;
