@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Limit the number of legs in a saved Forever flight route search.
+
 - Check whether a saved Forever flight route fits the starting wallet while preserving a copper reserve.
 
 - Find the cheapest fully quoted Forever flight route across explicitly selected saved panels.

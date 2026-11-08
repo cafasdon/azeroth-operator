@@ -830,6 +830,9 @@ prefer fewer legs, then compare each leg in order by panel input position
 and destination node ID. It uses only reachable destinations
 with quoted fares and excludes map transitions. The plan includes the
 saved panel for each leg and checks the starting wallet when available.
+Set `max_legs` inside `flight_route_search` to a value from one to eight.
+One limits the search to direct flights from the starting panel. Omit the
+limit to allow up to eight legs.
 Add `flight_wallet_reserve_copper` to check whether the whole route fits
 while preserving that amount. The plan reports `affordable_with_reserve`
 separately from fare-only affordability. A missing starting wallet makes

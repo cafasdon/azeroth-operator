@@ -353,6 +353,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(planned.isError)
                         plan = json.loads(planned.content[0].text)["flight_route_search"]
                         self.assertEqual(plan["total_fare_copper"], 3)
+                        direct_request = {
+                            **route_request, "flight_route_search": {
+                                **route_request["flight_route_search"], "max_legs": 1,
+                            },
+                        }
+                        direct = await session.call_tool("inspect_snapshot", direct_request)
+                        self.assertFalse(direct.isError)
+                        direct_plan = json.loads(direct.content[0].text)["flight_route_search"]
+                        self.assertEqual(direct_plan["total_fare_copper"], 20)
+                        self.assertEqual(len(direct_plan["legs"]), 1)
+                        for invalid in (0, 9):
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                **direct_request, "flight_route_search": {
+                                    **route_request["flight_route_search"], "max_legs": invalid,
+                                },
+                            })).isError)
                         self.assertEqual([leg["snapshot_id"] for leg in plan["legs"]],
                                          [route_start_id, route_onward_id])
                         self.assertTrue(plan["affordable_from_starting_wallet"])

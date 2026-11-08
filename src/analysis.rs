@@ -2431,7 +2431,9 @@ pub fn plan_saved_flights(
     captures: &[(&str, Snapshot)],
     destination: u32,
     reserve: Option<u64>,
+    max_legs: u8,
 ) -> Result<Value> {
+    ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
     let (_, first) = captures
         .first()
         .ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
@@ -2465,7 +2467,7 @@ pub fn plan_saved_flights(
     );
     let mut frontier = BTreeMap::from([(start, (0u64, Vec::new()))]);
     let mut best = None;
-    for depth in 0..8 {
+    for depth in 0..max_legs {
         let mut next = BTreeMap::new();
         for (node, (cost, path)) in frontier {
             for &(index, target, fare) in departures.get(&node).into_iter().flatten() {

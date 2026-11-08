@@ -389,6 +389,9 @@ struct FlightLeg {
 struct FlightRouteSearch {
     destination_node_id: std::num::NonZeroU32,
     onward_snapshot_ids: Option<Vec<String>>,
+    /// Maximum flight legs, including the first leg. Defaults to eight.
+    #[schemars(range(min = 1, max = 8))]
+    max_legs: Option<u8>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1832,13 +1835,14 @@ impl Operator {
                             &captures,
                             search.destination_node_id.get(),
                             args.flight_wallet_reserve_copper,
+                            search.max_legs.unwrap_or(8),
                         )
                     })();
                     match result {
                         Ok(plan) => value["flight_route_search"] = plan,
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
-                                "Flight route search requires compatible Forever captures with unambiguous flight panels and a different destination",
+                                "Flight route search requires compatible Forever captures with unambiguous flight panels, a different destination and a limit of one to eight legs",
                             )]);
                         }
                     }
