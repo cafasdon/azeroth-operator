@@ -1719,6 +1719,7 @@ pub fn merchant_cart_budget(
     let mut copper = 0u64;
     let mut token_costs = BTreeMap::<u32, u64>::new();
     let mut unknown_token_cost_slots = Vec::new();
+    let mut named_currency_cost_slots = Vec::new();
     for (slot, bundles) in cart {
         let Some(offer) = offers.get(&slot.to_string()) else {
             missing.push(slot);
@@ -1736,6 +1737,12 @@ pub fn merchant_cart_budget(
         } else {
             unknown_token_cost_slots.push(slot);
         }
+        if line["named_currency_costs"]
+            .as_array()
+            .is_some_and(|costs| !costs.is_empty())
+        {
+            named_currency_cost_slots.push(slot);
+        }
         line["item_id"] = offer["item_id"].clone();
         line["currency_id"] = offer["currency_id"].clone();
         lines.insert(slot, line);
@@ -1751,13 +1758,30 @@ pub fn merchant_cart_budget(
         tokens.push(json!({"item_id":id,"required_quantity":required,
             "shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
     }
+    let copper_shortfall = wallet.map(|balance| copper.saturating_sub(balance));
+    let item_costs_complete = missing.is_empty() && unknown_token_cost_slots.is_empty();
+    let token_shortfalls = tokens.iter().map(|row| row["shortfall_vs_bags"].as_u64());
+    let budget_status = if copper_shortfall.is_some_and(|gap| gap > 0)
+        || token_shortfalls.clone().flatten().any(|gap| gap > 0)
+    {
+        "insufficient"
+    } else if item_costs_complete
+        && named_currency_cost_slots.is_empty()
+        && (copper == 0 || copper_shortfall == Some(0))
+        && token_shortfalls.into_iter().all(|gap| gap == Some(0))
+    {
+        "fits_observed_budget"
+    } else {
+        "unknown"
+    };
     Ok(
         json!({"lines_by_slot":lines,"missing_slots":missing,"known_required_copper":copper,
         "total_required_copper":missing.is_empty().then_some(copper),
         "known_item_token_costs":tokens,
-        "item_token_costs_complete":missing.is_empty() && unknown_token_cost_slots.is_empty(),
+        "item_token_costs_complete":item_costs_complete,
         "unknown_item_token_cost_slots":unknown_token_cost_slots,
-        "known_copper_shortfall":wallet.map(|balance| copper.saturating_sub(balance))}),
+        "named_currency_cost_slots":named_currency_cost_slots,
+        "known_copper_shortfall":copper_shortfall,"resource_budget_status":budget_status}),
     )
 }
 

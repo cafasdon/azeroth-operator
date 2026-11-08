@@ -231,6 +231,9 @@ Missing offers leave the complete copper total unknown. Known item-token
 costs are combined by item ID and compared with captured bags. Missing
 offers or unobserved extended costs make the item-token tally incomplete.
 Named currency costs remain per line because their names are not stable IDs.
+The cart's `resource_budget_status` distinguishes a known shortfall,
+covered costs and unknown resources. It describes recorded costs and
+balances only. Stock and purchase eligibility are separate.
 
 Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.
