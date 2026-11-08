@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever skill rank and cap changes by stable skill-line ID.
+
 - Save observed Forever skill-line IDs and base ranks for weapon and skill review.
 
 - Identify carried food that the active Forever pet accepts.

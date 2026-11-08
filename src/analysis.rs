@@ -529,6 +529,17 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    let skills_before = before
+        .sections
+        .get("skill_lines")
+        .and_then(Value::as_object);
+    let skills_after = after.sections.get("skill_lines").and_then(Value::as_object);
+    if skills_before.is_some() || skills_after.is_some() {
+        comparison["skill_line_progress"] = skills_before
+            .zip(skills_after)
+            .map(|(before, after)| compare_skill_lines(before, after))
+            .unwrap_or(Value::Null);
+    }
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
     if flight_before.is_some() || flight_after.is_some() {
@@ -1089,6 +1100,40 @@ fn ensure_comparable(before: &Snapshot, after: &Snapshot) -> Result<()> {
         "Snapshots are reversed"
     );
     Ok(())
+}
+
+fn compare_skill_lines(
+    before: &serde_json::Map<String, Value>,
+    after: &serde_json::Map<String, Value>,
+) -> Value {
+    let mut matched = 0;
+    let mut changes = BTreeMap::new();
+    for (key, old) in before {
+        let Some(new) = after.get(key) else { continue };
+        matched += 1;
+        let (Some(id), Some(rank_before), Some(rank_after), Some(cap_before), Some(cap_after)) = (
+            key.parse::<u32>().ok(),
+            old["rank"].as_i64(),
+            new["rank"].as_i64(),
+            old["max_rank"].as_i64(),
+            new["max_rank"].as_i64(),
+        ) else {
+            continue;
+        };
+        if rank_before != rank_after || cap_before != cap_after {
+            changes.insert(id, json!({
+                "skill_line_id":id,"name":new["name"],
+                "rank_before":rank_before,"rank_after":rank_after,"rank_delta":rank_after-rank_before,
+                "max_rank_before":cap_before,"max_rank_after":cap_after,"max_rank_delta":cap_after-cap_before,
+            }));
+        }
+    }
+    json!({
+        "matched_skill_count":matched,
+        "before_only_count":before.len()-matched,
+        "after_only_count":after.len()-matched,
+        "changes":changes.into_values().collect::<Vec<_>>()
+    })
 }
 
 fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {

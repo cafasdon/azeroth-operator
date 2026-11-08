@@ -29,6 +29,11 @@ export leaves collapsed headers as they are, so missing rows do not
 establish that a skill is unlearned. Temporary modifiers are excluded.
 Update the importer and reader before syncing new captures. [Forever skill API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SkillInfoDocumentation.lua)
 
+`compare_snapshots` reports signed rank and cap changes under
+`skill_line_progress` for skills seen in both captures. Skills seen on
+only one side are counted separately because collapsed headers can hide
+rows. A missing section leaves the progress comparison unknown.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture
