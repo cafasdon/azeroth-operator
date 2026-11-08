@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reserve the captured repair quote in Forever merchant cart budgets.
+
 - Flag captured sold-out Forever merchant offers in shopping carts.
 
 - Distinguish insufficient, covered and unknown resources for saved Forever merchant carts.

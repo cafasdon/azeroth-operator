@@ -56,6 +56,9 @@ struct Inspect {
     merchant_bundles: Option<std::num::NonZeroU32>,
     /// Budget one to sixteen distinct captured merchant slots together.
     merchant_cart: Option<Vec<MerchantCartLine>>,
+    /// Include the repair quote from the same saved merchant capture in the cart budget.
+    #[serde(default)]
+    merchant_cart_include_repair: bool,
     /// Find saved merchant offers that sell this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
@@ -1066,6 +1069,11 @@ impl Operator {
             .merchant_item_id
             .map(|id| ("item_id", id))
             .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
+        if args.merchant_cart_include_repair && args.merchant_cart.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Repair reservation requires a merchant cart",
+            )]);
+        }
         if let Some(cart) = &args.merchant_cart
             && (args.section.as_deref() != Some("merchant_stock")
                 || args.merchant_offer_slot.is_some()
@@ -1452,6 +1460,7 @@ impl Operator {
                             &snapshot,
                             cart.iter()
                                 .map(|line| (line.slot.get(), line.bundles.get())),
+                            args.merchant_cart_include_repair,
                         )
                     });
                     let Ok(result) = result else {

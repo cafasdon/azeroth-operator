@@ -237,6 +237,9 @@ balances only. Stock and purchase eligibility are separate.
 Offer budgets report the raw captured stock and distinguish sold-out,
 unlimited and limited offers. Carts list captured sold-out slots. A
 positive limited count does not establish how many requested bundles fit.
+Set `merchant_cart_include_repair` to include the same capture's repair
+quote in the resource budget. The repair reservation shows the combined
+copper and shortfall. Missing repair quotes leave full coverage unknown.
 
 Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.

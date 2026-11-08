@@ -1713,6 +1713,7 @@ pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Resu
 pub fn merchant_cart_budget(
     snapshot: &Snapshot,
     cart: impl Iterator<Item = (u32, u32)>,
+    include_repair: bool,
 ) -> Result<Value> {
     let Some(offers) = snapshot
         .sections
@@ -1770,31 +1771,52 @@ pub fn merchant_cart_budget(
             "shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
     }
     let copper_shortfall = wallet.map(|balance| copper.saturating_sub(balance));
+    let repair = snapshot
+        .sections
+        .get("repair_quote")
+        .and_then(|quote| quote["copper"].as_u64());
+    let budget_copper = if include_repair {
+        copper
+            .checked_add(repair.unwrap_or_default())
+            .ok_or_else(|| anyhow::anyhow!("Merchant and repair cost is too large"))?
+    } else {
+        copper
+    };
+    let budget_shortfall = wallet.map(|balance| budget_copper.saturating_sub(balance));
+    let repair_reservation = include_repair.then(|| json!({
+        "captured_quote_copper":repair,
+        "known_combined_copper":budget_copper,
+        "total_combined_copper":(missing.is_empty() && repair.is_some()).then_some(budget_copper),
+        "known_combined_shortfall_copper":budget_shortfall
+    }));
     let item_costs_complete = missing.is_empty() && unknown_token_cost_slots.is_empty();
     let token_shortfalls = tokens.iter().map(|row| row["shortfall_vs_bags"].as_u64());
-    let budget_status = if copper_shortfall.is_some_and(|gap| gap > 0)
+    let budget_status = if budget_shortfall.is_some_and(|gap| gap > 0)
         || token_shortfalls.clone().flatten().any(|gap| gap > 0)
     {
         "insufficient"
     } else if item_costs_complete
         && named_currency_cost_slots.is_empty()
-        && (copper == 0 || copper_shortfall == Some(0))
+        && (!include_repair || repair.is_some())
+        && (budget_copper == 0 || budget_shortfall == Some(0))
         && token_shortfalls.into_iter().all(|gap| gap == Some(0))
     {
         "fits_observed_budget"
     } else {
         "unknown"
     };
-    Ok(
-        json!({"lines_by_slot":lines,"missing_slots":missing,"known_required_copper":copper,
+    let mut result = json!({"lines_by_slot":lines,"missing_slots":missing,"known_required_copper":copper,
         "total_required_copper":missing.is_empty().then_some(copper),
         "known_item_token_costs":tokens,
         "item_token_costs_complete":item_costs_complete,
         "unknown_item_token_cost_slots":unknown_token_cost_slots,
         "named_currency_cost_slots":named_currency_cost_slots,
         "sold_out_slots":sold_out_slots,
-        "known_copper_shortfall":copper_shortfall,"resource_budget_status":budget_status}),
-    )
+        "known_copper_shortfall":copper_shortfall,"resource_budget_status":budget_status});
+    if let Some(reservation) = repair_reservation {
+        result["repair_reservation"] = reservation;
+    }
+    Ok(result)
 }
 
 pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
