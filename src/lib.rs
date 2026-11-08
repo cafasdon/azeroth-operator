@@ -308,6 +308,8 @@ pub struct CaptureFilters<'a> {
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub repair_max_quote_copper: Option<u64>,
     pub repair_affordable_only: bool,
+    pub minimum_free_bag_slots: Option<u32>,
+    pub minimum_general_free_bag_slots: Option<u32>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
@@ -421,6 +423,8 @@ impl Store {
             player_parent_map_id,
             repair_max_quote_copper,
             repair_affordable_only,
+            minimum_free_bag_slots,
+            minimum_general_free_bag_slots,
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
@@ -549,6 +553,12 @@ impl Store {
         let instance_name = instance.name.map(str::to_lowercase);
         let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
         let filter_repair = repair_max_quote_copper.is_some() || repair_affordable_only;
+        let filter_bag_space =
+            minimum_free_bag_slots.is_some() || minimum_general_free_bag_slots.is_some();
+        ensure!(
+            !filter_bag_space || family == Family::Forever,
+            "Bag space filtering requires Forever"
+        );
         ensure!(
             (!filter_repair || family == Family::Forever)
                 && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999),
@@ -633,6 +643,24 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let bag_space = if filter_bag_space {
+                        let Some(space) = analysis::carried_bag_space(&s).filter(|space| {
+                            minimum_free_bag_slots.is_none_or(|minimum| {
+                                space["free_slots"]
+                                    .as_u64()
+                                    .is_some_and(|free| free >= u64::from(minimum))
+                            }) && minimum_general_free_bag_slots.is_none_or(|minimum| {
+                                space["known_general_free_slots"]
+                                    .as_u64()
+                                    .is_some_and(|free| free >= u64::from(minimum))
+                            })
+                        }) else {
+                            continue;
+                        };
+                        Some(space)
+                    } else {
+                        None
+                    };
                     let repair_quote = if filter_repair {
                         let quote = s
                             .sections
@@ -806,6 +834,9 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(space) = bag_space {
+                        summary["carried_bag_space"] = space;
+                    }
                     if let Some(quote) = repair_quote {
                         summary["repair_quote_match"] = json!({"copper":quote});
                     }

@@ -271,6 +271,13 @@ capture because a change in bag-family visibility can change those counts.
 The carried-item review flags whether free slots were captured and leaves
 stack compatibility unknown.
 
+Use `list_snapshots` with `family: "forever"` and
+`minimum_free_bag_slots` for total free carried slots, or
+`minimum_general_free_bag_slots` for slots in known general-purpose
+bags. The limits are inclusive and can be combined. Missing bag
+capacity is excluded. Results show the same counts as the character
+summary. Total free slots include specialty and unknown bag families.
+
 Inspect the `durability_alerts` section for saved equipment slots flagged
 `low` or `broken` by the built-in durability display. An empty map means
 the checked slots raised no alert. Exact durability, repair prices and

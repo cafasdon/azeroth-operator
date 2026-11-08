@@ -548,7 +548,7 @@ fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Val
     Ok(json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta}))
 }
 
-fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
+pub(crate) fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bag_capacity")?.as_object()?;
     let total = bags
         .values()

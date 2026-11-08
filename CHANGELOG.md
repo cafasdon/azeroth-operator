@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures with enough observed carried or general-purpose bag space.
+
 - Restrict saved Forever flight route searches to routes that fit the starting budget.
 
 - Check saved Forever flight affordability including the starting repair quote.

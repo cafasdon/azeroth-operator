@@ -814,15 +814,37 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         travel["sections"]["flight_map"]["entries"]["2"]["fare_copper"] = 1
                         travel["sections"]["repair_quote"] = {"copper": 1}
+                        travel["sections"]["bag_capacity"] = {
+                            "0": {"total_slots": 16, "free_slots": 1, "family_mask": 0},
+                            "1": {"total_slots": 8, "free_slots": 5, "family_mask": 32},
+                            "2": {"total_slots": 8, "free_slots": 4},
+                            "3": {"total_slots": 0, "free_slots": 0},
+                            "4": {"total_slots": 0, "free_slots": 0},
+                        }
                         travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
+                        del travel["sections"]["bag_capacity"]
                         travel["sections"]["wallet"]["copper"] = 0
                         travel["sections"]["stats"].update({
                             "map_id": 1415, "map_name": "Second map", "hearthstone_bind_name": "Second inn",
                             "hearthstone_cooldown_seconds": 0,
                         })
                         travel_after = SnapshotStore(Path(folder)).ingest(travel)
+                        bag_query = {"family": "forever", "minimum_free_bag_slots": 10,
+                                     "minimum_general_free_bag_slots": 1}
+                        bag_visits = await session.call_tool("list_snapshots", bag_query)
+                        self.assertFalse(bag_visits.isError)
+                        bag_rows = json.loads(bag_visits.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in bag_rows], [travel_before])
+                        self.assertEqual(bag_rows[0]["carried_bag_space"], {
+                            "total_slots": 32, "free_slots": 10, "known_general_free_slots": 1,
+                        })
+                        insufficient = await session.call_tool("list_snapshots", {
+                            **bag_query, "minimum_general_free_bag_slots": 2,
+                        })
+                        self.assertFalse(insufficient.isError)
+                        self.assertEqual(json.loads(insufficient.content[0].text)["snapshots"], [])
                         repair_query = {"family": "forever", "repair_max_quote_copper": 1,
                                         "repair_affordable_only": True}
                         repairs = await session.call_tool("list_snapshots", repair_query)
