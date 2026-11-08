@@ -1530,6 +1530,26 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 );
             }
         }
+        "equipment_durability" => {
+            object(
+                value,
+                &[
+                    ("coverage", "readable_equipped_slots_only", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            entries(
+                &value["entries"],
+                &[("current", "uint", true), ("maximum", "positive", true)],
+            )?;
+            for (slot, row) in value["entries"].as_object().unwrap() {
+                index(slot, 1, 19)?;
+                ensure!(
+                    row["current"].as_u64().unwrap() <= row["maximum"].as_u64().unwrap(),
+                    "Invalid equipment durability"
+                );
+            }
+        }
         "durability_alerts" => {
             let alerts = value
                 .as_object()

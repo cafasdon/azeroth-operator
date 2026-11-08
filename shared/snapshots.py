@@ -15,6 +15,7 @@ SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instanc
 SECTIONS = SECTIONS | {"profession_recipe_view"}
 SECTIONS = SECTIONS | {"mail_attachments"}
 SECTIONS = SECTIONS | {"pet_collection_view"}
+SECTIONS = SECTIONS | {"equipment_durability"}
 
 
 def _validate_action_bar_observation(observation):
@@ -463,6 +464,17 @@ def validate_snapshot(value):
             if "family_mask" in bag and (total == 0 or type(bag["family_mask"]) is not int
                                          or not 0 <= bag["family_mask"] <= 4_294_967_295):
                 raise ValueError("Invalid bag family")
+    if "equipment_durability" in sections:
+        durability=sections["equipment_durability"]
+        if (c["family"]!="forever" or not isinstance(durability,dict) or set(durability)!={"coverage","entries"}
+                or durability["coverage"]!="readable_equipped_slots_only" or not isinstance(durability["entries"],dict)):
+            raise ValueError("Invalid equipment durability coverage")
+        for slot,row in durability["entries"].items():
+            if (not isinstance(slot,str) or slot not in {str(i) for i in range(1,20)}
+                    or not isinstance(row,dict) or set(row)!={"current","maximum"}
+                    or type(row["current"]) is not int or type(row["maximum"]) is not int
+                    or not 0 <= row["current"] <= row["maximum"] <= 4_294_967_295 or row["maximum"]==0):
+                raise ValueError("Invalid equipment durability")
     if "durability_alerts" in sections:
         alerts = sections["durability_alerts"]
         slots = {"head", "shoulders", "chest", "waist", "legs", "feet", "wrists", "hands",

@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Exact equipped-slot durability capture complements existing low/broken alerts.
+Only readable stable current/maximum pairs are saved. Maintenance summaries
+show observed percentages and damaged/broken slots with explicit unobserved
+coverage. No item continuity, repair price/eligibility or repair action is
+inferred. [Offline evidence](../../docs/equipment-durability-verification-2026-11-08.md).
+
 The filtered local profession list can expose optional stable difficulty,
 skill-up flags and reported counts. Summary candidates require observed
 learning and a true skill-up flag; they are bounded, ID-ordered and retain

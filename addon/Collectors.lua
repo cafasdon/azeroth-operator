@@ -1657,6 +1657,26 @@ AO.collectors.durability_alerts = function()
     return result
 end
 
+AO.collectors.equipment_durability = function()
+    assert(AO.family=="forever" and type(GetInventoryItemDurability)=="function", "Equipment durability unavailable")
+    local rows={}
+    local function read(slot)
+        local current,maximum=GetInventoryItemDurability(slot)
+        if questRewardInteger(current,0,4294967295) and questRewardInteger(maximum,1,4294967295)
+            and current<=maximum then return current,maximum end
+    end
+    for slot=1,19 do
+        local ok,current,maximum=pcall(read,slot)
+        if ok and current~=nil then
+            local nextOk,nextCurrent,nextMaximum=pcall(read,slot)
+            if nextOk and current==nextCurrent and maximum==nextMaximum then
+                rows[tostring(slot)]={current=current,maximum=maximum}
+            end
+        end
+    end
+    return {coverage="readable_equipped_slots_only",entries=rows}
+end
+
 AO.collectors.flight_map = function()
     local frame=FlightMapFrame
     assert(frame and frame:IsVisible(), "Flight map is not open")

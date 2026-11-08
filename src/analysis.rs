@@ -4592,6 +4592,22 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["equipment_condition"] = s.sections.get("equipment_durability").map(|condition| {
+        let rows=condition["entries"].as_object().unwrap();
+        let mut slots:Vec<_>=rows.iter().map(|(slot,row)| {
+            let current=row["current"].as_u64().unwrap();
+            let maximum=row["maximum"].as_u64().unwrap();
+            (slot.parse::<u32>().unwrap(),current,maximum)
+        }).collect();
+        slots.sort_by_key(|(slot,_,_)|*slot);
+        let minimum=slots.iter().map(|(_,current,maximum)|100.0*(*current as f64)/(*maximum as f64)).reduce(f64::min);
+        json!({"coverage":condition["coverage"],"observed_slots":slots.len(),"unobserved_slots":19-slots.len(),
+            "minimum_observed_percent":minimum,
+            "damaged_slots":slots.iter().filter(|(_,current,maximum)|current<maximum).map(|(slot,_,_)|slot).collect::<Vec<_>>(),
+            "broken_slots":slots.iter().filter(|(_,current,_)|*current==0).map(|(slot,_,_)|slot).collect::<Vec<_>>(),
+            "slots":slots.into_iter().map(|(slot,current,maximum)|json!({"slot":slot,"current":current,"maximum":maximum,
+                "percent":100.0*(current as f64)/(maximum as f64)})).collect::<Vec<_>>()})
+    }).unwrap_or(Value::Null);
     summary["saved_world_bosses_observed"] = json!(
         s.sections
             .get("saved_world_bosses")
