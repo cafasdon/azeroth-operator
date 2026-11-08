@@ -477,6 +477,9 @@ struct RecipeReview {
     inventory_snapshot_id: Option<String>,
     /// Up to seven other saved recipes checked against the same inventory capture.
     additional_recipes: Option<Vec<RecipeBatchEntry>>,
+    /// Suggest a producer-before-consumer order for a batch with known fixed inputs and outputs.
+    #[serde(default)]
+    suggest_dependency_order: bool,
     /// Match material shortfalls against saved merchant offers.
     #[serde(default)]
     merchant_reagent_plan: bool,
@@ -924,6 +927,10 @@ impl Operator {
             );
             let additional = args.additional_recipes.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many recipes");
+            anyhow::ensure!(
+                !args.suggest_dependency_order || !additional.is_empty(),
+                "Dependency ordering requires multiple recipes"
+            );
             let snapshot = self.store.read(&args.snapshot_id)?;
             let inventory = args
                 .inventory_snapshot_id
@@ -981,6 +988,13 @@ impl Operator {
                     azeroth_operator::analysis::combine_recipe_outputs(
                         std::iter::once(&review).chain(&extra_reviews),
                     );
+                if args.suggest_dependency_order {
+                    review["dependency_order"] =
+                        azeroth_operator::analysis::recipe_dependency_order(
+                            std::iter::once(&review).chain(&extra_reviews),
+                            &review["combined_materials"],
+                        )?;
+                }
                 review["additional_recipe_reviews"] = serde_json::json!(extra_reviews);
                 if inventory.is_none() {
                     review["inventory_snapshot_id"] = serde_json::json!(args.snapshot_id);

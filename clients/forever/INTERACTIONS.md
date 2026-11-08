@@ -58,6 +58,24 @@ recipe does not match. Recipe reviews return the same classification in
 or full craftability. Learning, materials, tools and other conditions remain
 separate checks, and no game action is performed.
 
+For a multi-recipe `review_forever_recipe` request, set
+`suggest_dependency_order: true` to add `dependency_order`. Known outputs are
+matched to fixed input item IDs, then producers are placed before consumers.
+Independent recipes retain their input-order priority. All recipe numbers in
+the suggestion and dependency edges refer to the submitted batch, starting at
+one; checkpoint `suggested_step` identifies the position in the new order.
+
+The suggestion recalculates starting materials, coverage and preparation
+checkpoints using captured minimum yields. It does not change the original
+ordered plan or the requested craft counts. Insufficient output still requires
+external starting stock. Missing fixed requirements or output ranges produce
+`incomplete_observations`; a cycle produces `cyclic_dependencies`, with graph-
+blocked recipe numbers and no suggested order. A cycle does not prove the batch
+cannot be crafted using starting stock. These are conditional material estimates,
+not a cheapest-order optimisation, inventory-capacity check or permission to
+craft. Recipes with unobserved outputs, including enchant-only captures, keep
+their original plan and receive no automatic dependency order.
+
 Set `selected_recipe_changes: true` in `compare_snapshots` for a compact
 before/after view of selected-recipe learning, cooldown, fixed reagent and
 output observations. Recipe names are excluded so localisation-only changes

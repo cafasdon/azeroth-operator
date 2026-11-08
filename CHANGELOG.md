@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Suggest producer-first recipe batch orders with recalculated starting materials and explicit cycle/data gaps.
+
 - Compare saved selected-recipe learning, cooldown, reagent and output observations without crossing recipe identities.
 
 - Find saved Forever selected recipes by recorded cooldown availability, sharing the state with recipe reviews.

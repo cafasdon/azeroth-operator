@@ -434,6 +434,110 @@ pub fn ordered_recipe_material_coverage(materials: &Value) -> Value {
         "all_observed_storage":covered("shortfall_vs_observed")})
 }
 
+pub fn recipe_dependency_order<'a>(
+    reviews: impl Iterator<Item = &'a Value>,
+    combined_materials: &Value,
+) -> Result<Value> {
+    let reviews: Vec<_> = reviews.collect();
+    let mut unresolved_inputs = Vec::new();
+    let mut unresolved_outputs = Vec::new();
+    let mut edges = Vec::new();
+    let mut successors = vec![BTreeSet::new(); reviews.len()];
+    let mut incoming = vec![0; reviews.len()];
+    for (index, review) in reviews.iter().enumerate() {
+        if review["recipe"]["requirements"] != "fixed_items" {
+            unresolved_inputs.push(index + 1);
+        }
+        if review["base_output_if_completed"]["item_id"]
+            .as_u64()
+            .is_none()
+            || review["base_output_if_completed"]["minimum"]
+                .as_u64()
+                .is_none()
+        {
+            unresolved_outputs.push(index + 1);
+        }
+    }
+    for (producer, review) in reviews.iter().enumerate() {
+        let output = &review["base_output_if_completed"];
+        let Some(item) = output["item_id"]
+            .as_u64()
+            .filter(|_| output["minimum"].as_u64().is_some())
+        else {
+            continue;
+        };
+        for (consumer, other) in reviews.iter().enumerate() {
+            if other["recipe"]["requirements"] == "fixed_items"
+                && other["materials"].as_array().is_some_and(|materials| {
+                    materials
+                        .iter()
+                        .any(|row| row["item_id"].as_u64() == Some(item))
+                })
+            {
+                edges.push(json!({"producer_recipe_number":producer + 1,
+                    "consumer_recipe_number":consumer + 1,"item_id":item}));
+                if successors[producer].insert(consumer) {
+                    incoming[consumer] += 1;
+                }
+            }
+        }
+    }
+    let mut ready: BTreeSet<_> = incoming
+        .iter()
+        .enumerate()
+        .filter_map(|(index, count)| (*count == 0).then_some(index))
+        .collect();
+    let mut order = Vec::new();
+    while let Some(index) = ready.pop_first() {
+        order.push(index);
+        for &consumer in &successors[index] {
+            incoming[consumer] -= 1;
+            if incoming[consumer] == 0 {
+                ready.insert(consumer);
+            }
+        }
+    }
+    let status = if !unresolved_inputs.is_empty() || !unresolved_outputs.is_empty() {
+        "incomplete_observations"
+    } else if order.len() != reviews.len() {
+        "cyclic_dependencies"
+    } else {
+        "suggested"
+    };
+    let suggested = status == "suggested";
+    let mut result = json!({"status":status,"dependencies":edges,
+        "unresolved_input_recipe_numbers":unresolved_inputs,
+        "unresolved_output_recipe_numbers":unresolved_outputs,
+        "blocked_recipe_numbers":incoming.iter().enumerate().filter_map(|(index, count)|
+            (*count > 0).then_some(index + 1)).collect::<Vec<_>>(),
+        "suggested_recipe_numbers":suggested.then(|| order.iter().map(|index| index+1).collect::<Vec<_>>()),
+        "starting_materials":Value::Null,"material_checkpoint":Value::Null,
+        "nonmaterial_requirements":Value::Null,"material_coverage":Value::Null});
+    if suggested {
+        let ordered = || order.iter().map(|index| reviews[*index]);
+        let remap_checkpoint = |checkpoint: &mut Value, field: &str| {
+            if let Some(row) = checkpoint.get_mut(field).and_then(Value::as_object_mut)
+                && let Some(step) = row.get("recipe_number").and_then(Value::as_u64)
+                && let Some(original) = step
+                    .checked_sub(1)
+                    .and_then(|index| order.get(index as usize))
+            {
+                row.insert("suggested_step".to_string(), json!(step));
+                row.insert("recipe_number".to_string(), json!(original + 1));
+            }
+        };
+        let (materials, mut checkpoint) = ordered_recipe_materials(ordered(), combined_materials)?;
+        remap_checkpoint(&mut checkpoint, "first_uncovered_recipe");
+        let mut requirements = ordered_recipe_requirements(ordered());
+        remap_checkpoint(&mut requirements, "first_observed_shortfall");
+        result["material_coverage"] = ordered_recipe_material_coverage(&materials);
+        result["starting_materials"] = materials;
+        result["material_checkpoint"] = checkpoint;
+        result["nonmaterial_requirements"] = requirements;
+    }
+    Ok(result)
+}
+
 pub fn ordered_recipe_requirements<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
     let checks = [
         "recipe_learned",
