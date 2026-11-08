@@ -848,6 +848,11 @@ Add `flight_wallet_reserve_copper` to check whether the whole route fits
 while preserving that amount. The plan reports `affordable_with_reserve`
 separately from fare-only affordability. A missing starting wallet makes
 both checks unknown.
+Set `include_repair_quote: true` inside `flight_route_search` to
+include the repair-all quote from the starting capture. The
+`affordable_with_repairs_and_reserve` check includes fare, that quote
+and any explicit copper reserve. It is unknown if the starting wallet
+or quote was unavailable. Onward quotes do not contribute.
 `no_fully_priced_route` describes the supplied captures. Routes are
 historical observations and may have different capture times.
 

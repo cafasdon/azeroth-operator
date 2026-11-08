@@ -2441,6 +2441,7 @@ pub fn plan_saved_flights(
     reserve: Option<u64>,
     max_legs: u8,
     objective: FlightRouteObjective,
+    include_repair_quote: bool,
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
     let (_, first) = captures
@@ -2538,6 +2539,20 @@ pub fn plan_saved_flights(
                 .checked_sub(reserve)
                 .is_some_and(|spendable| fare <= spendable)
         }));
+    }
+    if include_repair_quote {
+        let repair = first
+            .sections
+            .get("repair_quote")
+            .and_then(|row| row["copper"].as_u64());
+        plan["starting_repair_quote_copper"] = json!(repair);
+        plan["affordable_with_repairs_and_reserve"] =
+            json!(wallet.zip(repair).map(|(balance, repair)| {
+                balance
+                    .checked_sub(repair)
+                    .and_then(|remaining| remaining.checked_sub(reserve.unwrap_or_default()))
+                    .is_some_and(|spendable| fare <= spendable)
+            }));
     }
     Ok(plan)
 }

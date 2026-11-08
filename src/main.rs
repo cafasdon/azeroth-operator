@@ -399,6 +399,9 @@ struct FlightRouteSearch {
     max_legs: Option<u8>,
     /// Rank by lowest fare (default) or fewest flight legs.
     objective: Option<azeroth_operator::analysis::FlightRouteObjective>,
+    /// Check the route budget including the repair-all quote in the starting capture.
+    #[serde(default)]
+    include_repair_quote: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1846,6 +1849,7 @@ impl Operator {
                             args.flight_wallet_reserve_copper,
                             search.max_legs.unwrap_or(8),
                             search.objective.unwrap_or_default(),
+                            search.include_repair_quote,
                         )
                     })();
                     match result {

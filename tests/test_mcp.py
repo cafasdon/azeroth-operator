@@ -333,12 +333,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })).isError)
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
                         route_start = json.loads(json.dumps(forever))
+                        route_start["sections"]["repair_quote"] = {"copper": 2}
                         route_start["sections"]["flight_map"]["entries"]["3"] = {
                             "node_id": 15, "name": "Route target", "state": "reachable",
                             "map_transition": False, "fare_copper": 20,
                         }
                         route_start_id = SnapshotStore(Path(folder)).ingest(route_start)
                         route_onward = json.loads(json.dumps(route_start))
+                        route_onward["sections"]["repair_quote"] = {"copper": 999}
                         route_onward["sections"]["flight_map"]["entries"] = {
                             "1": {"node_id": 14, "name": "Connection", "state": "current",
                                   "map_transition": False},
@@ -387,6 +389,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                          [route_start_id, route_onward_id])
                         self.assertTrue(plan["affordable_from_starting_wallet"])
                         self.assertNotIn("affordable_with_reserve", plan)
+                        self.assertNotIn("starting_repair_quote_copper", plan)
+                        for reserve, expected in [(4_999_999_996, True), (4_999_999_997, False)]:
+                            repair_budget = await session.call_tool("inspect_snapshot", {
+                                **route_request, "flight_wallet_reserve_copper": reserve,
+                                "flight_route_search": {
+                                    **route_request["flight_route_search"], "include_repair_quote": True,
+                                },
+                            })
+                            self.assertFalse(repair_budget.isError)
+                            repair_plan = json.loads(repair_budget.content[0].text)["flight_route_search"]
+                            self.assertEqual(repair_plan["starting_repair_quote_copper"], 2)
+                            self.assertTrue(repair_plan["affordable_with_reserve"])
+                            self.assertEqual(repair_plan["affordable_with_repairs_and_reserve"], expected)
                         for reserve, expected in [(4_999_999_998, True), (4_999_999_999, False)]:
                             reserved = await session.call_tool("inspect_snapshot", {
                                 **route_request, "flight_wallet_reserve_copper": reserve,
