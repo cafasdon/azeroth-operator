@@ -682,6 +682,28 @@ A second offline check ran the pinned Hunter defaults and `turret.apl.siml` usin
 
 The duration change shifted both DPS estimates and their precision. The order stayed the same and the individual intervals overlapped in both scenarios. These are per-profile intervals, with no paired-difference estimate or claim that the gear sets are tied. P1 CLI wall time was 0.273–0.309 s for 45 seconds and 0.504–0.519 s for 180 seconds. This synthetic check covers duration only. It adds no evidence about add waves, movement or native encounter accuracy.
 
+An offline shortlist audit compared 49 distinct chest gear sets including the
+equipped baseline, using the same public Hunter template, 45-second fights
+with three seconds of duration variation and seed 20261107. The fixed path
+used 1,500 paired iterations per set. The adaptive path screened 48
+alternatives and took five into the high-precision stage.
+
+| Forever preset | Fixed wall time | Adaptive wall time | Fixed top five retained |
+| --- | ---: | ---: | ---: |
+| Raid Target | 16.65 s | 5.81 s | 5/5 |
+| Dynamic Adds | 17.04 s | 7.13 s | 5/5 |
+| Movement | 16.32 s | 6.57 s | 5/5 |
+
+The leading alternative stayed the same across these profiles. Its adaptive
+estimate fell from 789.51 DPS on Raid Target to 767.11 DPS on Movement.
+The adaptive high stage used 16,785–18,401 iterations depending on the
+profile. The two paths used different precision, and each wall time is a
+single run. This audit measures shortlist agreement on this fixture.
+In a separate full-command Movement run, setting Go's processor limit to
+12 yielded 9.93 and 9.97 seconds versus 9.55 and 9.15 at 20, with the same
+shortlist and DPS to eight decimal places. The ranker retains the engine's
+default processor scheduling.
+
 An offline bulk pilot exercised the pinned Go `BulkSimAsync` entry point on the same Hunter defaults and turret rotation. It replaced only the chest piece with the first 48 matching catalogue rows in file order. The filter included cloth, leather or mail chest pieces with a level requirement at most 60 and no class, faction or profession restriction, excluding the baseline chest. Both modes used seed 20261107. The isolated harness lowered the stage floors to 40, 160 and 1,000 and set target errors to 5%, 2% and 1%. These are pilot settings.
 
 | Duration | Staged top five | Exhaustive all results | Ordered top-five chest IDs in both modes |
