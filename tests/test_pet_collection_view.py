@@ -1,0 +1,70 @@
+"""Species-only filtered pet observations preserve ownership scope and privacy."""
+import copy
+import hashlib
+import json
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from shared.snapshots import SnapshotStore, validate_snapshot
+from test_snapshots import fixture
+
+
+class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
+    async def test_species_readback_and_validation(self):
+        root=Path(__file__).resolve().parents[1]
+        binary=Path(os.environ.get('AZEROTH_TEST_BINARY',root/'target/debug'/(
+            'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder:
+            store=SnapshotStore(Path(folder))
+            value=fixture()
+            value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+            view={'coverage':'filtered_journal_species','displayed_rows':3,'entries':{
+                '7':{'name':'Species 7','owned_rows':2,'unowned_rows':0},
+                '8':{'name':'Species 8','owned_rows':0,'unowned_rows':1}}}
+            value['sections']['pet_collection_view']=view
+            key=store.ingest(value)
+            empty=copy.deepcopy(value)
+            empty['sections']['pet_collection_view'].update(displayed_rows=0,entries={})
+            empty_key=store.ingest(empty)
+            missing=copy.deepcopy(value);missing['sections'].pop('pet_collection_view')
+            missing_key=store.ingest(missing)
+            bad_keys=[]
+            for change in [
+                lambda x:x['client'].update(family='retail'),
+                lambda x:x['sections']['pet_collection_view'].update(coverage='full_collection'),
+                lambda x:x['sections']['pet_collection_view'].update(displayed_rows=4),
+                lambda x:x['sections']['pet_collection_view']['entries']['7'].update(owned_rows=True),
+                lambda x:x['sections']['pet_collection_view']['entries']['7'].update(pet_guid='private'),
+                lambda x:x['sections']['pet_collection_view']['entries']['7'].update(custom_name='private'),
+                lambda x:x['sections']['pet_collection_view']['entries']['7'].update(name='é'*129),
+                lambda x:x['sections']['pet_collection_view']['entries'].update({'0':{'name':'Bad','owned_rows':1,'unowned_rows':0}}),
+            ]:
+                bad=copy.deepcopy(value);change(bad)
+                with self.assertRaises(ValueError):validate_snapshot(bad)
+                raw=json.dumps(bad,sort_keys=True,separators=(',',':')).encode()
+                bad_key=hashlib.sha256(raw).hexdigest()
+                (Path(folder)/f'{bad_key}.json').write_bytes(raw)
+                bad_keys.append(bad_key)
+            env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
+            async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
+                async with ClientSession(read,write) as session:
+                    await session.initialize()
+                    response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_collection_view'})
+                    self.assertFalse(response.isError)
+                    self.assertEqual(json.loads(response.content[0].text)['data'],view)
+                    for source,expected in [(key,{'displayed_rows':3,'species_observed':2,'owned_rows_observed':2,'unowned_rows_observed':1}),
+                        (empty_key,{'displayed_rows':0,'species_observed':0,'owned_rows_observed':0,'unowned_rows_observed':0}),
+                        (missing_key,None)]:
+                        response=await session.call_tool('character_summary',{'snapshot_id':source})
+                        self.assertFalse(response.isError)
+                        self.assertEqual(json.loads(response.content[0].text)['pet_collection_view_counts'],expected)
+                    for source in bad_keys:
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':source,'section':'pet_collection_view'})
+                        self.assertTrue(response.isError)
+
+
+if __name__=='__main__':
+    unittest.main()

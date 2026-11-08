@@ -98,6 +98,47 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "pet_collection_view" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("displayed_rows", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "filtered_journal_species"
+                    && value["displayed_rows"].as_u64().unwrap() <= 10000,
+                "Invalid pet journal coverage"
+            );
+            entries(
+                &value["entries"],
+                &[
+                    ("name", "text", true),
+                    ("owned_rows", "uint", true),
+                    ("unowned_rows", "uint", true),
+                ],
+            )?;
+            let mut count = 0u64;
+            for row in value["entries"].as_object().unwrap().values() {
+                let total =
+                    row["owned_rows"].as_u64().unwrap() + row["unowned_rows"].as_u64().unwrap();
+                ensure!(
+                    total > 0
+                        && total <= 10000
+                        && row["name"]
+                            .as_str()
+                            .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid pet journal species"
+                );
+                count += total;
+            }
+            ensure!(
+                count == value["displayed_rows"].as_u64().unwrap(),
+                "Inconsistent pet journal row count"
+            );
+        }
         "mail_attachments" => {
             object(
                 value,

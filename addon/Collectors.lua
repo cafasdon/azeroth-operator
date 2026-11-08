@@ -642,6 +642,52 @@ AO.collectors.professions = function()
     return result
 end
 
+AO.collectors.pet_collection_view = function()
+    local api=C_PetJournal
+    assert(AO.family=="forever" and PetJournal and PetJournal.IsVisible and api
+        and api.GetNumPets and api.GetPetInfoByIndex and api.GetPetInfoBySpeciesID,"Pet journal unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value),"Restricted pet collection observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high,"Invalid pet collection number")
+        return value
+    end
+    local function visible() assert(readable(PetJournal:IsVisible())==true,"Pet journal hidden") end
+    local function read()
+        visible()
+        local count=integer(api.GetNumPets(),0,10000)
+        local rows={}
+        for index=1,count do
+            local _,species,owned=api.GetPetInfoByIndex(index)
+            species=integer(species,1,4294967295);owned=readable(owned)
+            assert(type(owned)=="boolean","Unknown pet ownership row")
+            local key=tostring(species)
+            local row=rows[key]
+            if not row then
+                local name=readable(api.GetPetInfoBySpeciesID(species))
+                assert(type(name)=="string" and #name>0 and #name<=256,"Invalid pet species name")
+                row={name=name,owned_rows=0,unowned_rows=0};rows[key]=row
+            end
+            local field=owned and "owned_rows" or "unowned_rows"
+            row[field]=row[field]+1
+        end
+        visible()
+        return {coverage="filtered_journal_species",displayed_rows=count,entries=rows}
+    end
+    local result=read()
+    local final=read()
+    assert(result.displayed_rows==final.displayed_rows,"Pet journal count changed")
+    for key,row in pairs(result.entries) do
+        local other=final.entries[key]
+        assert(other and row.name==other.name and row.owned_rows==other.owned_rows
+            and row.unowned_rows==other.unowned_rows,"Pet journal changed")
+    end
+    for key in pairs(final.entries) do assert(result.entries[key],"Pet journal changed") end
+    return result
+end
 AO.collectors.mail_attachments = function()
     assert(AO.family=="forever" and MailFrame and MailFrame.IsVisible and InboxFrame and InboxFrame.IsVisible
         and C_Mail and C_Mail.IsCommandPending and GetInboxNumItems and HasInboxItem and GetInboxItem,

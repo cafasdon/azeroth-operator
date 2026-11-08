@@ -4,6 +4,17 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+`inspect_snapshot` accepts `section: "pet_collection_view"` for species-level
+observations while the pet journal is visible. The capture aggregates owned and
+unowned rows by species ID, using public species names. Individual pet GUIDs,
+custom names, levels, stats, favourites and the separate account-owned total
+are omitted. `character_summary.pet_collection_view_counts` reports displayed
+rows, observed species and owned/unowned row totals, or null when unavailable.
+The journal remains filtered: absent species are unknown, and these counts do
+not establish complete account ownership. The exporter does not open the
+journal, change filters, rename, cage, release, summon or start pet battles.
+See [verification](../../docs/pet-collection-view-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "mail_attachments"` for pending attachments
 in the loaded inbox while the player's inbox panel is visible and idle. It
 records loaded/total message counts and attachment positions, IDs and quantities

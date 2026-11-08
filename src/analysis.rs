@@ -4349,6 +4349,12 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    summary["pet_collection_view_counts"] = s.sections.get("pet_collection_view").map(|view| {
+        let rows=view["entries"].as_object().unwrap();
+        json!({"displayed_rows":view["displayed_rows"],"species_observed":rows.len(),
+            "owned_rows_observed":rows.values().map(|row|row["owned_rows"].as_u64().unwrap()).sum::<u64>(),
+            "unowned_rows_observed":rows.values().map(|row|row["unowned_rows"].as_u64().unwrap()).sum::<u64>()})
+    }).unwrap_or(Value::Null);
     summary["mail_attachment_counts"] = s.sections.get("mail_attachments").map(|mail| {
         let rows: Vec<_> = mail["messages"].as_object().unwrap().values()
             .flat_map(|attachments| attachments.as_object().unwrap().values()).collect();

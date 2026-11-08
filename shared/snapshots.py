@@ -14,6 +14,7 @@ SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "se
 SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instances", "saved_world_bosses"}
 SECTIONS = SECTIONS | {"profession_recipe_view"}
 SECTIONS = SECTIONS | {"mail_attachments"}
+SECTIONS = SECTIONS | {"pet_collection_view"}
 
 
 def _validate_action_bar_observation(observation):
@@ -102,6 +103,24 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "pet_collection_view" in sections:
+        view=sections["pet_collection_view"]
+        if (c["family"]!="forever" or not isinstance(view,dict)
+                or set(view)!={"coverage","displayed_rows","entries"} or view["coverage"]!="filtered_journal_species"
+                or type(view["displayed_rows"]) is not int or not 0<=view["displayed_rows"]<=10000
+                or not isinstance(view["entries"],dict) or len(view["entries"])>10000):
+            raise ValueError("Invalid pet collection view")
+        total=0
+        for key,row in view["entries"].items():
+            if (not isinstance(key,str) or not key.isascii() or not key.isdecimal()
+                    or str(int(key))!=key or not 1<=int(key)<=4_294_967_295
+                    or not isinstance(row,dict) or set(row)!={"name","owned_rows","unowned_rows"}
+                    or not isinstance(row["name"],str) or not 1<=len(row["name"].encode())<=256
+                    or any(type(row[k]) is not int or not 0<=row[k]<=4_294_967_295 for k in ("owned_rows","unowned_rows"))
+                    or not 1<=row["owned_rows"]+row["unowned_rows"]<=10000):
+                raise ValueError("Invalid pet collection species")
+            total+=row["owned_rows"]+row["unowned_rows"]
+        if total!=view["displayed_rows"]:raise ValueError("Inconsistent pet journal rows")
     if "mail_attachments" in sections:
         mail=sections["mail_attachments"]
         if (c["family"]!="forever" or not isinstance(mail,dict)
