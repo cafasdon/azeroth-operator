@@ -682,6 +682,9 @@ pagination. This option requires a destination ID.
 Add `flight_max_fare_copper` to keep only routes with a recorded fare
 within your ceiling. It requires a destination ID. Zero matches free
 flights, and unknown fares are excluded when a ceiling is supplied.
+Set `flight_affordable_only` to require an observed fare and wallet from
+the same capture, with the fare at or below the balance. This option also
+requires a destination ID. Results include the fare and omit the wallet.
 
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters

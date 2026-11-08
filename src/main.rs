@@ -258,6 +258,9 @@ struct List {
     flight_origin_node_id: Option<std::num::NonZeroU32>,
     /// Keep saved routes with a recorded fare at or below this copper amount.
     flight_max_fare_copper: Option<u64>,
+    /// Keep routes whose recorded fare fits the wallet in the same saved capture.
+    #[serde(default)]
+    flight_affordable_only: bool,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -1074,6 +1077,7 @@ impl Operator {
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,
+                flight_affordable_only: args.flight_affordable_only,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),

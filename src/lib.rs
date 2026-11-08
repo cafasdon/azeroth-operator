@@ -278,6 +278,7 @@ pub struct CaptureFilters<'a> {
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
+    pub flight_affordable_only: bool,
 }
 
 impl Store {
@@ -370,7 +371,12 @@ impl Store {
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
+            flight_affordable_only,
         } = query;
+        ensure!(
+            !flight_affordable_only || flight_destination_node_id.is_some(),
+            "Flight affordability filtering requires a destination"
+        );
         ensure!(
             flight_max_fare_copper.is_none_or(|fare| {
                 flight_destination_node_id.is_some() && fare <= 9_999_999_999_999
@@ -512,14 +518,18 @@ impl Store {
                     let flight_match = flight_destination_node_id.and_then(|node| {
                         analysis::captured_flight_route(s.sections.get("flight_map")?, node.get())
                             .filter(|route| {
+                                let fare = route["fare_copper"].as_u64();
                                 flight_origin_node_id.is_none_or(|origin| {
                                     route["origin_node_id"].as_u64()
                                         == Some(u64::from(origin.get()))
-                                }) && flight_max_fare_copper.is_none_or(|maximum| {
-                                    route["fare_copper"]
-                                        .as_u64()
-                                        .is_some_and(|fare| fare <= maximum)
-                                })
+                                }) && flight_max_fare_copper
+                                    .is_none_or(|maximum| fare.is_some_and(|fare| fare <= maximum))
+                                    && (!flight_affordable_only
+                                        || s.sections
+                                            .get("wallet")
+                                            .and_then(|wallet| wallet["copper"].as_u64())
+                                            .zip(fare)
+                                            .is_some_and(|(balance, fare)| fare <= balance))
                             })
                     });
                     if flight_destination_node_id.is_some() && flight_match.is_none() {

@@ -225,6 +225,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "forever", "flight_max_fare_copper": 0,
                         })).isError)
                         self.assertFalse(filtered_data["has_more"])
+                        affordable_capture = json.loads(json.dumps(forever))
+                        affordable_capture["sections"]["flight_map"]["entries"]["2"]["node_id"] = 15
+                        affordable_capture["sections"].pop("wallet", None)
+                        SnapshotStore(Path(folder)).ingest(affordable_capture)
+                        affordable_capture["sections"]["wallet"] = {"copper": 0}
+                        affordable_key = SnapshotStore(Path(folder)).ingest(affordable_capture)
+                        affordable = await session.call_tool("list_snapshots", {
+                            "family": "forever", "flight_destination_node_id": 15,
+                            "flight_affordable_only": True,
+                        })
+                        self.assertFalse(affordable.isError)
+                        affordable_rows = json.loads(affordable.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in affordable_rows], [affordable_key])
+                        self.assertNotIn("wallet", affordable_rows[0])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "flight_affordable_only": True,
+                        })).isError)
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
                         self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")
                         tracked_recipes = await session.call_tool("inspect_snapshot", {
