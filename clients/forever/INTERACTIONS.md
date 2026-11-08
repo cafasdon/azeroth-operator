@@ -401,6 +401,11 @@ to inspect one saved achievement and its captured remaining work. A false
 observation flag means the ID is absent from the tracked list. A null flag
 means the list was unavailable. Only player-tracked achievements are covered.
 
+`character_summary.tracked_achievement_workload` lists up to 20 tracked
+achievements ranked by the number of observed unfinished criteria.
+The achievement completion flag is shown separately from those counts.
+A missing tracked list leaves the whole workload unknown.
+
 On the Rust MCP, pass `faction_id` with `section: "reputation"` to inspect
 one faction and its standard or special progress. An unlisted faction
 has a false observation flag. An unavailable list gives a null flag.

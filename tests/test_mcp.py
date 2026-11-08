@@ -270,6 +270,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "snapshot_id": forever_key, "section": "equipment", "quest_id": 42})
                         self.assertTrue(bad_selector.isError)
                         self.assertEqual(bank_summary_data["tracked_achievements_observed"], 2)
+                        self.assertEqual(bank_summary_data["tracked_achievement_workload"], {
+                            "achievements_with_unfinished_criteria": 1,
+                            "achievements_with_most_unfinished_criteria": [
+                                {"achievement_id": 101, "name": "Fixture achievement",
+                                 "completed": False, "unfinished_criteria": 3},
+                            ],
+                        })
                         training = json.loads(json.dumps(forever))
                         training["sections"]["professions"].update({
                             "2": {"name": "Fixture capped", "rank": 75, "max_rank": 75, "skill_line": 165},

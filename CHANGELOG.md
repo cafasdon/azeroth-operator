@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise unfinished criteria across saved Forever tracked achievements.
+
 - Compare finished and unfinished objective counts for a selected Forever quest.
 
 - Compare captured Forever quest timer observations and signed duration changes.

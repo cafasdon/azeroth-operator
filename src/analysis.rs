@@ -2433,6 +2433,40 @@ pub fn profession_rank_progress(profession: &Value) -> Value {
     json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining})
 }
 
+fn tracked_achievement_workload(section: &Value) -> Option<Value> {
+    let entries = section["entries"].as_object()?;
+    let mut unfinished = Vec::new();
+    for (id, achievement) in entries {
+        let Some(criteria) = achievement["criteria"].as_object() else {
+            continue;
+        };
+        let count = criteria
+            .values()
+            .filter(|row| row["completed"] == false)
+            .count();
+        if count > 0
+            && let Ok(id) = id.parse::<u32>()
+        {
+            unfinished.push((count, id, achievement));
+        }
+    }
+    unfinished.sort_unstable_by_key(|&(count, id, _)| (std::cmp::Reverse(count), id));
+    let rows: Vec<_> = unfinished
+        .iter()
+        .take(20)
+        .map(|(count, id, achievement)| {
+            json!({
+                "achievement_id":id,"name":achievement["name"],"completed":achievement["completed"],
+                "unfinished_criteria":count
+            })
+        })
+        .collect();
+    Some(
+        json!({"achievements_with_unfinished_criteria":unfinished.len(),
+        "achievements_with_most_unfinished_criteria":rows}),
+    )
+}
+
 pub fn tracked_achievement_work(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
@@ -2705,7 +2739,7 @@ pub fn summary(s: &Snapshot) -> Value {
         }
         json!({"ready_observed":ready,"status_observed":known,"status_unknown":quests.len()-known})
     });
-    json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
+    let mut summary = json!({"client":s.client,"character":s.character,"captured_at":s.captured_at,"live":false,
       "experience_progress":s.sections.get("experience").map(|xp|
           json!({"observed":xp,"xp_to_next_level":xp_to_next_level(xp)})),
       "spellbook_slots_observed":s.sections.get("spellbook").and_then(|book|book["entries"].as_object()).map(|slots|slots.len()),
@@ -2738,7 +2772,13 @@ pub fn summary(s: &Snapshot) -> Value {
       "observed_quest_difficulty":group_quests,
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
-      "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]})
+      "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]});
+    summary["tracked_achievement_workload"] = json!(
+        s.sections
+            .get("tracked_achievements")
+            .and_then(tracked_achievement_workload)
+    );
+    summary
 }
 
 #[cfg(test)]
