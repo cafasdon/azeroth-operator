@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Local item lookups can find catalogue quest rewards tied to saved gossip
+`available` or `active` lists, optionally matching a known completion flag.
+Missing observations remain distinct from empty lists; references do not prove
+current rewards, quest eligibility or a particular reward choice.
+[Offline evidence](docs/gossip-reward-lookup-verification-2026-11-08.md).
+
 Forever manual exports can observe quest IDs and readable flags from an already
 visible gossip panel. Inspect `gossip_quests` or its summary; available and active
 lists retain separate unknown/empty states. No quest is selected, accepted or

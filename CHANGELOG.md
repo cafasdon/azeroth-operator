@@ -1,5 +1,8 @@
 # Changelog
 
+- Discover local catalogue quest reward references from saved gossip lists,
+  with same-source quest/completion filters and explicit observation gaps.
+
 - Capture read-only visible gossip quest lists with stable IDs/flags, strict
   readers and bounded summaries, without quest selection or acceptance.
 

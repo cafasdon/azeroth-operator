@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Local item catalogue searches can use saved gossip available/active quest IDs
+and explicit completion flags. Quest-ID and dialogue predicates must match one
+reward source. Missing lists remain unknown, separate from quest-log observations;
+catalogue references do not prove native reward choices or turn-in eligibility.
+[Offline evidence](../../docs/gossip-reward-lookup-verification-2026-11-08.md).
+
 Manual capture can observe available/active quest lists from an already visible
 gossip frame. IDs and stable public flags survive without titles, dialogue or
 speaker identity. Lists remain historical and partial; acceptance/turn-in

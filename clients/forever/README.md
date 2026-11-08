@@ -721,6 +721,16 @@ For reputation rewards, pass `{"section":"items","reputation_faction_id":509}` u
 
 For quest rewards, pass `{"section":"items","reward_quest_id":53}` using the quest ID from a saved quest observation or other reference. Results cover reward associations recorded in the pinned catalogue. With `acquisition_snapshot_id`, matching quest IDs also show captured unfinished objectives and remaining counts when available. Turn-in readiness and failure remain separate observations. Character eligibility and live availability require separate evidence.
 
+With a saved gossip capture, set `gossip_quest_list` to `available` or `active`
+and supply `acquisition_snapshot_id` to discover reward references for its observed
+quests. Optional `gossip_quest_is_complete` requires a matching known flag; unknown
+does not match false. An additional `reward_quest_id` must match that same quest
+source. `gossip_quest_filter.list_observed` distinguishes unavailable and empty
+lists. Acquisition annotations retain dialogue observations separately from the
+quest log. These are historical catalogue associations, not native reward promises
+or acceptance/turn-in eligibility.
+[Offline evidence](../../docs/gossip-reward-lookup-verification-2026-11-08.md).
+
 For a public set reference, pass `{"section":"items","set_id":495}`. For a character comparison, call `review_forever_owned_gear` with the same `set_id` and a saved snapshot ID. Its `set_observation` lists each catalogue piece, whether its base ID was observed, and the number of occupied locations by storage. Duplicate copies count once toward distinct pieces. The summary spans the whole snapshot regardless of page, item ID or equipment category. Use storage coverage to see which sections contributed. An unseen piece may be in uncaptured storage. Set bonuses, acquisition and pieces in uncaptured storage need separate evidence.
 
 Verified on 7 November 2026: the actual sync command returned `synced` then `unchanged`; a bad download preserved the destination. The Rust stdio MCP returned exact pinned records across all nine lookup sections. The unconfigured server retained 14 tools. Caller and failure review caught the lack of a total HTTP deadline in the initial implementation. The revised command has a 30-second transfer deadline and a 35-second process timeout. Jev advisory triage classified the finding as material (model `jev-1.14.0`, request `b3f8fe8728dbc6193bf06ddff54922a80d21c1f0980322deea9af094d055e3fb`, 422 input/46 output tokens, 0.304 seconds).

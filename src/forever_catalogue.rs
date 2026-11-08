@@ -85,6 +85,22 @@ pub enum SourceFaction {
 
 #[derive(Clone, Copy, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub enum GossipQuestList {
+    Available,
+    Active,
+}
+
+impl GossipQuestList {
+    fn field(self) -> &'static str {
+        match self {
+            Self::Available => "available",
+            Self::Active => "active",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ReputationTier {
     Hated = 1,
     Hostile = 2,
@@ -212,6 +228,10 @@ pub struct Query {
     pub drop_label: Option<String>,
     /// Restrict items to records with a reward source for this quest ID.
     pub reward_quest_id: Option<std::num::NonZeroU32>,
+    /// Restrict quest reward sources to IDs observed in this saved gossip list; requires acquisition_snapshot_id.
+    pub gossip_quest_list: Option<GossipQuestList>,
+    /// Match an explicitly observed completion flag on the same gossip quest row. Requires gossip_quest_list.
+    pub gossip_quest_is_complete: Option<bool>,
     /// Restrict items to records with a sale source for this vendor NPC ID.
     pub vendor_npc_id: Option<std::num::NonZeroU32>,
     /// Restrict items to sale sources in this zone. With an NPC filter, both must match the same sale.
@@ -749,6 +769,25 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             "Invalid drop label"
         );
     }
+    ensure!(
+        query.gossip_quest_is_complete.is_none() || query.gossip_quest_list.is_some(),
+        "Gossip completion filtering requires a gossip list"
+    );
+    let gossip_rows = if let Some(list) = query.gossip_quest_list {
+        ensure!(
+            matches!(query.section, Section::Items) && query.acquisition_snapshot_id.is_some(),
+            "Gossip reward filtering requires items and a saved capture"
+        );
+        let snapshot = snapshot
+            .filter(|s| s.client.family == Family::Forever)
+            .ok_or_else(|| anyhow::anyhow!("Gossip reward filtering requires Forever"))?;
+        snapshot
+            .sections
+            .get("gossip_quests")
+            .and_then(|section| section[list.field()].as_object())
+    } else {
+        None
+    };
     let drop_filter = query.drop_npc_id.is_some()
         || query.drop_zone_id.is_some()
         || query.drop_instance_kind.is_some()
@@ -857,6 +896,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || query.order_by.is_some()
         || drop_filter
         || query.reward_quest_id.is_some()
+        || query.gossip_quest_list.is_some()
         || vendor_filter
         || reputation_filter
         || query.source_kind.is_some();
@@ -1019,13 +1059,25 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                                 })
                         })
                     });
-            let matches_quest = query.reward_quest_id.is_none_or(|id| {
-                row["sources"].as_array().is_some_and(|sources| {
-                    sources
-                        .iter()
-                        .any(|source| source["quest"]["id"].as_u64() == Some(u64::from(id.get())))
-                })
-            });
+            let matches_quest = (query.reward_quest_id.is_none()
+                && query.gossip_quest_list.is_none())
+                || row["sources"].as_array().is_some_and(|sources| {
+                    sources.iter().any(|source| {
+                        source["quest"]["id"].as_u64().is_some_and(|id| {
+                            query
+                                .reward_quest_id
+                                .is_none_or(|wanted| id == u64::from(wanted.get()))
+                                && (query.gossip_quest_list.is_none()
+                                    || gossip_rows
+                                        .and_then(|rows| rows.get(&id.to_string()))
+                                        .is_some_and(|quest| {
+                                            query.gossip_quest_is_complete.is_none_or(|wanted| {
+                                                quest["is_complete"].as_bool() == Some(wanted)
+                                            })
+                                        }))
+                        })
+                    })
+                });
             let matches_vendor =
                 !vendor_filter
                     || row["sources"].as_array().is_some_and(|sources| {
@@ -1182,6 +1234,11 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     }
     if query.include_source_references {
         result["source_references"] = source_references(db, &records);
+    }
+    if let Some(list) = query.gossip_quest_list {
+        result["gossip_quest_filter"] = json!({"list":list.field(),"list_observed":gossip_rows.is_some(),
+            "observed_quest_count":gossip_rows.map(|rows|rows.len()),"requested_is_complete":query.gossip_quest_is_complete,
+            "eligibility_verified":false});
     }
     if let Some(settings) = &query.simulation {
         ensure!(
@@ -1657,6 +1714,14 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
         "Expected a Forever snapshot"
     );
     let quests = snapshot.sections.get("quests").and_then(Value::as_object);
+    let gossip_available = snapshot
+        .sections
+        .get("gossip_quests")
+        .and_then(|section| section["available"].as_object());
+    let gossip_active = snapshot
+        .sections
+        .get("gossip_quests")
+        .and_then(|section| section["active"].as_object());
     let factions = snapshot
         .sections
         .get("reputation")
@@ -1702,6 +1767,10 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                 sources.push(json!({
                     "item_id":item["id"],"source_index":index+1,"quest_id":id,
                     "quest_observed":row.is_some(),
+                    "gossip_available_row_observed":gossip_available.map(|rows|rows.contains_key(&id.to_string())),
+                    "gossip_active_row_observed":gossip_active.map(|rows|rows.contains_key(&id.to_string())),
+                    "gossip_available_is_complete":gossip_available.and_then(|rows|rows.get(&id.to_string())).and_then(|quest|quest["is_complete"].as_bool()),
+                    "gossip_active_is_complete":gossip_active.and_then(|rows|rows.get(&id.to_string())).and_then(|quest|quest["is_complete"].as_bool()),
                     "ready_for_turn_in":row.and_then(|quest| quest["ready_for_turn_in"].as_bool()),
                     "failed":row.and_then(|quest| quest["failed"].as_bool()),
                     "unfinished_objectives":crate::analysis::unfinished_quest_objectives(row)
@@ -1780,6 +1849,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
     Ok(
         json!({"captured_at":snapshot.captured_at,"quests_available":quests.is_some(),
         "reputation_available":factions.is_some(),"selected_recipe_available":selected_recipe.is_some(),
+        "gossip_available_list_observed":gossip_available.is_some(),"gossip_active_list_observed":gossip_active.is_some(),
         "tracked_recipes_available":tracked_recipes.is_some(),
         "sources":sources,"owned_quantities_by_item_id":owned_quantities,
         "observed_requirement_conflicts_by_item_id":requirement_conflicts}),
