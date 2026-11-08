@@ -1952,6 +1952,39 @@ pub(crate) fn captured_flight_route(map: &Value, destination_id: u32) -> Option<
     )
 }
 
+pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> {
+    let (_, first, _) = legs
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("Missing first leg"))?;
+    ensure!(
+        first.client.family == crate::Family::Forever && (2..=8).contains(&legs.len()),
+        "Invalid flight itinerary"
+    );
+    let mut routes = Vec::new();
+    let mut previous_destination = None;
+    let mut total = Some(0u64);
+    for (snapshot_id, snapshot, destination) in legs {
+        ensure_same_character_and_client(first, snapshot)?;
+        let mut route = snapshot
+            .sections
+            .get("flight_map")
+            .and_then(|map| captured_flight_route(map, *destination))
+            .ok_or_else(|| anyhow::anyhow!("Route unavailable"))?;
+        ensure!(
+            previous_destination.is_none_or(|id| route["origin_node_id"].as_u64() == Some(id)),
+            "Flight legs are disconnected"
+        );
+        previous_destination = Some(u64::from(*destination));
+        total = total
+            .zip(route["fare_copper"].as_u64())
+            .and_then(|(sum, fare)| sum.checked_add(fare));
+        route["snapshot_id"] = json!(snapshot_id);
+        route["captured_at"] = json!(snapshot.captured_at);
+        routes.push(route);
+    }
+    Ok(json!({"legs":routes,"total_fare_copper":total}))
+}
+
 fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     if before["map_id"] != after["map_id"] {
         return json!({"status":"different_maps"});

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Review connected Forever flight legs and total their recorded fares.
+
 - Find saved Forever flights departing from a specific captured player map.
 
 - Find saved Forever flight routes affordable against each capture's wallet.

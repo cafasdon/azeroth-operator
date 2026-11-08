@@ -685,6 +685,15 @@ flights, and unknown fares are excluded when a ceiling is supplied.
 Set `flight_affordable_only` to require an observed fare and wallet from
 the same capture, with the fare at or below the balance. This option also
 requires a destination ID. Results include the fare and omit the wallet.
+
+To review a saved itinerary, use `inspect_snapshot` with
+`section: "flight_map"` and `flight_node_id` for the first leg. Supply
+one to seven `flight_onward_legs` with `snapshot_id` and
+`destination_node_id` per leg. The captures must share the same
+character and client/build. Each onward departure must match the
+previous destination. The total is unknown if any fare is missing.
+Use this without `flight_affordable_only`. Legs retain their separate
+capture times and describe historical routes.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an

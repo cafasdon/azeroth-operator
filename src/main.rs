@@ -40,6 +40,8 @@ struct Inspect {
     flight_wallet_projection: bool,
     /// Select a captured flight-map node by its exact ID.
     flight_node_id: Option<std::num::NonZeroU32>,
+    /// Check up to seven onward flight legs using explicit saved captures.
+    flight_onward_legs: Option<Vec<FlightLeg>>,
     /// Keep captured reachable flight destinations and exclude map-transition nodes.
     #[serde(default)]
     flight_reachable_only: bool,
@@ -341,6 +343,13 @@ struct OwnedGearReview {
     exclude_observed_requirement_conflicts: bool,
     /// Restrict matching gear locations to one captured storage section before paging.
     storage: Option<azeroth_operator::forever_catalogue::GearStorage>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct FlightLeg {
+    snapshot_id: String,
+    destination_node_id: std::num::NonZeroU32,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1200,6 +1209,15 @@ impl Operator {
         let filter_flight = args.flight_node_id.is_some()
             || args.flight_reachable_only
             || args.flight_affordable_only;
+        if args.flight_onward_legs.as_ref().is_some_and(|legs| {
+            args.flight_node_id.is_none()
+                || !(1..=7).contains(&legs.len())
+                || args.flight_affordable_only
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Flight itinerary requires a destination and one to seven onward legs, without the affordability filter",
+            )]);
+        }
         if args.flight_wallet_reserve_copper.is_some_and(|reserve| {
             reserve > 9_999_999_999_999
                 || !(args.flight_wallet_projection || args.flight_affordable_only)
@@ -1669,6 +1687,35 @@ impl Operator {
                             flight_balance,
                             flight_reserve,
                         );
+                }
+                if let Some(onward) = &args.flight_onward_legs {
+                    let result = (|| {
+                        let mut legs = Vec::new();
+                        let destination = args
+                            .flight_node_id
+                            .ok_or_else(|| anyhow::anyhow!("Missing destination"))?;
+                        legs.push((
+                            args.snapshot_id.as_str(),
+                            self.store.read(&args.snapshot_id)?,
+                            destination.get(),
+                        ));
+                        for leg in onward {
+                            legs.push((
+                                leg.snapshot_id.as_str(),
+                                self.store.read(&leg.snapshot_id)?,
+                                leg.destination_node_id.get(),
+                            ));
+                        }
+                        azeroth_operator::analysis::review_flight_itinerary(&legs)
+                    })();
+                    match result {
+                        Ok(itinerary) => value["flight_itinerary"] = itinerary,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Flight itinerary requires connected reachable routes in compatible Forever captures",
+                            )]);
+                        }
+                    }
                 }
                 if let Some(id) = args.quest_id {
                     let quests = value["data"].take();
