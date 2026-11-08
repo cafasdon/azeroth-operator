@@ -42,6 +42,7 @@ const SECTIONS: &[&str] = &[
     "flight_map",
     "durability_alerts",
     "repair_quote",
+    "merchant_stock",
     "bag_capacity",
     "instance_context",
     "tracked_achievements",
@@ -166,6 +167,7 @@ impl Snapshot {
                         | "flight_map"
                         | "durability_alerts"
                         | "repair_quote"
+                        | "merchant_stock"
                         | "bag_capacity"
                         | "instance_context"
                 ) || self.client.family == Family::Forever,

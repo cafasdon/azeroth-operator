@@ -55,6 +55,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="flight_map"
         sectionNames[#sectionNames+1]="durability_alerts"
         sectionNames[#sectionNames+1]="repair_quote"
+        sectionNames[#sectionNames+1]="merchant_stock"
         sectionNames[#sectionNames+1]="bag_capacity"
         sectionNames[#sectionNames+1]="instance_context"
         if includeWallet then sectionNames[#sectionNames+1]="wallet" end

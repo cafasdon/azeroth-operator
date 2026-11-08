@@ -866,6 +866,38 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "merchant_stock" => {
+            let rows = value
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Expected merchant stock map"))?;
+            ensure!(
+                (1..=256).contains(&rows.len()),
+                "Invalid merchant stock count"
+            );
+            for (key, row) in rows {
+                index(key, 1, rows.len() as u32)?;
+                object(
+                    row,
+                    &[
+                        ("item_id", "positive", false),
+                        ("currency_id", "positive", false),
+                        ("price_copper", "wallet_copper", true),
+                        ("bundle_size", "positive", true),
+                        ("available", "int", true),
+                        ("extended_cost", "bool", true),
+                    ],
+                )?;
+                ensure!(
+                    (row.get("item_id").is_some() ^ row.get("currency_id").is_some())
+                        && row["item_id"]
+                            .as_u64()
+                            .or_else(|| row["currency_id"].as_u64())
+                            .is_some()
+                        && row["available"].as_i64().is_some_and(|stock| stock >= -1),
+                    "Invalid merchant offer"
+                );
+            }
+        }
         "instance_context" => match value["kind"].as_str() {
             Some("none") => object(value, &[("kind", "none", true)])?,
             Some("party" | "raid" | "pvp" | "arena" | "scenario") => {

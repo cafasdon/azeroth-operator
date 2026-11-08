@@ -569,6 +569,12 @@ pub fn verify_forever_capture_fixture(
         TaxiNodeCost=function(slot) assert(slot==3); return 250 end
         Enum.GameRule={RepairArmorDisabled=42}
         MerchantFrame={IsVisible=function() return not closedMerchant end,selectedTab=1}
+        GetMerchantNumItems=function() return 2 end
+        GetMerchantItemID=function(index) assert(index==1); return 744 end
+        C_MerchantFrame={GetItemInfo=function(index)
+            if index==1 then return {price=250,stackCount=5,numAvailable=-1,hasExtendedCost=false} end
+            return {price=0,stackCount=1,numAvailable=0,hasExtendedCost=true,currencyID=99}
+        end}
         CanMerchantRepair=function() return not nonRepairMerchant end
         GetRepairAllCost=function() assert(not closedMerchant and not nonRepairMerchant); return fixtureRepairCost or 325,false end
         C_GameRules={IsGameRuleActive=function(rule) assert(rule==42); return repairsDisabled==true end}
@@ -751,9 +757,17 @@ pub fn verify_forever_capture_fixture(
     );
     lua.load("fixtureRepairCost=0;AO.Capture()").exec()?;
     assert_eq!(read()?.sections["repair_quote"]["copper"], 0);
+    assert_eq!(
+        snapshot.sections["merchant_stock"],
+        serde_json::json!({
+            "1":{"item_id":744,"price_copper":250,"bundle_size":5,"available":-1,"extended_cost":false},
+            "2":{"currency_id":99,"price_copper":0,"bundle_size":1,"available":0,"extended_cost":true}
+        })
+    );
     lua.load("MerchantFrame.selectedTab=2;AO.Capture()")
         .exec()?;
     assert!(read()?.unavailable.contains_key("repair_quote"));
+    assert!(read()?.unavailable.contains_key("merchant_stock"));
     lua.load("MerchantFrame.selectedTab=1;closedMerchant=true;AO.Capture()")
         .exec()?;
     assert!(read()?.unavailable.contains_key("repair_quote"));

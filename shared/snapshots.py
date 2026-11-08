@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -54,6 +54,22 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "merchant_stock" in sections:
+        rows = sections["merchant_stock"]
+        if (c["family"] != "forever" or not isinstance(rows, dict) or not 1 <= len(rows) <= 256
+                or set(rows) != {str(i) for i in range(1, len(rows) + 1)}):
+            raise ValueError("Invalid merchant stock")
+        keys = {"price_copper", "bundle_size", "available", "extended_cost"}
+        for row in rows.values():
+            if not isinstance(row, dict) or set(row) - keys not in ({"item_id"}, {"currency_id"}):
+                raise ValueError("Invalid merchant offer")
+            identity = row.get("item_id", row.get("currency_id"))
+            price, bundle, available = (row.get(key) for key in ("price_copper", "bundle_size", "available"))
+            if (any(type(n) is not int for n in (identity, price, bundle, available))
+                    or not 1 <= identity <= 4_294_967_295 or not 1 <= bundle <= 4_294_967_295
+                    or not 0 <= price <= 9_999_999_999_999 or not -1 <= available <= 2_147_483_647
+                    or type(row.get("extended_cost")) is not bool):
+                raise ValueError("Invalid merchant offer")
     if "instance_context" in sections:
         instance = sections["instance_context"]
         if c["family"] != "forever" or not isinstance(instance, dict):

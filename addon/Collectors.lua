@@ -924,6 +924,35 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+AO.collectors.merchant_stock = function()
+    local frame=MerchantFrame
+    assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")
+    local count=GetMerchantNumItems()
+    assert(questRewardInteger(count,1,256), "Merchant stock unavailable")
+    local entries={}
+    for index=1,count do
+        local info=C_MerchantFrame.GetItemInfo(index)
+        assert(questRewardAccessible(info) and type(info)=="table", "Merchant offer unavailable")
+        local price,bundle,available,extended,currency=info.price,info.stackCount,info.numAvailable,info.hasExtendedCost,info.currencyID
+        assert(questRewardInteger(price,0,9999999999999) and questRewardInteger(bundle,1,4294967295)
+            and questRewardInteger(available,-1,2147483647) and questRewardAccessible(extended)
+            and type(extended)=="boolean" and questRewardAccessible(currency), "Invalid merchant offer")
+        local row={price_copper=price,bundle_size=bundle,available=available,extended_cost=extended}
+        if currency~=nil then
+            assert(questRewardInteger(currency,1,4294967295), "Invalid merchant currency")
+            row.currency_id=currency
+        else
+            local item=GetMerchantItemID(index)
+            assert(questRewardInteger(item,1,4294967295), "Merchant item unavailable")
+            row.item_id=item
+        end
+        entries[tostring(index)]=row
+    end
+    assert(frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1)
+        and questRewardInteger(GetMerchantNumItems(),count,count), "Merchant stock changed")
+    return entries
+end
+
 AO.collectors.repair_quote = function()
     local frame=MerchantFrame
     assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")

@@ -97,6 +97,15 @@ section unavailable. The export records the price and leaves the repair
 to the player. Update the importer and reader before syncing this
 section. [Forever merchant source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Vanilla/MerchantFrame.lua)
 
+`merchant_stock` captures the open merchant's goods tab across its pages.
+Each offer identifies the item or currency and records the copper price
+per bundle, bundle size and game-reported stock. The stock value `-1`
+means unlimited and `0` means sold out. An extended-cost flag means
+the copper price is only part of the offer. The snapshot omits buyback,
+merchant identity and player eligibility. Empty, incomplete or unavailable
+stock leaves the section unavailable. Update the importer and reader
+before syncing new captures. [Forever merchant offer API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MerchantFrameDocumentation.lua)
+
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured
