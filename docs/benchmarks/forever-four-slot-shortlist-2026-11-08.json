@@ -1,0 +1,352 @@
+{
+  "fixture": "public Hunter, synthetic four-slot pool; not owned gear or legality qualification",
+  "template_sha256": "761afca4f5bca1d8b5825b6411d60cb804fd1b792cf7927aff7f3dbd3ee96dd0",
+  "catalogue_sha256": "5ca68229623b8bc1f9a085ed3b5f564ab82ff66055503749e324d640ac04640e",
+  "slot_alternatives": {
+    "4": [
+      16674,
+      8258,
+      8265
+    ],
+    "6": [
+      16676,
+      8298,
+      8305
+    ],
+    "7": [
+      16680,
+      8293,
+      8306
+    ],
+    "9": [
+      16675,
+      8269,
+      8294
+    ]
+  },
+  "profiles": [
+    "Default/Raid Target",
+    "Default/Movement"
+  ],
+  "duration_seconds": 45,
+  "duration_variation_seconds": 3,
+  "fixed_iterations": 1000,
+  "seeds": [
+    100000000,
+    200000000,
+    300000000
+  ],
+  "pool_size": 81,
+  "results": {
+    "Default/Raid Target": {
+      "basis": "fixed_point_estimate_shortlist_recall_not_optimality_proof",
+      "request_pool_sha256": "31007e5e33fe4538f3d1626aaaec82b39a246d261828e9db03a62f4efc3fe311",
+      "requested_gear_sets": 81,
+      "engine_sha256": "0e195f35c247d78f05c7d87c2c017e7052d7ca532500a84ae19faba133ae99a5",
+      "bulk_engine_sha256": "2ae564263fb0534aac88e59dd1d5c35447c7d6acafaeb3accc1a9c2720284059",
+      "top": 5,
+      "runs": [
+        {
+          "seed": 100000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 18.047853299882263,
+          "staged_wall_seconds": 5.449692899826914,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 1875,
+              "concurrency": 20,
+              "durationSeconds": 3.3410513,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.1998369520251154,
+              "baselineAvgDps": 848.8346047503537,
+              "bestCandidateAvgDps": 827.0898741129719
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 15955,
+              "concurrency": 1,
+              "durationSeconds": 1.9141949999999999,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.0499951917422892,
+              "baselineAvgDps": 849.153869023897,
+              "bestCandidateAvgDps": 827.0557666785415
+            }
+          ]
+        },
+        {
+          "seed": 200000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 18.634895199909806,
+          "staged_wall_seconds": 5.349387500202283,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 1965,
+              "concurrency": 20,
+              "durationSeconds": 3.4929853,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.1999823528244769,
+              "baselineAvgDps": 849.9288489131568,
+              "bestCandidateAvgDps": 828.102170578296
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 16015,
+              "concurrency": 1,
+              "durationSeconds": 1.6892236999999999,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.04996070974571282,
+              "baselineAvgDps": 849.5551321611815,
+              "bestCandidateAvgDps": 827.6295361224254
+            }
+          ]
+        },
+        {
+          "seed": 300000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 18.69953399989754,
+          "staged_wall_seconds": 6.006154800066724,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 1935,
+              "concurrency": 20,
+              "durationSeconds": 3.7209064,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.2007958506855364,
+              "baselineAvgDps": 849.4925332586257,
+              "bestCandidateAvgDps": 827.5997060100106
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 16505,
+              "concurrency": 1,
+              "durationSeconds": 2.0940628,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.049570057396319075,
+              "baselineAvgDps": 849.0156826263426,
+              "bestCandidateAvgDps": 827.1407018233726
+            }
+          ]
+        }
+      ],
+      "runs_with_missed_fixed_top": 0
+    },
+    "Default/Movement": {
+      "basis": "fixed_point_estimate_shortlist_recall_not_optimality_proof",
+      "request_pool_sha256": "8755f9acaad2506520a6ce2506f179f1e4f64666939fc46516239fa1b5b7ec46",
+      "requested_gear_sets": 81,
+      "engine_sha256": "0e195f35c247d78f05c7d87c2c017e7052d7ca532500a84ae19faba133ae99a5",
+      "bulk_engine_sha256": "2ae564263fb0534aac88e59dd1d5c35447c7d6acafaeb3accc1a9c2720284059",
+      "top": 5,
+      "runs": [
+        {
+          "seed": 100000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            21,
+            3,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 19.384234299883246,
+          "staged_wall_seconds": 6.596821099985391,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 2034,
+              "concurrency": 20,
+              "durationSeconds": 3.9164984,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.1994099869595735,
+              "baselineAvgDps": 826.2468353117662,
+              "bestCandidateAvgDps": 804.2842195131475
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 17281,
+              "concurrency": 1,
+              "durationSeconds": 2.4834092,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.04997889067914169,
+              "baselineAvgDps": 824.7589955391312,
+              "bestCandidateAvgDps": 803.3498518771838
+            }
+          ]
+        },
+        {
+          "seed": 200000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 18.584257300011814,
+          "staged_wall_seconds": 6.512621899833903,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 2112,
+              "concurrency": 20,
+              "durationSeconds": 4.1240652,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.1995706393283654,
+              "baselineAvgDps": 826.6586248675552,
+              "bestCandidateAvgDps": 805.4032426340513
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 17235,
+              "concurrency": 1,
+              "durationSeconds": 2.1953822,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.04999961560727196,
+              "baselineAvgDps": 824.4364257636504,
+              "bestCandidateAvgDps": 803.0224301201255
+            }
+          ]
+        },
+        {
+          "seed": 300000000,
+          "fixed_iterations": 1000,
+          "fixed_unique_gear_sets": 81,
+          "staged_shortlist_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_reviews": [
+            19,
+            3,
+            21,
+            22,
+            4
+          ],
+          "fixed_top_missing_from_shortlist": [],
+          "fixed_wall_seconds": 18.074737400049344,
+          "staged_wall_seconds": 6.070578800048679,
+          "stage_metrics": [
+            {
+              "stage": "BulkSimStageMedium",
+              "inputGearSets": 80,
+              "survivors": 5,
+              "iterations": 2090,
+              "concurrency": 20,
+              "durationSeconds": 3.9650729,
+              "targetErrorPct": 0.2,
+              "observedErrorPct": 0.19991903176185716,
+              "baselineAvgDps": 825.8737397674786,
+              "bestCandidateAvgDps": 804.4238323842649
+            },
+            {
+              "stage": "BulkSimStageHigh",
+              "inputGearSets": 5,
+              "survivors": 5,
+              "iterations": 17269,
+              "concurrency": 1,
+              "durationSeconds": 1.9124245,
+              "targetErrorPct": 0.05,
+              "observedErrorPct": 0.049990269801254594,
+              "baselineAvgDps": 825.4234329817671,
+              "bestCandidateAvgDps": 803.9718480784255
+            }
+          ]
+        }
+      ],
+      "runs_with_missed_fixed_top": 0
+    }
+  }
+}

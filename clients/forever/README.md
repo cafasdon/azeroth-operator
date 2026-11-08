@@ -549,6 +549,22 @@ as the tie-breaker. The fixed run uses the existing comparison budgets.
 The runs may reach different precision, so a disagreement calls for closer
 comparison at higher precision.
 
+For repeated-seed qualification of an already exported request pool, use
+`python -m tools.qualify_forever_shortlist --pool <pool.json> --engine <fixed.exe> --engine-sha256 <hash> --bulk-engine <bulk.exe> --bulk-engine-sha256 <hash> --seed 100000000 --seed 200000000 --seed 300000000 --top 5`.
+The input is an object with a `requests` array containing the baseline first,
+followed by explicit gear requests for one encounter and character context.
+Only equipment may differ. Each pass replaces every request's seed with the
+specified seed. The utility runs fresh comparisons without persistent caching,
+collapses gear aliases to their first review and reports missed fixed-run top candidates,
+stage telemetry and elapsed times, and includes an input digest rather than
+the input contents. It permits one to three distinct seeds, 2–129 requests,
+200–5,000 fixed iterations per request and the existing 100,000-iteration
+fixed-comparison budget. Engine deadlines still apply to each comparison.
+Duplicate baseline requests are not contenders. Empty contender lists do not
+establish anything about ranking quality. Agreement measures point-estimate
+shortlist recall on those inputs, not equip legality, global optimality or a
+confidence guarantee; seed spacing alone does not prove statistical independence.
+
 An offline two-slot audit used the public Hunter fixture with Icemail
 Jerkin and Brawler Gloves as alternatives. It compared four distinct gear
 sets including the baseline at 5,000 fixed iterations each. The real MCP

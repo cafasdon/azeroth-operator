@@ -61,6 +61,8 @@ movement, rotation, buffs or talents could be silently discarded.
 2. Broader shortlist validation. Use multi-slot pools, close contenders and
    independent seeds across supported encounter mechanics. Measure missed
    contenders and uncertainty as well as elapsed time before changing culling.
+   A new four-slot fixture below adds six repeated-seed native audits; close-tie
+   uncertainty and more classes remain unqualified.
 3. Extend encounter sensitivity qualification. Multi-profile DPS runs now show
    each requested draft's gains, losses, observed range and sign changes, with
    shortlist omissions kept unknown. These are point estimates only. A
@@ -72,6 +74,56 @@ Do not lower iteration floors or add parallel processes solely to improve one
 timing. The engine already schedules parallel work, and existing processor
 limit checks did not demonstrate an improvement. Native encounter accuracy and
 live game verification remain deferred.
+
+## Four-slot repeated-seed qualification
+
+The new `tools.qualify_forever_shortlist` module runs fresh staged and fixed
+comparisons for an explicit request pool, without persistent caching. It reports
+canonical gear review IDs, missed fixed point-estimate contenders, per-seed
+timings, engine hashes, input digest and stage telemetry. It does not infer
+confidence, legality or global optimality. CLI details are in the Forever guide.
+
+[Recorded public-fixture results](benchmarks/forever-four-slot-shortlist-2026-11-08.json)
+cover 81 explicit gear sets, four varied slots and three seeds for each of
+`Default/Raid Target` and `Default/Movement`. The Hunter template hash and exact
+item choices are in the record. This is a synthetic simulator pool, not owned
+gear or an equip-legality qualification. It was built as follows:
+
+- Use the existing public Hunter template, its APL, talents and buffs.
+- Enumerate the Cartesian product in slot order 4, 6, 7, 9 (zero-based simulator
+  chest, hands, waist, feet). Each slot has the three recorded base item IDs.
+  Replace each varied slot's item object with just its ID, dropping modifiers.
+  Replace the first whole combination with the exact public baseline, retaining
+  all its original modifiers. The other 80 inputs remain synthetic alternatives.
+- Use each pinned catalogue preset's `targets[].target` records, 45 seconds,
+  three seconds of variation, execute proportions 0.2/0.35 and 1,000 fixed
+  iterations. Pass the resolved equipment and profile through `request_from`.
+- Invoke the qualification CLI for each profile with seeds 100000000, 200000000
+  and 300000000, `--top 5` and the recorded executable hashes. Run profiles
+  sequentially. These seed choices are not proof of independent samples.
+
+| Profile | Seed | Fixed seconds | Staged seconds | Fixed top five missed |
+| --- | ---: | ---: | ---: | ---: |
+| Raid Target | 100000000 | 18.05 | 5.45 | 0 |
+| Raid Target | 200000000 | 18.63 | 5.35 | 0 |
+| Raid Target | 300000000 | 18.70 | 6.01 | 0 |
+| Movement | 100000000 | 19.38 | 6.60 | 0 |
+| Movement | 200000000 | 18.58 | 6.51 | 0 |
+| Movement | 300000000 | 18.07 | 6.07 | 0 |
+
+All six retained the same ordered top five. Each staged pass reduced 80
+alternatives to five and refined those five at higher precision. The fixed
+pass ran all 81 sets at 1,000 iterations; staged finalists reached roughly
+16,000–17,300 iterations. Different final precision prevents a claim that these
+are identical workloads. No culling rules or iteration floors were changed.
+This adds evidence for the existing acceleration rather than a new first-run
+speedup. Native boss-model accuracy and live game testing remain deferred.
+
+Five qualification tests cover canonical aliases and missed-contender reports,
+seed replacement without caller mutation, duplicate-only pools, aggregate
+budget rejection, post-normalisation deduplication and controlled malformed
+input/native-timeout CLI failures. The module's `--help` entry point runs.
+Two existing bulk-context tests also pass.
 
 The encounter-sensitivity extension passed five focused tests, including the
 command-line output path for ordinary and weighted finalist comparisons and
@@ -109,3 +161,21 @@ It exercised the ranker-to-request-to-bulk call chain with a mocked adapter,
 rejected type changes, added fields and non-finite context, and checked key
 reordering, duplicate mappings and the all-duplicate no-launch path. Both review
 rounds used `gpt-6.1-sol` at high effort. No native game testing was performed.
+
+The required independent Failure/Callers review used gpt-6.1-sol at high effort
+and ran two rounds. Round one reproduced a budget false rejection when input
+seeds differed but were replaced before execution, plus an uncaught malformed-
+party CLI error. Budget accounting now normalises a cloned seed before counting
+unique requests; CLI failures include malformed structure and native subprocess
+errors. Round two re-ran both original probes: 101 input seed aliases collapsed
+to one actual fixed run per requested seed, caller seeds stayed unchanged, and
+malformed parties exited with a controlled error. Five scoped tests and module
+help passed. No remaining concrete findings were reported.
+
+Jev 1.14.0 advisory triage recommended correcting the findings (request
+`27147d5f7c09ce5b716c13df69e8ac229bda13af61d3489289687ab2cd16ae43`,
+467 input / 45 output tokens, 0.454 seconds). Its separate limited-claim review
+returned supported (request
+`136d40b7edab12d4d64f3324edf8af434d2b60d22d9df07ba20bcf5619f6d440`,
+591 input / 46 output tokens, 0.308 seconds). These are advisory judgements,
+separate from test and native benchmark evidence.

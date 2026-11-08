@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add repeated-seed offline qualification of staged gear shortlists against fixed runs, with missed-contender and timing reports.
+
 - Search saved characters for world-boss cache observations by name and recorded reset/cache-age limits.
 
 - Capture saved world-boss names and reset timers from passive cache updates, with strict owner-scoped readback and unavailable-state handling.
