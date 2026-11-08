@@ -41,6 +41,9 @@ struct Inspect {
     /// Budget all lessons marked available in the saved Forever trainer list.
     #[serde(default)]
     trainer_wallet_projection: bool,
+    /// Budget available pet trainer lessons against saved training points.
+    #[serde(default)]
+    trainer_points_projection: bool,
     /// Case-insensitive substring of a saved trainer lesson name.
     trainer_service_name: Option<String>,
     /// Saved trainer lesson status: available, unavailable, or used.
@@ -967,7 +970,8 @@ impl Operator {
         let trainer_name = args.trainer_service_name.as_deref().map(str::trim);
         let trainer_status = args.trainer_service_status.as_deref();
         let filter_trainer = trainer_name.is_some() || trainer_status.is_some();
-        let review_trainer = args.trainer_wallet_projection || filter_trainer;
+        let review_trainer =
+            args.trainer_wallet_projection || args.trainer_points_projection || filter_trainer;
         if review_trainer && args.section.as_deref() != Some("trainer_services") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Trainer review requires the trainer_services section",
@@ -1259,6 +1263,10 @@ impl Operator {
                             &value["data"],
                             snapshot.sections.get("wallet"),
                         );
+                }
+                if args.trainer_points_projection {
+                    value["trainer_points_projection"] =
+                        azeroth_operator::analysis::trainer_points_projection(&value["data"]);
                 }
                 if let Some((field, id)) = merchant_search {
                     if value["client"]["family"] != "forever" {

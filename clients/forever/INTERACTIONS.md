@@ -44,6 +44,11 @@ when the opt-in wallet was captured too. It does not establish that the
 character could learn all listed lessons together. Pet trainer captures
 return no copper projection.
 
+Set `trainer_points_projection: true` for pet trainer captures. It budgets
+matching lessons marked available, with a training-point shortfall when
+all their costs and the active pet's balance were observed. The projection
+uses the saved pet and leaves training to the player.
+
 With the same section, `trainer_service_name` matches a case-insensitive
 substring and `trainer_service_status` matches `available`, `unavailable`
 or `used`. The filters combine, keep the original lesson slots and apply

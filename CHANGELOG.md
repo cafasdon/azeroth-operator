@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget available Forever pet lessons against the active pet's captured training points.
+
 - Capture Forever pet trainer lessons and training-point prices separately from copper.
 
 - Filter saved Forever trainer lessons by name and status, including when budgeting.

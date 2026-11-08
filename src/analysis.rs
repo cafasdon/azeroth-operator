@@ -1385,13 +1385,8 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes})
 }
 
-pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
-    if trainer["kind"] == "pet" {
-        return Value::Null;
-    }
-    let Some(entries) = trainer["entries"].as_object() else {
-        return Value::Null;
-    };
+fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize, usize, u64)> {
+    let entries = trainer["entries"].as_object()?;
     let mut available = 0;
     let mut unknown_prices = 0;
     let mut subtotal = 0u64;
@@ -1400,12 +1395,24 @@ pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Val
         .filter(|lesson| lesson["status"] == "available")
     {
         available += 1;
-        if let Some(price) = lesson["price_copper"].as_u64() {
+        if let Some(price) = lesson[price_field].as_u64() {
             subtotal += price;
         } else {
             unknown_prices += 1;
         }
     }
+    Some((available, unknown_prices, subtotal))
+}
+
+pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
+    if trainer["kind"] == "pet" {
+        return Value::Null;
+    }
+    let Some((available, unknown_prices, subtotal)) =
+        available_trainer_prices(trainer, "price_copper")
+    else {
+        return Value::Null;
+    };
     let total = (unknown_prices == 0).then_some(subtotal);
     let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
     json!({
@@ -1414,6 +1421,26 @@ pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Val
         "known_price_subtotal_copper":subtotal,
         "total_price_copper":total,
         "wallet_shortfall_copper":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
+    })
+}
+
+pub fn trainer_points_projection(trainer: &Value) -> Value {
+    if trainer["kind"] != "pet" {
+        return Value::Null;
+    }
+    let Some((available, unknown_prices, subtotal)) =
+        available_trainer_prices(trainer, "price_training_points")
+    else {
+        return Value::Null;
+    };
+    let total = (unknown_prices == 0).then_some(subtotal);
+    let balance = trainer["pet_training_points_available"].as_u64();
+    json!({
+        "available_lessons":available,
+        "lessons_with_unknown_price":unknown_prices,
+        "known_price_subtotal_points":subtotal,
+        "total_price_points":total,
+        "training_point_shortfall":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
     })
 }
 
