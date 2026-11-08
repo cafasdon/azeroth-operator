@@ -200,6 +200,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "4": {"name": "Blocked Lesson", "status": "unavailable",
                                   "skill_requirement": {"name": "Alchemy", "required_rank": 50, "met": False}},
                         }}
+                        forever["sections"]["skill_lines"] = {
+                            "171": {"name": "Alchemy", "rank": 35, "max_rank": 75, "modifier": 10},
+                        }
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
                         SnapshotStore(Path(folder)).ingest(forever)
@@ -242,7 +245,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(blocked, {
                             "slot": 4, "reason": "lesson_not_available",
                             "observed_requirements": {"level_shortfall": None,
-                                "skill_requirement_unmet": True, "unmet_ability_names": None},
+                                "skill_requirement_unmet": True, "unmet_ability_names": None,
+                                "captured_skill_rank_comparison": {"skill_line_id": 171,
+                                    "captured_rank": 35, "required_rank": 50, "rank_shortfall": 15}},
                         })
                         short_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",

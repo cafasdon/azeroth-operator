@@ -2176,7 +2176,11 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
         "node_ids_observed_only_before":observed_only_before,"node_ids_observed_only_after":observed_only_after})
 }
 
-pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value {
+pub fn trainer_requirements_review(
+    trainer: &Value,
+    level: Option<u64>,
+    skills: Option<&Value>,
+) -> Value {
     let Some(entries) = trainer["entries"].as_object() else {
         return Value::Null;
     };
@@ -2186,6 +2190,17 @@ pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value
     } else {
         level
     };
+    let mut ranks_by_name = BTreeMap::new();
+    if trainer["kind"] != "pet" {
+        for (id, row) in skills.and_then(Value::as_object).into_iter().flatten() {
+            if let Some((name, rank)) = row["name"].as_str().zip(row["rank"].as_u64()) {
+                ranks_by_name
+                    .entry(name)
+                    .and_modify(|rank| *rank = None)
+                    .or_insert(Some((id, rank)));
+            }
+        }
+    }
     let lessons: BTreeMap<_, _> = entries
         .iter()
         .filter(|(_, lesson)| lesson["status"] == "unavailable")
@@ -2197,6 +2212,17 @@ pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value
             let unmet_skill = lesson["skill_requirement"]
                 .as_object()
                 .map(|skill| skill["met"] == false);
+            let skill = &lesson["skill_requirement"];
+            let skill_comparison = skill["name"]
+                .as_str()
+                .zip(skill["required_rank"].as_u64())
+                .and_then(|(name, required)| {
+                    let (id, rank) = ranks_by_name.get(name)?.as_ref()?;
+                    Some(
+                        json!({"skill_line_id":id.parse::<u32>().ok()?,"captured_rank":rank,
+                        "required_rank":required,"rank_shortfall":required.saturating_sub(*rank)}),
+                    )
+                });
             let unmet_abilities = lesson["ability_requirements"].as_object().map(|abilities| {
                 abilities
                     .values()
@@ -2209,6 +2235,7 @@ pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value
                 json!({
                     "level_shortfall":level_shortfall,
                     "skill_requirement_unmet":unmet_skill,
+                    "captured_skill_rank_comparison":skill_comparison,
                     "unmet_ability_names":unmet_abilities
                 }),
             )

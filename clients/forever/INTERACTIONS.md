@@ -114,6 +114,10 @@ names for each retained unavailable lesson. Level comes from the same
 capture. Pet lessons use the active pet level recorded in the trainer
 section when available. Missing requirement data remains unknown. The trainer's saved
 availability remains authoritative for that observation.
+For character lessons, `captured_skill_rank_comparison` compares the
+required rank with a uniquely matching exact skill name in the same
+capture. It uses the recorded rank field without applying modifiers.
+Missing or ambiguous matches and pet lessons leave this comparison unknown.
 
 Set `trainer_wallet_projection: true` with `section: "trainer_services"`
 in `inspect_snapshot` to budget lessons the trainer marked available.

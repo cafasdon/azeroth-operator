@@ -1576,6 +1576,7 @@ impl Operator {
                     let requirements = azeroth_operator::analysis::trainer_requirements_review(
                         &value["data"],
                         level,
+                        snapshot.sections.get("skill_lines"),
                     );
                     for projection in ["trainer_wallet_projection", "trainer_points_projection"] {
                         if let Some(blocked) = value

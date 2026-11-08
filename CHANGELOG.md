@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare Forever trainer skill requirements with uniquely matched captured skill ranks.
+
 - Link the first blocked Forever trainer lesson to its captured prerequisite review.
 
 - Show how much extra copper or training points the first unaffordable Forever lesson needs.
