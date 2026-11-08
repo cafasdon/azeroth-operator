@@ -4225,6 +4225,14 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    let saved_instances = s
+        .sections
+        .get("saved_instances")
+        .and_then(|saved| saved["entries"].as_object());
+    summary["saved_instances_observed"] = json!(saved_instances.map(|rows| rows.len()));
+    summary["locked_instances_observed"] = json!(
+        saved_instances.map(|rows| rows.values().filter(|row| row["locked"] == true).count())
+    );
     let toys = s
         .sections
         .get("toy_collection_view")

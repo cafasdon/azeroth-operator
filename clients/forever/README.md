@@ -45,6 +45,18 @@ reported as observed only before/after, since journal filters may differ.
 Names are ignored and missing views give a null comparison. These reports
 do not establish toy acquisition, loss or full account coverage.
 
+`inspect_snapshot` accepts `section: "saved_instances"` for saved dungeon/raid
+metadata. Capture becomes available only after the addon observes an
+`UPDATE_INSTANCE_INFO` event; entering the world again invalidates that marker.
+The normal game UI can request the update when the player opens raid info.
+The MCP does not request it. `update_age_seconds` records how old that update
+was at capture. Names, difficulty, reported reset seconds, size and lock/extension
+flags are retained; unique lockout IDs and group details are omitted.
+`character_summary` reports observed entry and locked-entry counts, not present
+entry eligibility. Timers are not advanced on read, and world-boss saves are not
+part of this section. Reader/importer updates are required before installation;
+native qualification remains pending.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

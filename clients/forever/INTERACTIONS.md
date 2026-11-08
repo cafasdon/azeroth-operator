@@ -127,6 +127,7 @@ list makes the comparison unknown.
 | Economy and trading | Evaluate public price, recipe or loot data if its terms and provenance permit local use. | Select a permitted feed. Purchases, bids, sales, mail and trades remain player actions. |
 | Macros, bindings and action bars | Read saved observations where the client supports them. | Qualify visibility and report configuration gaps. No MCP-generated Apply codes or macro execution. |
 | Dungeons, raids, combat and PvP | Offline encounter, roster or preparation analysis from appropriate owner-provided data. | No live combat coaching from restricted values, input automation, targeting, queueing or play. |
+| Saved instances | Passive updated-cache capture of saved dungeon/raid names, difficulties, reset timers and lock/extension flags, with update age. | Qualify native events and returns. No refresh requests, unique lockout IDs, acceptance or extension actions. |
 | Social, guild and account administration | Public reference or owner-approved offline records only. | Chat, invitations, account changes and distribution of private data stay outside MCP scope. |
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
@@ -369,7 +370,8 @@ are excluded from filtered results.
 When the game's instance-lock warning is already visible in a dungeon
 or raid, `instance_context.lock_warning` can include its remaining seconds
 and aggregate encounter counts. This is the warning at capture time.
-It does not track the character's saved raid lockouts or accept the prompt.
+This warning capture does not track saved raid lockouts or accept the prompt.
+The separate `saved_instances` section below records updated cache metadata.
 The snapshot listing excludes the warning details. [Forever lock warning source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
 
 When the warning reports completed encounters, it can also include the

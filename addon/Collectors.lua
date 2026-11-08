@@ -1,5 +1,64 @@
 local _, AO = ...
 AO.collectors = {}
+local savedInstanceUpdate
+if AO.family=="forever" and CreateFrame then
+    local ok,observer=pcall(function()
+        local frame=CreateFrame("Frame")
+        frame:RegisterEvent("UPDATE_INSTANCE_INFO")
+        frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        frame:SetScript("OnEvent",function(_,event)
+            savedInstanceUpdate=nil
+            if event=="UPDATE_INSTANCE_INFO" and GetServerTime then
+                local success,value=pcall(GetServerTime)
+                if success and (not issecretvalue or not issecretvalue(value))
+                    and type(value)=="number" and value%1==0 and value>0 and value<=4294967295 then
+                    savedInstanceUpdate=value
+                end
+            end
+        end)
+        return frame
+    end)
+    if ok then AO.savedInstanceObserver=observer end
+end
+AO.collectors.saved_instances = function()
+    assert(AO.family=="forever" and savedInstanceUpdate and GetServerTime
+        and GetNumSavedInstances and GetSavedInstanceInfo, "Saved instance cache unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted saved instance observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid saved instance number")
+        return value
+    end
+    local function boolean(value)
+        value=readable(value); assert(type(value)=="boolean", "Invalid saved instance flag"); return value
+    end
+    local function text(value)
+        value=readable(value)
+        assert(type(value)=="string" and #value>0 and #value<=256, "Invalid saved instance name")
+        return value
+    end
+    local updated=savedInstanceUpdate
+    local now=integer(GetServerTime(),updated,4294967295)
+    local count=integer(GetNumSavedInstances(),0,128)
+    local result={coverage="updated_cache",update_age_seconds=now-updated,entries={}}
+    for index=1,count do
+        local name,_,reset,difficulty,locked,extended,_,raid,players,difficultyName=GetSavedInstanceInfo(index)
+        reset=readable(reset)
+        assert(type(reset)=="number", "Invalid saved instance timer")
+        local row={name=text(name),reset_seconds=integer(math.ceil(reset),-2147483648,2147483647),
+            difficulty_id=integer(difficulty,0,4294967295),locked=boolean(locked),extended=boolean(extended),
+            is_raid=boolean(raid),max_players=integer(players,0,4294967295)}
+        difficultyName=readable(difficultyName)
+        if difficultyName~=nil then row.difficulty_name=text(difficultyName) end
+        result.entries[tostring(index)]=row
+    end
+    assert(integer(GetNumSavedInstances(),0,128)==count and savedInstanceUpdate==updated,
+        "Saved instance cache changed")
+    return result
+end
 AO.collectors.toy_collection_view = function()
     local api=C_ToyBox
     assert(AO.family=="forever" and ToyBox and ToyBox.IsVisible and api

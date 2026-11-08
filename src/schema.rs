@@ -98,6 +98,52 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "saved_instances" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("update_age_seconds", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(
+                value["coverage"] == "updated_cache" && entries.len() <= 128,
+                "Invalid saved instance coverage"
+            );
+            for slot in 1..=entries.len() {
+                ensure!(
+                    entries.contains_key(&slot.to_string()),
+                    "Sparse saved instances"
+                );
+            }
+            for (slot, row) in entries {
+                index(slot, 1, 128)?;
+                object(
+                    row,
+                    &[
+                        ("name", "text", true),
+                        ("reset_seconds", "int", true),
+                        ("difficulty_id", "uint", true),
+                        ("locked", "bool", true),
+                        ("extended", "bool", true),
+                        ("is_raid", "bool", true),
+                        ("max_players", "uint", true),
+                        ("difficulty_name", "text", false),
+                    ],
+                )?;
+                for field in ["name", "difficulty_name"] {
+                    ensure!(
+                        row[field].is_null()
+                            || row[field]
+                                .as_str()
+                                .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                        "Invalid saved instance name"
+                    );
+                }
+            }
+        }
         "toy_collection_view" => {
             object(
                 value,

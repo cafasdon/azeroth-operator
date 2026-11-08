@@ -11,7 +11,7 @@ from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
-SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view"}
+SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instances"}
 
 
 def _validate_action_bar_observation(observation):
@@ -100,6 +100,24 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "saved_instances" in sections:
+        saved = sections["saved_instances"]
+        if (c["family"] != "forever" or not isinstance(saved, dict)
+                or set(saved) != {"coverage", "update_age_seconds", "entries"} or saved["coverage"] != "updated_cache"
+                or type(saved["update_age_seconds"]) is not int or not 0 <= saved["update_age_seconds"] <= 4_294_967_295
+                or not isinstance(saved["entries"], dict) or len(saved["entries"]) > 128
+                or set(saved["entries"]) != {str(i) for i in range(1, len(saved["entries"])+1)}):
+            raise ValueError("Invalid saved instance coverage")
+        required = {"name", "reset_seconds", "difficulty_id", "locked", "extended", "is_raid", "max_players"}
+        for row in saved["entries"].values():
+            if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - {"difficulty_name"}
+                    or type(row["reset_seconds"]) is not int or not -(2**31) <= row["reset_seconds"] < 2**31
+                    or any(type(row[field]) is not int or not 0 <= row[field] <= 4_294_967_295 for field in ("difficulty_id", "max_players"))
+                    or any(type(row[field]) is not bool for field in ("locked", "extended", "is_raid"))
+                    or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
+                    or (row.get("difficulty_name") is not None and (not isinstance(row["difficulty_name"], str)
+                        or not 1 <= len(row["difficulty_name"].encode()) <= 256))):
+                raise ValueError("Invalid saved instance row")
     if "toy_collection_view" in sections:
         view = sections["toy_collection_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)
