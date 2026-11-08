@@ -1593,6 +1593,31 @@ fn trainer_lesson_affordability(trainer: &Value, price_field: &str, balance: Opt
         }).collect::<BTreeMap<_, _>>())
 }
 
+fn trainer_cheapest_affordable(
+    trainer: &Value,
+    price_field: &str,
+    balance: Option<u64>,
+) -> Option<Value> {
+    let balance = balance?;
+    let mut priced: Vec<_> = trainer["entries"]
+        .as_object()?
+        .iter()
+        .filter(|(_, lesson)| lesson["status"] == "available")
+        .filter_map(|(slot, lesson)| Some((lesson[price_field].as_u64()?, slot)))
+        .collect();
+    priced.sort_unstable();
+    let mut subtotal = 0;
+    let mut slots = Vec::new();
+    for (price, slot) in priced {
+        if price > balance - subtotal {
+            break;
+        }
+        subtotal += price;
+        slots.push(slot);
+    }
+    Some(json!({"lesson_slots":slots,"lesson_count":slots.len(),"total_price":subtotal}))
+}
+
 pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
     if trainer["kind"] == "pet" {
         return Value::Null;
@@ -1611,6 +1636,7 @@ pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Val
         "total_price_copper":total,
         "wallet_shortfall_copper":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
         "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_copper", balance),
+        "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_copper", balance),
     })
 }
 
@@ -1632,6 +1658,7 @@ pub fn trainer_points_projection(trainer: &Value) -> Value {
         "total_price_points":total,
         "training_point_shortfall":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
         "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_training_points", balance),
+        "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_training_points", balance),
     })
 }
 

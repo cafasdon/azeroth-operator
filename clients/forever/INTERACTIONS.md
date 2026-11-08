@@ -121,6 +121,11 @@ Both projections include `individual_lesson_affordability` keyed by
 captured slot. Each available lesson is compared independently with the
 recorded balance, in copper or training points respectively. Missing
 prices or balances leave the comparison unknown.
+`cheapest_affordable_known_lessons` shows how many available lessons fit
+together by taking the lowest observed prices first. It uses the same
+currency or training points as the enclosing projection and excludes
+unknown prices. This is a budget estimate without modelling prerequisites
+or changes to the trainer's offers.
 
 With the same section, `trainer_service_name` matches a case-insensitive
 substring and `trainer_service_status` matches `available`, `unavailable`

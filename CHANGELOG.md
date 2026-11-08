@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget the largest number of known-price Forever trainer lessons that fit the captured balance.
+
 - Show individual affordability for captured Forever trainer and pet trainer lessons.
 
 - Show the affordable prefix and first copper shortfall in the suggested Forever quest turn-in order.
