@@ -510,6 +510,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "item_id":744,"required":6,"quantity_observed":1,"shortfall_vs_observed":5,
                             "quantity_by_storage":{"bags":None,"character_bank":1,"account_bank":0},
                             "shortfall_vs_bags":None,
+                            "suggested_bank_withdrawals":None,
                             "observed_stack_count":1,
                             "observed_locations":[{"storage":"character_bank","container":"6","slot":"1","count":1}],
                         }])
@@ -552,6 +553,42 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         mismatch = await session.call_tool("review_forever_recipe", {
                             **recipe_request, "inventory_snapshot_id": forever_key})
                         self.assertTrue(mismatch.isError)
+                        merchant = json.loads(json.dumps(forever))
+                        del merchant["sections"]["selected_recipe"]
+                        merchant["sections"]["merchant_stock"] = {
+                            "1": {"item_id": 744, "bundle_size": 5, "price_copper": 12,
+                                  "extended_cost": False, "available": -1},
+                            "2": {"item_id": 744, "bundle_size": 5, "price_copper": 1,
+                                  "extended_cost": False, "available": 0},
+                        }
+                        merchant["sections"]["wallet"] = {"copper": 100}
+                        merchant_key = SnapshotStore(Path(folder)).ingest(merchant)
+                        priced_inventory = json.loads(json.dumps(refreshed))
+                        priced_inventory["sections"]["wallet"] = {"copper": 11}
+                        priced_inventory_key = SnapshotStore(Path(folder)).ingest(priced_inventory)
+                        priced = await session.call_tool("review_forever_recipe", {
+                            **recipe_request, "crafts": 5, "inventory_snapshot_id": priced_inventory_key,
+                            "merchant_snapshot_id": merchant_key, "merchant_reagent_plan": True,
+                        })
+                        self.assertFalse(priced.isError)
+                        basket = json.loads(priced.content[0].text)["merchant_reagent_plan"]
+                        self.assertEqual(basket["merchant_captured_at"], merchant["captured_at"])
+                        reagent = next(row for row in basket["reagents"] if row["item_id"] == 744)
+                        self.assertEqual(reagent["shortfall_vs_observed"], 3)
+                        self.assertEqual(reagent["lowest_unlimited_copper_only_offer"],
+                                         {"slot": 1, "required_copper": 12})
+                        self.assertIsNone(basket["unlimited_copper_only_total"])
+                        priced_inventory["sections"]["bags"]["0"]["2"]["count"] = 10
+                        priced_inventory_key = SnapshotStore(Path(folder)).ingest(priced_inventory)
+                        priced = await session.call_tool("review_forever_recipe", {
+                            **recipe_request, "crafts": 5, "inventory_snapshot_id": priced_inventory_key,
+                            "merchant_snapshot_id": merchant_key, "merchant_reagent_plan": True,
+                        })
+                        self.assertFalse(priced.isError)
+                        basket = json.loads(priced.content[0].text)["merchant_reagent_plan"]
+                        self.assertEqual(basket["unlimited_copper_only_total"], 12)
+                        self.assertFalse(basket["unlimited_copper_only_affordable"])
+                        self.assertEqual(basket["unlimited_copper_only_shortfall"], 1)
                         second_recipe = json.loads(json.dumps(forever))
                         second_recipe["sections"]["selected_recipe"].update({
                             "recipe_id": 101, "reagents": {"744": 5}, "relative_difficulty": "trivial",
