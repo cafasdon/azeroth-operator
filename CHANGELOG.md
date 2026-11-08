@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever trainer visits by captured lesson name.
+
 - Price reagent purchases through the first uncovered Forever crafting step.
 
 - Suggest observed bank withdrawals for reagents blocking a Forever batch checkpoint.

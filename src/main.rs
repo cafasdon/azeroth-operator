@@ -254,6 +254,8 @@ struct List {
     instance_map_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
+    /// Find saved Forever trainer visits by a case-insensitive lesson name substring.
+    trainer_service_name: Option<String>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
     /// Narrow the flight destination search to this captured departure node.
@@ -1060,7 +1062,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe, instance context or merchant item. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe, instance, merchant item, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1090,6 +1092,7 @@ impl Operator {
                     map_id: args.instance_map_id,
                 },
                 merchant_item_id: args.merchant_item_id,
+                trainer_service_name: args.trainer_service_name.as_deref(),
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,
@@ -1101,7 +1104,7 @@ impl Operator {
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed: check the character, recipe, instance, merchant or flight filters and limit",
+                "Snapshot listing failed: check the character, recipe, instance, merchant, trainer or flight filters and limit",
             )]),
         }
     }

@@ -142,6 +142,10 @@ substring and `trainer_service_status` matches `available`, `unavailable`
 or `used`. The filters combine, keep the original lesson slots and apply
 before the optional wallet calculation. Zero matches and unavailable
 trainer data are reported separately.
+Use `trainer_service_name` in `list_snapshots` with `family: "forever"`
+to find saved visits by a case-insensitive lesson name substring. Matching
+captures include the trainer kind, lesson count and player map if known.
+Results describe the trainer list and filters recorded at capture time.
 Use `trainer_service_slots` to select up to 32 exact slots from the same
 capture. Slots missing from that capture are reported separately from rows
 excluded by the name or status filters.

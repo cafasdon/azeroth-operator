@@ -193,6 +193,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "2": {"node_id": 14, "name": "Fixture destination", "state": "reachable",
                                   "map_transition": False, "fare_copper": 0},
                         }}
+                        forever["sections"]["trainer_services"] = {"kind": "tradeskills", "entries": {
+                            "1": {"name": "Fixture Potion", "status": "available", "price_copper": 10},
+                            "2": {"name": "Other Lesson", "status": "used"},
+                        }}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
                         SnapshotStore(Path(folder)).ingest(forever)
@@ -200,6 +204,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "character":{"name":"example","realm":"FIRST"},"limit":1})
                         filtered_data = json.loads(filtered.content[0].text)
                         self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
+                        trainers = await session.call_tool("list_snapshots", {
+                            "family": "forever", "trainer_service_name": " PoTiOn ",
+                            "character": {"name": "example", "realm": "FIRST"}, "limit": 1,
+                        })
+                        self.assertFalse(trainers.isError)
+                        visits = json.loads(trainers.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in visits], [forever_key])
+                        self.assertEqual(visits[0]["trainer_match"], {
+                            "lesson_count": 1, "kind": "tradeskills", "captured_player_map_id": None,
+                        })
                         flight = await session.call_tool("list_snapshots", {
                             "family": "forever", "character": {"name": "example", "realm": "FIRST"},
                             "flight_origin_node_id": 12, "flight_destination_node_id": 14,

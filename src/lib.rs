@@ -275,6 +275,7 @@ pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
+    pub trainer_service_name: Option<&'a str>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
@@ -369,12 +370,21 @@ impl Store {
             recipe: filters,
             instance,
             merchant_item_id,
+            trainer_service_name,
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        let trainer_service_name = trainer_service_name.map(str::trim);
+        ensure!(
+            trainer_service_name.is_none_or(|name| {
+                family == Family::Forever && !name.is_empty() && name.len() <= 256
+            }),
+            "Trainer filtering requires Forever and a valid lesson name"
+        );
+        let trainer_service_name = trainer_service_name.map(str::to_lowercase);
         ensure!(
             flight_departure_map_id.is_none() || flight_destination_node_id.is_some(),
             "Flight departure map filtering requires a destination"
@@ -521,6 +531,17 @@ impl Store {
                     if merchant_matches == Some(0) {
                         continue;
                     }
+                    let trainer_match = trainer_service_name.as_ref().and_then(|name| {
+                        let trainer = s.sections.get("trainer_services")?;
+                        let count = trainer["entries"].as_object()?.values()
+                            .filter(|row| row["name"].as_str().is_some_and(|lesson| lesson.to_lowercase().contains(name)))
+                            .count();
+                        (count > 0).then(|| json!({"lesson_count":count,"kind":trainer["kind"],
+                            "captured_player_map_id":s.sections.get("stats").and_then(|stats| stats["map_id"].as_u64())}))
+                    });
+                    if trainer_service_name.is_some() && trainer_match.is_none() {
+                        continue;
+                    }
                     let flight_match = flight_destination_node_id.and_then(|node| {
                         let player_map = s
                             .sections
@@ -558,6 +579,9 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(trainer) = trainer_match {
+                        summary["trainer_match"] = trainer;
+                    }
                     if let Some(route) = flight_match {
                         summary["flight_match"] = route;
                     }
