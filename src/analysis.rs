@@ -658,10 +658,11 @@ pub fn compare_observations(
         };
         let previous = balance(before);
         let current = balance(after);
-        let change = previous.as_ref().zip(current.as_ref()).and_then(|(a, b)| {
-            if a["account_wide"] != b["account_wide"] {
-                return None;
-            }
+        let same_scope = previous
+            .as_ref()
+            .zip(current.as_ref())
+            .filter(|(a, b)| a["account_wide"] == b["account_wide"]);
+        let change = same_scope.and_then(|(a, b)| {
             let from = a["quantity"].as_u64()?;
             let to = b["quantity"].as_u64()?;
             let direction = match to.cmp(&from) {
@@ -671,8 +672,11 @@ pub fn compare_observations(
             };
             Some(json!({"direction":direction,"amount":to.abs_diff(from)}))
         });
-        comparison["currency_balance_change"] =
-            json!({"currency_id":currency_id,"before":previous,"after":current,"change":change});
+        let weekly_earned_delta = same_scope.and_then(|(a, b)| {
+            Some(b["earned_this_week"].as_i64()? - a["earned_this_week"].as_i64()?)
+        });
+        comparison["currency_balance_change"] = json!({"currency_id":currency_id,"before":previous,"after":current,"change":change,
+                "weekly_earned_delta":weekly_earned_delta});
     }
     if let Some(faction_id) = selectors.faction_id {
         ensure!(

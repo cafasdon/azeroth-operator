@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare weekly earnings counters between saved Forever currency observations.
+
 - Reject malformed Forever currency balance captures in the Python importer before storage.
 
 - Summarise reached and nearly filled weekly currency caps in Forever captures.

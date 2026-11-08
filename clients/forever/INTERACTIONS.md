@@ -424,6 +424,9 @@ weekly caps with known earnings and how many were reached. It lists up to
 20 by the smallest fraction of the cap remaining, with currency ID as
 the tie-breaker. Inactive rows and rows flagged as unable to earn weekly
 remain visible with their flags. These counters describe the capture.
+With `currency_id`, `compare_snapshots` reports `weekly_earned_delta`
+when both entries share the same account scope. A decrease records the
+counter change without establishing that a weekly reset occurred.
 
 Add `currency_reward_quantity` to compare a proposed reward against the
 tightest recorded cap. An explicit `can_earn_per_week: false` excludes the
