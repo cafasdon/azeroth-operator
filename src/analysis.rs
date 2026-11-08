@@ -645,6 +645,16 @@ pub fn compare_observations(
             .map(|(before, after)| compare_skill_lines(before, after))
             .unwrap_or(Value::Null);
     }
+    let professions_before = before.sections.get("professions");
+    let professions_after = after.sections.get("professions");
+    if before.client.family == crate::Family::Forever
+        && (professions_before.is_some() || professions_after.is_some())
+    {
+        comparison["profession_progress"] = professions_before
+            .zip(professions_after)
+            .and_then(|(before, after)| compare_professions(before, after))
+            .unwrap_or(Value::Null);
+    }
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
     let merchant_before = before.sections.get("merchant_stock");
@@ -1471,6 +1481,48 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_professions(before: &Value, after: &Value) -> Option<Value> {
+    fn index(section: &Value) -> Option<BTreeMap<u64, Option<&Value>>> {
+        let mut by_skill = BTreeMap::new();
+        for row in section.as_object()?.values() {
+            let id = row["skill_line"].as_u64()?;
+            by_skill
+                .entry(id)
+                .and_modify(|entry| *entry = None)
+                .or_insert(Some(row));
+        }
+        Some(by_skill)
+    }
+
+    let before = index(before)?;
+    let after = index(after)?;
+    let mut changes = Vec::new();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut ambiguous = Vec::new();
+    for id in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
+        match (before.get(id), after.get(id)) {
+            (Some(None), _) | (_, Some(None)) => ambiguous.push(id),
+            (Some(Some(old)), Some(Some(new))) => {
+                let (old_rank, new_rank) = (old["rank"].as_i64()?, new["rank"].as_i64()?);
+                let (old_cap, new_cap) = (old["max_rank"].as_i64()?, new["max_rank"].as_i64()?);
+                if (old_rank, old_cap) != (new_rank, new_cap) {
+                    changes.push(json!({
+                        "skill_line":id,
+                        "before_rank":old_rank,"after_rank":new_rank,"rank_delta":new_rank-old_rank,
+                        "before_max_rank":old_cap,"after_max_rank":new_cap,
+                    }));
+                }
+            }
+            (Some(Some(_)), None) => only_before.push(id),
+            (None, Some(Some(_))) => only_after.push(id),
+            (None, None) => {}
+        }
+    }
+    Some(json!({"changes":changes,"observed_only_before":only_before,
+                "observed_only_after":only_after,"ambiguous_skill_lines":ambiguous}))
 }
 
 fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &str) -> Option<bool> {

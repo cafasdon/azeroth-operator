@@ -936,6 +936,12 @@ ambiguous matches are excluded. Each matching row reports the captured
 skill line, rank and cap under `profession_match`. The search can combine
 with an exact character or captured recipe filter before pagination.
 
+`compare_snapshots` reports `profession_progress` for Forever captures.
+It matches unique skill-line IDs regardless of captured slot, reports
+rank and cap changes, and separates one-sided and ambiguous observations.
+A one-sided ID only establishes where the profession was observed.
+If only one capture has a profession section, the report is null.
+
 Use `inspect_snapshot` with `section: "tracked_recipes"` to read saved
 player-tracked recipes, separated into crafts and recrafts by recipe ID.
 Optional names reflect available recipe metadata. Empty maps

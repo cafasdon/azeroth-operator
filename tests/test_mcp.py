@@ -685,7 +685,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         criteria["2"]["quantity"] = 3
                         profession = reputation_after["sections"]["professions"].pop("1")
                         profession["rank"] = 25
+                        profession["max_rank"] = 150
                         reputation_after["sections"]["professions"]["2"] = profession
+                        reputation_after["sections"]["professions"]["3"] = {
+                            "name": "Another profession", "rank": 1, "max_rank": 75, "skill_line": 165,
+                        }
                         progress_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         progress = await session.call_tool("compare_snapshots", {
                             "before_id": after_key, "after_id": progress_key, "quest_id": 42,
@@ -739,14 +743,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(profession_change["rank_delta"], 5)
                         self.assertEqual(profession_change["before_status"], "observed")
                         self.assertEqual(profession_change["after"]["rank"], 25)
+                        self.assertEqual(progress_data["profession_progress"], {
+                            "changes": [{"skill_line": 164, "before_rank": 20, "after_rank": 25,
+                                         "rank_delta": 5, "before_max_rank": 75, "after_max_rank": 150}],
+                            "observed_only_before": [], "observed_only_after": [165],
+                            "ambiguous_skill_lines": [],
+                        })
                         reputation_after["sections"]["professions"]["1"] = dict(profession, rank=30)
                         ambiguous_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         ambiguous = await session.call_tool("compare_snapshots", {
                             "before_id": progress_key, "after_id": ambiguous_key, "profession_skill_line": 164})
                         self.assertFalse(ambiguous.isError)
-                        ambiguous_profession = json.loads(ambiguous.content[0].text)["profession_change"]
+                        ambiguous_data = json.loads(ambiguous.content[0].text)
+                        ambiguous_profession = ambiguous_data["profession_change"]
                         self.assertEqual(ambiguous_profession["after_status"], "ambiguous")
                         self.assertIsNone(ambiguous_profession["rank_delta"])
+                        self.assertEqual(ambiguous_data["profession_progress"], {
+                            "changes": [], "observed_only_before": [], "observed_only_after": [],
+                            "ambiguous_skill_lines": [164],
+                        })
                         recipe = await session.call_tool("review_forever_recipe", {"snapshot_id":forever_key,"crafts":2})
                         self.assertFalse(recipe.isError)
                         recipe_data = json.loads(recipe.content[0].text)
