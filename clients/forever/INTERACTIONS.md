@@ -842,8 +842,7 @@ One limits the search to direct flights from the starting panel. Omit the
 limit to allow up to eight legs.
 Set `objective` to `fewest_legs` to prefer fewer legs among fully quoted
 routes. Ties prefer the lower total fare, followed by the same per-leg
-ordering. The default objective is `lowest_fare`. A reserve checks the
-chosen route's affordability without changing its ranking.
+ordering. The default objective is `lowest_fare`.
 Add `flight_wallet_reserve_copper` to check whether the whole route fits
 while preserving that amount. The plan reports `affordable_with_reserve`
 separately from fare-only affordability. A missing starting wallet makes
@@ -853,6 +852,13 @@ include the repair-all quote from the starting capture. The
 `affordable_with_repairs_and_reserve` check includes fare, that quote
 and any explicit copper reserve. It is unknown if the starting wallet
 or quote was unavailable. Onward quotes do not contribute.
+Set `require_affordable: true` inside `flight_route_search` to limit
+the search to fares covered by the starting wallet after any reserve
+and requested repair quote. The objective then ranks only those routes.
+`starting_budget_unknown` means the wallet or requested quote was missing.
+`no_affordable_route` means no fully quoted route within the leg limit fit
+the saved budget. Without this option, budget checks describe the selected
+route without constraining the search.
 `no_fully_priced_route` describes the supplied captures. Routes are
 historical observations and may have different capture times.
 

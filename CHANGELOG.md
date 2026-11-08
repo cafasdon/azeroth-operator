@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restrict saved Forever flight route searches to routes that fit the starting budget.
+
 - Check saved Forever flight affordability including the starting repair quote.
 
 - Find saved Forever repair visits by quote ceiling or captured affordability.

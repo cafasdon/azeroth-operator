@@ -402,6 +402,9 @@ struct FlightRouteSearch {
     /// Check the route budget including the repair-all quote in the starting capture.
     #[serde(default)]
     include_repair_quote: bool,
+    /// Only consider routes covered by the starting wallet after any requested reserve and repair quote.
+    #[serde(default)]
+    require_affordable: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1850,6 +1853,7 @@ impl Operator {
                             search.max_legs.unwrap_or(8),
                             search.objective.unwrap_or_default(),
                             search.include_repair_quote,
+                            search.require_affordable,
                         )
                     })();
                     match result {

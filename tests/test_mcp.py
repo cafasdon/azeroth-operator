@@ -374,6 +374,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(fewest.isError)
                         self.assertEqual(json.loads(fewest.content[0].text)["flight_route_search"],
                                          direct_plan)
+                        constrained_request = {
+                            **fewest_request, "flight_wallet_reserve_copper": 4_999_999_996,
+                            "flight_route_search": {
+                                **fewest_request["flight_route_search"],
+                                "require_affordable": True, "include_repair_quote": True,
+                            },
+                        }
+                        constrained = await session.call_tool("inspect_snapshot", constrained_request)
+                        self.assertFalse(constrained.isError)
+                        constrained_plan = json.loads(constrained.content[0].text)["flight_route_search"]
+                        self.assertEqual(constrained_plan["total_fare_copper"], 3)
+                        self.assertTrue(constrained_plan["affordable_with_repairs_and_reserve"])
+                        too_expensive = await session.call_tool("inspect_snapshot", {
+                            **constrained_request, "flight_wallet_reserve_copper": 4_999_999_997,
+                        })
+                        self.assertFalse(too_expensive.isError)
+                        self.assertEqual(json.loads(too_expensive.content[0].text)[
+                            "flight_route_search"]["status"], "no_affordable_route")
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
                             **fewest_request, "flight_route_search": {
                                 **route_request["flight_route_search"], "objective": "fastest",

@@ -2442,6 +2442,7 @@ pub fn plan_saved_flights(
     max_legs: u8,
     objective: FlightRouteObjective,
     include_repair_quote: bool,
+    require_affordable: bool,
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
     let (_, first) = captures
@@ -2475,18 +2476,54 @@ pub fn plan_saved_flights(
         start != destination,
         "Already at the requested departure node"
     );
+    let wallet = first
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let repair = first
+        .sections
+        .get("repair_quote")
+        .and_then(|row| row["copper"].as_u64());
+    let status = |status: &str| {
+        json!({
+            "status":status,"origin_node_id":start,"destination_node_id":destination,
+        })
+    };
+    let max_fare = if require_affordable {
+        let required_repair = if include_repair_quote {
+            repair
+        } else {
+            Some(0)
+        };
+        let Some((balance, repair_cost)) = wallet.zip(required_repair) else {
+            return Ok(status("starting_budget_unknown"));
+        };
+        let Some(spendable) = balance
+            .checked_sub(repair_cost)
+            .and_then(|remaining| remaining.checked_sub(reserve.unwrap_or_default()))
+        else {
+            return Ok(status("no_affordable_route"));
+        };
+        Some(spendable)
+    } else {
+        None
+    };
     let mut frontier = BTreeMap::from([(start, (0u64, Vec::new()))]);
     let mut best = None;
     for depth in 0..max_legs {
         let mut next = BTreeMap::new();
         for (node, (cost, path)) in frontier {
             for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
-                if target == start || (depth == 0 && index != 0) {
+                let total = cost + fare;
+                if target == start
+                    || (depth == 0 && index != 0)
+                    || max_fare.is_some_and(|maximum| total > maximum)
+                {
                     continue;
                 }
                 let mut path = path.clone();
                 path.push((index, target));
-                let candidate = (cost + fare, path);
+                let candidate = (total, path);
                 if target == destination {
                     let candidate = (candidate.0, depth + 1, candidate.1);
                     if best.as_ref().is_none_or(|previous| &candidate < previous) {
@@ -2508,9 +2545,11 @@ pub fn plan_saved_flights(
         }
     }
     let Some((fare, _, path)) = best else {
-        return Ok(
-            json!({"status":"no_fully_priced_route","origin_node_id":start,"destination_node_id":destination}),
-        );
+        return Ok(status(if require_affordable {
+            "no_affordable_route"
+        } else {
+            "no_fully_priced_route"
+        }));
     };
     let legs = path
         .into_iter()
@@ -2526,10 +2565,6 @@ pub fn plan_saved_flights(
             Ok(route)
         })
         .collect::<Result<Vec<_>>>()?;
-    let wallet = first
-        .sections
-        .get("wallet")
-        .and_then(|wallet| wallet["copper"].as_u64());
     let mut plan = json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
         "legs":legs,"total_fare_copper":fare,
         "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)});
@@ -2541,10 +2576,6 @@ pub fn plan_saved_flights(
         }));
     }
     if include_repair_quote {
-        let repair = first
-            .sections
-            .get("repair_quote")
-            .and_then(|row| row["copper"].as_u64());
         plan["starting_repair_quote_copper"] = json!(repair);
         plan["affordable_with_repairs_and_reserve"] =
             json!(wallet.zip(repair).map(|(balance, repair)| {
