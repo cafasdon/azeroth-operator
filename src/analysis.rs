@@ -79,6 +79,108 @@ pub fn plan_recipe(
     }
 }
 
+/// Explicit IDs select only the bulk observation, never a fallback schematic.
+pub fn plan_recipe_by_id(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    crafts: Option<u32>,
+    target_output_quantity: Option<std::num::NonZeroU32>,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
+    let Some(id) = recipe_id else {
+        return plan_recipe(snapshot, crafts, target_output_quantity, inventory);
+    };
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    let section = snapshot
+        .sections
+        .get("profession_recipe_materials")
+        .ok_or_else(|| anyhow::anyhow!("Bulk recipe materials were not captured"))?;
+    let row = section["entries"]
+        .get(id.to_string())
+        .ok_or_else(|| anyhow::anyhow!("Requested bulk recipe was not captured"))?;
+    let fixed = row["status"] == "fixed_items";
+    ensure!(
+        fixed || row["status"] == "unsupported_required_slots",
+        "Requested bulk recipe materials unavailable"
+    );
+    let requirements = if fixed {
+        "fixed_items"
+    } else {
+        "unsupported_required_slots"
+    };
+    let mut recipe = json!({"recipe_id":id.get(),"learned":true,"requirements":requirements,
+        "reagents":if fixed {row["reagents"].clone()} else {json!({})}});
+    for field in ["output_item_id", "base_output_quantity"] {
+        if let Some(value) = row.get(field) {
+            recipe[field] = value.clone();
+        }
+    }
+    if let Some(selected) = snapshot
+        .sections
+        .get("selected_recipe")
+        .filter(|recipe| recipe["recipe_id"].as_u64() == Some(u64::from(id.get())))
+    {
+        ensure!(
+            selected["learned"] == true && selected["requirements"] == requirements,
+            "Conflicting captured recipe observations"
+        );
+        if fixed {
+            ensure!(
+                selected["reagents"] == recipe["reagents"],
+                "Conflicting captured recipe materials"
+            );
+        }
+        for field in ["output_item_id", "base_output_quantity"] {
+            if let (Some(a), Some(b)) = (
+                selected.get(field).filter(|v| !v.is_null()),
+                recipe.get(field),
+            ) {
+                ensure!(a == b, "Conflicting captured recipe outputs");
+            }
+        }
+        if let Some(profession) = selected.get("profession").filter(|v| !v.is_null()) {
+            ensure!(
+                profession["profession_id"] == section["profession_id"],
+                "Conflicting captured recipe profession"
+            );
+        }
+    }
+    if let Some(view) = snapshot.sections.get("profession_recipe_view") {
+        ensure!(
+            view["entries"][id.to_string()]["learned"] != false,
+            "Conflicting captured recipe learning"
+        );
+    }
+    let tracking = recipe_tracking(snapshot, u64::from(id.get()));
+    ensure!(
+        tracking["tracked_craft_learned"] != false && tracking["tracked_recraft_learned"] != false,
+        "Conflicting captured recipe learning"
+    );
+    let count = match (crafts, target_output_quantity) {
+        (Some(count), None) => count,
+        (None, Some(target)) => {
+            let minimum = recipe["base_output_quantity"]["minimum"]
+                .as_u64()
+                .and_then(|n| u32::try_from(n).ok())
+                .filter(|n| *n > 0)
+                .ok_or_else(|| anyhow::anyhow!("Recipe base output range unavailable"))?;
+            target.get().div_ceil(minimum)
+        }
+        _ => anyhow::bail!("Supply one craft count or target output quantity"),
+    };
+    let mut review = review_recipe_observation(snapshot, &recipe, count, inventory)?;
+    review["recipe_observation_source"] = json!("profession_recipe_materials");
+    review["recipe_profession_id"] = section["profession_id"].clone();
+    review["recipe_material_status"] = row["status"].clone();
+    if let Some(target) = target_output_quantity {
+        review["target_output_quantity"] = json!(target.get());
+    }
+    Ok(review)
+}
+
 pub fn review_recipe_with_inventory(
     snapshot: &Snapshot,
     crafts: u32,
@@ -93,6 +195,20 @@ pub fn review_recipe_with_inventory(
         .sections
         .get("selected_recipe")
         .ok_or_else(|| anyhow::anyhow!("Selected recipe was not captured"))?;
+    review_recipe_observation(snapshot, recipe, crafts, inventory)
+}
+
+fn review_recipe_observation(
+    snapshot: &Snapshot,
+    recipe: &Value,
+    crafts: u32,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    ensure!((1..=1000).contains(&crafts), "Craft count out of range");
     if let Some(inventory) = inventory {
         ensure_comparable(snapshot, inventory)?;
     }

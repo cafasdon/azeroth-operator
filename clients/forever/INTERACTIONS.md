@@ -5,8 +5,12 @@ reported known spell IDs without selecting recipes or changing filters.
 `profession_recipe_materials` retains fixed item quantities and optional output
 ranges, or an unavailable/unsupported/budget state per ID. IDs are processed in
 numeric order; at most 16,384 reagent pairs are retained across at most 4,096
-rows. Missing data is not a known-empty material list. Existing selected-recipe
-plans do not yet consume this section. Native availability, responsiveness,
+rows. Missing data is not a known-empty material list. `review_forever_recipe`
+can select an exact bulk recipe with `recipe_id` on the primary or additional
+batch entries. Omission preserves selected-schematic review. Bulk material
+plans retain unknown cooldowns and conditions. Same-ID false learning in selected,
+filtered or tracked rows blocks review; conflicting selected-schematic materials,
+output or profession ID also block it. Native availability, responsiveness,
 complete recipe knowledge and craftability remain unverified.
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.

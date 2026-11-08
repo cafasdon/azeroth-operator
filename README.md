@@ -17,9 +17,13 @@ Forever manual exports can record bulk fixed-item material observations for the
 visible local profession's reported known spell IDs. Inspect
 `profession_recipe_materials` or its summary. Unreadable recipes, unsupported
 required slots and the retained-material budget remain explicit. This does not
-yet feed the selected-recipe crafting planner or establish craftability.
+establish craftability. `review_forever_recipe` accepts an optional `recipe_id`
+for an exact bulk-observed recipe, including each additional batch entry.
+Omitting it retains selected-schematic review. Bulk reviews preserve unknown
+cooldowns/conditions and reject conflicting captured observations.
 Native availability and responsiveness remain unqualified.
 [Offline evidence](docs/profession-recipe-materials-verification-2026-11-08.md).
+[Planning integration](docs/bulk-recipe-planning-verification-2026-11-08.md).
 
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay

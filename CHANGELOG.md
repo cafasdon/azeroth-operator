@@ -1,5 +1,9 @@
 # Changelog
 
+- Plan exact bulk-observed recipes by ID, including shared-inventory batches,
+  output targets and dependency/merchant estimates, preserving unknowns and
+  rejecting conflicting saved recipe observations.
+
 - Capture bulk read-only profession recipe materials and output ranges, with
   per-recipe unknown/unsupported/budget states and strict local MCP inspection.
 

@@ -526,6 +526,8 @@ struct FlightRouteSearch {
 #[serde(deny_unknown_fields)]
 struct RecipeReview {
     snapshot_id: String,
+    /// Select an exact recipe from bulk material observations. Omit for the selected schematic.
+    recipe_id: Option<std::num::NonZeroU32>,
     /// Number of crafts. Supply exactly one of crafts or target_output_quantity.
     crafts: Option<u32>,
     /// Desired base item quantity, using the captured minimum per craft.
@@ -548,6 +550,8 @@ struct RecipeReview {
 #[serde(deny_unknown_fields)]
 struct RecipeBatchEntry {
     snapshot_id: String,
+    /// Select an exact bulk-observed recipe; omit for this capture's selected schematic.
+    recipe_id: Option<std::num::NonZeroU32>,
     /// Number of crafts. Supply exactly one of crafts or target_output_quantity.
     crafts: Option<u32>,
     /// Desired base item quantity, using the captured minimum per craft.
@@ -969,7 +973,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare one to eight saved Forever recipes with observed bags and banks for 1 to 1000 crafts each. Multiple recipes share one compatible inventory snapshot. Offline estimate only.",
+        description = "Compare one to eight saved Forever recipes with observed bags and banks for 1 to 1000 crafts each. Optional recipe_id selects an exact bulk-observed recipe; omit for the selected schematic. Multiple recipes share one compatible inventory snapshot. Offline estimate only.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -994,8 +998,9 @@ impl Operator {
                 .as_deref()
                 .map(|id| self.store.read(id))
                 .transpose()?;
-            let mut review = azeroth_operator::analysis::plan_recipe(
+            let mut review = azeroth_operator::analysis::plan_recipe_by_id(
                 &snapshot,
+                args.recipe_id,
                 args.crafts,
                 args.target_output_quantity,
                 inventory.as_ref(),
@@ -1010,8 +1015,9 @@ impl Operator {
                     std::collections::BTreeSet::from([review["recipe"]["recipe_id"].as_u64()]);
                 for entry in additional {
                     let saved = self.store.read(&entry.snapshot_id)?;
-                    let mut extra = azeroth_operator::analysis::plan_recipe(
+                    let mut extra = azeroth_operator::analysis::plan_recipe_by_id(
                         &saved,
+                        entry.recipe_id,
                         entry.crafts,
                         entry.target_output_quantity,
                         Some(stock),
