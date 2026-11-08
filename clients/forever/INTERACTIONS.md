@@ -278,6 +278,9 @@ to compare each observed spell action with base and reported spell IDs
 from the same snapshot. Missing spell IDs or spellbook data leave the match
 flags unknown. A false flag means no matching captured slot, which does
 not establish that a spell is unavailable in game.
+The review includes `matched_spellbook_flags_by_action_id` for the
+selected spell actions. It keeps distinct base/reported ID and flag
+observations without exposing unrelated spellbook entries.
 
 `active_spellbook_slots_without_observed_action` lists slots with observed
 false passive and off-spec flags and no matching base or reported spell ID

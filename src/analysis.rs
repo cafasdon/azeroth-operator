@@ -898,6 +898,30 @@ pub fn action_bar_spellbook(
             .collect::<BTreeMap<_, _>>()
     });
     let mut review = json!({"spellbook_available":book.is_some(),"spell_slots":slots});
+    let matches = book.zip(action_slots).map(|(book, actions)| {
+        let mut matches: BTreeMap<u64, BTreeSet<_>> = actions.values()
+            .filter(|row| row["kind"] == "spell")
+            .filter_map(|row| Some((row["id"].as_u64()?, BTreeSet::new())))
+            .collect();
+        for row in book.values() {
+            let (Some(base), Some(reported)) = (row["base_spell_id"].as_u64(), row["spell_id"].as_u64()) else {
+                continue;
+            };
+            let flags = (base, reported, row["passive"].as_bool(), row["off_spec"].as_bool());
+            for id in [base, reported] {
+                if let Some(observations) = matches.get_mut(&id) {
+                    observations.insert(flags);
+                }
+            }
+        }
+        matches.into_iter().map(|(id, observations)| {
+            let rows: Vec<_> = observations.into_iter().map(|(base, reported, passive, off_spec)| {
+                json!({"base_spell_id":base,"spell_id":reported,"passive":passive,"off_spec":off_spec})
+            }).collect();
+            (id, rows)
+        }).collect::<BTreeMap<_, _>>()
+    });
+    review["matched_spellbook_flags_by_action_id"] = json!(matches);
     if !include_reverse {
         return review;
     }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show captured spellbook flags behind matching Forever action-bar spells.
+
 - Check captured equipment and bag stock for a matched Forever action-bar item shortcut.
 
 - Find captured Forever action-bar item shortcuts by exact item ID.
