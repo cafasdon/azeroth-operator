@@ -1187,9 +1187,29 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         progress = await session.call_tool("compare_snapshots", {
                             "before_id": after_key, "after_id": progress_key, "quest_id": 42,
                             "achievement_id": 101, "profession_skill_line": 164,
-                            "quest_readiness_changes": True})
+                            "quest_readiness_changes": True, "achievement_status_changes": True})
                         self.assertFalse(progress.isError)
                         progress_data = json.loads(progress.content[0].text)
+                        self.assertEqual(progress_data["achievement_status_changes"], {
+                            "changes": [{"achievement_id": 101,
+                                         "before": {"completed": False, "earned_by_character": False,
+                                                    "account_wide": True},
+                                         "after": {"completed": True, "earned_by_character": False,
+                                                   "account_wide": True}}],
+                            "achievement_ids_observed_only_before": [],
+                            "achievement_ids_observed_only_after": [],
+                            "achievement_ids_with_scope_changes": [],
+                        })
+                        changed_scope = json.loads(json.dumps(reputation_after))
+                        changed_scope["sections"]["tracked_achievements"]["entries"]["101"]["account_wide"] = False
+                        scope_id = SnapshotStore(Path(folder)).ingest(changed_scope)
+                        scope_comparison = await session.call_tool("compare_snapshots", {
+                            "before_id": after_key, "after_id": scope_id, "achievement_status_changes": True,
+                        })
+                        self.assertFalse(scope_comparison.isError)
+                        scope_data = json.loads(scope_comparison.content[0].text)["achievement_status_changes"]
+                        self.assertEqual(scope_data["changes"], [])
+                        self.assertEqual(scope_data["achievement_ids_with_scope_changes"], [101])
                         dated = await session.call_tool("list_snapshots", {
                             "family": "forever",
                             "character": {"name": "Example", "realm": "First"},

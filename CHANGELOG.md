@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare completion and character credit across saved Forever tracked achievement lists.
+
 - Find saved Forever tracked achievements by completion and character credit.
 
 - Find saved Forever characters meeting a standard faction-rank threshold.

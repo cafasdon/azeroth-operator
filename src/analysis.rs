@@ -659,6 +659,7 @@ pub struct ComparisonSelectors {
     pub quest_id: Option<u32>,
     pub quest_waypoints: bool,
     pub quest_readiness_changes: bool,
+    pub achievement_status_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -1047,6 +1048,47 @@ pub fn compare_observations(
                 );
             }
             changes.into_values().collect::<Vec<_>>()
+        }));
+    }
+    if selectors.achievement_status_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Achievement status comparison requires Forever"
+        );
+        let previous = before
+            .sections
+            .get("tracked_achievements")
+            .and_then(|section| section["entries"].as_object());
+        let current = after
+            .sections
+            .get("tracked_achievements")
+            .and_then(|section| section["entries"].as_object());
+        comparison["achievement_status_changes"] = json!(previous.zip(current).map(|(before, after)| {
+            let mut changes = BTreeMap::new();
+            let mut only_before = BTreeSet::new();
+            let mut only_after = BTreeSet::new();
+            let mut scope_changed = BTreeSet::new();
+            for key in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
+                let Ok(id) = key.parse::<u32>() else { continue };
+                match (before.get(key), after.get(key)) {
+                    (Some(old), Some(new)) if old["account_wide"] != new["account_wide"] => {
+                        scope_changed.insert(id);
+                    }
+                    (Some(old), Some(new)) => {
+                        if old["completed"] != new["completed"] || old["earned_by_character"] != new["earned_by_character"] {
+                            let status = |entry: &Value| json!({"completed":entry["completed"],
+                                "earned_by_character":entry["earned_by_character"],"account_wide":entry["account_wide"]});
+                            changes.insert(id, json!({"achievement_id":id,"before":status(old),"after":status(new)}));
+                        }
+                    }
+                    (Some(_), None) => { only_before.insert(id); }
+                    (None, Some(_)) => { only_after.insert(id); }
+                    (None, None) => {}
+                }
+            }
+            json!({"changes":changes.into_values().collect::<Vec<_>>(),
+                "achievement_ids_observed_only_before":only_before,"achievement_ids_observed_only_after":only_after,
+                "achievement_ids_with_scope_changes":scope_changed})
         }));
     }
     if let Some(achievement_id) = selectors.achievement_id {

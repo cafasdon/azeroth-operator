@@ -41,6 +41,11 @@ tracked achievements. Flags must match the same recorded achievement.
 The result preserves account scope and character credit separately.
 An achievement absent from the tracked list does not match either
 completion state.
+Use `achievement_status_changes: true` in `compare_snapshots` to
+compare all shared tracked IDs. Completion and character-credit changes
+are compared only while the recorded account scope agrees. Scope changes
+and IDs present on just one side are listed separately. A missing tracked
+list makes the comparison unknown.
 
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
