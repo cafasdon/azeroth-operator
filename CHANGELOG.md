@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report the same encounter fingerprint in standalone Forever simulations and gear rankings.
+
 - Report encounter settings and a reproducibility fingerprint in local Forever gear rankings.
 
 - Carry projected Forever weapon skills into local encounter and weighted gear rankings.

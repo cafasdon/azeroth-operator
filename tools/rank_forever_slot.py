@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-from hashlib import sha256
 from itertools import product
 import json
 import logging
@@ -16,7 +15,7 @@ from mcp.client.stdio import stdio_client
 
 from tools.run_forever_sim import (
     CLASS_IDS, ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
-    player_spec, read_object, request_from, single_player,
+    encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
 )
 
 
@@ -270,13 +269,6 @@ def tradeoff_reviews(rows, score_for):
     ]
 
 
-def encounter_key(request):
-    return json.dumps(
-        (request["encounter"], request["simOptions"]),
-        sort_keys=True, separators=(",", ":"), allow_nan=False,
-    )
-
-
 def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     tank_ranking = args.rank_by in ("dtps", "tps", "death")
@@ -293,17 +285,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
         result = fixed if fixed is not None else compare(
             args.engine, args.engine_sha256, requests, paired=args.paired,
             tank_metrics=tank_ranking, healing_metrics=healing_ranking)
-    baseline_request = requests[0]
-    profile = baseline_request["encounter"]
-    result.update(
-        encounter_settings_sha256=sha256(encounter_key(baseline_request).encode()).hexdigest(),
-        duration_seconds=profile["duration"],
-        duration_variation_seconds=profile["durationVariation"],
-        target_count=len(profile["targets"]),
-        execute_proportion_20=profile["executeProportion20"],
-        execute_proportion_35=profile["executeProportion35"],
-        requested_iterations=baseline_request["simOptions"]["iterations"],
-    )
+    result.update(encounter_summary(requests[0]))
     if audit is not None:
         audit["fixed_wall_seconds"] = after_fixed - start
         audit["staged_wall_seconds"] = staged_wall

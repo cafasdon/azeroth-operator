@@ -203,6 +203,26 @@ def request_from(template, equipment_review, encounter_lookup):
     }
 
 
+def encounter_key(request):
+    return json.dumps(
+        (request["encounter"], request["simOptions"]),
+        sort_keys=True, separators=(",", ":"), allow_nan=False,
+    )
+
+
+def encounter_summary(request):
+    profile = request["encounter"]
+    return {
+        "encounter_settings_sha256": hashlib.sha256(encounter_key(request).encode()).hexdigest(),
+        "duration_seconds": profile["duration"],
+        "duration_variation_seconds": profile["durationVariation"],
+        "target_count": len(profile["targets"]),
+        "execute_proportion_20": profile["executeProportion20"],
+        "execute_proportion_35": profile["executeProportion35"],
+        "requested_iterations": request["simOptions"]["iterations"],
+    }
+
+
 def verify_engine(engine, expected_hash):
     if not engine.is_absolute() or not engine.is_file():
         raise ValueError("Provide an absolute path to the trusted local engine")
@@ -429,6 +449,7 @@ def main():
                   if len(requests) == 1 else compare(
                       args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.tank_metrics,
                       healing_metrics=args.healing_metrics))
+        result.update(encounter_summary(requests[0]))
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
