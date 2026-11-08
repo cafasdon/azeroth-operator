@@ -647,6 +647,10 @@ approximate 95% interval for each distinct alternative's DPS delta versus
 the baseline. An interval containing zero leaves the direction unresolved.
 These are individual comparisons without a multiple-comparison adjustment.
 The ranker continues to sort by the point estimate.
+Fixed paired DPS runs with at least two distinct inputs also report
+`observed_leading_dps_pair`, the observed gap and paired standard error
+between the two highest estimated results. Identical inputs count once.
+The pair is selected on the same samples, so the gap is descriptive.
 
 Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
 separately for each encounter. Output uses an `encounters` array in input order,

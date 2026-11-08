@@ -330,6 +330,18 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
     baseline = results[keys[0]]["mean_dps"]
+    leading_pair = None
+    if paired and len(unique) >= 2 and not (tank_metrics or healing_metrics):
+        leader, runner_up = sorted(unique, key=lambda key: -results[key]["mean_dps"])[:2]
+        leader_row, runner_up_row = results[leader], results[runner_up]
+        samples = leader_row["_dps_samples"]
+        differences = (a - b for a, b in zip(samples, runner_up_row["_dps_samples"], strict=True))
+        leading_pair = {
+            "leading_review": keys.index(leader) + 1,
+            "runner_up_review": keys.index(runner_up) + 1,
+            "mean_dps_gap": leader_row["mean_dps"] - runner_up_row["mean_dps"],
+            "paired_dps_standard_error": statistics.stdev(differences) / math.sqrt(len(samples)),
+        }
     if tank_metrics:
         for row in results.values():
             for field in ("mean_dtps", "mean_tps", "simulated_death_fraction"):
@@ -365,11 +377,14 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
                 "lower": lower, "upper": upper, "includes_zero": lower <= 0 <= upper,
             }
         rows.append(row)
-    return {
+    comparison = {
         "unique_runs": len(results),
         "baseline_review": 1,
         "results": rows,
     }
+    if leading_pair is not None:
+        comparison["observed_leading_dps_pair"] = leading_pair
+    return comparison
 
 
 def compare_bulk(engine, expected_hash, requests, top_results):

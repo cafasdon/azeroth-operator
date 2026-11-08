@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report the observed DPS gap and paired standard error between the leading distinct Forever gear inputs.
+
 - Show approximate paired DPS intervals versus equipped gear in fixed Forever simulations.
 
 - Filter captured Forever equipment, bags and banks by required character level before paging.
