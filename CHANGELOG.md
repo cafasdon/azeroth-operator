@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Flag saved Forever shortcuts whose spell IDs no longer match the captured spellbook.
+
 - Include observed names for spells added to or removed from saved Forever spellbooks.
 
 - Check captured wallet affordability for Forever copper-only reagent baskets.

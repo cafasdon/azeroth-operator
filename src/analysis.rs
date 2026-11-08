@@ -1112,9 +1112,34 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
         json!({"added_base_spell_ids":added,"removed_base_spell_ids":removed,"reported_spell_id_changes":changed,
             "added_observed_names_by_base_id":spellbook_names_for(after, &added),
             "removed_observed_names_by_base_id":spellbook_names_for(before, &removed),
+            "after_action_slots_with_lost_spellbook_match":lost_spellbook_action_matches(a, b, after),
             "observed_flag_changes":compare_spellbook_flags(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
+}
+
+fn lost_spellbook_action_matches<'a>(
+    before: &BTreeMap<u64, BTreeSet<u64>>,
+    after: &BTreeMap<u64, BTreeSet<u64>>,
+    snapshot: &'a Snapshot,
+) -> Option<BTreeMap<&'a str, u64>> {
+    let slots = snapshot.sections.get("action_bar_observation")?["slots"].as_object()?;
+    fn observed_ids(book: &BTreeMap<u64, BTreeSet<u64>>) -> BTreeSet<u64> {
+        book.iter()
+            .flat_map(|(&base, reported)| std::iter::once(base).chain(reported.iter().copied()))
+            .collect()
+    }
+    let (before, after) = (observed_ids(before), observed_ids(after));
+    Some(
+        slots
+            .iter()
+            .filter_map(|(slot, action)| {
+                let id = action["id"].as_u64()?;
+                (action["kind"] == "spell" && before.contains(&id) && !after.contains(&id))
+                    .then_some((slot.as_str(), id))
+            })
+            .collect(),
+    )
 }
 
 fn spellbook_names_for<'a>(

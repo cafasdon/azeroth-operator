@@ -466,6 +466,10 @@ on either side leaves changes unknown. Additions and removals describe the
 observed slots and do not establish permanent learning or unlearning.
 Added and removed base IDs also list any names observed on the respective
 side. Duplicate names are collapsed and differing names are retained.
+When the later capture contains action-bar observations,
+`after_action_slots_with_lost_spellbook_match` lists its spell shortcuts
+whose exact IDs appeared as base or reported IDs only in the earlier
+spellbook. This is a shortcut review cue based on the observed slots.
 
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.
