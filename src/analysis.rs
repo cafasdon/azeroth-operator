@@ -746,7 +746,11 @@ pub fn compare_observations(
     if flight_before.is_some() || flight_after.is_some() {
         comparison["flight_map_changes"] = flight_before
             .zip(flight_after)
-            .map(|(before, after)| compare_flight_maps(before, after))
+            .map(|(old_map, new_map)| {
+                let wallet =
+                    |snapshot: &Snapshot| snapshot.sections.get("wallet")?["copper"].as_u64();
+                compare_flight_maps(old_map, new_map, wallet(before).zip(wallet(after)))
+            })
             .unwrap_or(Value::Null);
     }
     let old_alerts = before
@@ -2448,7 +2452,7 @@ fn captured_flight_fare_summary(map: &Value) -> Option<Value> {
         "cheapest_destinations":cheapest}))
 }
 
-fn compare_flight_maps(before: &Value, after: &Value) -> Value {
+fn compare_flight_maps(before: &Value, after: &Value, wallets: Option<(u64, u64)>) -> Value {
     if before["map_id"] != after["map_id"] {
         return json!({"status":"different_maps"});
     }
@@ -2501,8 +2505,22 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
         .keys()
         .filter(|id| !previous.contains_key(id))
         .collect();
+    let affordability_changes = wallets.map(|(before_wallet, after_wallet)| {
+        previous.iter().filter_map(|(&id, old)| {
+            let new = current.get(&id)?;
+            if old["state"] != "reachable" || new["state"] != "reachable" {
+                return None;
+            }
+            let before_affordable = old["fare_copper"].as_u64()? <= before_wallet;
+            let after_affordable = new["fare_copper"].as_u64()? <= after_wallet;
+            (before_affordable != after_affordable).then(|| json!({
+                "node_id":id,"before_affordable":before_affordable,"after_affordable":after_affordable,
+            }))
+        }).collect::<Vec<_>>()
+    });
     json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes,
         "fare_observation_changes":fare_observation_changes,
+        "affordability_changes":affordability_changes,
         "node_ids_observed_only_before":observed_only_before,"node_ids_observed_only_after":observed_only_after})
 }
 

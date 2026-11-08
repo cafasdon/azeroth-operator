@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved flight affordability for shared reachable routes using each capture's wallet.
+
 - Find saved Forever captures by player map or its observed immediate parent.
 
 - Compare saved Forever map, Hearthstone bind name and cooldown observations.

@@ -832,6 +832,12 @@ reported separately as coverage differences. A fare difference requires
 an observed quote on both sides. Quotes that appear or become unknown
 are reported separately from price changes.
 
+For the same map and departure node, `affordability_changes` shows
+destinations whose fare fit one capture's wallet and exceeded the other.
+Each destination must be reachable and have a quoted fare in both
+captures. A missing wallet makes the list null. The list does not expose
+wallet balances.
+
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually
 exclusive with an explicit waypoint map ID. A missing captured map leaves

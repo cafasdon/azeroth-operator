@@ -703,8 +703,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "hearthstone_bind_name": "First inn",
                             "hearthstone_item_id": 6948, "hearthstone_cooldown_seconds": 30,
                         }
+                        travel["sections"]["flight_map"]["entries"]["2"]["fare_copper"] = 1
+                        travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
+                        travel["sections"]["wallet"]["copper"] = 0
                         travel["sections"]["stats"].update({
                             "map_id": 1415, "map_name": "Second map", "hearthstone_bind_name": "Second inn",
                             "hearthstone_cooldown_seconds": 0,
@@ -733,7 +736,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "before_id": travel_before, "after_id": travel_after,
                         })
                         self.assertFalse(changed_travel.isError)
-                        context = json.loads(changed_travel.content[0].text)["travel_context_change"]
+                        travel_changes = json.loads(changed_travel.content[0].text)
+                        self.assertEqual(travel_changes["flight_map_changes"]["changes"], [])
+                        self.assertEqual(travel_changes["flight_map_changes"]["affordability_changes"], [
+                            {"node_id": 14, "before_affordable": True, "after_affordable": False},
+                        ])
+                        context = travel_changes["travel_context_change"]
                         self.assertTrue(context["map_changed"])
                         self.assertTrue(context["hearthstone_bind_name_changed"])
                         self.assertFalse(context["hearthstone_item_changed"])
