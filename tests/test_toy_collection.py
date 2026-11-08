@@ -33,6 +33,16 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
             missing = copy.deepcopy(captured)
             missing["sections"].pop("toy_collection_view")
             missing_key = store.ingest(missing)
+            after = copy.deepcopy(captured)
+            after["captured_at"] = "2025-01-02T00:00:00Z"
+            view = after["sections"]["toy_collection_view"]
+            view["entries"].pop("2")
+            view["entries"]["1"].update(name="Translated", collected=False, favorite=True)
+            for item_id in (3, 10):
+                view["entries"][str(item_id)] = {"name": "New view row", "collected": True, "favorite": False}
+            view["displayed_count"] = 3
+            after_key = store.ingest(after)
+            retail_key = store.ingest(fixture())
             invalid = []
             for change in (
                 lambda x: x["client"].update(family="retail"),
@@ -67,6 +77,39 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(data["collected_toys_in_view"], collected)
                     for source in invalid:
                         self.assertTrue((await session.call_tool("inspect_snapshot", {"snapshot_id": source, "section": "toy_collection_view"})).isError)
+                    for source, item_id, observed, collected in (
+                        (key, 1, True, True), (key, 2, True, False),
+                        (key, 99, False, None), (empty_key, 1, False, None), (missing_key, 1, None, None),
+                    ):
+                        selected = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": source, "section": "toy_collection_view", "toy_item_id": item_id})
+                        self.assertFalse(selected.isError)
+                        data = json.loads(selected.content[0].text)
+                        self.assertEqual(data["observed_in_view"], observed)
+                        self.assertEqual(data["collected_in_capture"], collected)
+                    compared = await session.call_tool("compare_snapshots", {
+                        "before_id": key, "after_id": after_key, "toy_view_changes": True})
+                    self.assertFalse(compared.isError)
+                    change = json.loads(compared.content[0].text)["toy_view_changes"]
+                    self.assertEqual(change["coverage"], "filtered_journal")
+                    self.assertEqual(change["observed_only_before"], [2])
+                    self.assertEqual(change["observed_only_after"], [3, 10])
+                    self.assertEqual(change["changes"], [{"item_id": 1, "fields": {
+                        "collected": {"before": True, "after": False},
+                        "favorite": {"before": False, "after": True}}}])
+                    unknown = await session.call_tool("compare_snapshots", {
+                        "before_id": key, "after_id": missing_key, "toy_view_changes": True})
+                    self.assertIsNone(json.loads(unknown.content[0].text)["toy_view_changes"])
+                    ordinary = await session.call_tool("compare_snapshots", {"before_id": key, "after_id": after_key})
+                    self.assertNotIn("toy_view_changes", json.loads(ordinary.content[0].text))
+                    wrong_family = await session.call_tool("compare_snapshots", {
+                        "before_id": retail_key, "after_id": retail_key, "toy_view_changes": True})
+                    self.assertTrue(wrong_family.isError)
+                    for args in ({"snapshot_id": key, "toy_item_id": 1},
+                                 {"snapshot_id": key, "section": "equipment", "toy_item_id": 1},
+                                 {"snapshot_id": key, "section": "toy_collection_view", "toy_item_id": 1, "mount_id": 1},
+                                 {"snapshot_id": retail_key, "section": "toy_collection_view", "toy_item_id": 1}):
+                        self.assertTrue((await session.call_tool("inspect_snapshot", args)).isError)
 
 
 if __name__ == "__main__":

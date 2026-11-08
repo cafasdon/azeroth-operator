@@ -792,6 +792,7 @@ pub struct ComparisonSelectors {
     pub achievement_status_changes: bool,
     pub selected_recipe_changes: bool,
     pub mount_collection_changes: bool,
+    pub toy_view_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -851,6 +852,18 @@ pub fn compare_observations(
             .get("mount_collection")
             .zip(after.sections.get("mount_collection"))
             .map(|(old, new)| compare_mount_collection(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.toy_view_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Toy comparison requires Forever"
+        );
+        comparison["toy_view_changes"] = before
+            .sections
+            .get("toy_collection_view")
+            .zip(after.sections.get("toy_collection_view"))
+            .map(|(old, new)| compare_toy_views(old, new))
             .unwrap_or(Value::Null);
     }
     let skills_before = before
@@ -1835,6 +1848,44 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_toy_views(before: &Value, after: &Value) -> Value {
+    let old = before["entries"].as_object().unwrap();
+    let new = after["entries"].as_object().unwrap();
+    let ids: BTreeSet<u32> = old
+        .keys()
+        .chain(new.keys())
+        .filter_map(|key| key.parse().ok())
+        .collect();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut changes = Vec::new();
+    for id in ids {
+        match (old.get(&id.to_string()), new.get(&id.to_string())) {
+            (Some(a), Some(b)) => {
+                let fields: serde_json::Map<_, _> = ["collected", "favorite"]
+                    .into_iter()
+                    .filter(|field| a[*field] != b[*field])
+                    .map(|field| {
+                        (
+                            field.to_owned(),
+                            json!({"before":a[field],"after":b[field]}),
+                        )
+                    })
+                    .collect();
+                if !fields.is_empty() {
+                    changes.push(json!({"item_id":id,"fields":fields}));
+                }
+            }
+            (Some(_), None) => only_before.push(id),
+            (None, Some(_)) => only_after.push(id),
+            (None, None) => {}
+        }
+    }
+    json!({"coverage":"filtered_journal","observed_only_before":only_before,
+        "observed_only_after":only_after,"changes":changes,
+        "before_displayed_count":before["displayed_count"],"after_displayed_count":after["displayed_count"]})
 }
 
 fn compare_mount_collection(before: &Value, after: &Value) -> Value {

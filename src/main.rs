@@ -152,6 +152,8 @@ struct Inspect {
     achievement_id: Option<std::num::NonZeroU32>,
     /// Select a collected mount by ID. Absence does not establish non-ownership.
     mount_id: Option<std::num::NonZeroU32>,
+    /// Select one item from a captured filtered toy view; absent items have unknown collection state.
+    toy_item_id: Option<std::num::NonZeroU32>,
     /// Select one saved profession by skill line. Requires section "professions".
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
@@ -386,6 +388,9 @@ struct Compare {
     /// Compare recorded collected mount IDs and flags, without inferring gains or losses.
     #[serde(default)]
     mount_collection_changes: bool,
+    /// Compare overlapping toy-view rows without assuming equal filters or full collection coverage.
+    #[serde(default)]
+    toy_view_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1180,6 +1185,7 @@ impl Operator {
                     achievement_status_changes: args.achievement_status_changes,
                     selected_recipe_changes: args.selected_recipe_changes,
                     mount_collection_changes: args.mount_collection_changes,
+                    toy_view_changes: args.toy_view_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,
@@ -1599,6 +1605,7 @@ impl Operator {
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
                 || args.mount_id.is_some()
+                || args.toy_item_id.is_some()
                 || args.profession_skill_line.is_some()
                 || args.tracked_recipe_id.is_some()
                 || filter_spellbook
@@ -1687,6 +1694,11 @@ impl Operator {
         if args.mount_id.is_some() && args.section.as_deref() != Some("mount_collection") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Mount selection requires the mount_collection section",
+            )]);
+        }
+        if args.toy_item_id.is_some() && args.section.as_deref() != Some("toy_collection_view") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Toy selection requires the toy_collection_view section",
             )]);
         }
         if args.profession_skill_line.is_some() && args.section.as_deref() != Some("professions") {
@@ -2686,6 +2698,25 @@ impl Operator {
                         value["mount_id"] = serde_json::json!(id.get());
                         value["catalogue_count"] = section["catalogue_count"].clone();
                         value["observed_collected"] = serde_json::json!(row.map(|_| true));
+                        value["data"] = row.cloned().unwrap_or_default();
+                    }
+                } else if args.section.as_deref() == Some("toy_collection_view") {
+                    if let Some(id) = args.toy_item_id {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Toy selection requires Forever",
+                            )]);
+                        }
+                        let section = value["data"].take();
+                        let row = section["entries"].get(id.to_string());
+                        value["toy_item_id"] = serde_json::json!(id.get());
+                        value["coverage"] = section["coverage"].clone();
+                        value["displayed_count"] = section["displayed_count"].clone();
+                        value["observed_in_view"] =
+                            serde_json::json!(section.as_object().map(|_| row.is_some()));
+                        value["collected_in_capture"] = row
+                            .map(|entry| entry["collected"].clone())
+                            .unwrap_or_default();
                         value["data"] = row.cloned().unwrap_or_default();
                     }
                 } else if args.section.as_deref() == Some("professions") {

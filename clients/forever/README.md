@@ -36,6 +36,15 @@ means unavailable. The exporter never opens the panel, clears search text,
 changes filters or uses toys. Update the importer and reader before installing
 an exporter that includes this section; native qualification remains pending.
 
+Add `toy_item_id` to toy-view inspection to select an item. `observed_in_view`
+is true or false when the view was captured, and null when it was unavailable.
+`collected_in_capture` is a recorded boolean only for an observed row; absent
+items stay unknown. Set `toy_view_changes: true` in `compare_snapshots` to
+compare overlapping item IDs' collected/favourite flags. One-sided IDs are
+reported as observed only before/after, since journal filters may differ.
+Names are ignored and missing views give a null comparison. These reports
+do not establish toy acquisition, loss or full account coverage.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

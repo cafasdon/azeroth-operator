@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up toy items and compare overlapping observations in saved filtered toy-journal views.
+
 - Capture the visible filtered Forever toy-journal results, preserving partial-view scope and collected/favourite flags.
 
 - Search saved characters for a collected mount with optional recorded usability and favourite filters.
