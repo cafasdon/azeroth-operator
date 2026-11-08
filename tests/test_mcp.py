@@ -187,6 +187,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "recrafts": {"100": {}}}
                         forever["sections"]["selected_recipe"] = {"recipe_id":100,"name":"Fixture recipe","learned":True,
                             "requirements":"fixed_items","reagents":{"744":3}}
+                        forever["sections"]["flight_map"] = {"map_id": 1414, "entries": {
+                            "1": {"node_id": 12, "name": "Fixture origin", "state": "current",
+                                  "map_transition": False},
+                            "2": {"node_id": 14, "name": "Fixture destination", "state": "reachable",
+                                  "map_transition": False, "fare_copper": 0},
+                        }}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
                         SnapshotStore(Path(folder)).ingest(forever)
@@ -194,6 +200,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "character":{"name":"example","realm":"FIRST"},"limit":1})
                         filtered_data = json.loads(filtered.content[0].text)
                         self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
+                        flight = await session.call_tool("list_snapshots", {
+                            "family": "forever", "character": {"name": "example", "realm": "FIRST"},
+                            "flight_destination_node_id": 14, "limit": 1,
+                        })
+                        self.assertFalse(flight.isError)
+                        route = json.loads(flight.content[0].text)["snapshots"][0]
+                        self.assertEqual(route["snapshot_id"], forever_key)
+                        self.assertEqual(route["flight_match"], {
+                            "map_id": 1414, "origin_node_id": 12, "origin_name": "Fixture origin",
+                            "destination_node_id": 14, "destination_name": "Fixture destination",
+                            "fare_copper": 0,
+                        })
                         self.assertFalse(filtered_data["has_more"])
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
                         self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")

@@ -672,6 +672,12 @@ to the player. It covers the open flight map, so availability and fares
 can differ at another flight master. Update the importer and reader before
 syncing this section. [Forever flight map source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_FlightMap/FM_FlightPathDataProvider.lua)
 
+Use `flight_destination_node_id` with `family: "forever"` in
+`list_snapshots` to find captures with a reachable destination and an
+unambiguous origin. Results include the captured origin, destination,
+map and fare when known. The filter applies before pagination and can
+be combined with an explicit character. Routes describe past captures.
+
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters
 apply before the fare projection and preserve original row keys.

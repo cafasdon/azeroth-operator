@@ -252,6 +252,8 @@ struct List {
     instance_map_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
+    /// Find Forever captures with this reachable flight destination and an unambiguous origin.
+    flight_destination_node_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -1065,13 +1067,14 @@ impl Operator {
                     map_id: args.instance_map_id,
                 },
                 merchant_item_id: args.merchant_item_id,
+                flight_destination_node_id: args.flight_destination_node_id,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed: check the character, recipe, instance or merchant filters and limit",
+                "Snapshot listing failed: check the character, recipe, instance, merchant or flight filters and limit",
             )]),
         }
     }

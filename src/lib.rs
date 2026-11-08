@@ -275,6 +275,7 @@ pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
+    pub flight_destination_node_id: Option<std::num::NonZeroU32>,
 }
 
 impl Store {
@@ -364,7 +365,12 @@ impl Store {
             recipe: filters,
             instance,
             merchant_item_id,
+            flight_destination_node_id,
         } = query;
+        ensure!(
+            flight_destination_node_id.is_none() || family == Family::Forever,
+            "Flight filtering requires Forever"
+        );
         ensure!(
             merchant_item_id.is_none() || family == Family::Forever,
             "Merchant filtering requires Forever"
@@ -489,8 +495,17 @@ impl Store {
                     if merchant_matches == Some(0) {
                         continue;
                     }
+                    let flight_match = flight_destination_node_id.and_then(|node| {
+                        analysis::captured_flight_route(s.sections.get("flight_map")?, node.get())
+                    });
+                    if flight_destination_node_id.is_some() && flight_match.is_none() {
+                        continue;
+                    }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(route) = flight_match {
+                        summary["flight_match"] = route;
+                    }
                     if let Some(count) = merchant_matches {
                         let stats = s.sections.get("stats");
                         summary["merchant_match"] = json!({

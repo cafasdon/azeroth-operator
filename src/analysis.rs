@@ -1938,6 +1938,20 @@ fn flight_destinations(map: &Value) -> Option<(u64, BTreeMap<u64, &Value>)> {
     Some((origin?, nodes))
 }
 
+pub(crate) fn captured_flight_route(map: &Value, destination_id: u32) -> Option<Value> {
+    let (origin_id, nodes) = flight_destinations(map)?;
+    let origin = nodes.get(&origin_id)?;
+    let destination = nodes.get(&u64::from(destination_id))?;
+    if destination["state"] != "reachable" {
+        return None;
+    }
+    Some(
+        json!({"map_id":map["map_id"],"origin_node_id":origin_id,"origin_name":origin["name"],
+        "destination_node_id":destination_id,"destination_name":destination["name"],
+        "fare_copper":destination["fare_copper"]}),
+    )
+}
+
 fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     if before["map_id"] != after["map_id"] {
         return json!({"status":"different_maps"});

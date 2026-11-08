@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever departure points for a reachable flight destination.
+
 - Link saved Forever paragon rewards to captured quest-log readiness.
 
 - Summarise pending and level-restricted Forever paragon rewards.
