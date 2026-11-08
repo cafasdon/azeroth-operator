@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Check saved Forever itinerary fares against the starting capture's wallet.
+
 - Review connected Forever flight legs and total their recorded fares.
 
 - Find saved Forever flights departing from a specific captured player map.

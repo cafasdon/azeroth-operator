@@ -694,6 +694,9 @@ character and client/build. Each onward departure must match the
 previous destination. The total is unknown if any fare is missing.
 Use this without `flight_affordable_only`. Legs retain their separate
 capture times and describe historical routes.
+The review compares the total with the first capture's opt-in wallet
+and reports affordability and any copper shortfall when both are known.
+Later captures supply fares only.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an
