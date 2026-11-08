@@ -42,6 +42,12 @@ only when all such prices were captured, and a copper shortfall only
 when the opt-in wallet was captured too. It does not establish that the
 character could learn all listed lessons together.
 
+With the same section, `trainer_service_name` matches a case-insensitive
+substring and `trainer_service_status` matches `available`, `unavailable`
+or `used`. The filters combine, keep the original lesson slots and apply
+before the optional wallet calculation. Zero matches and unavailable
+trainer data are reported separately.
+
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.
 Outside an instance the observation contains only `kind: "none"`.

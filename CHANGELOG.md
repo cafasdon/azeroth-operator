@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever trainer lessons by name and status, including when budgeting.
+
 - Budget saved Forever trainer lessons marked available against the captured wallet.
 
 - Save skill and ability prerequisites for observed Forever trainer lessons.

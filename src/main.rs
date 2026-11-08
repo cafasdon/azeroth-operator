@@ -41,6 +41,10 @@ struct Inspect {
     /// Budget all lessons marked available in the saved Forever trainer list.
     #[serde(default)]
     trainer_wallet_projection: bool,
+    /// Case-insensitive substring of a saved trainer lesson name.
+    trainer_service_name: Option<String>,
+    /// Saved trainer lesson status: available, unavailable, or used.
+    trainer_service_status: Option<String>,
     /// Review a saved merchant offer by its 1-based goods-tab slot.
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
@@ -960,11 +964,24 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
-        if args.trainer_wallet_projection && args.section.as_deref() != Some("trainer_services") {
+        let trainer_name = args.trainer_service_name.as_deref().map(str::trim);
+        let trainer_status = args.trainer_service_status.as_deref();
+        let filter_trainer = trainer_name.is_some() || trainer_status.is_some();
+        let review_trainer = args.trainer_wallet_projection || filter_trainer;
+        if review_trainer && args.section.as_deref() != Some("trainer_services") {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Trainer wallet projection requires the trainer_services section",
+                "Trainer review requires the trainer_services section",
             )]);
         }
+        if trainer_name.is_some_and(|name| name.is_empty() || name.len() > 256)
+            || trainer_status
+                .is_some_and(|status| !matches!(status, "available" | "unavailable" | "used"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Invalid trainer name or status filter",
+            )]);
+        }
+        let trainer_name = trainer_name.map(str::to_lowercase);
         let merchant_search = args
             .merchant_item_id
             .map(|id| ("item_id", id))
@@ -1208,12 +1225,30 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if review_trainer && value["client"]["family"] != "forever" {
+                    return CallToolResult::error(vec![ContentBlock::text(
+                        "Trainer review requires a saved Forever snapshot",
+                    )]);
+                }
+                if filter_trainer {
+                    let count = value["data"]
+                        .get_mut("entries")
+                        .and_then(serde_json::Value::as_object_mut)
+                        .map(|entries| {
+                            entries.retain(|_, lesson| {
+                                trainer_status
+                                    .is_none_or(|status| lesson["status"].as_str() == Some(status))
+                                    && trainer_name.as_ref().is_none_or(|search| {
+                                        lesson["name"].as_str().is_some_and(|name| {
+                                            name.to_lowercase().contains(search)
+                                        })
+                                    })
+                            });
+                            entries.len()
+                        });
+                    value["trainer_match_count"] = serde_json::json!(count);
+                }
                 if args.trainer_wallet_projection {
-                    if value["client"]["family"] != "forever" {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Trainer wallet projection requires a saved Forever snapshot",
-                        )]);
-                    }
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Could not read the captured trainer wallet context",
