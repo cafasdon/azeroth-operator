@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from hashlib import sha256
 from itertools import product
 import json
 import logging
@@ -269,6 +270,13 @@ def tradeoff_reviews(rows, score_for):
     ]
 
 
+def encounter_key(request):
+    return json.dumps(
+        (request["encounter"], request["simOptions"]),
+        sort_keys=True, separators=(",", ":"), allow_nan=False,
+    )
+
+
 def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     tank_ranking = args.rank_by in ("dtps", "tps", "death")
@@ -285,6 +293,17 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
         result = fixed if fixed is not None else compare(
             args.engine, args.engine_sha256, requests, paired=args.paired,
             tank_metrics=tank_ranking, healing_metrics=healing_ranking)
+    baseline_request = requests[0]
+    profile = baseline_request["encounter"]
+    result.update(
+        encounter_settings_sha256=sha256(encounter_key(baseline_request).encode()).hexdigest(),
+        duration_seconds=profile["duration"],
+        duration_variation_seconds=profile["durationVariation"],
+        target_count=len(profile["targets"]),
+        execute_proportion_20=profile["executeProportion20"],
+        execute_proportion_35=profile["executeProportion35"],
+        requested_iterations=baseline_request["simOptions"]["iterations"],
+    )
     if audit is not None:
         audit["fixed_wall_seconds"] = after_fixed - start
         audit["staged_wall_seconds"] = staged_wall
@@ -433,10 +452,7 @@ def main():
             keys = []
             for encounter in encounters:
                 request = request_from(template, drafts[0][1], encounter)
-                keys.append(json.dumps(
-                    (request["encounter"], request["simOptions"]),
-                    sort_keys=True, separators=(",", ":"), allow_nan=False,
-                ))
+                keys.append(encounter_key(request))
             rankings = []
             simulated = {}
             for index, (encounter, key) in enumerate(zip(encounters, keys, strict=True), 1):
@@ -446,13 +462,7 @@ def main():
                     simulated[key] = index
                 else:
                     ranking = {**rankings[previous - 1], "reused_encounter_index": previous}
-                profile = encounter["simulation_input"]["encounter"]
-                ranking.update(
-                    encounter_index=index,
-                    duration_seconds=profile["duration"],
-                    duration_variation_seconds=profile["durationVariation"],
-                    target_count=len(profile["targets"]),
-                )
+                ranking["encounter_index"] = index
                 rankings.append(ranking)
             result = {"encounters": rankings}
             if weights is not None:

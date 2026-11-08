@@ -632,6 +632,12 @@ The encounter's
 requested iteration count and the fixed mode's aggregate iteration cap apply
 to fixed mode, including the fallback when every set matches the baseline.
 
+Each ranking reports duration, duration variation, target count, execute
+windows and the requested iteration count. Adaptive runs report actual
+stage iterations separately. `encounter_settings_sha256` fingerprints the
+validated encounter and simulator options, including target inputs and seed.
+It excludes character, gear and template data.
+
 Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
 separately for each encounter. Output uses an `encounters` array in input order,
 with a one-based encounter index, duration, duration variation and target count.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report encounter settings and a reproducibility fingerprint in local Forever gear rankings.
+
 - Carry projected Forever weapon skills into local encounter and weighted gear rankings.
 
 - Show captured Forever weapon skills for the projected equipment in a gear draft.
