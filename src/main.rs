@@ -38,6 +38,9 @@ struct Inspect {
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
+    /// Budget all lessons marked available in the saved Forever trainer list.
+    #[serde(default)]
+    trainer_wallet_projection: bool,
     /// Review a saved merchant offer by its 1-based goods-tab slot.
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
@@ -957,6 +960,11 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.trainer_wallet_projection && args.section.as_deref() != Some("trainer_services") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Trainer wallet projection requires the trainer_services section",
+            )]);
+        }
         let merchant_search = args
             .merchant_item_id
             .map(|id| ("item_id", id))
@@ -1200,6 +1208,23 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if args.trainer_wallet_projection {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Trainer wallet projection requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured trainer wallet context",
+                        )]);
+                    };
+                    value["trainer_wallet_projection"] =
+                        azeroth_operator::analysis::trainer_wallet_projection(
+                            &value["data"],
+                            snapshot.sections.get("wallet"),
+                        );
+                }
                 if let Some((field, id)) = merchant_search {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget saved Forever trainer lessons marked available against the captured wallet.
+
 - Save skill and ability prerequisites for observed Forever trainer lessons.
 
 - Capture the open Forever trainer's lesson status, requirements and copper prices.

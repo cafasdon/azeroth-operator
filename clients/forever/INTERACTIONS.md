@@ -35,6 +35,13 @@ and prerequisite ability names, along with the game's recorded met flags.
 An empty ability list means the trainer reported zero prerequisites of
 that type. Missing detail remains unknown.
 
+Set `trainer_wallet_projection: true` with `section: "trainer_services"`
+in `inspect_snapshot` to budget lessons the trainer marked available.
+The review reports the known-price subtotal. It reports a full total
+only when all such prices were captured, and a copper shortfall only
+when the opt-in wallet was captured too. It does not establish that the
+character could learn all listed lessons together.
+
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.
 Outside an instance the observation contains only `kind: "none"`.

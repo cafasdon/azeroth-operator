@@ -1385,6 +1385,35 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes})
 }
 
+pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
+    let Some(entries) = trainer["entries"].as_object() else {
+        return Value::Null;
+    };
+    let mut available = 0;
+    let mut unknown_prices = 0;
+    let mut subtotal = 0u64;
+    for lesson in entries
+        .values()
+        .filter(|lesson| lesson["status"] == "available")
+    {
+        available += 1;
+        if let Some(price) = lesson["price_copper"].as_u64() {
+            subtotal += price;
+        } else {
+            unknown_prices += 1;
+        }
+    }
+    let total = (unknown_prices == 0).then_some(subtotal);
+    let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
+    json!({
+        "available_lessons":available,
+        "lessons_with_unknown_price":unknown_prices,
+        "known_price_subtotal_copper":subtotal,
+        "total_price_copper":total,
+        "wallet_shortfall_copper":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
+    })
+}
+
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {
     ensure!((1..=1000).contains(&bundles), "Invalid bundle count");
     let bundles = u64::from(bundles);
