@@ -339,6 +339,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("map_min_level", "positive", false),
                     ("map_max_level", "positive", false),
                     ("new_mail_indicator", "bool", false),
+                    ("hearthstone_bind_name", "text", false),
                     ("client_version", "text", true),
                 ],
             )?;

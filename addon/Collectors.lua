@@ -226,6 +226,10 @@ AO.collectors.stats = function()
     end
     if AO.family == "forever" then
         local function accessible(value) return not issecretvalue or not issecretvalue(value) end
+        local bound,location=pcall(GetBindLocation)
+        if bound and accessible(location) and type(location)=="string" and #location>0 and #location<=256 then
+            stats.hearthstone_bind_name=location
+        end
         local observed,mail=pcall(HasNewMail)
         if observed and accessible(mail) and (mail==nil or type(mail)=="boolean" or mail==1) then
             stats.new_mail_indicator=mail==true or mail==1

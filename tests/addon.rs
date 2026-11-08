@@ -402,6 +402,7 @@ pub fn verify_forever_capture_fixture(
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
         function HasNewMail() return fixtureNewMail end
+        function GetBindLocation() return fixtureBindName or "Fixture Inn" end
         function GetInstanceInfo() return "Fixture Dungeon",fixtureInstanceKind or "party",1,"Normal",5,nil,nil,123 end
         fixtureLockDialog={IsVisible=function() return fixtureLockVisible end}
         function StaticPopup_FindVisible(key) assert(key=="INSTANCE_LOCK"); return fixtureLockVisible and fixtureLockDialog end
@@ -835,6 +836,14 @@ pub fn verify_forever_capture_fixture(
     );
     lua.load("fixtureLockVisible=false").exec()?;
     assert_eq!(summary["new_mail_indicator"], true);
+    assert_eq!(summary["hearthstone_bind_name"], "Fixture Inn");
+    lua.load("fixtureBindName='';AO.Capture()").exec()?;
+    assert!(
+        read()?.sections["stats"]
+            .get("hearthstone_bind_name")
+            .is_none()
+    );
+    lua.load("fixtureBindName=nil").exec()?;
     lua.load("fixtureNewMail=nil;AO.Capture()").exec()?;
     assert_eq!(read()?.sections["stats"]["new_mail_indicator"], false);
     lua.load("HasNewMail=nil;AO.Capture()").exec()?;

@@ -60,6 +60,11 @@ clear indicator can coexist with mail in the inbox. The export reads
 only the indicator and leaves senders, messages and attachments private.
 Update the importer and reader before syncing new captures. [Minimap mail source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_Minimap/Mainline/Minimap.lua)
 
+`hearthstone_bind_name` in `stats` and `character_summary` is the
+client's localized bind-location name at export time. It carries no
+coordinates, item availability or cooldown information. Update the
+importer and reader before syncing new captures. [Forever bind-location usage](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
+
 `bag_capacity` records total and free slots per carried bag, including the
 backpack, with the game-reported bag family when available.
 `character_summary` reports combined capacity, free slots and free slots

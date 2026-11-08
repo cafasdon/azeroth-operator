@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report the captured Forever Hearthstone bind location for offline travel planning.
+
 - Save the encounter names and defeat flags available from the visible Forever instance-lock warning.
 
 - Capture the visible Forever instance-lock warning timer and encounter counts.

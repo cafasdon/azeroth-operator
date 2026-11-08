@@ -125,6 +125,17 @@ impl Snapshot {
         );
         for (name, value) in &self.sections {
             if name == "stats"
+                && let Some(location) = value.get("hearthstone_bind_name")
+            {
+                ensure!(
+                    self.client.family == Family::Forever
+                        && location
+                            .as_str()
+                            .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid Forever Hearthstone bind name"
+                );
+            }
+            if name == "stats"
                 && let Some(indicator) = value.get("new_mail_indicator")
             {
                 ensure!(

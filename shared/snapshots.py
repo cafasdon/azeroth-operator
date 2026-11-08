@@ -30,6 +30,10 @@ def validate_snapshot(value):
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
     stats = sections.get("stats")
+    if isinstance(stats, dict) and "hearthstone_bind_name" in stats:
+        location = stats["hearthstone_bind_name"]
+        if c["family"] != "forever" or not isinstance(location, str) or not 1 <= len(location.encode()) <= 256:
+            raise ValueError("Invalid Forever Hearthstone bind name")
     if isinstance(stats, dict) and "new_mail_indicator" in stats:
         if c["family"] != "forever" or type(stats["new_mail_indicator"]) is not bool:
             raise ValueError("Invalid Forever new mail indicator")
