@@ -21,6 +21,7 @@ SECTIONS = SECTIONS | {"weapon_enchants"}
 SECTIONS = SECTIONS | {"pet_action_bar"}
 SECTIONS = SECTIONS | {"player_resources"}
 SECTIONS = SECTIONS | {"profession_spells"}
+SECTIONS = SECTIONS | {"profession_recipe_materials"}
 SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
@@ -531,6 +532,45 @@ def validate_snapshot(value):
                             or not (1 if field=="enchant_id" else 0)<=row[field]<=4_294_967_295
                             for field in ("enchant_id","charges","remaining_milliseconds") if field in row)):
                     raise ValueError("Invalid weapon enchant observation")
+    if "profession_recipe_materials" in sections:
+        materials = sections["profession_recipe_materials"]
+        def material_uint(value):
+            return type(value) is int and 1 <= value <= 4_294_967_295
+        def material_id(value):
+            return (isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{0,9}", value)
+                    and int(value) <= 4_294_967_295)
+        if (c["family"] != "forever" or not isinstance(materials, dict)
+                or set(materials) != {"coverage", "profession_id", "entries"}
+                or materials["coverage"] != "reported_known_spell_schematics"
+                or not material_uint(materials["profession_id"])
+                or not isinstance(materials["entries"], dict) or len(materials["entries"]) > 4096):
+            raise ValueError("Invalid profession recipe materials")
+        retained = 0
+        for key, row in materials["entries"].items():
+            if not material_id(key) or not isinstance(row, dict):
+                raise ValueError("Invalid recipe material row")
+            if row.get("status") != "fixed_items":
+                if (set(row) != {"status"} or row["status"] not in
+                        ("unavailable", "unsupported_required_slots", "budget_exhausted")):
+                    raise ValueError("Invalid recipe material status")
+                continue
+            if (not {"status", "reagents"} <= set(row)
+                    or set(row) - {"status", "reagents", "output_item_id", "base_output_quantity"}
+                    or not isinstance(row["reagents"], dict) or len(row["reagents"]) > 64
+                    or any(not material_id(item) or not material_uint(quantity)
+                           for item, quantity in row["reagents"].items())
+                    or ("output_item_id" in row and not material_uint(row["output_item_id"]))):
+                raise ValueError("Invalid recipe material details")
+            retained += len(row["reagents"])
+            if retained > 16384:
+                raise ValueError("Recipe material budget exceeded")
+            if "base_output_quantity" in row:
+                quantity = row["base_output_quantity"]
+                if (not isinstance(quantity, dict) or set(quantity) != {"minimum", "maximum"}
+                        or not material_uint(row.get("output_item_id"))
+                        or not material_uint(quantity["minimum"]) or not material_uint(quantity["maximum"])
+                        or quantity["minimum"] > quantity["maximum"]):
+                    raise ValueError("Invalid recipe material output range")
     if "profession_spells" in sections:
         spells=sections["profession_spells"]
         if (c["family"]!="forever" or not isinstance(spells,dict) or set(spells)!={"coverage","profession_id","entries"}

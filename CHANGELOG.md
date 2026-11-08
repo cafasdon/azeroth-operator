@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture bulk read-only profession recipe materials and output ranges, with
+  per-recipe unknown/unsupported/budget states and strict local MCP inspection.
+
 - Add same-capture buyback quote cost review with wallet reserves, partial-price
   lower bounds and explicit unknowns, without purchase actions.
 

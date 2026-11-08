@@ -1,5 +1,14 @@
 # Forever interaction map
 
+Bulk profession material capture observes the visible local profession's
+reported known spell IDs without selecting recipes or changing filters.
+`profession_recipe_materials` retains fixed item quantities and optional output
+ranges, or an unavailable/unsupported/budget state per ID. IDs are processed in
+numeric order; at most 16,384 reagent pairs are retained across at most 4,096
+rows. Missing data is not a known-empty material list. Existing selected-recipe
+plans do not yet consume this section. Native availability, responsiveness,
+complete recipe knowledge and craftability remain unverified.
+
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
 Saved buyback quote review can compare selected whole-entry quotes with the same

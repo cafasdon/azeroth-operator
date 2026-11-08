@@ -4728,6 +4728,15 @@ pub fn summary(s: &Snapshot) -> Value {
         json!({"coverage":section["coverage"],"helpful":describe(section["groups"].get("helpful")),
             "harmful":describe(section["groups"].get("harmful")),"effectiveness_verified":false,"cast_eligibility_verified":false})
     }).unwrap_or(Value::Null);
+    summary["profession_recipe_material_observations"] = s.sections.get("profession_recipe_materials").map(|section| {
+        let rows=section["entries"].as_object().unwrap();
+        let count=|status: &str| rows.values().filter(|row|row["status"]==status).count();
+        json!({"coverage":section["coverage"],"profession_id":section["profession_id"],
+            "reported_spell_count":rows.len(),"fixed_item_recipe_count":count("fixed_items"),
+            "unavailable_recipe_count":count("unavailable"),"unsupported_recipe_count":count("unsupported_required_slots"),
+            "budget_exhausted_recipe_count":count("budget_exhausted"),
+            "complete_recipe_knowledge_verified":false,"craftability_verified":false})
+    }).unwrap_or(Value::Null);
     summary["profession_spell_observations"] = s.sections.get("profession_spells").map(|section| {
         let mut ids: Vec<_>=section["entries"].as_object().unwrap().keys().map(|key|key.parse::<u32>().unwrap()).collect();
         ids.sort_unstable();

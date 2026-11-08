@@ -262,6 +262,73 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "profession_recipe_materials" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("profession_id", "positive", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "reported_known_spell_schematics",
+                "Invalid recipe material coverage"
+            );
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(rows.len() <= 4096, "Too many recipe material rows");
+            let mut retained = 0usize;
+            for (id, row) in rows {
+                index(id, 1, u32::MAX)?;
+                if row["status"] != "fixed_items" {
+                    object(row, &[("status", "text", true)])?;
+                    ensure!(
+                        matches!(
+                            row["status"].as_str(),
+                            Some("unavailable" | "unsupported_required_slots" | "budget_exhausted")
+                        ),
+                        "Invalid recipe material status"
+                    );
+                    continue;
+                }
+                object(
+                    row,
+                    &[
+                        ("status", "text", true),
+                        ("reagents", "map", true),
+                        ("output_item_id", "positive", false),
+                        ("base_output_quantity", "map", false),
+                    ],
+                )?;
+                let reagents = row["reagents"].as_object().unwrap();
+                ensure!(reagents.len() <= 64, "Too many recipe reagents");
+                retained += reagents.len();
+                ensure!(retained <= 16384, "Recipe material budget exceeded");
+                for (item, quantity) in reagents {
+                    index(item, 1, u32::MAX)?;
+                    ensure!(
+                        quantity
+                            .as_u64()
+                            .is_some_and(|n| (1..=u32::MAX as u64).contains(&n)),
+                        "Invalid recipe material quantity"
+                    );
+                }
+                if let Some(output) = row.get("output_item_id") {
+                    ensure!(!output.is_null(), "Null recipe output");
+                }
+                if let Some(quantity) = row.get("base_output_quantity") {
+                    object(
+                        quantity,
+                        &[("minimum", "positive", true), ("maximum", "positive", true)],
+                    )?;
+                    ensure!(
+                        row["output_item_id"].as_u64().is_some()
+                            && quantity["minimum"].as_u64() <= quantity["maximum"].as_u64(),
+                        "Invalid recipe material output range"
+                    );
+                }
+            }
+        }
         "profession_spells" => {
             object(
                 value,

@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can record bulk fixed-item material observations for the
+visible local profession's reported known spell IDs. Inspect
+`profession_recipe_materials` or its summary. Unreadable recipes, unsupported
+required slots and the retained-material budget remain explicit. This does not
+yet feed the selected-recipe crafting planner or establish craftability.
+Native availability and responsiveness remain unqualified.
+[Offline evidence](docs/profession-recipe-materials-verification-2026-11-08.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

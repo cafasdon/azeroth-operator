@@ -1219,6 +1219,103 @@ AO.collectors.tracked_recipes = function()
     return {coverage="player_tracked_recipes_only",crafts=read(false),recrafts=read(true)}
 end
 
+AO.collectors.profession_recipe_materials = function()
+    local api=C_TradeSkillUI
+    assert(api and api.GetRecipeInfo and api.GetRecipeSchematic and Enum and Enum.TradeskillRecipeType,
+        "Recipe material APIs unavailable")
+    local before=AO.collectors.profession_spells()
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted recipe materials")
+        return value
+    end
+    local function positive(value)
+        value=public(value)
+        return type(value)=="number" and value%1==0 and value>=1 and value<=4294967295
+    end
+    local function array(value,maximum)
+        value=public(value)
+        assert(type(value)=="table" and #value<=maximum, "Recipe material array unavailable")
+        local count=0
+        for key in pairs(value) do
+            assert(positive(key) and key<=#value, "Sparse recipe material array")
+            count=count+1
+        end
+        assert(count==#value, "Incomplete recipe material array")
+        return value
+    end
+    local function read(id)
+        local info=public(api.GetRecipeInfo(id))
+        assert(type(info)=="table" and public(info.recipeID)==id and public(info.learned)==true,
+            "Known recipe unavailable")
+        local schematic=public(api.GetRecipeSchematic(id,false))
+        assert(type(schematic)=="table" and public(schematic.recipeID)==id
+            and public(schematic.isRecraft)==false, "Recipe schematic unavailable")
+        local kind=public(schematic.recipeType)
+        assert(type(kind)=="number" and (kind==Enum.TradeskillRecipeType.Item or kind==Enum.TradeskillRecipeType.Enchant),
+            "Unsupported recipe type")
+        local row={status="fixed_items",reagents={}}
+        for _,slot in ipairs(array(schematic.reagentSlotSchematics,64)) do
+            slot=public(slot)
+            assert(type(slot)=="table" and type(public(slot.required))=="boolean", "Recipe slot unavailable")
+            if slot.required then
+                local choices=array(slot.reagents,64)
+                local variable=array(slot.variableQuantities,64)
+                if #choices~=1 or #variable~=0 then return {status="unsupported_required_slots"} end
+                local item=public(choices[1])
+                assert(type(item)=="table", "Recipe reagent unavailable")
+                local itemID,currency,quantity=public(item.itemID),public(item.currencyID),public(slot.quantityRequired)
+                if currency~=nil then return {status="unsupported_required_slots"} end
+                assert(positive(itemID) and positive(quantity), "Invalid recipe reagent")
+                local key=tostring(itemID)
+                local total=(row.reagents[key] or 0)+quantity
+                assert(positive(total), "Recipe material quantity exceeds limit")
+                row.reagents[key]=total
+            end
+        end
+        local output=public(schematic.outputItemID)
+        if output~=nil then
+            assert(positive(output), "Invalid recipe output")
+            row.output_item_id=output
+        end
+        if kind==Enum.TradeskillRecipeType.Item and output then
+            local minimum,maximum=public(schematic.quantityMin),public(schematic.quantityMax)
+            if minimum~=nil or maximum~=nil then
+                assert(positive(minimum) and positive(maximum) and minimum<=maximum, "Invalid recipe output range")
+                row.base_output_quantity={minimum=minimum,maximum=maximum}
+            end
+        end
+        return row
+    end
+    local function equal(a,b)
+        if type(a)~=type(b) then return false end
+        if type(a)~="table" then return a==b end
+        for key,value in pairs(a) do if not equal(value,b[key]) then return false end end
+        for key in pairs(b) do if a[key]==nil then return false end end
+        return true
+    end
+    local ids={}
+    for key in pairs(before.entries) do ids[#ids+1]=tonumber(key) end
+    table.sort(ids)
+    local entries,retained={},0
+    for _,id in ipairs(ids) do
+        local ok,first=pcall(read,id)
+        local secondOk,second=pcall(read,id)
+        local row={status="unavailable"}
+        if ok and secondOk and equal(first,second) then
+            row=first
+            local count=0
+            for _ in pairs(row.reagents or {}) do count=count+1 end
+            if retained+count>16384 then row={status="budget_exhausted"}
+            else retained=retained+count end
+        end
+        entries[tostring(id)]=row
+    end
+    local after=AO.collectors.profession_spells()
+    assert(before.profession_id==after.profession_id and equal(before.entries,after.entries),
+        "Recipe material context changed")
+    return {coverage="reported_known_spell_schematics",profession_id=before.profession_id,entries=entries}
+end
+
 AO.collectors.selected_recipe = function()
     local page=ProfessionsFrame and ProfessionsFrame.CraftingPage
     local form=page and page.SchematicForm
