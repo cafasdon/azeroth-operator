@@ -6,6 +6,24 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Execute a saved gear journal page offline
 
+For execution across pages and a combined observed ranking, use
+`python -m tools.run_forever_saved_journal --help`. It takes the same trusted
+MCP/template/encounter/pinned-engine/private-checkpoint inputs, plus `--top`
+(1–20, default ten) and `--max-pages` (1–1,000,000, default 64). Page size defaults
+to eight windows. New-run, iteration and time budgets are shared across pages
+and encounters. Repeat the same invocation to resume; it starts from the
+beginning, revalidates saved work and reuses numeric checkpoints. It does not
+accept a cursor that could silently skip earlier pages in the combined ranking.
+
+`all_saved_resolved_results_complete` covers all resolved requests in the saved
+journal only. `ranking_scope` says either `all_saved_resolved_requests` or
+`completed_pages_only`. Ranked gear hashes include a saved window offset and
+local review reference for inspection. Missing coordinates, unresolved items
+and unknown ownership/model coverage remain limitations; all verified global
+ranking, feasible-set and BiS flags remain false. This is a ranking of observed
+weighted DPS point estimates, not a statistical optimality guarantee. See
+[ADR 018](../../docs/ADR-018-saved-journal-ranking.md).
+
 `python -m tools.run_forever_journal_page --help` exposes the same trusted MCP,
 template, encounter, pinned engine and private simulation-journal arguments as
 the saved-window encounter executor. It selects the next saved window starts

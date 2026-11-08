@@ -1,5 +1,9 @@
 # Changelog
 
+- Execute saved journal pages under shared budgets and combine their completed
+  weighted DPS results into a bounded distinct-gear ranking; revalidate journal
+  content and cross-page model/baseline identity before reporting completeness.
+
 - Run saved gear journals by bounded indexed pages, with explicit continuation
   cursors, same-page retry for incomplete work, shared encounter budgets and
   selection drift checks; keep prior-page and global ranking claims false.

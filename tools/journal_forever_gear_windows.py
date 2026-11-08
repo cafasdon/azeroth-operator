@@ -147,9 +147,11 @@ def journal_status(path, deadline=None):
         cursor = covered = count = gap_count = 0
         gaps = []
         accounting = empty_accounting()
+        content = hashlib.sha256()
         for row in connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows ORDER BY start_key'):
             require(monotonic() <= deadline)
             report, current = checked_row(row)
+            content.update(encoded([row[0], row[1], row[3]]) + b'\n')
             for field in ACCOUNTING_FIELDS:
                 accounting[field] += current['resolution_accounting'][field]
             if anchor is None:
@@ -177,6 +179,7 @@ def journal_status(path, deadline=None):
                    if summary and 'collection_binding_sha256' in summary else {}),
                 'scope_sha256': summary['scope_sha256'] if summary else None,
                 'window_count': count, 'covered_coordinate_count': covered,
+                'journal_content_sha256': content.hexdigest(),
                 'equipment_specs_retained': summary['equipment_specs_retained'] if summary else None,
                 'resolution_accounting': accounting,
                 'total_combinations_decimal': str(total) if total is not None else None,

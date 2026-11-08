@@ -4,6 +4,7 @@ import asyncio
 from copy import copy
 import hashlib
 from pathlib import Path
+from math import isfinite
 from time import monotonic
 
 from tools import journal_forever_gear_windows as journal
@@ -51,7 +52,7 @@ def select_page(path, after, limit, deadline):
         connection.close()
 
 
-async def execute(args):
+async def execute(args, *, deadline=None):
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.max_new_runs, 1, 128)
     integer(args.iteration_budget, 1, 100000)
@@ -59,7 +60,9 @@ async def execute(args):
     require(1 <= len(args.encounter_lookup) <= 8)
     encounters.normalise_weights(args.encounter_weight, len(args.encounter_lookup))
     digest(args.engine_sha256.lower())
-    deadline = monotonic() + args.time_budget_seconds
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+    deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     selected = select_page(args.journal, args.after_window_offset, args.page_limit, deadline)
     offsets = [int(value) for value in selected['selected_window_offsets_decimal']]
     result = None

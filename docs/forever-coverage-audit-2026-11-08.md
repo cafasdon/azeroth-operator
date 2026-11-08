@@ -155,3 +155,11 @@ with partial-page retries using existing checkpoints. It supports processing
 larger journals without manual offset lists, while leaving past-page/global
 ranking and full owned BiS unverified. Automatic invocation scheduling and
 global result aggregation are still unfinished.
+
+The [saved-journal ranking increment](saved-journal-ranking-verification-2026-11-09.md)
+subsequently traverses pages automatically and combines their completed weighted
+DPS observations into bounded distinct-gear leaders. It distinguishes all saved
+resolved requests from completed-page observations and revalidates source and
+cross-page model identity. Repeated invocations reuse checkpoints. Full owned
+inventory, feasible sets, model/encounter qualification and absolute owned BiS
+remain unfinished; cached numerical results alone cannot establish them.

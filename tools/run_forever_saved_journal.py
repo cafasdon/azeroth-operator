@@ -1,0 +1,159 @@
+"""Execute saved journal pages and rank completed gear across a stable journal."""
+import argparse
+import asyncio
+from copy import copy
+from math import isfinite
+from pathlib import Path
+from time import monotonic
+
+from tools import journal_forever_gear_windows as journal
+from tools import run_forever_journal_page as pages
+from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, require
+from tools.prepare_forever_gear_window import encoded
+
+
+async def execute(args):
+    integer(args.max_pages, 1, 1000000)
+    integer(args.top, 1, 20)
+    integer(args.page_limit, 1, 64)
+    integer(args.time_budget_seconds, 1, 3600)
+    integer(args.max_new_runs, 1, 128)
+    integer(args.iteration_budget, 1, 100000)
+    integer(args.simulation_journal_mib, 1, 512)
+    require(1 <= len(args.encounter_lookup) <= 8)
+    weights = pages.encounters.normalise_weights(args.encounter_weight, len(args.encounter_lookup))
+    digest(args.engine_sha256.lower())
+    deadline = monotonic() + args.time_budget_seconds
+    source = journal.journal_status(args.journal, deadline=deadline)
+    require(not source['window_count'] or source['equipment_specs_retained'] is True)
+    cursor = None
+    leaders, contexts, baselines = {}, {}, {}
+    baseline_gear = None
+    visited = completed = new_runs = new_iterations = hits = 0
+    page_count = 0
+    progress = []
+    stop = 'no_saved_work' if source['window_count'] == 0 else 'page_budget'
+    exhausted = False
+    for _ in range(args.max_pages if source['window_count'] else 0):
+        if monotonic() >= deadline:
+            stop = 'time_budget'
+            break
+        options = copy(args)
+        options.after_window_offset = cursor
+        options.max_new_runs = max(1, args.max_new_runs - new_runs)
+        options.iteration_budget = max(1, args.iteration_budget - new_iterations)
+        options.checkpoint_only = (getattr(args, 'checkpoint_only', False)
+            or new_runs >= args.max_new_runs or new_iterations >= args.iteration_budget)
+        page = await pages.execute(options, deadline=deadline)
+        selected = page['journal_page']
+        count = selected['selected_window_count']
+        require(count > 0)
+        visited += count
+        page_count += 1
+        comparison = page['encounter_comparison']
+        require(comparison['encounter_weights'] == weights)
+        new_runs += comparison['new_runs']
+        new_iterations += comparison['new_iterations']
+        hits += comparison['checkpoint_hits']
+        require(new_runs <= args.max_new_runs and new_iterations <= args.iteration_budget)
+        profiles = comparison['profiles']
+        for profile in profiles:
+            index, result = profile['encounter_index'], profile['result']
+            coverage = result['search_coverage']
+            require(coverage['snapshot_id'] == source['snapshot_id'] and coverage['scope_sha256'] == source['scope_sha256'])
+            signature = {'engine': result['engine_sha256'], 'profile': result['simulation_profile_sha256'],
+                'fingerprints': result['fingerprints'], 'settings': result['encounter_settings']}
+            require(index not in contexts or contexts[index] == signature)
+            contexts[index] = signature
+            baseline = next((row for row in result['results'] if row['review'] == 1), None)
+            if baseline is not None:
+                identity = {key: baseline[key] for key in ['simulator_gear_sha256', 'request_sha256',
+                    'iterations', 'seed', 'mean_dps', 'dps_standard_deviation']}
+                require(index not in baselines or baselines[index] == identity)
+                baselines[index] = identity
+                require(baseline_gear is None or baseline_gear == baseline['simulator_gear_sha256'])
+                baseline_gear = baseline['simulator_gear_sha256']
+        if len(progress) < 64:
+            progress.append({'after_window_offset_decimal': str(cursor) if cursor is not None else None,
+                'selected_window_count': count, 'page_status': page['page_status'],
+                'weighted_status': comparison['weighted_status']})
+        if not selected['page_results_complete']:
+            stop = 'incomplete_page'
+            break
+        completed += count
+        if comparison['weighted_status'] != 'complete_for_selected_resolved_requests':
+            stop = comparison['weighted_status']
+            break
+        first = {row['review']: row for row in profiles[0]['result']['results']}
+        metrics = [{row['review']: row for row in profile['result']['results']} for profile in profiles]
+        for weighted in comparison['weighted_ranking']['results']:
+            review = weighted['review']
+            gear = digest(weighted['simulator_gear_sha256'])
+            score = weighted['weighted_dps_gain_pct']
+            require(type(score) in (int, float) and isfinite(score))
+            reference = first[review]['references'][0]
+            row = {'simulator_gear_sha256': gear, 'weighted_dps_gain_pct': score,
+                'mean_dps_by_encounter': [rows[review]['mean_dps'] for rows in metrics],
+                'gain_pct_by_encounter': [100 * rows[review]['mean_dps_delta_from_baseline'] / rows[1]['mean_dps'] for rows in metrics],
+                'source_window_offset_decimal': selected['selected_window_offsets_decimal'][reference['window_index'] - 1],
+                'source_window_review': reference['review']}
+            if gear in leaders:
+                require(all(leaders[gear][field] == row[field] for field in
+                    ['weighted_dps_gain_pct', 'mean_dps_by_encounter', 'gain_pct_by_encounter']))
+            else:
+                leaders[gear] = row
+            leaders = dict(sorted(leaders.items(), key=lambda item: (-item[1]['weighted_dps_gain_pct'], item[0]))[:args.top])
+        next_cursor = selected['resume_after_window_offset_decimal']
+        if next_cursor is None:
+            exhausted = True
+            stop = 'all_saved_resolved_results_complete'
+            break
+        next_cursor = int(next_cursor)
+        require(cursor is None or next_cursor > cursor)
+        cursor = next_cursor
+    current = journal.journal_status(args.journal, deadline=deadline + 5)
+    require(current == source and monotonic() <= deadline + 5)
+    complete = exhausted and completed == source['window_count'] and completed > 0
+    report = {'mode': 'saved_journal_simulation', 'journal_coverage': source,
+        'all_saved_resolved_results_complete': complete, 'ranking_scope':
+            'all_saved_resolved_requests' if complete else 'completed_pages_only',
+        'ranking_basis': 'weighted_dps_point_estimates_not_statistical_optimality',
+        'encounter_weights': weights, 'baseline_simulator_gear_sha256': baseline_gear,
+        'ranked_gear_sets': list(leaders.values()), 'top_limit': args.top,
+        'visited_window_count': visited, 'completed_window_count': completed, 'visited_page_count': page_count,
+        'page_progress': progress, 'page_progress_truncated': page_count > len(progress),
+        'stop_reason': stop, 'restart_from_beginning_for_ranking': not complete,
+        'new_runs': new_runs, 'new_iterations': new_iterations, 'checkpoint_hits': hits,
+        'simulation_performed': new_runs > 0, 'global_ranking_verified': False,
+        'best_in_slot_verified': False, 'feasible_set_coverage_verified': False, 'game_execution': False}
+    require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
+    return report
+
+
+def main(argv=None):
+    cli = argparse.ArgumentParser(description=__doc__)
+    for name in ['mcp', 'journal', 'template', 'engine', 'simulation-journal']:
+        cli.add_argument('--' + name, type=Path, required=True)
+    cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
+    cli.add_argument('--encounter-weight', type=float, action='append')
+    cli.add_argument('--engine-sha256', required=True)
+    cli.add_argument('--page-limit', type=int, default=8)
+    cli.add_argument('--max-pages', type=int, default=64)
+    cli.add_argument('--top', type=int, default=10)
+    cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--checkpoint-only', action='store_true')
+    cli.add_argument('--max-new-runs', type=int, default=16)
+    cli.add_argument('--iteration-budget', type=int, default=100000)
+    cli.add_argument('--time-budget-seconds', type=int, default=180)
+    cli.add_argument('--simulation-journal-mib', type=int, default=64)
+    args = cli.parse_args(argv)
+    try:
+        print(encoded(asyncio.run(execute(args))).decode())
+    except KeyboardInterrupt:
+        cli.exit(130, 'Saved journal execution interrupted; numeric checkpoints remain available.\n')
+    except Exception:
+        cli.exit(1, 'Saved journal execution stopped: invalid, changed, unsupported or over-budget local inputs; numeric checkpoints remain available.\n')
+
+
+if __name__ == '__main__':
+    main()

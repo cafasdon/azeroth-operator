@@ -16,6 +16,22 @@ import tools.journal_forever_gear_windows as journal
 
 
 class GearWindowJournalTests(unittest.TestCase):
+    def test_content_identity_binds_report_bytes_beyond_coverage_metadata(self):
+        value = report(0, ['b' * 64])
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'identity.sqlite'
+            append_report(path,value)
+            before = journal_status(path)
+            value['PRIVATE_CHARACTER'] = 'changed synthetic marker'
+            data = journal.encoded(value)
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute('UPDATE windows SET report=?,report_sha=?,payload_bytes=?',
+                    (data,journal.hashlib.sha256(data).hexdigest(),len(data)))
+                connection.commit()
+            after = journal_status(path)
+            self.assertNotEqual(before.pop('journal_content_sha256'),after.pop('journal_content_sha256'))
+            self.assertEqual(before,after)
+
     def test_maximum_valid_report_fits_sqlite_row_limit(self):
         value = report(0, ['b' * 64])
         value['PRIVATE_PADDING'] = ''
