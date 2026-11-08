@@ -4,6 +4,12 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+Saved mount collections are available through `inspect_snapshot` with
+`section: "mount_collection"`; `character_summary` reports the observed
+collected count. This is source-tested read-only support, with native capture
+still pending. Update both readers before using the new exporter.
+See [mount collection verification](../../docs/mount-collection-verification-2026-11-08.md).
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

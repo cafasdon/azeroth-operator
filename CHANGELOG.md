@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture and inspect saved Forever mount collections with bounded, read-only journal queries and owner-scoped validation.
+
 - Quote remaining reagent purchases for a suggested dependency order without buying intermediates produced by the batch.
 
 - Suggest producer-first recipe batch orders with recalculated starting materials and explicit cycle/data gaps.

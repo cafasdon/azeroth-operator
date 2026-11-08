@@ -98,6 +98,39 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "mount_collection" => {
+            object(
+                value,
+                &[
+                    ("catalogue_count", "positive", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let count = value["catalogue_count"].as_u64().unwrap();
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(
+                count <= 4096 && entries.len() as u64 <= count,
+                "Invalid mount catalogue size"
+            );
+            for (id, entry) in entries {
+                index(id, 1, u32::MAX)?;
+                object(
+                    entry,
+                    &[
+                        ("name", "text", true),
+                        ("spell_id", "positive", true),
+                        ("usable", "bool", true),
+                        ("favorite", "bool", true),
+                    ],
+                )?;
+                ensure!(
+                    entry["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid mount name"
+                );
+            }
+        }
         "binding_state" => {
             object(
                 value,

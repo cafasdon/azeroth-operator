@@ -1,5 +1,52 @@
 local _, AO = ...
 AO.collectors = {}
+AO.collectors.mount_collection = function()
+    local api=C_MountJournal
+    assert(AO.family=="forever" and api and api.GetMountIDs and api.GetMountInfoByID,
+        "Mount journal unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted mount observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high,
+            "Invalid mount identifier")
+        return value
+    end
+    local function boolean(value)
+        value=readable(value); assert(type(value)=="boolean", "Invalid mount flag"); return value
+    end
+    local function catalogue()
+        local ids=readable(api.GetMountIDs())
+        assert(type(ids)=="table", "Missing mount catalogue")
+        local result,indices,count={},{},0
+        for index,id in pairs(ids) do
+            index=integer(index,1,4096); id=integer(id,1,4294967295)
+            assert(not result[tostring(id)], "Duplicate mount ID")
+            result[tostring(id)]=id; indices[index]=true; count=count+1
+        end
+        assert(count>0 and count<=4096, "Empty or oversized mount catalogue")
+        for index=1,count do assert(indices[index], "Incomplete mount catalogue") end
+        return result,count
+    end
+    local ids,count=catalogue()
+    local result={catalogue_count=count,entries={}}
+    for key,id in pairs(ids) do
+        local name,spellID,_,_,usable,_,favorite,_,_,_,collected,returnedID=api.GetMountInfoByID(id)
+        assert(integer(returnedID,1,4294967295)==id, "Mount identity changed")
+        if boolean(collected) then
+            name=readable(name)
+            assert(type(name)=="string" and #name>0 and #name<=256, "Invalid mount name")
+            result.entries[key]={name=name,spell_id=integer(spellID,1,4294967295),
+                usable=boolean(usable),favorite=boolean(favorite)}
+        end
+    end
+    local after,afterCount=catalogue()
+    assert(afterCount==count, "Mount catalogue changed")
+    for key in pairs(ids) do assert(after[key], "Mount catalogue changed") end
+    return result
+end
 local function itemGUID(bag,slot)
     if (AO.family~="retail" and AO.family~="forever") or not (C_Item and C_Item.GetItemGUID and ItemLocation) then return nil end
     local ok,guid=pcall(function()

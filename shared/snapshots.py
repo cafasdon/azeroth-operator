@@ -11,6 +11,7 @@ from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = SECTIONS | {"mount_collection"}
 
 
 def _validate_action_bar_observation(observation):
@@ -99,6 +100,23 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "mount_collection" in sections:
+        collection = sections["mount_collection"]
+        if (c["family"] != "forever" or not isinstance(collection, dict)
+                or set(collection) != {"catalogue_count", "entries"}
+                or type(collection["catalogue_count"]) is not int
+                or not 1 <= collection["catalogue_count"] <= 4096
+                or not isinstance(collection["entries"], dict)
+                or len(collection["entries"]) > collection["catalogue_count"]):
+            raise ValueError("Invalid mount collection")
+        for key, row in collection["entries"].items():
+            if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()
+                    or str(int(key)) != key or not 1 <= int(key) <= 4_294_967_295
+                    or not isinstance(row, dict) or set(row) != {"name", "spell_id", "usable", "favorite"}
+                    or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
+                    or type(row["spell_id"]) is not int or not 1 <= row["spell_id"] <= 4_294_967_295
+                    or type(row["usable"]) is not bool or type(row["favorite"]) is not bool):
+                raise ValueError("Invalid collected mount")
     if "currency_balances" in sections:
         if c["family"] != "forever":
             raise ValueError("Currency balances require Forever")

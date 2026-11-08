@@ -4116,6 +4116,12 @@ pub fn summary(s: &Snapshot) -> Value {
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]});
+    summary["collected_mounts_observed"] = json!(
+        s.sections
+            .get("mount_collection")
+            .and_then(|collection| collection["entries"].as_object())
+            .map(|entries| entries.len())
+    );
     summary["tracked_achievement_workload"] = json!(
         s.sections
             .get("tracked_achievements")
