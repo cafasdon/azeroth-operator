@@ -332,6 +332,40 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "forever", "flight_affordable_only": True,
                         })).isError)
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
+                        route_start = json.loads(json.dumps(forever))
+                        route_start["sections"]["flight_map"]["entries"]["3"] = {
+                            "node_id": 15, "name": "Route target", "state": "reachable",
+                            "map_transition": False, "fare_copper": 20,
+                        }
+                        route_start_id = SnapshotStore(Path(folder)).ingest(route_start)
+                        route_onward = json.loads(json.dumps(route_start))
+                        route_onward["sections"]["flight_map"]["entries"] = {
+                            "1": {"node_id": 14, "name": "Connection", "state": "current",
+                                  "map_transition": False},
+                            "2": {"node_id": 15, "name": "Route target", "state": "reachable",
+                                  "map_transition": False, "fare_copper": 3},
+                        }
+                        route_onward_id = SnapshotStore(Path(folder)).ingest(route_onward)
+                        route_request = {"snapshot_id": route_start_id, "section": "flight_map",
+                                         "flight_route_search": {"destination_node_id": 15,
+                                                                 "onward_snapshot_ids": [route_onward_id]}}
+                        planned = await session.call_tool("inspect_snapshot", route_request)
+                        self.assertFalse(planned.isError)
+                        plan = json.loads(planned.content[0].text)["flight_route_search"]
+                        self.assertEqual(plan["total_fare_copper"], 3)
+                        self.assertEqual([leg["snapshot_id"] for leg in plan["legs"]],
+                                         [route_start_id, route_onward_id])
+                        self.assertTrue(plan["affordable_from_starting_wallet"])
+                        del route_onward["sections"]["flight_map"]
+                        without_panel = SnapshotStore(Path(folder)).ingest(route_onward)
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            **route_request, "flight_route_search": {
+                                "destination_node_id": 15, "onward_snapshot_ids": [without_panel],
+                            },
+                        })).isError)
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            **route_request, "section": "wallet",
+                        })).isError)
                         self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")
                         tracked_recipes = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "tracked_recipes"})

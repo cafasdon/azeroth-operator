@@ -821,6 +821,18 @@ amount explicitly. The projection compares fare plus reserve with the
 flight capture's wallet, and the filter retains only routes that fit both
 costs. An unknown fare or wallet still leaves affordability unknown.
 
+For route discovery, pass `flight_route_search` to `inspect_snapshot`
+with `section: "flight_map"`. Supply `destination_node_id` and
+optionally up to seven `onward_snapshot_ids` from the same character
+and client build. The starting panel supplies the first leg. The search
+minimises the sum of observed fares across up to eight legs. Equal fares
+prefer fewer legs, then compare each leg in order by panel input position
+and destination node ID. It uses only reachable destinations
+with quoted fares and excludes map transitions. The plan includes the
+saved panel for each leg and checks the starting wallet when available.
+`no_fully_priced_route` describes the supplied captures. Routes are
+historical observations and may have different capture times.
+
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability
 changes and signed copper differences for shared destination IDs.

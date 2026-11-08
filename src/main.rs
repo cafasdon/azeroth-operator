@@ -42,6 +42,8 @@ struct Inspect {
     flight_node_id: Option<std::num::NonZeroU32>,
     /// Check up to seven onward flight legs using explicit saved captures.
     flight_onward_legs: Option<Vec<FlightLeg>>,
+    /// Find a lowest-fare route across this saved flight panel and optional onward panels.
+    flight_route_search: Option<FlightRouteSearch>,
     /// Keep captured reachable flight destinations and exclude map-transition nodes.
     #[serde(default)]
     flight_reachable_only: bool,
@@ -380,6 +382,13 @@ struct OwnedGearReview {
 struct FlightLeg {
     snapshot_id: String,
     destination_node_id: std::num::NonZeroU32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct FlightRouteSearch {
+    destination_node_id: std::num::NonZeroU32,
+    onward_snapshot_ids: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1282,7 +1291,19 @@ impl Operator {
                 "Flight reserve requires an affordability filter or wallet projection and a valid copper amount",
             )]);
         }
-        if (args.flight_wallet_projection || filter_flight)
+        if args.flight_route_search.as_ref().is_some_and(|search| {
+            search
+                .onward_snapshot_ids
+                .as_ref()
+                .is_some_and(|ids| ids.len() > 7)
+                || args.flight_onward_legs.is_some()
+                || filter_flight
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Flight route search accepts up to seven onward captures and no flight node filters or manual itinerary",
+            )]);
+        }
+        if (args.flight_wallet_projection || filter_flight || args.flight_route_search.is_some())
             && args.section.as_deref() != Some("flight_map")
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1698,7 +1719,9 @@ impl Operator {
                     value["data"] = serde_json::Value::Null;
                     value["merchant_cart_budget"] = result;
                 }
-                if (args.flight_wallet_projection || filter_flight)
+                if (args.flight_wallet_projection
+                    || filter_flight
+                    || args.flight_route_search.is_some())
                     && value["client"]["family"] != "forever"
                 {
                     return CallToolResult::error(vec![ContentBlock::text(
@@ -1787,6 +1810,32 @@ impl Operator {
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
                                 "Flight itinerary requires connected reachable routes in compatible Forever captures",
+                            )]);
+                        }
+                    }
+                }
+                if let Some(search) = &args.flight_route_search {
+                    let result = (|| {
+                        let ids = std::iter::once(args.snapshot_id.as_str()).chain(
+                            search
+                                .onward_snapshot_ids
+                                .iter()
+                                .flatten()
+                                .map(String::as_str),
+                        );
+                        let captures = ids
+                            .map(|id| Ok((id, self.store.read(id)?)))
+                            .collect::<anyhow::Result<Vec<_>>>()?;
+                        azeroth_operator::analysis::plan_saved_flights(
+                            &captures,
+                            search.destination_node_id.get(),
+                        )
+                    })();
+                    match result {
+                        Ok(plan) => value["flight_route_search"] = plan,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Flight route search requires compatible Forever captures with unambiguous flight panels and a different destination",
                             )]);
                         }
                     }

@@ -2427,6 +2427,98 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
 }
 
+pub fn plan_saved_flights(captures: &[(&str, Snapshot)], destination: u32) -> Result<Value> {
+    let (_, first) = captures
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
+    ensure!(
+        first.client.family == crate::Family::Forever && captures.len() <= 8,
+        "Expected up to eight Forever captures"
+    );
+    let mut departures = BTreeMap::<u64, Vec<_>>::new();
+    let mut start = None;
+    for (index, (_, capture)) in captures.iter().enumerate() {
+        ensure_same_character_and_client(first, capture)?;
+        let (origin, nodes) = capture
+            .sections
+            .get("flight_map")
+            .and_then(flight_destinations)
+            .ok_or_else(|| anyhow::anyhow!("Missing or ambiguous flight panel"))?;
+        if index == 0 {
+            start = Some(origin);
+        }
+        let edges = departures.entry(origin).or_default();
+        edges.extend(nodes.into_iter().filter_map(|(node, row)| {
+            (row["state"] == "reachable").then_some(())?;
+            Some((index, node, row["fare_copper"].as_u64()?))
+        }));
+    }
+    let start = start.ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
+    let destination = u64::from(destination);
+    ensure!(
+        start != destination,
+        "Already at the requested departure node"
+    );
+    let mut frontier = BTreeMap::from([(start, (0u64, Vec::new()))]);
+    let mut best = None;
+    for depth in 0..8 {
+        let mut next = BTreeMap::new();
+        for (node, (cost, path)) in frontier {
+            for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
+                if target == start || (depth == 0 && index != 0) {
+                    continue;
+                }
+                let mut path = path.clone();
+                path.push((index, target));
+                let candidate = (cost + fare, path);
+                if target == destination {
+                    let candidate = (candidate.0, depth + 1, candidate.1);
+                    if best.as_ref().is_none_or(|previous| &candidate < previous) {
+                        best = Some(candidate);
+                    }
+                } else {
+                    let current = next.entry(target).or_insert_with(|| candidate.clone());
+                    if candidate < *current {
+                        *current = candidate;
+                    }
+                }
+            }
+        }
+        frontier = next;
+        if frontier.is_empty() {
+            break;
+        }
+    }
+    let Some((fare, _, path)) = best else {
+        return Ok(
+            json!({"status":"no_fully_priced_route","origin_node_id":start,"destination_node_id":destination}),
+        );
+    };
+    let legs = path
+        .into_iter()
+        .map(|(index, target)| {
+            let (id, capture) = &captures[index];
+            let mut route = capture
+                .sections
+                .get("flight_map")
+                .and_then(|map| captured_flight_route(map, target as u32))
+                .ok_or_else(|| anyhow::anyhow!("Missing selected leg"))?;
+            route["snapshot_id"] = json!(id);
+            route["captured_at"] = json!(capture.captured_at);
+            Ok(route)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let wallet = first
+        .sections
+        .get("wallet")
+        .and_then(|wallet| wallet["copper"].as_u64());
+    Ok(
+        json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
+        "legs":legs,"total_fare_copper":fare,
+        "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)}),
+    )
+}
+
 fn captured_flight_fare_summary(map: &Value) -> Option<Value> {
     let (origin_id, nodes) = flight_destinations(map)?;
     let mut unknown_fares = 0usize;
