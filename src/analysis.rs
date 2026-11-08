@@ -277,6 +277,23 @@ pub fn review_recipe_with_inventory(
         review["inventory_captured_at"] = json!(inventory.captured_at);
     }
     review["material_capacity_by_item"] = json!(fixed.then_some(capacity_by_item));
+    review["pending_mail_material_observations"] = stock.sections.get("mail_attachments")
+        .filter(|_|fixed).map(|mail| {
+            let (totals,unknown)=mail_attachment_totals(mail);
+            let ids:BTreeSet<u64>=recipe["reagents"].as_object().unwrap().keys()
+                .map(|id|id.parse().unwrap()).collect();
+            let mut items=Vec::new();
+            let mut unobserved=Vec::new();
+            for id in ids {
+                if let Some((quantity,slots))=totals.get(&("item",id)) {
+                    items.push(json!({"item_id":id,"known_quantity":quantity,"known_attachment_slots":slots}));
+                } else { unobserved.push(id); }
+            }
+            json!({"coverage":"loaded_inbox_attachments","captured_at":stock.captured_at,
+                "loaded_messages":mail["loaded_messages"],"total_messages":mail["total_messages"],
+                "unknown_attachment_slots":unknown,"counts_toward_material_capacity":false,
+                "items":items,"unobserved_reagent_ids":unobserved})
+        }).unwrap_or(Value::Null);
     Ok(review)
 }
 
@@ -1902,32 +1919,35 @@ pub fn profession_by_skill_line(
     }
 }
 
-fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
-    let aggregate = |mail: &Value| {
-        let mut totals = BTreeMap::<(&str, u64), (u64, u32)>::new();
-        let mut unknown = 0u32;
-        for message in mail["messages"].as_object().unwrap().values() {
-            for row in message.as_object().unwrap().values() {
-                let (kind, field) = match row["kind"].as_str().unwrap() {
-                    "item" => ("item", "item_id"),
-                    "currency" => ("currency", "currency_id"),
-                    _ => {
-                        unknown += 1;
-                        continue;
-                    }
-                };
-                let entry = totals
-                    .entry((kind, row[field].as_u64().unwrap()))
-                    .or_default();
-                // Validated inbox coverage bounds totals to 100 * 16 * u32::MAX.
-                entry.0 += row["count"].as_u64().unwrap();
-                entry.1 += 1;
-            }
+type KnownMailTotals = BTreeMap<(&'static str, u64), (u64, u32)>;
+
+fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
+    let mut totals = KnownMailTotals::new();
+    let mut unknown = 0u32;
+    for message in mail["messages"].as_object().unwrap().values() {
+        for row in message.as_object().unwrap().values() {
+            let (kind, field) = match row["kind"].as_str().unwrap() {
+                "item" => ("item", "item_id"),
+                "currency" => ("currency", "currency_id"),
+                _ => {
+                    unknown += 1;
+                    continue;
+                }
+            };
+            let entry = totals
+                .entry((kind, row[field].as_u64().unwrap()))
+                .or_default();
+            // Validated inbox coverage bounds totals to 100 * 16 * u32::MAX.
+            entry.0 += row["count"].as_u64().unwrap();
+            entry.1 += 1;
         }
-        (totals, unknown)
-    };
-    let (old, old_unknown) = aggregate(before);
-    let (new, new_unknown) = aggregate(after);
+    }
+    (totals, unknown)
+}
+
+fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
+    let (old, old_unknown) = mail_attachment_totals(before);
+    let (new, new_unknown) = mail_attachment_totals(after);
     let ids: BTreeSet<_> = old.keys().chain(new.keys()).copied().collect();
     let mut only_before = Vec::new();
     let mut only_after = Vec::new();

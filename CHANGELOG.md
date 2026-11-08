@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Annotate fixed-reagent recipe reviews with known pending-mail materials from the selected inventory capture, keeping mail outside stock, capacity and purchase calculations.
+
 - Compare known loaded pending mail attachment quantities and slot counts by item/currency ID, retaining partial coverage and avoiding delivery or inventory-transfer claims.
 
 - Search saved active-pet observations by presence, family, level and signed training-point balance, preserving unknowns and newest-capture selection.

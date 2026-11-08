@@ -130,6 +130,17 @@ either section returns null; message identity, deliveries/retrievals and
 inventory transfers remain unverified. No correspondence or mail actions
 are added. See [offline comparison evidence](../../docs/mail-comparison-verification-2026-11-08.md).
 
+`review_forever_recipe.pending_mail_material_observations` shows known pending
+item attachments matching a fixed recipe's reagent IDs. It uses the selected
+inventory capture, including for every recipe in a batch, and records that
+capture's time and partial inbox coverage. Currency attachments and unrelated
+items are excluded. Unseen reagent IDs stay separate from known quantities.
+Missing mail or unsupported recipe requirements return null. The field has
+`counts_toward_material_capacity: false`: stock, shortages, bank withdrawals,
+craft capacity, dependency plans and merchant purchases retain their existing
+inputs. Repeated batch observations do not allocate pending mail to recipes.
+No retrieval eligibility is implied. See [offline evidence](../../docs/recipe-pending-mail-verification-2026-11-08.md).
+
 Search pending observations with `list_snapshots.mail_attachment`, for example
 `{"family":"forever","mail_attachment":{"kind":"item","id":720,"minimum_quantity":2},"latest_per_character":true}`.
 `kind` is `item` or `currency`, with a positive ID in that namespace. The

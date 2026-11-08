@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Fixed-reagent recipe reviews can join their reagent IDs to known pending
+item attachments in the selected inventory capture. This is a separate
+observation with source time and partial coverage, never a stock credit or
+retrieval action. Batch observations reuse the same inventory source without
+allocating mail. [Offline evidence](../../docs/recipe-pending-mail-verification-2026-11-08.md).
+
 `compare_snapshots.mail_attachment_changes` compares known loaded pending
 attachment quantities/slot counts by kind and ID, retaining unknown slots
 and loaded/total message counts. No correspondence or mail actions are
