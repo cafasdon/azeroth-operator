@@ -2,6 +2,10 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+The [coverage audit](../../docs/forever-coverage-audit-2026-11-08.md) separates
+implemented observations from the remaining active-character, complete owned-gear,
+local-data and native qualification requirements.
+
 Public pet action-bar observations distinguish logical command and spell
 slots, reported flags and unreadable slots. Pet/bar context must remain
 consistent; missing metadata is not guessed. Names, textures, GUIDs and target
