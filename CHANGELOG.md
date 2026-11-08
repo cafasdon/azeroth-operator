@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise unfinished Forever quest objectives by captured kind.
+
 - Validate loaded action-bar observations consistently in the Python importer and Rust reader.
 
 - Flag saved Forever shortcuts whose spell IDs no longer match the captured spellbook.

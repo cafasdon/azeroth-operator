@@ -2432,6 +2432,24 @@ pub fn tracked_achievement_work(section: &Value) -> Value {
     )
 }
 
+fn quest_objective_workload(quests: &serde_json::Map<String, Value>) -> Value {
+    let mut by_kind = BTreeMap::<&str, usize>::new();
+    let mut quests_without_objectives = 0usize;
+    for quest in quests.values().filter(|quest| quest["failed"] != true) {
+        let Some(objectives) = quest["objectives"].as_object() else {
+            quests_without_objectives += 1;
+            continue;
+        };
+        for objective in objectives.values().filter(|row| row["finished"] == false) {
+            if let Some(kind) = objective["kind"].as_str() {
+                *by_kind.entry(kind).or_default() += 1;
+            }
+        }
+    }
+    json!({"unfinished_objectives_by_kind":by_kind,
+        "quests_without_objective_observations":quests_without_objectives})
+}
+
 pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     let Some(objectives) = quest.and_then(|quest| quest["objectives"].as_object()) else {
         return Value::Null;
@@ -2623,6 +2641,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "tracked_achievements_observed":s.sections.get("tracked_achievements").and_then(|v|v["entries"].as_object()).map(|v|v.len()),
       "quest_turn_in":quest_turn_in,
       "quest_checklist":quests.map(quest_checklist),
+      "quest_objective_workload":quests.filter(|_| is_forever).map(quest_objective_workload),
       "quest_waypoint_maps":waypoint_maps,
       "captured_map_id":captured_map,
       "captured_map_name":captured_map.and_then(|_| s.sections["stats"]["map_name"].as_str()),
