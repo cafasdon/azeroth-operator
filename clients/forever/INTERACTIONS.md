@@ -22,6 +22,12 @@ Forever family. The result includes only that currency's quantity,
 account scope and inactive flag. A zero minimum requires an observed
 balance. Combine with `latest_per_character` to evaluate each
 character's newest capture before matching the balance.
+Add `minimum_weekly_remaining` or `minimum_maximum_remaining` inside
+`currency_balance` to require room below an observed cap. These limits
+combine with the held-quantity threshold. Total caps use the captured
+held quantity or total-earned basis. Missing limits or counters do not
+match, even at a zero threshold. The result reports the cap headroom used
+for the filter, which does not establish whether more currency can be earned.
 
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |

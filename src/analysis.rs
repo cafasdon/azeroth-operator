@@ -2160,35 +2160,35 @@ fn weekly_cap_remaining(entry: &Value) -> Option<u64> {
     Some(cap.saturating_sub(entry["earned_this_week"].as_u64()?))
 }
 
+pub(crate) fn currency_entry_cap_headroom(entry: &Value) -> Option<Value> {
+    let weekly = weekly_cap_remaining(entry);
+    let basis = if entry["cap_uses_total_earned"].as_bool()? {
+        "total_earned"
+    } else {
+        "quantity"
+    };
+    let maximum = entry["max_quantity"]
+        .as_u64()
+        .filter(|limit| *limit > 0)
+        .zip(entry[basis].as_u64())
+        .map(|(limit, used)| limit.saturating_sub(used));
+    (weekly.is_some() || maximum.is_some()).then(|| {
+        json!({
+            "weekly_remaining":weekly,"maximum_remaining":maximum,
+            "maximum_basis":maximum.map(|_| basis),
+        })
+    })
+}
+
 pub fn currency_cap_headroom(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
-    };
-    let remaining = |entry: &Value, limit: &str, used: &str| {
-        entry[limit]
-            .as_u64()
-            .filter(|limit| *limit > 0)
-            .zip(entry[used].as_u64())
-            .map(|(limit, used)| limit.saturating_sub(used))
     };
     Value::Object(
         entries
             .iter()
             .filter_map(|(id, entry)| {
-                let weekly = weekly_cap_remaining(entry);
-                let basis = if entry["cap_uses_total_earned"].as_bool()? {
-                    "total_earned"
-                } else {
-                    "quantity"
-                };
-                let maximum = remaining(entry, "max_quantity", basis);
-                (weekly.is_some() || maximum.is_some()).then(|| {
-                    (
-                        id.clone(),
-                        json!({"weekly_remaining":weekly,"maximum_remaining":maximum,
-                            "maximum_basis":maximum.map(|_| basis)}),
-                    )
-                })
+                currency_entry_cap_headroom(entry).map(|headroom| (id.clone(), headroom))
             })
             .collect(),
     )

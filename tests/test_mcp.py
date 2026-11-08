@@ -1263,6 +1263,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "retail",
                             "currency_balance": {"currency_id": 100, "minimum_quantity": 0},
                         })).isError)
+                        for weekly, maximum, expected_ids in [
+                            (30, 40, [new_freshness_id]),
+                            (31, 40, []),
+                            (30, 41, []),
+                        ]:
+                            cap_search = await session.call_tool("list_snapshots", {
+                                **latest_query, "currency_balance": {
+                                    "currency_id": 100, "minimum_quantity": 0,
+                                    "minimum_weekly_remaining": weekly,
+                                    "minimum_maximum_remaining": maximum,
+                                },
+                            })
+                            self.assertFalse(cap_search.isError)
+                            cap_rows = json.loads(cap_search.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in cap_rows], expected_ids)
+                            if cap_rows:
+                                self.assertEqual(cap_rows[0]["currency_balance_match"]["cap_headroom"], {
+                                    "weekly_remaining": 30, "maximum_remaining": 40,
+                                    "maximum_basis": "total_earned",
+                                })
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),

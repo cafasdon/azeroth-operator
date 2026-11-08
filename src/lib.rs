@@ -367,6 +367,10 @@ pub struct CurrencyBalanceFilter {
     pub currency_id: std::num::NonZeroU32,
     /// Inclusive minimum recorded quantity.
     pub minimum_quantity: u64,
+    /// Inclusive minimum room below an observed weekly cap.
+    pub minimum_weekly_remaining: Option<u64>,
+    /// Inclusive minimum room below an observed total cap.
+    pub minimum_maximum_remaining: Option<u64>,
 }
 
 impl Store {
@@ -808,7 +812,20 @@ impl Store {
                         .zip(currency_key.as_ref())
                         .and_then(|(filter, key)| {
                             let row = s.sections.get("currency_balances")?["entries"].get(key)?;
-                            (row["quantity"].as_u64()? >= filter.minimum_quantity).then_some(row)
+                            let headroom =
+                                analysis::currency_entry_cap_headroom(row).unwrap_or(Value::Null);
+                            (row["quantity"].as_u64()? >= filter.minimum_quantity
+                                && filter.minimum_weekly_remaining.is_none_or(|minimum| {
+                                    headroom["weekly_remaining"]
+                                        .as_u64()
+                                        .is_some_and(|room| room >= minimum)
+                                })
+                                && filter.minimum_maximum_remaining.is_none_or(|minimum| {
+                                    headroom["maximum_remaining"]
+                                        .as_u64()
+                                        .is_some_and(|room| room >= minimum)
+                                }))
+                            .then_some(row)
                         });
                     if currency_balance.is_some() && currency_match.is_none() {
                         continue;
@@ -1116,6 +1133,12 @@ impl Store {
                             "currency_id":filter.currency_id,"quantity":row["quantity"],
                             "account_wide":row["account_wide"],"inactive":row["inactive"],
                         });
+                        if filter.minimum_weekly_remaining.is_some()
+                            || filter.minimum_maximum_remaining.is_some()
+                        {
+                            summary["currency_balance_match"]["cap_headroom"] =
+                                analysis::currency_entry_cap_headroom(row).unwrap_or(Value::Null);
+                        }
                     }
                     if let Some(food) = pet_food_match {
                         summary["pet_food_match"] = food;
