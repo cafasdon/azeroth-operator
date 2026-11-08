@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured Forever action-bar item shortcuts by exact item ID.
+
 - Find captured Forever action-bar placements by exact spell action ID.
 
 - Identify duplicate spell placements in a saved Forever action bar.

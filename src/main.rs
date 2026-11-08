@@ -158,6 +158,8 @@ struct Inspect {
     action_bar_hotkey: Option<String>,
     /// Find captured action bar slots with this exact observed spell action ID.
     action_bar_spell_id: Option<std::num::NonZeroU32>,
+    /// Find captured action bar slots with this exact observed item action ID.
+    action_bar_item_id: Option<std::num::NonZeroU32>,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -1178,9 +1180,18 @@ impl Operator {
                 "Action bar hotkey requires 1 to 128 UTF-8 bytes",
             )]);
         }
+        if args.action_bar_spell_id.is_some() && args.action_bar_item_id.is_some() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Choose either a spell ID or an item ID for an action bar search",
+            )]);
+        }
+        let action_id_filter = args
+            .action_bar_spell_id
+            .map(|id| ("spell", id))
+            .or_else(|| args.action_bar_item_id.map(|id| ("item", id)));
         let review_action_bar = args.action_bar_spellbook
             || args.action_bar_slot.is_some()
-            || args.action_bar_spell_id.is_some()
+            || action_id_filter.is_some()
             || action_bar_hotkey.is_some();
         if review_action_bar && args.section.as_deref() != Some("action_bar_observation") {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1931,14 +1942,14 @@ impl Operator {
                         rows.retain(|_, row| row["slot"].as_u64() == Some(u64::from(slot.get())));
                     }
                 }
-                if let Some(id) = args.action_bar_spell_id {
+                if let Some((kind, id)) = action_id_filter {
                     let data = &mut value["data"];
                     let matched_slots = data
                         .get_mut("slots")
                         .and_then(serde_json::Value::as_object_mut)
                         .map(|slots| {
                             slots.retain(|_, row| {
-                                row["kind"] == "spell"
+                                row["kind"] == kind
                                     && row["id"].as_u64() == Some(u64::from(id.get()))
                             });
                             slots
@@ -1958,7 +1969,7 @@ impl Operator {
                             })
                         });
                     }
-                    value["action_bar_spell_id"] = serde_json::json!(id);
+                    value[format!("action_bar_{kind}_id")] = serde_json::json!(id);
                 }
                 if let Some(key) = action_bar_hotkey {
                     let data = &mut value["data"];
@@ -1992,8 +2003,8 @@ impl Operator {
                     value["action_bar_hotkey_match_count"] =
                         serde_json::json!(matches.map(|(count, _)| count));
                 }
-                if args.action_bar_spell_id.is_some() {
-                    value["action_bar_spell_match_count"] = serde_json::json!(
+                if let Some((kind, _)) = action_id_filter {
+                    value[format!("action_bar_{kind}_match_count")] = serde_json::json!(
                         value["data"]["slots"].as_object().map(|slots| slots.len())
                     );
                 }
@@ -2012,7 +2023,7 @@ impl Operator {
                             snapshot.sections.get("spellbook"),
                             args.action_bar_slot.is_none()
                                 && action_bar_hotkey.is_none()
-                                && args.action_bar_spell_id.is_none(),
+                                && action_id_filter.is_none(),
                         );
                 }
                 if filter_spellbook {
