@@ -98,6 +98,59 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "mail_attachments" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("loaded_messages", "uint", true),
+                    ("total_messages", "uint", true),
+                    ("messages", "map", true),
+                ],
+            )?;
+            let loaded = value["loaded_messages"].as_u64().unwrap();
+            let messages = value["messages"].as_object().unwrap();
+            ensure!(
+                value["coverage"] == "loaded_inbox_attachments"
+                    && loaded <= 100
+                    && value["total_messages"].as_u64().unwrap() >= loaded
+                    && messages.len() as u64 == loaded,
+                "Invalid inbox coverage"
+            );
+            for message in 1..=loaded {
+                ensure!(messages.contains_key(&message.to_string()), "Sparse inbox");
+            }
+            for (message, attachments) in messages {
+                index(message, 1, 100)?;
+                let rows = attachments
+                    .as_object()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid inbox attachments"))?;
+                ensure!(rows.len() <= 16, "Too many inbox attachments");
+                for (slot, row) in rows {
+                    index(slot, 1, 16)?;
+                    match row["kind"].as_str() {
+                        Some("item") => object(
+                            row,
+                            &[
+                                ("kind", "text", true),
+                                ("item_id", "positive", true),
+                                ("count", "positive", true),
+                            ],
+                        )?,
+                        Some("currency") => object(
+                            row,
+                            &[
+                                ("kind", "text", true),
+                                ("currency_id", "positive", true),
+                                ("count", "positive", true),
+                            ],
+                        )?,
+                        Some("unknown") => object(row, &[("kind", "text", true)])?,
+                        _ => anyhow::bail!("Invalid inbox attachment kind"),
+                    }
+                }
+            }
+        }
         "profession_recipe_view" => {
             object(
                 value,

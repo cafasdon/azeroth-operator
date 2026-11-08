@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture pending loaded inbox attachments without correspondence or mail actions, separating items, currencies and unresolved slots from owned inventory.
+
 - Search saved local profession recipe views by recipe ID, profession and explicit learned/unlearned/unknown observations.
 
 - Capture the visible local profession recipe list with explicit filtered coverage and learned/unlearned/unknown observations, excluding external crafting contexts.

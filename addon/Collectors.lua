@@ -642,6 +642,68 @@ AO.collectors.professions = function()
     return result
 end
 
+AO.collectors.mail_attachments = function()
+    assert(AO.family=="forever" and MailFrame and MailFrame.IsVisible and InboxFrame and InboxFrame.IsVisible
+        and C_Mail and C_Mail.IsCommandPending and GetInboxNumItems and HasInboxItem and GetInboxItem,
+        "Inbox unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted inbox observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid inbox number")
+        return value
+    end
+    local function idle()
+        assert(readable(MailFrame:IsVisible())==true and readable(InboxFrame:IsVisible())==true
+            and readable(MailFrame.inboxBeingChecked)==false and readable(C_Mail.IsCommandPending())==false,
+            "Inbox is not idle")
+    end
+    local function read()
+        idle()
+        local loaded,total=GetInboxNumItems()
+        loaded=integer(loaded,0,100);total=integer(total,loaded,4294967295)
+        local messages={}
+        for message=1,loaded do
+            local attachments={}
+            for slot=1,16 do
+                local present=readable(HasInboxItem(message,slot))
+                assert(type(present)=="boolean", "Unknown inbox slot")
+                if present then
+                    local _,id,_,count,_,_,currency=GetInboxItem(message,slot)
+                    currency=readable(currency)
+                    local row={kind="unknown"}
+                    if currency~=nil then
+                        assert(type(currency)=="boolean", "Invalid inbox attachment kind")
+                        id=readable(id);count=readable(count)
+                        if id~=nil and count~=nil then
+                            row={kind=currency and "currency" or "item",count=integer(count,1,4294967295)}
+                            row[currency and "currency_id" or "item_id"]=integer(id,1,4294967295)
+                        end
+                    end
+                    attachments[tostring(slot)]=row
+                end
+            end
+            messages[tostring(message)]=attachments
+        end
+        idle()
+        return {coverage="loaded_inbox_attachments",loaded_messages=loaded,total_messages=total,messages=messages}
+    end
+    local result=read()
+    local final=read()
+    assert(result.loaded_messages==final.loaded_messages and result.total_messages==final.total_messages,"Inbox counts changed")
+    for message,rows in pairs(result.messages) do
+        local other=final.messages[message]
+        for slot,row in pairs(rows) do
+            local nextRow=other[slot]
+            assert(nextRow and row.kind==nextRow.kind and row.item_id==nextRow.item_id
+                and row.currency_id==nextRow.currency_id and row.count==nextRow.count,"Inbox attachments changed")
+        end
+        for slot in pairs(other) do assert(rows[slot],"Inbox attachments changed") end
+    end
+    return result
+end
 AO.collectors.profession_recipe_view = function()
     local api=C_TradeSkillUI
     local page=ProfessionsFrame and ProfessionsFrame.CraftingPage

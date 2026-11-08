@@ -4,6 +4,19 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+`inspect_snapshot` accepts `section: "mail_attachments"` for pending attachments
+in the loaded inbox while the player's inbox panel is visible and idle. It
+records loaded/total message counts and attachment positions, IDs and quantities
+for readable items or currencies; unresolved slots remain `kind: "unknown"`.
+It omits senders, subjects, text, invoices, money, COD and item modifiers.
+The exporter does not refresh, open messages, retrieve, delete or send mail.
+`character_summary.mail_attachment_counts` reports captured slot counts by kind,
+or null when unavailable. Message/attachment positions identify only this
+capture. Unloaded messages remain outside coverage. Pending attachments are
+excluded from owned-item quantities, gear search and recipe material stock;
+their presence does not establish ownership, retrieval eligibility or cost.
+See [verification](../../docs/mail-attachment-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "profession_recipe_view"` for the saved
 filtered recipe list of a visible local crafting page. It includes the current
 profession ID and recipe IDs, with names and learned flags where readable.

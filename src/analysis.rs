@@ -4295,6 +4295,14 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    summary["mail_attachment_counts"] = s.sections.get("mail_attachments").map(|mail| {
+        let rows: Vec<_> = mail["messages"].as_object().unwrap().values()
+            .flat_map(|attachments| attachments.as_object().unwrap().values()).collect();
+        json!({"loaded_messages":mail["loaded_messages"],"total_messages":mail["total_messages"],
+            "observed_slots":rows.len(),"item_slots":rows.iter().filter(|row| row["kind"]=="item").count(),
+            "currency_slots":rows.iter().filter(|row| row["kind"]=="currency").count(),
+            "unknown_slots":rows.iter().filter(|row| row["kind"]=="unknown").count()})
+    }).unwrap_or(Value::Null);
     summary["profession_recipe_view_counts"] = s.sections.get("profession_recipe_view").map(|view| {
         let rows = view["entries"].as_object().unwrap();
         json!({"observed":rows.len(),

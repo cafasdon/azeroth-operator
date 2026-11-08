@@ -13,6 +13,7 @@ MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instances", "saved_world_bosses"}
 SECTIONS = SECTIONS | {"profession_recipe_view"}
+SECTIONS = SECTIONS | {"mail_attachments"}
 
 
 def _validate_action_bar_observation(observation):
@@ -101,6 +102,32 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "mail_attachments" in sections:
+        mail=sections["mail_attachments"]
+        if (c["family"]!="forever" or not isinstance(mail,dict)
+                or set(mail)!={"coverage","loaded_messages","total_messages","messages"}
+                or mail["coverage"]!="loaded_inbox_attachments"
+                or type(mail["loaded_messages"]) is not int or not 0<=mail["loaded_messages"]<=100
+                or type(mail["total_messages"]) is not int or not mail["loaded_messages"]<=mail["total_messages"]<=4_294_967_295
+                or not isinstance(mail["messages"],dict)
+                or set(mail["messages"])!={str(i) for i in range(1,mail["loaded_messages"]+1)}):
+            raise ValueError("Invalid inbox coverage")
+        for attachments in mail["messages"].values():
+            if not isinstance(attachments,dict) or len(attachments)>16:
+                raise ValueError("Invalid inbox attachments")
+            for slot,row in attachments.items():
+                if (not isinstance(slot,str) or not slot.isascii() or not slot.isdecimal()
+                        or str(int(slot))!=slot or not 1<=int(slot)<=16 or not isinstance(row,dict)):
+                    raise ValueError("Invalid inbox slot")
+                kind=row.get("kind")
+                if kind=="unknown":
+                    if set(row)!={"kind"}:raise ValueError("Invalid unknown attachment")
+                elif kind in ("item","currency"):
+                    field="item_id" if kind=="item" else "currency_id"
+                    if (set(row)!={"kind",field,"count"} or any(type(row[k]) is not int
+                            or not 1<=row[k]<=4_294_967_295 for k in (field,"count"))):
+                        raise ValueError("Invalid known attachment")
+                else:raise ValueError("Invalid attachment kind")
     if "profession_recipe_view" in sections:
         view = sections["profession_recipe_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)
