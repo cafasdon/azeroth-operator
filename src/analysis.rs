@@ -2699,6 +2699,90 @@ fn container_slots(s: &Snapshot, section: &str) -> Option<usize> {
         })
 }
 
+#[derive(
+    Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum ReputationKind {
+    Standard,
+    Renown,
+    Friendship,
+    Paragon,
+    Unknown,
+}
+
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ParagonRewardStatus {
+    Pending,
+    PendingLevelRestricted,
+    NoPendingReward,
+}
+
+#[derive(Clone, Default, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReputationFilter {
+    pub kind: Option<ReputationKind>,
+    pub account_wide: Option<bool>,
+    pub capped: Option<bool>,
+    pub maximum_remaining_to_next_rank: Option<u64>,
+    pub paragon_reward_status: Option<ParagonRewardStatus>,
+}
+
+impl ReputationFilter {
+    pub fn valid(&self) -> bool {
+        let rank_kind = matches!(
+            self.kind,
+            Some(ReputationKind::Standard | ReputationKind::Renown | ReputationKind::Friendship)
+        );
+        (self.kind.is_some()
+            || self.account_wide.is_some()
+            || self.capped.is_some()
+            || self.maximum_remaining_to_next_rank.is_some()
+            || self.paragon_reward_status.is_some())
+            && ((self.capped.is_none() && self.maximum_remaining_to_next_rank.is_none())
+                || rank_kind)
+            && (self.paragon_reward_status.is_none() || self.kind == Some(ReputationKind::Paragon))
+    }
+
+    pub fn matches(&self, entry: &Value, progress: &Value) -> Option<bool> {
+        if self.kind.is_some_and(|kind| entry["kind"] != json!(kind))
+            || self
+                .account_wide
+                .is_some_and(|expected| entry["account_wide"].as_bool() != Some(expected))
+        {
+            return Some(false);
+        }
+        let mut unknown = false;
+        if let Some(expected) = self.capped {
+            match progress["capped"].as_bool() {
+                Some(actual) if actual != expected => return Some(false),
+                Some(_) => {}
+                None => unknown = true,
+            }
+        }
+        if let Some(maximum) = self.maximum_remaining_to_next_rank {
+            if progress["capped"] == true {
+                return Some(false);
+            }
+            match progress["remaining_to_next_rank"].as_u64() {
+                Some(remaining) if remaining > maximum => return Some(false),
+                Some(_) => {}
+                None => unknown = true,
+            }
+        }
+        if let Some(expected) = self.paragon_reward_status {
+            let expected = json!(expected);
+            match progress["reward_status"].as_str() {
+                Some(actual) if Some(actual) != expected.as_str() => return Some(false),
+                Some(_) => {}
+                None => unknown = true,
+            }
+        }
+        if unknown { None } else { Some(true) }
+    }
+}
+
 pub fn standard_reputation_progress(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;

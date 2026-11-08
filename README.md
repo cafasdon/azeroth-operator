@@ -13,6 +13,11 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`inspect_snapshot` accepts `reputation_filter` on the saved Forever `reputation`
+section: progression kind, account-wide flag, capped state, rank distance and
+paragon reward status. Rank predicates require an explicit compatible kind;
+missing progress stays unknown. [Evidence](docs/reputation-filter-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `achievement_filter` for the saved Forever
 `tracked_achievements` section: completion, character credit and account-wide
 flags, plus same-row criterion ID, completion and maximum remaining units.

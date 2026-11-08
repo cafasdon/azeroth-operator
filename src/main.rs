@@ -169,6 +169,8 @@ struct Inspect {
     currency_reward_quantity: Option<std::num::NonZeroU64>,
     /// Select one saved Forever faction by ID. Requires section "reputation".
     faction_id: Option<std::num::NonZeroU32>,
+    /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
+    reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
     achievement_id: Option<std::num::NonZeroU32>,
     /// Filter tracked Forever achievements by flags and same-row criterion predicates.
@@ -1829,6 +1831,7 @@ impl Operator {
                 || filter_rewards
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
+                || args.reputation_filter.is_some()
                 || args.achievement_id.is_some()
                 || args.achievement_filter.is_some()
                 || args.mount_id.is_some()
@@ -1910,6 +1913,15 @@ impl Operator {
         if args.faction_id.is_some() && args.section.as_deref() != Some("reputation") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Faction selection requires the reputation section",
+            )]);
+        }
+        if args.reputation_filter.as_ref().is_some_and(|filter| {
+            !filter.valid()
+                || args.section.as_deref() != Some("reputation")
+                || args.faction_id.is_some()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation filters require reputation without faction_id, nonempty compatible predicates and explicit progress kind",
             )]);
         }
         if args.achievement_id.is_some() && args.section.as_deref() != Some("tracked_achievements")
@@ -2912,10 +2924,42 @@ impl Operator {
                         value["currency_cap_headroom"] = headroom;
                     }
                 } else if args.section.as_deref() == Some("reputation") {
-                    let standard =
+                    let mut standard =
                         azeroth_operator::analysis::standard_reputation_progress(&value["data"]);
-                    let special =
+                    let mut special =
                         azeroth_operator::analysis::special_reputation_progress(&value["data"]);
+                    if let Some(filter) = args.reputation_filter.as_ref() {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Reputation filters require a saved Forever snapshot",
+                            )]);
+                        }
+                        value["reputation_filter"] = serde_json::json!(filter);
+                        value["reputation_filter_unknown_count"] = serde_json::json!(
+                            value["data"]
+                                .get_mut("entries")
+                                .and_then(serde_json::Value::as_object_mut)
+                                .map(|entries| {
+                                    let mut unknown = 0;
+                                    entries.retain(|id, entry| {
+                                        let progress = if entry["kind"] == "standard" {
+                                            &standard[id]
+                                        } else {
+                                            &special[id]
+                                        };
+                                        let matched = filter.matches(entry, progress);
+                                        unknown += usize::from(matched.is_none());
+                                        matched == Some(true)
+                                    });
+                                    unknown
+                                })
+                        );
+                        for progress in [&mut standard, &mut special] {
+                            if let Some(rows) = progress.as_object_mut() {
+                                rows.retain(|id, _| value["data"]["entries"].get(id).is_some());
+                            }
+                        }
+                    }
                     if let Some(id) = args.faction_id {
                         if value["client"]["family"] != "forever" {
                             return CallToolResult::error(vec![ContentBlock::text(

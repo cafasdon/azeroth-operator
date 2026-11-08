@@ -1,5 +1,9 @@
 # Changelog
 
+- Search visible saved reputation by explicit progression kind, account-wide
+  status, rank cap/distance and paragon reward state, preserving unknown progress
+  and filtering derived maps to the same retained factions.
+
 - Search saved tracked Forever achievements by completion/credit/account flags
   and same-criterion progress, retaining unknown IDs/counts, tracked-only
   coverage and derived work for the retained achievements.
