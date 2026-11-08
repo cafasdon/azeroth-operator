@@ -942,9 +942,46 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
             let new = b.get(id)?;
             (old != new).then(|| json!({"base_spell_id":id,"before_reported_spell_ids":old,"after_reported_spell_ids":new}))
         }).collect::<Vec<_>>();
-        json!({"added_base_spell_ids":added,"removed_base_spell_ids":removed,"reported_spell_id_changes":changed})
+        json!({"added_base_spell_ids":added,"removed_base_spell_ids":removed,"reported_spell_id_changes":changed,
+            "observed_flag_changes":compare_spellbook_flags(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
+}
+
+fn compare_spellbook_flags(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
+    type Flags = BTreeSet<(Option<bool>, Option<bool>)>;
+    fn flags(snapshot: &Snapshot) -> Option<BTreeMap<(u64, u64), Flags>> {
+        let rows = snapshot.sections.get("spellbook")?["entries"].as_object()?;
+        let mut by_spell = BTreeMap::<_, Flags>::new();
+        for row in rows.values() {
+            by_spell
+                .entry((row["base_spell_id"].as_u64()?, row["spell_id"].as_u64()?))
+                .or_default()
+                .insert((row["passive"].as_bool(), row["off_spec"].as_bool()));
+        }
+        Some(by_spell)
+    }
+    let after = flags(after)?;
+    Some(
+        flags(before)?
+            .into_iter()
+            .filter_map(|(id, old)| {
+                let new = after.get(&id)?;
+                let describe = |flags: &Flags| {
+                    flags
+                        .iter()
+                        .map(|(passive, off_spec)| json!({"passive":passive,"off_spec":off_spec}))
+                        .collect::<Vec<_>>()
+                };
+                (old != *new).then(|| {
+                    json!({
+                        "base_spell_id":id.0,"spell_id":id.1,
+                        "before_flags":describe(&old),"after_flags":describe(new)
+                    })
+                })
+            })
+            .collect(),
+    )
 }
 
 fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {

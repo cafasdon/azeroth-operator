@@ -387,8 +387,11 @@ spell names. It uses the language of the saved capture and combines with
 the other spellbook filters. Slots with unknown names do not match.
 
 Use `compare_snapshots` with `spellbook: true` to compare the observed base
-spell IDs and their reported IDs. Slot reordering and duplicate entries
-with the same IDs leave this comparison unchanged. Missing spellbook data
+spell IDs and their reported IDs. Slot reordering and identical duplicate
+observations leave this comparison unchanged. For the same base and
+reported spell IDs, it also shows changes in observed passive and off-spec
+flags. Conflicting observations are retained, and missing flags stay unknown.
+Missing spellbook data
 on either side leaves changes unknown. Additions and removals describe the
 observed slots and do not establish permanent learning or unlearning.
 

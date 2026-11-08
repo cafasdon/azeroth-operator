@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured passive and off-spec flags for the same Forever spell across snapshots.
+
 - Distinguish Forever flight fare visibility and destination coverage changes between captures.
 
 - Find reachable Forever flights whose captured fare fits the saved wallet.
