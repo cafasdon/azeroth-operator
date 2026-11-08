@@ -29,6 +29,12 @@ held quantity or total-earned basis. Missing limits or counters do not
 match, even at a zero threshold. The result reports the cap headroom used
 for the filter, which does not establish whether more currency can be earned.
 
+Use `reputation_rank` with `faction_id` and `minimum_reaction`
+(1–8) to search standard reputation ranks in saved Forever captures.
+The threshold is inclusive. Missing factions and specialised progression
+types are excluded. Results include the matched rank and account-scope
+flag. This can be combined with time bounds and newest-capture selection.
+
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
 | Character selection | Exact name and realm filter on saved snapshots. Explicit target takes precedence. | Qualify a supported, fresh active-character signal. Until then a saved capture remains historical. |

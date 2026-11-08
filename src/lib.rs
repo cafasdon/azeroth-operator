@@ -325,6 +325,7 @@ pub struct CaptureFilters<'a> {
     pub bag_family_space: Option<BagFamilySpaceFilter>,
     pub pet_food: Option<PetFoodCaptureFilter>,
     pub currency_balance: Option<CurrencyBalanceFilter>,
+    pub reputation_rank: Option<ReputationRankFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -371,6 +372,15 @@ pub struct CurrencyBalanceFilter {
     pub minimum_weekly_remaining: Option<u64>,
     /// Inclusive minimum room below an observed total cap.
     pub minimum_maximum_remaining: Option<u64>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReputationRankFilter {
+    pub faction_id: std::num::NonZeroU32,
+    /// Inclusive minimum standard reputation reaction, from 1 to 8.
+    #[schemars(range(min = 1, max = 8))]
+    pub minimum_reaction: u8,
 }
 
 impl Store {
@@ -476,6 +486,7 @@ impl Store {
             bag_family_space,
             pet_food,
             currency_balance,
+            reputation_rank,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -692,6 +703,15 @@ impl Store {
             .as_ref()
             .map(|filter| filter.currency_id.to_string());
         ensure!(
+            reputation_rank.as_ref().is_none_or(|filter| {
+                family == Family::Forever && (1..=8).contains(&filter.minimum_reaction)
+            }),
+            "Reputation filtering requires Forever and a standard reaction from 1 to 8"
+        );
+        let reputation_key = reputation_rank
+            .as_ref()
+            .map(|filter| filter.faction_id.to_string());
+        ensure!(
             (quest_id.is_none() && quest_readiness.is_none() && quest_waypoint_map_id.is_none())
                 || family == Family::Forever,
             "Quest filtering requires Forever"
@@ -807,6 +827,18 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let reputation_match = reputation_rank
+                        .as_ref()
+                        .zip(reputation_key.as_ref())
+                        .and_then(|(filter, key)| {
+                            let row = s.sections.get("reputation")?["entries"].get(key)?;
+                            (row["kind"] == "standard"
+                                && row["reaction"].as_u64()? >= u64::from(filter.minimum_reaction))
+                            .then_some(row)
+                        });
+                    if reputation_rank.is_some() && reputation_match.is_none() {
+                        continue;
+                    }
                     let currency_match = currency_balance
                         .as_ref()
                         .zip(currency_key.as_ref())
@@ -1128,6 +1160,12 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {
+                        summary["reputation_rank_match"] = json!({
+                            "faction_id":filter.faction_id,"reaction":row["reaction"],
+                            "account_wide":row["account_wide"],
+                        });
+                    }
                     if let Some((filter, row)) = currency_balance.as_ref().zip(currency_match) {
                         summary["currency_balance_match"] = json!({
                             "currency_id":filter.currency_id,"quantity":row["quantity"],

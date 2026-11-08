@@ -284,6 +284,8 @@ struct List {
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
+    /// Find an observed standard faction rank at or above the requested reaction.
+    reputation_rank: Option<azeroth_operator::ReputationRankFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1208,6 +1210,7 @@ impl Operator {
                 bag_family_space: args.bag_family_space,
                 pet_food: args.pet_food,
                 currency_balance: args.currency_balance,
+                reputation_rank: args.reputation_rank,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

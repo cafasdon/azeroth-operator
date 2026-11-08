@@ -1217,6 +1217,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         freshness = json.loads(json.dumps(reputation_after))
                         freshness["character"]["name"] = "Freshness"
+                        freshness["sections"]["reputation"]["entries"]["10"]["kind"] = "standard"
                         freshness["captured_at"] = "2025-01-01T00:00:00Z"
                         freshness["sections"]["quests"]["43"] = {"title": "Old observation", "level": 10}
                         freshness["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 10
@@ -1283,6 +1284,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "weekly_remaining": 30, "maximum_remaining": 40,
                                     "maximum_basis": "total_earned",
                                 })
+                        for reaction, expected_ids in [(4, [new_freshness_id]), (5, [])]:
+                            ranked = await session.call_tool("list_snapshots", {
+                                **latest_query, "reputation_rank": {
+                                    "faction_id": 10, "minimum_reaction": reaction,
+                                },
+                            })
+                            self.assertFalse(ranked.isError)
+                            ranked_rows = json.loads(ranked.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in ranked_rows], expected_ids)
+                            if ranked_rows:
+                                self.assertEqual(ranked_rows[0]["reputation_rank_match"], {
+                                    "faction_id": 10, "reaction": 4, "account_wide": False,
+                                })
+                        for invalid_rank in (0, 9):
+                            self.assertTrue((await session.call_tool("list_snapshots", {
+                                **latest_query, "reputation_rank": {
+                                    "faction_id": 10, "minimum_reaction": invalid_rank,
+                                },
+                            })).isError)
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),
