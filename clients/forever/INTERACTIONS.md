@@ -35,6 +35,13 @@ The threshold is inclusive. Missing factions and specialised progression
 types are excluded. Results include the matched rank and account-scope
 flag. This can be combined with time bounds and newest-capture selection.
 
+Use `tracked_achievement` with `achievement_id` and optional
+`completed` or `earned_by_character` flags to search saved Forever
+tracked achievements. Flags must match the same recorded achievement.
+The result preserves account scope and character credit separately.
+An achievement absent from the tracked list does not match either
+completion state.
+
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
 | Character selection | Exact name and realm filter on saved snapshots. Explicit target takes precedence. | Qualify a supported, fresh active-character signal. Until then a saved capture remains historical. |

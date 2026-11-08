@@ -326,6 +326,7 @@ pub struct CaptureFilters<'a> {
     pub pet_food: Option<PetFoodCaptureFilter>,
     pub currency_balance: Option<CurrencyBalanceFilter>,
     pub reputation_rank: Option<ReputationRankFilter>,
+    pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -381,6 +382,14 @@ pub struct ReputationRankFilter {
     /// Inclusive minimum standard reputation reaction, from 1 to 8.
     #[schemars(range(min = 1, max = 8))]
     pub minimum_reaction: u8,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct TrackedAchievementFilter {
+    pub achievement_id: std::num::NonZeroU32,
+    pub completed: Option<bool>,
+    pub earned_by_character: Option<bool>,
 }
 
 impl Store {
@@ -487,6 +496,7 @@ impl Store {
             pet_food,
             currency_balance,
             reputation_rank,
+            tracked_achievement,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -712,6 +722,13 @@ impl Store {
             .as_ref()
             .map(|filter| filter.faction_id.to_string());
         ensure!(
+            tracked_achievement.is_none() || family == Family::Forever,
+            "Tracked achievement filtering requires Forever"
+        );
+        let achievement_key = tracked_achievement
+            .as_ref()
+            .map(|filter| filter.achievement_id.to_string());
+        ensure!(
             (quest_id.is_none() && quest_readiness.is_none() && quest_waypoint_map_id.is_none())
                 || family == Family::Forever,
             "Quest filtering requires Forever"
@@ -827,6 +844,23 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let achievement_match = tracked_achievement
+                        .as_ref()
+                        .zip(achievement_key.as_ref())
+                        .and_then(|(filter, key)| {
+                            let row =
+                                s.sections.get("tracked_achievements")?["entries"].get(key)?;
+                            (filter
+                                .completed
+                                .is_none_or(|value| row["completed"].as_bool() == Some(value))
+                                && filter.earned_by_character.is_none_or(|value| {
+                                    row["earned_by_character"].as_bool() == Some(value)
+                                }))
+                            .then_some(row)
+                        });
+                    if tracked_achievement.is_some() && achievement_match.is_none() {
+                        continue;
+                    }
                     let reputation_match = reputation_rank
                         .as_ref()
                         .zip(reputation_key.as_ref())
@@ -1160,6 +1194,13 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some((filter, row)) = tracked_achievement.as_ref().zip(achievement_match)
+                    {
+                        summary["tracked_achievement_match"] = json!({
+                            "achievement_id":filter.achievement_id,"completed":row["completed"],
+                            "earned_by_character":row["earned_by_character"],"account_wide":row["account_wide"],
+                        });
+                    }
                     if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {
                         summary["reputation_rank_match"] = json!({
                             "faction_id":filter.faction_id,"reaction":row["reaction"],

@@ -286,6 +286,8 @@ struct List {
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
     reputation_rank: Option<azeroth_operator::ReputationRankFilter>,
+    /// Match a captured tracked achievement by ID and optional completion or character-credit flags.
+    tracked_achievement: Option<azeroth_operator::TrackedAchievementFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1211,6 +1213,7 @@ impl Operator {
                 pet_food: args.pet_food,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
+                tracked_achievement: args.tracked_achievement,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

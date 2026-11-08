@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever tracked achievements by completion and character credit.
+
 - Find saved Forever characters meeting a standard faction-rank threshold.
 
 - Find saved Forever currencies with room below their recorded weekly or total caps.

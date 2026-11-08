@@ -1303,6 +1303,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "faction_id": 10, "minimum_reaction": invalid_rank,
                                 },
                             })).isError)
+                        for selection, expected_ids in [
+                            ({"achievement_id": 101, "completed": True, "earned_by_character": False},
+                             [new_freshness_id]),
+                            ({"achievement_id": 101, "earned_by_character": True}, []),
+                            ({"achievement_id": 999, "completed": False}, []),
+                        ]:
+                            achievement_search = await session.call_tool("list_snapshots", {
+                                **latest_query, "tracked_achievement": selection,
+                            })
+                            self.assertFalse(achievement_search.isError)
+                            achievement_rows = json.loads(achievement_search.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in achievement_rows], expected_ids)
+                            if achievement_rows:
+                                self.assertEqual(achievement_rows[0]["tracked_achievement_match"], {
+                                    "achievement_id": 101, "completed": True,
+                                    "earned_by_character": False, "account_wide": True,
+                                })
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),
