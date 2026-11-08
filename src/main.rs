@@ -85,6 +85,9 @@ struct Inspect {
     /// Combine renown rewards from retained quests against the same capture's faction progress.
     #[serde(default)]
     quest_list_renown_projection: bool,
+    /// Total fixed item rewards and identify item choices across retained Forever quests.
+    #[serde(default)]
+    quest_list_item_rewards: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -1176,6 +1179,7 @@ impl Operator {
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
                 || args.quest_list_renown_projection
+                || args.quest_list_item_rewards
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -1242,7 +1246,8 @@ impl Operator {
             || args.quest_list_xp_projection
             || args.quest_list_wallet_projection
             || args.quest_list_currency_projection
-            || args.quest_list_renown_projection)
+            || args.quest_list_renown_projection
+            || args.quest_list_item_rewards)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1491,6 +1496,7 @@ impl Operator {
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
                     || args.quest_list_renown_projection
+                    || args.quest_list_item_rewards
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -1656,6 +1662,12 @@ impl Operator {
                         data.as_object().map_or(serde_json::Value::Null, |quests| {
                             azeroth_operator::analysis::quest_checklist(quests)
                         });
+                    if args.quest_list_item_rewards {
+                        value["quest_list_item_rewards"] = data.as_object().map_or(
+                            serde_json::Value::Null,
+                            azeroth_operator::analysis::quest_list_item_rewards,
+                        );
+                    }
                     if args.quest_list_xp_projection {
                         let experience = context
                             .as_ref()

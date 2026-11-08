@@ -586,6 +586,9 @@ are counted. Missing cap information leaves the comparison unknown.
 Set `quest_list_renown_projection` to compare known renown rewards by
 faction with the next rank in the same capture. A shortfall is measured
 against known rewards. Missing reward lists may change the final result.
+Set `quest_list_item_rewards` to total known fixed rewards by base item ID
+across retained quests. Quest IDs with item choices appear separately,
+and missing fixed and choice lists are counted independently.
 Use `quest_min_reward_xp` to keep quests with at least that much captured
 XP. Unknown rewards are excluded and counted before the copper filters.
 Set `quest_list_xp_projection` to total observed XP across retained quests.

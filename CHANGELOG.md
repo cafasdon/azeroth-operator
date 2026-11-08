@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Tally fixed item rewards across saved Forever quest lists and identify quests with choices.
+
 - Project combined renown rewards across saved Forever quest lists.
 
 - Compare combined fixed Forever quest currency rewards with captured cap headroom.

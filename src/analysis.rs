@@ -1298,6 +1298,34 @@ pub fn currency_reward_projection(proposed: u64, entry: &Value, caps: &Value) ->
     })
 }
 
+pub fn quest_list_item_rewards(quests: &serde_json::Map<String, Value>) -> Value {
+    let mut totals = BTreeMap::<u64, u64>::new();
+    let mut unknown_fixed = 0;
+    let mut unknown_choices = 0;
+    let mut quests_with_choices = Vec::new();
+    for (id, quest) in quests {
+        match quest["item_choices"].as_object() {
+            Some(choices) if !choices.is_empty() => quests_with_choices.push(id),
+            Some(_) => (),
+            None => unknown_choices += 1,
+        }
+        let Some(rows) = quest["item_rewards"].as_object() else {
+            unknown_fixed += 1;
+            continue;
+        };
+        for row in rows.values() {
+            if let (Some(id), Some(quantity)) = (row["item_id"].as_u64(), row["quantity"].as_u64())
+            {
+                *totals.entry(id).or_default() += quantity;
+            }
+        }
+    }
+    json!({"known_fixed_quantity_by_item_id":totals,
+        "unknown_fixed_reward_list_count":unknown_fixed,
+        "quests_with_observed_item_choices":quests_with_choices,
+        "unknown_choice_list_count":unknown_choices})
+}
+
 pub fn quest_list_currency_projection(
     quests: &serde_json::Map<String, Value>,
     balances: &Value,
