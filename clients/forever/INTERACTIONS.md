@@ -30,6 +30,13 @@ Unrecognised or unavailable context remains unknown. Group membership,
 lockout identifiers and encounter state are outside this capture. Update
 the importer and reader before syncing new captures. [Forever instance API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/InstanceDocumentation.lua)
 
+In `list_snapshots`, set `family: "forever"` and supply any of
+`instance_kind`, `instance_name` or `instance_difficulty_id`. Name
+matching is exact and case-insensitive. Filters combine with the saved
+character and recipe selectors before pagination. `instance_kind: "none"`
+finds captures taken outside an instance. Captures without an observation
+are excluded from filtered results.
+
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture
 time. The separately observed `rested_xp` is the saved XP bonus pool.

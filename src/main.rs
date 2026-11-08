@@ -167,6 +167,12 @@ struct List {
     recipe_profession_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the exact captured selected recipe ID.
     recipe_id: Option<std::num::NonZeroU32>,
+    /// Filter saved Forever instance context by kind, including "none" for outside an instance.
+    instance_kind: Option<String>,
+    /// Filter saved Forever instance context by exact, case-insensitive name.
+    instance_name: Option<String>,
+    /// Filter saved Forever instance context by its observed difficulty ID.
+    instance_difficulty_id: Option<u32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -890,7 +896,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can find selected recipes by recipe, output item or profession ID. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe or instance context. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -904,7 +910,7 @@ impl Operator {
             "forever" => Family::Forever,
             _ => return CallToolResult::error(vec![ContentBlock::text("Unknown family")]),
         };
-        match self.store.list_matching_recipes(
+        match self.store.list_matching_captures(
             family,
             args.character.as_ref(),
             azeroth_operator::RecipeCaptureFilters {
@@ -912,12 +918,17 @@ impl Operator {
                 output_item_id: args.recipe_output_item_id,
                 profession_id: args.recipe_profession_id,
             },
+            azeroth_operator::InstanceCaptureFilters {
+                kind: args.instance_kind.as_deref(),
+                name: args.instance_name.as_deref(),
+                difficulty_id: args.instance_difficulty_id,
+            },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed: check the character, recipe filters and limit",
+                "Snapshot listing failed: check the character, recipe or instance filters and limit",
             )]),
         }
     }

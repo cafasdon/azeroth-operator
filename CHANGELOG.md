@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever captures by instance type, name and difficulty.
+
 - Capture the observed Forever instance type, public name and difficulty ID.
 
 - Estimate when a captured Forever recipe cooldown ends using the recipe capture time.

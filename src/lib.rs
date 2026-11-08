@@ -203,6 +203,13 @@ pub struct RecipeCaptureFilters {
     pub profession_id: Option<std::num::NonZeroU32>,
 }
 
+#[derive(Default)]
+pub struct InstanceCaptureFilters<'a> {
+    pub kind: Option<&'a str>,
+    pub name: Option<&'a str>,
+    pub difficulty_id: Option<u32>,
+}
+
 impl Store {
     pub fn list(&self, family: Family, offset: usize, limit: usize) -> Result<Value> {
         self.list_matching(family, None, offset, limit)
@@ -246,6 +253,25 @@ impl Store {
         offset: usize,
         limit: usize,
     ) -> Result<Value> {
+        self.list_matching_captures(
+            family,
+            character,
+            filters,
+            InstanceCaptureFilters::default(),
+            offset,
+            limit,
+        )
+    }
+
+    pub fn list_matching_captures(
+        &self,
+        family: Family,
+        character: Option<&Character>,
+        filters: RecipeCaptureFilters,
+        instance: InstanceCaptureFilters<'_>,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Value> {
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
@@ -253,6 +279,24 @@ impl Store {
             !filter_recipes || family == Family::Forever,
             "Recipe filtering requires Forever"
         );
+        let filter_instance =
+            instance.kind.is_some() || instance.name.is_some() || instance.difficulty_id.is_some();
+        ensure!(
+            !filter_instance || family == Family::Forever,
+            "Instance filtering requires Forever"
+        );
+        ensure!(
+            instance.kind.is_none_or(|kind| matches!(
+                kind,
+                "none" | "party" | "raid" | "pvp" | "arena" | "scenario"
+            )) && instance
+                .name
+                .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256)
+                && (instance.kind != Some("none")
+                    || (instance.name.is_none() && instance.difficulty_id.is_none())),
+            "Invalid instance filters"
+        );
+        let instance_name = instance.name.map(str::to_lowercase);
         ensure!((1..=100).contains(&limit), "Limit must be 1..100");
         if let Some(character) = character {
             ensure!(
@@ -289,6 +333,20 @@ impl Store {
             match Self::read_in_root(&root, id) {
                 Ok(s)
                     if s.client.family == family
+                        && (!filter_instance
+                            || s.sections.get("instance_context").is_some_and(|context| {
+                                instance
+                                    .kind
+                                    .is_none_or(|kind| context["kind"].as_str() == Some(kind))
+                                    && instance_name.as_ref().is_none_or(|name| {
+                                        context["name"]
+                                            .as_str()
+                                            .is_some_and(|value| value.to_lowercase() == *name)
+                                    })
+                                    && instance.difficulty_id.is_none_or(|id| {
+                                        context["difficulty_id"].as_u64() == Some(u64::from(id))
+                                    })
+                            }))
                         && filters.recipe_id.is_none_or(|id| {
                             s.sections.get("selected_recipe").is_some_and(|recipe| {
                                 recipe["recipe_id"].as_u64() == Some(u64::from(id.get()))
@@ -312,6 +370,9 @@ impl Store {
                 {
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if filter_instance {
+                        summary["instance_context"] = s.sections["instance_context"].clone();
+                    }
                     if filter_recipes && let Some(recipe) = s.sections.get("selected_recipe") {
                         summary["selected_recipe"] = json!({
                             "recipe_id":recipe["recipe_id"],"learned":recipe["learned"],
