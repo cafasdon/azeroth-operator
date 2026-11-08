@@ -798,7 +798,7 @@ pub fn verify_forever_capture_fixture(
     let summary = azeroth_operator::analysis::summary(&snapshot);
     assert_eq!(
         summary["instance_context"],
-        serde_json::json!({"kind":"party","name":"Fixture Dungeon","difficulty_id":1})
+        serde_json::json!({"kind":"party","name":"Fixture Dungeon","difficulty_id":1,"instance_map_id":123})
     );
     lua.load("fixtureInstanceKind='none';AO.Capture()").exec()?;
     assert_eq!(

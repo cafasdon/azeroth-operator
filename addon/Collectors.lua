@@ -845,13 +845,15 @@ AO.collectors.currencies = function()
 end
 
 AO.collectors.instance_context = function()
-    local name,kind,difficulty=GetInstanceInfo()
+    local name,kind,difficulty,_,_,_,_,map=GetInstanceInfo()
     local types={none=true,party=true,raid=true,pvp=true,arena=true,scenario=true}
     assert(questRewardAccessible(kind) and type(kind)=="string" and types[kind], "Instance type unavailable")
     if kind=="none" then return {kind=kind} end
     assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
         and questRewardInteger(difficulty,0,4294967295), "Instance details unavailable")
-    return {kind=kind,name=name,difficulty_id=difficulty}
+    local context={kind=kind,name=name,difficulty_id=difficulty}
+    if questRewardInteger(map,1,4294967295) then context.instance_map_id=map end
+    return context
 end
 
 AO.collectors.bag_capacity = function()

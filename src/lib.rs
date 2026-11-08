@@ -208,6 +208,7 @@ pub struct InstanceCaptureFilters<'a> {
     pub kind: Option<&'a str>,
     pub name: Option<&'a str>,
     pub difficulty_id: Option<u32>,
+    pub map_id: Option<std::num::NonZeroU32>,
 }
 
 impl Store {
@@ -279,8 +280,10 @@ impl Store {
             !filter_recipes || family == Family::Forever,
             "Recipe filtering requires Forever"
         );
-        let filter_instance =
-            instance.kind.is_some() || instance.name.is_some() || instance.difficulty_id.is_some();
+        let filter_instance = instance.kind.is_some()
+            || instance.name.is_some()
+            || instance.difficulty_id.is_some()
+            || instance.map_id.is_some();
         ensure!(
             !filter_instance || family == Family::Forever,
             "Instance filtering requires Forever"
@@ -293,7 +296,9 @@ impl Store {
                 .name
                 .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256)
                 && (instance.kind != Some("none")
-                    || (instance.name.is_none() && instance.difficulty_id.is_none())),
+                    || (instance.name.is_none()
+                        && instance.difficulty_id.is_none()
+                        && instance.map_id.is_none())),
             "Invalid instance filters"
         );
         let instance_name = instance.name.map(str::to_lowercase);
@@ -345,6 +350,10 @@ impl Store {
                                     })
                                     && instance.difficulty_id.is_none_or(|id| {
                                         context["difficulty_id"].as_u64() == Some(u64::from(id))
+                                    })
+                                    && instance.map_id.is_none_or(|id| {
+                                        context["instance_map_id"].as_u64()
+                                            == Some(u64::from(id.get()))
                                     })
                             }))
                         && filters.recipe_id.is_none_or(|id| {

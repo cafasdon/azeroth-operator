@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture and filter Forever instances by their map ID independently of localized names.
+
 - Filter saved Forever captures by instance type, name and difficulty.
 
 - Capture the observed Forever instance type, public name and difficulty ID.

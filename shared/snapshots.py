@@ -50,10 +50,12 @@ def validate_snapshot(value):
             raise ValueError("Invalid instance context")
         if instance != {"kind": "none"}:
             name, difficulty = instance.get("name"), instance.get("difficulty_id")
-            if (set(instance) != {"kind", "name", "difficulty_id"}
-                    or instance["kind"] not in ("party", "raid", "pvp", "arena", "scenario")
+            map_id = instance.get("instance_map_id")
+            if (set(instance) - {"kind", "name", "difficulty_id", "instance_map_id"}
+                    or instance.get("kind") not in ("party", "raid", "pvp", "arena", "scenario")
                     or not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
-                    or type(difficulty) is not int or not 0 <= difficulty <= 4_294_967_295):
+                    or type(difficulty) is not int or not 0 <= difficulty <= 4_294_967_295
+                    or ("instance_map_id" in instance and (type(map_id) is not int or not 1 <= map_id <= 4_294_967_295))):
                 raise ValueError("Invalid instance context")
     if "bag_capacity" in sections:
         bags = sections["bag_capacity"]

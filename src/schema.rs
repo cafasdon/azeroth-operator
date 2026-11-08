@@ -861,6 +861,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("kind", "text", true),
                         ("name", "text", true),
                         ("difficulty_id", "uint", true),
+                        ("instance_map_id", "positive", false),
                     ],
                 )?;
                 ensure!(
@@ -868,6 +869,10 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         .as_str()
                         .is_some_and(|name| !name.is_empty() && name.len() <= 256),
                     "Invalid instance name"
+                );
+                ensure!(
+                    value.get("instance_map_id").is_none_or(|id| !id.is_null()),
+                    "Invalid instance map ID"
                 );
             }
             _ => anyhow::bail!("Invalid instance type"),

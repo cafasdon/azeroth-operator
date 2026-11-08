@@ -173,6 +173,8 @@ struct List {
     instance_name: Option<String>,
     /// Filter saved Forever instance context by its observed difficulty ID.
     instance_difficulty_id: Option<u32>,
+    /// Filter by the saved Forever instance map ID, independent of the localized name.
+    instance_map_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -922,6 +924,7 @@ impl Operator {
                 kind: args.instance_kind.as_deref(),
                 name: args.instance_name.as_deref(),
                 difficulty_id: args.instance_difficulty_id,
+                map_id: args.instance_map_id,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
