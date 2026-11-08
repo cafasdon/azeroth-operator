@@ -57,6 +57,16 @@ entry eligibility. Timers are not advanced on read, and world-boss saves are not
 part of this section. Reader/importer updates are required before installation;
 native qualification remains pending.
 
+For saved-instance searches, use `list_snapshots.saved_instance`, for example
+`{"name":"Molten Core","locked":true,"maximum_reset_seconds":86400}` with
+`family: "forever"`. Names match exactly without case sensitivity. Optional
+`difficulty_id`, `extended` and `is_raid` flags apply to the same row. Negative
+reset timers are excluded when a maximum is supplied.
+`maximum_update_age_seconds` limits the cache's age at capture, not its age now.
+Results include a count and up to 20 matching rows, with `truncated` when more
+match. Character, capture-time and newest-per-character filters still apply.
+No row or unavailable cache is never interpreted as an unsaved character.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

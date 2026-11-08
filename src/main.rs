@@ -300,6 +300,8 @@ struct List {
     tracked_achievement: Option<azeroth_operator::TrackedAchievementFilter>,
     /// Find an observed collected mount by ID and optional recorded usability/favourite flags.
     collected_mount: Option<azeroth_operator::CollectedMountFilter>,
+    /// Match a named saved instance and its recorded lock/reset state.
+    saved_instance: Option<azeroth_operator::SavedInstanceFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1273,6 +1275,7 @@ impl Operator {
                 paragon: args.paragon,
                 tracked_achievement: args.tracked_achievement,
                 collected_mount: args.collected_mount,
+                saved_instance: args.saved_instance,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

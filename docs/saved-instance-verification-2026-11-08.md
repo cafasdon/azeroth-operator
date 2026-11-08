@@ -38,3 +38,28 @@ and flag values, failed timestamp reads, clock rollback, private-ID omission,
 53 Python/Rust schema cases and separate owner stores. Jev 1.14.0 scope advice
 returned supported (request `b39ca73222c82d1df6e360eefbe4536908a32268bc39552e4ad5bfeb419854af`,
 502 input / 46 output tokens, 0.364 seconds), separately from verification.
+
+## Saved-character search
+
+`list_snapshots.saved_instance` requires an exact case-insensitive name and
+optionally matches difficulty, lock/extension and raid flags, nonnegative reset
+seconds and the age of the cache update at capture. All predicates apply to
+one entry. It cannot infer an unsaved state from a missing entry or section.
+
+The result includes a matched count and at most 20 rows ordered by their
+numeric captured slot, with truncation flagged. Standard character/date/newest
+filters remain in effect. A maximum update age is not a live freshness check.
+
+The real-MCP fixture checks conjunctive matching, explicit false lock flags,
+inclusive reset/update-age boundaries, negative timer exclusion, missing-newest
+suppression, family/name rejection and the 20-row result limit. The regression
+command `PYTHONPATH=.;tests python -m unittest test_mcp test_snapshots test_saved_instances`
+passed 11 tests. Offline build, formatting and diff checks passed.
+
+Independent failure/caller review (gpt-6.1-sol, high effort) found no concrete
+failure across 51 extra real-MCP checks: same-row predicates, false flags,
+timer/update-age boundaries, date/newest order, pagination, 128-row truncation,
+malformed arguments/snapshots, private-ID rejection and unchanged defaults.
+Jev 1.14.0 scope advice returned supported (request
+`7d2136864f3e95e1614eb103d061c3546a8c9f322896e633080f8bcd645e5eb0`,
+471 input / 46 output tokens, 0.316 seconds), separately from runtime evidence.

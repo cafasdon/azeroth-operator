@@ -319,6 +319,21 @@ pub struct CollectedMountFilter {
     pub favorite: Option<bool>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SavedInstanceFilter {
+    /// Exact case-insensitive captured instance name.
+    pub name: String,
+    pub difficulty_id: Option<u32>,
+    pub locked: Option<bool>,
+    pub extended: Option<bool>,
+    pub is_raid: Option<bool>,
+    /// Only nonnegative reset timers at or below this value, as recorded at capture.
+    pub maximum_reset_seconds: Option<u32>,
+    /// Maximum age of the last instance-info update at capture, not age today.
+    pub maximum_update_age_seconds: Option<u32>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -345,6 +360,7 @@ pub struct CaptureFilters<'a> {
     pub paragon: Option<ParagonFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub collected_mount: Option<CollectedMountFilter>,
+    pub saved_instance: Option<SavedInstanceFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -536,6 +552,7 @@ impl Store {
             paragon,
             tracked_achievement,
             collected_mount,
+            saved_instance,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -569,6 +586,17 @@ impl Store {
         let mount_key = collected_mount
             .as_ref()
             .map(|filter| filter.mount_id.to_string());
+        ensure!(
+            saved_instance
+                .as_ref()
+                .is_none_or(|filter| family == Family::Forever
+                    && !filter.name.trim().is_empty()
+                    && filter.name.len() <= 256),
+            "Saved instance filtering requires Forever and a bounded name"
+        );
+        let saved_instance_name = saved_instance
+            .as_ref()
+            .map(|filter| filter.name.to_lowercase());
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -906,6 +934,29 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let saved_instance_match = saved_instance.as_ref().zip(saved_instance_name.as_ref()).and_then(|(filter, name)| {
+                        let saved = s.sections.get("saved_instances")?;
+                        if !filter.maximum_update_age_seconds.is_none_or(|maximum|
+                            saved["update_age_seconds"].as_u64().is_some_and(|age| age <= u64::from(maximum))) {
+                            return None;
+                        }
+                        let mut matches: Vec<_> = saved["entries"].as_object()?.iter().filter(|(_, row)| {
+                            row["name"].as_str().is_some_and(|value| value.to_lowercase() == *name)
+                                && filter.difficulty_id.is_none_or(|id| row["difficulty_id"].as_u64() == Some(u64::from(id)))
+                                && filter.locked.is_none_or(|flag| row["locked"].as_bool() == Some(flag))
+                                && filter.extended.is_none_or(|flag| row["extended"].as_bool() == Some(flag))
+                                && filter.is_raid.is_none_or(|flag| row["is_raid"].as_bool() == Some(flag))
+                                && filter.maximum_reset_seconds.is_none_or(|maximum|
+                                    row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
+                        }).collect();
+                        matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
+                        (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
+                            "matched_count":matches.len(),"truncated":matches.len()>20,
+                            "entries":matches.iter().take(20).map(|(slot,row)| json!({"slot":slot.parse::<u32>().unwrap(),"data":row})).collect::<Vec<_>>() }))
+                    });
+                    if saved_instance.is_some() && saved_instance_match.is_none() {
+                        continue;
+                    }
                     let mount_match = collected_mount.as_ref().zip(mount_key.as_ref()).and_then(
                         |(filter, key)| {
                             let row = s.sections.get("mount_collection")?["entries"].get(key)?;
@@ -1372,6 +1423,9 @@ impl Store {
                     }
                     if let Some(map) = quest_waypoint_map_id {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
+                    }
+                    if let Some(observation) = saved_instance_match {
+                        summary["saved_instance_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

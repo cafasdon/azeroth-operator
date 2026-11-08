@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved characters by observed instance name, difficulty, lock flags, reset timer and cache age.
+
 - Capture saved-instance metadata after a passive instance-info update, excluding unique lockout IDs.
 
 - Look up toy items and compare overlapping observations in saved filtered toy-journal views.
