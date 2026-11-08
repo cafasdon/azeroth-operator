@@ -52,11 +52,11 @@ movement, rotation, buffs or talents could be silently discarded.
 
 ## Next improvements to qualify
 
-1. Persistent owner-local result caching. Current reuse is within an invocation.
-   An entry must cover the full canonical request, engine/adapter hash, pinned
-   catalogue identity, metric mode, precision and shortlist settings. Keep
-   names, account identifiers and raw captures out of shared caches. Bound
-   storage and validate entries; corruption must trigger recomputation.
+1. Extend caching to staged bulk results after qualifying their full keys.
+   Fixed-run persistent caching is now implemented with `--cache`, keyed by
+   the full request, engine checksum and metric modes. It stores no requests
+   or character names, uses user-bound DPAPI on Windows and bounds entries.
+   Bulk entries would additionally need adapter identity and shortlist settings.
 2. Broader shortlist validation. Use multi-slot pools, close contenders and
    independent seeds across supported encounter mechanics. Measure missed
    contenders and uncertainty as well as elapsed time before changing culling.

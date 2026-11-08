@@ -16,9 +16,11 @@ import tempfile
 import time
 
 if __package__:
+    from .simulation_cache import SimulationCache
     from .sync_exports import ordinary
     from .sync_forever_catalogue import MAX_BYTES, verify
 else:
+    from simulation_cache import SimulationCache
     from sync_exports import ordinary
     from sync_forever_catalogue import MAX_BYTES, verify
 
@@ -244,7 +246,8 @@ def wilson_interval_95(count, iterations):
     }
 
 
-def run(engine, expected_hash, request, deadline=None, paired=False, tank_metrics=False, healing_metrics=False):
+def run(engine, expected_hash, request, deadline=None, paired=False, tank_metrics=False, healing_metrics=False,
+        cache=None):
     if tank_metrics:
         raid = request["raid"]
         first_party = raid["parties"][0].get("players", [])
@@ -255,6 +258,13 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                            for target in request["encounter"]["targets"])):
             raise ValueError("Tank metrics require the first player as the encounter tank")
     verify_engine(engine, expected_hash)
+    if deadline is not None and time.monotonic() >= deadline:
+        raise ValueError("Comparison deadline exceeded")
+    cache_key = cache.key(expected_hash, request, paired, tank_metrics, healing_metrics) if cache else None
+    if cache:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return {**cached, "cache_status": "hit"}
     with tempfile.TemporaryDirectory(prefix="forever-sim-") as folder:
         root = Path(folder)
         source = root / "request.json"
@@ -325,10 +335,13 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                     or not all(type(value) in (int, float) and math.isfinite(value) for value in values)):
                 raise ValueError("Simulator returned invalid paired samples")
             summary[f"_{metric}_samples"] = values
+        if cache:
+            cache.put(cache_key, summary)
+            summary["cache_status"] = "miss"
         return summary
 
 
-def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, healing_metrics=False):
+def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, healing_metrics=False, cache=None):
     keys = [json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False)
             for request in requests]
     unique = dict(zip(keys, requests))
@@ -346,6 +359,7 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         results[key] = run(
             engine, expected_hash, request, deadline=deadline, paired=paired,
             tank_metrics=tank_metrics, healing_metrics=healing_metrics,
+            cache=cache,
         )
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
@@ -484,8 +498,10 @@ def main():
                         help="Report damage taken, threat per second and simulated deaths for an explicit tank")
     parser.add_argument("--healing-metrics", action="store_true",
                         help="Report simulated healing per second and time out of mana")
+    parser.add_argument("--cache", action="store_true", help="Reuse exact fixed-run results in this OS user's local cache")
     args = parser.parse_args()
     try:
+        cache = SimulationCache.for_current_user() if args.cache else None
         if len(args.equipment_review) > 8:
             raise ValueError("Use at most eight equipment reviews")
         if args.paired and len(args.equipment_review) < 2:
@@ -497,10 +513,10 @@ def main():
         requests = [request_from(template, read_object(path, limit), encounter)
                     for path in args.equipment_review]
         result = (run(args.engine, args.engine_sha256, requests[0], tank_metrics=args.tank_metrics,
-                      healing_metrics=args.healing_metrics)
+                      healing_metrics=args.healing_metrics, cache=cache)
                   if len(requests) == 1 else compare(
                       args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.tank_metrics,
-                      healing_metrics=args.healing_metrics))
+                      healing_metrics=args.healing_metrics, cache=cache))
         result.update(encounter_summary(requests[0]))
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:

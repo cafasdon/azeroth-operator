@@ -16,6 +16,7 @@ from mcp.client.stdio import stdio_client
 from tools.run_forever_sim import (
     CLASS_IDS, ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
     encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
+    SimulationCache,
 )
 
 
@@ -325,8 +326,9 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finali
     tank_ranking = args.rank_by in ("dtps", "tps", "death")
     healing_ranking = args.rank_by in ("hps", "oom")
     start = monotonic()
+    cache = getattr(args, "simulation_cache", None)
     screening = finalist_reviews is None and args.bulk_engine
-    fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired)
+    fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired, cache=cache)
              if screening and args.audit_shortlist else None)
     after_fixed = monotonic()
     result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
@@ -336,7 +338,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finali
     if result is None:
         result = fixed if fixed is not None else compare(
             args.engine, args.engine_sha256, requests, paired=args.paired,
-            tank_metrics=tank_ranking, healing_metrics=healing_ranking)
+            tank_metrics=tank_ranking, healing_metrics=healing_ranking, cache=cache)
     result.update(encounter_summary(requests[0]))
     if args.confirm_leading_seed is not None and not (screening and args.encounter_weight):
         pair = result.get("observed_leading_dps_pair")
@@ -359,7 +361,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finali
                 {**request, "simOptions": {**request["simOptions"], "randomSeed": confirmation["seed"]}}
                 for request in selected
             ]
-            _, leader = compare(args.engine, args.engine_sha256, fresh, paired=True)["results"]
+            _, leader = compare(args.engine, args.engine_sha256, fresh, paired=True, cache=cache)["results"]
             confirmation.update(
                 status="compared",
                 leading_review=reviews[1],
@@ -494,6 +496,7 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Bulk mode cross-tests the combined shortlist.")
     parser.add_argument("--paired", action="store_true")
+    parser.add_argument("--cache", action="store_true", help="Reuse exact fixed-run results in this OS user's local cache")
     parser.add_argument("--confirm-leading-seed", type=int,
                         help="Rerun the top two distinct DPS sets with this fresh seed.")
     parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",
@@ -525,7 +528,7 @@ def main():
         if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
                 or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
                 or args.encounter_weight or args.rank_by != "dps"
-                or args.confirm_leading_seed is not None):
+                or args.confirm_leading_seed is not None or args.cache):
             parser.error("--plan-only takes no simulator or encounter options")
     elif not (args.engine and args.engine_sha256 and args.encounter_lookup):
         parser.error("--engine, --engine-sha256 and --encounter-lookup are required for simulation")
@@ -535,6 +538,7 @@ def main():
     ):
         parser.error("Confirmation requires a positive 32-bit seed and paired DPS mode")
     try:
+        args.simulation_cache = SimulationCache.for_current_user() if args.cache else None
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
         if len(set(args.slot)) != len(args.slot):

@@ -781,6 +781,31 @@ Within one command, matching encounter and simulator options reuse the first
 result. The repeated row reports `reused_encounter_index` and keeps its own
 weight and position. Different seeds or iteration counts run separately.
 
+Add `--cache` to `python -m tools.run_forever_sim` or
+`python -m tools.rank_forever_slot` to reuse fixed-run results between commands.
+The key covers the full simulator request, engine checksum, metric modes and
+cache format version. The engine checksum is verified even on a hit. A changed
+seed, encounter, rotation, equipment or precision gets a separate entry.
+Each returned fixed-run row reports `cache_status` as `hit` or `miss`.
+
+This opt-in cache belongs to the local OS user, under
+`%LOCALAPPDATA%\AzerothOperator\simulation-cache` on Windows. It stores numeric
+summaries and hashed request keys, not character names, raw captures or full
+requests. It holds at most 128 summaries of up to 512 KiB each; SQLite adds
+storage overhead. Windows encrypts result bodies with current-user DPAPI and
+binds them to the request key. Other OS users cannot decrypt or reuse them,
+and native owner/access checks reject existing folders or databases granting
+access to other users. Unavailable, insecure or corrupt cache data causes a
+fresh simulation.
+Omit `--cache` to bypass it. Bulk screening itself is not cached; fixed shortlist
+audits, finalist comparisons and fresh-seed confirmation runs can reuse it.
+
+An offline public Hunter check used three seeds, 1,000 iterations and a
+180-second Raid Target fight. Three separate cold CLI calls took 0.406–0.430 s;
+their matching warm calls took 0.173–0.182 s. Each returned identical numeric
+results. This measures reuse of identical work, not faster first-time simulation
+or native encounter accuracy. [Recorded measurements](../../docs/benchmarks/forever-cache-2026-11-08.json)
+
 On the 49-set Hunter fixture above, a paired comparison of Raid Target,
 Movement and a repeated Raid Target export at weights 5:3:2 took 11.08 s
 with staged weighting and 27.64 s with exhaustive weighting. Seven review

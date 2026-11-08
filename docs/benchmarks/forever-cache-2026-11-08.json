@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-08",
+  "engine_sha256": "0e195f35c247d78f05c7d87c2c017e7052d7ca532500a84ae19faba133ae99a5",
+  "template_sha256": "761afca4f5bca1d8b5825b6411d60cb804fd1b792cf7927aff7f3dbd3ee96dd0",
+  "iterations": 1000,
+  "duration_seconds": 180,
+  "duration_variation_seconds": 5,
+  "mode": "separate CLI processes, Windows current-user DPAPI and native ACL checks",
+  "fixture": "public Hunter template and pinned Raid Target",
+  "runs": [
+    {
+      "seed": 20261110,
+      "cold_seconds": 0.43019510013982654,
+      "warm_seconds": 0.17320220009423792,
+      "metrics_equal": true,
+      "mean_dps": 789.8279341832722
+    },
+    {
+      "seed": 20261111,
+      "cold_seconds": 0.406310599995777,
+      "warm_seconds": 0.18246859987266362,
+      "metrics_equal": true,
+      "mean_dps": 789.8402774489713
+    },
+    {
+      "seed": 20261112,
+      "cold_seconds": 0.42926039989106357,
+      "warm_seconds": 0.1749757998622954,
+      "metrics_equal": true,
+      "mean_dps": 789.8319777806063
+    }
+  ]
+}
