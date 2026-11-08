@@ -1,5 +1,9 @@
 # Changelog
 
+- Prepare bounded simulation requests from an exact retained gear window using
+  fresh read-only MCP reviews, exact saved gear matching and existing model
+  guards, with local input fingerprints and no simulator execution.
+
 - Optionally retain canonical numeric gear inputs in bounded search journals,
   validate each input against its draft hash, and export an exact saved window
   without recollecting combinations; keep simulation qualification separate.

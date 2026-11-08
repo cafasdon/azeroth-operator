@@ -112,3 +112,9 @@ On 9 November, [optional retained gear inputs](retained-gear-inputs-verification
 add canonical numeric material to saved resolved drafts. This reduces future
 recollection needs but does not persist a qualified character/encounter job,
 execute simulations or complete global ranking/full owned BiS.
+
+Later [window request preparation](gear-window-preparation-verification-2026-11-09.md)
+rechecks retained saved selections via local MCP and applies existing adapter
+guards before producing bounded requests. It skips candidate enumeration but
+still needs fresh reviews; engine execution, resumable result storage and global
+simulation ranking/full owned BiS remain unfinished.

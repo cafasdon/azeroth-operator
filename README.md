@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.prepare_forever_gear_window --help` prepares simulator requests
+from one exact retained journal window. It rechecks saved selections through the
+local MCP, requires identical gear inputs, and applies the existing character,
+pet, profession and native-slot model guards. No candidate enumeration or engine
+execution is performed. [Evidence](docs/gear-window-preparation-verification-2026-11-09.md).
+
 The offline gear collector can opt into `--retain-equipment-specs` to save the
 numeric equipment behind each resolved draft hash. Inspect an exact saved window
 with `--include-equipment-specs` to retrieve those inputs. Retention must stay
