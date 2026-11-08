@@ -363,6 +363,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         direct_plan = json.loads(direct.content[0].text)["flight_route_search"]
                         self.assertEqual(direct_plan["total_fare_copper"], 20)
                         self.assertEqual(len(direct_plan["legs"]), 1)
+                        fewest_request = {
+                            **route_request, "flight_route_search": {
+                                **route_request["flight_route_search"], "objective": "fewest_legs",
+                            },
+                        }
+                        fewest = await session.call_tool("inspect_snapshot", fewest_request)
+                        self.assertFalse(fewest.isError)
+                        self.assertEqual(json.loads(fewest.content[0].text)["flight_route_search"],
+                                         direct_plan)
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            **fewest_request, "flight_route_search": {
+                                **route_request["flight_route_search"], "objective": "fastest",
+                            },
+                        })).isError)
                         for invalid in (0, 9):
                             self.assertTrue((await session.call_tool("inspect_snapshot", {
                                 **direct_request, "flight_route_search": {

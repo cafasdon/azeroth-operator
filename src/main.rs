@@ -42,7 +42,7 @@ struct Inspect {
     flight_node_id: Option<std::num::NonZeroU32>,
     /// Check up to seven onward flight legs using explicit saved captures.
     flight_onward_legs: Option<Vec<FlightLeg>>,
-    /// Find a lowest-fare route across this saved flight panel and optional onward panels.
+    /// Find a route across this saved flight panel and optional onward panels.
     flight_route_search: Option<FlightRouteSearch>,
     /// Keep captured reachable flight destinations and exclude map-transition nodes.
     #[serde(default)]
@@ -392,6 +392,8 @@ struct FlightRouteSearch {
     /// Maximum flight legs, including the first leg. Defaults to eight.
     #[schemars(range(min = 1, max = 8))]
     max_legs: Option<u8>,
+    /// Rank by lowest fare (default) or fewest flight legs.
+    objective: Option<azeroth_operator::analysis::FlightRouteObjective>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1836,6 +1838,7 @@ impl Operator {
                             search.destination_node_id.get(),
                             args.flight_wallet_reserve_copper,
                             search.max_legs.unwrap_or(8),
+                            search.objective.unwrap_or_default(),
                         )
                     })();
                     match result {

@@ -833,6 +833,10 @@ saved panel for each leg and checks the starting wallet when available.
 Set `max_legs` inside `flight_route_search` to a value from one to eight.
 One limits the search to direct flights from the starting panel. Omit the
 limit to allow up to eight legs.
+Set `objective` to `fewest_legs` to prefer fewer legs among fully quoted
+routes. Ties prefer the lower total fare, followed by the same per-leg
+ordering. The default objective is `lowest_fare`. A reserve checks the
+chosen route's affordability without changing its ranking.
 Add `flight_wallet_reserve_copper` to check whether the whole route fits
 while preserving that amount. The plan reports `affordable_with_reserve`
 separately from fare-only affordability. A missing starting wallet makes

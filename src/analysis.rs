@@ -2427,11 +2427,20 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
 }
 
+#[derive(Clone, Copy, Default, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum FlightRouteObjective {
+    #[default]
+    LowestFare,
+    FewestLegs,
+}
+
 pub fn plan_saved_flights(
     captures: &[(&str, Snapshot)],
     destination: u32,
     reserve: Option<u64>,
     max_legs: u8,
+    objective: FlightRouteObjective,
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
     let (_, first) = captures
@@ -2491,7 +2500,9 @@ pub fn plan_saved_flights(
             }
         }
         frontier = next;
-        if frontier.is_empty() {
+        if frontier.is_empty()
+            || (matches!(objective, FlightRouteObjective::FewestLegs) && best.is_some())
+        {
             break;
         }
     }
