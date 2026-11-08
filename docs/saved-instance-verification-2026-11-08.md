@@ -63,3 +63,33 @@ malformed arguments/snapshots, private-ID rejection and unchanged defaults.
 Jev 1.14.0 scope advice returned supported (request
 `7d2136864f3e95e1614eb103d061c3546a8c9f322896e633080f8bcd645e5eb0`,
 471 input / 46 output tokens, 0.316 seconds), separately from runtime evidence.
+
+## Public-description comparison
+
+`compare_snapshots.saved_instance_changes` compares case-insensitive instance
+name, difficulty ID, raid flag and maximum players. These descriptors are not
+lockout identity. Unique descriptors on both sides expose changes in recorded
+reset seconds, locked and extended flags. Duplicates on either side are grouped
+as ambiguous with counts; no field changes are derived for those groups.
+One-sided descriptors are labelled observed-only. An unavailable cache returns
+null, and both cache ages remain explicitly ages at capture.
+
+The real stdio MCP test covers timer/flag deltas, duplicate ambiguity,
+one-sided observations, unavailable cache and the unchanged default output.
+`PYTHONPATH=.;tests python -m unittest test_mcp test_snapshots test_saved_instances`
+passed 11 tests. `cargo build --locked --offline`, formatting and diff checks
+passed. No native game or installed addon validation was performed.
+
+Jev 1.14.0 advisory scope assessment returned supported, separately from tests
+(request `1997ec15562535d069cfa4650c7554085b263c530aa39026554f8c3a33221639`,
+469 input / 46 output tokens, 0.347 seconds).
+
+Independent failure/caller review (gpt-6.1-sol, high effort) found no concrete
+flaw. Its scoped command `PYTHONPATH=. python -m unittest discover -s tests -p test_saved_instances.py -v`
+passed one test in 0.478 seconds. A separate inline Python MCP client using an
+isolated temporary SnapshotStore reported 21 adversarial cases plus three
+row-order/mixed-ambiguity cases passing. These covered character/client/time
+boundaries, missing sections, duplicates on either side, malformed/private
+fields, negative timers, extension flags and case/slot permutations. The probe
+script was transient, so the retained source test remains the reproducible
+regression command above.

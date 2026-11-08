@@ -393,6 +393,9 @@ struct Compare {
     /// Compare overlapping toy-view rows without assuming equal filters or full collection coverage.
     #[serde(default)]
     toy_view_changes: bool,
+    /// Compare public saved-instance descriptions; ambiguous rows never produce deltas.
+    #[serde(default)]
+    saved_instance_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1188,6 +1191,7 @@ impl Operator {
                     selected_recipe_changes: args.selected_recipe_changes,
                     mount_collection_changes: args.mount_collection_changes,
                     toy_view_changes: args.toy_view_changes,
+                    saved_instance_changes: args.saved_instance_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,

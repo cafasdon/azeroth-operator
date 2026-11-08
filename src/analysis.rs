@@ -793,6 +793,7 @@ pub struct ComparisonSelectors {
     pub selected_recipe_changes: bool,
     pub mount_collection_changes: bool,
     pub toy_view_changes: bool,
+    pub saved_instance_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -864,6 +865,18 @@ pub fn compare_observations(
             .get("toy_collection_view")
             .zip(after.sections.get("toy_collection_view"))
             .map(|(old, new)| compare_toy_views(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.saved_instance_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Saved-instance comparison requires Forever"
+        );
+        comparison["saved_instance_changes"] = before
+            .sections
+            .get("saved_instances")
+            .zip(after.sections.get("saved_instances"))
+            .map(|(old, new)| compare_saved_instances(old, new))
             .unwrap_or(Value::Null);
     }
     let skills_before = before
@@ -1848,6 +1861,63 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_saved_instances(before: &Value, after: &Value) -> Value {
+    type Key = (String, u64, bool, u64);
+    fn index(section: &Value) -> BTreeMap<Key, Vec<&Value>> {
+        let mut rows: BTreeMap<Key, Vec<&Value>> = BTreeMap::new();
+        for row in section["entries"].as_object().unwrap().values() {
+            let key = (
+                row["name"].as_str().unwrap().to_lowercase(),
+                row["difficulty_id"].as_u64().unwrap(),
+                row["is_raid"].as_bool().unwrap(),
+                row["max_players"].as_u64().unwrap(),
+            );
+            rows.entry(key).or_default().push(row);
+        }
+        rows
+    }
+    let old = index(before);
+    let new = index(after);
+    let keys: BTreeSet<_> = old.keys().chain(new.keys()).collect();
+    let mut changes = Vec::new();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut ambiguous = Vec::new();
+    for key in keys {
+        let a = old.get(key).map(Vec::as_slice).unwrap_or_default();
+        let b = new.get(key).map(Vec::as_slice).unwrap_or_default();
+        let description = json!({"name_normalized":key.0,"difficulty_id":key.1,
+            "is_raid":key.2,"max_players":key.3});
+        if a.len() > 1 || b.len() > 1 {
+            ambiguous.push(
+                json!({"description":description,"before_count":a.len(),"after_count":b.len()}),
+            );
+        } else if a.is_empty() {
+            only_after.push(description);
+        } else if b.is_empty() {
+            only_before.push(description);
+        } else {
+            let fields: serde_json::Map<_, _> = ["reset_seconds", "locked", "extended"]
+                .into_iter()
+                .filter(|field| a[0][*field] != b[0][*field])
+                .map(|field| {
+                    (
+                        field.to_owned(),
+                        json!({"before":a[0][field],"after":b[0][field]}),
+                    )
+                })
+                .collect();
+            if !fields.is_empty() {
+                changes.push(json!({"description":description,"fields":fields}));
+            }
+        }
+    }
+    json!({"identity_basis":"public_description_not_lockout_id","changes":changes,
+        "observed_only_before":only_before,"observed_only_after":only_after,"ambiguous":ambiguous,
+        "before_update_age_seconds":before["update_age_seconds"],
+        "after_update_age_seconds":after["update_age_seconds"]})
 }
 
 fn compare_toy_views(before: &Value, after: &Value) -> Value {

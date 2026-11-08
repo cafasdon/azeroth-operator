@@ -57,6 +57,14 @@ entry eligibility. Timers are not advanced on read, and world-boss saves are not
 part of this section. Reader/importer updates are required before installation;
 native qualification remains pending.
 
+Set `saved_instance_changes: true` in `compare_snapshots` to compare captured
+reset timers and lock/extension flags. Matching uses case-insensitive public
+name, difficulty, raid/dungeon kind and player capacity, not a unique lockout
+ID. Duplicate descriptions on either side are reported as ambiguous with no
+deltas. One-sided descriptions are observations only; they do not prove a reset
+or new lockout. Missing cache sections remain unknown, and cache ages describe
+the capture time. Ordinary character/client/build/time comparison guards apply.
+
 For saved-instance searches, use `list_snapshots.saved_instance`, for example
 `{"name":"Molten Core","locked":true,"maximum_reset_seconds":86400}` with
 `family: "forever"`. Names match exactly without case sensitivity. Optional

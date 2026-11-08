@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved-instance public descriptions and recorded timer/lock flags, marking duplicate descriptions ambiguous.
+
 - Search saved characters by observed instance name, difficulty, lock flags, reset timer and cache age.
 
 - Capture saved-instance metadata after a passive instance-info update, excluding unique lockout IDs.

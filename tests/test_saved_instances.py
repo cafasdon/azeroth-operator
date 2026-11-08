@@ -39,6 +39,10 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             later["captured_at"] = "2025-01-02T00:00:00Z"
             later["sections"]["saved_instances"]["entries"]["1"].update(locked=False, reset_seconds=0)
             later_key = store.ingest(later)
+            duplicate = copy.deepcopy(later)
+            duplicate["sections"]["saved_instances"]["entries"]["3"] = copy.deepcopy(
+                duplicate["sections"]["saved_instances"]["entries"]["1"])
+            duplicate_key = store.ingest(duplicate)
             newest = copy.deepcopy(missing)
             newest["captured_at"] = "2025-01-03T00:00:00Z"
             store.ingest(newest)
@@ -70,6 +74,26 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    async def compare(left, right, **extra):
+                        response = await session.call_tool("compare_snapshots", {
+                            "before_id": left, "after_id": right, **extra})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+                    delta = (await compare(key, later_key, saved_instance_changes=True))["saved_instance_changes"]
+                    self.assertEqual(delta["identity_basis"], "public_description_not_lockout_id")
+                    self.assertEqual(len(delta["changes"]), 1)
+                    self.assertEqual(delta["changes"][0]["fields"], {
+                        "locked": {"before": True, "after": False},
+                        "reset_seconds": {"before": 124, "after": 0}})
+                    ambiguous = (await compare(key, duplicate_key, saved_instance_changes=True))["saved_instance_changes"]
+                    self.assertEqual(ambiguous["changes"], [])
+                    self.assertEqual(ambiguous["ambiguous"][0]["after_count"], 2)
+                    absent = (await compare(key, empty_key, saved_instance_changes=True))["saved_instance_changes"]
+                    self.assertEqual(len(absent["observed_only_before"]), 2)
+                    self.assertEqual(absent["changes"], [])
+                    self.assertIsNone((await compare(key, missing_key, saved_instance_changes=True))["saved_instance_changes"])
+                    self.assertNotIn("saved_instance_changes", await compare(key, later_key))
+                    (root / f"{duplicate_key}.json").unlink()
                     response = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "saved_instances"})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)["data"], value["sections"]["saved_instances"])
