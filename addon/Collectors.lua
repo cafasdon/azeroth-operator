@@ -840,6 +840,25 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.bag_capacity = function()
+    local last=NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4
+    assert(questRewardInteger(last,4,5), "Unsupported carried bag range")
+    local result={}
+    for bag=0,last do
+        local capacity=C_Container.GetContainerNumSlots(bag)
+        assert(questRewardInteger(capacity,bag==0 and 1 or 0,1024), "Invalid bag capacity")
+        local entry={total_slots=capacity,free_slots=0}
+        if capacity>0 then
+            local free,family=C_Container.GetContainerNumFreeSlots(bag)
+            assert(questRewardInteger(free,0,capacity), "Invalid free slot count")
+            entry.free_slots=free
+            if questRewardInteger(family,0,4294967295) then entry.family_mask=family end
+        end
+        result[tostring(bag)]=entry
+    end
+    return result
+end
+
 AO.collectors.repair_quote = function()
     local frame=MerchantFrame
     assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")

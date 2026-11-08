@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "bag_capacity", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -41,6 +41,21 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "bag_capacity" in sections:
+        bags = sections["bag_capacity"]
+        if (c["family"] != "forever" or not isinstance(bags, dict) or len(bags) not in (5, 6)
+                or set(bags) != {str(index) for index in range(len(bags))}):
+            raise ValueError("Invalid carried bag range")
+        for slot, bag in bags.items():
+            if not isinstance(bag, dict) or set(bag) - {"total_slots", "free_slots", "family_mask"}:
+                raise ValueError("Invalid bag capacity")
+            total, free = bag.get("total_slots"), bag.get("free_slots")
+            if (type(total) is not int or type(free) is not int
+                    or not 0 <= free <= total <= 1024 or (slot == "0" and total == 0)):
+                raise ValueError("Invalid bag capacity")
+            if "family_mask" in bag and (total == 0 or type(bag["family_mask"]) is not int
+                                         or not 0 <= bag["family_mask"] <= 4_294_967_295):
+                raise ValueError("Invalid bag family")
     if "durability_alerts" in sections:
         alerts = sections["durability_alerts"]
         slots = {"head", "shoulders", "chest", "waist", "legs", "feet", "wrists", "hands",

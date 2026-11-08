@@ -417,8 +417,17 @@ pub fn verify_forever_capture_fixture(
             end
         }
         C_Container={
-            GetContainerNumSlots=function(bag) return bag==6 and 2 or 0 end,
-            GetContainerNumFreeSlots=function() return freeSlots end,
+            GetContainerNumSlots=function(bag)
+                if bag==0 then return 16 end
+                if bag==1 then return 8 end
+                return bag==6 and 2 or 0
+            end,
+            GetContainerNumFreeSlots=function(bag)
+                if bag==0 then return badCapacity and 17 or 16,0 end
+                if bag==1 then return 8,32 end
+                assert(bag==6)
+                return freeSlots
+            end,
             GetContainerItemInfo=function(bag,slot)
                 if bag==6 and slot==1 then return {itemID=744,stackCount=malformed and 0 or 1,hyperlink='item:744:7'} end
             end
@@ -779,6 +788,17 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
     assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     let summary = azeroth_operator::analysis::summary(&snapshot);
+    assert_eq!(
+        snapshot.sections["bag_capacity"]["1"],
+        serde_json::json!({"total_slots":8,"free_slots":8,"family_mask":32})
+    );
+    assert_eq!(
+        summary["carried_bag_space"],
+        serde_json::json!({"total_slots":24,"free_slots":24,"known_general_free_slots":16})
+    );
+    lua.load("badCapacity=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("bag_capacity"));
+    lua.load("badCapacity=false").exec()?;
     assert_eq!(summary["captured_map_min_level"], 5);
     assert_eq!(summary["captured_map_max_level"], 12);
     assert_eq!(

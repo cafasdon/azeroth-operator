@@ -851,6 +851,34 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "bag_capacity" => {
+            let bags = value
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Expected bag capacity map"))?;
+            ensure!((5..=6).contains(&bags.len()), "Invalid carried bag range");
+            for (key, bag) in bags {
+                index(key, 0, (bags.len() - 1) as u32)?;
+                object(
+                    bag,
+                    &[
+                        ("total_slots", "uint", true),
+                        ("free_slots", "uint", true),
+                        ("family_mask", "uint", false),
+                    ],
+                )?;
+                let total = bag["total_slots"].as_u64().unwrap();
+                let free = bag["free_slots"].as_u64().unwrap();
+                ensure!(
+                    total <= 1024
+                        && free <= total
+                        && (key != "0" || total > 0)
+                        && bag
+                            .get("family_mask")
+                            .is_none_or(|mask| total > 0 && !mask.is_null()),
+                    "Invalid bag capacity"
+                );
+            }
+        }
         "durability_alerts" => {
             let alerts = value
                 .as_object()

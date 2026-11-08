@@ -1551,6 +1551,13 @@ pub fn summary(s: &Snapshot) -> Value {
           json!({"observed":xp,"xp_to_next_level":xp_to_next_level(xp)})),
       "spellbook_slots_observed":s.sections.get("spellbook").and_then(|book|book["entries"].as_object()).map(|slots|slots.len()),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
+      "carried_bag_space":s.sections.get("bag_capacity").and_then(Value::as_object).map(|bags| {
+          let total = bags.values().filter_map(|bag| bag["total_slots"].as_u64()).sum::<u64>();
+          let free = bags.values().filter_map(|bag| bag["free_slots"].as_u64()).sum::<u64>();
+          let general = bags.values().filter(|bag| bag["family_mask"].as_u64()==Some(0))
+              .filter_map(|bag| bag["free_slots"].as_u64()).sum::<u64>();
+          json!({"total_slots":total,"free_slots":free,"known_general_free_slots":general})
+      }),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),
       "reputation_factions_observed":s.sections.get("reputation").and_then(|v|v["entries"].as_object()).map(|v|v.len()),

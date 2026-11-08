@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever carried bag capacity and separate known general-purpose free slots from total free slots.
+
 - Summarise saved Forever durability alerts, repair quote and wallet shortfall.
 
 - Save the repair-all copper quote shown by an open Forever repair merchant.
