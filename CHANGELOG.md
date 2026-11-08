@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bind direct simulation to saved class and race observations, sharing the owned-gear ranker's identity check and reporting legacy/unknown identity assumptions.
+
 - Carry saved professions into equipment reviews and check simulator template profession identities before running, retaining explicit unknowns and plan-only mismatch reports.
 
 - Keep malformed, unloaded or changing profession observations out of exports so valid equipment and other sections remain importable.

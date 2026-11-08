@@ -85,7 +85,15 @@ This shared collector also applies to other client families. See the
 [offline verification](../../docs/profession-capture-verification-2026-11-08.md).
 
 Equipment reviews include `captured_professions` (null when unavailable).
-The local simulator tools compare these identities with the template's two
+They also include `captured_character_identity` with class and race, each null
+when unavailable. Direct simulation now rejects a known class/race mismatch
+before running any engine; gear ranking uses the same check. Legacy reviews
+and unmapped identities remain explicitly unverified. Direct adapter results
+include `character_identities` for each supplied review. This does not verify
+talents, pets or current character activity. See the
+[offline identity evidence](../../docs/simulation-character-identity-verification-2026-11-08.md).
+
+The local simulator tools compare saved profession identities with the template's two
 professions before simulating. A known mismatch stops the run; `--plan-only`
 retains the draft and reports `template_identity.professions.status: "mismatch"`.
 Missing observations or unmapped skill lines report `"unverified"` unless

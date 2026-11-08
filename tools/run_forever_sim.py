@@ -37,6 +37,46 @@ CLASS_IDS = {
     "warrior": 1, "paladin": 2, "hunter": 3, "rogue": 4, "priest": 5,
     "shaman": 7, "mage": 8, "warlock": 9, "druid": 11,
 }
+# Race enum IDs from the pinned Forever common.proto.
+CAPTURED_RACES = {
+    "bloodelf": 1, "dwarf": 2, "gnome": 3, "human": 4, "nightelf": 5,
+    "orc": 6, "tauren": 7, "troll": 8, "undead": 9,
+    "highorderskyborne": 10, "windshaperskyborne": 11,
+}
+
+
+class ConflictingCharacterIdentity(ValueError):
+    """The template contradicts the captured class or race."""
+
+
+def check_character_identity(player, observed):
+    if observed is None:
+        observed = {}
+    if not isinstance(observed, dict):
+        raise ValueError("Invalid captured character identity")
+    checks = {}
+    for field, known in (("class", CLASS_IDS), ("race", CAPTURED_RACES)):
+        token = observed.get(field)
+        if token is not None and not isinstance(token, str):
+            raise ValueError("Invalid captured character identity")
+        token = (token or "").lower()
+        if field == "race" and token == "scourge":
+            token = "undead"
+        checks[field] = "unverified"
+        if token in known:
+            declared = player.get(field)
+            if isinstance(declared, str):
+                matches = declared.removeprefix(field.capitalize()).lower() == token
+            else:
+                matches = type(declared) is int and declared == known[token]
+            if not matches:
+                raise ConflictingCharacterIdentity(
+                    "Simulator template class or race disagrees with the saved character observation. Match the template to that capture."
+                )
+            checks[field] = "matches"
+    return checks
+
+
 # Pinned common.proto Profession enum and DBC skill-line mapping, also used
 # by src/forever_catalogue.rs for item profession requirements.
 PROFESSIONS = {
@@ -232,6 +272,7 @@ def request_from(template, equipment_review, encounter_lookup):
         raise UnsupportedSimulationLevel("Pinned Forever simulation requires an explicitly captured level of 60.")
     raid = deepcopy(template["raid"])
     player = single_player(raid)
+    check_character_identity(player, equipment_review.get("captured_character_identity"))
     check_profession_identity(player, equipment_review.get("captured_professions"))
     healing_dummy_count(raid)
     rotation = player["rotation"]
@@ -621,6 +662,8 @@ def main():
         result.update(encounter_summary(requests[0]))
         result["profession_identities"] = [check_profession_identity(
             single_player(template["raid"]), review.get("captured_professions")) for review in reviews]
+        result["character_identities"] = [check_character_identity(
+            single_player(template["raid"]), review.get("captured_character_identity")) for review in reviews]
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
@@ -628,6 +671,8 @@ def main():
         parser.exit(1, "Simulation requires a current equipment review with captured_character_level=60. Re-export the saved capture with an updated MCP reader; other or unknown levels remain plan-only.\n")
     except ConflictingProfessions:
         parser.exit(1, "Simulator template professions disagree with the saved character observation. Match the template to that capture before simulation.\n")
+    except ConflictingCharacterIdentity:
+        parser.exit(1, "Simulator template class or race disagrees with the saved character observation. Match the template to that capture before simulation.\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 

@@ -14,11 +14,12 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from tools.run_forever_sim import (
-    CLASS_IDS, ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
+    ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
     encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
     SimulationCache,
     SIMULATOR_CHARACTER_LEVEL, UnsupportedSimulationLevel,
     check_profession_identity, ConflictingProfessions,
+    check_character_identity, ConflictingCharacterIdentity,
 )
 
 
@@ -27,12 +28,6 @@ SIMULATOR_SLOTS = (
     "legs", "feet", "finger1", "finger2", "trinket1", "trinket2",
     "main_hand", "off_hand", "ranged",
 )
-# Race enum IDs from the pinned Forever common.proto.
-CAPTURED_RACES = {
-    "bloodelf": 1, "dwarf": 2, "gnome": 3, "human": 4, "nightelf": 5,
-    "orc": 6, "tauren": 7, "troll": 8, "undead": 9,
-    "highorderskyborne": 10, "windshaperskyborne": 11,
-}
 # Pinned WoWSims SPEC_CAN_DUAL_WIELD.
 DUAL_WIELD_SPECS = frozenset(("hunter", "rogue", "dpsWarrior", "protectionWarrior"))
 
@@ -43,24 +38,7 @@ class GearSearchLimit(ValueError):
 
 def check_template_identity(template, stats, require_simulator_level=True):
     player = single_player(template["raid"])
-    captured_class = (stats.get("class") or "").lower()
-    captured_race = (stats.get("race") or "").lower()
-    if captured_race == "scourge":
-        captured_race = "undead"
-    checks = {}
-    for field, token, known in (("class", captured_class, CLASS_IDS),
-                                ("race", captured_race, CAPTURED_RACES)):
-        if token in known:
-            expected = player.get(field, "")
-            if isinstance(expected, str):
-                matches = expected.removeprefix(field.capitalize()).lower() == token
-            else:
-                matches = type(expected) is int and expected == known[token]
-            if not matches:
-                raise ValueError("Simulator template disagrees with captured character identity")
-            checks[field] = "matches"
-        else:
-            checks[field] = "unverified"
+    checks = check_character_identity(player, stats)
     level=stats.get("level")
     checks["simulator_character_level"]=SIMULATOR_CHARACTER_LEVEL
     checks["level"]=("matches" if level==SIMULATOR_CHARACTER_LEVEL else "unsupported_for_simulation") \
@@ -729,7 +707,8 @@ def main():
         # The stdio client's task groups wrap errors raised during collection.
         while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
             error = error.exceptions[0]
-        if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel, ConflictingProfessions)):
+        if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel, ConflictingProfessions,
+                              ConflictingCharacterIdentity)):
             parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")

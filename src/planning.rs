@@ -140,6 +140,9 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     Ok(
         json!({"format":"azeroth_operator.equipment_review.v1","captured_character_level":captured_level,
         "captured_professions":snapshot.sections.get("professions"),
+        "captured_character_identity":{
+            "class":snapshot.sections.get("stats").and_then(|stats| stats.get("class")),
+            "race":snapshot.sections.get("stats").and_then(|stats| stats.get("race"))},
         "client":snapshot.client,"character":snapshot.character,"captured_at":snapshot.captured_at,
         "source":snapshot.source,"live":false,"game_execution":false,"requires_player_review":true,
         "status":"draft_unverified_compatibility","changes":changes,"vacated_equipment_slots":vacated,
