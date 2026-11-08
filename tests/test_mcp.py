@@ -226,6 +226,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
+                        self.assertEqual(bank_summary_data["standard_reputation_workload"], {
+                            "capped_factions": 0, "factions_with_observed_rank_gap": 1,
+                            "closest_to_next_rank": [
+                                {"faction_id": 10, "name": "Fixture faction", "account_wide": False,
+                                 "remaining_to_next_rank": 50},
+                            ],
+                        })
                         self.assertEqual(bank_summary_data["quest_turn_in"], {"ready_observed":2,"status_observed":4,"status_unknown":1})
                         self.assertEqual(bank_summary_data["quest_objective_workload"], {
                             "unfinished_objectives_by_kind": {"event": 1, "item": 2},

@@ -1500,6 +1500,36 @@ pub fn standard_reputation_progress(section: &Value) -> Value {
     )
 }
 
+fn standard_reputation_workload(section: &Value) -> Option<Value> {
+    let entries = section["entries"].as_object()?;
+    let progress = standard_reputation_progress(section);
+    let mut capped = 0usize;
+    let mut rows = Vec::new();
+    for (key, row) in progress.as_object()? {
+        if row["capped"] == true {
+            capped += 1;
+        } else if let Some((remaining, id)) = row["remaining_to_next_rank"]
+            .as_u64()
+            .zip(key.parse::<u32>().ok())
+        {
+            rows.push((remaining, id, &entries[key]));
+        }
+    }
+    rows.sort_unstable_by_key(|&(remaining, id, _)| (remaining, id));
+    let closest: Vec<_> = rows
+        .iter()
+        .take(20)
+        .map(|(remaining, id, entry)| {
+            json!({"faction_id":id,"name":entry["name"],"account_wide":entry["account_wide"],
+            "remaining_to_next_rank":remaining})
+        })
+        .collect();
+    Some(
+        json!({"capped_factions":capped,"factions_with_observed_rank_gap":rows.len(),
+        "closest_to_next_rank":closest}),
+    )
+}
+
 pub fn special_reputation_progress(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
@@ -2839,6 +2869,11 @@ pub fn summary(s: &Snapshot) -> Value {
         s.sections
             .get("currency_balances")
             .and_then(currency_weekly_cap_summary)
+    );
+    summary["standard_reputation_workload"] = json!(
+        s.sections
+            .get("reputation")
+            .and_then(standard_reputation_workload)
     );
     summary
 }

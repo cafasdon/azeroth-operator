@@ -414,6 +414,11 @@ On the Rust MCP, pass `faction_id` with `section: "reputation"` to inspect
 one faction and its standard or special progress. An unlisted faction
 has a false observation flag. An unavailable list gives a null flag.
 
+`character_summary.standard_reputation_workload` lists up to 20 standard
+factions with the fewest points to the next observed rank, with faction ID
+breaking ties. It counts capped factions separately. Invalid brackets and
+special reputation types are outside this ranking.
+
 On the Rust MCP, pass `currency_id` with `section: "currency_balances"`
 to return one currency and its cap headroom. The observation flag is false
 when the saved list lacks that ID and null when the list is unavailable.

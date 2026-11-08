@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- List captured standard Forever factions closest to their next reputation rank.
+
 - Show whether a selected Forever currency entered or left its observed weekly cap.
 
 - Compare weekly earnings counters between saved Forever currency observations.
