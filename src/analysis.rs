@@ -4677,6 +4677,37 @@ pub fn quest_readiness(quest: &Value) -> QuestReadiness {
     }
 }
 
+pub fn quest_objective_matches(
+    quest: &Value,
+    kind: Option<&str>,
+    finished: Option<bool>,
+    maximum_remaining: Option<u32>,
+) -> Option<bool> {
+    let objectives = quest["objectives"].as_object()?;
+    let mut unknown = false;
+    for objective in objectives.values() {
+        if kind.is_some_and(|kind| objective["kind"].as_str() != Some(kind))
+            || finished.is_some_and(|finished| objective["finished"].as_bool() != Some(finished))
+        {
+            continue;
+        }
+        if let Some(maximum) = maximum_remaining {
+            let remaining = objective["required"]
+                .as_u64()
+                .zip(objective["fulfilled"].as_u64())
+                .map(|(required, fulfilled)| required.saturating_sub(fulfilled));
+            match remaining {
+                Some(remaining) if remaining <= u64::from(maximum) => return Some(true),
+                Some(_) => {}
+                None => unknown = true,
+            }
+        } else {
+            return Some(true);
+        }
+    }
+    if unknown { None } else { Some(false) }
+}
+
 pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     let (mut ready, mut not_ready, mut failed, mut unknown) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());

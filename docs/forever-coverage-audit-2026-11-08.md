@@ -86,3 +86,9 @@ New [coordinate outcomes](gear-coordinate-outcomes-verification-2026-11-08.md)
 make individual saved-window gaps diagnosable with fixed reason codes and local
 review references. Legacy payloads retain explicit unavailable details; this
 does not promote collected or resolved plans into simulation/BiS qualification.
+
+Later [quest objective filtering](quest-objective-filter-verification-2026-11-08.md)
+extends saved quest discovery by exact objective kind, finished flag and remaining
+units on the same objective row, composable with reward/readiness searches and
+existing projections. Missing observations stay unknown; native and complete
+world-database coverage remain unqualified.

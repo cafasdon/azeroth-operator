@@ -139,6 +139,13 @@ struct Inspect {
     quest_difficulty: Option<QuestDifficulty>,
     /// Filter saved Forever quests by captured turn-in readiness.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
+    /// Keep quests with an objective of this exact captured kind (1 to 64 bytes).
+    quest_objective_kind: Option<String>,
+    /// Keep quests with an objective whose captured finished flag matches.
+    quest_objective_finished: Option<bool>,
+    /// Keep quests with an objective needing at most this many recorded units.
+    /// All objective filters must match the same objective row.
+    quest_objective_max_remaining: Option<u32>,
     /// Keep saved Forever quests with at most this many seconds remaining at capture.
     quest_max_remaining_seconds: Option<u32>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
@@ -1694,6 +1701,20 @@ impl Operator {
         ];
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
         let filter_quest_map = args.quest_waypoint_map_id.is_some() || args.quest_on_captured_map;
+        let filter_quest_objectives = args.quest_objective_kind.is_some()
+            || args.quest_objective_finished.is_some()
+            || args.quest_objective_max_remaining.is_some();
+        if args
+            .quest_objective_kind
+            .as_ref()
+            .is_some_and(|kind| kind.is_empty() || kind.len() > 64)
+            || (filter_quest_objectives
+                && (args.section.as_deref() != Some("quests") || args.quest_id.is_some()))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Objective filters require the quests section without a quest ID and an exact kind of 1 to 64 bytes",
+            )]);
+        }
         if args.quest_waypoint_map_id.is_some() && args.quest_on_captured_map {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Choose either an explicit waypoint map or the captured map",
@@ -1790,6 +1811,7 @@ impl Operator {
             if args.section.is_some()
                 || args.quest_id.is_some()
                 || filter_quest_map
+                || filter_quest_objectives
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
@@ -2355,6 +2377,7 @@ impl Operator {
                     value["data"] = quest.cloned().unwrap_or(serde_json::Value::Null);
                 }
                 if filter_quest_map
+                    || filter_quest_objectives
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
@@ -2442,6 +2465,29 @@ impl Operator {
                                 azeroth_operator::analysis::quest_readiness(quest) == readiness
                             });
                         }
+                    }
+                    if filter_quest_objectives {
+                        value["quest_objective_filter"] = serde_json::json!({
+                            "kind": args.quest_objective_kind,
+                            "finished": args.quest_objective_finished,
+                            "maximum_remaining": args.quest_objective_max_remaining,
+                        });
+                        value["quest_objective_unknown_count"] =
+                            serde_json::json!(data.as_object_mut().map(|quests| {
+                                let mut unknown = 0;
+                                quests.retain(|_, quest| {
+                                    let matched =
+                                        azeroth_operator::analysis::quest_objective_matches(
+                                            quest,
+                                            args.quest_objective_kind.as_deref(),
+                                            args.quest_objective_finished,
+                                            args.quest_objective_max_remaining,
+                                        );
+                                    unknown += usize::from(matched.is_none());
+                                    matched == Some(true)
+                                });
+                                unknown
+                            }));
                     }
                     if let Some(maximum) = args.quest_max_remaining_seconds {
                         value["quest_max_remaining_seconds"] = serde_json::json!(maximum);

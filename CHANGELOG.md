@@ -1,5 +1,9 @@
 # Changelog
 
+- Filter captured Forever quests by same-row objective kind, finished flag and
+  remaining-unit bounds, preserving missing observations and existing reward,
+  readiness and projection semantics without new game or external-data calls.
+
 - Record per-coordinate outcomes in new bounded gear plans and inspect exact
   saved journal windows, retaining local review references and fixed diagnostic
   reasons without exposing raw selections or inventing legacy details.

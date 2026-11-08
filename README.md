@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`inspect_snapshot` can filter the saved Forever `quests` section by
+`quest_objective_kind`, `quest_objective_finished` and
+`quest_objective_max_remaining`. Supplied objective predicates match the same
+row. Missing lists/counts remain unknown; empty observed lists do not match.
+These filters combine with existing quest rewards/readiness and projections.
+[Offline evidence](docs/quest-objective-filter-verification-2026-11-08.md).
+
 `python -m tools.collect_forever_gear_windows --help` exposes bounded offline
 plan collection into an explicit local journal. Supply a trusted absolute MCP
 executable, snapshot ID, template and slots. Repeating the same request resumes
