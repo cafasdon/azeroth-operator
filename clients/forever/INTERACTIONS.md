@@ -106,6 +106,12 @@ merchant identity and player eligibility. Empty, incomplete or unavailable
 stock leaves the section unavailable. Update the importer and reader
 before syncing new captures. [Forever merchant offer API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/MerchantFrameDocumentation.lua)
 
+Extended offers can include `cost_components` per bundle. Item tokens
+carry their item ID and currencies carry their localized name, as supplied
+by the merchant cost API. Missing components leave the extended cost
+unknown. Currency names are recorded without inferring balance matches.
+[Forever merchant cost display](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/MerchantFrame.lua)
+
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured

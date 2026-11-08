@@ -59,10 +59,27 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(rows, dict) or not 1 <= len(rows) <= 256
                 or set(rows) != {str(i) for i in range(1, len(rows) + 1)}):
             raise ValueError("Invalid merchant stock")
-        keys = {"price_copper", "bundle_size", "available", "extended_cost"}
+        keys = {"price_copper", "bundle_size", "available", "extended_cost", "cost_components"}
         for row in rows.values():
             if not isinstance(row, dict) or set(row) - keys not in ({"item_id"}, {"currency_id"}):
                 raise ValueError("Invalid merchant offer")
+            if "cost_components" in row:
+                costs = row["cost_components"]
+                if (row.get("extended_cost") is not True or not isinstance(costs, dict) or not 1 <= len(costs) <= 16
+                        or set(costs) != {str(i) for i in range(1, len(costs) + 1)}):
+                    raise ValueError("Invalid merchant costs")
+                for cost in costs.values():
+                    if not isinstance(cost, dict) or set(cost) not in ({"quantity", "item_id"}, {"quantity", "currency_name"}):
+                        raise ValueError("Invalid merchant cost component")
+                    quantity = cost["quantity"]
+                    if "item_id" in cost:
+                        item = cost["item_id"]
+                        valid_identity = type(item) is int and 1 <= item <= 4_294_967_295
+                    else:
+                        currency = cost["currency_name"]
+                        valid_identity = isinstance(currency, str) and 1 <= len(currency.encode()) <= 256
+                    if not valid_identity or type(quantity) is not int or not 1 <= quantity <= 4_294_967_295:
+                        raise ValueError("Invalid merchant cost component")
             identity = row.get("item_id", row.get("currency_id"))
             price, bundle, available = (row.get(key) for key in ("price_copper", "bundle_size", "available"))
             if (any(type(n) is not int for n in (identity, price, bundle, available))

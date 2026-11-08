@@ -924,6 +924,29 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+local function merchantCostComponents(index)
+    local count=GetMerchantItemCostInfo(index)
+    if not questRewardInteger(count,1,16) then return end
+    local components={}
+    for component=1,count do
+        local _,quantity,link,currency=GetMerchantItemCostItem(index,component)
+        if not (questRewardInteger(quantity,1,4294967295) and questRewardAccessible(currency)
+            and questRewardAccessible(link)) then return end
+        local row={quantity=quantity}
+        if currency~=nil then
+            if type(currency)~="string" or #currency==0 or #currency>256 then return end
+            row.currency_name=currency
+        else
+            if type(link)~="string" or #link==0 or #link>4096 then return end
+            local id=C_Item.GetItemInfoInstant(link)
+            if not questRewardInteger(id,1,4294967295) then return end
+            row.item_id=id
+        end
+        components[tostring(component)]=row
+    end
+    if questRewardInteger(GetMerchantItemCostInfo(index),count,count) then return components end
+end
+
 AO.collectors.merchant_stock = function()
     local frame=MerchantFrame
     assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")
@@ -938,6 +961,10 @@ AO.collectors.merchant_stock = function()
             and questRewardInteger(available,-1,2147483647) and questRewardAccessible(extended)
             and type(extended)=="boolean" and questRewardAccessible(currency), "Invalid merchant offer")
         local row={price_copper=price,bundle_size=bundle,available=available,extended_cost=extended}
+        if extended then
+            local ok,components=pcall(merchantCostComponents,index)
+            if ok then row.cost_components=components end
+        end
         if currency~=nil then
             assert(questRewardInteger(currency,1,4294967295), "Invalid merchant currency")
             row.currency_id=currency

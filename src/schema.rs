@@ -885,6 +885,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("bundle_size", "positive", true),
                         ("available", "int", true),
                         ("extended_cost", "bool", true),
+                        ("cost_components", "map", false),
                     ],
                 )?;
                 ensure!(
@@ -896,6 +897,35 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         && row["available"].as_i64().is_some_and(|stock| stock >= -1),
                     "Invalid merchant offer"
                 );
+                if let Some(costs) = row.get("cost_components") {
+                    let costs = costs
+                        .as_object()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid merchant costs"))?;
+                    ensure!(
+                        row["extended_cost"].as_bool() == Some(true)
+                            && (1..=16).contains(&costs.len()),
+                        "Invalid merchant costs"
+                    );
+                    for (key, cost) in costs {
+                        index(key, 1, costs.len() as u32)?;
+                        object(
+                            cost,
+                            &[
+                                ("quantity", "positive", true),
+                                ("item_id", "positive", false),
+                                ("currency_name", "text", false),
+                            ],
+                        )?;
+                        ensure!(
+                            (cost.get("item_id").is_some() ^ cost.get("currency_name").is_some())
+                                && (cost["item_id"].as_u64().is_some()
+                                    || cost["currency_name"]
+                                        .as_str()
+                                        .is_some_and(|name| !name.is_empty() && name.len() <= 256)),
+                            "Invalid merchant cost component"
+                        );
+                    }
+                }
             }
         }
         "instance_context" => match value["kind"].as_str() {

@@ -575,6 +575,13 @@ pub fn verify_forever_capture_fixture(
             if index==1 then return {price=250,stackCount=5,numAvailable=-1,hasExtendedCost=false} end
             return {price=0,stackCount=1,numAvailable=0,hasExtendedCost=true,currencyID=99}
         end}
+        function GetMerchantItemCostInfo(index) assert(index==2); return 2 end
+        function GetMerchantItemCostItem(index,component)
+            assert(index==2)
+            if component==1 then return 123,3,"item:900" end
+            return 456,fixtureBadMerchantCost and 0 or 7,nil,"Fixture Marks"
+        end
+        C_Item.GetItemInfoInstant=function(link) assert(link=="item:900"); return 900 end
         CanMerchantRepair=function() return not nonRepairMerchant end
         GetRepairAllCost=function() assert(not closedMerchant and not nonRepairMerchant); return fixtureRepairCost or 325,false end
         C_GameRules={IsGameRuleActive=function(rule) assert(rule==42); return repairsDisabled==true end}
@@ -761,9 +768,22 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["merchant_stock"],
         serde_json::json!({
             "1":{"item_id":744,"price_copper":250,"bundle_size":5,"available":-1,"extended_cost":false},
-            "2":{"currency_id":99,"price_copper":0,"bundle_size":1,"available":0,"extended_cost":true}
+            "2":{"currency_id":99,"price_copper":0,"bundle_size":1,"available":0,"extended_cost":true,
+                "cost_components":{"1":{"quantity":3,"item_id":900},"2":{"quantity":7,"currency_name":"Fixture Marks"}}}
         })
     );
+    lua.load("fixtureBadMerchantCost=true;AO.Capture()")
+        .exec()?;
+    assert_eq!(
+        read()?.sections["merchant_stock"]["2"]["extended_cost"],
+        true
+    );
+    assert!(
+        read()?.sections["merchant_stock"]["2"]
+            .get("cost_components")
+            .is_none()
+    );
+    lua.load("fixtureBadMerchantCost=false").exec()?;
     lua.load("MerchantFrame.selectedTab=2;AO.Capture()")
         .exec()?;
     assert!(read()?.unavailable.contains_key("repair_quote"));
