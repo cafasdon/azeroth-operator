@@ -1145,6 +1145,30 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "extended_cost": False, "available": -1,
                         }
                         merchant_key = SnapshotStore(Path(folder)).ingest(merchant)
+                        food_merchant = json.loads(json.dumps(merchant))
+                        food_merchant["character"]["realm"] = "First"
+                        food_merchant["sections"]["merchant_stock"] = {
+                            "1": {"item_id": 117, "bundle_size": 5, "price_copper": 8,
+                                  "extended_cost": False, "available": -1},
+                            "2": {"currency_id": 117, "bundle_size": 1, "price_copper": 0,
+                                  "extended_cost": False, "available": -1},
+                        }
+                        food_merchant_id = SnapshotStore(Path(folder)).ingest(food_merchant)
+                        food_offer_query = {"snapshot_id": food_merchant_id, "section": "merchant_stock",
+                                            "merchant_pet_food_snapshot_id": travel_before}
+                        food_offers = await session.call_tool("inspect_snapshot", food_offer_query)
+                        self.assertFalse(food_offers.isError)
+                        food_data = json.loads(food_offers.content[0].text)
+                        self.assertEqual(list(food_data["data"]), ["1"])
+                        self.assertEqual(food_data["merchant_match_count"], 1)
+                        unknown_food = await session.call_tool("inspect_snapshot", {
+                            **food_offer_query, "merchant_pet_food_snapshot_id": forever_key,
+                        })
+                        self.assertFalse(unknown_food.isError)
+                        self.assertIsNone(json.loads(unknown_food.content[0].text)["merchant_match_count"])
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            **food_offer_query, "merchant_item_id": 117,
+                        })).isError)
                         currency_visits = await session.call_tool("list_snapshots", {
                             "family": "forever", "merchant_currency_id": 744, "merchant_max_price_copper": 2,
                         })

@@ -80,6 +80,8 @@ struct Inspect {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
+    /// Match merchant items classified as accepted pet food in this compatible Forever capture.
+    merchant_pet_food_snapshot_id: Option<String>,
     /// Calculate whole bundles needed for this quantity in each matching merchant offer.
     merchant_target_quantity: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
@@ -1247,12 +1249,12 @@ impl Operator {
             .merchant_item_id
             .map(|id| ("item_id", id))
             .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
-        if args
-            .merchant_target_quantity
-            .is_some_and(|quantity| merchant_search.is_none() || quantity.get() > 1000)
-        {
+        if args.merchant_target_quantity.is_some_and(|quantity| {
+            (merchant_search.is_none() && args.merchant_pet_food_snapshot_id.is_none())
+                || quantity.get() > 1000
+        }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Merchant quantity planning requires an item or currency search and 1 to 1000 units",
+                "Merchant quantity planning requires an item, currency or pet food search and 1 to 1000 units",
             )]);
         }
         if args.merchant_cart_include_repair && args.merchant_cart.is_none() {
@@ -1287,6 +1289,16 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Merchant search requires merchant_stock and exactly one item or currency ID without a slot",
+            )]);
+        }
+        if args.merchant_pet_food_snapshot_id.is_some()
+            && (args.section.as_deref() != Some("merchant_stock")
+                || merchant_search.is_some()
+                || args.merchant_offer_slot.is_some()
+                || args.merchant_cart.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant pet food search requires merchant_stock without another offer selector or cart",
             )]);
         }
         if (args.merchant_offer_slot.is_some() && args.section.as_deref() != Some("merchant_stock"))
@@ -1693,13 +1705,48 @@ impl Operator {
                         offers.len()
                     });
                     value["merchant_match_count"] = serde_json::json!(count);
-                    if let Some(quantity) = args.merchant_target_quantity {
-                        value["merchant_quantity_plan"] =
-                            azeroth_operator::analysis::merchant_quantity_plan(
-                                &value["data"],
-                                quantity.get(),
-                            );
-                    }
+                }
+                if let Some(food_id) = &args.merchant_pet_food_snapshot_id {
+                    let result = (|| {
+                        let merchant = self.store.read(&args.snapshot_id)?;
+                        let food = self.store.read(food_id)?;
+                        anyhow::ensure!(merchant.client.family == Family::Forever);
+                        azeroth_operator::analysis::ensure_same_character_and_client(
+                            &merchant, &food,
+                        )?;
+                        Ok::<_, anyhow::Error>(food)
+                    })();
+                    let Ok(food) = result else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Merchant pet food search requires compatible saved Forever captures",
+                        )]);
+                    };
+                    let accepted = food
+                        .sections
+                        .get("pet_care")
+                        .and_then(|pet| pet["carried_food"].as_object());
+                    let count = if let Some(accepted) = accepted {
+                        value["data"].as_object_mut().map(|offers| {
+                            offers.retain(|_, offer| {
+                                offer["item_id"]
+                                    .as_u64()
+                                    .is_some_and(|id| accepted.contains_key(&id.to_string()))
+                            });
+                            offers.len()
+                        })
+                    } else {
+                        value["data"] = serde_json::Value::Null;
+                        None
+                    };
+                    value["merchant_pet_food_snapshot_id"] = serde_json::json!(food_id);
+                    value["merchant_match_count"] = serde_json::json!(count);
+                }
+                if let Some(quantity) = args.merchant_target_quantity {
+                    value["merchant_quantity_plan"] =
+                        azeroth_operator::analysis::merchant_quantity_plan(
+                            &value["data"],
+                            quantity.get(),
+                        );
                 }
                 if let Some(slot) = args.merchant_offer_slot {
                     if value["client"]["family"] != "forever" {

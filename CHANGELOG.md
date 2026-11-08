@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved merchant offers for foods accepted in a compatible Forever pet capture.
+
 - Find saved Forever captures by accepted carried pet food quantity.
 
 - Compare saved Forever active-pet observations and accepted carried food quantities.

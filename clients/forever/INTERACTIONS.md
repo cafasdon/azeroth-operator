@@ -101,6 +101,14 @@ filter counts accepted units across all classified food or for the
 specified item. A zero minimum still requires a captured classification.
 Results include the accepted quantity and omit bag locations.
 
+To find vendor sources for those foods, inspect `merchant_stock` with
+`merchant_pet_food_snapshot_id` set to a compatible Forever capture for
+the same character. This returns saved offers for item IDs previously
+classified as accepted carried food. An unavailable classification gives
+an unknown match count, and an observed empty classification matches
+no offers. `merchant_target_quantity` can estimate bundles per offer.
+Use this for historical sourcing. Pet acceptance can change between captures.
+
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have
 food classifications, it compares accepted carried quantities by item ID.
