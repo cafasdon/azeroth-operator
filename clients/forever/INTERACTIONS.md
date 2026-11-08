@@ -1041,6 +1041,10 @@ to show a separate wallet estimate for just the selected quests. It
 uses the same capture's wallet and reports observed costs, unknowns and
 the cost shortfall without crediting rewards. The XP selection itself
 still prioritises the fewest recorded turn-ins.
+When the selected quests have an observed wallet order and the wallet
+was captured, the estimate also reports XP from the affordable prefix
+and the XP still needed. This follows that order and does not search
+for a different subset of quests.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its

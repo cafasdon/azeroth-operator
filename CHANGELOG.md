@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Estimate XP from the affordable prefix of a saved Forever quest turn-in plan.
+
 - Budget the quests selected by the saved Forever XP turn-in plan.
 
 - Find the fewest observed ready quest turn-ins that cover the saved Forever XP threshold.

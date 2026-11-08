@@ -820,8 +820,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         for quest_id, reward in [("10", 50), ("2", 50), ("42", 1000), ("44", 1000)]:
                             travel["sections"]["quests"][quest_id]["reward_amounts"] = {"xp": reward}
-                        for quest_id, cost in [("2", 20), ("10", 40), ("42", 500)]:
+                        for quest_id, cost in [("2", 1), ("10", 40), ("42", 500)]:
                             travel["sections"]["quests"][quest_id]["required_copper"] = cost
+                        travel["sections"]["quests"]["2"]["reward_amounts"]["copper"] = 2
+                        travel["sections"]["quests"]["10"]["reward_amounts"]["copper"] = 0
                         travel["sections"]["bags"] = {"0": {"1": {"item_id": 117, "count": 3}}}
                         travel["sections"]["pet_care"] = {
                             "present": True, "happiness": 2, "loyalty": "Fixture loyal",
@@ -966,12 +968,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(xp_budget.isError)
                         xp_budget_data = json.loads(xp_budget.content[0].text)
-                        self.assertEqual(xp_budget_data["quest_list_wallet_projection"]["known_required_copper"], 560)
+                        self.assertEqual(xp_budget_data["quest_list_wallet_projection"]["known_required_copper"], 541)
                         selected_budget = xp_budget_data["quest_list_xp_projection"][
                             "ready_turn_in_plan"]["wallet_projection"]
-                        self.assertEqual(selected_budget["known_required_copper"], 60)
-                        self.assertEqual(selected_budget["known_cost_shortfall_without_rewards_copper"], 59)
+                        self.assertEqual(selected_budget["known_required_copper"], 41)
+                        self.assertEqual(selected_budget["known_cost_shortfall_without_rewards_copper"], 40)
                         self.assertFalse(selected_budget["all_costs_fit_wallet_without_rewards"])
+                        self.assertEqual(selected_budget["xp_from_affordable_prefix"], 50)
+                        self.assertEqual(selected_budget["xp_shortfall_after_affordable_prefix"], 30)
                         for capture_id, expected in [
                             (travel_before, {"quest_ids_to_threshold": [2, 10],
                                              "xp_shortfall_after_known_ready_rewards": 0}),

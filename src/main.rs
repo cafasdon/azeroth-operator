@@ -2235,13 +2235,14 @@ impl Operator {
                         if let Some(ids) = value["quest_list_xp_projection"]["ready_turn_in_plan"]
                             ["quest_ids_to_threshold"].as_array()
                             && let Some(quests) = data.as_object()
+                            && let Some(xp_remaining) = value["quest_list_xp_projection"]["xp_to_next_level"].as_u64()
                         {
                             let selected = ids.iter().filter_map(|id| {
                                 let key = id.as_u64()?.to_string();
                                 Some((key.clone(), quests.get(&key)?.clone()))
                             }).collect();
                             value["quest_list_xp_projection"]["ready_turn_in_plan"]["wallet_projection"] =
-                                azeroth_operator::analysis::quest_list_wallet_projection(&selected, wallet);
+                                azeroth_operator::analysis::quest_xp_wallet_projection(&selected, wallet, xp_remaining);
                         }
                         value["quest_list_wallet_projection"] =
                             data.as_object().map_or(serde_json::Value::Null, |quests| {

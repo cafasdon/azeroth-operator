@@ -3394,6 +3394,27 @@ pub fn quest_list_wallet_projection(
     })
 }
 
+pub fn quest_xp_wallet_projection(
+    quests: &serde_json::Map<String, Value>,
+    wallet: Option<&Value>,
+    xp_to_threshold: u64,
+) -> Value {
+    let mut projection = quest_list_wallet_projection(quests, wallet);
+    let order = &projection["ready_turn_in_order"];
+    let prefix_xp = order["quest_ids"].as_array().and_then(|ids| {
+        let count =
+            usize::try_from(order["captured_wallet_progress"]["affordable_prefix_count"].as_u64()?)
+                .ok()?;
+        ids.iter().take(count).try_fold(0u64, |total, id| {
+            total.checked_add(quests.get(id.as_str()?)?["reward_amounts"]["xp"].as_u64()?)
+        })
+    });
+    projection["xp_from_affordable_prefix"] = json!(prefix_xp);
+    projection["xp_shortfall_after_affordable_prefix"] =
+        json!(prefix_xp.map(|xp| xp_to_threshold.saturating_sub(xp)));
+    projection
+}
+
 fn quest_wallet_turn_in_order(
     quests: &serde_json::Map<String, Value>,
     balance: Option<u64>,
