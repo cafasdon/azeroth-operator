@@ -847,6 +847,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(insufficient.isError)
                         self.assertEqual(json.loads(insufficient.content[0].text)["snapshots"], [])
+                        for family_mask, minimum, expected in [
+                            (32, 5, [travel_before]), (32, 6, []), (96, 0, []), (0, 1, [travel_before]),
+                        ]:
+                            by_family = await session.call_tool("list_snapshots", {
+                                **bag_query, "bag_family_space": {
+                                    "family_mask": family_mask, "minimum_free_slots": minimum,
+                                },
+                            })
+                            self.assertFalse(by_family.isError)
+                            family_rows = json.loads(by_family.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in family_rows], expected)
                         repair_query = {"family": "forever", "repair_max_quote_copper": 1,
                                         "repair_affordable_only": True}
                         repairs = await session.call_tool("list_snapshots", repair_query)

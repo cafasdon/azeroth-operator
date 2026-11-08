@@ -295,6 +295,15 @@ pub enum TrackedRecipeKind {
     Recraft,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BagFamilySpaceFilter {
+    /// Exact captured family mask. Zero selects general-purpose bags.
+    pub family_mask: u32,
+    /// Inclusive minimum free slots for this observed family.
+    pub minimum_free_slots: u32,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
@@ -310,6 +319,7 @@ pub struct CaptureFilters<'a> {
     pub repair_affordable_only: bool,
     pub minimum_free_bag_slots: Option<u32>,
     pub minimum_general_free_bag_slots: Option<u32>,
+    pub bag_family_space: Option<BagFamilySpaceFilter>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
@@ -425,6 +435,7 @@ impl Store {
             repair_affordable_only,
             minimum_free_bag_slots,
             minimum_general_free_bag_slots,
+            bag_family_space,
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
@@ -553,8 +564,15 @@ impl Store {
         let instance_name = instance.name.map(str::to_lowercase);
         let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
         let filter_repair = repair_max_quote_copper.is_some() || repair_affordable_only;
-        let filter_bag_space =
-            minimum_free_bag_slots.is_some() || minimum_general_free_bag_slots.is_some();
+        let bag_family_space = bag_family_space.map(|filter| {
+            (
+                filter.family_mask.to_string(),
+                u64::from(filter.minimum_free_slots),
+            )
+        });
+        let filter_bag_space = minimum_free_bag_slots.is_some()
+            || minimum_general_free_bag_slots.is_some()
+            || bag_family_space.is_some();
         ensure!(
             !filter_bag_space || family == Family::Forever,
             "Bag space filtering requires Forever"
@@ -653,6 +671,10 @@ impl Store {
                                 space["known_general_free_slots"]
                                     .as_u64()
                                     .is_some_and(|free| free >= u64::from(minimum))
+                            }) && bag_family_space.as_ref().is_none_or(|(mask, minimum)| {
+                                space["free_slots_by_family_mask"][mask]
+                                    .as_u64()
+                                    .is_some_and(|free| free >= *minimum)
                             })
                         }) else {
                             continue;

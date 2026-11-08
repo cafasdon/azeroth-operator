@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures with free slots in an exact observed bag family.
+
 - Break down saved Forever free bag space by recorded family mask and unknown family.
 
 - Find saved Forever captures with enough observed carried or general-purpose bag space.

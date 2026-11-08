@@ -281,6 +281,11 @@ bags. The limits are inclusive and can be combined. Missing bag
 capacity is excluded. Results show the same counts as the character
 summary. Total free slots include specialty and unknown bag families.
 
+For a particular recorded family, use `bag_family_space` with
+`family_mask` and `minimum_free_slots`. The mask must match exactly.
+A zero minimum still requires a bag with that recorded mask. This
+matches saved capacity observations and leaves item eligibility unknown.
+
 Inspect the `durability_alerts` section for saved equipment slots flagged
 `low` or `broken` by the built-in durability display. An empty map means
 the checked slots raised no alert. Exact durability, repair prices and

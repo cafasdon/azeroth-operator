@@ -269,6 +269,8 @@ struct List {
     minimum_free_bag_slots: Option<u32>,
     /// Minimum observed free slots in known general-purpose carried bags.
     minimum_general_free_bag_slots: Option<u32>,
+    /// Require an exact observed bag family and a minimum number of free slots in it.
+    bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1163,6 +1165,7 @@ impl Operator {
                 repair_affordable_only: args.repair_affordable_only,
                 minimum_free_bag_slots: args.minimum_free_bag_slots,
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
+                bag_family_space: args.bag_family_space,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_max_price_copper: args.merchant_max_price_copper,
