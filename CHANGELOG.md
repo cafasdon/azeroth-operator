@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever flight maps by exact node ID or captured reachable destinations.
+
 - Reserve the captured repair quote in Forever merchant cart budgets.
 
 - Flag captured sold-out Forever merchant offers in shopping carts.

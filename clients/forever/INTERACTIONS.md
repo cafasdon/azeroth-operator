@@ -541,6 +541,10 @@ to the player. It covers the open flight map, so availability and fares
 can differ at another flight master. Update the importer and reader before
 syncing this section. [Forever flight map source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_FlightMap/FM_FlightPathDataProvider.lua)
 
+Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
+to keep reachable destinations and exclude map transitions. Both filters
+apply before the fare projection and preserve original row keys.
+
 Set `flight_wallet_projection: true` with `section: "flight_map"` in
 `inspect_snapshot` for affordability and copper shortfall by captured
 slot. A missing fare or wallet leaves both values unknown. Each comparison

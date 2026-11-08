@@ -38,6 +38,11 @@ struct Inspect {
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
+    /// Select a captured flight-map node by its exact ID.
+    flight_node_id: Option<std::num::NonZeroU32>,
+    /// Keep captured reachable flight destinations and exclude map-transition nodes.
+    #[serde(default)]
+    flight_reachable_only: bool,
     /// Budget all lessons marked available in the saved Forever trainer list.
     #[serde(default)]
     trainer_wallet_projection: bool,
@@ -1115,9 +1120,12 @@ impl Operator {
                 "Merchant review requires merchant_stock, a slot from 1 to 256 and up to 1000 bundles",
             )]);
         }
-        if args.flight_wallet_projection && args.section.as_deref() != Some("flight_map") {
+        let filter_flight = args.flight_node_id.is_some() || args.flight_reachable_only;
+        if (args.flight_wallet_projection || filter_flight)
+            && args.section.as_deref() != Some("flight_map")
+        {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Flight wallet projection requires the flight_map section",
+                "Flight review requires the flight_map section",
             )]);
         }
         let reward_filters: [(_, _, _, &[&str]); 4] = [
@@ -1471,12 +1479,30 @@ impl Operator {
                     value["data"] = serde_json::Value::Null;
                     value["merchant_cart_budget"] = result;
                 }
+                if (args.flight_wallet_projection || filter_flight)
+                    && value["client"]["family"] != "forever"
+                {
+                    return CallToolResult::error(vec![ContentBlock::text(
+                        "Flight review requires a saved Forever snapshot",
+                    )]);
+                }
+                if filter_flight {
+                    let count = value["data"]
+                        .get_mut("entries")
+                        .and_then(serde_json::Value::as_object_mut)
+                        .map(|entries| {
+                            entries.retain(|_, node| {
+                                args.flight_node_id.is_none_or(|id| {
+                                    node["node_id"].as_u64() == Some(u64::from(id.get()))
+                                }) && (!args.flight_reachable_only
+                                    || (node["state"] == "reachable"
+                                        && node["map_transition"] == false))
+                            });
+                            entries.len()
+                        });
+                    value["flight_match_count"] = serde_json::json!(count);
+                }
                 if args.flight_wallet_projection {
-                    if value["client"]["family"] != "forever" {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Flight wallet projection requires a saved Forever snapshot",
-                        )]);
-                    }
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Could not read the captured flight wallet context",
