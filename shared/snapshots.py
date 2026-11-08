@@ -30,6 +30,12 @@ def validate_snapshot(value):
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
     stats = sections.get("stats")
+    if isinstance(stats, dict) and {"hearthstone_item_id", "hearthstone_cooldown_seconds"} & stats.keys():
+        item = stats.get("hearthstone_item_id")
+        cooldown = stats.get("hearthstone_cooldown_seconds")
+        if (c["family"] != "forever" or type(item) is not int or not 1 <= item <= 4_294_967_295
+                or ("hearthstone_cooldown_seconds" in stats and (type(cooldown) is not int or not 0 <= cooldown <= 4_294_967_295))):
+            raise ValueError("Invalid Hearthstone cooldown observation")
     if isinstance(stats, dict) and "hearthstone_bind_name" in stats:
         location = stats["hearthstone_bind_name"]
         if c["family"] != "forever" or not isinstance(location, str) or not 1 <= len(location.encode()) <= 256:

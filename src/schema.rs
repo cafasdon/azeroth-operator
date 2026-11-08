@@ -340,10 +340,23 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("map_max_level", "positive", false),
                     ("new_mail_indicator", "bool", false),
                     ("hearthstone_bind_name", "text", false),
+                    ("hearthstone_item_id", "positive", false),
+                    ("hearthstone_cooldown_seconds", "uint", false),
                     ("client_version", "text", true),
                 ],
             )?;
             let map_id = value["map_id"].as_u64();
+            ensure!(
+                value
+                    .get("hearthstone_item_id")
+                    .is_none_or(|id| !id.is_null())
+                    && value
+                        .get("hearthstone_cooldown_seconds")
+                        .is_none_or(|seconds| {
+                            !seconds.is_null() && value["hearthstone_item_id"].as_u64().is_some()
+                        }),
+                "Invalid Hearthstone cooldown observation"
+            );
             let levels = (
                 value["map_min_level"].as_u64(),
                 value["map_max_level"].as_u64(),

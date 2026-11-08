@@ -234,20 +234,37 @@ AO.collectors.stats = function()
         if observed and accessible(mail) and (mail==nil or type(mail)=="boolean" or mail==1) then
             stats.new_mail_indicator=mail==true or mail==1
         end
-        local function mapID(value)
+        local function positiveID(value)
             return accessible(value) and type(value)=="number" and value%1==0 and value>=1 and value<=4294967295
         end
+        local foundHearthstone,item=pcall(C_Container and C_Container.PlayerHasHearthstone)
+        if foundHearthstone and positiveID(item) then
+            stats.hearthstone_item_id=item
+            local foundCooldown,start,duration,enabled=pcall(C_Container.GetItemCooldown,item)
+            if foundCooldown and accessible(start) and accessible(duration) and accessible(enabled)
+                and enabled==1 and type(start)=="number" and start>=0 and start<math.huge
+                and type(duration)=="number" and duration>=0 and duration<=4294967295 then
+                if start==0 and duration==0 then
+                    stats.hearthstone_cooldown_seconds=0
+                elseif start>0 and duration>0 then
+                    local clockOk,now=pcall(GetTime)
+                    if clockOk and accessible(now) and type(now)=="number" and now>=start and now<math.huge then
+                        stats.hearthstone_cooldown_seconds=math.ceil(math.max(0,duration-(now-start)))
+                    end
+                end
+            end
+        end
         local ok,map=pcall(C_Map and C_Map.GetBestMapForUnit,"player")
-        if ok and mapID(map) then
+        if ok and positiveID(map) then
             stats.map_id=map
             local found,info=pcall(C_Map.GetMapInfo,map)
-            if found and accessible(info) and type(info)=="table" and mapID(info.mapID) and info.mapID==map then
+            if found and accessible(info) and type(info)=="table" and positiveID(info.mapID) and info.mapID==map then
                 local name,parent=info.name,info.parentMapID
                 if accessible(name) and type(name)=="string" and #name>0 and #name<=256 then stats.map_name=name end
-                if mapID(parent) and parent~=map then stats.map_parent_id=parent end
+                if positiveID(parent) and parent~=map then stats.map_parent_id=parent end
             end
             local foundLevels,minLevel,maxLevel=pcall(C_Map.GetMapLevels,map)
-            if foundLevels and mapID(minLevel) and mapID(maxLevel) and minLevel<=maxLevel and maxLevel<=255 then
+            if foundLevels and positiveID(minLevel) and positiveID(maxLevel) and minLevel<=maxLevel and maxLevel<=255 then
                 stats.map_min_level=minLevel
                 stats.map_max_level=maxLevel
             end

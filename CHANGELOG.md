@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Save the Hearthstone item ID and observed cooldown for Forever travel planning.
+
 - Report the captured Forever Hearthstone bind location for offline travel planning.
 
 - Save the encounter names and defeat flags available from the visible Forever instance-lock warning.

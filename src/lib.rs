@@ -125,6 +125,15 @@ impl Snapshot {
         );
         for (name, value) in &self.sections {
             if name == "stats"
+                && (value.get("hearthstone_item_id").is_some()
+                    || value.get("hearthstone_cooldown_seconds").is_some())
+            {
+                ensure!(
+                    self.client.family == Family::Forever,
+                    "Hearthstone observation requires Forever"
+                );
+            }
+            if name == "stats"
                 && let Some(location) = value.get("hearthstone_bind_name")
             {
                 ensure!(

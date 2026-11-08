@@ -1668,6 +1668,8 @@ pub fn summary(s: &Snapshot) -> Value {
       "captured_map_max_level":captured_map.and_then(|_| s.sections["stats"]["map_max_level"].as_u64()),
       "new_mail_indicator":s.sections.get("stats").filter(|_| is_forever).and_then(|stats| stats["new_mail_indicator"].as_bool()),
       "hearthstone_bind_name":s.sections.get("stats").filter(|_| is_forever).and_then(|stats| stats["hearthstone_bind_name"].as_str()),
+      "hearthstone_item_id":s.sections.get("stats").filter(|_| is_forever).and_then(|stats| stats["hearthstone_item_id"].as_u64()),
+      "hearthstone_cooldown_seconds":s.sections.get("stats").filter(|_| is_forever).and_then(|stats| stats["hearthstone_cooldown_seconds"].as_u64()),
       "quests_with_waypoint_on_captured_map":quests_on_captured_map,
       "quest_money":quest_money,
       "repair_status":repair_status,

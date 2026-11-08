@@ -62,7 +62,11 @@ Update the importer and reader before syncing new captures. [Minimap mail source
 
 `hearthstone_bind_name` in `stats` and `character_summary` is the
 client's localized bind-location name at export time. It carries no
-coordinates, item availability or cooldown information. Update the
+coordinates. When the game reports a Hearthstone item, the same views
+show `hearthstone_item_id` and any readable, enabled item cooldown in
+`hearthstone_cooldown_seconds`, rounded up at capture time. A zero means
+no remaining timer was observed. Missing data leaves availability unknown,
+and a timer alone does not establish usability. Update the
 importer and reader before syncing new captures. [Forever bind-location usage](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
 
 `bag_capacity` records total and free slots per carried bag, including the

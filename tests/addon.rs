@@ -428,6 +428,12 @@ pub fn verify_forever_capture_fixture(
             end
         }
         C_Container={
+            PlayerHasHearthstone=function() if not fixtureNoHearth then return 6948 end end,
+            GetItemCooldown=function(id)
+                assert(id==6948)
+                if fixtureReadyHearth then return 0,0,1 end
+                return 10,30.5,fixtureDisabledHearth and 0 or 1
+            end,
             GetContainerNumSlots=function(bag)
                 if bag==0 then return 16 end
                 if bag==1 then return 8 end
@@ -444,6 +450,7 @@ pub fn verify_forever_capture_fixture(
             end
         }
         ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end}
+        GetTime=function() return 20 end
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
         Professions={InLocalCraftingMode=function() return localCrafting end}
         C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end,
@@ -837,6 +844,23 @@ pub fn verify_forever_capture_fixture(
     lua.load("fixtureLockVisible=false").exec()?;
     assert_eq!(summary["new_mail_indicator"], true);
     assert_eq!(summary["hearthstone_bind_name"], "Fixture Inn");
+    assert_eq!(summary["hearthstone_item_id"], 6948);
+    assert_eq!(summary["hearthstone_cooldown_seconds"], 21);
+    lua.load("fixtureReadyHearth=true;AO.Capture()").exec()?;
+    assert_eq!(read()?.sections["stats"]["hearthstone_cooldown_seconds"], 0);
+    lua.load("fixtureReadyHearth=false;fixtureDisabledHearth=true;AO.Capture()")
+        .exec()?;
+    assert!(
+        read()?.sections["stats"]
+            .get("hearthstone_cooldown_seconds")
+            .is_none()
+    );
+    lua.load("fixtureNoHearth=true;AO.Capture()").exec()?;
+    assert!(
+        read()?.sections["stats"]
+            .get("hearthstone_item_id")
+            .is_none()
+    );
     lua.load("fixtureBindName='';AO.Capture()").exec()?;
     assert!(
         read()?.sections["stats"]
