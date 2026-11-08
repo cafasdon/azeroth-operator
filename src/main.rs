@@ -54,6 +54,8 @@ struct Inspect {
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
     merchant_bundles: Option<std::num::NonZeroU32>,
+    /// Budget one to sixteen distinct captured merchant slots together.
+    merchant_cart: Option<Vec<MerchantCartLine>>,
     /// Find saved merchant offers that sell this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
@@ -259,6 +261,13 @@ struct Compare {
 #[serde(deny_unknown_fields)]
 struct Summary {
     snapshot_id: String,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct MerchantCartLine {
+    slot: std::num::NonZeroU32,
+    bundles: std::num::NonZeroU32,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1057,6 +1066,26 @@ impl Operator {
             .merchant_item_id
             .map(|id| ("item_id", id))
             .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
+        if let Some(cart) = &args.merchant_cart
+            && (args.section.as_deref() != Some("merchant_stock")
+                || args.merchant_offer_slot.is_some()
+                || args.merchant_bundles.is_some()
+                || merchant_search.is_some()
+                || !(1..=16).contains(&cart.len())
+                || cart
+                    .iter()
+                    .any(|line| line.slot.get() > 256 || line.bundles.get() > 1000)
+                || cart
+                    .iter()
+                    .map(|line| line.slot)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+                    != cart.len())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant cart requires merchant_stock and up to sixteen distinct slots with 1 to 1000 bundles each",
+            )]);
+        }
         if merchant_search.is_some()
             && (args.section.as_deref() != Some("merchant_stock")
                 || args.merchant_offer_slot.is_some()
@@ -1411,6 +1440,27 @@ impl Operator {
                         value["merchant_budget"] = projection;
                         value["data"] = offer.clone();
                     }
+                }
+                if let Some(cart) = &args.merchant_cart {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Merchant cart requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                        azeroth_operator::analysis::merchant_cart_budget(
+                            &snapshot,
+                            cart.iter()
+                                .map(|line| (line.slot.get(), line.bundles.get())),
+                        )
+                    });
+                    let Ok(result) = result else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not review the captured merchant cart",
+                        )]);
+                    };
+                    value["data"] = serde_json::Value::Null;
+                    value["merchant_cart_budget"] = result;
                 }
                 if args.flight_wallet_projection {
                     if value["client"]["family"] != "forever" {

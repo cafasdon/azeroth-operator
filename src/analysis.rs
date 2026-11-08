@@ -1703,6 +1703,44 @@ pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Resu
     }))
 }
 
+pub fn merchant_cart_budget(
+    snapshot: &Snapshot,
+    cart: impl Iterator<Item = (u32, u32)>,
+) -> Result<Value> {
+    let Some(offers) = snapshot
+        .sections
+        .get("merchant_stock")
+        .and_then(Value::as_object)
+    else {
+        return Ok(Value::Null);
+    };
+    let mut lines = BTreeMap::new();
+    let mut missing = Vec::new();
+    let mut copper = 0u64;
+    for (slot, bundles) in cart {
+        let Some(offer) = offers.get(&slot.to_string()) else {
+            missing.push(slot);
+            continue;
+        };
+        let mut line = merchant_budget(snapshot, offer, bundles)?;
+        copper = copper
+            .checked_add(line["required_copper"].as_u64().unwrap())
+            .ok_or_else(|| anyhow::anyhow!("Merchant cart cost is too large"))?;
+        line["item_id"] = offer["item_id"].clone();
+        line["currency_id"] = offer["currency_id"].clone();
+        lines.insert(slot, line);
+    }
+    let wallet = snapshot
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    Ok(
+        json!({"lines_by_slot":lines,"missing_slots":missing,"known_required_copper":copper,
+        "total_required_copper":missing.is_empty().then_some(copper),
+        "known_copper_shortfall":wallet.map(|balance| copper.saturating_sub(balance))}),
+    )
+}
+
 pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
     let Some(entries) = map["entries"].as_object() else {
         return Value::Null;

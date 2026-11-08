@@ -225,7 +225,12 @@ by the merchant cost API. Missing components leave the extended cost
 unknown. Currency names are recorded without inferring balance matches.
 [Forever merchant cost display](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/MerchantFrame.lua)
 
-With `section: "merchant_stock"`, set `merchant_offer_slot` to select an
+With `section: "merchant_stock"`, use `merchant_cart` with up to 16
+distinct `{slot, bundles}` entries to budget their copper together.
+Missing offers leave the complete total unknown. Extended costs are
+shown per line and are not combined into a cart affordability decision.
+
+Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.
 The review scales the copper and token costs, compares them with the
 opt-in wallet and carried bags from the same capture, and lists named

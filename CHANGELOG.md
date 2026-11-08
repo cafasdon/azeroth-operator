@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget combined copper for a saved Forever merchant cart with per-offer extended costs.
+
 - Select exact saved Forever trainer lesson slots before comparing lesson costs.
 
 - Budget the largest number of known-price Forever trainer lessons that fit the captured balance.
