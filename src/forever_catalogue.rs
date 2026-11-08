@@ -2229,6 +2229,12 @@ fn proficiency_conflict(class: u64, item: &Value) -> Option<&'static str> {
     }
 }
 
+fn native_slot_category_conflict(item: &Value, target: u32) -> Option<Value> {
+    let category = crate::planning::native_slot_category(item, target);
+    (category["target_slot_category_matches"]==false).then(||json!({"slot":target,"item_id":item["item_id"],
+        "observed_equip_location":category["observed_equip_location"],"candidate_equipment_slots":category["candidate_equipment_slots"]}))
+}
+
 fn native_level_shortfall(
     snapshot: &Snapshot,
     selection: &crate::planning::EquipmentSelection,
@@ -2534,6 +2540,13 @@ pub fn review_equipment_catalogue(
         }
     };
     let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
+    let native_slot_conflicts: Vec<_> = (1..=19)
+        .filter(|slot| {
+            snapshot.client.family == Family::Forever
+                && simulator_slot_for_equipment(*slot).is_some()
+        })
+        .filter_map(|slot| native_slot_category_conflict(projected_observation(slot)?, slot))
+        .collect();
     let projected_weapon_skills: Vec<_> = [16, 17, 18]
         .into_iter()
         .filter_map(|slot| {
@@ -2658,6 +2671,7 @@ pub fn review_equipment_catalogue(
         }
     }
     let equipment_spec = (blockers.is_empty()
+        && native_slot_conflicts.is_empty()
         && native_shortfalls.is_empty()
         && requirement_conflicts.is_empty()
         && pairing != "two_hand_conflict"
@@ -2670,6 +2684,7 @@ pub fn review_equipment_catalogue(
         "catalogue_projected_weapon_skills":projected_weapon_skills,
         "catalogue_requirement_conflicts":requirement_conflicts,
         "native_required_level_shortfalls":native_shortfalls,
+        "native_slot_category_conflicts":native_slot_conflicts,
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
         "simulator_equipment_spec":equipment_spec,
@@ -2917,11 +2932,15 @@ pub fn review_owned(
                 let native_shortfall = draft_selection
                     .as_ref()
                     .and_then(|selection| native_level_shortfall(snapshot, selection));
+                let native_slot_conflict = draft_selection.as_ref().and_then(|selection| {
+                    native_slot_category_conflict(item, selection.target_slot)
+                });
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
                     "catalogue_item_requirement_conflict":item_conflict,
                     "catalogue_requirement_conflict":requirement_conflict,
                     "native_required_level_shortfall":native_shortfall,
+                    "native_slot_category_conflict":native_slot_conflict,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),
                     "link_modifiers":modifiers,

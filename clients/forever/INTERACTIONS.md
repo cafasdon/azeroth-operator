@@ -2,11 +2,19 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Known native slot-category contradictions in projected simulation equipment
+now withhold resolved inputs, including baseline conflicts. Candidate reviews
+and ranker skips expose the reason. Cleared/vacated/non-simulated slots are
+excluded; unknown/conditional categories do not add a block. Draft inspection
+remains possible and native equip eligibility remains unverified.
+[Offline evidence](../../docs/native-slot-conflict-verification-2026-11-08.md).
+
 Linked-item observations can include stable native equip-location tokens.
 Saved equipment drafts annotate known slot categories, with unknown mappings
 and two-handed off-hand placement left explicit. Category matches do not
 establish class, level, dual-wield, unique-item or complete-set legality.
-No simulation rules or game equipment are changed.
+Category annotations remain separate from equip eligibility; known conflicts
+withhold simulator inputs as described above. No game equipment is changed.
 [Offline evidence](../../docs/native-equip-location-verification-2026-11-08.md).
 
 Public weapon-enchant list observations cover main hand, off hand and ranged

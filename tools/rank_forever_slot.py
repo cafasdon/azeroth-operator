@@ -21,6 +21,7 @@ from tools.run_forever_sim import (
     check_profession_identity, ConflictingProfessions,
     check_character_identity, ConflictingCharacterIdentity,
     check_hunter_pet_level, UnsupportedSimulationPetLevel,
+    ConflictingNativeSlotCategory,
 )
 
 
@@ -92,6 +93,10 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
                 if not multi and not same_slot:
                     skipped.append({"selection": selection, "reason": "would_vacate_another_slot"})
                     continue
+            if conflict := row.get("native_slot_category_conflict"):
+                skipped.append({**({"selections":[selection]} if multi else {"selection":selection}),
+                                "reason":"native_slot_category_conflict","conflicts":[conflict]})
+                continue
             if conflict := row.get("native_required_level_shortfall"):
                 skipped.append({**({"selections":[selection]} if multi else {"selection":selection}),
                                 "reason":"native_required_level_shortfall","conflicts":[conflict]})
@@ -173,6 +178,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
 
         stats = await call("inspect_snapshot", section="stats")
         baseline = await call("review_equipment_selection", selections=[])
+        if baseline["checks"].get("native_slot_category_conflicts"):
+            raise ConflictingNativeSlotCategory("Captured baseline has native slot-category conflicts; refresh its observations or catalogue")
         if not baseline["checks"]["simulator_equipment_spec"]:
             raise ValueError("Captured baseline has unresolved equipment")
         set_observation = None
@@ -267,6 +274,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                         )
                     resolved_keys.setdefault(key, len(drafts) + 1)
                     drafts.append((selections, draft))
+                elif conflicts := draft["checks"].get("native_slot_category_conflicts"):
+                    skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
+                                    "reason":"native_slot_category_conflict","conflicts":conflicts})
                 elif conflicts := draft["checks"].get("native_required_level_shortfalls"):
                     skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
                                     "reason":"native_required_level_shortfall","conflicts":conflicts})
@@ -712,7 +722,7 @@ def main():
         while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
             error = error.exceptions[0]
         if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel, ConflictingProfessions,
-                              ConflictingCharacterIdentity, UnsupportedSimulationPetLevel)):
+                              ConflictingCharacterIdentity, UnsupportedSimulationPetLevel, ConflictingNativeSlotCategory)):
             parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")

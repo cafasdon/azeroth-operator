@@ -1,5 +1,10 @@
 # Native equipment-location observations — 8 November 2026
 
+This record describes the original annotation-only milestone. A subsequent
+[simulation qualification change](native-slot-conflict-verification-2026-11-08.md)
+withholds simulator inputs for known native category conflicts; its evidence
+is recorded separately below that link.
+
 Source and offline verification only. No installation, deployment, game
 interaction or native capture. Broad in-game coverage remains unfinished.
 

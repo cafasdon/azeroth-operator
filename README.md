@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Known native slot-category conflicts now withhold resolved Forever simulator
+equipment, including conflicting baselines. Owned-gear reviews and ranking
+report these conflicts separately; unknown or conditional categories do not
+create a new blocker. Raw drafts remain inspectable. This is a conservative
+simulation qualification check, not proof of live equip legality.
+[Offline verification](docs/native-slot-conflict-verification-2026-11-08.md).
+
 Forever linked-item captures can include stable `equip_location` tokens.
 Equipment reviews annotate the selected item's native slot category, keeping
 unknown tokens and conditional two-handed off-hand placement explicit.

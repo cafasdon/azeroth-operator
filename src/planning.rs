@@ -174,7 +174,7 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     )
 }
 
-fn native_slot_category(item: &Value, target: u32) -> Value {
+pub(crate) fn native_slot_category(item: &Value, target: u32) -> Value {
     let location = item["equip_location"].as_str();
     let slots: Option<&[u32]> = match location {
         Some("INVTYPE_HEAD") => Some(&[1]),

@@ -32,6 +32,45 @@ class UnsupportedSimulationLevel(ValueError):
     """The pinned simulator cannot represent the captured character level."""
 
 
+class ConflictingNativeSlotCategory(ValueError):
+    """Native item categories contradict the projected equipment placement."""
+
+
+# Mirrors planning::native_slot_category for legacy saved review metadata.
+NATIVE_CATEGORY_SLOTS = {
+    'HEAD':{1},'NECK':{2},'SHOULDER':{3},'BODY':{4},'CHEST':{5},'ROBE':{5},'WAIST':{6},
+    'LEGS':{7},'FEET':{8},'WRIST':{9},'HAND':{10},'FINGER':{11,12},'TRINKET':{13,14},'CLOAK':{15},
+    'WEAPONMAINHAND':{16},'WEAPONOFFHAND':{17},'SHIELD':{17},'HOLDABLE':{17},'WEAPON':{16,17},
+    '2HWEAPON':{16,17},'RANGED':{18},'RANGEDRIGHT':{18},'THROWN':{18},'RELIC':{18},'TABARD':{19},
+}
+PROJECTED_SLOT_INDEX = {slot:index for index,slot in enumerate([1,2,3,15,5,9,10,6,7,8,11,12,13,14,16,17,18])}
+
+
+def check_native_slot_categories(review, equipment):
+    if review['checks'].get('native_slot_category_conflicts'):
+        raise ConflictingNativeSlotCategory('Native slot-category conflicts require a refreshed equipment review before simulation')
+    changes=review.get('changes',[])
+    if not isinstance(changes,list):raise ValueError('Invalid equipment review changes')
+    for change in changes:
+        if not isinstance(change,dict):raise ValueError('Invalid equipment review change')
+        target=change.get('target_slot')
+        if type(target) is not int or not 1<=target<=19:raise ValueError('Invalid equipment review target')
+        index=PROJECTED_SLOT_INDEX.get(target)
+        if index is None:continue
+        projected=equipment['items'][index]
+        # Cleared or vacated slots contribute no simulated item.
+        if not isinstance(projected,dict) or not projected.get('id'):continue
+        annotation=change.get('native_slot_category')
+        conflicting=isinstance(annotation,dict) and annotation.get('target_slot_category_matches') is False
+        observed=change.get('selected_item_observed')
+        location=observed.get('equip_location') if isinstance(observed,dict) else None
+        token=location.removeprefix('INVTYPE_') if isinstance(location,str) and location.startswith('INVTYPE_') else None
+        slots=NATIVE_CATEGORY_SLOTS.get(token)
+        if slots is not None and target not in slots:conflicting=True
+        if conflicting:
+            raise ConflictingNativeSlotCategory('Native slot-category conflicts require a refreshed equipment review before simulation')
+
+
 # Class enum IDs from the pinned Forever common.proto.
 CLASS_IDS = {
     "warrior": 1, "paladin": 2, "hunter": 3, "rogue": 4, "priest": 5,
@@ -351,8 +390,11 @@ def request_from(template, equipment_review, encounter_lookup):
     if player.get("enableItemSwap") or player.get("enable_item_swap"):
         raise ValueError("Disable template item swapping")
     equipment = equipment_review["checks"]["simulator_equipment_spec"]
+    if equipment_review["checks"].get("native_slot_category_conflicts"):
+        check_native_slot_categories(equipment_review,equipment)
     if equipment_review["client"]["family"] != "forever" or not equipment or len(equipment["items"]) != 17:
         raise ValueError("Provide a resolved Forever equipment review")
+    check_native_slot_categories(equipment_review,equipment)
     profile = encounter_lookup["simulation_input"]
     if encounter_lookup["family"] != "forever" or encounter_lookup["section"] != "encounters":
         raise ValueError("Provide a Forever encounter lookup with simulation settings")
@@ -733,6 +775,8 @@ def main():
         parser.exit(1, "Simulator template professions disagree with the saved character observation. Match the template to that capture before simulation.\n")
     except ConflictingCharacterIdentity:
         parser.exit(1, "Simulator template class or race disagrees with the saved character observation. Match the template to that capture before simulation.\n")
+    except ConflictingNativeSlotCategory:
+        parser.exit(1, "Native slot-category conflicts require refreshed item observations or catalogue data before simulation.\n")
     except UnsupportedSimulationPetLevel as error:
         parser.exit(1, f"{error}\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:

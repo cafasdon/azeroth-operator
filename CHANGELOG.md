@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Withhold Forever simulator inputs for known native slot-category conflicts in projected equipment, expose candidate diagnostics and skip conflicts in ranking with fixed CLI errors.
+
 - Capture stable native linked-item equip-location tokens and annotate saved equipment drafts by slot category, retaining unknown/conditional placement and unverified equip eligibility.
 
 - Capture public weapon-enchant lists and summarise reported types, IDs, countdowns and charges, preserving unreadable hands and unknown details without expiry or performance inference.
