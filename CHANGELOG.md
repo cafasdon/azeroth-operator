@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter captured Forever equipment, bags and banks by required character level before paging.
+
 - Find Forever catalogue gear by its recorded required character level range.
 
 - Explain Forever level restrictions with the captured level, required level and levels remaining.

@@ -62,6 +62,11 @@ When the captured level is below the catalogue requirement, both conflict
 views include `level_shortfall` with the captured and required levels and
 the difference.
 
+Use `minimum_required_level` or `maximum_required_level` to narrow owned-gear
+results by the catalogue's recorded required character level before paging.
+These inclusive bounds exclude items with no recorded requirement.
+Storage coverage and set totals describe the full capture.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

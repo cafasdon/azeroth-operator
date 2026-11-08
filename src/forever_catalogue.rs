@@ -743,13 +743,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let effect_filter = query.item_effect_buff_id.is_some() || query.item_effect_trigger.is_some();
     let required_level_filter =
         query.minimum_required_level.is_some() || query.maximum_required_level.is_some();
-    ensure!(
-        query
-            .minimum_required_level
-            .zip(query.maximum_required_level)
-            .is_none_or(|(min, max)| min <= max),
-        "Expected an ordered required character level range"
-    );
+    let matches_required_level =
+        required_level_check(query.minimum_required_level, query.maximum_required_level)?;
     let inventory_filter = item_ids.is_some() || ownership.is_some();
     let item_filter = check_requirements.is_some()
         || query.set_id.is_some()
@@ -840,15 +835,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                         .as_u64()
                         .is_some_and(|level| level >= u64::from(minimum.get()))
                 })
-                && (!required_level_filter
-                    || row["reqLvl"].as_u64().is_some_and(|level| {
-                        query
-                            .minimum_required_level
-                            .is_none_or(|min| level >= u64::from(min))
-                            && query
-                                .maximum_required_level
-                                .is_none_or(|max| level <= u64::from(max))
-                    }))
+                && matches_required_level(Some(row))
                 && minimum_upgrade_level.is_none_or(|minimum| {
                     default_item_level(row).is_some_and(|level| level >= minimum)
                 })
@@ -2543,6 +2530,25 @@ fn weapon_skill(snapshot: &Snapshot, item: &Value) -> Option<Value> {
     Some(json!({"skill_line_id":id,"observed":observed,"base_points_to_cap":points_to_cap}))
 }
 
+fn required_level_check(
+    minimum: Option<u32>,
+    maximum: Option<u32>,
+) -> Result<impl Fn(Option<&Value>) -> bool> {
+    ensure!(
+        minimum.zip(maximum).is_none_or(|(min, max)| min <= max),
+        "Expected an ordered required character level range"
+    );
+    Ok(move |item: Option<&Value>| {
+        (minimum.is_none() && maximum.is_none())
+            || item
+                .and_then(|item| item["reqLvl"].as_u64())
+                .is_some_and(|level| {
+                    minimum.is_none_or(|min| level >= u64::from(min))
+                        && maximum.is_none_or(|max| level <= u64::from(max))
+                })
+    })
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
@@ -2552,6 +2558,7 @@ pub fn review_owned(
     set_id: Option<std::num::NonZeroU32>,
     observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
+    required_levels: (Option<u32>, Option<u32>),
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -2565,6 +2572,7 @@ pub fn review_owned(
         .iter()
         .map(|id| u64::from(id.get()))
         .collect();
+    let matches_required_level = required_level_check(required_levels.0, required_levels.1)?;
     ensure!(
         observed_item_ids.len() <= 16 && item_filter.len() == observed_item_ids.len(),
         "Expected at most sixteen distinct item IDs"
@@ -2628,7 +2636,12 @@ pub fn review_owned(
             let wrong_slot = simulator_slot.is_some_and(|slot| {
                 !reference.is_some_and(|item| simulator_slots(item).contains(&slot))
             });
-            if wrong_type || wrong_set || wrong_item || wrong_slot {
+            if wrong_type
+                || wrong_set
+                || wrong_item
+                || wrong_slot
+                || !matches_required_level(reference.copied())
+            {
                 return;
             }
             if included >= offset && entries.len() < limit {

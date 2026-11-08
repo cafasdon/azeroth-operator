@@ -253,6 +253,10 @@ struct OwnedGearReview {
     item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Filter candidates by a pinned simulator slot before paging.
     simulator_slot: Option<azeroth_operator::forever_catalogue::SimulatorSlot>,
+    /// Minimum recorded character level required to equip the item, inclusive.
+    minimum_required_level: Option<u32>,
+    /// Maximum recorded character level required to equip the item, inclusive.
+    maximum_required_level: Option<u32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -626,6 +630,7 @@ impl Operator {
                 args.set_id,
                 item_ids,
                 args.simulator_slot,
+                (args.minimum_required_level, args.maximum_required_level),
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
@@ -633,7 +638,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Owned gear review requires a valid Forever snapshot, a verified local catalogue and a limit from 1 to 50.",
+                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds.",
             )]),
         }
     }
