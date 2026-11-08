@@ -425,6 +425,30 @@ fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
     Some(json!({"total_slots":total,"free_slots":free,"known_general_free_slots":general}))
 }
 
+fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {
+    let foods = snapshot.sections.get("pet_care")?["carried_food"].as_object()?;
+    let bags = snapshot.sections.get("bags")?.as_object()?;
+    let mut locations = Vec::new();
+    let mut matching_stacks = 0usize;
+    for (bag, slots) in bags {
+        for (slot, item) in slots.as_object()? {
+            let id = item["item_id"].as_u64()?;
+            if foods.contains_key(&id.to_string()) {
+                matching_stacks += 1;
+                if locations.len() < 50 {
+                    locations
+                        .push(json!({"bag":bag,"slot":slot,"item_id":id,"count":item["count"]}));
+                }
+            }
+        }
+    }
+    Some(json!({
+        "matching_stacks":matching_stacks,
+        "locations_truncated":matching_stacks>locations.len(),
+        "locations":locations
+    }))
+}
+
 fn carried_items(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();
@@ -2467,6 +2491,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "quests_with_waypoint_on_captured_map":quests_on_captured_map,
       "quest_money":quest_money,
       "repair_status":repair_status,
+      "pet_food_locations":is_forever.then(|| pet_food_locations(s)).flatten(),
       "observed_quest_timers":timed_quests,
       "observed_quest_difficulty":group_quests,
       "carried_item_review":carried_items(s),

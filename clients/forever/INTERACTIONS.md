@@ -91,6 +91,9 @@ same export's carried bags. An empty map means none of the checked items
 were accepted. Unavailable bags or any unreadable classification leave
 the map unknown. The importer checks each reported quantity against the
 saved bag stacks. The classification does not estimate feeding effects.
+In `character_summary`, `pet_food_locations` reports the matching stack
+count and up to 50 saved bag slots. A missing classification stays unknown,
+while an observed empty map gives zero matching stacks.
 
 `trainer_services` saves the open general, profession or pet trainer's API
 list under the player's current trainer filters. It records lesson names,

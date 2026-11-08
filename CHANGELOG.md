@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Locate captured food for the active Forever pet in carried bags.
+
 - Capture active pet level in Forever trainer panels and use it for lesson level gaps.
 
 - Summarise recorded blockers for unavailable Forever trainer lessons.
