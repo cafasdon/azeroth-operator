@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Consumable catalogue lookups with an owner-local capture can match recorded
+effect spell IDs to saved helpful aura IDs. Matches can be shared across items;
+they do not prove item use, effectiveness or inactivity when absent. Stock,
+restock plans and simulator inputs retain their existing meaning.
+[Offline evidence](docs/consumable-aura-matches-verification-2026-11-08.md).
+
 Forever manual exports can include public nonprivate player aura lists. Inspect
 `player_auras` or read `character_summary.player_aura_observations` for reported
 spell IDs and readable application counts. Missing lists remain unknown;

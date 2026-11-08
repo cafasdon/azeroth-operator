@@ -1,5 +1,8 @@
 # Changelog
 
+- Associate local consumable effect references with saved helpful aura spell IDs,
+  preserving unknowns and shared matches independently of stock/restock plans.
+
 - Capture bounded public nonprivate player buff/debuff observations, keeping
   unreadable lists unknown and omitting caster identity and gameplay actions.
 

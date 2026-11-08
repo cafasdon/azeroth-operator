@@ -1532,6 +1532,49 @@ pub fn consumable_inventory(
     });
     let mut result =
         json!({"captured_at":snapshot.captured_at,"owned_quantities_by_item_id":quantities});
+    let helpful = snapshot
+        .sections
+        .get("player_auras")
+        .and_then(|section| section["groups"]["helpful"]["entries"].as_object());
+    let mut effects = serde_json::Map::new();
+    for record in records.as_array().unwrap() {
+        let Some(item_id) = record["id"]
+            .as_u64()
+            .filter(|id| *id > 0 && *id <= u32::MAX as u64)
+        else {
+            continue;
+        };
+        let reference_ids = recorded_effect_ids(record);
+        let matched = reference_ids
+            .as_ref()
+            .filter(|ids| !ids.is_empty())
+            .zip(helpful)
+            .map(|(ids, rows)| {
+                let mut count = 0;
+                let mut matching_ids = BTreeSet::new();
+                for row in rows.values() {
+                    if let Some(id) = row["spell_id"].as_u64().filter(|id| ids.contains(id)) {
+                        count += 1;
+                        matching_ids.insert(id);
+                    }
+                }
+                (count, matching_ids)
+            });
+        effects.insert(item_id.to_string(), json!({
+            "catalogue_effect_spell_id_count":reference_ids.as_ref().map(BTreeSet::len),
+            "catalogue_effect_spell_ids":reference_ids.as_ref().map(|ids|ids.iter().take(50).collect::<Vec<_>>()),
+            "catalogue_effect_spell_ids_truncated":reference_ids.as_ref().map(|ids|ids.len()>50),
+            "observed_id_match":matched.as_ref().map(|(count,_)|*count>0),
+            "matching_aura_row_count":matched.as_ref().map(|(count,_)|count),
+            "matching_aura_spell_id_count":matched.as_ref().map(|(_,ids)|ids.len()),
+            "matching_aura_spell_ids":matched.as_ref().map(|(_,ids)|ids.iter().take(50).collect::<Vec<_>>()),
+            "matching_aura_spell_ids_truncated":matched.as_ref().map(|(_,ids)|ids.len()>50)
+        }));
+    }
+    result["captured_helpful_aura_matches"] = json!({
+        "helpful_list_observed":helpful.is_some(),"by_item_id":effects,
+        "item_use_verified":false,"effectiveness_verified":false
+    });
     if let Some(plan) = plan {
         result["restock_plan"] = json!(plan);
     }
@@ -2018,6 +2061,45 @@ fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn consumable_aura_matches_preserve_unknown_references_and_bound_full_counts() {
+        let rows: serde_json::Map<_, _> = (1..=60)
+            .map(|i| (i.to_string(), json!({"spell_id":1000+i})))
+            .chain(std::iter::once(("61".into(), json!({"spell_id":1001}))))
+            .collect();
+        let snapshot:Snapshot=serde_json::from_value(json!({
+            "schema_version":1,"source":"fixture","captured_at":"2025-01-01T00:00:00Z",
+            "client":{"family":"forever","variant":"live","build":"70862","interface":16001},
+            "character":{"name":"Example","realm":"Test"},"sections":{"player_auras":{
+                "coverage":"readable_nonprivate_player_aura_lists","groups":{"helpful":{"entries":rows}}}}
+        })).unwrap();
+        snapshot.validate().unwrap();
+        let mut effects: Vec<_> = (1001..=1059).map(|id| json!({"buffId":id})).collect();
+        effects.push(json!({"stackingAura":{"buffId":1060}}));
+        effects.push(json!({"buffId":1001}));
+        let records = json!([{"id":1},{"id":2,"itemEffects":{}},{"id":3,"itemEffects":effects},
+            {"id":4,"itemEffects":[{"buffId":1001}]}]);
+        let result = consumable_inventory(&snapshot, &records, None).unwrap();
+        let observations = &result["captured_helpful_aura_matches"];
+        let items = &observations["by_item_id"];
+        assert_eq!(items["1"]["catalogue_effect_spell_ids"], json!([]));
+        assert!(items["1"]["observed_id_match"].is_null());
+        assert!(items["2"]["catalogue_effect_spell_ids"].is_null());
+        assert!(items["2"]["observed_id_match"].is_null());
+        assert_eq!(items["3"]["catalogue_effect_spell_id_count"], 60);
+        assert_eq!(items["3"]["matching_aura_row_count"], 61);
+        assert_eq!(items["3"]["matching_aura_spell_id_count"], 60);
+        assert_eq!(
+            items["3"]["matching_aura_spell_ids"],
+            json!((1001..=1050).collect::<Vec<_>>())
+        );
+        assert_eq!(items["3"]["catalogue_effect_spell_ids_truncated"], true);
+        assert_eq!(items["3"]["matching_aura_spell_ids_truncated"], true);
+        assert_eq!(items["4"]["matching_aura_row_count"], 2);
+        assert_eq!(observations["item_use_verified"], false);
+        assert_eq!(observations["effectiveness_verified"], false);
+    }
 
     #[test]
     fn crafted_sources_distinguish_missing_and_observed_recipe_tracking() {

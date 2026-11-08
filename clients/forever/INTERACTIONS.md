@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Consumable catalogue lookups can join exact recorded effect spell IDs to saved
+helpful aura observations. Unknown lists/reference associations remain unknown;
+shared matches do not identify a consumed item. No inactivity, effect strength,
+stock change, resource use or simulator configuration is inferred.
+[Offline evidence](../../docs/consumable-aura-matches-verification-2026-11-08.md).
+
 Manual player aura capture reads helpful/harmful lists independently and retains
 only stable public nonprivate spell IDs plus readable application counts. Private,
 restricted or changing lists remain unknown. Caster names/GUIDs, instance IDs,
