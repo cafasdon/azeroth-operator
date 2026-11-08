@@ -1190,6 +1190,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "quest_readiness_changes": True})
                         self.assertFalse(progress.isError)
                         progress_data = json.loads(progress.content[0].text)
+                        dated = await session.call_tool("list_snapshots", {
+                            "family": "forever",
+                            "character": {"name": "Example", "realm": "First"},
+                            "captured_from": "2025-01-02T02:00:00+02:00",
+                            "captured_through": "2025-01-02T00:00:00Z",
+                        })
+                        self.assertFalse(dated.isError)
+                        dated_rows = json.loads(dated.content[0].text)["snapshots"]
+                        self.assertTrue(dated_rows)
+                        self.assertTrue(all(row["captured_at"] == "2025-01-02T00:00:00Z"
+                                            for row in dated_rows))
+                        for bounds in [
+                            {"captured_from": "yesterday"},
+                            {"captured_through": "2025-01-02"},
+                            {"captured_from": "2025-01-03T00:00:00Z",
+                             "captured_through": "2025-01-02T00:00:00Z"},
+                        ]:
+                            self.assertTrue((await session.call_tool("list_snapshots", {
+                                "family": "forever", **bounds,
+                            })).isError)
                         self.assertEqual(progress_data["quest_readiness_changes"], {
                             "changes": [{"quest_id": 42, "before": "not_ready", "after": "ready"}],
                             "quest_ids_observed_only_before": [43],

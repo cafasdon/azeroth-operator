@@ -234,6 +234,10 @@ struct ItemCost {
 struct List {
     family: String,
     character: Option<azeroth_operator::Character>,
+    /// Inclusive earliest capture timestamp in RFC 3339 format.
+    captured_from: Option<String>,
+    /// Inclusive latest capture timestamp in RFC 3339 format.
+    captured_through: Option<String>,
     /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
@@ -1171,6 +1175,8 @@ impl Operator {
             family,
             args.character.as_ref(),
             azeroth_operator::CaptureFilters {
+                captured_from: args.captured_from.as_deref(),
+                captured_through: args.captured_through.as_deref(),
                 recipe: azeroth_operator::RecipeCaptureFilters {
                     recipe_id: args.recipe_id,
                     output_item_id: args.recipe_output_item_id,
@@ -1226,7 +1232,7 @@ impl Operator {
         ) {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Snapshot listing failed: check the character, recipe, instance, merchant, trainer or flight filters and limit",
+                "Snapshot listing failed: check capture time bounds, character, feature filters and pagination limits",
             )]),
         }
     }

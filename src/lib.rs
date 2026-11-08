@@ -306,6 +306,8 @@ pub struct BagFamilySpaceFilter {
 
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
+    pub captured_from: Option<&'a str>,
+    pub captured_through: Option<&'a str>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -441,6 +443,8 @@ impl Store {
         limit: usize,
     ) -> Result<Value> {
         let CaptureFilters {
+            captured_from,
+            captured_through,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -482,6 +486,18 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
+            ensure!(value.len() <= 64, "Capture timestamp is too long");
+            Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
+        };
+        let captured_from = captured_from.map(parse_bound).transpose()?;
+        let captured_through = captured_through.map(parse_bound).transpose()?;
+        ensure!(
+            captured_from
+                .zip(captured_through)
+                .is_none_or(|(from, through)| from <= through),
+            "Capture time bounds are reversed"
+        );
         let trainer_service_name = trainer_service_name.map(str::trim);
         ensure!(
             trainer_max_price_copper.is_none_or(
@@ -707,6 +723,8 @@ impl Store {
             match Self::read_in_root(&root, id) {
                 Ok(s)
                     if s.client.family == family
+                        && captured_from.is_none_or(|from| s.captured_at >= from)
+                        && captured_through.is_none_or(|through| s.captured_at <= through)
                         && (!filter_instance
                             || s.sections.get("instance_context").is_some_and(|context| {
                                 instance

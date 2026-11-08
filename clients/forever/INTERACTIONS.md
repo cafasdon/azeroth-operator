@@ -4,6 +4,12 @@ Updated 7 November 2026. This map records source evidence and engineering scope.
 
 The hosted reader and importer support the bank, recipe, reputation, currency, tracked-achievement and quest observations below. See the [hosted deployment evidence](../../docs/container.md#forever-snapshot-rollout-7-november-2026) and the [Windows companion and package checkpoint](README.md#capture-only-installation-checkpoint). Live addon capture remains pending.
 
+Saved searches accept `captured_from` and `captured_through` as inclusive
+RFC 3339 timestamps. UTC and explicit timezone offsets are supported.
+These bounds combine with character and feature filters before pagination.
+They use the recorded capture time, so a recent match still requires
+separate evidence of current game state.
+
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
 | Character selection | Exact name and realm filter on saved snapshots. Explicit target takes precedence. | Qualify a supported, fresh active-character signal. Until then a saved capture remains historical. |

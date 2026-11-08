@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved snapshots by inclusive capture timestamps before pagination.
+
 - Find saved Forever captures by quest waypoint map, combined with readiness or quest ID.
 
 - Find saved Forever captures by quest readiness without specifying a quest ID.
