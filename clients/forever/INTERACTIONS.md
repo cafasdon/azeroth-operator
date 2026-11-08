@@ -929,6 +929,13 @@ captured rank equals a positive cap. Zero or inconsistent caps give null
 remaining points. The result describes the captured cap and does not
 identify available trainers or a future rank cap.
 
+Use `list_snapshots` with `family: "forever"` and
+`profession_skill_line` to find saved captures containing that profession.
+Add `profession_min_rank` for an inclusive lower rank bound. Missing or
+ambiguous matches are excluded. Each matching row reports the captured
+skill line, rank and cap under `profession_match`. The search can combine
+with an exact character or captured recipe filter before pagination.
+
 Use `inspect_snapshot` with `section: "tracked_recipes"` to read saved
 player-tracked recipes, separated into crafts and recrafts by recipe ID.
 Optional names reflect available recipe metadata. Empty maps

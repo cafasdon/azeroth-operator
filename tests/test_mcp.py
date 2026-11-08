@@ -436,6 +436,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "4": {"name": "Fixture inconsistent", "rank": 76, "max_rank": 75, "skill_line": 164},
                         })
                         training_key = SnapshotStore(Path(folder)).ingest(training)
+                        profession_filter = {"family": "forever", "profession_skill_line": 164,
+                                             "profession_min_rank": 20}
+                        matching = await session.call_tool("list_snapshots", profession_filter)
+                        self.assertFalse(matching.isError)
+                        matches = json.loads(matching.content[0].text)["snapshots"]
+                        self.assertIn(forever_key, [row["snapshot_id"] for row in matches])
+                        self.assertNotIn(training_key, [row["snapshot_id"] for row in matches])
+                        self.assertTrue(all(row["profession_match"] == {
+                            "skill_line": 164, "rank": 20, "max_rank": 75,
+                        } for row in matches))
+                        higher_rank = await session.call_tool("list_snapshots", {
+                            **profession_filter, "profession_min_rank": 21,
+                        })
+                        self.assertFalse(higher_rank.isError)
+                        self.assertEqual(json.loads(higher_rank.content[0].text)["snapshots"], [])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "profession_min_rank": 20,
+                        })).isError)
                         professions = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": training_key, "section": "professions"})
                         self.assertFalse(professions.isError)

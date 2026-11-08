@@ -273,6 +273,8 @@ pub struct InstanceCaptureFilters<'a> {
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
+    pub profession_skill_line: Option<std::num::NonZeroU32>,
+    pub profession_min_rank: Option<u32>,
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
@@ -377,6 +379,8 @@ impl Store {
     ) -> Result<Value> {
         let CaptureFilters {
             recipe: filters,
+            profession_skill_line,
+            profession_min_rank,
             instance,
             merchant_item_id,
             merchant_currency_id,
@@ -466,6 +470,11 @@ impl Store {
         ensure!(
             !filter_recipes || family == Family::Forever,
             "Recipe filtering requires Forever"
+        );
+        ensure!(
+            profession_skill_line.is_none_or(|_| family == Family::Forever)
+                && (profession_min_rank.is_none() || profession_skill_line.is_some()),
+            "Profession filtering requires Forever and a profession skill line"
         );
         let filter_instance = instance.kind.is_some()
             || instance.name.is_some()
@@ -564,6 +573,22 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let profession_match = profession_skill_line.and_then(|skill_line| {
+                        let (_, row) = analysis::profession_by_skill_line(
+                            s.sections.get("professions"),
+                            skill_line.get(),
+                        );
+                        row.filter(|row| {
+                            profession_min_rank.is_none_or(|minimum| {
+                                row["rank"]
+                                    .as_u64()
+                                    .is_some_and(|rank| rank >= u64::from(minimum))
+                            })
+                        })
+                    });
+                    if profession_skill_line.is_some() && profession_match.is_none() {
+                        continue;
+                    }
                     let merchant_matches = merchant_product.map(|(field, id)| {
                         let wallet = s
                             .sections
@@ -666,6 +691,12 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(profession) = profession_match {
+                        summary["profession_match"] = json!({
+                            "skill_line":profession["skill_line"],"rank":profession["rank"],
+                            "max_rank":profession["max_rank"],
+                        });
+                    }
                     if let Some(trainer) = trainer_match {
                         summary["trainer_match"] = trainer;
                     }

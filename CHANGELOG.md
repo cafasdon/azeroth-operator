@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by profession skill line and minimum observed rank.
+
 - Find saved Forever merchant offers that were affordable from the wallet captured on the same visit.
 
 - Cross-test the combined Forever gear shortlist across weighted encounters.
