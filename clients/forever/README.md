@@ -50,6 +50,16 @@ coverage, profession/recipe IDs and recorded name/learning flag. Character,
 date, newest-capture and pagination filters still apply. This search does not
 establish current knowledge, full profession coverage or craft eligibility.
 
+Set `profession_recipe_changes: true` in `compare_snapshots` to compare two
+saved filtered recipe views. Shared recipe IDs expose before/after learning
+flags only when profession IDs agree. Null retains unknown learning; missing
+and explicit null flags are equivalent. Names are ignored. IDs present on only
+one side are labelled observed-only, without inferring learned or lost recipes.
+Different professions return `same_profession: false` and null derived changes;
+a missing section returns null for the whole recipe-view comparison. Existing
+character/client/build/time guards still apply. Changes describe observations,
+not learning events or proof of identical filters.
+
 Saved mount collections are available through `inspect_snapshot` with
 `section: "mount_collection"`; `character_summary` reports the observed
 collected count. This is source-tested read-only support, with native capture

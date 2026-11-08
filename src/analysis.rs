@@ -794,6 +794,7 @@ pub struct ComparisonSelectors {
     pub mount_collection_changes: bool,
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
+    pub profession_recipe_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -877,6 +878,18 @@ pub fn compare_observations(
             .get("saved_instances")
             .zip(after.sections.get("saved_instances"))
             .map(|(old, new)| compare_saved_instances(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.profession_recipe_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Profession recipe comparison requires Forever"
+        );
+        comparison["profession_recipe_changes"] = before
+            .sections
+            .get("profession_recipe_view")
+            .zip(after.sections.get("profession_recipe_view"))
+            .map(|(old, new)| compare_profession_recipe_views(old, new))
             .unwrap_or(Value::Null);
     }
     let skills_before = before
@@ -1861,6 +1874,47 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
+    let old = before["entries"].as_object().unwrap();
+    let new = after["entries"].as_object().unwrap();
+    let same_profession = before["profession_id"] == after["profession_id"];
+    let mut result = json!({"coverage":"filtered_local_recipe_list","same_profession":same_profession,
+        "before_profession_id":before["profession_id"],"after_profession_id":after["profession_id"],
+        "before_observed_rows":old.len(),"after_observed_rows":new.len(),
+        "observed_only_before":null,"observed_only_after":null,"learning_observation_changes":null});
+    if !same_profession {
+        return result;
+    }
+    let ids: BTreeSet<u32> = old
+        .keys()
+        .chain(new.keys())
+        .map(|key| key.parse().unwrap())
+        .collect();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut changes = Vec::new();
+    for id in ids {
+        match (old.get(&id.to_string()), new.get(&id.to_string())) {
+            (Some(a), Some(b)) => {
+                let first = a["learned"].as_bool();
+                let second = b["learned"].as_bool();
+                if first != second {
+                    changes.push(
+                        json!({"recipe_id":id,"before_learned":first,"after_learned":second}),
+                    );
+                }
+            }
+            (Some(_), None) => only_before.push(id),
+            (None, Some(_)) => only_after.push(id),
+            _ => {}
+        }
+    }
+    result["observed_only_before"] = json!(only_before);
+    result["observed_only_after"] = json!(only_after);
+    result["learning_observation_changes"] = json!(changes);
+    result
 }
 
 fn compare_saved_instances(before: &Value, after: &Value) -> Value {

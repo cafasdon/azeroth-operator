@@ -402,6 +402,9 @@ struct Compare {
     /// Compare public saved-instance descriptions; ambiguous rows never produce deltas.
     #[serde(default)]
     saved_instance_changes: bool,
+    /// Compare learning observations for shared recipes only when captured profession IDs agree.
+    #[serde(default)]
+    profession_recipe_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1198,6 +1201,7 @@ impl Operator {
                     mount_collection_changes: args.mount_collection_changes,
                     toy_view_changes: args.toy_view_changes,
                     saved_instance_changes: args.saved_instance_changes,
+                    profession_recipe_changes: args.profession_recipe_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,

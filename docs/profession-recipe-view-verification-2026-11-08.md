@@ -47,6 +47,28 @@ Offline evidence:
 
 The package was not installed. Live game testing remains deferred.
 
+## Recipe-view comparison
+
+`compare_snapshots.profession_recipe_changes` adds a compact optional comparison
+under the existing character/client/build/time and owner-store boundaries.
+Both sections must be present; otherwise the result is null. Different
+profession IDs report `same_profession: false`, both IDs/counts, and null derived
+arrays. No recipe progress is inferred across professions.
+
+For the same profession ID, shared recipe IDs compare optional learned booleans.
+True, false and unknown remain distinct; missing and explicit null flags both
+mean unknown. Names do not affect learning differences. One-sided IDs are
+sorted numeric observations only before/after, not acquired/lost recipes.
+Filters need not agree, so no completion or learning-event claim is made.
+The response always retains `filtered_local_recipe_list` coverage.
+
+`cargo build --locked --offline` passed. With `PYTHONPATH=.;tests`,
+`python -m unittest test_profession_recipe_view test_mcp test_snapshots` passed
+11 tests. Real stdio fixtures cover true-to-false and unknown-to-true changes,
+one-sided rows, different professions, name-only changes, missing/null flag
+equivalence, missing sections, unchanged default output and family rejection.
+Formatting and diff checks passed. No game or deployment actions occurred.
+
 ## Saved-character recipe search
 
 `list_snapshots.profession_recipe` requires a positive recipe ID and optionally
@@ -124,3 +146,25 @@ concrete findings:
 Additional probes used disposable synthetic owner stores and made no game,
 installation or source changes. The committed regression is the retained
 reproducible test; inline probes are supplementary review evidence.
+
+Jev 1.14.0 advisory comparison-scope assessment returned supported (request
+`53c7e7f035a030fc6cd774b876c0a5b6ff93765379923dae524bfbe73bda0da6`,
+555 input / 46 output tokens, 0.282 seconds), separately from runtime evidence.
+
+Independent comparison reviews used gpt-6.1-sol at high effort; neither found
+a concrete flaw:
+
+- Failure: `PYTHONPATH=. python -m unittest discover -s tests -p test_profession_recipe_view.py -v`
+  passed one test in 0.554 seconds. Thirty additional real-MCP calls checked all
+  16 missing/null/false/true transitions; seven character/client/time rejection
+  cases; either/both missing sections; numeric ordering; different-profession
+  suppression; 4,096 changed shared rows (0.118 seconds); and disjoint 4,096-row
+  views producing only observed-only arrays.
+- Callers/data boundaries: the same command passed in 0.570 seconds. Real stdio
+  probes verified default/false equivalence, seven malformed booleans rejected,
+  composition with all 17 existing selectors without changing their fields,
+  exact identity/client/build/time guards, and five path/missing/invalid/hash
+  rejection cases. No catalogue or additional paths are read by this selector.
+
+Review fixtures were temporary synthetic owner snapshots; no source edits,
+installation or game operations occurred.

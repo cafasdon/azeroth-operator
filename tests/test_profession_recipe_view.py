@@ -93,6 +93,44 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(response.isError)
                     response=await session.call_tool('list_snapshots',{'family':'retail','profession_recipe':{'recipe_id':7}})
                     self.assertTrue(response.isError)
+                    changed=copy.deepcopy(value)
+                    changed['captured_at']='2025-01-02T00:00:00Z'
+                    changed_view=changed['sections']['profession_recipe_view']
+                    changed_view['entries']['7']['learned']=False
+                    changed_view['entries']['9']['learned']=True
+                    changed_view['entries'].pop('8')
+                    changed_view['entries']['10']={'learned':False}
+                    changed_key=store.ingest(changed)
+                    async def compare(left,right,**arguments):
+                        response=await session.call_tool('compare_snapshots',{'before_id':left,'after_id':right,**arguments})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+                    delta=(await compare(key,changed_key,profession_recipe_changes=True))['profession_recipe_changes']
+                    self.assertTrue(delta['same_profession'])
+                    self.assertEqual(delta['learning_observation_changes'],[
+                        {'recipe_id':7,'before_learned':True,'after_learned':False},
+                        {'recipe_id':9,'before_learned':None,'after_learned':True}])
+                    self.assertEqual(delta['observed_only_before'],[8])
+                    self.assertEqual(delta['observed_only_after'],[10])
+                    other_profession=copy.deepcopy(changed)
+                    other_profession['sections']['profession_recipe_view']['profession_id']=165
+                    other_key=store.ingest(other_profession)
+                    delta=(await compare(key,other_key,profession_recipe_changes=True))['profession_recipe_changes']
+                    self.assertFalse(delta['same_profession'])
+                    for field in ['observed_only_before','observed_only_after','learning_observation_changes']:
+                        self.assertIsNone(delta[field])
+                    renamed=copy.deepcopy(value)
+                    renamed['sections']['profession_recipe_view']['entries']['7']['name']='Translated'
+                    renamed['sections']['profession_recipe_view']['entries']['9']['learned']=None
+                    renamed_key=store.ingest(renamed)
+                    delta=(await compare(key,renamed_key,profession_recipe_changes=True))['profession_recipe_changes']
+                    self.assertEqual(delta['learning_observation_changes'],[])
+                    self.assertIsNone((await compare(key,missing_key,profession_recipe_changes=True))['profession_recipe_changes'])
+                    self.assertNotIn('profession_recipe_changes',await compare(key,changed_key))
+                    retail_key=store.ingest(fixture())
+                    response=await session.call_tool('compare_snapshots',{'before_id':retail_key,'after_id':retail_key,
+                                                                         'profession_recipe_changes':True})
+                    self.assertTrue(response.isError)
                     response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'profession_recipe_view'})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)['data'],view)

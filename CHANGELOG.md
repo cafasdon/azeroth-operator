@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare observed learning flags across compatible saved profession recipe views, preserving unknowns, profession changes and filtered-list scope.
+
 - Search saved characters for pending loaded mail attachments by item/currency ID and known quantity, preserving partial coverage and inventory separation.
 
 - Capture pending loaded inbox attachments without correspondence or mail actions, separating items, currencies and unresolved slots from owned inventory.
