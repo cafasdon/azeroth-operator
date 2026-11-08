@@ -275,6 +275,7 @@ pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
+    pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub trainer_service_name: Option<&'a str>,
     pub trainer_service_status: Option<&'a str>,
     pub trainer_max_price_copper: Option<u64>,
@@ -374,6 +375,7 @@ impl Store {
             recipe: filters,
             instance,
             merchant_item_id,
+            merchant_currency_id,
             trainer_service_name,
             trainer_service_status,
             trainer_max_price_copper,
@@ -432,9 +434,14 @@ impl Store {
             "Flight filtering requires Forever"
         );
         ensure!(
-            merchant_item_id.is_none() || family == Family::Forever,
-            "Merchant filtering requires Forever"
+            (merchant_item_id.is_none() || merchant_currency_id.is_none())
+                && (family == Family::Forever
+                    || (merchant_item_id.is_none() && merchant_currency_id.is_none())),
+            "Merchant filtering requires Forever and one product ID"
         );
+        let merchant_product = merchant_item_id
+            .map(|id| ("item_id", id.get()))
+            .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
@@ -539,16 +546,14 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
-                    let merchant_matches = merchant_item_id.map(|id| {
+                    let merchant_matches = merchant_product.map(|(field, id)| {
                         s.sections
                             .get("merchant_stock")
                             .and_then(Value::as_object)
                             .map_or(0, |offers| {
                                 offers
                                     .values()
-                                    .filter(|offer| {
-                                        offer["item_id"].as_u64() == Some(u64::from(id.get()))
-                                    })
+                                    .filter(|offer| offer[field].as_u64() == Some(u64::from(id)))
                                     .count()
                             })
                     });
@@ -624,10 +629,12 @@ impl Store {
                     if let Some(route) = flight_match {
                         summary["flight_match"] = route;
                     }
-                    if let Some(count) = merchant_matches {
+                    if let Some((count, (field, product_id))) =
+                        merchant_matches.zip(merchant_product)
+                    {
                         let stats = s.sections.get("stats");
                         summary["merchant_match"] = json!({
-                            "item_id":merchant_item_id.map(std::num::NonZeroU32::get),
+                            (field):product_id,
                             "offer_count":count,
                             "captured_player_map_id":stats.and_then(|stats| stats["map_id"].as_u64()),
                             "captured_player_map_name":stats.and_then(|stats| stats["map_name"].as_str()),

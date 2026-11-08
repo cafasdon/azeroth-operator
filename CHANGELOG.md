@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever merchant visits by the exact offered currency ID.
+
 - Report merchant offers observed in only one saved Forever panel.
 
 - Compare item-token and named-currency costs for saved Forever merchant offers.

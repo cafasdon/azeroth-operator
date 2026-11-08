@@ -254,6 +254,8 @@ struct List {
     instance_map_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
+    /// Find Forever snapshots whose captured merchant offered this exact currency ID.
+    merchant_currency_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever trainer visits by a case-insensitive lesson name substring.
     trainer_service_name: Option<String>,
     /// Find saved Forever trainer visits with a lesson recorded as available, unavailable or used.
@@ -1071,7 +1073,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe, instance, merchant item, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1101,6 +1103,7 @@ impl Operator {
                     map_id: args.instance_map_id,
                 },
                 merchant_item_id: args.merchant_item_id,
+                merchant_currency_id: args.merchant_currency_id,
                 trainer_service_name: args.trainer_service_name.as_deref(),
                 trainer_service_status: args.trainer_service_status.as_deref(),
                 trainer_max_price_copper: args.trainer_max_price_copper,

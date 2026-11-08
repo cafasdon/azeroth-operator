@@ -801,7 +801,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                   "extended_cost": False, "available": 0},
                         }
                         merchant["sections"]["wallet"] = {"copper": 100}
+                        merchant["sections"]["merchant_stock"]["3"] = {
+                            "currency_id": 744, "bundle_size": 1, "price_copper": 2,
+                            "extended_cost": False, "available": -1,
+                        }
                         merchant_key = SnapshotStore(Path(folder)).ingest(merchant)
+                        currency_visits = await session.call_tool("list_snapshots", {
+                            "family": "forever", "merchant_currency_id": 744,
+                        })
+                        self.assertFalse(currency_visits.isError)
+                        visits = json.loads(currency_visits.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in visits], [merchant_key])
+                        self.assertEqual(visits[0]["merchant_match"], {
+                            "currency_id": 744, "offer_count": 1,
+                            "captured_player_map_id": None, "captured_player_map_name": None,
+                        })
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "merchant_item_id": 744, "merchant_currency_id": 744,
+                        })).isError)
                         priced_inventory = json.loads(json.dumps(refreshed))
                         priced_inventory["sections"]["wallet"] = {"copper": 11}
                         priced_inventory_key = SnapshotStore(Path(folder)).ingest(priced_inventory)
