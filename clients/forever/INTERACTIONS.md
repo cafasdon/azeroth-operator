@@ -95,6 +95,14 @@ In `character_summary`, `pet_food_locations` reports the matching stack
 count and up to 50 saved bag slots. A missing classification stays unknown,
 while an observed empty map gives zero matching stacks.
 
+`compare_snapshots` reports `pet_care_change` with the observed pet
+presence, happiness and loyalty on each side. When both captures have
+food classifications, it compares accepted carried quantities by item ID.
+An absent item in an observed classification contributes zero accepted
+units. A missing classification leaves the comparison unknown. The
+captures can describe different pets, so changes can reflect different
+food acceptance as well as changes in bag stock.
+
 `trainer_services` saves the open general, profession or pet trainer's API
 list under the player's current trainer filters. It records lesson names,
 available, unavailable or known status, and readable rank labels,

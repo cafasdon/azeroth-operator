@@ -814,6 +814,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         travel["sections"]["flight_map"]["entries"]["2"]["fare_copper"] = 1
                         travel["sections"]["repair_quote"] = {"copper": 1}
+                        travel["sections"]["bags"] = {"0": {"1": {"item_id": 117, "count": 3}}}
+                        travel["sections"]["pet_care"] = {
+                            "present": True, "happiness": 2, "loyalty": "Fixture loyal",
+                            "carried_food": {"117": 3},
+                        }
                         travel["sections"]["bag_capacity"] = {
                             "0": {"total_slots": 16, "free_slots": 1, "family_mask": 0},
                             "1": {"total_slots": 8, "free_slots": 5, "family_mask": 32},
@@ -824,6 +829,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
+                        travel["sections"]["bags"]["0"]["1"]["count"] = 1
+                        travel["sections"]["pet_care"]["carried_food"] = {"117": 1}
                         del travel["sections"]["bag_capacity"]
                         travel["sections"]["wallet"]["copper"] = 0
                         travel["sections"]["stats"].update({
@@ -893,6 +900,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(changed_travel.isError)
                         travel_changes = json.loads(changed_travel.content[0].text)
+                        self.assertEqual(travel_changes["pet_care_change"], {
+                            "before": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
+                            "after": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
+                            "accepted_carried_food_changes": {
+                                "117": {"before_quantity": 3, "after_quantity": 1, "quantity_delta": -2},
+                            },
+                        })
                         self.assertEqual(travel_changes["flight_map_changes"]["changes"], [])
                         self.assertEqual(travel_changes["flight_map_changes"]["affordability_changes"], [
                             {"node_id": 14, "before_affordable": True, "after_affordable": False},

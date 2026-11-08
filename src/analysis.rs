@@ -830,6 +830,14 @@ pub fn compare_observations(
             "after":current_space,
         });
     }
+    if before.client.family == crate::Family::Forever
+        && (before.sections.contains_key("pet_care") || after.sections.contains_key("pet_care"))
+    {
+        comparison["pet_care_change"] = compare_pet_care(
+            before.sections.get("pet_care").unwrap_or(&Value::Null),
+            after.sections.get("pet_care").unwrap_or(&Value::Null),
+        );
+    }
     let tracked_before = before.sections.get("tracked_recipes");
     let tracked_after = after.sections.get("tracked_recipes");
     if tracked_before.is_some() || tracked_after.is_some() {
@@ -1623,6 +1631,39 @@ fn compare_professions(before: &Value, after: &Value) -> Option<Value> {
     }
     Some(json!({"changes":changes,"observed_only_before":only_before,
                 "observed_only_after":only_after,"ambiguous_skill_lines":ambiguous}))
+}
+
+fn compare_pet_care(before: &Value, after: &Value) -> Value {
+    let observation = |pet: &Value| {
+        pet.as_object().map(|_| {
+            json!({
+                "present":pet["present"],"happiness":pet["happiness"],"loyalty":pet["loyalty"],
+            })
+        })
+    };
+    let food_changes =
+        before["carried_food"]
+            .as_object()
+            .zip(after["carried_food"].as_object())
+            .map(|(before, after)| {
+                before
+                    .keys()
+                    .chain(after.keys())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .filter_map(|id| {
+                        let old = before.get(id).and_then(Value::as_i64).unwrap_or(0);
+                        let new = after.get(id).and_then(Value::as_i64).unwrap_or(0);
+                        (old != new).then(|| (id, json!({
+                        "before_quantity":old,"after_quantity":new,"quantity_delta":new-old,
+                    })))
+                    })
+                    .collect::<BTreeMap<_, _>>()
+            });
+    json!({
+        "before":observation(before),"after":observation(after),
+        "accepted_carried_food_changes":food_changes,
+    })
 }
 
 fn compare_travel_context(before: &Value, after: &Value) -> Option<Value> {
