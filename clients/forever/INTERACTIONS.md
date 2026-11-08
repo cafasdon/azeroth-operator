@@ -508,6 +508,9 @@ syncing these fields. [Forever quest API](https://raw.githubusercontent.com/Geth
 rounded down. `character_summary.observed_quest_timers` lists observed timers
 with the least time left first. A missing timer means no usable timer was
 returned. These are saved observations and do not count down after export.
+Each row includes the captured total and `estimated_end_at`, calculated
+as capture time plus the recorded remaining seconds. The estimate assumes
+the timer continued without changes after capture.
 Update the importer and reader before syncing the new field. [Forever quest tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_QuestObjectiveTracker.lua)
 
 The selected quest can include `currency_rewards`, indexed by reward row.

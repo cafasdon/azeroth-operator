@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include captured durations and estimated end times for Forever quest timers.
+
 - List the Forever quests with the most observed unfinished objectives.
 
 - Summarise unfinished Forever quest objectives by captured kind.

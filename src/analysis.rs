@@ -2565,10 +2565,18 @@ pub fn summary(s: &Snapshot) -> Value {
     let quests = s.sections.get("quests").and_then(Value::as_object);
     let timed_quests = quests.filter(|_| s.client.family == crate::Family::Forever).map(|quests| {
         let mut rows = quests.iter().filter_map(|(id, quest)| {
-            Some((quest["timer"]["remaining_seconds"].as_u64()?, id.parse::<u32>().ok()?))
+            let timer = quest["timer"].as_object()?;
+            Some((timer.get("remaining_seconds")?.as_u64()?, id.parse::<u32>().ok()?,
+                timer.get("total_seconds")?.as_u64()?))
         }).collect::<Vec<_>>();
         rows.sort_unstable();
-        rows.into_iter().map(|(remaining_seconds, quest_id)| json!({"quest_id":quest_id,"remaining_seconds":remaining_seconds})).collect::<Vec<_>>()
+        rows.into_iter().map(|(remaining_seconds, quest_id, total_seconds)| {
+            let estimated_end = i64::try_from(remaining_seconds).ok()
+                .and_then(chrono::TimeDelta::try_seconds)
+                .and_then(|remaining| s.captured_at.checked_add_signed(remaining));
+            json!({"quest_id":quest_id,"remaining_seconds":remaining_seconds,"total_seconds":total_seconds,
+                "estimated_end_at":estimated_end})
+        }).collect::<Vec<_>>()
     });
     let group_quests = quests.filter(|_| s.client.family == crate::Family::Forever).map(|quests| {
         let mut groups = Vec::new();

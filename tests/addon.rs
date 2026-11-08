@@ -1048,7 +1048,8 @@ pub fn verify_forever_capture_fixture(
     assert!(quests["43"].get("timer").is_none());
     assert_eq!(
         azeroth_operator::analysis::summary(&snapshot)["observed_quest_timers"],
-        serde_json::json!([{"quest_id":42,"remaining_seconds":74}])
+        serde_json::json!([{"quest_id":42,"remaining_seconds":74,"total_seconds":100,
+            "estimated_end_at":snapshot.captured_at + chrono::TimeDelta::seconds(74)}])
     );
     assert_eq!(
         quests["42"]["currency_rewards"],
