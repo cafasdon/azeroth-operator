@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever catalogue items linked to the explicitly learned recipe in a saved capture.
+
 - Discover Forever catalogue crafting outputs by the recorded source profession.
 
 - Put Forever healing mana downtime in context with the realised simulation duration and fraction of simulated time.

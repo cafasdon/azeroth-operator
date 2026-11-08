@@ -160,6 +160,9 @@ pub struct Query {
     pub recipe_spell_id: Option<u32>,
     /// Restrict items or enchants to a crafted source with this pinned simulator Profession enum ID.
     pub crafted_profession_id: Option<std::num::NonZeroU32>,
+    /// Match only the learned recipe explicitly observed in the supplied item acquisition snapshot.
+    #[serde(default)]
+    pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
     pub set_id: Option<std::num::NonZeroU32>,
     /// Restrict items to catalogue placements for this simulator equipment slot.
@@ -649,7 +652,26 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             || matches!(query.section, Section::Items | Section::Enchants),
         "Crafted profession filters require items or enchants"
     );
-    let crafted_filter = query.recipe_spell_id.is_some() || query.crafted_profession_id.is_some();
+    let learned_recipe = if query.only_observed_learned_recipe {
+        ensure!(
+            matches!(query.section, Section::Items) && query.acquisition_snapshot_id.is_some(),
+            "Learned recipe filtering requires items and an acquisition snapshot"
+        );
+        let snapshot = snapshot.ok_or_else(|| anyhow::anyhow!("Missing acquisition snapshot"))?;
+        ensure!(
+            snapshot.client.family == Family::Forever,
+            "Expected a Forever snapshot"
+        );
+        snapshot
+            .sections
+            .get("selected_recipe")
+            .filter(|row| row["learned"] == true)
+    } else {
+        None
+    };
+    let crafted_filter = query.recipe_spell_id.is_some()
+        || query.crafted_profession_id.is_some()
+        || query.only_observed_learned_recipe;
     let drop_label = query.drop_label.as_deref().map(str::trim);
     if let Some(label) = drop_label {
         ensure!(
@@ -839,6 +861,15 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                                 source["crafted"]["profession"].as_u64()
                                     == Some(u64::from(profession.get()))
                             })
+                            && (!query.only_observed_learned_recipe
+                                || learned_recipe.is_some_and(|recipe| {
+                                    source["crafted"]["spellId"]
+                                        .as_u64()
+                                        .is_some_and(|id| recipe["recipe_id"].as_u64() == Some(id))
+                                        && recipe["output_item_id"]
+                                            .as_u64()
+                                            .is_none_or(|id| row["id"].as_u64() == Some(id))
+                                }))
                     })
                 });
             let matches_gear = query

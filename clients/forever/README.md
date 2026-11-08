@@ -184,6 +184,10 @@ for a pinned simulator profession, such as Blacksmithing (2).
 If `recipe_spell_id` is also supplied, the same crafting source must
 match both. These records identify catalogue outputs, and recipe
 availability still depends on separate evidence.
+With an item lookup and `acquisition_snapshot_id`, enable
+`only_observed_learned_recipe` to restrict results to the capture's
+explicitly learned selected recipe. A recorded output item must agree.
+Tracking alone is insufficient, and an empty result describes that capture.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip
