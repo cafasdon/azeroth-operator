@@ -349,6 +349,15 @@ pub struct SavedWorldBossFilter {
     pub maximum_update_age_seconds: Option<u32>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ProfessionRecipeFilter {
+    pub recipe_id: std::num::NonZeroU32,
+    pub profession_id: Option<std::num::NonZeroU32>,
+    /// Unknown requires an observed row with no readable learning flag.
+    pub learning: Option<RecipeLearning>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -377,6 +386,7 @@ pub struct CaptureFilters<'a> {
     pub collected_mount: Option<CollectedMountFilter>,
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
+    pub profession_recipe: Option<ProfessionRecipeFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -570,6 +580,7 @@ impl Store {
             collected_mount,
             saved_instance,
             saved_world_boss,
+            profession_recipe,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -625,6 +636,13 @@ impl Store {
         let saved_world_boss_name = saved_world_boss
             .as_ref()
             .map(|filter| filter.name.to_lowercase());
+        ensure!(
+            profession_recipe.is_none() || family == Family::Forever,
+            "Profession recipe view filtering requires Forever"
+        );
+        let profession_recipe_key = profession_recipe
+            .as_ref()
+            .map(|filter| filter.recipe_id.to_string());
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -962,6 +980,17 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let profession_recipe_match = profession_recipe.as_ref().zip(profession_recipe_key.as_ref()).and_then(|(filter, key)| {
+                        let view = s.sections.get("profession_recipe_view")?;
+                        let row = view["entries"].get(key)?;
+                        (filter.profession_id.is_none_or(|id| view["profession_id"].as_u64() == Some(u64::from(id.get())))
+                            && filter.learning.is_none_or(|state| row["learned"].as_bool() == state.observed()))
+                            .then(|| json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
+                                "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]}))
+                    });
+                    if profession_recipe.is_some() && profession_recipe_match.is_none() {
+                        continue;
+                    }
                     let saved_world_boss_match = saved_world_boss.as_ref().zip(saved_world_boss_name.as_ref()).and_then(|(filter, name)| {
                         let saved = s.sections.get("saved_world_bosses")?;
                         if !filter.maximum_update_age_seconds.is_none_or(|maximum|
@@ -1476,6 +1505,9 @@ impl Store {
                     }
                     if let Some(observation) = saved_world_boss_match {
                         summary["saved_world_boss_match"] = observation;
+                    }
+                    if let Some(observation) = profession_recipe_match {
+                        summary["profession_recipe_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

@@ -26,11 +26,19 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             value['sections']['profession_recipe_view']=view
             key=store.ingest(value)
             empty=copy.deepcopy(value)
+            empty['character']['name']='Empty'
             empty['sections']['profession_recipe_view']['entries']={}
             empty_key=store.ingest(empty)
             missing=copy.deepcopy(value)
             missing['sections'].pop('profession_recipe_view')
             missing_key=store.ingest(missing)
+            later=copy.deepcopy(missing)
+            later['captured_at']='2025-01-02T00:00:00Z'
+            store.ingest(later)
+            nullable=copy.deepcopy(value)
+            nullable['character']['name']='Null'
+            nullable['sections']['profession_recipe_view']['entries']['9']['learned']=None
+            nullable_key=store.ingest(nullable)
             bad_keys=[]
             for change in [
                 lambda x:x['client'].update(family='retail'),
@@ -53,6 +61,38 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    async def search(**arguments):
+                        response=await session.call_tool('list_snapshots',{'family':'forever',**arguments})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+                    for recipe,state,expected in [(7,'learned',1),(7,'unlearned',0),(7,'unknown',0),
+                        (8,'unlearned',1),(8,'learned',0),(9,'unknown',1),(9,'unlearned',0),(10,'unknown',0)]:
+                        args={'character':value['character'],'profession_recipe':{
+                            'recipe_id':recipe,'profession_id':164,'learning':state}}
+                        rows=(await search(**args))['snapshots']
+                        self.assertEqual(len(rows),expected)
+                        if rows:
+                            self.assertEqual(rows[0]['snapshot_id'],key)
+                            self.assertEqual(rows[0]['profession_recipe_match']['coverage'],'filtered_local_recipe_list')
+                            self.assertEqual(rows[0]['profession_recipe_match']['recipe_id'],recipe)
+                    args={'character':value['character'],'profession_recipe':{'recipe_id':7}}
+                    self.assertEqual(len((await search(**args))['snapshots']),1)
+                    self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
+                    self.assertEqual(len((await search(**args,latest_per_character=True,
+                        captured_through='2025-01-01T00:00:00Z'))['snapshots']),1)
+                    self.assertEqual((await search(character=value['character'],profession_recipe={
+                        'recipe_id':7,'profession_id':165}))['snapshots'],[])
+                    rows=(await search(character=nullable['character'],profession_recipe={
+                        'recipe_id':9,'learning':'unknown'}))['snapshots']
+                    self.assertEqual(rows[0]['snapshot_id'],nullable_key)
+                    self.assertIsNone(rows[0]['profession_recipe_match']['learned'])
+                    self.assertTrue(all('profession_recipe_match' not in row for row in (await search())['snapshots']))
+                    for bad in [{'recipe_id':0},{'recipe_id':True},{'recipe_id':2**32},{'recipe_id':7,'profession_id':0},
+                                {'recipe_id':7,'learning':'missing'},{'recipe_id':7,'learned':False},{}]:
+                        response=await session.call_tool('list_snapshots',{'family':'forever','profession_recipe':bad})
+                        self.assertTrue(response.isError)
+                    response=await session.call_tool('list_snapshots',{'family':'retail','profession_recipe':{'recipe_id':7}})
+                    self.assertTrue(response.isError)
                     response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'profession_recipe_view'})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)['data'],view)

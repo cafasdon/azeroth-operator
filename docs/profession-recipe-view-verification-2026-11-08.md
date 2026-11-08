@@ -47,6 +47,28 @@ Offline evidence:
 
 The package was not installed. Live game testing remains deferred.
 
+## Saved-character recipe search
+
+`list_snapshots.profession_recipe` requires a positive recipe ID and optionally
+matches profession ID and the existing `RecipeLearning` enum. Every match
+requires that exact recipe row in the captured local filtered list. Missing or
+null learning flags match unknown; explicit false matches unlearned. Absence
+from the list does not match any learning state. The response includes compact
+`profession_recipe_match` metadata, preserving the filtered coverage label.
+
+Existing owner-root validation, character/family/date/newest selection and
+pagination remain in place. Feature matching runs after newest-capture
+selection, so a missing-newest view suppresses the older recipe observation.
+Time bounds are applied before newest selection. Other filters combine by
+conjunction; no other recipe list is substituted for this one.
+
+`cargo build --locked --offline` passed. With `PYTHONPATH=.;tests`,
+`python -m unittest test_profession_recipe_view test_mcp test_snapshots` passed
+11 tests. The real-MCP fixture covers same recipe/profession matching,
+true/false/unknown/absent distinctions, nullable learning, default output,
+missing-newest suppression, date-bound selection, family/ID/enum rejection
+and strict unknown-argument fields. Formatting and diff checks passed.
+
 Independent reader/failure review (gpt-6.1-sol, high effort) found no concrete
 flaw. `python -m unittest discover -s tests -p test_profession_recipe_view.py -v`
 passed one test in 0.200 seconds. A separate real stdio probe passed 45 Python/
@@ -78,3 +100,27 @@ The revised Lua test passed one test, including a rebuild beginning at the end
 of enumeration. Reader code did not change in this correction, so its passing
 boundary evidence remains scoped to the final schema. No additional callers
 were introduced by the fix.
+
+Jev 1.14.0 advisory search-scope assessment returned supported, separately from
+runtime evidence (request
+`7c751514cbd588730f829f06249e1a6b582d10a6485a7c0654bc4fc8af23ce9e`,
+559 input / 46 output tokens, 0.303 seconds).
+
+Independent search review ran two lenses (gpt-6.1-sol, high effort), with no
+concrete findings:
+
+- Failure: `python -m unittest test_profession_recipe_view -v` passed one test.
+  An additional 39 real-MCP calls checked malformed and maximum IDs, nullable
+  optionals, observed-null learning, newest profession/learning changes, date
+  boundaries and filtered pagination. All passed.
+- Callers/data boundaries: `python -m unittest discover -s tests -p test_profession_recipe_view.py -v`
+  passed one test in 0.496 seconds. Real stdio probes confirmed conjunction with
+  selected-recipe, output and tracked-recipe filters; separate newest selection
+  for live/ptr variants; compact metadata; pagination; unchanged defaults;
+  absent-row exclusion; seven malformed arguments; and exclusion of five
+  correctly hashed invalid snapshots. Existing owner containment, hash/schema
+  validation and read-only tool annotations remain in the real call path.
+
+Additional probes used disposable synthetic owner stores and made no game,
+installation or source changes. The committed regression is the retained
+reproducible test; inline probes are supplementary review evidence.

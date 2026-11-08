@@ -304,6 +304,8 @@ struct List {
     saved_instance: Option<azeroth_operator::SavedInstanceFilter>,
     /// Find a named world boss in the saved cache; does not establish loot eligibility.
     saved_world_boss: Option<azeroth_operator::SavedWorldBossFilter>,
+    /// Match a recipe observed in the saved local filtered profession list, optionally by learning state.
+    profession_recipe: Option<azeroth_operator::ProfessionRecipeFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1283,6 +1285,7 @@ impl Operator {
                 collected_mount: args.collected_mount,
                 saved_instance: args.saved_instance,
                 saved_world_boss: args.saved_world_boss,
+                profession_recipe: args.profession_recipe,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

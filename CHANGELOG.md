@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved local profession recipe views by recipe ID, profession and explicit learned/unlearned/unknown observations.
+
 - Capture the visible local profession recipe list with explicit filtered coverage and learned/unlearned/unknown observations, excluding external crafting contexts.
 
 - Let identical-item collapsing deduplicate complete resolved gear drafts before applying the distinct alternative budget, retaining physical review locations.

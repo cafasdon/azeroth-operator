@@ -15,6 +15,16 @@ unlearned and unknown-learning row counts, or null if the section is unavailable
 This is not a full learned-recipe catalogue or a crafting/material review for
 every listed recipe. See [verification](../../docs/profession-recipe-view-verification-2026-11-08.md).
 
+Search these saved observations with `list_snapshots.profession_recipe`, for
+example `{"recipe_id":7,"profession_id":164,"learning":"learned"}`. Only
+`recipe_id` is required; `learning` accepts `learned`, `unlearned` or `unknown`.
+Even unknown requires the recipe ID to be present in the captured filtered list.
+Missing and explicit null flags remain unknown, while unlearned requires an
+explicit false flag. The result includes `profession_recipe_match` with the
+coverage, profession/recipe IDs and recorded name/learning flag. Character,
+date, newest-capture and pagination filters still apply. This search does not
+establish current knowledge, full profession coverage or craft eligibility.
+
 Saved mount collections are available through `inspect_snapshot` with
 `section: "mount_collection"`; `character_summary` reports the observed
 collected count. This is source-tested read-only support, with native capture
