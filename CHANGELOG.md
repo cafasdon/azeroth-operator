@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Explain where the saved starting wallet stops covering a Forever itinerary.
+
 - Show how many consecutive Forever itinerary legs fit the starting wallet.
 
 - Check saved Forever itinerary fares against the starting capture's wallet.

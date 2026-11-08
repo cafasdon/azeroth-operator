@@ -1996,10 +1996,20 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
             })
             .count()
     });
+    let first_uncovered_leg = affordable_prefix.and_then(|index| {
+        let route = routes.get(index)?;
+        let reason = if route["fare_copper"].is_null() {
+            "fare_unknown"
+        } else {
+            "insufficient_copper"
+        };
+        Some(json!({"leg_number":index + 1,"reason":reason}))
+    });
     Ok(json!({"legs":routes,"total_fare_copper":total,
         "affordable_from_starting_wallet":budget.map(|(fare, balance)| fare <= balance),
         "starting_wallet_shortfall_copper":budget.map(|(fare, balance)| fare.saturating_sub(balance)),
-        "starting_wallet_affordable_prefix_legs":affordable_prefix}))
+        "starting_wallet_affordable_prefix_legs":affordable_prefix,
+        "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
 }
 
 fn compare_flight_maps(before: &Value, after: &Value) -> Value {

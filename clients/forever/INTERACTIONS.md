@@ -700,6 +700,9 @@ Later captures supply fares only.
 `starting_wallet_affordable_prefix_legs` counts consecutive legs from the
 start, stopping at the first unknown fare or fare above the remaining
 budget. A missing starting wallet leaves the count unknown.
+`starting_wallet_first_uncovered_leg` gives the one-based leg number and
+whether the fare was unknown or exceeded the remaining copper. It is null
+when every leg fits or the starting wallet was unavailable.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an
