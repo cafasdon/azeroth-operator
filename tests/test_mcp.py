@@ -203,6 +203,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                       "1": {"name": "Brew", "met": False},
                                       "2": {"name": "Distil", "met": False},
                                   }},
+                            "5": {"name": "Brew", "status": "available", "price_copper": 15},
                         }}
                         forever["sections"]["skill_lines"] = {
                             "171": {"name": "Alchemy", "rank": 35, "max_rank": 75, "modifier": 10},
@@ -243,7 +244,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         blocked_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
-                            "trainer_service_slots": [1, 4], "trainer_wallet_projection": True,
+                            "trainer_service_slots": [1, 4, 5], "trainer_wallet_projection": True,
                             "trainer_requirements_review": True,
                         })
                         self.assertFalse(blocked_trainer.isError)
@@ -254,6 +255,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "observed_requirements": {"level_shortfall": None,
                                 "skill_requirement_unmet": True, "unmet_ability_names": ["Brew", "Distil"],
                                 "unmet_ability_names_observed_in_spellbook": ["Brew"],
+                                "available_lesson_slots_by_unmet_ability_name": {"Brew": [5]},
                                 "captured_skill_rank_comparison": {"skill_line_id": 171,
                                     "captured_rank": 35, "required_rank": 50, "rank_shortfall": 15}},
                         })

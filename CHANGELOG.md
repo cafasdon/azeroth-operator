@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Link unmet Forever trainer prerequisites to available lessons with matching names.
+
 - Cross-reference unmet Forever trainer ability names with the captured spellbook.
 
 - Compare Forever trainer skill requirements with uniquely matched captured skill ranks.

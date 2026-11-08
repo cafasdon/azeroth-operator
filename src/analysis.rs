@@ -2192,6 +2192,18 @@ pub fn trainer_requirements_review(
         level
     };
     let mut ranks_by_name = BTreeMap::new();
+    let mut available_slots_by_name = BTreeMap::<&str, BTreeSet<u32>>::new();
+    for (slot, lesson) in entries
+        .iter()
+        .filter(|(_, lesson)| lesson["status"] == "available")
+    {
+        if let Some((name, slot)) = lesson["name"].as_str().zip(slot.parse::<u32>().ok()) {
+            available_slots_by_name
+                .entry(name)
+                .or_default()
+                .insert(slot);
+        }
+    }
     let spell_names = spellbook
         .filter(|_| trainer["kind"] != "pet")
         .and_then(|book| book["entries"].as_object())
@@ -2249,6 +2261,15 @@ pub fn trainer_requirements_review(
                             .filter_map(|name| name.as_str().filter(|name| names.contains(name)))
                             .collect::<BTreeSet<_>>()
                     });
+            let candidate_lessons = unmet_abilities.as_ref().map(|abilities| {
+                abilities
+                    .iter()
+                    .filter_map(|name| {
+                        let name = name.as_str()?;
+                        Some((name, available_slots_by_name.get(name)?))
+                    })
+                    .collect::<BTreeMap<_, _>>()
+            });
             (
                 slot,
                 json!({
@@ -2256,7 +2277,8 @@ pub fn trainer_requirements_review(
                     "skill_requirement_unmet":unmet_skill,
                     "captured_skill_rank_comparison":skill_comparison,
                     "unmet_ability_names":unmet_abilities,
-                    "unmet_ability_names_observed_in_spellbook":observed_unmet_abilities
+                    "unmet_ability_names_observed_in_spellbook":observed_unmet_abilities,
+                    "available_lesson_slots_by_unmet_ability_name":candidate_lessons
                 }),
             )
         })
