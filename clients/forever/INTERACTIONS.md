@@ -23,11 +23,12 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
-`trainer_services` saves the open general or profession trainer's API
+`trainer_services` saves the open general, profession or pet trainer's API
 list under the player's current trainer filters. It records lesson names,
 available, unavailable or known status, and readable rank labels,
-level requirements and copper prices. The capture excludes pet trainers
-and leaves training and filter changes to the player. Update the importer
+level requirements and prices. Pet lessons record `price_training_points`
+instead of copper, and the capture includes the active pet's available
+points when readable. Training and filter changes stay with the player. Update the importer
 and reader before syncing new captures. [Forever trainer UI](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_TrainerUI/Mainline/Blizzard_TrainerUI.lua)
 
 Lessons that have yet to be learned can include the required skill rank
@@ -40,7 +41,8 @@ in `inspect_snapshot` to budget lessons the trainer marked available.
 The review reports the known-price subtotal. It reports a full total
 only when all such prices were captured, and a copper shortfall only
 when the opt-in wallet was captured too. It does not establish that the
-character could learn all listed lessons together.
+character could learn all listed lessons together. Pet trainer captures
+return no copper projection.
 
 With the same section, `trainer_service_name` matches a case-insensitive
 substring and `trainer_service_status` matches `available`, `unavailable`

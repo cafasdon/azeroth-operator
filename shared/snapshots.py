@@ -57,15 +57,21 @@ def validate_snapshot(value):
     if "trainer_services" in sections:
         trainer = sections["trainer_services"]
         if (c["family"] != "forever" or not isinstance(trainer, dict)
-                or set(trainer) != {"kind", "entries"} or trainer["kind"] not in ("general", "tradeskills")):
+                or set(trainer) - {"pet_training_points_available"} != {"kind", "entries"}
+                or trainer["kind"] not in ("general", "tradeskills", "pet")):
             raise ValueError("Invalid trainer services")
+        pet = trainer["kind"] == "pet"
+        if "pet_training_points_available" in trainer:
+            points = trainer["pet_training_points_available"]
+            if not pet or type(points) is not int or not 0 <= points <= 4_294_967_295:
+                raise ValueError("Invalid pet training point balance")
         rows = trainer["entries"]
         if (not isinstance(rows, dict) or not 1 <= len(rows) <= 512
                 or set(rows) != {str(i) for i in range(1, len(rows) + 1)}):
             raise ValueError("Invalid trainer service count")
         for row in rows.values():
             if not isinstance(row, dict) or set(row) - {"name", "status", "required_level", "rank_label", "price_copper",
-                                                        "skill_requirement", "ability_requirements"}:
+                                                        "skill_requirement", "ability_requirements", "price_training_points"}:
                 raise ValueError("Invalid trainer service")
             name, status = row.get("name"), row.get("status")
             if "skill_requirement" in row:
@@ -84,11 +90,13 @@ def validate_snapshot(value):
                                or type(ability["met"]) is not bool for ability in abilities.values())):
                     raise ValueError("Invalid trainer ability requirements")
             level, rank, price = row.get("required_level"), row.get("rank_label"), row.get("price_copper")
+            points_price = row.get("price_training_points")
             if (not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
                     or status not in ("available", "unavailable", "used")
                     or ("required_level" in row and (type(level) is not int or not 1 <= level <= 255))
                     or ("rank_label" in row and (not isinstance(rank, str) or not 1 <= len(rank.encode()) <= 256))
-                    or ("price_copper" in row and (status == "used" or type(price) is not int or not 0 <= price <= 9_999_999_999_999))):
+                    or ("price_copper" in row and (pet or status == "used" or type(price) is not int or not 0 <= price <= 9_999_999_999_999))
+                    or ("price_training_points" in row and (not pet or status == "used" or type(points_price) is not int or not 0 <= points_price <= 4_294_967_295))):
                 raise ValueError("Invalid trainer service")
     if "merchant_stock" in sections:
         rows = sections["merchant_stock"]

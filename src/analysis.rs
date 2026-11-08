@@ -1386,6 +1386,9 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
 }
 
 pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
+    if trainer["kind"] == "pet" {
+        return Value::Null;
+    }
     let Some(entries) = trainer["entries"].as_object() else {
         return Value::Null;
     };

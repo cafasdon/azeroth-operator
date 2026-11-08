@@ -867,9 +867,22 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
         "trainer_services" => {
-            object(value, &[("kind", "text", true), ("entries", "map", true)])?;
+            object(
+                value,
+                &[
+                    ("kind", "text", true),
+                    ("entries", "map", true),
+                    ("pet_training_points_available", "uint", false),
+                ],
+            )?;
+            let pet = value["kind"] == "pet";
             ensure!(
-                matches!(value["kind"].as_str(), Some("general" | "tradeskills")),
+                matches!(
+                    value["kind"].as_str(),
+                    Some("general" | "tradeskills" | "pet")
+                ) && value
+                    .get("pet_training_points_available")
+                    .is_none_or(|points| pet && !points.is_null()),
                 "Invalid trainer kind"
             );
             let rows = value["entries"].as_object().unwrap();
@@ -889,6 +902,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("skill_requirement", "map", false),
                         ("ability_requirements", "map", false),
                         ("price_copper", "wallet_copper", false),
+                        ("price_training_points", "uint", false),
                     ],
                 )?;
                 ensure!(
@@ -904,9 +918,12 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         && row
                             .get("required_level")
                             .is_none_or(|level| level.as_u64().is_some_and(|level| level <= 255))
+                        && row.get("price_copper").is_none_or(|price| !pet
+                            && !price.is_null()
+                            && row["status"] != "used")
                         && row
-                            .get("price_copper")
-                            .is_none_or(|price| !price.is_null() && row["status"] != "used"),
+                            .get("price_training_points")
+                            .is_none_or(|price| pet && !price.is_null() && row["status"] != "used"),
                     "Invalid trainer service"
                 );
                 if let Some(skill) = row.get("skill_requirement") {

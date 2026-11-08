@@ -572,6 +572,8 @@ pub fn verify_forever_capture_fixture(
         ClassTrainerFrame={IsVisible=function() return not closedTrainer end}
         Enum.TrainerType={General=0,Tradeskills=2,Pet=3}
         C_Trainer={GetTrainerType=function() return fixtureTrainerKind or 2 end}
+        function UnitExists(unit) assert(unit=="pet"); return not fixtureNoPet end
+        C_PetInfo={GetPetTrainingPoints=function() return 25,10 end}
         function GetNumTrainerServices() return 2 end
         function GetTrainerServiceInfo(index)
             if index==1 then return "Fixture lesson","available",nil,10,"Rank 2" end
@@ -792,7 +794,17 @@ pub fn verify_forever_capture_fixture(
     );
     lua.load("fixtureEmptyAbilities=false").exec()?;
     lua.load("fixtureTrainerKind=3;AO.Capture()").exec()?;
-    assert!(read()?.unavailable.contains_key("trainer_services"));
+    let pet = read()?.sections["trainer_services"].clone();
+    assert_eq!(pet["kind"], "pet");
+    assert_eq!(pet["pet_training_points_available"], 15);
+    assert_eq!(pet["entries"]["1"]["price_training_points"], 500);
+    assert!(pet["entries"]["1"].get("price_copper").is_none());
+    lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
+    assert!(
+        read()?.sections["trainer_services"]
+            .get("pet_training_points_available")
+            .is_none()
+    );
     lua.load("fixtureTrainerKind=nil;closedTrainer=true;AO.Capture()")
         .exec()?;
     assert!(read()?.unavailable.contains_key("trainer_services"));

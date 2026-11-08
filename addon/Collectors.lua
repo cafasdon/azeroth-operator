@@ -942,7 +942,9 @@ AO.collectors.trainer_services = function()
     assert(frame and frame:IsVisible(), "Trainer panel is not open")
     local types=Enum.TrainerType
     local kind=C_Trainer.GetTrainerType()
-    assert(questRewardInteger(kind,0,4294967295) and (kind==types.General or kind==types.Tradeskills), "Unsupported trainer")
+    assert(questRewardInteger(kind,0,4294967295)
+        and (kind==types.General or kind==types.Tradeskills or kind==types.Pet), "Unsupported trainer")
+    local pet=kind==types.Pet
     local count=GetNumTrainerServices()
     assert(questRewardInteger(count,1,512), "Trainer services unavailable")
     local entries={}
@@ -955,7 +957,9 @@ AO.collectors.trainer_services = function()
         if questRewardAccessible(rank) and type(rank)=="string" and #rank>0 and #rank<=256 then row.rank_label=rank end
         if status~="used" then
             local ok,cost=pcall(GetTrainerServiceCost,index)
-            if ok and questRewardInteger(cost,0,9999999999999) then row.price_copper=cost end
+            if ok and questRewardInteger(cost,0,pet and 4294967295 or 9999999999999) then
+                if pet then row.price_training_points=cost else row.price_copper=cost end
+            end
             local observed,skill,required,met=pcall(GetTrainerServiceSkillReq,index)
             if observed and questRewardAccessible(skill) and type(skill)=="string" and #skill>0 and #skill<=256
                 and questRewardInteger(required,0,4294967295) and questRewardAccessible(met) and type(met)=="boolean" then
@@ -966,9 +970,21 @@ AO.collectors.trainer_services = function()
         end
         entries[tostring(index)]=row
     end
+    local result={kind=pet and "pet" or (kind==types.General and "general" or "tradeskills"),entries=entries}
+    if pet then
+        local ok,points=pcall(function()
+            local exists=UnitExists("pet")
+            if not questRewardAccessible(exists) or exists~=true then return end
+            local total,used=C_PetInfo.GetPetTrainingPoints()
+            if questRewardInteger(total,0,4294967295) and questRewardInteger(used,0,4294967295) then
+                return math.max(0,total-used)
+            end
+        end)
+        if ok then result.pet_training_points_available=points end
+    end
     assert(frame:IsVisible() and questRewardInteger(C_Trainer.GetTrainerType(),kind,kind)
         and questRewardInteger(GetNumTrainerServices(),count,count), "Trainer services changed")
-    return {kind=kind==types.General and "general" or "tradeskills",entries=entries}
+    return result
 end
 
 local function merchantCostComponents(index)
