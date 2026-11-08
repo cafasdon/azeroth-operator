@@ -259,6 +259,8 @@ struct OwnedGearReview {
     maximum_required_level: Option<u32>,
     /// Filter by the exact nonzero enchant effect ID encoded in a captured item link.
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
+    /// Filter by the exact signed random suffix ID encoded in a captured item link.
+    observed_random_suffix_id: Option<i32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -641,6 +643,7 @@ impl Operator {
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),
                 args.observed_enchant_effect_id,
+                args.observed_random_suffix_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

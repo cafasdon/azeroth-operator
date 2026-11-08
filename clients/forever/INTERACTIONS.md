@@ -71,6 +71,9 @@ Use `observed_enchant_effect_id` to find captured items whose links encode
 that exact nonzero effect ID. The filter works before paging and includes
 items absent from the catalogue when the link agrees with the captured
 base ID. Missing or unreadable modifier data cannot match.
+Use `observed_random_suffix_id` to match the exact signed suffix from the
+same link. Zero matches an explicit zero. Combine it with the enchant
+filter to find variants that match both fields.
 
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted

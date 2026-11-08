@@ -2650,6 +2650,7 @@ pub fn review_owned(
     simulator_slot: Option<SimulatorSlot>,
     required_levels: (Option<u32>, Option<u32>),
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
+    observed_random_suffix_id: Option<i32>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -2736,14 +2737,21 @@ pub fn review_owned(
                 return;
             }
             let on_page = included >= offset && entries.len() < limit;
-            let modifiers = (on_page || observed_enchant_effect_id.is_some())
-                .then(|| link_modifiers(item))
-                .flatten();
+            let modifiers = (on_page
+                || observed_enchant_effect_id.is_some()
+                || observed_random_suffix_id.is_some())
+            .then(|| link_modifiers(item))
+            .flatten();
             if observed_enchant_effect_id.is_some_and(|id| {
                 modifiers
                     .as_ref()
                     .and_then(|fields| fields["enchant_id"].as_u64())
                     != Some(u64::from(id.get()))
+            }) || observed_random_suffix_id.is_some_and(|id| {
+                modifiers
+                    .as_ref()
+                    .and_then(|fields| fields["random_suffix_id"].as_i64())
+                    != Some(i64::from(id))
             }) {
                 return;
             }
