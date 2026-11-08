@@ -231,6 +231,19 @@ def verify_engine(engine, expected_hash):
             raise ValueError("Engine SHA-256 mismatch")
 
 
+def wilson_interval_95(count, iterations):
+    fraction = count / iterations
+    z = 1.959963984540054
+    adjustment = z * z / iterations
+    scale = 1 + adjustment
+    center = (fraction + adjustment / 2) / scale
+    radius = z * math.sqrt((fraction * (1 - fraction) + adjustment / 4) / iterations) / scale
+    return {
+        "lower": 0.0 if count == 0 else center - radius,
+        "upper": 1.0 if count == iterations else center + radius,
+    }
+
+
 def run(engine, expected_hash, request, deadline=None, paired=False, tank_metrics=False, healing_metrics=False):
     if tank_metrics:
         raid = request["raid"]
@@ -290,6 +303,8 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                 raise ValueError("Simulator returned an invalid death fraction")
             summary["simulated_death_fraction"] = min(death_fraction, 1.0)
             summary["simulated_deaths"] = round(summary["simulated_death_fraction"] * summary["iterations"])
+            summary["simulated_death_fraction_wilson_95"] = wilson_interval_95(
+                summary["simulated_deaths"], summary["iterations"])
         if healing_metrics:
             mean, deviation = metrics["hps"]["avg"], metrics["hps"]["stdev"]
             oom = metrics["secondsOomAvg"]

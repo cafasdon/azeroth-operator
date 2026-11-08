@@ -647,6 +647,9 @@ approximate 95% interval for each distinct alternative's DPS delta versus
 the baseline. An interval containing zero leaves the direction unresolved.
 These are individual comparisons without a multiple-comparison adjustment.
 Tank comparisons also include damage taken and threat per second.
+Fixed tank runs report a 95% Wilson interval for each simulated death
+fraction, including zero observed deaths. It estimates uncertainty for
+that gear set under the chosen simulator settings.
 Healing comparisons include healing per second. An interval below zero
 for damage taken indicates an estimated reduction.
 The ranker continues to sort by the point estimate.

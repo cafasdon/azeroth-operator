@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show Wilson intervals for tank death fractions in fixed Forever simulations.
+
 - Show paired uncertainty for simulated damage taken, threat and healing in fixed Forever comparisons.
 
 - Report the observed DPS gap and paired standard error between the leading distinct Forever gear inputs.
