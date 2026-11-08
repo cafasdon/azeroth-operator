@@ -1022,6 +1022,16 @@ The selected recipe collector reads the visible local schematic form during `/ao
 
 Offline checks passed for the Lua capture, Rust import and MCP review, including duplicate material quantities, incomplete inventory, and refusal of malformed reagent lists and salvage recipes. The `0.22.0-dev` Forever package passed byte and Lua export round-trip verification (SHA-256 `796bac24b8072309cdbee98ae8d0ce17dda6af595922c6edefbfc164b738609f`). Caller and failure review identified sparse reagent slots and separate salvage inputs, and the revised guards passed the follow-up probes. Jev advisory triage classified both as material (`jev-1.14.0`, request `9b76e769cba333e61da3c48a5110227aaa3c65ddb7041129f551dad8ff03c1d3`, 439 input/46 output tokens, 0.305 seconds). The Forever addon has not been installed.
 
+Each recipe review includes `captured_preparation` checks for learning,
+observed conditions, observed charges and coverage of fixed reagents.
+Material checks distinguish bags from all observed storage. False means
+the recorded evidence falls short. Null means the check could not be
+evaluated. Material checks in each batch entry use starting inventory
+independently. The ordered batch plan accounts for shared materials and
+outputs from earlier recipes. With a later inventory capture, only the
+material checks use that capture. Learning, conditions and charges still
+reflect the recipe capture.
+
 Recipe reviews also show `estimated_cooldown_end_at` when a positive
 remaining duration was observed. The estimate adds the rounded duration
 to the recipe capture timestamp, even when material counts come from a

@@ -1037,6 +1037,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(target_data["unmet_crafting_conditions"], {
                             "1": {"name": "Fixture area", "kind": "area", "met": False},
                         })
+                        self.assertEqual(target_data["captured_preparation"], {
+                            "recipe_learned": True, "observed_conditions_met": False,
+                            "observed_charges_cover_request": False, "bags_cover_fixed_reagents": False,
+                            "observed_storage_covers_fixed_reagents": False,
+                        })
+                        self.assertEqual(batch_data["captured_preparation"], {
+                            "recipe_learned": True, "observed_conditions_met": None,
+                            "observed_charges_cover_request": None, "bags_cover_fixed_reagents": True,
+                            "observed_storage_covers_fixed_reagents": True,
+                        })
                         self.assertEqual(target_data["materials"][0]["required"], 15)
                         self.assertEqual(target_data["base_output_if_completed"],
                                          {"item_id": 456, "minimum": 6, "maximum": 9})

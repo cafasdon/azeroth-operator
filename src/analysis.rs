@@ -186,6 +186,35 @@ pub fn review_recipe_with_inventory(
         .and_then(|remaining| snapshot.captured_at.checked_add_signed(remaining));
     let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
     let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
+    let material_coverage = |materials: &Value| {
+        if fixed && bag_limits.is_empty() {
+            return Some(true);
+        }
+        materials["supported_crafts"]
+            .as_u64()
+            .map(|limit| limit >= u64::from(crafts))
+    };
+    let preparation_checks = [
+        ("recipe_learned", recipe["learned"].as_bool()),
+        (
+            "observed_conditions_met",
+            recipe["crafting_conditions"]
+                .as_object()
+                .map(|conditions| conditions.values().all(|row| row["met"] == true)),
+        ),
+        (
+            "observed_charges_cover_request",
+            charges.map(|available| available >= u64::from(crafts)),
+        ),
+        (
+            "bags_cover_fixed_reagents",
+            material_coverage(&bags_capacity),
+        ),
+        (
+            "observed_storage_covers_fixed_reagents",
+            material_coverage(&observed_capacity),
+        ),
+    ];
     let combined_capacity = |materials: &Value| {
         materials["supported_crafts"]
             .as_u64()
@@ -198,6 +227,7 @@ pub fn review_recipe_with_inventory(
     };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "recipe_tracking":recipe_tracking(snapshot, recipe_id),
+        "captured_preparation":preparation_checks.into_iter().collect::<BTreeMap<_, _>>(),
         "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)
             .zip(recipe["profession"]["rank"].as_u64()).and_then(|(cap, rank)| cap.checked_sub(rank)),
         "base_output_if_completed":base_output_if_completed,

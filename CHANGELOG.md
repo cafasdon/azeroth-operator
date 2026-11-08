@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report saved recipe preparation checks for learning, conditions, charges and fixed reagents.
+
 - Find saved Forever captures with tracked crafts or recrafts in a given learning state, with counts per group.
 
 - Filter saved Forever tracked recipe matches by craft or recraft and learned status.
