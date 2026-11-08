@@ -419,6 +419,12 @@ to return one currency and its cap headroom. The observation flag is false
 when the saved list lacks that ID and null when the list is unavailable.
 An observed balance of zero remains zero.
 
+`character_summary.currency_weekly_cap_summary` counts observed positive
+weekly caps with known earnings and how many were reached. It lists up to
+20 by the smallest fraction of the cap remaining, with currency ID as
+the tie-breaker. Inactive rows and rows flagged as unable to earn weekly
+remain visible with their flags. These counters describe the capture.
+
 Add `currency_reward_quantity` to compare a proposed reward against the
 tightest recorded cap. An explicit `can_earn_per_week: false` excludes the
 weekly limit from the projection. If no applicable positive cap was recorded,

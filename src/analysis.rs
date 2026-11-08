@@ -1570,6 +1570,40 @@ pub fn currency_cap_headroom(section: &Value) -> Value {
     )
 }
 
+fn currency_weekly_cap_summary(section: &Value) -> Option<Value> {
+    let entries = section["entries"].as_object()?;
+    let mut rows = Vec::new();
+    for (id, entry) in entries {
+        let (Ok(id), Some(cap), Some(earned)) = (
+            id.parse::<u32>(),
+            entry["max_weekly_quantity"].as_u64(),
+            entry["earned_this_week"].as_u64(),
+        ) else {
+            continue;
+        };
+        if cap > 0 {
+            rows.push((id, cap, earned, cap.saturating_sub(earned), entry));
+        }
+    }
+    rows.sort_unstable_by(|a, b| {
+        (u128::from(a.3) * u128::from(b.1))
+            .cmp(&(u128::from(b.3) * u128::from(a.1)))
+            .then_with(|| a.0.cmp(&b.0))
+    });
+    let closest: Vec<_> = rows
+        .iter()
+        .take(20)
+        .map(|(id, cap, earned, remaining, entry)| {
+            json!({"currency_id":id,"name":entry["name"],"weekly_cap":cap,
+            "earned_this_week":earned,"weekly_remaining":remaining,
+            "inactive":entry["inactive"],"can_earn_per_week":entry["can_earn_per_week"]})
+        })
+        .collect();
+    Some(json!({"weekly_caps_observed":rows.len(),
+        "weekly_caps_reached":rows.iter().filter(|row| row.3 == 0).count(),
+        "closest_weekly_caps":closest}))
+}
+
 pub fn currency_reward_projection(proposed: u64, entry: &Value, caps: &Value) -> Value {
     let maximum = caps["maximum_remaining"].as_u64();
     let weekly = caps["weekly_remaining"]
@@ -2783,6 +2817,11 @@ pub fn summary(s: &Snapshot) -> Value {
         s.sections
             .get("tracked_achievements")
             .and_then(tracked_achievement_workload)
+    );
+    summary["currency_weekly_cap_summary"] = json!(
+        s.sections
+            .get("currency_balances")
+            .and_then(currency_weekly_cap_summary)
     );
     summary
 }

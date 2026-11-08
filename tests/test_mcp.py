@@ -311,6 +311,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "snapshot_id": key, "section": "tracked_achievements"})
                         self.assertIsNone(json.loads(missing_achievements.content[0].text)["tracked_achievement_work"])
                         self.assertEqual(bank_summary_data["currency_balances_observed"], 1)
+                        self.assertEqual(bank_summary_data["currency_weekly_cap_summary"], {
+                            "weekly_caps_observed": 1, "weekly_caps_reached": 0,
+                            "closest_weekly_caps": [
+                                {"currency_id": 100, "name": "Fixture currency", "weekly_cap": 40,
+                                 "earned_this_week": 10, "weekly_remaining": 30,
+                                 "inactive": False, "can_earn_per_week": None},
+                            ],
+                        })
                         currency = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"currency_balances"})
                         currency_data = json.loads(currency.content[0].text)
                         self.assertEqual(currency_data["data"]["entries"]["100"]["quantity"], 0)

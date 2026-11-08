@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise reached and nearly filled weekly currency caps in Forever captures.
+
 - Distinguish captured achievement completion from Forever character credit.
 
 - Summarise unfinished criteria across saved Forever tracked achievements.
