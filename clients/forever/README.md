@@ -120,10 +120,25 @@ and hotkey searches, spellbook matches and hotkey changes over MCP stdio.
 Update the reader and importer before syncing this candidate. Native capture
 remains pending.
 
+The staged `0.41.0-dev` candidate is in `dist/forever-travel`, built
+from `04a3c5f` for interface `16001`. Its ZIP SHA-256 is
+`78d6ed6974ff50019a0a90a21e47d87c94896cb34925f95b27187e4007a220ae`.
+The archive passed packaged Lua 5.1 verification, changed-interface
+refusal and synthetic Windows installation with all four files verified.
+The installer refused to overwrite the synthetic install.
+
+The matching Windows release companion is `dist/forever-travel/azeroth-operator.exe`,
+SHA-256 `54dcc6c23430eba92585a29fb8e04f8e5ffb5f05db7496184d563e5df5e3cfd5`.
+The installed fixture's `/aoexport wallet` output passed through
+`import-stdin` into a temporary owner store. MCP stdio returned the
+Hearthstone timer, repair and flight shortfalls, general bag space,
+instance lock warning details and map-ID filtering. Filtered listings
+omitted warning details. Native capture is pending.
+
 After closing Forever, first-install the reviewed capture package from the repository root:
 
 ```powershell
-$manifest = (Resolve-Path 'dist/forever-action-review/AzerothOperator-0.40.0-dev-forever-live.manifest.json').Path
+$manifest = (Resolve-Path 'dist/forever-travel/AzerothOperator-0.41.0-dev-forever-live.manifest.json').Path
 python -m deploy.install_forever_capture --client 'T:/Games/World of Warcraft/_forever_' --manifest $manifest --expected-build 1.60.1.70862
 ```
 
