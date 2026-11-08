@@ -531,6 +531,25 @@ for this workload. These results measure shortlist membership against a
 finite-iteration reference. A larger gear pool or another encounter can
 change the trade-off. [Pinned cutoff rules](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/sim/core/bulk/statistics.go)
 
+An offline follow-up ran the same 48 chest alternatives with a 2,000-iteration
+paired reference per gear set. Both MCP encounter exports used 90 seconds
+with five seconds of variation and seed 20261110. Movement was set to 12
+yards every seven seconds. Bulk screened all 48 alternatives and refined
+five in both encounters. The two modes returned the same ordered top five.
+
+| Preset | Fixed wall time | Bulk wall time | Bulk screening / finalist iterations per set |
+| --- | ---: | ---: | ---: |
+| Default/Raid Target | 12.26 s | 3.43 s | 1,000 / 10,000 |
+| Default/Movement | 12.05 s | 3.46 s | 1,027 / 10,180 |
+
+These are phase timings with different iteration budgets. The fresh-seed
+confirmation ran separately with seed 20200001 and 2,000 paired iterations
+per set. The leading alternative beat equipped gear, which was the overall
+runner-up in both profiles. The estimated gains were 3.73 DPS (approximate
+95% interval 2.64–4.83) on Raid Target and 3.42 DPS (2.50–4.34) on Movement.
+The same gear won despite the lower DPS on Movement. This check covers one
+Hunter rotation and one gear pool.
+
 The standalone `python -m tools.run_forever_sim` command combines saved
 equipment and encounter MCP responses with a trusted local WoWSims executable
 and a caller-supplied `RaidSimRequest` JSON template. Supply `--engine` as an
