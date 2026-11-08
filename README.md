@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+The offline gear collector can opt into `--retain-equipment-specs` to save the
+numeric equipment behind each resolved draft hash. Inspect an exact saved window
+with `--include-equipment-specs` to retrieve those inputs. Retention must stay
+consistent across resume; old hash-only reports remain readable with unavailable
+equipment details. This does not create or run a qualified simulation job.
+[Evidence](docs/retained-gear-inputs-verification-2026-11-09.md).
+
 `inspect_snapshot` accepts `currency_filter` for saved Forever `currency_balances`:
 captured account/inactive/weekly-earning flags, positive-cap presence and weekly/
 total headroom bounds. Missing earning observations remain unknown; zero cap

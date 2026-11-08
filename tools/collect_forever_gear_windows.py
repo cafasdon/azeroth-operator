@@ -44,7 +44,7 @@ def request_binding(args, deadline, template_sha256):
                        'sha256': file_digest(path, deadline) if path and path.is_file() else None}
     fields = ['snapshot_id', 'slot', 'collapse_identical_items', 'item_id', 'set_id', 'storage',
               'max_swaps', 'minimum_required_level', 'maximum_required_level',
-              'observed_enchant_effect_id', 'observed_random_suffix_id']
+              'observed_enchant_effect_id', 'observed_random_suffix_id', 'retain_equipment_specs']
     current_template = file_digest(args.template, deadline)
     require(current_template == template_sha256)
     request = {'version': 1, 'mcp_path': str(args.mcp), 'mcp_sha256': file_digest(args.mcp, deadline),
@@ -135,7 +135,8 @@ async def collect_windows(args):
             identity['professions'] = ranker.check_profession_identity(ranker.single_player(template['raid']),
                 drafts[0][1].get('captured_professions'), require_match=False)
             require(request_binding(args, deadline, template_sha256) == binding)
-            artifact = ranker.plan_report(drafts, include_gear_hashes=True)
+            artifact = ranker.plan_report(drafts, include_gear_hashes=True,
+                                          include_equipment_specs=args.retain_equipment_specs)
             artifact.update(gear_search=search, skipped=skipped, storage_coverage=coverage,
                             template_identity=identity, best_in_slot_verified=False,
                             collection_binding_sha256=binding)
@@ -162,6 +163,8 @@ def parser():
     slots.add_argument('--slot', action='append', choices=ranker.SIMULATOR_SLOTS)
     slots.add_argument('--all-slots', action='store_const', const=ranker.SIMULATOR_SLOTS, dest='slot')
     result.add_argument('--collapse-identical-items', action='store_true')
+    result.add_argument('--retain-equipment-specs', action='store_true',
+                        help='Persist numeric equipment inputs; does not qualify or run simulations')
     result.add_argument('--item-id', type=int, action='append')
     result.add_argument('--set-id', type=int)
     result.add_argument('--storage', choices=['equipment', 'bags', 'character_bank', 'account_bank'])

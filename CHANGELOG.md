@@ -1,5 +1,9 @@
 # Changelog
 
+- Optionally retain canonical numeric gear inputs in bounded search journals,
+  validate each input against its draft hash, and export an exact saved window
+  without recollecting combinations; keep simulation qualification separate.
+
 - Search saved currencies by captured flags, positive weekly/total caps and
   remaining headroom, retaining lifetime-earned cap basis, unknown earning flags
   and matching-only derived maps without claiming live earning eligibility.

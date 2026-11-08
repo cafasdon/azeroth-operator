@@ -422,7 +422,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation, search
 
 
-def plan_report(drafts, include_gear_hashes=False):
+def plan_report(drafts, include_gear_hashes=False, include_equipment_specs=False):
+    if include_equipment_specs and not include_gear_hashes:
+        raise ValueError('Retained equipment requires gear hashes')
     return {
         "mode": "plan_only", "baseline_review": 1,
         "resolved_drafts": [
@@ -431,6 +433,8 @@ def plan_report(drafts, include_gear_hashes=False):
                  draft["checks"]["simulator_equipment_spec"], sort_keys=True,
                  separators=(",", ":"), allow_nan=False).encode()).hexdigest()}
                 if include_gear_hashes else {}),
+             **({'simulator_equipment_spec': draft['checks']['simulator_equipment_spec']}
+                if include_equipment_specs else {}),
              "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
             for index, (selections, draft) in enumerate(drafts, 1)
         ],

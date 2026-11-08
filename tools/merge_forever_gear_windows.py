@@ -1,5 +1,6 @@
 """Aggregate bounded local plan-window artifacts; never infer a simulated optimum."""
 import argparse
+import hashlib
 import json
 from math import isfinite
 from pathlib import Path
@@ -32,6 +33,24 @@ def integer(value, minimum=0, maximum=None):
 def digest(value):
     require(isinstance(value, str) and len(value) == 64 and all(c in '0123456789abcdef' for c in value))
     return value
+
+
+def retained_equipment(row):
+    if 'simulator_equipment_spec' not in row:
+        return None
+    spec = row['simulator_equipment_spec']
+    require(isinstance(spec, dict) and set(spec) == {'items'})
+    require(isinstance(spec['items'], list) and len(spec['items']) == 17)
+    for item in spec['items']:
+        require(isinstance(item, dict))
+        if item:
+            require(set(item) == {'id', 'enchant', 'randomSuffix'})
+            integer(item['id'], 1, 2**31 - 1)
+            integer(item['enchant'], 0, 2**31 - 1)
+            integer(item['randomSuffix'], -(2**31), 2**31 - 1)
+    require(hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(',', ':'),
+                                    allow_nan=False).encode()).hexdigest() == row['simulator_gear_sha256'])
+    return spec
 
 
 def coordinate_outcomes(report):
@@ -76,7 +95,7 @@ def coordinate_outcomes(report):
 def merge_reports(reports):
     require(isinstance(reports, list) and 1 <= len(reports) <= 64)
     signature = baseline = scope = snapshot = binding = None
-    intervals, windows, gear = [], [], {}
+    intervals, windows, gear, equipment = [], [], {}, {}
     accounting = empty_accounting()
     for index, report in enumerate(reports, 1):
         require(isinstance(report, dict) and report.get('mode') == 'plan_only'
@@ -119,15 +138,18 @@ def merge_reports(reports):
             require(integer(window.get('next_offset')) == next_offset)
         require(window.get('baseline_reused') is True)
         require(window.get('covers_requested_combinations') is (offset == 0 and considered == total))
-        current_signature = json.dumps([current_snapshot, current_scope, current_binding, slots, counts, swaps,
+        drafts = report.get('resolved_drafts')
+        require(isinstance(drafts, list) and 1 <= len(drafts) <= 129)
+        require(all(isinstance(row, dict) for row in drafts))
+        retains_equipment = 'simulator_equipment_spec' in drafts[0]
+        require(all(('simulator_equipment_spec' in row) == retains_equipment for row in drafts))
+        current_signature = json.dumps([current_snapshot, current_scope, current_binding, retains_equipment, slots, counts, swaps,
             search['candidate_filters'], search.get('inventory_evidence')],
             sort_keys=True, separators=(',', ':'), allow_nan=False)
         if signature is None:
             signature, scope, snapshot = current_signature, current_scope, current_snapshot
             binding = current_binding
         require(signature == current_signature)
-        drafts = report.get('resolved_drafts')
-        require(isinstance(drafts, list) and 1 <= len(drafts) <= 129)
         require(integer(search.get('resolved_drafts_including_baseline'), 1, 129) == len(drafts))
         proposed = integer(search.get('proposed_alternative_drafts'), 0,
                            considered - (1 if offset == 0 and considered else 0))
@@ -145,6 +167,10 @@ def merge_reports(reports):
             selections = row.get('selections')
             require(isinstance(selections, list) and (not selections if review == 1 else 1 <= len(selections) <= 17))
             key = digest(row.get('simulator_gear_sha256'))
+            spec = retained_equipment(row)
+            if spec is not None:
+                require(key not in equipment or equipment[key] == spec)
+                equipment[key] = spec
             keys.append(key)
             gear.setdefault(key, []).append({'window_index': index, 'review': review})
         require(integer(search.get('distinct_simulator_gear_sets'), 1, len(drafts)) == len(set(keys)))
@@ -172,7 +198,9 @@ def merge_reports(reports):
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,
             'next_uncovered_offset_decimal': gaps[0]['start_decimal'] if gaps else None,
             'windows': windows, 'distinct_simulator_gear_sets': len(ordered), 'baseline_global_review': 1,
+            'equipment_specs_retained': retains_equipment,
             'drafts': [{'global_review': i, 'simulator_gear_sha256': key, 'references': gear[key]}
+                       | ({'simulator_equipment_spec': equipment[key]} if retains_equipment else {})
                        for i, key in enumerate(ordered, 1)],
             'feasible_set_coverage_verified': False, 'best_in_slot_verified': False,
             'simulation_performed': False, 'game_execution': False}

@@ -177,6 +177,7 @@ def journal_status(path, deadline=None):
                    if summary and 'collection_binding_sha256' in summary else {}),
                 'scope_sha256': summary['scope_sha256'] if summary else None,
                 'window_count': count, 'covered_coordinate_count': covered,
+                'equipment_specs_retained': summary['equipment_specs_retained'] if summary else None,
                 'resolution_accounting': accounting,
                 'total_combinations_decimal': str(total) if total is not None else None,
                 'reported_coordinate_coverage_complete': total is not None and gap_count == 0,
@@ -188,7 +189,8 @@ def journal_status(path, deadline=None):
         connection.close()
 
 
-def journal_window(path, offset):
+def journal_window(path, offset, include_equipment_specs=False):
+    require(type(include_equipment_specs) is bool)
     start = coordinate(offset)
     connection, deadline = connect(path)
     try:
@@ -202,6 +204,12 @@ def journal_window(path, offset):
                 'considered': report['gear_search']['combination_window']['considered'],
                 'coordinate_outcomes_available': outcomes is not None, 'coordinate_outcomes': outcomes,
                 'resolution_accounting': summary['resolution_accounting'],
+                **({'equipment_specs_available': summary['equipment_specs_retained'],
+                    'equipment_specs': [{'review': row['review'],
+                        'simulator_gear_sha256': row['simulator_gear_sha256'],
+                        'simulator_equipment_spec': row['simulator_equipment_spec']}
+                        for row in report['resolved_drafts']] if summary['equipment_specs_retained'] else None}
+                   if include_equipment_specs else {}),
                 'best_in_slot_verified': False, 'feasible_set_coverage_verified': False,
                 'simulation_performed': False, 'game_execution': False}
     finally:
@@ -214,15 +222,18 @@ def main(argv=None):
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--add', type=Path, help='Append one validated plan report; omission reads progress only.')
     action.add_argument('--window-offset', type=int, help='Inspect coordinate outcomes at an exact saved window start.')
+    parser.add_argument('--include-equipment-specs', action='store_true',
+                        help='Include retained numeric inputs when inspecting an exact window')
     parser.add_argument('--max-payload-mib', type=int, default=64, choices=range(1, 513), metavar='1-512')
     args = parser.parse_args(argv)
     try:
+        require(not args.include_equipment_specs or args.window_offset is not None)
         if args.add is not None:
             with args.add.open('rb') as handle:
                 data = handle.read(MAX_REPORT_BYTES + 1)
             result = append_report(args.journal, parse_report(data), args.max_payload_mib * 1024 * 1024)
         elif args.window_offset is not None:
-            result = journal_window(args.journal, args.window_offset)
+            result = journal_window(args.journal, args.window_offset, args.include_equipment_specs)
         else:
             result = journal_status(args.journal)
         print(json.dumps(result, allow_nan=False))
