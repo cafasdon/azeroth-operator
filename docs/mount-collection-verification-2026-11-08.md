@@ -73,3 +73,23 @@ Additional real-stdio probes covered u32 boundaries and malformed selectors,
 conflicts with spending/other selectors, empty/unavailable collections,
 negative count changes, spell changes, name-only differences, default omission,
 owner separation and rejected client/character or chronological mismatches.
+
+## Saved-character search
+
+`list_snapshots.collected_mount` accepts a required mount ID and optional
+recorded `usable` / `favorite` flags, matching one owned row in the same
+capture. It is Forever-only and preserves character/time/newest/pagination
+behaviour. Missing IDs or sections never become false-flag matches. The compact
+result omits names and reports only ID, spell ID and the two recorded flags.
+
+The real-MCP test verifies flag conjunction, false-flag searches, exclusion of
+unobserved IDs, character mismatch, pagination, newest-capture suppression of
+an older matching observation and non-Forever rejection. The regression command
+above passed all 11 tests after this extension.
+
+Independent failure/caller review (gpt-6.1-sol, high effort) reported no findings
+after 20 additional real-MCP calls. It checked same-row flag matching, false
+flags, missing/newest captures, independent variants, time/character filters,
+unchanged defaults and malformed argument rejection. Jev 1.14.0 scope advice
+returned supported (request `c00d292e4205dff82eaaa4dc9c5ca08290cd9bd1ad8a8f690dee526ce94f6914`,
+458 input / 46 output tokens, 0.284 seconds), separately from that evidence.

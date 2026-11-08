@@ -18,6 +18,14 @@ captures. It lists IDs observed on only one side and changes in shared IDs'
 spell, usability and favourite fields. Names are excluded. These observations
 do not establish acquisition or loss, especially if catalogue coverage changed.
 
+To search saved captures, pass `collected_mount` to `list_snapshots`, for example
+`{"family":"forever","collected_mount":{"mount_id":2,"usable":true},"latest_per_character":true}`.
+The mount ID is required; `usable` and `favorite` are optional recorded flags
+and must match that same mount. Results include a compact `collected_mount_match`.
+Missing IDs or collection sections never match, including searches for false
+flags. Date, character and pagination filters still apply. This does not identify
+the character currently in play or establish present mount usability.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

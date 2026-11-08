@@ -307,6 +307,14 @@ pub struct BagFamilySpaceFilter {
     pub minimum_free_slots: u32,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CollectedMountFilter {
+    pub mount_id: std::num::NonZeroU32,
+    pub usable: Option<bool>,
+    pub favorite: Option<bool>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -332,6 +340,7 @@ pub struct CaptureFilters<'a> {
     pub renown: Option<RenownFilter>,
     pub paragon: Option<ParagonFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
+    pub collected_mount: Option<CollectedMountFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -522,6 +531,7 @@ impl Store {
             renown,
             paragon,
             tracked_achievement,
+            collected_mount,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -548,6 +558,13 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        ensure!(
+            collected_mount.is_none() || family == Family::Forever,
+            "Mount filtering requires Forever"
+        );
+        let mount_key = collected_mount
+            .as_ref()
+            .map(|filter| filter.mount_id.to_string());
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -885,6 +902,21 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let mount_match = collected_mount.as_ref().zip(mount_key.as_ref()).and_then(
+                        |(filter, key)| {
+                            let row = s.sections.get("mount_collection")?["entries"].get(key)?;
+                            (filter
+                                .usable
+                                .is_none_or(|expected| row["usable"].as_bool() == Some(expected))
+                                && filter.favorite.is_none_or(|expected| {
+                                    row["favorite"].as_bool() == Some(expected)
+                                }))
+                            .then_some(row)
+                        },
+                    );
+                    if collected_mount.is_some() && mount_match.is_none() {
+                        continue;
+                    }
                     let achievement_match = tracked_achievement
                         .as_ref()
                         .zip(achievement_key.as_ref())
@@ -1336,6 +1368,10 @@ impl Store {
                     }
                     if let Some(map) = quest_waypoint_map_id {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
+                    }
+                    if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
+                        summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,
+                            "spell_id":row["spell_id"],"usable":row["usable"],"favorite":row["favorite"]});
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

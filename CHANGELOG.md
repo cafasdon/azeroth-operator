@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved characters for a collected mount with optional recorded usability and favourite filters.
+
 - Look up saved collected mounts by ID and compare observed mount IDs and flags between compatible captures.
 
 - Capture and inspect saved Forever mount collections with bounded, read-only journal queries and owner-scoped validation.

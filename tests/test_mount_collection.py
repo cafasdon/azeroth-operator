@@ -123,6 +123,30 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                                  {"snapshot_id": key, "section": "equipment", "mount_id": 2},
                                  {"snapshot_id": retail_key, "section": "mount_collection", "mount_id": 2}):
                         self.assertTrue((await session.call_tool("inspect_snapshot", args)).isError)
+                    query = {"family": "forever", "collected_mount": {"mount_id": 2}}
+                    filtered = await session.call_tool("list_snapshots", {
+                        **query, "collected_mount": {"mount_id": 2, "usable": False, "favorite": True}})
+                    matches = json.loads(filtered.content[0].text)["snapshots"]
+                    self.assertEqual([row["snapshot_id"] for row in matches], [after_key])
+                    self.assertEqual(matches[0]["collected_mount_match"], {
+                        "mount_id": 2, "spell_id": 40002, "usable": False, "favorite": True})
+                    older = await session.call_tool("list_snapshots", {
+                        **query, "collected_mount": {"mount_id": 2, "favorite": False}})
+                    self.assertEqual({row["snapshot_id"] for row in json.loads(older.content[0].text)["snapshots"]},
+                                     {key, before_key})
+                    latest = await session.call_tool("list_snapshots", {
+                        **query, "latest_per_character": True, "collected_mount": {"mount_id": 2, "usable": True}})
+                    self.assertEqual(json.loads(latest.content[0].text)["snapshots"], [])
+                    absent = await session.call_tool("list_snapshots", {
+                        **query, "collected_mount": {"mount_id": 99, "usable": False, "favorite": False}})
+                    self.assertEqual(json.loads(absent.content[0].text)["snapshots"], [])
+                    wrong_character = await session.call_tool("list_snapshots", {
+                        **query, "character": {"name": "Other", "realm": "Test"}})
+                    self.assertEqual(json.loads(wrong_character.content[0].text)["snapshots"], [])
+                    paged = await session.call_tool("list_snapshots", {**query, "offset": 1, "limit": 1})
+                    self.assertEqual(len(json.loads(paged.content[0].text)["snapshots"]), 1)
+                    for family in ("retail", "classic"):
+                        self.assertTrue((await session.call_tool("list_snapshots", {**query, "family": family})).isError)
 
 
 if __name__ == "__main__":

@@ -296,6 +296,8 @@ struct List {
     paragon: Option<azeroth_operator::ParagonFilter>,
     /// Match a captured tracked achievement by ID and optional completion or character-credit flags.
     tracked_achievement: Option<azeroth_operator::TrackedAchievementFilter>,
+    /// Find an observed collected mount by ID and optional recorded usability/favourite flags.
+    collected_mount: Option<azeroth_operator::CollectedMountFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1264,6 +1266,7 @@ impl Operator {
                 renown: args.renown,
                 paragon: args.paragon,
                 tracked_achievement: args.tracked_achievement,
+                collected_mount: args.collected_mount,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
