@@ -348,6 +348,12 @@ slot. A missing fare or wallet leaves both values unknown. Each comparison
 uses the same saved balance independently. The result covers the copper
 fare at capture time.
 
+`compare_snapshots` compares flight maps only when the map ID and
+unambiguous current departure node agree. It reports availability
+changes and signed copper differences for shared destination IDs.
+Map transitions and destinations missing from either capture are excluded.
+A fare difference requires an observed quote on both sides.
+
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually
 exclusive with an explicit waypoint map ID. A missing captured map leaves

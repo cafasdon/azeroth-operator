@@ -523,6 +523,14 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    let flight_before = before.sections.get("flight_map");
+    let flight_after = after.sections.get("flight_map");
+    if flight_before.is_some() || flight_after.is_some() {
+        comparison["flight_map_changes"] = flight_before
+            .zip(flight_after)
+            .map(|(before, after)| compare_flight_maps(before, after))
+            .unwrap_or(Value::Null);
+    }
     let previous_space = carried_bag_space(before);
     let current_space = carried_bag_space(after);
     if previous_space.is_some() || current_space.is_some() {
@@ -1318,6 +1326,57 @@ pub fn quest_xp_projection(quest: Option<&Value>, experience: Option<&Value>) ->
         "covers_recorded_xp_threshold":estimate.map(|(remaining,reward)| reward >= remaining),
         "xp_shortfall_after_reward":estimate.map(|(remaining,reward)| remaining.saturating_sub(reward))
     })
+}
+
+fn flight_destinations(map: &Value) -> Option<(u64, BTreeMap<u64, &Value>)> {
+    let mut origin = None;
+    let mut nodes = BTreeMap::new();
+    for row in map["entries"].as_object()?.values() {
+        if row["map_transition"].as_bool()? {
+            continue;
+        }
+        let id = row["node_id"].as_u64()?;
+        if nodes.insert(id, row).is_some() {
+            return None;
+        }
+        if row["state"].as_str()? == "current" && origin.replace(id).is_some() {
+            return None;
+        }
+    }
+    Some((origin?, nodes))
+}
+
+fn compare_flight_maps(before: &Value, after: &Value) -> Value {
+    if before["map_id"] != after["map_id"] {
+        return json!({"status":"different_maps"});
+    }
+    let Some(((from, previous), (to, current))) =
+        flight_destinations(before).zip(flight_destinations(after))
+    else {
+        return json!({"status":"origin_or_destinations_ambiguous"});
+    };
+    if from != to {
+        return json!({"status":"different_origins"});
+    }
+    let changes: Vec<_> = previous
+        .iter()
+        .filter_map(|(&id, old)| {
+            let new = current.get(&id)?;
+            let state_changed = old["state"] != new["state"];
+            let fare_delta = old["fare_copper"]
+                .as_i64()
+                .zip(new["fare_copper"].as_i64())
+                .map(|(old, new)| new - old)
+                .filter(|delta| *delta != 0);
+            (state_changed || fare_delta.is_some()).then(|| {
+                json!({
+                    "node_id":id,"before_state":old["state"],"after_state":new["state"],
+                    "fare_copper_delta":fare_delta,
+                })
+            })
+        })
+        .collect();
+    json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes})
 }
 
 pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {

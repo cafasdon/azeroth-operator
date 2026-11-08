@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare observed Forever flight destinations and fares across captures of the same departure point.
+
 - Capture the Forever resting flag alongside saved XP progress.
 
 - Report the saved Forever new-mail indicator without reading mail details.
