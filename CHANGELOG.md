@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget Forever trainer lessons in the player's requested slot order.
+
 - Find saved Forever trainer visits with lessons affordable from captured balances.
 
 - Filter saved Forever trainer visits by copper or pet training point prices.

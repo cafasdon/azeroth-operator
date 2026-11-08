@@ -159,6 +159,11 @@ availability. Search results omit the balance.
 Use `trainer_service_slots` to select up to 32 exact slots from the same
 capture. Slots missing from that capture are reported separately from rows
 excluded by the name or status filters.
+With a wallet or points projection, the supplied slot order also gets
+an `ordered_lesson_budget`. It counts the consecutive available lessons
+with known prices that fit the captured balance and identifies the
+first uncovered slot. Slots excluded by filters stop the count.
+A missing balance leaves the ordered budget unknown.
 
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.

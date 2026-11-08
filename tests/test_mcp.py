@@ -217,6 +217,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(visits[0]["trainer_match"], {
                             "lesson_count": 1, "kind": "tradeskills", "captured_player_map_id": None,
                         })
+                        ordered_trainer = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "trainer_services",
+                            "trainer_service_slots": [1, 2], "trainer_wallet_projection": True,
+                        })
+                        self.assertFalse(ordered_trainer.isError)
+                        ordered_budget = json.loads(ordered_trainer.content[0].text)[
+                            "trainer_wallet_projection"]["ordered_lesson_budget"]
+                        self.assertEqual(ordered_budget, {
+                            "covered_prefix_lessons": 1,
+                            "first_uncovered_lesson": {"slot": 2, "reason": "lesson_not_available"},
+                        })
                         crossed = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": "Potion",
                             "trainer_service_status": "used",

@@ -1553,11 +1553,15 @@ impl Operator {
                         azeroth_operator::analysis::trainer_wallet_projection(
                             &value["data"],
                             snapshot.sections.get("wallet"),
+                            args.trainer_service_slots.as_deref(),
                         );
                 }
                 if args.trainer_points_projection {
                     value["trainer_points_projection"] =
-                        azeroth_operator::analysis::trainer_points_projection(&value["data"]);
+                        azeroth_operator::analysis::trainer_points_projection(
+                            &value["data"],
+                            args.trainer_service_slots.as_deref(),
+                        );
                 }
                 if args.trainer_requirements_review {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {

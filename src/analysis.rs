@@ -2278,7 +2278,38 @@ fn trainer_cheapest_affordable(
     Some(json!({"lesson_slots":slots,"lesson_count":slots.len(),"total_price":subtotal}))
 }
 
-pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Value {
+fn trainer_order_budget(
+    trainer: &Value,
+    slots: &[std::num::NonZeroU32],
+    price_field: &str,
+    balance: Option<u64>,
+) -> Value {
+    let Some(mut remaining) = balance else {
+        return Value::Null;
+    };
+    for (index, slot) in slots.iter().enumerate() {
+        let row = &trainer["entries"][slot.to_string()];
+        let reason = match (row["status"].as_str(), row[price_field].as_u64()) {
+            (None, _) => "lesson_not_retained",
+            (Some("available"), None) => "price_unknown",
+            (Some("available"), Some(price)) if price <= remaining => {
+                remaining -= price;
+                continue;
+            }
+            (Some("available"), Some(_)) => "insufficient_balance",
+            _ => "lesson_not_available",
+        };
+        return json!({"covered_prefix_lessons":index,
+            "first_uncovered_lesson":{"slot":slot,"reason":reason}});
+    }
+    json!({"covered_prefix_lessons":slots.len(),"first_uncovered_lesson":null})
+}
+
+pub fn trainer_wallet_projection(
+    trainer: &Value,
+    wallet: Option<&Value>,
+    slots: Option<&[std::num::NonZeroU32]>,
+) -> Value {
     if trainer["kind"] == "pet" {
         return Value::Null;
     }
@@ -2289,7 +2320,7 @@ pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Val
     };
     let total = (unknown_prices == 0).then_some(subtotal);
     let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
-    json!({
+    let mut projection = json!({
         "available_lessons":available,
         "lessons_with_unknown_price":unknown_prices,
         "known_price_subtotal_copper":subtotal,
@@ -2297,10 +2328,15 @@ pub fn trainer_wallet_projection(trainer: &Value, wallet: Option<&Value>) -> Val
         "wallet_shortfall_copper":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
         "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_copper", balance),
         "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_copper", balance),
-    })
+    });
+    if let Some(slots) = slots {
+        projection["ordered_lesson_budget"] =
+            trainer_order_budget(trainer, slots, "price_copper", balance);
+    }
+    projection
 }
 
-pub fn trainer_points_projection(trainer: &Value) -> Value {
+pub fn trainer_points_projection(trainer: &Value, slots: Option<&[std::num::NonZeroU32]>) -> Value {
     if trainer["kind"] != "pet" {
         return Value::Null;
     }
@@ -2311,7 +2347,7 @@ pub fn trainer_points_projection(trainer: &Value) -> Value {
     };
     let total = (unknown_prices == 0).then_some(subtotal);
     let balance = trainer["pet_training_points_available"].as_u64();
-    json!({
+    let mut projection = json!({
         "available_lessons":available,
         "lessons_with_unknown_price":unknown_prices,
         "known_price_subtotal_points":subtotal,
@@ -2319,7 +2355,12 @@ pub fn trainer_points_projection(trainer: &Value) -> Value {
         "training_point_shortfall":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
         "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_training_points", balance),
         "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_training_points", balance),
-    })
+    });
+    if let Some(slots) = slots {
+        projection["ordered_lesson_budget"] =
+            trainer_order_budget(trainer, slots, "price_training_points", balance);
+    }
+    projection
 }
 
 pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
