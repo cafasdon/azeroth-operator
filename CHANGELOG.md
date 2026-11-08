@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever merchant offers that were affordable from the wallet captured on the same visit.
+
 - Cross-test the combined Forever gear shortlist across weighted encounters.
 
 - Filter saved Forever merchant visits by recorded stock and copper-only offers.

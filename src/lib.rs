@@ -279,6 +279,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
     pub merchant_copper_only: bool,
+    pub merchant_affordable_only: bool,
     pub trainer_service_name: Option<&'a str>,
     pub trainer_service_status: Option<&'a str>,
     pub trainer_max_price_copper: Option<u64>,
@@ -382,6 +383,7 @@ impl Store {
             merchant_max_price_copper,
             merchant_in_stock_only,
             merchant_copper_only,
+            merchant_affordable_only,
             trainer_service_name,
             trainer_service_status,
             trainer_max_price_copper,
@@ -449,7 +451,8 @@ impl Store {
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
         ensure!(
-            !(merchant_in_stock_only || merchant_copper_only) || merchant_product.is_some(),
+            !(merchant_in_stock_only || merchant_copper_only || merchant_affordable_only)
+                || merchant_product.is_some(),
             "Merchant stock and cost filters require a product ID"
         );
         ensure!(
@@ -562,6 +565,10 @@ impl Store {
                         }) =>
                 {
                     let merchant_matches = merchant_product.map(|(field, id)| {
+                        let wallet = s
+                            .sections
+                            .get("wallet")
+                            .and_then(|wallet| wallet["copper"].as_u64());
                         s.sections
                             .get("merchant_stock")
                             .and_then(Value::as_object)
@@ -570,13 +577,20 @@ impl Store {
                                     .values()
                                     .filter(|offer| {
                                         offer[field].as_u64() == Some(u64::from(id))
-                                            && (!merchant_in_stock_only
+                                            && (!(merchant_in_stock_only
+                                                || merchant_affordable_only)
                                                 || matches!(
                                                     offer["available"].as_i64(),
                                                     Some(-1 | 1..)
                                                 ))
-                                            && (!merchant_copper_only
+                                            && (!(merchant_copper_only || merchant_affordable_only)
                                                 || offer["extended_cost"] == false)
+                                            && (!merchant_affordable_only
+                                                || wallet
+                                                    .zip(offer["price_copper"].as_u64())
+                                                    .is_some_and(|(balance, price)| {
+                                                        price <= balance
+                                                    }))
                                             && merchant_max_price_copper.is_none_or(|maximum| {
                                                 offer["price_copper"]
                                                     .as_u64()

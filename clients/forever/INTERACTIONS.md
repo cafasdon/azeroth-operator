@@ -382,6 +382,10 @@ Stock and extended costs are separate from this price filter.
 With a product ID, set `merchant_in_stock_only` to require positive
 or unlimited recorded stock and `merchant_copper_only` to exclude
 extended costs. All selected filters must match the same offer.
+Set `merchant_affordable_only` with a product ID to require positive or
+unlimited recorded stock and a copper-only bundle price at or below the
+wallet captured on the same visit. An absent wallet excludes the visit.
+Positive limited stock remains a raw observation.
 
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper

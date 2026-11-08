@@ -264,6 +264,9 @@ struct List {
     /// Require a captured offer without extended costs.
     #[serde(default)]
     merchant_copper_only: bool,
+    /// Require positive or unlimited recorded stock and a copper-only bundle within the captured wallet.
+    #[serde(default)]
+    merchant_affordable_only: bool,
     /// Find saved Forever trainer visits by a case-insensitive lesson name substring.
     trainer_service_name: Option<String>,
     /// Find saved Forever trainer visits with a lesson recorded as available, unavailable or used.
@@ -1115,6 +1118,7 @@ impl Operator {
                 merchant_max_price_copper: args.merchant_max_price_copper,
                 merchant_in_stock_only: args.merchant_in_stock_only,
                 merchant_copper_only: args.merchant_copper_only,
+                merchant_affordable_only: args.merchant_affordable_only,
                 trainer_service_name: args.trainer_service_name.as_deref(),
                 trainer_service_status: args.trainer_service_status.as_deref(),
                 trainer_max_price_copper: args.trainer_max_price_copper,
