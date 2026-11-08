@@ -1,5 +1,44 @@
 local _, AO = ...
 AO.collectors = {}
+AO.collectors.toy_collection_view = function()
+    local api=C_ToyBox
+    assert(AO.family=="forever" and ToyBox and ToyBox.IsVisible and api
+        and api.GetNumFilteredToys and api.GetToyFromIndex and api.GetToyInfo and PlayerHasToy,
+        "Toy journal unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted toy observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid toy identifier")
+        return value
+    end
+    local function boolean(value)
+        value=readable(value); assert(type(value)=="boolean", "Invalid toy flag"); return value
+    end
+    assert(boolean(ToyBox:IsVisible()), "Toy journal is not visible")
+    local count=integer(api.GetNumFilteredToys(),0,4096)
+    local result={coverage="filtered_journal",displayed_count=count,entries={}}
+    local ids={}
+    for index=1,count do
+        local id=integer(api.GetToyFromIndex(index),1,4294967295)
+        local key=tostring(id)
+        assert(not result.entries[key], "Duplicate toy ID")
+        local returnedID,name,_,favorite=api.GetToyInfo(id)
+        assert(integer(returnedID,1,4294967295)==id, "Toy identity changed")
+        name=readable(name)
+        assert(type(name)=="string" and #name>0 and #name<=256, "Invalid toy name")
+        result.entries[key]={name=name,collected=boolean(PlayerHasToy(id)),favorite=boolean(favorite)}
+        ids[index]=id
+    end
+    assert(boolean(ToyBox:IsVisible()) and integer(api.GetNumFilteredToys(),0,4096)==count,
+        "Toy view changed")
+    for index=1,count do
+        assert(integer(api.GetToyFromIndex(index),1,4294967295)==ids[index], "Toy view changed")
+    end
+    return result
+end
 AO.collectors.mount_collection = function()
     local api=C_MountJournal
     assert(AO.family=="forever" and api and api.GetMountIDs and api.GetMountInfoByID,

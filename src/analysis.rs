@@ -4174,6 +4174,17 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    let toys = s
+        .sections
+        .get("toy_collection_view")
+        .and_then(|view| view["entries"].as_object());
+    summary["toy_rows_observed"] = json!(toys.map(|entries| entries.len()));
+    summary["collected_toys_in_view"] = json!(toys.map(|entries| {
+        entries
+            .values()
+            .filter(|row| row["collected"] == true)
+            .count()
+    }));
     summary["tracked_achievement_workload"] = json!(
         s.sections
             .get("tracked_achievements")

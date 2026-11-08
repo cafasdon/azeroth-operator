@@ -11,7 +11,7 @@ from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
-SECTIONS = SECTIONS | {"mount_collection"}
+SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view"}
 
 
 def _validate_action_bar_observation(observation):
@@ -100,6 +100,21 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "toy_collection_view" in sections:
+        view = sections["toy_collection_view"]
+        if (c["family"] != "forever" or not isinstance(view, dict)
+                or set(view) != {"coverage", "displayed_count", "entries"}
+                or view["coverage"] != "filtered_journal"
+                or type(view["displayed_count"]) is not int or not 0 <= view["displayed_count"] <= 4096
+                or not isinstance(view["entries"], dict) or len(view["entries"]) != view["displayed_count"]):
+            raise ValueError("Invalid toy journal view")
+        for key, row in view["entries"].items():
+            if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()
+                    or str(int(key)) != key or not 1 <= int(key) <= 4_294_967_295
+                    or not isinstance(row, dict) or set(row) != {"name", "collected", "favorite"}
+                    or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
+                    or type(row["collected"]) is not bool or type(row["favorite"]) is not bool):
+                raise ValueError("Invalid toy observation")
     if "mount_collection" in sections:
         collection = sections["mount_collection"]
         if (c["family"] != "forever" or not isinstance(collection, dict)

@@ -98,6 +98,40 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "toy_collection_view" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("displayed_count", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(
+                value["coverage"] == "filtered_journal"
+                    && entries.len() <= 4096
+                    && value["displayed_count"].as_u64() == Some(entries.len() as u64),
+                "Invalid toy view coverage"
+            );
+            for (id, entry) in entries {
+                index(id, 1, u32::MAX)?;
+                object(
+                    entry,
+                    &[
+                        ("name", "text", true),
+                        ("collected", "bool", true),
+                        ("favorite", "bool", true),
+                    ],
+                )?;
+                ensure!(
+                    entry["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid toy name"
+                );
+            }
+        }
         "mount_collection" => {
             object(
                 value,

@@ -26,6 +26,16 @@ Missing IDs or collection sections never match, including searches for false
 flags. Date, character and pagination filters still apply. This does not identify
 the character currently in play or establish present mount usability.
 
+`inspect_snapshot` also accepts `section: "toy_collection_view"`. The exporter
+reads the filtered toy result list only while the toy panel is visible, across
+the result pages without paging the UI. It preserves item IDs, names and
+collected/favourite flags. `coverage: "filtered_journal"` means this is not a
+full collection. `character_summary` reports `toy_rows_observed` and
+`collected_toys_in_view`; zero describes an observed empty result, while null
+means unavailable. The exporter never opens the panel, clears search text,
+changes filters or uses toys. Update the importer and reader before installing
+an exporter that includes this section; native qualification remains pending.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.

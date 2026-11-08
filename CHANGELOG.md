@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the visible filtered Forever toy-journal results, preserving partial-view scope and collected/favourite flags.
+
 - Search saved characters for a collected mount with optional recorded usability and favourite filters.
 
 - Look up saved collected mounts by ID and compare observed mount IDs and flags between compatible captures.
