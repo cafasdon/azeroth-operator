@@ -409,6 +409,21 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation, search
 
 
+def plan_report(drafts, include_gear_hashes=False):
+    return {
+        "mode": "plan_only", "baseline_review": 1,
+        "resolved_drafts": [
+            {"review": index, "selections": selections,
+             **({"simulator_gear_sha256": hashlib.sha256(json.dumps(
+                 draft["checks"]["simulator_equipment_spec"], sort_keys=True,
+                 separators=(",", ":"), allow_nan=False).encode()).hexdigest()}
+                if include_gear_hashes else {}),
+             "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
+            for index, (selections, draft) in enumerate(drafts, 1)
+        ],
+    }
+
+
 def audit_shortlist(staged, fixed, requests, top):
     canonical = {}
     aliases = {}
@@ -770,19 +785,7 @@ def main():
                 if not 200 <= iterations <= 5000 or abs(gap) < iterations:
                     parser.exit(1, "Confirmation requires 200–5,000 iterations and non-overlapping seed ranges.\n")
         if args.plan_only:
-            result = {
-                "mode": "plan_only",
-                "baseline_review": 1,
-                "resolved_drafts": [
-                    {"review": index, "selections": selections,
-                     **({"simulator_gear_sha256": hashlib.sha256(json.dumps(
-                         draft["checks"]["simulator_equipment_spec"], sort_keys=True,
-                         separators=(",", ":"), allow_nan=False).encode()).hexdigest()}
-                        if args.combination_limit is not None else {}),
-                     "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
-                    for index, (selections, draft) in enumerate(drafts, 1)
-                ],
-            }
+            result = plan_report(drafts, args.combination_limit is not None)
         elif len(encounters) == 1:
             result = rank_encounter(args, template, encounters[0], drafts, set_piece_ids)
         else:

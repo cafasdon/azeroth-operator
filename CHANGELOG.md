@@ -1,5 +1,9 @@
 # Changelog
 
+- Collect bounded offline gear-plan windows into an explicitly bound local
+  journal and resume uncovered coordinates after restart; reject input drift
+  and unbound journal adoption, retaining false simulation and BiS claims.
+
 - Persist validated gear-plan windows in a bounded local transactional journal,
   with idempotent retry, restart coverage, streaming beyond 64 windows and
   fail-closed identity/schema/value-size checks.

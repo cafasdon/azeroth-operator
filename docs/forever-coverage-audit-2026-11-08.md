@@ -70,3 +70,8 @@ and a [local transactional journal](gear-window-journal-verification-2026-11-08.
 group reported inputs and preserve coverage across restart. This is conditional
 planning metadata; automatic collection, simulation ranking aggregation and
 complete owned-gear/native/model proof remain open.
+
+The later [resumable collection controller](gear-window-collection-verification-2026-11-08.md)
+automates bounded offline plan-window collection with explicit snapshot and
+input binding. Simulation ranking aggregation, full owned-gear/model proof,
+active-character qualification and native testing remain open.

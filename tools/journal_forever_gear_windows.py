@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from math import isfinite
 import sqlite3
 import stat
 from time import monotonic
@@ -32,7 +33,11 @@ def encoded(report):
     return data
 
 
-def connect(path, write=False):
+def connect(path, write=False, deadline=None):
+    now = monotonic()
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > now)
+    deadline = min(now + 45, deadline) if deadline is not None else now + 45
     path = Path(path)
     require(path.parent.resolve(strict=True).is_dir())
     try:
@@ -56,9 +61,10 @@ def connect(path, write=False):
                 and int.from_bytes(header[60:64], 'big') == 1)
     else:
         require(write)
-    deadline = monotonic() + 45
     uri = path.resolve(strict=True).as_uri() + ('?mode=rw' if write else '?mode=ro')
-    connection = sqlite3.connect(uri, uri=True, timeout=5, isolation_level=None)
+    remaining = deadline - monotonic()
+    require(remaining > 0)
+    connection = sqlite3.connect(uri, uri=True, timeout=min(5, remaining), isolation_level=None)
     try:
         connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_REPORT_BYTES + 4096)
         connection.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH, 65536)
@@ -95,7 +101,7 @@ def checked_row(row):
     return report, summary
 
 
-def append_report(path, report, max_payload_bytes=64 * 1024 * 1024):
+def append_report(path, report, max_payload_bytes=64 * 1024 * 1024, deadline=None):
     integer(max_payload_bytes, 1, 512 * 1024 * 1024)
     summary = merge_reports([report])
     window = report['gear_search']['combination_window']
@@ -103,7 +109,7 @@ def append_report(path, report, max_payload_bytes=64 * 1024 * 1024):
     start, end = coordinate(window['offset']), coordinate(window['offset'] + window['considered'])
     data = encoded(report)
     sha = hashlib.sha256(data).hexdigest()
-    connection, _ = connect(path, write=True)
+    connection, deadline = connect(path, write=True, deadline=deadline)
     try:
         existing = connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows WHERE start_key=?', (start,)).fetchone()
         if existing:
@@ -121,8 +127,11 @@ def append_report(path, report, max_payload_bytes=64 * 1024 * 1024):
             require(count < 1000000 and used + len(data) <= max_payload_bytes)
             connection.execute('INSERT INTO windows VALUES(?,?,?,?,?)', (start, end, data, sha, len(data)))
             inserted = True
+        require(monotonic() <= deadline)
         connection.commit()
         return {'inserted': inserted, 'snapshot_id': summary['snapshot_id'], 'scope_sha256': summary['scope_sha256'],
+                **({'collection_binding_sha256': summary['collection_binding_sha256']}
+                   if 'collection_binding_sha256' in summary else {}),
                 'offset_decimal': str(window['offset']), 'considered': window['considered'],
                 'best_in_slot_verified': False, 'game_execution': False}
     finally:
@@ -131,8 +140,8 @@ def append_report(path, report, max_payload_bytes=64 * 1024 * 1024):
         connection.close()
 
 
-def journal_status(path):
-    connection, deadline = connect(path)
+def journal_status(path, deadline=None):
+    connection, deadline = connect(path, deadline=deadline)
     try:
         anchor = summary = None
         cursor = covered = count = gap_count = 0
@@ -159,7 +168,10 @@ def journal_status(path):
             gap_count += 1
             if len(gaps) < 64:
                 gaps.append({'start_decimal': str(cursor), 'end_decimal': str(total)})
+        require(monotonic() <= deadline)
         return {'mode': 'gear_window_journal', 'snapshot_id': summary['snapshot_id'] if summary else None,
+                **({'collection_binding_sha256': summary['collection_binding_sha256']}
+                   if summary and 'collection_binding_sha256' in summary else {}),
                 'scope_sha256': summary['scope_sha256'] if summary else None,
                 'window_count': count, 'covered_coordinate_count': covered,
                 'total_combinations_decimal': str(total) if total is not None else None,

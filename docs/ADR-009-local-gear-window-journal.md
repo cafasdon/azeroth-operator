@@ -35,3 +35,6 @@ The journal persists conditional reported coverage. It does not schedule work,
 execute saved commands, automatically collect the next window, merge simulation
 rankings, prove feasible-set coverage or establish full owned BiS. Those remain
 separate outcomes, as do native qualification and active-character detection.
+
+Subsequent extension: ADR 010 adds a separate bounded collection controller.
+The journal itself still does not execute stored commands or simulations.

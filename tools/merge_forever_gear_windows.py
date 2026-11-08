@@ -27,7 +27,7 @@ def digest(value):
 
 def merge_reports(reports):
     require(isinstance(reports, list) and 1 <= len(reports) <= 64)
-    signature = baseline = scope = snapshot = None
+    signature = baseline = scope = snapshot = binding = None
     intervals, windows, gear = [], [], {}
     for index, report in enumerate(reports, 1):
         require(isinstance(report, dict) and report.get('mode') == 'plan_only'
@@ -54,6 +54,9 @@ def merge_reports(reports):
         window = search.get('combination_window')
         require(isinstance(window, dict) and integer(window.get('version'), 1, 1) == 1)
         current_scope = digest(window.get('scope_sha256'))
+        current_binding = report.get('collection_binding_sha256')
+        if current_binding is not None:
+            digest(current_binding)
         offset = integer(window.get('offset'))
         limit = integer(window.get('limit'), 1, 1024)
         considered = integer(window.get('considered'), 0, limit)
@@ -67,11 +70,12 @@ def merge_reports(reports):
             require(integer(window.get('next_offset')) == next_offset)
         require(window.get('baseline_reused') is True)
         require(window.get('covers_requested_combinations') is (offset == 0 and considered == total))
-        current_signature = json.dumps([current_snapshot, current_scope, slots, counts, swaps,
+        current_signature = json.dumps([current_snapshot, current_scope, current_binding, slots, counts, swaps,
             search['candidate_filters'], search.get('inventory_evidence')],
             sort_keys=True, separators=(',', ':'), allow_nan=False)
         if signature is None:
             signature, scope, snapshot = current_signature, current_scope, current_snapshot
+            binding = current_binding
         require(signature == current_signature)
         drafts = report.get('resolved_drafts')
         require(isinstance(drafts, list) and 1 <= len(drafts) <= 129)
@@ -105,6 +109,7 @@ def merge_reports(reports):
         gaps.append({'start_decimal': str(cursor), 'end_decimal': str(total)})
     ordered = [baseline, *sorted(key for key in gear if key != baseline)]
     return {'mode': 'gear_window_coverage', 'basis': 'validated_local_plan_report_metadata',
+            **({'collection_binding_sha256': binding} if binding is not None else {}),
             'snapshot_id': snapshot, 'scope_sha256': scope, 'window_count': len(windows),
             'total_combinations_decimal': str(total), 'covered_coordinate_count': sum(end - start for start, end in intervals),
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,
