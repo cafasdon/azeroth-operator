@@ -696,6 +696,29 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         rep_diff = await session.call_tool("compare_snapshots", {
                             "before_id":forever_key,"after_id":after_key,"faction_id":10,"wallet":True})
                         self.assertFalse(rep_diff.isError)
+                        travel = json.loads(json.dumps(reputation_after))
+                        travel["sections"]["stats"] = {
+                            "level": 60, "class": "Hunter", "race": "Human", "client_version": "1.60.1",
+                            "map_id": 1414, "map_name": "First map", "hearthstone_bind_name": "First inn",
+                            "hearthstone_item_id": 6948, "hearthstone_cooldown_seconds": 30,
+                        }
+                        travel_before = SnapshotStore(Path(folder)).ingest(travel)
+                        travel["captured_at"] = "2025-01-03T00:00:00Z"
+                        travel["sections"]["stats"].update({
+                            "map_id": 1415, "map_name": "Second map", "hearthstone_bind_name": "Second inn",
+                            "hearthstone_cooldown_seconds": 0,
+                        })
+                        travel_after = SnapshotStore(Path(folder)).ingest(travel)
+                        changed_travel = await session.call_tool("compare_snapshots", {
+                            "before_id": travel_before, "after_id": travel_after,
+                        })
+                        self.assertFalse(changed_travel.isError)
+                        context = json.loads(changed_travel.content[0].text)["travel_context_change"]
+                        self.assertTrue(context["map_changed"])
+                        self.assertTrue(context["hearthstone_bind_name_changed"])
+                        self.assertFalse(context["hearthstone_item_changed"])
+                        self.assertEqual(context["hearthstone_cooldown_seconds_delta"], -30)
+                        self.assertNotIn("class", context["after"])
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["reputation"]["changed_paths"],
                                          ["/entries/10/standing"])
                         self.assertEqual(json.loads(rep_diff.content[0].text)["sections"]["currency_balances"]["changed_paths"],

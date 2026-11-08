@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever map, Hearthstone bind name and cooldown observations.
+
 - Show the first observed learning, condition or charge shortfall in a saved Forever crafting batch.
 
 - Report saved recipe preparation checks for learning, conditions, charges and fixed reagents.

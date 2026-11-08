@@ -717,6 +717,14 @@ pub fn compare_observations(
     }
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
+    if before.client.family == crate::Family::Forever
+        && let Some(travel) = compare_travel_context(
+            before.sections.get("stats").unwrap_or(&Value::Null),
+            after.sections.get("stats").unwrap_or(&Value::Null),
+        )
+    {
+        comparison["travel_context_change"] = travel;
+    }
     let merchant_before = before.sections.get("merchant_stock");
     let merchant_after = after.sections.get("merchant_stock");
     if merchant_before.is_some() || merchant_after.is_some() {
@@ -1583,6 +1591,43 @@ fn compare_professions(before: &Value, after: &Value) -> Option<Value> {
     }
     Some(json!({"changes":changes,"observed_only_before":only_before,
                 "observed_only_after":only_after,"ambiguous_skill_lines":ambiguous}))
+}
+
+fn compare_travel_context(before: &Value, after: &Value) -> Option<Value> {
+    let map_ids = (before["map_id"].as_u64(), after["map_id"].as_u64());
+    let bind_names = (
+        before["hearthstone_bind_name"].as_str(),
+        after["hearthstone_bind_name"].as_str(),
+    );
+    let item_ids = (
+        before["hearthstone_item_id"].as_u64(),
+        after["hearthstone_item_id"].as_u64(),
+    );
+    if map_ids == (None, None) && bind_names == (None, None) && item_ids == (None, None) {
+        return None;
+    }
+    let items = item_ids.0.zip(item_ids.1);
+    let cooldown_delta = items.filter(|(old, new)| old == new).and_then(|_| {
+        Some(
+            after["hearthstone_cooldown_seconds"].as_i64()?
+                - before["hearthstone_cooldown_seconds"].as_i64()?,
+        )
+    });
+    let observed = |stats: &Value| {
+        json!({
+            "map_id":stats["map_id"],"map_name":stats["map_name"],
+            "hearthstone_bind_name":stats["hearthstone_bind_name"],
+            "hearthstone_item_id":stats["hearthstone_item_id"],
+            "hearthstone_cooldown_seconds":stats["hearthstone_cooldown_seconds"],
+        })
+    };
+    Some(json!({
+        "before":observed(before),"after":observed(after),
+        "map_changed":map_ids.0.zip(map_ids.1).map(|(old,new)| old != new),
+        "hearthstone_bind_name_changed":bind_names.0.zip(bind_names.1).map(|(old,new)| old != new),
+        "hearthstone_item_changed":items.map(|(old,new)| old != new),
+        "hearthstone_cooldown_seconds_delta":cooldown_delta,
+    }))
 }
 
 fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &str) -> Option<bool> {

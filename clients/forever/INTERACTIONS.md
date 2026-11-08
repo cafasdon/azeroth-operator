@@ -245,6 +245,12 @@ no remaining timer was observed. Missing data leaves availability unknown,
 and a timer alone does not establish usability. Update the
 importer and reader before syncing new captures. [Forever bind-location usage](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
 
+`compare_snapshots` reports `travel_context_change` when either Forever
+capture includes a map ID, bind name or Hearthstone item ID. It compares
+map IDs and captured bind names when both values are available. A
+cooldown delta requires the same observed item ID and a timer in both
+captures. It describes recorded timers rather than current usability.
+
 `bag_capacity` records total and free slots per carried bag, including the
 backpack, with the game-reported bag family when available.
 `character_summary` reports combined capacity, free slots and free slots
