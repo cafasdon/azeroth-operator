@@ -1243,6 +1243,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "reaction": 4, "standing": 0, "threshold": 0, "next_threshold": 0,
                             "renown": {"level": 5, "earned_in_level": 10, "level_threshold": 100, "capped": False},
                         }
+                        freshness["sections"]["reputation"]["entries"]["30"] = {
+                            "name": "Fixture paragon", "kind": "paragon", "account_wide": False,
+                            "reaction": 8, "standing": 42000, "threshold": 42000, "next_threshold": 42000,
+                            "paragon": {"current_value": 10000, "reward_threshold": 10000,
+                                        "reward_pending": True, "level_too_low": True, "reward_quest_id": 999},
+                        }
                         freshness["captured_at"] = "2025-01-01T00:00:00Z"
                         freshness["sections"]["quests"]["43"] = {"title": "Old observation", "level": 10}
                         freshness["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 10
@@ -1360,6 +1366,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(achievement_rows[0]["tracked_achievement_match"], {
                                     "achievement_id": 101, "completed": True,
                                     "earned_by_character": False, "account_wide": True,
+                                })
+                        for selection, expected_ids in [
+                            ({"faction_id": 30, "reward_pending": True}, [new_freshness_id]),
+                            ({"faction_id": 30, "reward_pending": True, "level_too_low": False}, []),
+                            ({"faction_id": 10}, []),
+                        ]:
+                            rewards = await session.call_tool("list_snapshots", {
+                                **latest_query, "paragon": selection,
+                            })
+                            self.assertFalse(rewards.isError)
+                            reward_rows = json.loads(rewards.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in reward_rows], expected_ids)
+                            if reward_rows:
+                                self.assertEqual(reward_rows[0]["paragon_match"], {
+                                    "faction_id": 30, "reward_pending": True, "level_too_low": True,
+                                    "reward_quest_id": 999, "account_wide": False,
                                 })
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],

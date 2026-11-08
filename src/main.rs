@@ -288,6 +288,8 @@ struct List {
     reputation_rank: Option<azeroth_operator::ReputationRankFilter>,
     /// Find a captured renown faction at or above a level, optionally by capped status.
     renown: Option<azeroth_operator::RenownFilter>,
+    /// Find recorded paragon rewards and level eligibility for an exact faction.
+    paragon: Option<azeroth_operator::ParagonFilter>,
     /// Match a captured tracked achievement by ID and optional completion or character-credit flags.
     tracked_achievement: Option<azeroth_operator::TrackedAchievementFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
@@ -1220,6 +1222,7 @@ impl Operator {
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,
+                paragon: args.paragon,
                 tracked_achievement: args.tracked_achievement,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,

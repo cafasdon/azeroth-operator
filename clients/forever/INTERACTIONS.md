@@ -38,6 +38,10 @@ For renown, use `renown` with `faction_id`, `minimum_level` and an
 optional `capped` flag. It requires an observed renown level for that
 faction. Standard reputation and unavailable renown detail are excluded.
 The result includes the recorded level, capped flag and account scope.
+Use `paragon` with `faction_id` and optional `reward_pending` and
+`level_too_low` flags to find recorded paragon rewards. Both flags
+must match the same faction. Pending status alone does not establish
+eligibility to collect the reward. Missing paragon detail is excluded.
 
 Use `tracked_achievement` with `achievement_id` and optional
 `completed` or `earned_by_character` flags to search saved Forever

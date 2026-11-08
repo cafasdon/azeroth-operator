@@ -327,6 +327,7 @@ pub struct CaptureFilters<'a> {
     pub currency_balance: Option<CurrencyBalanceFilter>,
     pub reputation_rank: Option<ReputationRankFilter>,
     pub renown: Option<RenownFilter>,
+    pub paragon: Option<ParagonFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
@@ -391,6 +392,14 @@ pub struct RenownFilter {
     pub faction_id: std::num::NonZeroU32,
     pub minimum_level: u32,
     pub capped: Option<bool>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ParagonFilter {
+    pub faction_id: std::num::NonZeroU32,
+    pub reward_pending: Option<bool>,
+    pub level_too_low: Option<bool>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -506,6 +515,7 @@ impl Store {
             currency_balance,
             reputation_rank,
             renown,
+            paragon,
             tracked_achievement,
             minimum_rested_xp,
             xp_gain_enabled_only,
@@ -737,6 +747,11 @@ impl Store {
         );
         let renown_key = renown.as_ref().map(|filter| filter.faction_id.to_string());
         ensure!(
+            paragon.is_none() || family == Family::Forever,
+            "Paragon filtering requires Forever"
+        );
+        let paragon_key = paragon.as_ref().map(|filter| filter.faction_id.to_string());
+        ensure!(
             tracked_achievement.is_none() || family == Family::Forever,
             "Tracked achievement filtering requires Forever"
         );
@@ -874,6 +889,25 @@ impl Store {
                             .then_some(row)
                         });
                     if tracked_achievement.is_some() && achievement_match.is_none() {
+                        continue;
+                    }
+                    let paragon_match =
+                        paragon
+                            .as_ref()
+                            .zip(paragon_key.as_ref())
+                            .and_then(|(filter, key)| {
+                                let row = s.sections.get("reputation")?["entries"].get(key)?;
+                                let detail = row["paragon"].as_object()?;
+                                (row["kind"] == "paragon"
+                                    && filter.reward_pending.is_none_or(|flag| {
+                                        detail["reward_pending"].as_bool() == Some(flag)
+                                    })
+                                    && filter.level_too_low.is_none_or(|flag| {
+                                        detail["level_too_low"].as_bool() == Some(flag)
+                                    }))
+                                .then_some(row)
+                            });
+                    if paragon.is_some() && paragon_match.is_none() {
                         continue;
                     }
                     let renown_match =
@@ -1237,6 +1271,14 @@ impl Store {
                         summary["renown_match"] = json!({
                             "faction_id":filter.faction_id,"level":row["renown"]["level"],
                             "capped":row["renown"]["capped"],"account_wide":row["account_wide"],
+                        });
+                    }
+                    if let Some((filter, row)) = paragon.as_ref().zip(paragon_match) {
+                        summary["paragon_match"] = json!({
+                            "faction_id":filter.faction_id,"reward_pending":row["paragon"]["reward_pending"],
+                            "level_too_low":row["paragon"]["level_too_low"],
+                            "reward_quest_id":row["paragon"]["reward_quest_id"],
+                            "account_wide":row["account_wide"],
                         });
                     }
                     if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {
