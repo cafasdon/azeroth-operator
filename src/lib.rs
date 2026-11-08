@@ -308,6 +308,7 @@ pub struct BagFamilySpaceFilter {
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
     pub captured_through: Option<&'a str>,
+    pub latest_per_character: bool,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -445,6 +446,7 @@ impl Store {
         let CaptureFilters {
             captured_from,
             captured_through,
+            latest_per_character,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -714,13 +716,33 @@ impl Store {
         }
         paths.sort();
         let mut rows = Vec::new();
+        let mut latest = BTreeMap::new();
         let mut invalid = 0;
         for path in paths {
             let Some(id) = path.file_stem().and_then(|s| s.to_str()) else {
                 invalid += 1;
                 continue;
             };
-            match Self::read_in_root(&root, id) {
+            let snapshot = Self::read_in_root(&root, id);
+            if latest_per_character
+                && let Ok(snapshot) = &snapshot
+                && snapshot.client.family == family
+                && captured_from.is_none_or(|from| snapshot.captured_at >= from)
+                && captured_through.is_none_or(|through| snapshot.captured_at <= through)
+            {
+                let key = (
+                    snapshot.character.name.to_lowercase(),
+                    snapshot.character.realm.to_lowercase(),
+                    snapshot.client.variant.clone(),
+                );
+                let candidate = (snapshot.captured_at, id.to_owned());
+                let current = latest.entry(key).or_insert_with(|| candidate.clone());
+                if candidate.0 > current.0 || (candidate.0 == current.0 && candidate.1 < current.1)
+                {
+                    *current = candidate;
+                }
+            }
+            match snapshot {
                 Ok(s)
                     if s.client.family == family
                         && captured_from.is_none_or(|from| s.captured_at >= from)
@@ -1154,6 +1176,11 @@ impl Store {
                 Ok(_) => (),
                 Err(_) => invalid += 1,
             }
+        }
+        if latest_per_character {
+            let ids: std::collections::BTreeSet<_> =
+                latest.values().map(|(_, id)| id.as_str()).collect();
+            rows.retain(|(_, id, _)| ids.contains(id.as_str()));
         }
         let purchase_cost = |summary: &Value| {
             summary["merchant_match"]["lowest_cost_quantity_plan"]["plan"]["required_copper"]

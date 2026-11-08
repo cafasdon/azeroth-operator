@@ -238,6 +238,9 @@ struct List {
     captured_from: Option<String>,
     /// Inclusive latest capture timestamp in RFC 3339 format.
     captured_through: Option<String>,
+    /// Evaluate feature filters only against the newest capture per character, realm and client variant in the time window.
+    #[serde(default)]
+    latest_per_character: bool,
     /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
@@ -1177,6 +1180,7 @@ impl Operator {
             azeroth_operator::CaptureFilters {
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
+                latest_per_character: args.latest_per_character,
                 recipe: azeroth_operator::RecipeCaptureFilters {
                     recipe_id: args.recipe_id,
                     output_item_id: args.recipe_output_item_id,

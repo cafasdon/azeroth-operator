@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Evaluate saved searches against only the newest capture per character and variant when requested.
+
 - Filter saved snapshots by inclusive capture timestamps before pagination.
 
 - Find saved Forever captures by quest waypoint map, combined with readiness or quest ID.

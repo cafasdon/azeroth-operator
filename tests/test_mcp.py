@@ -1215,6 +1215,34 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "quest_ids_observed_only_before": [43],
                             "quest_ids_observed_only_after": [999],
                         })
+                        freshness = json.loads(json.dumps(reputation_after))
+                        freshness["character"]["name"] = "Freshness"
+                        freshness["captured_at"] = "2025-01-01T00:00:00Z"
+                        freshness["sections"]["quests"]["43"] = {"title": "Old observation", "level": 10}
+                        old_freshness_id = SnapshotStore(Path(folder)).ingest(freshness)
+                        del freshness["sections"]["quests"]["43"]
+                        freshness["captured_at"] = "2025-01-03T00:00:00Z"
+                        new_freshness_id = SnapshotStore(Path(folder)).ingest(freshness)
+                        latest_query = {"family": "forever", "character": {
+                            "name": "Freshness", "realm": "First"}, "latest_per_character": True}
+                        latest_capture = await session.call_tool("list_snapshots", latest_query)
+                        self.assertFalse(latest_capture.isError)
+                        latest_rows = json.loads(latest_capture.content[0].text)["snapshots"]
+                        self.assertEqual(len(latest_rows), 1)
+                        self.assertEqual(latest_rows[0]["snapshot_id"], new_freshness_id)
+                        self.assertEqual(latest_rows[0]["captured_at"], "2025-01-03T00:00:00Z")
+                        stale_match = await session.call_tool("list_snapshots", {
+                            **latest_query, "quest_id": 43,
+                        })
+                        self.assertFalse(stale_match.isError)
+                        self.assertEqual(json.loads(stale_match.content[0].text)["snapshots"], [])
+                        historical_match = await session.call_tool("list_snapshots", {
+                            **latest_query, "quest_id": 43,
+                            "captured_through": "2025-01-01T00:00:00Z",
+                        })
+                        self.assertFalse(historical_match.isError)
+                        self.assertEqual(json.loads(historical_match.content[0].text)["snapshots"][0][
+                            "snapshot_id"], old_freshness_id)
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),

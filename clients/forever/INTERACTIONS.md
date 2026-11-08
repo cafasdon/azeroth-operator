@@ -9,6 +9,12 @@ RFC 3339 timestamps. UTC and explicit timezone offsets are supported.
 These bounds combine with character and feature filters before pagination.
 They use the recorded capture time, so a recent match still requires
 separate evidence of current game state.
+Set `latest_per_character: true` to evaluate feature filters only against
+the newest valid capture per character, realm and client variant inside
+those time bounds. An older matching capture is excluded even if the
+newest capture lacks the requested observation. Equal timestamps prefer
+the lowest snapshot ID. This option uses the requested client family and
+does not identify the character currently in play.
 
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
