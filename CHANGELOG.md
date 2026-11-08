@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use a separate same-character merchant capture for Forever reagent plans.
+
 - Match Forever crafting shortfalls against captured merchant offers.
 
 - Plan whole bundles and copper for a target quantity across matching Forever merchant offers.

@@ -1293,15 +1293,20 @@ fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &st
 }
 
 fn ensure_comparable(before: &Snapshot, after: &Snapshot) -> Result<()> {
+    ensure_same_character_and_client(before, after)?;
+    ensure!(
+        before.captured_at <= after.captured_at,
+        "Snapshots are reversed"
+    );
+    Ok(())
+}
+
+pub fn ensure_same_character_and_client(before: &Snapshot, after: &Snapshot) -> Result<()> {
     ensure!(before.client == after.client, "Client/build mismatch");
     ensure!(
         before.character.name == after.character.name
             && before.character.realm == after.character.realm,
         "Character mismatch"
-    );
-    ensure!(
-        before.captured_at <= after.captured_at,
-        "Snapshots are reversed"
     );
     Ok(())
 }

@@ -344,9 +344,11 @@ struct RecipeReview {
     inventory_snapshot_id: Option<String>,
     /// Up to seven other saved recipes checked against the same inventory capture.
     additional_recipes: Option<Vec<RecipeBatchEntry>>,
-    /// Match material shortfalls against the merchant stock in the inventory capture.
+    /// Match material shortfalls against saved merchant offers.
     #[serde(default)]
     merchant_reagent_plan: bool,
+    /// Optional merchant capture for the same character and exact client/build.
+    merchant_snapshot_id: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -783,6 +785,10 @@ impl Operator {
     )]
     fn review_forever_recipe(&self, Parameters(args): Parameters<RecipeReview>) -> CallToolResult {
         let result = (|| {
+            anyhow::ensure!(
+                args.merchant_snapshot_id.is_none() || args.merchant_reagent_plan,
+                "Merchant snapshot requires a merchant reagent plan"
+            );
             let additional = args.additional_recipes.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many recipes");
             let snapshot = self.store.read(&args.snapshot_id)?;
@@ -839,17 +845,32 @@ impl Operator {
                 }
             }
             if args.merchant_reagent_plan {
-                review["merchant_reagent_plan"] = azeroth_operator::analysis::recipe_merchant_plan(
-                    &review,
-                    inventory.as_ref().unwrap_or(&snapshot),
-                );
+                let merchant = args
+                    .merchant_snapshot_id
+                    .as_deref()
+                    .map(|id| self.store.read(id))
+                    .transpose()?;
+                if let Some(merchant) = &merchant {
+                    azeroth_operator::analysis::ensure_same_character_and_client(
+                        &snapshot, merchant,
+                    )?;
+                }
+                let offers = merchant
+                    .as_ref()
+                    .or(inventory.as_ref())
+                    .unwrap_or(&snapshot);
+                review["merchant_reagent_plan"] =
+                    azeroth_operator::analysis::recipe_merchant_plan(&review, offers);
+                if let Some(id) = args.merchant_snapshot_id {
+                    review["merchant_snapshot_id"] = serde_json::json!(id);
+                }
             }
             Ok::<_, anyhow::Error>(review)
         })();
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe review requires up to eight distinct saved Forever recipes and a compatible inventory capture. Supply crafts or a supported target output quantity per recipe, within 1 to 1000 crafts.",
+                "Recipe review requires up to eight distinct saved Forever recipes and compatible captures. Supply crafts or a supported target output quantity per recipe, within 1 to 1000 crafts. A merchant snapshot requires a merchant reagent plan and the same character and client/build.",
             )]),
         }
     }

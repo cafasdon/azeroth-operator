@@ -289,6 +289,11 @@ storage was observed, matching slots can still be listed but their
 quantities stay unknown. The plan estimates bundles and copper, with
 stock and extended costs reported separately.
 
+Pass `merchant_snapshot_id` with this option to use offers from a separate
+visit. It must match the recipe character and exact client/build. The
+offer capture can predate the inventory. Its timestamp is reported
+separately, and a missing stock section leaves the plan unknown.
+
 Use `merchant_item_id` with `family: "forever"` in `list_snapshots`
 to search across captures. Results include the matching offer count and
 the player's captured map when known. This is the map at export, so it
