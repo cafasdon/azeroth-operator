@@ -1765,6 +1765,42 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
         "node_ids_observed_only_before":observed_only_before,"node_ids_observed_only_after":observed_only_after})
 }
 
+pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value {
+    let Some(entries) = trainer["entries"].as_object() else {
+        return Value::Null;
+    };
+    let requirement_level = level.filter(|_| trainer["kind"] != "pet");
+    let lessons: BTreeMap<_, _> = entries
+        .iter()
+        .filter(|(_, lesson)| lesson["status"] == "unavailable")
+        .map(|(slot, lesson)| {
+            let level_shortfall = lesson["required_level"]
+                .as_u64()
+                .zip(requirement_level)
+                .map(|(required, observed)| required.saturating_sub(observed));
+            let unmet_skill = lesson["skill_requirement"]
+                .as_object()
+                .map(|skill| skill["met"] == false);
+            let unmet_abilities = lesson["ability_requirements"].as_object().map(|abilities| {
+                abilities
+                    .values()
+                    .filter(|ability| ability["met"] == false)
+                    .map(|ability| &ability["name"])
+                    .collect::<Vec<_>>()
+            });
+            (
+                slot,
+                json!({
+                    "level_shortfall":level_shortfall,
+                    "skill_requirement_unmet":unmet_skill,
+                    "unmet_ability_names":unmet_abilities
+                }),
+            )
+        })
+        .collect();
+    json!({"captured_character_level":level,"unavailable_lessons_by_slot":lessons})
+}
+
 fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize, usize, u64)> {
     let entries = trainer["entries"].as_object()?;
     let mut available = 0;

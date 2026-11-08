@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise recorded blockers for unavailable Forever trainer lessons.
+
 - Show how many merchant bundles saved resources cover in Forever offer reviews.
 
 - Compare observed Forever durability alerts and repair quotes between saved captures.

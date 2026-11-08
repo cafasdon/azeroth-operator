@@ -52,6 +52,9 @@ struct Inspect {
     /// Budget available pet trainer lessons against saved training points.
     #[serde(default)]
     trainer_points_projection: bool,
+    /// Explain observed requirements for unavailable Forever trainer lessons.
+    #[serde(default)]
+    trainer_requirements_review: bool,
     /// Case-insensitive substring of a saved trainer lesson name.
     trainer_service_name: Option<String>,
     /// Saved trainer lesson status: available, unavailable, or used.
@@ -1070,8 +1073,10 @@ impl Operator {
         }
         let filter_trainer =
             trainer_name.is_some() || trainer_status.is_some() || trainer_slots.is_some();
-        let review_trainer =
-            args.trainer_wallet_projection || args.trainer_points_projection || filter_trainer;
+        let review_trainer = args.trainer_wallet_projection
+            || args.trainer_points_projection
+            || args.trainer_requirements_review
+            || filter_trainer;
         if review_trainer && args.section.as_deref() != Some("trainer_services") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Trainer review requires the trainer_services section",
@@ -1450,6 +1455,22 @@ impl Operator {
                 if args.trainer_points_projection {
                     value["trainer_points_projection"] =
                         azeroth_operator::analysis::trainer_points_projection(&value["data"]);
+                }
+                if args.trainer_requirements_review {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured trainer requirements context",
+                        )]);
+                    };
+                    let level = snapshot
+                        .sections
+                        .get("stats")
+                        .and_then(|stats| stats["level"].as_u64());
+                    value["trainer_requirements_review"] =
+                        azeroth_operator::analysis::trainer_requirements_review(
+                            &value["data"],
+                            level,
+                        );
                 }
                 if let Some((field, id)) = merchant_search {
                     if value["client"]["family"] != "forever" {
