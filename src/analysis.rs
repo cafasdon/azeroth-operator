@@ -650,11 +650,12 @@ pub fn compare_observations(
     let merchant_before = before.sections.get("merchant_stock");
     let merchant_after = after.sections.get("merchant_stock");
     if merchant_before.is_some() || merchant_after.is_some() {
-        comparison["merchant_offer_changes"] = json!(
-            merchant_before
-                .zip(merchant_after)
-                .and_then(|(old, new)| compare_merchant_offers(old, new))
-        );
+        let (changes, coverage) = merchant_before
+            .zip(merchant_after)
+            .and_then(|(old, new)| compare_merchant_offers(old, new))
+            .unwrap_or((Value::Null, Value::Null));
+        comparison["merchant_offer_changes"] = changes;
+        comparison["merchant_offer_coverage"] = coverage;
     }
     let trainer_before = before.sections.get("trainer_services");
     let trainer_after = after.sections.get("trainer_services");
@@ -1628,7 +1629,7 @@ fn standard_reputation_workload(section: &Value) -> Option<Value> {
     )
 }
 
-fn compare_merchant_offers(before: &Value, after: &Value) -> Option<Vec<Value>> {
+fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Value)> {
     type OfferKey = (&'static str, u64, u64);
     fn by_product(panel: &Value) -> Option<BTreeMap<OfferKey, Option<&Value>>> {
         let mut offers = BTreeMap::new();
@@ -1664,8 +1665,19 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<Vec<Value>> 
         });
         Some(rows)
     }
+    let previous = by_product(before)?;
     let current = by_product(after)?;
-    Some(by_product(before)?.into_iter().filter_map(|((kind, id, size), old)| {
+    let observed_only =
+        |offers: &BTreeMap<OfferKey, Option<&Value>>,
+         other: &BTreeMap<OfferKey, Option<&Value>>| {
+            offers.iter().filter(|(key, _)| !other.contains_key(*key))
+            .map(|((kind, id, size), row)| json!({
+                "product_kind":kind,"product_id":id,"bundle_size":size,"ambiguous":row.is_none()
+            })).collect::<Vec<_>>()
+        };
+    let coverage = json!({"observed_only_before":observed_only(&previous, &current),
+        "observed_only_after":observed_only(&current, &previous)});
+    let changes: Vec<_> = previous.into_iter().filter_map(|((kind, id, size), old)| {
         let (old, new) = old.zip(current.get(&(kind, id, size)).copied().flatten())?;
         let old_price = old["price_copper"].as_i64()?;
         let new_price = new["price_copper"].as_i64()?;
@@ -1685,7 +1697,8 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<Vec<Value>> 
             }
             change
         })
-    }).collect())
+    }).collect();
+    Some((json!(changes), coverage))
 }
 
 fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {

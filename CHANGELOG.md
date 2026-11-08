@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report merchant offers observed in only one saved Forever panel.
+
 - Compare item-token and named-currency costs for saved Forever merchant offers.
 
 - Compare copper and stock for matched saved Forever merchant offers.

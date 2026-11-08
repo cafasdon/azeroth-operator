@@ -337,6 +337,10 @@ stock on either side leaves it unknown. When extended cost observations
 differ, `cost_component_change` shows both lists regardless of row order.
 An unknown extended cost is null. A copper-only offer has an empty list.
 Currency names are compared as captured labels.
+`merchant_offer_coverage` separately lists product and bundle keys seen
+on only one side. Duplicate rows for a one-sided key are marked ambiguous.
+One-sided offers can reflect different panels. Missing stock leaves the
+coverage comparison unknown.
 
 Add `merchant_target_quantity` from 1 to 1000 to calculate whole bundles,
 units received, surplus and copper for each matching offer. Extended
