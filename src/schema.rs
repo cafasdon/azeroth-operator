@@ -1788,12 +1788,22 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("passive", "bool", false),
                     ("off_spec", "bool", false),
                     ("level_learned", "uint", false),
+                    ("usability", "map", false),
                 ],
             )?;
             let rows = value["entries"].as_object().unwrap();
             ensure!(rows.len() <= 1024, "Too many spellbook observations");
             for (key, row) in rows {
                 index(key, 1, 4096)?;
+                if let Some(usability) = row.get("usability") {
+                    object(
+                        usability,
+                        &[
+                            ("usable", "bool", true),
+                            ("insufficient_power", "bool", true),
+                        ],
+                    )?;
+                }
                 ensure!(
                     row.get("level_learned")
                         .is_none_or(|level| !level.is_null()),

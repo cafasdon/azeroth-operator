@@ -4592,6 +4592,16 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["spellbook_usability_observations"] = s.sections.get("spellbook").map(|book| {
+        let rows=book["entries"].as_object().unwrap();
+        let known=rows.values().filter(|row|row.get("usability").is_some()).count();
+        json!({"coverage":book["coverage"],"observed_rows":rows.len(),"known_usability_rows":known,
+            "unknown_usability_rows":rows.len()-known,
+            "usable_rows":rows.values().filter(|row|row["usability"]["usable"]==true).count(),
+            "unusable_rows":rows.values().filter(|row|row["usability"]["usable"]==false).count(),
+            "insufficient_power_rows":rows.values().filter(|row|row["usability"]["insufficient_power"]==true).count(),
+            "cast_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
     summary["captured_vendor_price_values"] = json!(["equipment","bags","character_bank","account_bank"].into_iter().map(|storage| {
         let value=s.sections.get(storage).map(|section| {
             let rows:Vec<_>=if storage=="equipment" {section.as_object().unwrap().values().collect()}

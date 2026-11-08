@@ -1930,6 +1930,21 @@ AO.collectors.spellbook = function()
                             end
                         end
                     end
+                    if C_Spell and type(C_Spell.IsSpellUsable)=="function" then
+                        local function readUsability()
+                            local usable,power=C_Spell.IsSpellUsable(row.spell_id)
+                            if questRewardAccessible(usable) and type(usable)=="boolean"
+                                and questRewardAccessible(power) and type(power)=="boolean" then
+                                return {usable=usable,insufficient_power=power}
+                            end
+                        end
+                        local ok,first=pcall(readUsability)
+                        if ok and first then
+                            local nextOk,second=pcall(readUsability)
+                            if nextOk and second and first.usable==second.usable
+                                and first.insufficient_power==second.insufficient_power then row.usability=first end
+                        end
+                    end
                     entries[tostring(slot)]=row
                 end
             end

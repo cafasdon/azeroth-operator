@@ -402,6 +402,9 @@ pub struct SpellbookSpellFilter {
     pub spell_id: std::num::NonZeroU32,
     pub passive: Option<bool>,
     pub off_spec: Option<bool>,
+    /// Recorded API usability, not current cooldown/target eligibility.
+    pub usable: Option<bool>,
+    pub insufficient_power: Option<bool>,
     /// Inclusive reported learn-level bound; level linking may affect this observation.
     pub minimum_level_learned: Option<u32>,
     pub maximum_level_learned: Option<u32>,
@@ -1181,6 +1184,8 @@ impl Store {
                             (row["base_spell_id"].as_u64()==requested || row["spell_id"].as_u64()==requested)
                                 && filter.passive.is_none_or(|flag|row["passive"].as_bool()==Some(flag))
                                 && filter.off_spec.is_none_or(|flag|row["off_spec"].as_bool()==Some(flag))
+                                && filter.usable.is_none_or(|flag|row["usability"]["usable"].as_bool()==Some(flag))
+                                && filter.insufficient_power.is_none_or(|flag|row["usability"]["insufficient_power"].as_bool()==Some(flag))
                                 && filter.minimum_level_learned.is_none_or(|minimum|row["level_learned"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
                                 && filter.maximum_level_learned.is_none_or(|maximum|row["level_learned"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
                         }).map(|(slot,row)|(slot.parse::<u32>().unwrap(),row)).collect::<Vec<_>>();
@@ -1188,9 +1193,12 @@ impl Store {
                         matches.sort_by_key(|(slot,_)|*slot);
                         Some(json!({"coverage":book["coverage"],"spell_id":filter.spell_id,
                             "matched_slots":matches.len(),"truncated":matches.len()>20,
-                            "entries":matches.iter().take(20).map(|(slot,row)|json!({"slot":slot,
-                                "base_spell_id":row["base_spell_id"],"spell_id":row["spell_id"],
-                                "passive":row["passive"],"off_spec":row["off_spec"],"level_learned":row["level_learned"]})).collect::<Vec<_>>()}))
+                            "entries":matches.iter().take(20).map(|(slot,row)| {
+                                let mut observed=json!({"slot":slot,"base_spell_id":row["base_spell_id"],"spell_id":row["spell_id"],
+                                    "passive":row["passive"],"off_spec":row["off_spec"],"level_learned":row["level_learned"]});
+                                if let Some(usability)=row.get("usability") {observed["usability"]=usability.clone();}
+                                observed
+                            }).collect::<Vec<_>>()}))
                     });
                     if spellbook_spell.is_some() && spellbook_match.is_none() {
                         continue;

@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Visible player-spell rows can include the public API's usability and
+insufficient-power pair when two readable observations agree. Saved search
+matches flags on the same row; summary counts distinguish unknowns from false.
+The capture performs no casting, targeting, explicit loads or cooldown/range
+inference and does not establish current cast eligibility.
+[Offline evidence](../../docs/spell-usability-verification-2026-11-08.md).
+
 Native linked-item sell-price observations support local reference-value
 summaries per observed storage. Quantity arithmetic retains partial/unpriced
 coverage and overflow rather than inventing values. Zero remains a reported

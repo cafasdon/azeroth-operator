@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable public spell-usability/power flags on visible spellbook rows, search same-row saved observations and summarise known/unknown counts without casting or readiness inference.
+
 - Capture stable native linked-item sell prices and summarise quantity-based reference values by storage, preserving unknowns and checked overflow without crediting wallets or assuming sale eligibility.
 
 - Withhold Forever simulator inputs for known native slot-category conflicts in projected equipment, expose candidate diagnostics and skip conflicts in ranking with fixed CLI errors.

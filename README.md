@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever visible spellbook rows can include stable API `usability` flags.
+Search saved rows with `spellbook_spell.usable` and `insufficient_power`, or
+read `character_summary.spellbook_usability_observations`. Unknown flags do
+not match false. These are historical, partial spellbook observations; they
+do not prove current cooldown, target, range or cast eligibility.
+[Offline verification](docs/spell-usability-verification-2026-11-08.md).
+
 Forever linked-item captures can include stable `sell_price_copper` from the
 native item API. `character_summary.captured_vendor_price_values` reports
 quantity-based reference values separately for each observed storage, keeping
