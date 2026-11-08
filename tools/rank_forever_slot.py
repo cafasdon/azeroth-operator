@@ -396,10 +396,12 @@ def main():
                             help="Compare up to this many selected replacements across the requested slots.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
-    parser.add_argument("--engine", type=Path, required=True)
-    parser.add_argument("--engine-sha256", required=True)
+    parser.add_argument("--plan-only", action="store_true",
+                        help="List resolved equipment drafts without launching a simulator.")
+    parser.add_argument("--engine", type=Path)
+    parser.add_argument("--engine-sha256")
     parser.add_argument("--template", type=Path, required=True)
-    parser.add_argument("--encounter-lookup", type=Path, action="append", required=True,
+    parser.add_argument("--encounter-lookup", type=Path, action="append",
                         help="Encounter export. Repeat for separate rankings.")
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Fixed comparisons only.")
@@ -412,6 +414,13 @@ def main():
     parser.add_argument("--audit-shortlist", action="store_true",
                         help="Compare the staged shortlist with a bounded fixed-iteration run of every candidate")
     args = parser.parse_args()
+    if args.plan_only:
+        if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
+                or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
+                or args.encounter_weight or args.rank_by != "dps"):
+            parser.error("--plan-only takes no simulator or encounter options")
+    elif not (args.engine and args.engine_sha256 and args.encounter_lookup):
+        parser.error("--engine, --engine-sha256 and --encounter-lookup are required for simulation")
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
@@ -430,7 +439,7 @@ def main():
             raise ValueError("Non-DPS ranking requires fixed, unweighted encounter comparisons")
         if not 1 <= args.max_drafts <= 128:
             raise ValueError("Draft limit is out of range")
-        if len(args.encounter_lookup) > 4:
+        if len(args.encounter_lookup or []) > 4:
             raise ValueError("Provide up to four encounter exports")
         weights = args.encounter_weight
         if weights is not None:
@@ -446,7 +455,7 @@ def main():
         template = read_object(args.template, 4 * 1024 * 1024)
         check_consumable_groups(template)
         can_dual_wield = player_spec(single_player(template["raid"])) in DUAL_WIELD_SPECS
-        encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup]
+        encounters = [read_object(path, 4 * 1024 * 1024) for path in args.encounter_lookup or []]
         logging.disable(logging.CRITICAL)
         with open(os.devnull, "w") as errlog:
             drafts, skipped, coverage, stats, selected_capture, set_observation = asyncio.run(asyncio.wait_for(
@@ -458,7 +467,17 @@ def main():
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
                          if set_observation is not None else None)
-        if len(encounters) == 1:
+        if args.plan_only:
+            result = {
+                "mode": "plan_only",
+                "baseline_review": 1,
+                "resolved_drafts": [
+                    {"review": index, "selections": selections,
+                     "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
+                    for index, (selections, draft) in enumerate(drafts, 1)
+                ],
+            }
+        elif len(encounters) == 1:
             result = rank_encounter(args, template, encounters[0], drafts, set_piece_ids)
         else:
             # Validate every export before running any simulations. Within this command

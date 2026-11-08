@@ -600,6 +600,9 @@ Use `--max-swaps 2` to compare singles and pairs across the requested slots.
 This evaluates two-item interactions while skipping larger combinations.
 The limit accepts 1–17 selected replacements. Higher limits still stop at
 the existing 1,024-combination scan cap and the configured draft limit.
+Use `--plan-only` with the template, snapshot and slot options to inspect
+resolved draft locations, projected slot clears, exclusions and storage
+coverage before committing CPU time. Omit engine and encounter arguments.
 
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing
