@@ -103,6 +103,10 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
                 if not multi and not same_slot:
                     skipped.append({"selection": selection, "reason": "would_vacate_another_slot"})
                     continue
+            if conflict := row.get("native_required_level_shortfall"):
+                skipped.append({**({"selections":[selection]} if multi else {"selection":selection}),
+                                "reason":"native_required_level_shortfall","conflicts":[conflict]})
+                continue
             if conflict := row.get("catalogue_requirement_conflict"):
                 skipped.append({
                     **({"selections": [selection]} if multi else {"selection": selection}),
@@ -274,6 +278,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                         )
                     resolved_keys.setdefault(key, len(drafts) + 1)
                     drafts.append((selections, draft))
+                elif conflicts := draft["checks"].get("native_required_level_shortfalls"):
+                    skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
+                                    "reason":"native_required_level_shortfall","conflicts":conflicts})
                 elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):
                     skipped.append({
                         **({"selections": selections} if multi else {"selection": selections[0]}),

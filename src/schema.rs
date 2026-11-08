@@ -11,6 +11,7 @@ struct Item<'a> {
     link: Option<&'a str>,
     count: Option<u32>,
     guid: Option<&'a str>,
+    required_level: Option<u32>,
 }
 
 fn index(key: &str, minimum: u32, maximum: u32) -> Result<()> {
@@ -30,6 +31,10 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
         ensure!(item.item_id > 0, "Invalid item ID");
+        ensure!(
+            item.required_level.is_none() || item.link.is_some_and(|link| !link.is_empty()),
+            "Required level needs an observed item link"
+        );
         ensure!(
             item.guid.is_none_or(|s| !s.is_empty()
                 && s.len() <= 128

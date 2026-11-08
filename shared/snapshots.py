@@ -103,6 +103,17 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    for storage in ("equipment","bags","character_bank","account_bank"):
+        data=sections.get(storage,{})
+        if not isinstance(data,dict):continue
+        groups=[data] if storage=="equipment" else data.values()
+        for group in groups:
+            if not isinstance(group,dict):continue
+            for item in group.values():
+                if isinstance(item,dict) and item.get("required_level") is not None:
+                    if (type(item["required_level"]) is not int or not 0<=item["required_level"]<=4_294_967_295
+                            or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):
+                        raise ValueError("Invalid linked item required level")
     if "pet_collection_view" in sections:
         view=sections["pet_collection_view"]
         if (c["family"]!="forever" or not isinstance(view,dict)

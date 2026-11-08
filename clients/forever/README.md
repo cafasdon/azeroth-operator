@@ -4,6 +4,22 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+Forever item observations can include optional `required_level`, read from the
+captured item link after checking that its native base ID matches the observed
+item ID. Missing APIs, unreadable data, unloaded details and errors leave it
+unknown, never zero. Equipment and the shared bag/bank reader use the same
+helper; it performs no equip or explicit data-load operation. Update readers
+before using an exporter that writes this metadata.
+
+Equipment reviews withhold simulator input when a proposed change has a known
+native required-level shortfall against the captured player level. The
+`native_required_level_shortfalls` check is separate from catalogue conflicts;
+owned-gear target reviews and the ranker also report/skip these candidates.
+Current same-slot equipment and the empty-selection baseline remain preserved.
+Meeting the level requirement does not establish equip legality, proficiency,
+specialisation compatibility or current usability. Existing catalogue checks
+remain in effect. See [verification](../../docs/native-item-level-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "pet_collection_view"` for species-level
 observations while the pet journal is visible. The capture aggregates owned and
 unowned rows by species ID, using public species names. Individual pet GUIDs,

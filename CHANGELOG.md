@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture optional item-link required levels and reject known shortfalls in changed equipment drafts and owned-gear ranking, preserving unknowns and existing baselines.
+
 - Search saved filtered pet-journal observations by species ID and owned/unowned row thresholds, preserving partial-view scope.
 
 - Capture filtered pet-journal species observations without individual pet GUIDs, custom names or journal actions.

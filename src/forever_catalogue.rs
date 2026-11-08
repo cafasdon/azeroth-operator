@@ -2229,6 +2229,28 @@ fn proficiency_conflict(class: u64, item: &Value) -> Option<&'static str> {
     }
 }
 
+fn native_level_shortfall(
+    snapshot: &Snapshot,
+    selection: &crate::planning::EquipmentSelection,
+) -> Option<Value> {
+    use crate::planning::ItemLocation;
+    if selection.source
+        == (ItemLocation::Equipment {
+            slot: selection.target_slot,
+        })
+    {
+        return None;
+    }
+    let observed = snapshot.sections.get("stats")?["level"]
+        .as_u64()
+        .filter(|level| *level > 0)?;
+    let required = selection.source.observed_in(snapshot)?["required_level"].as_u64()?;
+    (observed < required).then(|| {
+        json!({"slot":selection.target_slot,"item_id":selection.expected_item_id,
+        "observed_level":observed,"required_level":required,"levels_remaining":required-observed})
+    })
+}
+
 fn requirement_check(
     snapshot: &Snapshot,
 ) -> impl Fn(&Value, &crate::planning::EquipmentSelection) -> Option<Value> {
@@ -2559,6 +2581,10 @@ pub fn review_equipment_catalogue(
         })
         .collect();
     let mut unique_slots = BTreeMap::<u64, Vec<u32>>::new();
+    let native_shortfalls: Vec<_> = selections
+        .iter()
+        .filter_map(|selection| native_level_shortfall(snapshot, selection))
+        .collect();
     let mut limit_categories = BTreeMap::<u64, Vec<Value>>::new();
     for slot in 1..=19 {
         if let Some(id) = projected_item(slot)
@@ -2632,6 +2658,7 @@ pub fn review_equipment_catalogue(
         }
     }
     let equipment_spec = (blockers.is_empty()
+        && native_shortfalls.is_empty()
         && requirement_conflicts.is_empty()
         && pairing != "two_hand_conflict"
         && duplicates.is_empty()
@@ -2642,6 +2669,7 @@ pub fn review_equipment_catalogue(
         "catalogue_slot_fit":fit,
         "catalogue_projected_weapon_skills":projected_weapon_skills,
         "catalogue_requirement_conflicts":requirement_conflicts,
+        "native_required_level_shortfalls":native_shortfalls,
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
         "simulator_equipment_spec":equipment_spec,
@@ -2886,10 +2914,14 @@ pub fn review_owned(
                     .zip(reference)
                     .and_then(|(selection, item)| check_requirements(item, selection));
                 let weapon_skill = reference.and_then(|item| weapon_skill(snapshot, item));
+                let native_shortfall = draft_selection
+                    .as_ref()
+                    .and_then(|selection| native_level_shortfall(snapshot, selection));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
                     "catalogue_item_requirement_conflict":item_conflict,
                     "catalogue_requirement_conflict":requirement_conflict,
+                    "native_required_level_shortfall":native_shortfall,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),
                     "link_modifiers":modifiers,

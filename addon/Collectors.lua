@@ -188,12 +188,27 @@ AO.collectors.operation_receipts = function()
     return AO.ReadMacroReceipts()
 end
 
+local function itemRequiredLevel(item)
+    if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
+    local function readable(value) return not issecretvalue or not issecretvalue(value) end
+    local link=item.link
+    if not readable(link) or type(link)~="string" or #link==0 or #link>4096 or not readable(item.item_id) then return item end
+    local ok,level=pcall(function()
+        local id=C_Item.GetItemInfoInstant(link)
+        if not readable(id) or id~=item.item_id then return nil end
+        local _,_,_,_,required=C_Item.GetItemInfo(link)
+        if readable(required) and type(required)=="number" and required%1==0
+            and required>=0 and required<=4294967295 then return required end
+    end)
+    if ok then item.required_level=level end
+    return item
+end
 AO.collectors.equipment = function()
     local equipment = {}
     for slot = 1, 19 do
         local id = GetInventoryItemID("player", slot)
         if id then
-            equipment[tostring(slot)] = { item_id = id, link = GetInventoryItemLink("player", slot), guid=itemGUID(nil,slot) }
+            equipment[tostring(slot)] = itemRequiredLevel({ item_id = id, link = GetInventoryItemLink("player", slot), guid=itemGUID(nil,slot) })
         end
     end
     return equipment
@@ -339,7 +354,7 @@ local function containerItems(bag, capacity)
     for slot = 1, capacity do
         local info = C_Container.GetContainerItemInfo(bag, slot)
         if info then
-            slots[tostring(slot)] = {item_id=info.itemID,count=info.stackCount,link=info.hyperlink,guid=itemGUID(bag,slot)}
+            slots[tostring(slot)] = itemRequiredLevel({item_id=info.itemID,count=info.stackCount,link=info.hyperlink,guid=itemGUID(bag,slot)})
             occupied=occupied+1
         end
     end
