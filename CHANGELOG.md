@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Explain Forever level restrictions with the captured level, required level and levels remaining.
+
 - Show observed Forever item requirement conflicts in owned-gear searches without a target slot.
 
 - Report the same encounter fingerprint in standalone Forever simulations and gear rankings.

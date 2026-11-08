@@ -58,6 +58,9 @@ catalogue restrictions that conflict with captured character data, even
 without a target slot. Null means no conflict was detected from the
 available evidence. The separate draft conflict still applies to the
 proposed placement.
+When the captured level is below the catalogue requirement, both conflict
+views include `level_shortfall` with the captured and required levels and
+the difference.
 
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted

@@ -2077,9 +2077,9 @@ fn item_requirement_check(snapshot: &Snapshot) -> impl Fn(&Value) -> Option<Valu
         .get("professions")
         .and_then(Value::as_object);
     move |item| {
-        let level_conflict = level
+        let level_shortfall = level
             .zip(item["reqLvl"].as_u64())
-            .is_some_and(|(level, required)| level < required);
+            .filter(|(level, required)| level < required);
         let class_conflict =
             class_id
                 .zip(item["classAllowlist"].as_array())
@@ -2116,15 +2116,22 @@ fn item_requirement_check(snapshot: &Snapshot) -> impl Fn(&Value) -> Option<Valu
         let faction_conflict =
             required_faction.filter(|required| faction.is_some_and(|actual| actual != *required));
         let proficiency = class_id.and_then(|class| proficiency_conflict(class, item));
-        (level_conflict
+        (level_shortfall.is_some()
             || class_conflict
             || missing_skill_line.is_some()
             || faction_conflict.is_some()
             || proficiency.is_some())
         .then(|| {
             let mut conflict = json!({
-                "below_required_level":level_conflict,"class_excluded":class_conflict
+                "below_required_level":level_shortfall.is_some(),"class_excluded":class_conflict
             });
+            if let Some((observed, required)) = level_shortfall {
+                conflict["level_shortfall"] = json!({
+                    "observed_level": observed,
+                    "required_level": required,
+                    "levels_remaining": required - observed
+                });
+            }
             if let Some(id) = missing_skill_line {
                 conflict["required_profession_not_observed"] = json!(id);
             }
