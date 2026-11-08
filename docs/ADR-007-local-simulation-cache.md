@@ -5,7 +5,7 @@ Status: accepted
 
 ## Context
 
-Repeated fixed simulations run the same deterministic seeded request. Existing
+Repeated simulations run the same deterministic seeded request. Existing
 deduplication only avoids repeats within one comparison. Saved snapshots and
 simulator configuration can contain personal identifiers, so caching whole
 requests or raw engine output is unnecessary.
@@ -35,8 +35,12 @@ Check stored-body digests, decrypt with the matching key and bound reads.
 Missing, unreadable, un-decryptable or byte-corrupt entries mean recomputation.
 An unavailable cache location disables persistence without blocking simulation.
 
-Bulk results remain uncached. Fixed finalist runs, audits and seed confirmation
-can reuse fixed-run entries. Selection/search and snapshot collection still run,
+Bulk results now use a separate key containing the adapter checksum, full
+ordered request list and requested shortlist size. Only known numeric stage
+telemetry and stage labels are eligible for persistence; other stage shapes
+are returned without caching. Cached stage times describe the original run.
+Fixed finalist runs, audits and seed confirmation use fixed-run entries.
+Selection/search and snapshot collection still run,
 so a cache hit does not imply an unchanged inventory or skip current validation.
 
 ## Evidence and limitations
@@ -51,6 +55,12 @@ checks have not been exercised on this Windows host.
 returned identical numeric output at distinct seeds. Warm elapsed time includes
 process startup, imports, engine hashing, SQLite and decryption. This is an
 offline reuse measurement, not native encounter validation.
+
+[Three bulk cold/warm pairs](benchmarks/forever-bulk-cache-2026-11-08.json)
+also preserved metrics and review IDs. The entire ordered pool forms part of
+the key so candidate reordering, duplicate insertion or shortlist-size changes
+cannot reuse a result with the wrong review mapping. All normal context and
+engine validation runs before looking up a cached shortlist.
 
 Independent review found and prompted fixes for absent/relative LOCALAPPDATA
 and pre-existing permissive Windows folders. Both reviews used gpt-6.1-sol at
@@ -71,3 +81,18 @@ defects. They rechecked the native ACL guard against permissive roots, databases
 and SQLite journal files, machine-scoped ciphertext injection into an insecure
 root, and native API failure. All used temporary files. The collected scoped
 suite passed 12 tests on Windows. No live game tests were run.
+
+The bulk extension adds seven regression tests for exact pool/shortlist keys,
+duplicate mapping, mutation isolation, corruption, validation before hits and
+stage-telemetry persistence. The combined cache and context suite runs with
+`python -m unittest tests.test_bulk_cache tests.test_simulation_cache tests.test_simulation_comparison`.
+Independent data review found an oversized integer could overflow during a
+finiteness check. Integer telemetry is now retained exactly without float
+conversion; non-finite floats and unknown fields remain ineligible for caching.
+Jev 1.14.0 advisory triage supported addressing the overflow (request
+`b610a1755b86d807f716dd6cef6573b65f9a40624285f983f707d2241e7ec8a7`,
+431 input / 45 output tokens, 0.286 s).
+
+The bulk caller review and second data review reported no remaining findings.
+All 19 combined cache/context tests passed. Oversized results remain available
+to the caller but skip storage; unknown telemetry fields also skip storage.

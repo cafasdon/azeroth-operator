@@ -422,7 +422,23 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
     return comparison
 
 
-def compare_bulk(engine, expected_hash, requests, top_results):
+def cacheable_stage_metrics(stages):
+    """Only persist the pinned adapter's numeric stage telemetry and enum label."""
+    fields = {"inputGearSets", "survivors", "iterations", "concurrency", "durationSeconds",
+              "targetErrorPct", "observedErrorPct", "baselineAvgDps", "bestCandidateAvgDps"}
+    labels = {"BulkSimStageUnknown", "BulkSimStageLow", "BulkSimStageMedium", "BulkSimStageHigh",
+              "BulkSimStageFinalist"}
+    return isinstance(stages, list) and all(
+        isinstance(stage, dict) and set(stage) <= fields | {"stage"}
+        and type(stage.get("stage")) is str
+        and stage.get("stage") in labels
+        and all((type(value) is int or type(value) is float and math.isfinite(value))
+                for name, value in stage.items() if name != "stage")
+        for stage in stages
+    )
+
+
+def compare_bulk(engine, expected_hash, requests, top_results, cache=None):
     verify_engine(engine, expected_hash)
     baseline = requests[0]
     baseline_context = None
@@ -452,6 +468,12 @@ def compare_bulk(engine, expected_hash, requests, top_results):
         return None
     payload = {"baseRequest": baseline, "candidates": candidates,
                "topResults": min(top_results, len(candidates))}
+    cache_key = cache.key(expected_hash, {"operation": "bulk", "requests": requests,
+                                         "top_results": top_results}, False, False, False) if cache else None
+    if cache:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return {**cached, "cache_status": "hit"}
     with tempfile.TemporaryDirectory(prefix="forever-bulk-") as folder:
         output = Path(folder) / "result.json"
         with output.open("wb") as stream:
@@ -481,9 +503,14 @@ def compare_bulk(engine, expected_hash, requests, top_results):
             "mean_dps_delta_from_baseline": dps["avg"] - baseline_dps,
             "paired_dps_standard_error": paired_error if index != 1 and paired_error else None,
         } for review in reviews[index])
-    return {"mode": "staged_bulk", "baseline_review": 1, "results": rows,
-            "engine_sha256": expected_hash.lower(), "seed": baseline["simOptions"]["randomSeed"],
-            "unique_gear_sets": len(reviews), "stage_metrics": result["stageMetrics"]}
+    summary = {"mode": "staged_bulk", "baseline_review": 1, "results": rows,
+               "engine_sha256": expected_hash.lower(), "seed": baseline["simOptions"]["randomSeed"],
+               "unique_gear_sets": len(reviews), "stage_metrics": result["stageMetrics"]}
+    if cache:
+        if cacheable_stage_metrics(summary["stage_metrics"]):
+            cache.put(cache_key, summary)
+        summary["cache_status"] = "miss"
+    return summary
 
 
 def main():

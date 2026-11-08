@@ -782,7 +782,7 @@ result. The repeated row reports `reused_encounter_index` and keeps its own
 weight and position. Different seeds or iteration counts run separately.
 
 Add `--cache` to `python -m tools.run_forever_sim` or
-`python -m tools.rank_forever_slot` to reuse fixed-run results between commands.
+`python -m tools.rank_forever_slot` to reuse simulation results between commands.
 The key covers the full simulator request, engine checksum, metric modes and
 cache format version. The engine checksum is verified even on a hit. A changed
 seed, encounter, rotation, equipment or precision gets a separate entry.
@@ -797,14 +797,27 @@ binds them to the request key. Other OS users cannot decrypt or reuse them,
 and native owner/access checks reject existing folders or databases granting
 access to other users. Unavailable, insecure or corrupt cache data causes a
 fresh simulation.
-Omit `--cache` to bypass it. Bulk screening itself is not cached; fixed shortlist
-audits, finalist comparisons and fresh-seed confirmation runs can reuse it.
+Omit `--cache` to bypass it. Bulk screening also uses the cache, with a separate
+key covering the adapter checksum, full ordered request list and requested
+shortlist size. Its summary reports `cache_status`. Changing candidate order or
+duplicate placement creates a separate entry, preserving review IDs. Only
+recognised numeric stage telemetry and stage labels are persisted. On a hit,
+stage durations describe the original computation, not the current lookup.
+Fixed shortlist audits, finalist comparisons and fresh-seed confirmation runs
+continue to use their own exact-input entries.
 
 An offline public Hunter check used three seeds, 1,000 iterations and a
 180-second Raid Target fight. Three separate cold CLI calls took 0.406–0.430 s;
 their matching warm calls took 0.173–0.182 s. Each returned identical numeric
 results. This measures reuse of identical work, not faster first-time simulation
 or native encounter accuracy. [Recorded measurements](../../docs/benchmarks/forever-cache-2026-11-08.json)
+
+A separate three-seed bulk check used the public Hunter baseline, two chest
+alternatives and a 45-second Raid Target fight. Cold processes took 1.262–1.669 s;
+matching cached processes took 0.210–0.235 s. Shortlists, metrics and review IDs
+were identical. These timings include Python startup and fixture loading but
+not MCP collection, and measure this small pool only.
+[Bulk reuse measurements](../../docs/benchmarks/forever-bulk-cache-2026-11-08.json)
 
 On the 49-set Hunter fixture above, a paired comparison of Raid Target,
 Movement and a repeated Raid Target export at weights 5:3:2 took 11.08 s

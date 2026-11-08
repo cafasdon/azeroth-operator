@@ -1,0 +1,90 @@
+{
+  "date": "2026-11-08",
+  "fixture": "public Hunter template, Raid Target, chest alternatives 1981 and 4082",
+  "duration_seconds": 45,
+  "duration_variation_seconds": 3,
+  "requested_iterations": 1000,
+  "top_results": 1,
+  "mode": "separate Python processes calling compare_bulk, native Windows ACL and DPAPI enabled",
+  "runs": [
+    {
+      "seed": 20261113,
+      "cold_process_seconds": 1.6690533000510186,
+      "warm_process_seconds": 0.23491139989346266,
+      "cold_helper_seconds": 1.4809311998542398,
+      "warm_helper_seconds": 0.04213980003260076,
+      "results_equal": true,
+      "review_order": [
+        1,
+        2
+      ],
+      "stage_metrics": [
+        {
+          "stage": "BulkSimStageHigh",
+          "inputGearSets": 2,
+          "survivors": 2,
+          "iterations": 15829,
+          "concurrency": 1,
+          "durationSeconds": 1.2664681,
+          "targetErrorPct": 0.05,
+          "observedErrorPct": 0.04999940083700507,
+          "baselineAvgDps": 849.7204727916454,
+          "bestCandidateAvgDps": 844.0857211782533
+        }
+      ]
+    },
+    {
+      "seed": 20261114,
+      "cold_process_seconds": 1.2680069000925869,
+      "warm_process_seconds": 0.20980449998751283,
+      "cold_helper_seconds": 1.0969740999862552,
+      "warm_helper_seconds": 0.04356869985349476,
+      "results_equal": true,
+      "review_order": [
+        1,
+        2
+      ],
+      "stage_metrics": [
+        {
+          "stage": "BulkSimStageHigh",
+          "inputGearSets": 2,
+          "survivors": 2,
+          "iterations": 15830,
+          "concurrency": 1,
+          "durationSeconds": 0.9262446,
+          "targetErrorPct": 0.05,
+          "observedErrorPct": 0.04999835071357521,
+          "baselineAvgDps": 849.7145380822453,
+          "bestCandidateAvgDps": 844.0796950446163
+        }
+      ]
+    },
+    {
+      "seed": 20261115,
+      "cold_process_seconds": 1.2618886001873761,
+      "warm_process_seconds": 0.2096271999180317,
+      "cold_helper_seconds": 1.089941600104794,
+      "warm_helper_seconds": 0.04118840000592172,
+      "results_equal": true,
+      "review_order": [
+        1,
+        2
+      ],
+      "stage_metrics": [
+        {
+          "stage": "BulkSimStageHigh",
+          "inputGearSets": 2,
+          "survivors": 2,
+          "iterations": 15830,
+          "concurrency": 1,
+          "durationSeconds": 0.9235297,
+          "targetErrorPct": 0.05,
+          "observedErrorPct": 0.049998593357744994,
+          "baselineAvgDps": 849.7131883224042,
+          "bestCandidateAvgDps": 844.0783686612139
+        }
+      ]
+    }
+  ],
+  "engine_sha256": "2ae564263fb0534aac88e59dd1d5c35447c7d6acafaeb3accc1a9c2720284059"
+}

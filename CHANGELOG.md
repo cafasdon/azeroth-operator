@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reuse exact bulk Forever shortlists across commands with the per-user simulation cache.
+
 - Add opt-in per-user caching for fixed Forever simulations and gear comparisons.
 
 - Reject mixed encounter or character templates in fast Forever gear comparisons.

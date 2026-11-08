@@ -331,7 +331,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finali
     fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired, cache=cache)
              if screening and args.audit_shortlist else None)
     after_fixed = monotonic()
-    result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
+    result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top, cache=cache)
               if screening else None)
     staged_wall = monotonic() - after_fixed if result is not None else None
     audit = audit_shortlist(result, fixed, requests, args.top) if fixed is not None else None
@@ -496,7 +496,7 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Bulk mode cross-tests the combined shortlist.")
     parser.add_argument("--paired", action="store_true")
-    parser.add_argument("--cache", action="store_true", help="Reuse exact fixed-run results in this OS user's local cache")
+    parser.add_argument("--cache", action="store_true", help="Reuse exact simulation results in this OS user's local cache")
     parser.add_argument("--confirm-leading-seed", type=int,
                         help="Rerun the top two distinct DPS sets with this fresh seed.")
     parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",

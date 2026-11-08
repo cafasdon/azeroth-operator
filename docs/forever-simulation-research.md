@@ -52,11 +52,12 @@ movement, rotation, buffs or talents could be silently discarded.
 
 ## Next improvements to qualify
 
-1. Extend caching to staged bulk results after qualifying their full keys.
-   Fixed-run persistent caching is now implemented with `--cache`, keyed by
-   the full request, engine checksum and metric modes. It stores no requests
-   or character names, uses user-bound DPAPI on Windows and bounds entries.
-   Bulk entries would additionally need adapter identity and shortlist settings.
+1. Qualify reuse across broader gear pools. Persistent caching now covers both
+   fixed runs and bulk shortlists with `--cache`. Bulk keys include adapter
+   identity, the full ordered pool and shortlist settings. Entries store no
+   requests or character names, use user-bound DPAPI on Windows and have size
+   and count limits. Small-pool reuse is measured; broader search quality remains
+   a separate qualification task.
 2. Broader shortlist validation. Use multi-slot pools, close contenders and
    independent seeds across supported encounter mechanics. Measure missed
    contenders and uncertainty as well as elapsed time before changing culling.
