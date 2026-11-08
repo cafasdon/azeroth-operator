@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Carry saved professions into equipment reviews and check simulator template profession identities before running, retaining explicit unknowns and plan-only mismatch reports.
+
 - Keep malformed, unloaded or changing profession observations out of exports so valid equipment and other sections remain importable.
 
 - Bind character simulations to captured level 60, matching the pinned engine, while preserving plan-only review for other or unknown levels and explaining legacy-review re-export.

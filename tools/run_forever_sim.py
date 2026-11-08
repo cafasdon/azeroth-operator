@@ -37,6 +37,68 @@ CLASS_IDS = {
     "warrior": 1, "paladin": 2, "hunter": 3, "rogue": 4, "priest": 5,
     "shaman": 7, "mage": 8, "warlock": 9, "druid": 11,
 }
+# Pinned common.proto Profession enum and DBC skill-line mapping, also used
+# by src/forever_catalogue.rs for item profession requirements.
+PROFESSIONS = {
+    171: (1, "Alchemy"), 164: (2, "Blacksmithing"), 333: (3, "Enchanting"),
+    202: (4, "Engineering"), 182: (5, "Herbalism"), 773: (6, "Inscription"),
+    165: (8, "Leatherworking"), 186: (9, "Mining"), 393: (10, "Skinning"),
+    197: (11, "Tailoring"),
+}
+SECONDARY_SKILL_LINES = frozenset((129, 185, 356, 794))
+
+
+class ConflictingProfessions(ValueError):
+    """The template uses different professions from the captured character."""
+
+
+def check_profession_identity(player, observed, require_match=True):
+    """Check observed profession identities only; ranks and recipes stay unverified."""
+    names = {name: identifier for identifier, name in PROFESSIONS.values()}
+    names["ProfessionUnknown"] = 0
+    declared = []
+    for field in ("profession1", "profession2"):
+        value = player.get(field, 0)
+        if isinstance(value, str):
+            value = names.get(value)
+        if type(value) is not int or value not in (0, *names.values()):
+            raise ValueError("Invalid simulator template profession")
+        if value:
+            declared.append(value)
+    if len(set(declared)) != len(declared):
+        raise ValueError("Duplicate simulator template profession")
+    report = {"status": "unverified", "template_profession_ids": sorted(declared),
+              "ranks_and_recipes": "unverified"}
+    if observed is None:
+        return report
+    if not isinstance(observed, dict):
+        raise ValueError("Invalid captured professions observation")
+    captured = []
+    complete = True
+    for row in observed.values():
+        if not isinstance(row, dict) or type(row.get("skill_line")) is not int:
+            raise ValueError("Invalid captured professions observation")
+        skill = row["skill_line"]
+        if skill in SECONDARY_SKILL_LINES:
+            continue
+        if skill not in PROFESSIONS:
+            complete = False
+        else:
+            captured.append(PROFESSIONS[skill][0])
+    if len(captured) > 2 or len(set(captured)) != len(captured):
+        complete = False
+    report["captured_profession_ids"] = sorted(set(captured))
+    if set(captured) - set(declared) or (complete and sorted(captured) != sorted(declared)):
+        if require_match:
+            raise ConflictingProfessions("Simulator template professions disagree with the saved character observation; match the template to that capture or use --plan-only.")
+        report["status"] = "mismatch"
+        return report
+    if not complete:
+        return report
+    report["status"] = "matches"
+    return report
+
+
 SPEC_CLASSES = {
     "balanceDruid": "druid", "feralCatDruid": "druid", "feralBearDruid": "druid",
     "restorationDruid": "druid", "hunter": "hunter", "mage": "mage",
@@ -170,6 +232,7 @@ def request_from(template, equipment_review, encounter_lookup):
         raise UnsupportedSimulationLevel("Pinned Forever simulation requires an explicitly captured level of 60.")
     raid = deepcopy(template["raid"])
     player = single_player(raid)
+    check_profession_identity(player, equipment_review.get("captured_professions"))
     healing_dummy_count(raid)
     rotation = player["rotation"]
     if rotation.get("type") != "TypeAPL" or not any(
@@ -548,19 +611,23 @@ def main():
         template = read_object(args.template, limit)
         check_consumable_groups(template)
         encounter = read_object(args.encounter_lookup, limit)
-        requests = [request_from(template, read_object(path, limit), encounter)
-                    for path in args.equipment_review]
+        reviews = [read_object(path, limit) for path in args.equipment_review]
+        requests = [request_from(template, review, encounter) for review in reviews]
         result = (run(args.engine, args.engine_sha256, requests[0], tank_metrics=args.tank_metrics,
                       healing_metrics=args.healing_metrics, cache=cache)
                   if len(requests) == 1 else compare(
                       args.engine, args.engine_sha256, requests, paired=args.paired, tank_metrics=args.tank_metrics,
                       healing_metrics=args.healing_metrics, cache=cache))
         result.update(encounter_summary(requests[0]))
+        result["profession_identities"] = [check_profession_identity(
+            single_player(template["raid"]), review.get("captured_professions")) for review in reviews]
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
     except UnsupportedSimulationLevel:
         parser.exit(1, "Simulation requires a current equipment review with captured_character_level=60. Re-export the saved capture with an updated MCP reader; other or unknown levels remain plan-only.\n")
+    except ConflictingProfessions:
+        parser.exit(1, "Simulator template professions disagree with the saved character observation. Match the template to that capture before simulation.\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 

@@ -18,6 +18,7 @@ from tools.run_forever_sim import (
     encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
     SimulationCache,
     SIMULATOR_CHARACTER_LEVEL, UnsupportedSimulationLevel,
+    check_profession_identity, ConflictingProfessions,
 )
 
 
@@ -650,6 +651,9 @@ def main():
                         args.max_swaps, candidate_filters), timeout=45,
             ))
         identity = check_template_identity(template, stats, require_simulator_level=not args.plan_only)
+        identity["professions"] = check_profession_identity(
+            single_player(template["raid"]), drafts[0][1].get("captured_professions"),
+            require_match=not args.plan_only)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
                          if set_observation is not None else None)
         if args.confirm_leading_seed is not None:
@@ -725,7 +729,7 @@ def main():
         # The stdio client's task groups wrap errors raised during collection.
         while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
             error = error.exceptions[0]
-        if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel)):
+        if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel, ConflictingProfessions)):
             parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")

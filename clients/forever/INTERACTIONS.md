@@ -7,6 +7,13 @@ malformed or changing public rows as an unavailable section, preserving
 other valid export sections. This does not establish full profession or
 simulator-template compatibility. See [offline evidence](../../docs/profession-capture-verification-2026-11-08.md).
 
+Equipment reviews now carry saved professions to the local simulator tools.
+Known template profession identity mismatches block simulation and remain
+reviewable in plan-only mode. Missing/unmapped observations remain unverified
+unless a known captured profession already contradicts the template;
+profession ranks, recipes and specialisations are outside this identity check.
+See [integration evidence](../../docs/simulation-professions-verification-2026-11-08.md).
+
 The hosted reader and importer support the bank, recipe, reputation, currency, tracked-achievement and quest observations below. See the [hosted deployment evidence](../../docs/container.md#forever-snapshot-rollout-7-november-2026) and the [Windows companion and package checkpoint](README.md#capture-only-installation-checkpoint). Live addon capture remains pending.
 
 Saved searches accept `captured_from` and `captured_through` as inclusive

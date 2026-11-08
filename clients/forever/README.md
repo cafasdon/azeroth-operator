@@ -84,6 +84,17 @@ marks this section unavailable while retaining valid sections in the export.
 This shared collector also applies to other client families. See the
 [offline verification](../../docs/profession-capture-verification-2026-11-08.md).
 
+Equipment reviews include `captured_professions` (null when unavailable).
+The local simulator tools compare these identities with the template's two
+professions before simulating. A known mismatch stops the run; `--plan-only`
+retains the draft and reports `template_identity.professions.status: "mismatch"`.
+Missing observations or unmapped skill lines report `"unverified"` unless
+another known captured profession already contradicts the template.
+A match verifies identities only, not ranks, specialisations, recipes or
+profession-dependent consumable eligibility. Direct adapter results include
+`profession_identities`; rankings include `template_identity.professions`.
+See [offline integration evidence](../../docs/simulation-professions-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "profession_recipe_view"` for the saved
 filtered recipe list of a visible local crafting page. It includes the current
 profession ID and recipe IDs, with names and learned flags where readable.
