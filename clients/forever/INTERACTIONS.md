@@ -125,6 +125,10 @@ This estimate uses captured offers and keeps different items separate.
 Set `merchant_cheapest_first: true` with a target quantity to rank visits
 by that total before pagination. Equal totals use the usual newest-first
 order, then the snapshot ID.
+Set `merchant_max_total_copper` with a target quantity to cap the whole
+purchase cost. The limit includes bundle rounding and combines with
+per-bundle price and captured-wallet filters. A zero limit matches free
+offers.
 
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have

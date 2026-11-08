@@ -1212,6 +1212,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             **food_listing, "merchant_cheapest_first": True,
                         })).isError)
+                        for cap, expected in [(11, []), (12, [cheaper_id]),
+                                              (16, [cheaper_id, food_merchant_id])]:
+                            capped_total = await session.call_tool("list_snapshots", {
+                                **cost_query, "limit": 2, "merchant_cheapest_first": True,
+                                "merchant_max_total_copper": cap,
+                            })
+                            self.assertFalse(capped_total.isError)
+                            total_rows = json.loads(capped_total.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in total_rows], expected)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **food_listing, "merchant_max_total_copper": 12,
+                        })).isError)
                         unknown_food = await session.call_tool("inspect_snapshot", {
                             **food_offer_query, "merchant_pet_food_snapshot_id": forever_key,
                         })

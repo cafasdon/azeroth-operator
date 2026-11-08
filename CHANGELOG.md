@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cap the full bundle cost of a requested quantity in saved Forever merchant searches.
+
 - Sort saved Forever merchant visits by total bundle cost for a requested quantity.
 
 - Find saved Forever merchant visits that can cover a target quantity using an unlimited copper-only offer.

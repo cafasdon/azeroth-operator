@@ -286,6 +286,8 @@ struct List {
     /// Sort matching merchant visits by the full bundle cost. Requires merchant_target_quantity.
     #[serde(default)]
     merchant_cheapest_first: bool,
+    /// Maximum total copper for the requested quantity, including whole-bundle rounding.
+    merchant_max_total_copper: Option<u64>,
     /// Limit the captured copper component per bundle of a matching merchant offer.
     merchant_max_price_copper: Option<u64>,
     /// Require an offer with unlimited or positive captured stock.
@@ -1183,6 +1185,7 @@ impl Operator {
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),
                 merchant_target_quantity: args.merchant_target_quantity,
                 merchant_cheapest_first: args.merchant_cheapest_first,
+                merchant_max_total_copper: args.merchant_max_total_copper,
                 merchant_max_price_copper: args.merchant_max_price_copper,
                 merchant_in_stock_only: args.merchant_in_stock_only,
                 merchant_copper_only: args.merchant_copper_only,

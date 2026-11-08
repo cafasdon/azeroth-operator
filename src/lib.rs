@@ -326,6 +326,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
     pub merchant_target_quantity: Option<std::num::NonZeroU32>,
     pub merchant_cheapest_first: bool,
+    pub merchant_max_total_copper: Option<u64>,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
     pub merchant_copper_only: bool,
@@ -455,6 +456,7 @@ impl Store {
             merchant_pet_food_snapshot_id,
             merchant_target_quantity,
             merchant_cheapest_first,
+            merchant_max_total_copper,
             merchant_max_price_copper,
             merchant_in_stock_only,
             merchant_copper_only,
@@ -538,8 +540,9 @@ impl Store {
             "Merchant quantity filtering requires an offer selector and up to 1000 units"
         );
         ensure!(
-            !merchant_cheapest_first || merchant_target_quantity.is_some(),
-            "Cheapest-first merchant ordering requires a target quantity"
+            !(merchant_cheapest_first || merchant_max_total_copper.is_some())
+                || merchant_target_quantity.is_some(),
+            "Merchant cost ordering and total cost limits require a target quantity"
         );
         ensure!(
             !filter_merchant || family == Family::Forever,
@@ -893,6 +896,9 @@ impl Store {
                                     let Some(cost) = plan["required_copper"].as_u64() else {
                                         continue;
                                     };
+                                    if merchant_max_total_copper.is_some_and(|maximum| cost > maximum) {
+                                        continue;
+                                    }
                                     if merchant_affordable_only && !wallet.is_some_and(|balance| cost <= balance) {
                                         continue;
                                     }
