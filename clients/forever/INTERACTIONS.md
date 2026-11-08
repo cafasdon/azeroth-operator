@@ -557,8 +557,10 @@ fare at capture time.
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability
 changes and signed copper differences for shared destination IDs.
-Map transitions and destinations missing from either capture are excluded.
-A fare difference requires an observed quote on both sides.
+Map transitions are excluded. Destinations seen on only one side are
+reported separately as coverage differences. A fare difference requires
+an observed quote on both sides. Quotes that appear or become unknown
+are reported separately from price changes.
 
 Set `quest_on_captured_map: true` to use that map directly in quest
 inspection. It combines with the other quest list filters and is mutually

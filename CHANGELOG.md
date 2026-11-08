@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Distinguish Forever flight fare visibility and destination coverage changes between captures.
+
 - Find reachable Forever flights whose captured fare fits the saved wallet.
 
 - Filter saved Forever flight maps by exact node ID or captured reachable destinations.

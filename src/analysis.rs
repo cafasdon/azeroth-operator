@@ -1559,7 +1559,30 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
             })
         })
         .collect();
-    json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes})
+    let fare_observation_changes: Vec<_> =
+        previous
+            .iter()
+            .filter_map(|(&id, old)| {
+                let new = current.get(&id)?;
+                let before_fare = old["fare_copper"].as_u64();
+                let after_fare = new["fare_copper"].as_u64();
+                (before_fare.is_some() != after_fare.is_some()).then(|| json!({
+            "node_id":id,"before_fare_copper":before_fare,"after_fare_copper":after_fare,
+            "status":if after_fare.is_some() {"became_observed"} else {"became_unknown"}
+        }))
+            })
+            .collect();
+    let observed_only_before: Vec<_> = previous
+        .keys()
+        .filter(|id| !current.contains_key(id))
+        .collect();
+    let observed_only_after: Vec<_> = current
+        .keys()
+        .filter(|id| !previous.contains_key(id))
+        .collect();
+    json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes,
+        "fare_observation_changes":fare_observation_changes,
+        "node_ids_observed_only_before":observed_only_before,"node_ids_observed_only_after":observed_only_after})
 }
 
 fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize, usize, u64)> {
