@@ -163,3 +163,9 @@ resolved requests from completed-page observations and revalidates source and
 cross-page model identity. Repeated invocations reuse checkpoints. Full owned
 inventory, feasible sets, model/encounter qualification and absolute owned BiS
 remain unfinished; cached numerical results alone cannot establish them.
+
+The [real combined-journal qualification](real-saved-journal-verification-2026-11-09.md)
+subsequently checks two saved pages against pinned actual simulator results,
+including warm reuse, cold bounded resumptions, exact metrics and gear draft
+references. It remains a fixed-seed sparse synthetic fixture; broad native,
+ownership, feasibility and model qualification remain open.

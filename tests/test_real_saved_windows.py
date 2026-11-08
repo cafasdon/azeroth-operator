@@ -82,8 +82,9 @@ class RealSavedWindowQualification(unittest.TestCase):
                 '--paired', '--max-new-runs', '1', '--encounter-lookup', str(paths[0]),
                 '--encounter-lookup', str(paths[1]), '--encounter-lookup', str(paths[0]),
                 '--encounter-weight', '1', '--encounter-weight', '3', '--encounter-weight', '1']
-            def launch(extra=(), fails=False):
-                proc = subprocess.run([*args, *extra], cwd=root, env=env, capture_output=True, text=True, timeout=65)
+            def launch(extra=(), fails=False, command=None):
+                proc = subprocess.run([*(args if command is None else command), *extra], cwd=root,
+                    env=env, capture_output=True, text=True, timeout=65)
                 self.assertEqual(proc.returncode, 1 if fails else 0, proc.stderr)
                 self.assertNotIn(folder, proc.stdout + proc.stderr)
                 self.assertEqual(journal.read_bytes(), gear_bytes)
@@ -135,8 +136,61 @@ class RealSavedWindowQualification(unittest.TestCase):
                 gains.append((rows[2]['mean_dps'] / rows[1]['mean_dps'] - 1) * 100)
             weighted = {row['review']: row for row in cached['weighted_ranking']['results']}
             self.assertAlmostEqual(weighted[2]['weighted_dps_gain_pct'], sum(a*b for a,b in zip(gains, [.2,.6,.2])))
+            # Split the same gear work across saved windows, then exercise the
+            # combined runner with both existing checkpoints and a cold journal.
+            paged_journal = base / 'paged.sqlite'
+            for offset in [0, 1]:
+                with patch.dict(os.environ, env):
+                    drafts, skipped, coverage, _, _, _, search = asyncio.run(collect(binary, key,
+                        ['finger1'], errlog, combination_offset=offset, combination_limit=1))
+                page_report = plan_report(drafts, True, True)
+                page_report.update(gear_search=search, skipped=skipped, storage_coverage=coverage,
+                    best_in_slot_verified=False)
+                append_report(paged_journal, page_report)
+            paged_bytes = paged_journal.read_bytes()
+            journal_command = list(args)
+            journal_command[2] = 'tools.run_forever_saved_journal'
+            offset_flag = journal_command.index('--window-offset')
+            del journal_command[offset_flag:offset_flag + 2]
+            journal_command.extend(['--journal', str(paged_journal), '--page-limit', '1'])
+            expected_gears = {row['simulator_gear_sha256']: row for row in cached['weighted_ranking']['results']}
+            def check_combined(result):
+                self.assertTrue(result['all_saved_resolved_results_complete'])
+                self.assertEqual((result['visited_page_count'], result['completed_window_count']), (2, 2))
+                self.assertEqual(result['ranking_scope'], 'all_saved_resolved_requests')
+                self.assertEqual(len(result['ranked_gear_sets']), len(expected_gears))
+                self.assertEqual([row['simulator_gear_sha256'] for row in result['ranked_gear_sets']],
+                    sorted(expected_gears, key=lambda gear: (-expected_gears[gear]['weighted_dps_gain_pct'], gear)))
+                actual = {row['simulator_gear_sha256']: row for row in result['ranked_gear_sets']}
+                self.assertEqual(set(actual), set(expected_gears))
+                for gear, row in actual.items():
+                    self.assertEqual(row['weighted_dps_gain_pct'], expected_gears[gear]['weighted_dps_gain_pct'])
+                    review = expected_gears[gear]['review']
+                    means = [next(entry['mean_dps'] for entry in profile['result']['results'] if entry['review'] == review)
+                        for profile in cached['profiles']]
+                    self.assertEqual(row['mean_dps_by_encounter'], means)
+                    self.assertEqual(row['source_window_offset_decimal'], '0' if review == 1 else '1')
+                    self.assertEqual(row['source_window_review'], review)
+                self.assertEqual(paged_journal.read_bytes(), paged_bytes)
+                for flag in ['game_execution', 'best_in_slot_verified', 'feasible_set_coverage_verified', 'global_ranking_verified']:
+                    self.assertFalse(result[flag])
+            combined = launch(['--checkpoint-only'], command=journal_command)
+            self.assertEqual((combined['new_runs'], combined['checkpoint_hits']), (0, 9))
+            check_combined(combined)
+            cold_root = base / 'combined-results'
+            for index in range(4):
+                combined = launch(['--simulation-journal', str(cold_root)], command=journal_command)
+                self.assertEqual((combined['new_runs'], combined['new_iterations']), (1, 1000))
+                self.assertEqual(combined['all_saved_resolved_results_complete'], index == 3)
+                self.assertEqual(paged_journal.read_bytes(), paged_bytes)
+            check_combined(combined)
+            rebuilt = launch(['--simulation-journal', str(cold_root), '--checkpoint-only'], command=journal_command)
+            self.assertEqual((rebuilt['new_runs'], rebuilt['checkpoint_hits']), (0, 9))
+            self.assertEqual(rebuilt['ranked_gear_sets'], combined['ranked_gear_sets'])
             checkpoint = base / 'results/checkpoints.sqlite3'
             before = checkpoint.read_bytes()
+            combined_checkpoint = cold_root / 'checkpoints.sqlite3'
+            combined_before = combined_checkpoint.read_bytes()
             changed = deepcopy(value)
             changed['sections']['stats']['level'] = 20
             low_key = store.ingest(changed)
@@ -144,7 +198,10 @@ class RealSavedWindowQualification(unittest.TestCase):
             low['gear_search']['snapshot_id'] = low_key
             append_report(base / 'low.sqlite', low)
             launch(['--journal', str(base / 'low.sqlite')], fails=True)
+            launch(['--journal', str(base / 'low.sqlite'), '--simulation-journal', str(cold_root)],
+                fails=True, command=journal_command)
             self.assertEqual(checkpoint.read_bytes(), before)
+            self.assertEqual(combined_checkpoint.read_bytes(), combined_before)
             for flag in ['game_execution', 'best_in_slot_verified', 'feasible_set_coverage_verified']:
                 self.assertFalse(cached[flag])
 

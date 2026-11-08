@@ -1,5 +1,10 @@
 # Real simulator qualification of saved-window execution — 9 November 2026
 
+This records the qualification at `14e9650`. The test was later extended with
+[real combined-journal checks](real-saved-journal-verification-2026-11-09.md),
+including more actual simulator invocations per test; the counts below describe
+the earlier recorded version.
+
 The saved-window encounter CLI now has an opt-in regression that exercises the
 actual Rust stdio MCP and existing local simulator. No game client, native
 interaction, installation, deployment or network data lookup was used.

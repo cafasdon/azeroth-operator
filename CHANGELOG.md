@@ -1,5 +1,8 @@
 # Changelog
 
+- Extend pinned real-simulator qualification to combined saved-journal rankings,
+  cold multi-page resumptions, warm checkpoint reuse and saved gear references.
+
 - Execute saved journal pages under shared budgets and combine their completed
   weighted DPS results into a bounded distinct-gear ranking; revalidate journal
   content and cross-page model/baseline identity before reporting completeness.
