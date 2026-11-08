@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Estimate remaining reagent stock after requested Forever recipe consumption.
+
 - Report per-reagent shortfalls in whole crafts for Forever recipe reviews.
 
 - Show how many Forever crafts each individual reagent can support.

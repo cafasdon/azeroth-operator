@@ -845,6 +845,9 @@ supports on its own, for bags and all observed storage. Missing storage
 stays unknown, and partial coverage can understate the available stock.
 Each item also shows how many of the requested crafts its captured
 stock falls short by, separately for bags and all observed storage.
+The remaining reagent units are shown when that stock covers the requested
+consumption. These are per-recipe estimates before any crafted output is
+added. Shared batch demands are reported separately.
 
 Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include

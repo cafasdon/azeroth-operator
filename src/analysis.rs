@@ -125,9 +125,10 @@ pub fn review_recipe_with_inventory(
             let observed_capacity = available / per_craft;
             bag_limits.push((item_id, bags_capacity));
             observed_limits.push((item_id, observed_capacity));
-            let bags_capacity = (!missing_storage.contains(&"bags")).then_some(bags_capacity);
-            let observed_capacity =
-                (missing_storage.len() < storage.len()).then_some(observed_capacity);
+            let bags_observed = !missing_storage.contains(&"bags");
+            let any_storage_observed = missing_storage.len() < storage.len();
+            let bags_capacity = bags_observed.then_some(bags_capacity);
+            let observed_capacity = any_storage_observed.then_some(observed_capacity);
             let craft_shortfall = |capacity: u64| u64::from(crafts).saturating_sub(capacity);
             capacity_by_item.insert(
                 item_id,
@@ -135,7 +136,9 @@ pub fn review_recipe_with_inventory(
                     "bags":bags_capacity,
                     "all_observed_storage":observed_capacity,
                     "craft_shortfall_vs_bags":bags_capacity.map(craft_shortfall),
-                    "craft_shortfall_vs_observed_storage":observed_capacity.map(craft_shortfall)
+                    "craft_shortfall_vs_observed_storage":observed_capacity.map(craft_shortfall),
+                    "reagent_units_left_in_bags":bags_observed.then_some(quantities[0]).and_then(|count| count.checked_sub(required)),
+                    "reagent_units_left_in_observed_storage":any_storage_observed.then_some(available).and_then(|count| count.checked_sub(required))
                 }),
             );
             let by_storage: BTreeMap<_, _> = storage
