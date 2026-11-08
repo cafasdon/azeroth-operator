@@ -160,6 +160,11 @@ pub fn review_recipe_with_inventory(
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?;
     let charges = recipe["cooldown"]["charges"].as_u64();
+    let estimated_cooldown_end = recipe["cooldown"]["remaining_seconds"]
+        .as_i64()
+        .filter(|seconds| *seconds > 0)
+        .and_then(chrono::TimeDelta::try_seconds)
+        .and_then(|remaining| snapshot.captured_at.checked_add_signed(remaining));
     let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
     let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
     let combined_capacity = |materials: &Value| {
@@ -177,6 +182,7 @@ pub fn review_recipe_with_inventory(
         "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)
             .zip(recipe["profession"]["rank"].as_u64()).and_then(|(cap, rank)| cap.checked_sub(rank)),
         "base_output_if_completed":base_output_if_completed,
+        "estimated_cooldown_end_at":estimated_cooldown_end,
         "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),
         "unmet_crafting_conditions":recipe["crafting_conditions"].as_object().map(|conditions|

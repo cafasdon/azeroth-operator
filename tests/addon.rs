@@ -1130,6 +1130,10 @@ pub fn verify_forever_capture_fixture(
         })
     );
     assert_eq!(recipe["shortfall_vs_observed_recipe_charges"], 1);
+    assert_eq!(
+        recipe["estimated_cooldown_end_at"],
+        serde_json::json!(snapshot.captured_at + chrono::TimeDelta::seconds(13))
+    );
     assert_eq!(recipe["profession_points_to_observed_cap"], 63);
     assert_eq!(recipe["recipe"]["profession"]["profession_id"], 164);
     assert_eq!(

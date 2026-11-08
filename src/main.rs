@@ -1846,6 +1846,7 @@ impl Operator {
                 "target_output_quantity":quantity,"requested_crafts":review["requested_crafts"],
                 "base_output_if_completed":review["base_output_if_completed"],
                 "observed_cooldown":recipe["cooldown"],
+                "estimated_cooldown_end_at":review["estimated_cooldown_end_at"],
                 "shortfall_vs_observed_recipe_charges":review["shortfall_vs_observed_recipe_charges"],
                 "unmet_crafting_conditions":review["unmet_crafting_conditions"]
             }));

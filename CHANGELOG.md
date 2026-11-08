@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Estimate when a captured Forever recipe cooldown ends using the recipe capture time.
+
 - Compare observed Forever flight destinations and fares across captures of the same departure point.
 
 - Capture the Forever resting flag alongside saved XP progress.
