@@ -400,6 +400,8 @@ pub struct ParagonFilter {
     pub faction_id: std::num::NonZeroU32,
     pub reward_pending: Option<bool>,
     pub level_too_low: Option<bool>,
+    /// Match the linked reward quest's readiness in the same capture.
+    pub reward_quest_readiness: Option<analysis::QuestReadiness>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -898,14 +900,22 @@ impl Store {
                             .and_then(|(filter, key)| {
                                 let row = s.sections.get("reputation")?["entries"].get(key)?;
                                 let detail = row["paragon"].as_object()?;
+                                let readiness = detail
+                                    .get("reward_quest_id")
+                                    .and_then(Value::as_u64)
+                                    .and_then(|id| s.sections.get("quests")?.get(id.to_string()))
+                                    .map(analysis::quest_readiness);
                                 (row["kind"] == "paragon"
                                     && filter.reward_pending.is_none_or(|flag| {
                                         detail["reward_pending"].as_bool() == Some(flag)
                                     })
                                     && filter.level_too_low.is_none_or(|flag| {
                                         detail["level_too_low"].as_bool() == Some(flag)
-                                    }))
-                                .then_some(row)
+                                    })
+                                    && filter
+                                        .reward_quest_readiness
+                                        .is_none_or(|expected| readiness == Some(expected)))
+                                .then_some((row, readiness))
                             });
                     if paragon.is_some() && paragon_match.is_none() {
                         continue;
@@ -1273,13 +1283,16 @@ impl Store {
                             "capped":row["renown"]["capped"],"account_wide":row["account_wide"],
                         });
                     }
-                    if let Some((filter, row)) = paragon.as_ref().zip(paragon_match) {
+                    if let Some((filter, (row, readiness))) = paragon.as_ref().zip(paragon_match) {
                         summary["paragon_match"] = json!({
                             "faction_id":filter.faction_id,"reward_pending":row["paragon"]["reward_pending"],
                             "level_too_low":row["paragon"]["level_too_low"],
                             "reward_quest_id":row["paragon"]["reward_quest_id"],
                             "account_wide":row["account_wide"],
                         });
+                        if filter.reward_quest_readiness.is_some() {
+                            summary["paragon_match"]["reward_quest_readiness"] = json!(readiness);
+                        }
                     }
                     if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {
                         summary["reputation_rank_match"] = json!({

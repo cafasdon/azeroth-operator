@@ -42,6 +42,9 @@ Use `paragon` with `faction_id` and optional `reward_pending` and
 `level_too_low` flags to find recorded paragon rewards. Both flags
 must match the same faction. Pending status alone does not establish
 eligibility to collect the reward. Missing paragon detail is excluded.
+Add `reward_quest_readiness` to match the linked reward quest in the
+same capture. It accepts `ready`, `not_ready`, `failed` or `unknown`.
+The quest must be observed even for an unknown-readiness match.
 
 Use `tracked_achievement` with `achievement_id` and optional
 `completed` or `earned_by_character` flags to search saved Forever

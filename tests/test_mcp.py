@@ -1383,6 +1383,29 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "faction_id": 30, "reward_pending": True, "level_too_low": True,
                                     "reward_quest_id": 999, "account_wide": False,
                                 })
+                        for readiness, expected_ids in [("unknown", [new_freshness_id]), ("ready", [])]:
+                            reward_quests = await session.call_tool("list_snapshots", {
+                                **latest_query, "paragon": {
+                                    "faction_id": 30, "reward_pending": True,
+                                    "reward_quest_readiness": readiness,
+                                },
+                            })
+                            self.assertFalse(reward_quests.isError)
+                            reward_quest_rows = json.loads(reward_quests.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in reward_quest_rows], expected_ids)
+                            if reward_quest_rows:
+                                self.assertEqual(reward_quest_rows[0]["paragon_match"][
+                                    "reward_quest_readiness"], readiness)
+                        absent_reward = json.loads(json.dumps(freshness))
+                        absent_reward["character"]["name"] = "AbsentReward"
+                        del absent_reward["sections"]["quests"]["999"]
+                        SnapshotStore(Path(folder)).ingest(absent_reward)
+                        missing_reward = await session.call_tool("list_snapshots", {
+                            **latest_query, "character": absent_reward["character"],
+                            "paragon": {"faction_id": 30, "reward_quest_readiness": "unknown"},
+                        })
+                        self.assertFalse(missing_reward.isError)
+                        self.assertEqual(json.loads(missing_reward.content[0].text)["snapshots"], [])
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),

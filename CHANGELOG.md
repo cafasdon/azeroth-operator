@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Match saved Forever paragon rewards against their linked quest readiness.
+
 - Find saved Forever paragon factions by pending reward and level restriction.
 
 - Find saved Forever renown levels and recorded capped status.
