@@ -685,6 +685,11 @@ flights, and unknown fares are excluded when a ceiling is supplied.
 Set `flight_affordable_only` to require an observed fare and wallet from
 the same capture, with the fare at or below the balance. This option also
 requires a destination ID. Results include the fare and omit the wallet.
+Set `flight_departure_map_id` with a destination ID to match the player's
+map when the flight panel was captured. This can use a quest waypoint
+map ID to look for departures from that area. The filter requires an
+exact captured player-map match and returns that map separately from
+the viewed flight map.
 
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters

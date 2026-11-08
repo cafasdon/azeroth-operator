@@ -278,6 +278,7 @@ pub struct CaptureFilters<'a> {
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
+    pub flight_departure_map_id: Option<std::num::NonZeroU32>,
     pub flight_affordable_only: bool,
 }
 
@@ -371,8 +372,13 @@ impl Store {
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
+            flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        ensure!(
+            flight_departure_map_id.is_none() || flight_destination_node_id.is_some(),
+            "Flight departure map filtering requires a destination"
+        );
         ensure!(
             !flight_affordable_only || flight_destination_node_id.is_some(),
             "Flight affordability filtering requires a destination"
@@ -516,6 +522,15 @@ impl Store {
                         continue;
                     }
                     let flight_match = flight_destination_node_id.and_then(|node| {
+                        let player_map = s
+                            .sections
+                            .get("stats")
+                            .and_then(|stats| stats["map_id"].as_u64());
+                        if flight_departure_map_id
+                            .is_some_and(|map| player_map != Some(u64::from(map.get())))
+                        {
+                            return None;
+                        }
                         analysis::captured_flight_route(s.sections.get("flight_map")?, node.get())
                             .filter(|route| {
                                 let fare = route["fare_copper"].as_u64();
@@ -530,6 +545,12 @@ impl Store {
                                             .and_then(|wallet| wallet["copper"].as_u64())
                                             .zip(fare)
                                             .is_some_and(|(balance, fare)| fare <= balance))
+                            })
+                            .map(|mut route| {
+                                if flight_departure_map_id.is_some() {
+                                    route["captured_departure_map_id"] = json!(player_map);
+                                }
+                                route
                             })
                     });
                     if flight_destination_node_id.is_some() && flight_match.is_none() {

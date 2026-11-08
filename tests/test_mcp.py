@@ -230,15 +230,21 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         affordable_capture["sections"].pop("wallet", None)
                         SnapshotStore(Path(folder)).ingest(affordable_capture)
                         affordable_capture["sections"]["wallet"] = {"copper": 0}
+                        affordable_capture["sections"]["stats"] = {
+                            "level": 10, "class": "Hunter", "race": "Dwarf",
+                            "client_version": "fixture", "map_id": 27,
+                        }
                         affordable_key = SnapshotStore(Path(folder)).ingest(affordable_capture)
                         affordable = await session.call_tool("list_snapshots", {
                             "family": "forever", "flight_destination_node_id": 15,
-                            "flight_affordable_only": True,
+                            "flight_affordable_only": True, "flight_departure_map_id": 27,
                         })
                         self.assertFalse(affordable.isError)
                         affordable_rows = json.loads(affordable.content[0].text)["snapshots"]
                         self.assertEqual([row["snapshot_id"] for row in affordable_rows], [affordable_key])
                         self.assertNotIn("wallet", affordable_rows[0])
+                        self.assertEqual(affordable_rows[0]["flight_match"]["captured_departure_map_id"], 27)
+                        self.assertEqual(affordable_rows[0]["flight_match"]["map_id"], 1414)
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "forever", "flight_affordable_only": True,
                         })).isError)
