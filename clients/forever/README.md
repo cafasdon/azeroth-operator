@@ -191,6 +191,9 @@ Tracking alone is insufficient, and an empty result describes that capture.
 The same filter works for enchants. It matches the crafting spell ID
 and reports the capture ID under `recipe_observation`. When both sides
 record an output item ID, those IDs must agree.
+For enchant lookups, supply `enchant_target_item_id` to keep effects that
+fit the specified base item under the pinned simulator rules. It combines
+with crafting filters and does not require a character capture.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip

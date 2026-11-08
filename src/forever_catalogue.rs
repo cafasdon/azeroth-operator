@@ -160,6 +160,8 @@ pub struct Query {
     pub recipe_spell_id: Option<u32>,
     /// Restrict items or enchants to a crafted source with this pinned simulator Profession enum ID.
     pub crafted_profession_id: Option<std::num::NonZeroU32>,
+    /// Restrict enchant effects to simulator fits for this exact catalogue base item ID.
+    pub enchant_target_item_id: Option<std::num::NonZeroU32>,
     /// Match items or enchants to the learned recipe explicitly observed in the supplied acquisition snapshot.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
@@ -594,6 +596,25 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let rows = db[section]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Missing catalogue section"))?;
+    let enchant_target = if let Some(id) = query.enchant_target_item_id {
+        ensure!(
+            matches!(query.section, Section::Enchants),
+            "Enchant target requires enchants"
+        );
+        let item = db["items"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|item| item["id"].as_u64() == Some(u64::from(id.get())))
+            .ok_or_else(|| anyhow::anyhow!("Unknown enchant target item"))?;
+        let kind = item["type"]
+            .as_u64()
+            .filter(|kind| (1..=14).contains(kind))
+            .ok_or_else(|| anyhow::anyhow!("Unknown enchant target item type"))?;
+        Some((item, kind))
+    } else {
+        None
+    };
     let mut records = Vec::new();
     let mut has_more = false;
     let key = query.key.as_deref().map(str::trim);
@@ -801,6 +822,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Inventory filters require items or consumables"
     );
     let filtered = key.is_some()
+        || enchant_target.is_some()
         || crafted_filter
         || item_filter
         || inventory_filter
@@ -990,6 +1012,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 })
             });
             if matches
+                && enchant_target.is_none_or(|(item, kind)| enchant_type_fits(row, item, kind))
                 && matches_recipe
                 && matches_set
                 && matches_gear
