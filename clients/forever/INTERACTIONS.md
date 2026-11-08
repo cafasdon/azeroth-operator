@@ -419,6 +419,11 @@ factions with the fewest points to the next observed rank, with faction ID
 breaking ties. It counts capped factions separately. Invalid brackets and
 special reputation types are outside this ranking.
 
+`character_summary.paragon_reward_summary` lists pending rewards by
+faction and separates those with a captured level restriction. It includes
+the reward quest ID when observed and lists paragon factions with unknown
+reward status separately. The result describes the saved panel.
+
 On the Rust MCP, pass `currency_id` with `section: "currency_balances"`
 to return one currency and its cap headroom. The observation flag is false
 when the saved list lacks that ID and null when the list is unavailable.

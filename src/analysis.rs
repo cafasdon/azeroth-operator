@@ -1530,6 +1530,46 @@ fn standard_reputation_workload(section: &Value) -> Option<Value> {
     )
 }
 
+fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'static str> {
+    let pending = detail.get("reward_pending")?.as_bool()?;
+    let restricted = detail.get("level_too_low")?.as_bool()?;
+    Some(match (pending, restricted) {
+        (true, false) => "pending",
+        (true, true) => "pending_level_restricted",
+        (false, _) => "no_pending_reward",
+    })
+}
+
+fn paragon_reward_summary(section: &Value) -> Option<Value> {
+    let entries = section["entries"].as_object()?;
+    let mut pending = BTreeMap::new();
+    let mut restricted = BTreeMap::new();
+    let mut unknown = Vec::new();
+    for (key, entry) in entries.iter().filter(|(_, row)| row["kind"] == "paragon") {
+        let Ok(id) = key.parse::<u32>() else { continue };
+        let detail = &entry["paragon"];
+        let group = match detail.as_object().and_then(paragon_reward_status) {
+            Some("pending") => &mut pending,
+            Some("pending_level_restricted") => &mut restricted,
+            Some(_) => continue,
+            None => {
+                unknown.push(id);
+                continue;
+            }
+        };
+        group.insert(
+            id,
+            json!({"name":entry["name"],"account_wide":entry["account_wide"],
+            "reward_quest_id":detail["reward_quest_id"]}),
+        );
+    }
+    unknown.sort_unstable();
+    Some(
+        json!({"pending_by_faction_id":pending,"level_restricted_by_faction_id":restricted,
+        "unknown_faction_ids":unknown}),
+    )
+}
+
 pub fn special_reputation_progress(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
@@ -1559,13 +1599,7 @@ pub fn special_reputation_progress(section: &Value) -> Value {
                         json!({"kind":kind,"capped":next.is_none(),"remaining_to_next_rank":remaining})
                     }
                     "paragon" => {
-                        let pending = detail.get("reward_pending")?.as_bool()?;
-                        let too_low = detail.get("level_too_low")?.as_bool()?;
-                        let status = match (pending, too_low) {
-                            (true, false) => "pending",
-                            (true, true) => "pending_level_restricted",
-                            (false, _) => "no_pending_reward",
-                        };
+                        let status = paragon_reward_status(detail)?;
                         json!({"kind":kind,"reward_status":status})
                     }
                     _ => return None,
@@ -2874,6 +2908,11 @@ pub fn summary(s: &Snapshot) -> Value {
         s.sections
             .get("reputation")
             .and_then(standard_reputation_workload)
+    );
+    summary["paragon_reward_summary"] = json!(
+        s.sections
+            .get("reputation")
+            .and_then(paragon_reward_summary)
     );
     summary
 }

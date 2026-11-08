@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise pending and level-restricted Forever paragon rewards.
+
 - List captured standard Forever factions closest to their next reputation rank.
 
 - Show whether a selected Forever currency entered or left its observed weekly cap.
