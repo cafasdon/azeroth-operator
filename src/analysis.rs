@@ -401,6 +401,24 @@ fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Val
     Ok(json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta}))
 }
 
+fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
+    let bags = snapshot.sections.get("bag_capacity")?.as_object()?;
+    let total = bags
+        .values()
+        .filter_map(|bag| bag["total_slots"].as_i64())
+        .sum::<i64>();
+    let free = bags
+        .values()
+        .filter_map(|bag| bag["free_slots"].as_i64())
+        .sum::<i64>();
+    let general = bags
+        .values()
+        .filter(|bag| bag["family_mask"].as_u64() == Some(0))
+        .filter_map(|bag| bag["free_slots"].as_i64())
+        .sum::<i64>();
+    Some(json!({"total_slots":total,"free_slots":free,"known_general_free_slots":general}))
+}
+
 fn carried_items(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut groups: BTreeMap<u64, (u64, usize, Vec<Value>)> = BTreeMap::new();
@@ -434,7 +452,8 @@ fn carried_items(snapshot: &Snapshot) -> Option<Value> {
         "repeated_item_id_count":repeated_count,"repeated_item_ids":repeated,
         "groups_truncated":repeated_count>repeated.len(),
         "grouping":"item_id_only_not_item_identity",
-        "stack_compatibility":"unknown","free_slots":"not_captured",
+        "stack_compatibility":"unknown",
+        "free_slots":if snapshot.sections.contains_key("bag_capacity") {"captured"} else {"not_captured"},
         "game_execution":false}),
     )
 }
@@ -504,6 +523,22 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    let previous_space = carried_bag_space(before);
+    let current_space = carried_bag_space(after);
+    if previous_space.is_some() || current_space.is_some() {
+        let delta = |field: &str| {
+            Some(
+                current_space.as_ref()?[field].as_i64()?
+                    - previous_space.as_ref()?[field].as_i64()?,
+            )
+        };
+        comparison["carried_bag_space_change"] = json!({
+            "total_slots_delta":delta("total_slots"),
+            "free_slots_delta":delta("free_slots"),
+            "before":previous_space,
+            "after":current_space,
+        });
+    }
     let tracked_before = before.sections.get("tracked_recipes");
     let tracked_after = after.sections.get("tracked_recipes");
     if tracked_before.is_some() || tracked_after.is_some() {
@@ -1551,13 +1586,7 @@ pub fn summary(s: &Snapshot) -> Value {
           json!({"observed":xp,"xp_to_next_level":xp_to_next_level(xp)})),
       "spellbook_slots_observed":s.sections.get("spellbook").and_then(|book|book["entries"].as_object()).map(|slots|slots.len()),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
-      "carried_bag_space":s.sections.get("bag_capacity").and_then(Value::as_object).map(|bags| {
-          let total = bags.values().filter_map(|bag| bag["total_slots"].as_u64()).sum::<u64>();
-          let free = bags.values().filter_map(|bag| bag["free_slots"].as_u64()).sum::<u64>();
-          let general = bags.values().filter(|bag| bag["family_mask"].as_u64()==Some(0))
-              .filter_map(|bag| bag["free_slots"].as_u64()).sum::<u64>();
-          json!({"total_slots":total,"free_slots":free,"known_general_free_slots":general})
-      }),
+      "carried_bag_space":carried_bag_space(s),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),
       "reputation_factions_observed":s.sections.get("reputation").and_then(|v|v["entries"].as_object()).map(|v|v.len()),

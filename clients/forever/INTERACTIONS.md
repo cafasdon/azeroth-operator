@@ -30,6 +30,13 @@ in known general-purpose bags. Unknown family slots are excluded from
 the general-purpose count. Specialty slots can have item restrictions.
 Update the importer and reader before syncing this section. [Forever container API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ContainerDocumentation.lua)
 
+`compare_snapshots` reports both bag-space observations and signed
+changes in total and free slots. If one capture lacks capacity data, its
+side and both changes are unknown. General-purpose counts are shown per
+capture because a change in bag-family visibility can change those counts.
+The carried-item review flags whether free slots were captured and leaves
+stack compatibility unknown.
+
 Inspect the `durability_alerts` section for saved equipment slots flagged
 `low` or `broken` by the built-in durability display. An empty map means
 the checked slots raised no alert. Exact durability, repair prices and

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever carried bag capacity and free slots across two captures.
+
 - Capture Forever carried bag capacity and separate known general-purpose free slots from total free slots.
 
 - Summarise saved Forever durability alerts, repair quote and wallet shortfall.
