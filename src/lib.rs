@@ -47,6 +47,7 @@ const SECTIONS: &[&str] = &[
     "merchant_stock",
     "trainer_services",
     "pet_care",
+    "pet_action_bar",
     "mount_collection",
     "toy_collection_view",
     "saved_instances",
@@ -215,6 +216,7 @@ impl Snapshot {
                         | "merchant_stock"
                         | "trainer_services"
                         | "pet_care"
+                        | "pet_action_bar"
                         | "mount_collection"
                         | "toy_collection_view"
                         | "saved_instances"

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture public pet action-bar command/spell observations with stable optional active/autocast/range flags, strict partial coverage and no command execution or identity inference.
+
 - Capture stable public spell-usability/power flags on visible spellbook rows, search same-row saved observations and summarise known/unknown counts without casting or readiness inference.
 
 - Capture stable native linked-item sell prices and summarise quantity-based reference values by storage, preserving unknowns and checked overflow without crediting wallets or assuming sale eligibility.

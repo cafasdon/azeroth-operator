@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever exports can include `pet_action_bar`: partial native command/spell
+slots with reported active, autocast and range flags. Inspect the section or
+read `character_summary.pet_action_bar_observations`. Missing slots stay
+unknown. Pet/spell names and target identities are omitted; the MCP issues
+no commands or autocast changes.
+These are historical observations, not pet identity or cast eligibility.
+[Offline verification](docs/pet-action-bar-verification-2026-11-08.md).
+
 Forever visible spellbook rows can include stable API `usability` flags.
 Search saved rows with `spellbook_spell.usable` and `insufficient_power`, or
 read `character_summary.spellbook_usability_observations`. Unknown flags do

@@ -1592,6 +1592,80 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 );
             }
         }
+        "pet_action_bar" => {
+            object(
+                value,
+                &[
+                    ("coverage", "readable_pet_action_slots", true),
+                    ("pet_present", "bool", true),
+                    ("has_action_bar", "bool", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["pet_present"] == true || value["has_action_bar"] == false,
+                "Invalid pet action context"
+            );
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(
+                value["has_action_bar"] == true || rows.is_empty(),
+                "Unexpected pet action rows"
+            );
+            entries(
+                &value["entries"],
+                &[
+                    ("kind", "text", true),
+                    ("spell_id", "positive", false),
+                    ("command_token", "text", false),
+                    ("is_active", "bool", false),
+                    ("autocast_allowed", "bool", false),
+                    ("autocast_enabled", "bool", false),
+                    ("range_check_performed", "bool", false),
+                    ("in_range", "bool", false),
+                ],
+            )?;
+            for (slot, row) in rows {
+                index(slot, 1, 10)?;
+                match row["kind"].as_str() {
+                    Some("spell") => ensure!(
+                        row["spell_id"]
+                            .as_u64()
+                            .is_some_and(|n| n > 0 && n <= u32::MAX as u64)
+                            && row.get("command_token").is_none(),
+                        "Invalid pet action spell"
+                    ),
+                    Some("command") => ensure!(
+                        row.get("spell_id").is_none()
+                            && row["command_token"]
+                                .as_str()
+                                .is_some_and(|token| token.len() <= 64
+                                    && token.strip_prefix("PET_").is_some_and(|s| !s.is_empty()
+                                        && s.bytes().all(|b| b.is_ascii_uppercase()
+                                            || b.is_ascii_digit()
+                                            || b == b'_'))),
+                        "Invalid pet action command"
+                    ),
+                    _ => anyhow::bail!("Invalid pet action kind"),
+                }
+                for field in [
+                    "is_active",
+                    "autocast_allowed",
+                    "autocast_enabled",
+                    "range_check_performed",
+                    "in_range",
+                ] {
+                    ensure!(
+                        row.get(field).is_none_or(Value::is_boolean),
+                        "Invalid pet action flag"
+                    );
+                }
+                ensure!(
+                    (row["range_check_performed"] != true || row.get("in_range").is_some())
+                        && (row.get("in_range").is_none() || row["range_check_performed"] == true),
+                    "Invalid pet action range observation"
+                );
+            }
+        }
         "weapon_enchants" => {
             object(
                 value,

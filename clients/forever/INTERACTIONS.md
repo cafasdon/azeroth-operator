@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Public pet action-bar observations distinguish logical command and spell
+slots, reported flags and unreadable slots. Pet/bar context must remain
+consistent; missing metadata is not guessed. Names, textures, GUIDs and target
+identity are omitted. No pet command, autocast toggle or spell is issued, and
+simulator pet identity still comes from its separate validated observations.
+[Offline evidence](../../docs/pet-action-bar-verification-2026-11-08.md).
+
 Visible player-spell rows can include the public API's usability and
 insufficient-power pair when two readable observations agree. Saved search
 matches flags on the same row; summary counts distinguish unknowns from false.

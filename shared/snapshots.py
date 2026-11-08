@@ -18,6 +18,7 @@ SECTIONS = SECTIONS | {"mail_attachments"}
 SECTIONS = SECTIONS | {"pet_collection_view"}
 SECTIONS = SECTIONS | {"equipment_durability"}
 SECTIONS = SECTIONS | {"weapon_enchants"}
+SECTIONS = SECTIONS | {"pet_action_bar"}
 
 
 def _validate_action_bar_observation(observation):
@@ -485,6 +486,28 @@ def validate_snapshot(value):
             if "family_mask" in bag and (total == 0 or type(bag["family_mask"]) is not int
                                          or not 0 <= bag["family_mask"] <= 4_294_967_295):
                 raise ValueError("Invalid bag family")
+    if "pet_action_bar" in sections:
+        bar=sections["pet_action_bar"]
+        if (c["family"]!="forever" or not isinstance(bar,dict) or set(bar)!={"coverage","pet_present","has_action_bar","entries"}
+                or bar["coverage"]!="readable_pet_action_slots" or type(bar["pet_present"]) is not bool
+                or type(bar["has_action_bar"]) is not bool or not isinstance(bar["entries"],dict)
+                or (not bar["pet_present"] and bar["has_action_bar"]) or (not bar["has_action_bar"] and bar["entries"])):
+            raise ValueError("Invalid pet action context")
+        for slot,row in bar["entries"].items():
+            if (slot not in {str(i) for i in range(1,11)} or not isinstance(row,dict)
+                    or row.get("kind") not in ("spell","command")
+                    or set(row)-{"kind","spell_id","command_token","is_active","autocast_allowed","autocast_enabled","range_check_performed","in_range"}
+                    or any(type(row[field]) is not bool for field in ("is_active","autocast_allowed","autocast_enabled","range_check_performed","in_range") if field in row)):
+                raise ValueError("Invalid pet action row")
+            if row["kind"]=="spell":
+                if type(row.get("spell_id")) is not int or not 1<=row["spell_id"]<=4_294_967_295 or "command_token" in row:
+                    raise ValueError("Invalid pet action spell")
+            elif ("spell_id" in row or not isinstance(row.get("command_token"),str) or len(row["command_token"])>64
+                    or not re.fullmatch(r"PET_[A-Z0-9_]+",row["command_token"])):
+                raise ValueError("Invalid pet action command")
+            if (row.get("range_check_performed") is True and "in_range" not in row
+                    or "in_range" in row and row.get("range_check_performed") is not True):
+                raise ValueError("Invalid pet action range observation")
     if "weapon_enchants" in sections:
         enchants=sections["weapon_enchants"]
         if (c["family"]!="forever" or not isinstance(enchants,dict) or set(enchants)!={"coverage","hands"}

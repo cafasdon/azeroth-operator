@@ -4592,6 +4592,18 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["pet_action_bar_observations"] = s.sections.get("pet_action_bar").map(|bar| {
+        let rows=bar["entries"].as_object().unwrap();
+        let mut slots:Vec<_>=rows.iter().map(|(slot,row)|(slot.parse::<u32>().unwrap(),row)).collect();slots.sort_by_key(|(slot,_)|*slot);
+        json!({"coverage":bar["coverage"],"pet_present":bar["pet_present"],"has_action_bar":bar["has_action_bar"],
+            "observed_slots":rows.len(),"unobserved_slots":if bar["has_action_bar"]==true {Some(10-rows.len())} else {None},
+            "command_slots":slots.iter().filter(|(_,row)|row["kind"]=="command").map(|(slot,_)|slot).collect::<Vec<_>>(),
+            "spell_slots":slots.iter().filter(|(_,row)|row["kind"]=="spell").map(|(slot,_)|slot).collect::<Vec<_>>(),
+            "reported_active_slots":slots.iter().filter(|(_,row)|row["is_active"]==true).map(|(slot,_)|slot).collect::<Vec<_>>(),
+            "autocast_enabled_spell_slots":slots.iter().filter(|(_,row)|row["kind"]=="spell" && row["autocast_enabled"]==true).map(|(slot,_)|slot).collect::<Vec<_>>(),
+            "unknown_autocast_spell_slots":slots.iter().filter(|(_,row)|row["kind"]=="spell" && row["autocast_enabled"].as_bool().is_none()).map(|(slot,_)|slot).collect::<Vec<_>>(),
+            "cast_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
     summary["spellbook_usability_observations"] = s.sections.get("spellbook").map(|book| {
         let rows=book["entries"].as_object().unwrap();
         let known=rows.values().filter(|row|row.get("usability").is_some()).count();

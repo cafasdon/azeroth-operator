@@ -1800,6 +1800,62 @@ AO.collectors.weapon_enchants = function()
     return {coverage="public_weapon_enchant_lists",hands=hands}
 end
 
+AO.collectors.pet_action_bar = function()
+    assert(AO.family=="forever" and type(UnitExists)=="function" and type(PetHasActionBar)=="function", "Pet action bar unavailable")
+    local function context()
+        local present,bar=UnitExists("pet"),PetHasActionBar()
+        assert(questRewardAccessible(present) and type(present)=="boolean"
+            and questRewardAccessible(bar) and type(bar)=="boolean" and (present or not bar), "Pet action context unavailable")
+        return present,bar
+    end
+    local present,bar=context()
+    local entries={}
+    local function read(slot)
+        local name,_,token,active,allowed,enabled,id,checks,inRange=GetPetActionInfo(slot)
+        if not questRewardAccessible(token) or type(token)~="boolean" then return end
+        local row
+        if token then
+            if not questRewardAccessible(name) or type(name)~="string" or #name>64
+                or not name:match("^PET_[A-Z0-9_]+$") then return end
+            row={kind="command",command_token=name}
+        else
+            if not questRewardInteger(id,1,4294967295) then return end
+            row={kind="spell",spell_id=id}
+        end
+        local function flag(field,value)
+            if questRewardAccessible(value) and type(value)=="boolean" then row[field]=value end
+        end
+        flag("is_active",active);flag("autocast_allowed",allowed);flag("autocast_enabled",enabled)
+        if questRewardAccessible(checks) and type(checks)=="boolean" then
+            if not checks then row.range_check_performed=false
+            elseif questRewardAccessible(inRange) and type(inRange)=="boolean" then
+                row.range_check_performed=true;row.in_range=inRange
+            end
+        end
+        return row
+    end
+    if bar then
+        assert(type(GetPetActionInfo)=="function" and questRewardInteger(NUM_PET_ACTION_SLOTS,10,10), "Pet action info unavailable")
+        for slot=1,10 do
+            local ok,first=pcall(read,slot)
+            local nextOk,second=pcall(read,slot)
+            if ok and nextOk and first and second and first.kind==second.kind
+                and first.spell_id==second.spell_id and first.command_token==second.command_token then
+                for _,field in ipairs({"is_active","autocast_allowed","autocast_enabled"}) do
+                    if first[field]~=second[field] then second[field]=nil end
+                end
+                if first.range_check_performed~=second.range_check_performed or first.in_range~=second.in_range then
+                    second.range_check_performed=nil;second.in_range=nil
+                end
+                entries[tostring(slot)]=second
+            end
+        end
+    end
+    local nextPresent,nextBar=context()
+    assert(nextPresent==present and nextBar==bar, "Pet action context changed")
+    return {coverage="readable_pet_action_slots",pet_present=present,has_action_bar=bar,entries=entries}
+end
+
 AO.collectors.flight_map = function()
     local frame=FlightMapFrame
     assert(frame and frame:IsVisible(), "Flight map is not open")

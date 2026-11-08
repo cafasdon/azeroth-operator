@@ -63,6 +63,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="merchant_stock"
         sectionNames[#sectionNames+1]="trainer_services"
         sectionNames[#sectionNames+1]="pet_care"
+        sectionNames[#sectionNames+1]="pet_action_bar"
         sectionNames[#sectionNames+1]="mount_collection"
         sectionNames[#sectionNames+1]="toy_collection_view"
         sectionNames[#sectionNames+1]="saved_instances"
