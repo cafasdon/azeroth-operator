@@ -823,6 +823,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                          {"item_id": 456, "required_before_batch": 1,
                                           "quantity_observed": 0, "shortfall_vs_observed": 1,
                                           "shortfall_vs_bags": 1,
+                                          "estimated_units_after_batch_in_observed_storage": None,
                                           "suggested_bank_withdrawals": {"character_bank": None, "account_bank": 0}})
                         self.assertEqual(next(row for row in reverse if row["item_id"] == 456)
                                          ["required_before_batch"], 5)
@@ -840,6 +841,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         item_plan = next(row for row in withdrawal_plan if row["item_id"] == 456)
                         self.assertEqual(item_plan["shortfall_vs_observed"], 0)
                         self.assertEqual(item_plan["shortfall_vs_bags"], 5)
+                        self.assertEqual(item_plan["estimated_units_after_batch_in_observed_storage"], 10)
                         self.assertEqual(item_plan["suggested_bank_withdrawals"],
                                          {"character_bank": 2, "account_bank": 3})
                         del bank_stock["sections"]["bags"]

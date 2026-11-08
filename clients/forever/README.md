@@ -848,6 +848,11 @@ stock falls short by, separately for bags and all observed storage.
 The remaining reagent units are shown when that stock covers the requested
 consumption. These are per-recipe estimates before any crafted output is
 added. Shared batch demands are reported separately.
+For ordered batches, each starting-material row also estimates units
+remaining across observed storage after all requested consumption and
+known minimum outputs. The estimate is conditional on completing the
+batch and requires enough observed starting stock for that item in the
+supplied order. Unknown outputs contribute zero.
 
 Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include

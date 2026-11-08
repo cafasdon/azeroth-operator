@@ -308,10 +308,14 @@ pub fn ordered_recipe_materials<'a>(
         let observed = material["quantity_observed"].as_u64();
         let by_storage = &material["quantity_by_storage"];
         let (bag_shortfall, withdrawals) = bag_restock(by_storage, required);
+        let remaining = observed
+            .filter(|count| *count >= required)
+            .and_then(|count| count.checked_add_signed(*balance.get(&item)?));
         starting_materials.push(json!({
             "item_id":item,"required_before_batch":required,"quantity_observed":observed,
             "shortfall_vs_observed":observed.map(|quantity| required.saturating_sub(quantity)),
-            "shortfall_vs_bags":bag_shortfall,"suggested_bank_withdrawals":withdrawals
+            "shortfall_vs_bags":bag_shortfall,"suggested_bank_withdrawals":withdrawals,
+            "estimated_units_after_batch_in_observed_storage":remaining
         }));
     }
     Ok(json!(starting_materials))
