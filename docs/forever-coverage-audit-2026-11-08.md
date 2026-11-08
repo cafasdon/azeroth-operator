@@ -59,3 +59,8 @@ verifies the current 1,024-combination and 128-alternative limits with synthetic
 real-MCP probes. Identical-copy collapse works, but a successful single-swap
 search does not establish full two-slot or full-set coverage. Complete owned
 optimisation remains an open requirement.
+
+The subsequent [combination-window increment](gear-combination-windows-verification-2026-11-08.md)
+adds opt-in bounded coordinate execution for larger products. Per-call budgets
+remain; cross-window aggregation, a persistent search journal and complete
+owned-gear/model qualification remain unfinished.

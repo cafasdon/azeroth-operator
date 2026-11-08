@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import hashlib
 from itertools import combinations, product
 import json
 import logging
@@ -149,9 +150,60 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
             return candidates, skipped, page["coverage"]
 
 
+def product_window(choices, offset, limit):
+    """Jump to a product coordinate without visiting the preceding combinations."""
+    total = prod(map(len, choices))
+    for index in range(offset, min(total, offset + limit)):
+        coordinate = []
+        for group in reversed(choices):
+            index, digit = divmod(index, len(group))
+            coordinate.append(group[digit])
+        yield tuple(reversed(coordinate))
+
+
+def combination_window(options, max_swaps, offset, limit):
+    if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 1024:
+        raise ValueError("Invalid combination window")
+    if max_swaps is None:
+        return prod(map(len, options)), product_window(options, offset, limit)
+    if type(max_swaps) is not int or max_swaps < 1:
+        raise ValueError("Invalid maximum swaps")
+    max_swaps = min(max_swaps, len(options))
+    groups = [choices[1:] for choices in options if len(choices) > 1]
+    counts = [1] + [0] * max_swaps
+    for choices in groups:
+        for size in range(max_swaps, 0, -1):
+            counts[size] += counts[size - 1] * len(choices)
+
+    def window():
+        remaining, skip = limit, offset
+        if skip == 0:
+            yield (None,)
+            remaining -= 1
+        skip = max(0, skip - 1)
+        for size in range(1, min(max_swaps, len(groups)) + 1):
+            for group in combinations(groups, size):
+                count = prod(map(len, group))
+                if skip >= count:
+                    skip -= count
+                    continue
+                take = min(remaining, count - skip)
+                yield from product_window(group, skip, take)
+                remaining -= take
+                if not remaining:
+                    return
+                skip = 0
+    return sum(counts), window()
+
+
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
-                  max_swaps=None, candidate_filters=None):
+                  max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None):
+    if (type(combination_offset) is not int or combination_offset < 0
+            or (combination_limit is None and combination_offset != 0)
+            or (combination_limit is not None and (type(combination_limit) is not int
+                or not 1 <= combination_limit <= 1024 or character is not None))):
+        raise ValueError("Combination windows require an explicit snapshot and a valid offset/limit")
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -175,11 +227,20 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
 
         inventory_evidence = None
         inventory_evidence_seen = False
+        catalogue_source = None
 
         async def call(tool, **args):
-            nonlocal inventory_evidence, inventory_evidence_seen
+            nonlocal inventory_evidence, inventory_evidence_seen, catalogue_source
             reply = await request(tool, snapshot_id=snapshot_id, **args)
             if tool == "review_forever_owned_gear":
+                if combination_limit is not None:
+                    source = reply.get("catalogue_source")
+                    digest = source.get("sha256") if isinstance(source, dict) else None
+                    if (not isinstance(digest, str) or len(digest) != 64
+                            or any(char not in "0123456789abcdef" for char in digest)
+                            or (catalogue_source is not None and source != catalogue_source)):
+                        raise ValueError("Local MCP returned inconsistent catalogue evidence")
+                    catalogue_source = source
                 evidence = reply.get("inventory_evidence")
                 if inventory_evidence_seen and evidence != inventory_evidence:
                     raise ValueError("Local MCP returned inconsistent inventory evidence")
@@ -209,7 +270,10 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
-        if max_swaps is not None:
+        if combination_limit is not None:
+            combination_count, drafts_to_scan = combination_window(
+                options, max_swaps, combination_offset, combination_limit)
+        elif max_swaps is not None:
             candidate_groups = [choices[1:] for choices in options if len(choices) > 1]
             slot_groups = (
                 group
@@ -227,7 +291,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         else:
             combination_count = prod(map(len, options))
             drafts_to_scan = product(*options)
-        if combination_count > 1024:
+        if combination_limit is None and combination_count > 1024:
             raise GearSearchLimit(
                 "The search exceeds 1,024 combinations. Use fewer slots, --max-swaps or a narrower candidate filter."
             )
@@ -325,6 +389,23 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 for _, draft in drafts
             }),
         }
+        if combination_limit is not None:
+            scope = {"snapshot_id": snapshot_id, "slots": list(slots), "options": options,
+                     "filters": search["candidate_filters"], "max_swaps": max_swaps,
+                     "collapse_identical": collapse_identical, "can_dual_wield": can_dual_wield,
+                     "catalogue_source": catalogue_source, "inventory_evidence": inventory_evidence,
+                     "baseline": baseline["checks"]["simulator_equipment_spec"]}
+            count = min(combination_limit, max(0, combination_count - combination_offset))
+            end = combination_offset + count
+            search["combination_window"] = {
+                "version": 1, "scope_sha256": hashlib.sha256(json.dumps(
+                    scope, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest(),
+                "offset": combination_offset, "limit": combination_limit, "considered": count,
+                "total_combinations_decimal": str(combination_count),
+                "next_offset": end if end < combination_count else None,
+                "covers_requested_combinations": combination_offset == 0 and count == combination_count,
+                "baseline_reused": True,
+            }
         return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation, search
 
 
@@ -565,6 +646,10 @@ def main():
                             help="Compare up to this many selected replacements across the requested slots.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
+    parser.add_argument("--combination-offset", type=int, default=0,
+                        help="Start at this zero-based combination coordinate; requires --combination-limit.")
+    parser.add_argument("--combination-limit", type=int,
+                        help="Review a bounded window of 1–1024 combinations from an explicit snapshot.")
     parser.add_argument("--plan-only", action="store_true",
                         help="List resolved equipment drafts without launching a simulator.")
     parser.add_argument("--engine", type=Path)
@@ -635,6 +720,10 @@ def main():
             raise ValueError("Non-DPS ranking requires fixed, unweighted encounter comparisons")
         if not 1 <= args.max_drafts <= 128:
             raise ValueError("Draft limit is out of range")
+        if (args.combination_offset < 0 or (args.combination_limit is None and args.combination_offset != 0)
+                or (args.combination_limit is not None and
+                    (not 1 <= args.combination_limit <= 1024 or args.character is not None))):
+            raise ValueError("Invalid explicit-snapshot combination window")
         if len(args.encounter_lookup or []) > 4:
             raise ValueError("Provide up to four encounter exports")
         weights = args.encounter_weight
@@ -658,7 +747,7 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
-                        args.max_swaps, candidate_filters), timeout=45,
+                        args.max_swaps, candidate_filters, args.combination_offset, args.combination_limit), timeout=45,
             ))
         identity = check_template_identity(template, stats, require_simulator_level=not args.plan_only)
         identity["hunter_pet"] = check_hunter_pet_level(

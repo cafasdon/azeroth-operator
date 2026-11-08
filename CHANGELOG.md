@@ -1,5 +1,9 @@
 # Changelog
 
+- Review bounded gear-combination windows beyond the whole-request product
+  limit, with direct coordinate indexing, exact counts, scope fingerprints and
+  explicit continuation metadata; retain draft limits and false BiS claims.
+
 - Price shared consumable-restock reagent shortfalls from captured merchant
   offers, with explicit inventory-wallet provenance and unknown quote states.
 
