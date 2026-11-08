@@ -176,3 +176,9 @@ search. Independent exact-integer and planner comparisons cover missing storage,
 large captures and paging. It answers material-support questions without
 inferring learning, live craftability, complete knowledge or profession
 progression; those broader requirements remain unfinished.
+
+[Recipe-view discovery predicates](recipe-view-search-verification-2026-11-09.md)
+subsequently combine captured learned/skill-up observations with optional
+material support through exact same-profession joins. Missing and conflicting
+evidence is not promoted into verified learning or gains. Full levelling
+progression and native profession qualification remain open.

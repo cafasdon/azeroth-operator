@@ -6,6 +6,29 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Find recipes supported by observed materials
 
+To narrow discovery by saved recipe-view flags, add `recipe_view_filter`, for
+example `{"learned":true,"can_skill_up":true,"minimum_skill_ups_reported":1}`.
+Supply at least one non-null predicate. `learned` and `can_skill_up` are optional
+booleans; the optional minimum is an unsigned 32-bit integer, including zero.
+All requested predicates must match the same exact recipe ID in
+`profession_recipe_view`, whose profession ID must match the bulk material
+section. Missing rows, fields, sections or a different profession stay unknown.
+A known predicate mismatch excludes the row even if another predicate is unknown.
+
+The filter can combine with `material_filter` to discover reported skill-up
+recipes supported by observed reagents. ID/status predicates run first, then
+recipe-view predicates, then material support, before paging. View unknown and
+nonmatching counts cover the first stage; material counters cover only rows
+that passed the view filter. Returned `recipe_view_observation` fields retain
+the captured flags and difficulty, with no recipe names. The coverage record
+keeps `learning_verified` and `skill_gains_verified` false.
+
+These are observations of the filtered local recipe view, not an estimate of
+guaranteed skill gains or aggregate learning across conflicting sources. The
+separate recipe review may still reject contradictory selected/tracked learning.
+Recipes absent from the bulk material capture are not invented from view rows.
+Omitting the view filter, or supplying null, preserves prior search behaviour.
+
 `search_forever_recipes` accepts optional `material_filter`, for example
 `{"scope":"bags","minimum_crafts":5}`. Scope is required and can instead be
 `all_observed_storage` to combine observed bags, character bank and account bank

@@ -102,6 +102,41 @@ pub struct RecipeMaterialFilter {
     pub minimum_crafts: std::num::NonZeroU32,
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeViewFilter {
+    pub learned: Option<bool>,
+    pub can_skill_up: Option<bool>,
+    pub minimum_skill_ups_reported: Option<u32>,
+}
+
+fn recipe_view_matches(row: Option<&Value>, filter: &RecipeViewFilter) -> Option<bool> {
+    let checks: Vec<_> = [
+        filter.learned.map(|expected| {
+            row.and_then(|r| r["learned"].as_bool())
+                .map(|value| value == expected)
+        }),
+        filter.can_skill_up.map(|expected| {
+            row.and_then(|r| r["can_skill_up"].as_bool())
+                .map(|value| value == expected)
+        }),
+        filter.minimum_skill_ups_reported.map(|minimum| {
+            row.and_then(|r| r["skill_ups_reported"].as_u64())
+                .map(|value| value >= u64::from(minimum))
+        }),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if checks.contains(&Some(false)) {
+        Some(false)
+    } else if checks.contains(&None) {
+        None
+    } else {
+        Some(true)
+    }
+}
+
 struct RecipeMaterialStock {
     quantities: BTreeMap<u64, u64>,
     observed: Vec<&'static str>,
@@ -196,6 +231,30 @@ pub fn search_recipe_materials_with_filter(
     limit: usize,
     material_filter: Option<&RecipeMaterialFilter>,
 ) -> Result<Value> {
+    search_recipe_materials_with_observations(
+        snapshot,
+        recipe_id,
+        output_item_id,
+        reagent_item_id,
+        status,
+        offset,
+        limit,
+        material_filter,
+        None,
+    )
+}
+
+pub fn search_recipe_materials_with_observations(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+    material_filter: Option<&RecipeMaterialFilter>,
+    recipe_view_filter: Option<&RecipeViewFilter>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
@@ -206,6 +265,21 @@ pub fn search_recipe_materials_with_filter(
     );
     let section = snapshot.sections.get("profession_recipe_materials");
     let rows = section.and_then(|value| value["entries"].as_object());
+    if let Some(filter) = recipe_view_filter {
+        ensure!(
+            filter.learned.is_some()
+                || filter.can_skill_up.is_some()
+                || filter.minimum_skill_ups_reported.is_some(),
+            "Recipe view filter requires at least one predicate"
+        );
+    }
+    let view = snapshot.sections.get("profession_recipe_view");
+    let profession_matches = view
+        .zip(section)
+        .map(|(view, bulk)| view["profession_id"] == bulk["profession_id"]);
+    let compatible_view = view.filter(|_| profession_matches == Some(true));
+    let mut view_unknown = 0;
+    let mut view_nonmatching = 0;
     let stock = material_filter
         .map(|filter| RecipeMaterialStock::from_snapshot(snapshot, filter.scope))
         .transpose()?;
@@ -227,6 +301,20 @@ pub fn search_recipe_materials_with_filter(
                     .is_none_or(|value| row["status"] == *value)
         })
         .filter_map(|(id, row)| {
+            let observation = compatible_view.and_then(|view| view["entries"].get(id));
+            if let Some(filter) = recipe_view_filter {
+                match recipe_view_matches(observation, filter) {
+                    Some(true) => {}
+                    Some(false) => {
+                        view_nonmatching += 1;
+                        return None;
+                    }
+                    None => {
+                        view_unknown += 1;
+                        return None;
+                    }
+                }
+            }
             let support = if let (Some(filter), Some(stock)) = (material_filter, stock.as_ref()) {
                 match stock.support(row, filter.minimum_crafts.get()) {
                     Some(support) if support["covers_minimum_crafts"] == true => Some(support),
@@ -242,19 +330,26 @@ pub fn search_recipe_materials_with_filter(
             } else {
                 None
             };
-            Some((id, row, support))
+            Some((id, row, support, observation))
         })
         .collect();
-    matches.sort_unstable_by_key(|(id, _, _)| id.parse::<u32>().unwrap());
+    matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
     let records: Vec<_> = matches
         .iter()
         .skip(offset)
         .take(limit)
-        .map(|(id, row, support)| {
+        .map(|(id, row, support, observation)| {
             let mut record = (*row).clone();
             record["recipe_id"] = json!(id.parse::<u32>().unwrap());
             if let Some(support) = support {
                 record["material_support"] = support.clone();
+            }
+            if recipe_view_filter.is_some() {
+                let observation = observation.unwrap();
+                record["recipe_view_observation"] = json!({"source":"profession_recipe_view",
+                    "learned":observation.get("learned"),"can_skill_up":observation.get("can_skill_up"),
+                    "skill_ups_reported":observation.get("skill_ups_reported"),
+                    "relative_difficulty":observation.get("relative_difficulty")});
             }
             record
         })
@@ -278,6 +373,14 @@ pub fn search_recipe_materials_with_filter(
         result["material_support_insufficient_observed_count"] = json!(rows.map(|_| insufficient));
         result["material_inventory_coverage"] = json!({"observed_storage":stock.observed,
             "unobserved_storage":stock.missing,"complete_ownership_verified":false});
+    }
+    if let Some(filter) = recipe_view_filter {
+        result["filters"]["recipe_view_filter"] = json!(filter);
+        result["recipe_view_unknown_count"] = json!(rows.map(|_| view_unknown));
+        result["recipe_view_nonmatching_count"] = json!(rows.map(|_| view_nonmatching));
+        result["recipe_view_coverage"] = json!({"section_observed":view.is_some(),
+            "profession_matches_bulk":profession_matches,"coverage":view.map(|view|&view["coverage"]),
+            "learning_verified":false,"skill_gains_verified":false});
     }
     Ok(result)
 }

@@ -583,6 +583,8 @@ struct RecipeSearch {
     status: Option<azeroth_operator::analysis::RecipeMaterialStatus>,
     /// Filter fixed reagent support in observed items, not actual craftability.
     material_filter: Option<azeroth_operator::analysis::RecipeMaterialFilter>,
+    /// Same-ID/profession captured recipe-view flags, not verified learning or gains.
+    recipe_view_filter: Option<azeroth_operator::analysis::RecipeViewFilter>,
     offset: Option<usize>,
     /// Page size, 1 to 50; defaults to 20. Ordering is numeric recipe ID.
     limit: Option<usize>,
@@ -1043,7 +1045,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Search owner-local captured Forever recipe rows by exact IDs/status, optionally requiring fixed reagent support for a minimum craft count in bags or all observed storage. Material support is not learning or craftability. Same-row filters, numeric order, up to 50 rows per page. Unknowns stay unknown; no external lookup or game action.",
+        description = "Search owner-local captured Forever recipes by exact IDs/status, fixed material support, and/or matching captured profession recipe-view learned/skill-up flags. Observations do not verify learning, skill gains or craftability. Numeric paging up to 50 rows; unknowns stay unknown. No external lookup or game action.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1053,7 +1055,7 @@ impl Operator {
     fn search_forever_recipes(&self, Parameters(args): Parameters<RecipeSearch>) -> CallToolResult {
         let result = (|| {
             let snapshot = self.store.read(&args.snapshot_id)?;
-            let mut found = azeroth_operator::analysis::search_recipe_materials_with_filter(
+            let mut found = azeroth_operator::analysis::search_recipe_materials_with_observations(
                 &snapshot,
                 args.recipe_id,
                 args.output_item_id,
@@ -1062,6 +1064,7 @@ impl Operator {
                 args.offset.unwrap_or(0),
                 args.limit.unwrap_or(20),
                 args.material_filter.as_ref(),
+                args.recipe_view_filter.as_ref(),
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(found)

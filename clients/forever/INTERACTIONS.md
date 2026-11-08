@@ -1,5 +1,15 @@
 # Forever interaction map
 
+Bulk recipe discovery can join captured recipe-view learned, skill-up and
+minimum reported-point predicates through `recipe_view_filter`. Exact recipe
+and profession IDs must agree. Same-row three-valued matching preserves
+unknown fields; explicit mismatches win over unknowns. View predicates precede
+optional material support, with separate staged counts and bounded paging.
+Projected observations omit recipe names and never verify aggregate learning,
+guaranteed gains, full knowledge or crafting eligibility. Existing review still
+blocks conflicting learning evidence.
+[Offline evidence](../../docs/recipe-view-search-verification-2026-11-09.md).
+
 Recipe discovery can require observed fixed material support with
 `search_forever_recipes.material_filter`: explicit bags or all-observed-storage
 scope and a positive minimum craft count. Counts aggregate once from the same
