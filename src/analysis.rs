@@ -1717,6 +1717,8 @@ pub fn merchant_cart_budget(
     let mut lines = BTreeMap::new();
     let mut missing = Vec::new();
     let mut copper = 0u64;
+    let mut token_costs = BTreeMap::<u32, u64>::new();
+    let mut unknown_token_cost_slots = Vec::new();
     for (slot, bundles) in cart {
         let Some(offer) = offers.get(&slot.to_string()) else {
             missing.push(slot);
@@ -1726,6 +1728,14 @@ pub fn merchant_cart_budget(
         copper = copper
             .checked_add(line["required_copper"].as_u64().unwrap())
             .ok_or_else(|| anyhow::anyhow!("Merchant cart cost is too large"))?;
+        if let Some(tokens) = line["item_token_costs"].as_array() {
+            for token in tokens {
+                let id = u32::try_from(token["item_id"].as_u64().unwrap())?;
+                *token_costs.entry(id).or_default() += token["required_quantity"].as_u64().unwrap();
+            }
+        } else {
+            unknown_token_cost_slots.push(slot);
+        }
         line["item_id"] = offer["item_id"].clone();
         line["currency_id"] = offer["currency_id"].clone();
         lines.insert(slot, line);
@@ -1734,9 +1744,19 @@ pub fn merchant_cart_budget(
         .sections
         .get("wallet")
         .and_then(|row| row["copper"].as_u64());
+    let mut tokens = Vec::new();
+    for (id, required) in token_costs {
+        let found = find_item(snapshot, id, 0, 1)?;
+        let carried = found["quantity_by_storage"]["bags"].as_u64();
+        tokens.push(json!({"item_id":id,"required_quantity":required,
+            "shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
+    }
     Ok(
         json!({"lines_by_slot":lines,"missing_slots":missing,"known_required_copper":copper,
         "total_required_copper":missing.is_empty().then_some(copper),
+        "known_item_token_costs":tokens,
+        "item_token_costs_complete":missing.is_empty() && unknown_token_cost_slots.is_empty(),
+        "unknown_item_token_cost_slots":unknown_token_cost_slots,
         "known_copper_shortfall":wallet.map(|balance| copper.saturating_sub(balance))}),
     )
 }

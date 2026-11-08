@@ -227,8 +227,10 @@ unknown. Currency names are recorded without inferring balance matches.
 
 With `section: "merchant_stock"`, use `merchant_cart` with up to 16
 distinct `{slot, bundles}` entries to budget their copper together.
-Missing offers leave the complete total unknown. Extended costs are
-shown per line and are not combined into a cart affordability decision.
+Missing offers leave the complete copper total unknown. Known item-token
+costs are combined by item ID and compared with captured bags. Missing
+offers or unobserved extended costs make the item-token tally incomplete.
+Named currency costs remain per line because their names are not stable IDs.
 
 Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.
