@@ -262,6 +262,9 @@ backpack, with the game-reported bag family when available.
 `character_summary` reports combined capacity, free slots and free slots
 in known general-purpose bags. Unknown family slots are excluded from
 the general-purpose count. Specialty slots can have item restrictions.
+The bag summary groups free slots by exact recorded mask in
+`free_slots_by_family_mask` and reports `unknown_family_free_slots`
+separately. Composite masks are kept together so their slots count once.
 Update the importer and reader before syncing this section. [Forever container API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ContainerDocumentation.lua)
 
 `compare_snapshots` reports both bag-space observations and signed

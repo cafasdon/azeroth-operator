@@ -550,20 +550,23 @@ fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Val
 
 pub(crate) fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bag_capacity")?.as_object()?;
-    let total = bags
-        .values()
-        .filter_map(|bag| bag["total_slots"].as_i64())
-        .sum::<i64>();
-    let free = bags
-        .values()
-        .filter_map(|bag| bag["free_slots"].as_i64())
-        .sum::<i64>();
-    let general = bags
-        .values()
-        .filter(|bag| bag["family_mask"].as_u64() == Some(0))
-        .filter_map(|bag| bag["free_slots"].as_i64())
-        .sum::<i64>();
-    Some(json!({"total_slots":total,"free_slots":free,"known_general_free_slots":general}))
+    let mut total = 0;
+    let mut free = 0;
+    let mut by_family = BTreeMap::new();
+    let mut unknown = 0;
+    for bag in bags.values() {
+        let slots = bag["free_slots"].as_u64()?;
+        total += bag["total_slots"].as_u64()?;
+        free += slots;
+        if let Some(mask) = bag["family_mask"].as_u64() {
+            *by_family.entry(mask).or_insert(0) += slots;
+        } else {
+            unknown += slots;
+        }
+    }
+    Some(json!({"total_slots":total,"free_slots":free,
+        "known_general_free_slots":by_family.get(&0).copied().unwrap_or_default(),
+        "free_slots_by_family_mask":by_family,"unknown_family_free_slots":unknown}))
 }
 
 fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {

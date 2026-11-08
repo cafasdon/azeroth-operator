@@ -1021,7 +1021,8 @@ pub fn verify_forever_capture_fixture(
     );
     assert_eq!(
         summary["carried_bag_space"],
-        serde_json::json!({"total_slots":24,"free_slots":24,"known_general_free_slots":16})
+        serde_json::json!({"total_slots":24,"free_slots":24,"known_general_free_slots":16,
+            "free_slots_by_family_mask":{"0":16,"32":8},"unknown_family_free_slots":0})
     );
     lua.load("badCapacity=true;AO.Capture()").exec()?;
     assert!(read()?.unavailable.contains_key("bag_capacity"));

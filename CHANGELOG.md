@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Break down saved Forever free bag space by recorded family mask and unknown family.
+
 - Find saved Forever captures with enough observed carried or general-purpose bag space.
 
 - Restrict saved Forever flight route searches to routes that fit the starting budget.

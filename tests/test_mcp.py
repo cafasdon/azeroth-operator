@@ -839,6 +839,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["snapshot_id"] for row in bag_rows], [travel_before])
                         self.assertEqual(bag_rows[0]["carried_bag_space"], {
                             "total_slots": 32, "free_slots": 10, "known_general_free_slots": 1,
+                            "free_slots_by_family_mask": {"0": 1, "32": 5},
+                            "unknown_family_free_slots": 4,
                         })
                         insufficient = await session.call_tool("list_snapshots", {
                             **bag_query, "minimum_general_free_bag_slots": 2,
