@@ -113,6 +113,10 @@ def validate_snapshot(value):
         for group in groups:
             if not isinstance(group,dict):continue
             for item in group.values():
+                if isinstance(item,dict) and "sell_price_copper" in item:
+                    if (type(item["sell_price_copper"]) is not int or not 0<=item["sell_price_copper"]<=9_999_999_999_999
+                            or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):
+                        raise ValueError("Invalid linked item sell price")
                 if isinstance(item,dict) and "equip_location" in item:
                     location=item["equip_location"]
                     if (not isinstance(location,str) or len(location)>64

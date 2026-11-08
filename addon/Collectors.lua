@@ -241,9 +241,29 @@ local function itemEquipLocation(item)
     return item
 end
 
+local function itemSellPrice(item)
+    if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
+    local function readable(value) return not issecretvalue or not issecretvalue(value) end
+    local link=item.link
+    if not readable(link) or type(link)~="string" or #link==0 or #link>4096 or not readable(item.item_id) then return item end
+    local function read()
+        local id=C_Item.GetItemInfoInstant(link)
+        if not readable(id) or id~=item.item_id then return end
+        local _,_,_,_,_,_,_,_,_,_,price=C_Item.GetItemInfo(link)
+        if readable(price) and type(price)=="number" and price%1==0 and price>=0 and price<=9999999999999 then return price end
+    end
+    local ok,first=pcall(read)
+    if ok and first~=nil then
+        local nextOk,second=pcall(read)
+        if nextOk and first==second then item.sell_price_copper=first end
+    end
+    return item
+end
+
 local function itemRequiredLevel(item)
     item=itemEquipLocation(item)
     item=itemNativeStats(item)
+    item=itemSellPrice(item)
     if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
     local function readable(value) return not issecretvalue or not issecretvalue(value) end
     local link=item.link

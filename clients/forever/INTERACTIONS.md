@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Native linked-item sell-price observations support local reference-value
+summaries per observed storage. Quantity arithmetic retains partial/unpriced
+coverage and overflow rather than inventing values. Zero remains a reported
+price, not proof of eligibility; no wallet credit or sale action is introduced.
+[Offline evidence](../../docs/item-sell-price-verification-2026-11-08.md).
+
 Known native slot-category contradictions in projected simulation equipment
 now withhold resolved inputs, including baseline conflicts. Candidate reviews
 and ranker skips expose the reason. Cleared/vacated/non-simulated slots are

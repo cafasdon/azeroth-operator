@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever linked-item captures can include stable `sell_price_copper` from the
+native item API. `character_summary.captured_vendor_price_values` reports
+quantity-based reference values separately for each observed storage, keeping
+missing prices and overflow explicit. These values are not sale eligibility,
+transaction proceeds or wallet funds; no item is sold.
+[Offline verification](docs/item-sell-price-verification-2026-11-08.md).
+
 Known native slot-category conflicts now withhold resolved Forever simulator
 equipment, including conflicting baselines. Owned-gear reviews and ranking
 report these conflicts separately; unknown or conditional categories do not

@@ -4592,6 +4592,26 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["captured_vendor_price_values"] = json!(["equipment","bags","character_bank","account_bank"].into_iter().map(|storage| {
+        let value=s.sections.get(storage).map(|section| {
+            let rows:Vec<_>=if storage=="equipment" {section.as_object().unwrap().values().collect()}
+                else {section.as_object().unwrap().values().flat_map(|container|container.as_object().unwrap().values()).collect()};
+            let mut priced=0usize;let mut observed_units=0u64;let mut priced_units=0u64;let mut subtotal=Some(0u64);
+            for row in &rows {
+                let count=if storage=="equipment" {1} else {row["count"].as_u64().unwrap()};
+                observed_units+=count;
+                if let Some(price)=row["sell_price_copper"].as_u64() {
+                    priced+=1;priced_units+=count;
+                    subtotal=subtotal.and_then(|sum|price.checked_mul(count).and_then(|value|sum.checked_add(value)));
+                }
+            }
+            json!({"observed_locations":rows.len(),"priced_locations":priced,"unpriced_locations":rows.len()-priced,
+                "observed_units":observed_units,"priced_units":priced_units,"unpriced_units":observed_units-priced_units,
+                "known_price_subtotal_copper":subtotal,"observed_total_copper":if priced==rows.len() {subtotal} else {None},
+                "arithmetic_overflow":subtotal.is_none(),"sale_eligibility_verified":false})
+        });
+        (storage,value)
+    }).collect::<std::collections::BTreeMap<_,_>>());
     summary["weapon_enchant_observations"] = s.sections.get("weapon_enchants").map(|section| {
         let hands=section["hands"].as_object().unwrap();
         let rows:Vec<_>=hands.iter().map(|(hand,value)| {

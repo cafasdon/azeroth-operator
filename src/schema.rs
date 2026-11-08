@@ -12,6 +12,7 @@ struct Item<'a> {
     count: Option<u32>,
     guid: Option<&'a str>,
     required_level: Option<u32>,
+    sell_price_copper: Option<u64>,
     equip_location: Option<&'a str>,
     native_stats: Option<std::collections::BTreeMap<String, f64>>,
 }
@@ -32,6 +33,15 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
     for (slot, value) in slots {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
+        if value.get("sell_price_copper").is_some() {
+            ensure!(
+                item.link.is_some_and(|link| !link.is_empty())
+                    && item
+                        .sell_price_copper
+                        .is_some_and(|price| price <= 9_999_999_999_999),
+                "Invalid linked item sell price"
+            );
+        }
         if value.get("equip_location").is_some() {
             let location = item
                 .equip_location

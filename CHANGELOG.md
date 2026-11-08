@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable native linked-item sell prices and summarise quantity-based reference values by storage, preserving unknowns and checked overflow without crediting wallets or assuming sale eligibility.
+
 - Withhold Forever simulator inputs for known native slot-category conflicts in projected equipment, expose candidate diagnostics and skip conflicts in ranking with fixed CLI errors.
 
 - Capture stable native linked-item equip-location tokens and annotate saved equipment drafts by slot category, retaining unknown/conditional placement and unverified equip eligibility.
