@@ -1112,6 +1112,17 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if let Some(item) = suffix_target {
+        let variants: Vec<_> = records.iter().map(|suffix| {
+            let effects = scaled_suffix_effects(item, suffix);
+            json!({
+                "suffix_id": suffix["id"],
+                "default_scaling_suffix_allocation_delta": effects.as_ref().map(|(stats, _)| stats),
+                "default_scaling_suffix_extra_effects": effects.as_ref().map(|(_, extra)| extra)
+            })
+        }).collect();
+        result["suffix_target_preview"] = json!({"item_id":item["id"],"variants":variants});
+    }
     if matches!(query.section, Section::Consumables) && filtered {
         result["recorded_shared_cooldowns"] = shared_consumable_cooldowns(&records);
         result["simulator_exclusive_buff_groups"] = exclusive_consumable_groups(&records);

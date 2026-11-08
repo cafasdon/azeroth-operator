@@ -201,6 +201,9 @@ For `random_suffixes`, use `suffix_target_item_id` to list the catalogue
 suffixes referenced by a base item. For `items`, use
 `item_random_suffix_id` to find base items that list a specific suffix.
 These are catalogue possibilities. Saved links show which variant was observed.
+Targeted suffix lookups include `suffix_target_preview` for the returned
+page, with default-scaling regular stat changes, pseudo-stats and any
+recorded replacement weapon damage. Missing scaling evidence yields null.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip
