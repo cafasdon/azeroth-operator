@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Identify duplicate spell placements in a saved Forever action bar.
+
 - Compare captured passive and off-spec flags for the same Forever spell across snapshots.
 
 - Distinguish Forever flight fare visibility and destination coverage changes between captures.

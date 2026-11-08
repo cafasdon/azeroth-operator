@@ -284,6 +284,9 @@ false passive and off-spec flags and no matching base or reported spell ID
 among captured spell actions. Missing flags exclude a slot. A missing
 spellbook or action bar section gives null. This can miss spells reached
 through macros, flyouts or bars outside the capture.
+The unfiltered review also reports `repeated_observed_action_spell_slots`
+by exact action spell ID. It works without a spellbook capture and leaves
+base and override IDs separate.
 
 Use `compare_snapshots` with `action_bar_slots: true` to compare two saved
 Forever action bar observations. A shared slot can be filled, cleared or

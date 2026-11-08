@@ -901,6 +901,20 @@ pub fn action_bar_spellbook(
     if !include_reverse {
         return review;
     }
+    let repeated = action_slots.map(|slots| {
+        let mut by_spell = BTreeMap::<u64, Vec<u32>>::new();
+        for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == "spell") {
+            if let (Ok(slot), Some(id)) = (slot.parse(), row["id"].as_u64()) {
+                by_spell.entry(id).or_default().push(slot);
+            }
+        }
+        by_spell.retain(|_, slots| slots.len() > 1);
+        for slots in by_spell.values_mut() {
+            slots.sort_unstable();
+        }
+        by_spell
+    });
+    review["repeated_observed_action_spell_slots"] = json!(repeated);
     let unslotted = book.zip(action_slots).map(|(book, actions)| {
         let slotted = actions
             .values()
