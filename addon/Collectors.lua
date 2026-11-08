@@ -188,7 +188,42 @@ AO.collectors.operation_receipts = function()
     return AO.ReadMacroReceipts()
 end
 
+local function itemNativeStats(item)
+    if AO.family~="forever" or not (C_Item and C_Item.GetItemStats and C_Item.GetItemInfoInstant) then return item end
+    local function readable(value) return not issecretvalue or not issecretvalue(value) end
+    local link=item.link
+    if not readable(link) or type(link)~="string" or #link==0 or #link>4096 then return item end
+    local function read()
+        local id=C_Item.GetItemInfoInstant(link)
+        if not readable(id) or id~=item.item_id then return end
+        local stats=C_Item.GetItemStats(link)
+        if not readable(stats) or type(stats)~="table" then return end
+        local result,count={},0
+        for key,value in pairs(stats) do
+            if not readable(key) or type(key)~="string" or #key>96 then return end
+            if not (key:match("^ITEM_MOD_[A-Z0-9_]+_SHORT$") or key:match("^RESISTANCE[0-6]_NAME$")
+                or key:match("^EMPTY_SOCKET_[A-Z_]+$")) then return end
+            if not readable(value) or type(value)~="number" or value~=value
+                or value < -4294967295 or value > 4294967295 then return end
+            count=count+1;if count>128 then return end
+            result[key]=value
+        end
+        return result
+    end
+    local ok,first=pcall(read)
+    if ok and first then
+        local nextOk,second=pcall(read)
+        if nextOk and second then
+            for key,value in pairs(first) do if second[key]~=value then return item end end
+            for key in pairs(second) do if first[key]==nil then return item end end
+            item.native_stats=first
+        end
+    end
+    return item
+end
+
 local function itemRequiredLevel(item)
+    item=itemNativeStats(item)
     if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
     local function readable(value) return not issecretvalue or not issecretvalue(value) end
     local link=item.link

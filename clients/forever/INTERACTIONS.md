@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Linked equipment and container-item observations can include stable native
+numeric stat-token maps. Equipment reviews show shared-token differences
+and separate one-sided observations; missing tokens are not imputed as zero.
+This supports local gear inspection without replacing the pinned simulator
+or asserting complete effects, eligibility or performance improvement.
+[Offline evidence](../../docs/native-item-stats-verification-2026-11-08.md).
+
 Exact equipped-slot durability capture complements existing low/broken alerts.
 Only readable stable current/maximum pairs are saved. Maintenance summaries
 show observed percentages and damaged/broken slots with explicit unobserved

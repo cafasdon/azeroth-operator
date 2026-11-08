@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable numeric native item-stat tokens from exact links and compare shared tokens in equipment reviews, preserving one-sided observations and unknown performance effects.
+
 - Capture stable readable equipped-slot durability pairs and summarise observed percentages, damaged/broken slots and coverage without imputing unknown gear condition or repair costs.
 
 - Capture stable reported skill-up metadata from the visible local recipe list, search exact recipe observations and summarise learned skill-up candidates with explicit partial coverage and unknowns.

@@ -126,9 +126,23 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             == (ItemLocation::Equipment {
                 slot: selection.target_slot,
             });
-        changes.push(json!({"target_slot":selection.target_slot,"source":selection.source,
+        let native_stat_comparison=previous.and_then(|old|old.get("native_stats")).zip(item.get("native_stats")).map(|(old,new)| {
+            let old=old.as_object().unwrap();let new=new.as_object().unwrap();
+            let shared:std::collections::BTreeMap<_,_>=old.iter().filter_map(|(key,first)| {
+                let second=new.get(key)?;
+                Some((key,json!({"before":first,"after":second,"delta":second.as_f64().unwrap()-first.as_f64().unwrap()})))
+            }).collect();
+            json!({"shared_tokens":shared,
+                "observed_only_before":old.iter().filter(|(key,_)|!new.contains_key(*key)).collect::<std::collections::BTreeMap<_,_>>(),
+                "observed_only_after":new.iter().filter(|(key,_)|!old.contains_key(*key)).collect::<std::collections::BTreeMap<_,_>>(),
+                "effect_on_performance":"unverified"})
+        });
+        changes.push(
+            json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"selected_item_observed":item,
-            "previous_item_observed":previous,"status":if same_location {"already_selected"} else {"requested_change"}}));
+            "previous_item_observed":previous,"native_stat_comparison":native_stat_comparison,
+            "status":if same_location {"already_selected"} else {"requested_change"}}),
+        );
     }
     changes.sort_by_key(|row| row["target_slot"].as_u64().unwrap());
     let vacated: Vec<_> = moved_equipment.difference(&targets).copied().collect();

@@ -3,6 +3,7 @@ import hashlib
 import json
 import re
 import os
+import math
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -111,6 +112,15 @@ def validate_snapshot(value):
         for group in groups:
             if not isinstance(group,dict):continue
             for item in group.values():
+                if isinstance(item,dict) and "native_stats" in item:
+                    stats=item["native_stats"]
+                    if (not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096
+                            or not isinstance(stats,dict) or len(stats)>128
+                            or any(not isinstance(key,str) or len(key)>96
+                                or not re.fullmatch(r"(?:ITEM_MOD_[A-Z0-9_]+_SHORT|RESISTANCE[0-6]_NAME|EMPTY_SOCKET_[A-Z_]+)",key)
+                                or type(n) not in (int,float) or not -4_294_967_295<=n<=4_294_967_295 or not math.isfinite(n)
+                                for key,n in stats.items())):
+                        raise ValueError("Invalid native item stats")
                 if isinstance(item,dict) and item.get("required_level") is not None:
                     if (type(item["required_level"]) is not int or not 0<=item["required_level"]<=4_294_967_295
                             or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):

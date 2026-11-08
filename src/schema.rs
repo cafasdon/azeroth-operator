@@ -12,6 +12,7 @@ struct Item<'a> {
     count: Option<u32>,
     guid: Option<&'a str>,
     required_level: Option<u32>,
+    native_stats: Option<std::collections::BTreeMap<String, f64>>,
 }
 
 fn index(key: &str, minimum: u32, maximum: u32) -> Result<()> {
@@ -30,6 +31,40 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
     for (slot, value) in slots {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
+        if value.get("native_stats").is_some() {
+            let stats = item
+                .native_stats
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("Invalid native item stats"))?;
+            ensure!(
+                item.link.is_some_and(|link| !link.is_empty()) && stats.len() <= 128,
+                "Invalid native item stats"
+            );
+            for (key, number) in stats {
+                let token = key
+                    .strip_prefix("ITEM_MOD_")
+                    .and_then(|s| s.strip_suffix("_SHORT"));
+                let socket = key.strip_prefix("EMPTY_SOCKET_");
+                let resistance = key
+                    .strip_prefix("RESISTANCE")
+                    .and_then(|s| s.strip_suffix("_NAME"));
+                let valid = token.is_some_and(|s| {
+                    !s.is_empty()
+                        && s.bytes()
+                            .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+                }) || socket.is_some_and(|s| {
+                    !s.is_empty() && s.bytes().all(|b| b.is_ascii_uppercase() || b == b'_')
+                }) || resistance
+                    .is_some_and(|s| s.len() == 1 && matches!(s.as_bytes()[0], b'0'..=b'6'));
+                ensure!(
+                    key.len() <= 96
+                        && valid
+                        && number.is_finite()
+                        && (-4294967295.0..=4294967295.0).contains(number),
+                    "Invalid native item stat"
+                );
+            }
+        }
         ensure!(item.item_id > 0, "Invalid item ID");
         ensure!(
             item.required_level.is_none() || item.link.is_some_and(|link| !link.is_empty()),
