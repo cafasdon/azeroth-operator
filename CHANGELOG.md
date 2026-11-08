@@ -1,5 +1,8 @@
 # Changelog
 
+- Add opt-in historical profession-spell and player-resource comparisons with
+  numeric bounds, context matching and explicit unknowns.
+
 - Capture stable reported known profession spell IDs and join exact IDs to
   local crafted-output discovery without changing profession filters.
 

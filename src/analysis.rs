@@ -800,6 +800,8 @@ pub fn compare_with_item(
 
 #[derive(Default)]
 pub struct ComparisonSelectors {
+    pub profession_spell_changes: bool,
+    pub player_resource_changes: bool,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
@@ -853,6 +855,45 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if selectors.profession_spell_changes || selectors.player_resource_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Resource and profession spell comparison requires Forever"
+        );
+    }
+    if selectors.profession_spell_changes {
+        comparison["profession_spell_changes"] = before.sections.get("profession_spells")
+            .zip(after.sections.get("profession_spells"))
+            .filter(|(old,new)| old["profession_id"]==new["profession_id"])
+            .map(|(old,new)| {
+                let ids=|value:&Value| value["entries"].as_object().unwrap().keys()
+                    .map(|id|id.parse::<u32>().unwrap()).collect::<BTreeSet<_>>();
+                let old_ids=ids(old);let new_ids=ids(new);
+                let added:Vec<_>=new_ids.difference(&old_ids).copied().collect();
+                let removed:Vec<_>=old_ids.difference(&new_ids).copied().collect();
+                json!({"profession_id":new["profession_id"],"before_reported_count":old_ids.len(),
+                    "after_reported_count":new_ids.len(),"newly_reported_spell_count":added.len(),
+                    "no_longer_reported_spell_count":removed.len(),
+                    "newly_reported_spell_ids":added.iter().take(50).collect::<Vec<_>>(),
+                    "no_longer_reported_spell_ids":removed.iter().take(50).collect::<Vec<_>>(),
+                    "newly_reported_truncated":added.len()>50,"no_longer_reported_truncated":removed.len()>50,
+                    "learning_verified":false,"complete_recipe_knowledge_verified":false})
+            }).unwrap_or(Value::Null);
+    }
+    if selectors.player_resource_changes {
+        comparison["player_resource_changes"] = before.sections.get("player_resources")
+            .zip(after.sections.get("player_resources"))
+            .map(|(old,new)| {
+                let counters=|a:&Value,b:&Value| json!({"before":a,"after":b,
+                    "current_delta":b["current"].as_i64().unwrap()-a["current"].as_i64().unwrap(),
+                    "maximum_delta":b["maximum"].as_i64().unwrap()-a["maximum"].as_i64().unwrap()});
+                let power=old.get("primary_power").zip(new.get("primary_power"));
+                json!({"health":old.get("health").zip(new.get("health")).map(|(a,b)|counters(a,b)),
+                    "primary_power":power.filter(|(a,b)| a["power_type"]==b["power_type"] && a["units"]==b["units"]).map(|(a,b)|counters(a,b)),
+                    "primary_power_type_changed":power.map(|(a,b)|a["power_type"]!=b["power_type"]),
+                    "resource_events_verified":false,"readiness_verified":false})
+            }).unwrap_or(Value::Null);
+    }
     if selectors.selected_recipe_changes {
         ensure!(
             before.client.family == crate::Family::Forever,

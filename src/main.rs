@@ -388,6 +388,12 @@ struct List {
 struct Compare {
     before_id: String,
     after_id: String,
+    /// Compare reported profession spell ID sets only for matching native profession IDs.
+    #[serde(default)]
+    profession_spell_changes: bool,
+    /// Compare historical player resource counters; power deltas require the same type and units.
+    #[serde(default)]
+    player_resource_changes: bool,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever currency balance by ID.
@@ -1223,6 +1229,8 @@ impl Operator {
                     toy_view_changes: args.toy_view_changes,
                     saved_instance_changes: args.saved_instance_changes,
                     profession_recipe_changes: args.profession_recipe_changes,
+                    profession_spell_changes: args.profession_spell_changes,
+                    player_resource_changes: args.player_resource_changes,
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),

@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Opt-in saved comparisons cover reported profession spell sets and player resource
+counters. Profession ID and primary-power context must match for derived results;
+missing observations stay unknown. Spell additions/removals are reported-set
+differences, and counter changes do not prove learning, healing or resource use.
+[Offline evidence](../../docs/observation-comparisons-verification-2026-11-08.md).
+
 Visible local profession capture can retain stable reported known spell IDs
 without filter changes. Exact crafted-source IDs can support local learned-output
 searches; conflicts stay unknown. The spell report does not establish complete

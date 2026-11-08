@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`compare_snapshots` can opt into `profession_spell_changes` and
+`player_resource_changes`. Spell differences require the same profession;
+power deltas require the same type and units. Missing context stays unknown,
+and observed differences do not establish learning or resource-use events.
+[Offline evidence](docs/observation-comparisons-verification-2026-11-08.md).
+
 Forever manual exports can capture the visible local profession's reported
 known spell IDs without changing filters. Inspect `profession_spells` or its
 summary; exact catalogue crafting-source IDs can support learned-output searches.
