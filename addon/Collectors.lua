@@ -1671,6 +1671,15 @@ AO.collectors.spellbook = function()
                     if questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256 then row.name=name end
                     if questRewardAccessible(passive) and type(passive)=="boolean" then row.passive=passive end
                     if questRewardAccessible(offSpec) and type(offSpec)=="boolean" then row.off_spec=offSpec end
+                    if C_Spell then
+                        local ok,first=pcall(C_Spell.GetSpellLevelLearned,row.spell_id)
+                        if ok and questRewardInteger(first,0,4294967295) then
+                            local read,second=pcall(C_Spell.GetSpellLevelLearned,row.spell_id)
+                            if read and questRewardInteger(second,0,4294967295) and first==second then
+                                row.level_learned=first
+                            end
+                        end
+                    end
                     entries[tostring(slot)]=row
                 end
             end

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture optional stable reported learn levels for observed spellbook spells and compare exact-spell metadata sets, preserving unknowns and level-linked changes.
+
 - Annotate fixed-reagent recipe reviews with known pending-mail materials from the selected inventory capture, keeping mail outside stock, capacity and purchase calculations.
 
 - Compare known loaded pending mail attachment quantities and slot counts by item/currency ID, retaining partial coverage and avoiding delivery or inventory-transfer claims.

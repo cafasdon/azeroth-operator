@@ -4,6 +4,19 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+Saved `spellbook.entries` can now include optional `level_learned`, reported
+by the public spell API for the captured spell ID. It can vary with level
+linking and does not establish eligibility or current usability. A readable
+stable zero remains zero; missing/restricted/invalid/changing data leaves
+the field absent. Existing spellbook inspection filters return it normally.
+With `compare_snapshots.spellbook: true`,
+`spellbook_change.changes.observed_level_learned_changes` compares deduplicated
+level observations only for shared exact base/reported spell-ID pairs.
+Null in a level set means unknown; different duplicate values are retained.
+This reports metadata changes rather than newly learned spells or level gains.
+Update readers before syncing the new field. See
+[offline evidence](../../docs/spell-learned-level-verification-2026-11-08.md).
+
 The pinned simulator models level 60 only. Equipment reviews now expose
 `captured_character_level` from saved stats, or null when unknown. The ranker
 and direct adapter require an explicit integer 60 before constructing character-

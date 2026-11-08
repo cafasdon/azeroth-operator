@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Spellbook observations can include a readable stable `level_learned` from
+the public spell API, including level-linked adjustments. Existing inspection
+and optional spellbook comparison expose it without an eligibility or new-
+learning inference. Unknowns and duplicate-value ambiguity remain explicit.
+[Offline evidence](../../docs/spell-learned-level-verification-2026-11-08.md).
+
 Fixed-reagent recipe reviews can join their reagent IDs to known pending
 item attachments in the selected inventory capture. This is a separate
 observation with source time and partial coverage, never a stock credit or

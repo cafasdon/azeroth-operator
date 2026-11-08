@@ -1698,7 +1698,8 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
             "added_observed_names_by_base_id":spellbook_names_for(after, &added),
             "removed_observed_names_by_base_id":spellbook_names_for(before, &removed),
             "after_action_slots_with_lost_spellbook_match":lost_spellbook_action_matches(a, b, after),
-            "observed_flag_changes":compare_spellbook_flags(before, after)})
+            "observed_flag_changes":compare_spellbook_flags(before, after),
+            "observed_level_learned_changes":compare_spellbook_levels(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
@@ -1744,6 +1745,35 @@ fn spellbook_names_for<'a>(
         }
     }
     names
+}
+
+fn compare_spellbook_levels(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
+    fn levels(snapshot: &Snapshot) -> Option<BTreeMap<(u64, u64), BTreeSet<Option<u64>>>> {
+        let mut observed = BTreeMap::<_, BTreeSet<_>>::new();
+        for row in snapshot.sections.get("spellbook")?["entries"]
+            .as_object()?
+            .values()
+        {
+            observed
+                .entry((row["base_spell_id"].as_u64()?, row["spell_id"].as_u64()?))
+                .or_default()
+                .insert(row["level_learned"].as_u64());
+        }
+        Some(observed)
+    }
+    let after = levels(after)?;
+    Some(
+        levels(before)?
+            .into_iter()
+            .filter_map(|((base, id), old)| {
+                let new = after.get(&(base, id))?;
+                (old != *new).then(|| {
+                    json!({"base_spell_id":base,"spell_id":id,
+            "before_levels":old,"after_levels":new})
+                })
+            })
+            .collect(),
+    )
 }
 
 fn compare_spellbook_flags(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
