@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Confirm the leading distinct Forever bulk shortlist sets on fresh fixed samples.
+
 - Rerun the two leading Forever DPS gear sets with a fresh seed for an independent paired comparison.
 
 - Narrow Forever ranker alternatives by captured enchant effect and random suffix.

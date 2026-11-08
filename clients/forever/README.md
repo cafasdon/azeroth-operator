@@ -722,6 +722,10 @@ at least that many integers away from each original seed to rerun those two
 sets only. The confirmation reports the original leader minus the
 original runner-up on fresh samples, including when the order reverses.
 It adds a fixed comparison per distinct encounter with two eligible sets.
+In adaptive bulk mode the pair comes from the returned shortlist and
+equipped baseline. The confirmation seed must precede the selection seed
+by at least the requested fixed iterations because the adaptive run can
+extend its seed range forward.
 
 Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
 separately for each encounter. Output uses an `encounters` array in input order,

@@ -337,6 +337,16 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     result.update(encounter_summary(requests[0]))
     if args.confirm_leading_seed is not None:
         pair = result.get("observed_leading_dps_pair")
+        if result.get("mode") == "staged_bulk":
+            leaders = {}
+            for row in sorted(result["results"], key=lambda row: (-row["mean_dps"], row["review"])):
+                review = row["review"]
+                gear = single_player(requests[review - 1]["raid"])["equipment"]
+                leaders.setdefault(json.dumps(gear, sort_keys=True), review)
+                if len(leaders) == 2:
+                    leading, runner_up = leaders.values()
+                    pair = {"leading_review": leading, "runner_up_review": runner_up}
+                    break
         confirmation = {"seed": str(args.confirm_leading_seed), "status": "no_distinct_pair"}
         if pair is not None:
             # Keep the original runner-up as the reference even if the order reverses.
@@ -459,7 +469,7 @@ def main():
                         help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
     parser.add_argument("--confirm-leading-seed", type=int,
-                        help="Rerun the top two distinct fixed paired DPS sets with this fresh seed.")
+                        help="Rerun the top two distinct DPS sets with this fresh seed.")
     parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",
                         help="Rank by damage dealt, damage taken, threat, deaths, healing or time out of mana")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
@@ -495,9 +505,9 @@ def main():
         parser.error("--engine, --engine-sha256 and --encounter-lookup are required for simulation")
     if args.confirm_leading_seed is not None and (
         not 1 <= args.confirm_leading_seed <= 2**32 - 1
-        or not args.paired or args.bulk_engine or args.rank_by != "dps"
+        or not args.paired or args.rank_by != "dps"
     ):
-        parser.error("Confirmation requires a positive 32-bit seed and fixed paired DPS mode")
+        parser.error("Confirmation requires a positive 32-bit seed and paired DPS mode")
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
@@ -549,7 +559,11 @@ def main():
                 options = request_from(template, drafts[0][1], encounter)["simOptions"]
                 iterations = options["iterations"]
                 # The engine advances the seed once per iteration.
-                if not 200 <= iterations <= 5000 or abs(int(options["randomSeed"]) - args.confirm_leading_seed) < iterations:
+                gap = int(options["randomSeed"]) - args.confirm_leading_seed
+                # Adaptive selection can use more samples than the requested fixed count.
+                if args.bulk_engine and gap < iterations:
+                    parser.exit(1, "Adaptive confirmation seed must precede each selection seed by at least the requested iterations.\n")
+                if not 200 <= iterations <= 5000 or abs(gap) < iterations:
                     parser.exit(1, "Confirmation requires 200–5,000 iterations and non-overlapping seed ranges.\n")
         if args.plan_only:
             result = {
