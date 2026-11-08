@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Linked-item observations can include stable native equip-location tokens.
+Saved equipment drafts annotate known slot categories, with unknown mappings
+and two-handed off-hand placement left explicit. Category matches do not
+establish class, level, dual-wield, unique-item or complete-set legality.
+No simulation rules or game equipment are changed.
+[Offline evidence](../../docs/native-equip-location-verification-2026-11-08.md).
+
 Public weapon-enchant list observations cover main hand, off hand and ranged
 slots independently, retaining reported type/ID/timer/charge data. Summaries
 separate unreadable hands, empty lists and missing details; values remain

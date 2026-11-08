@@ -222,7 +222,27 @@ local function itemNativeStats(item)
     return item
 end
 
+local function itemEquipLocation(item)
+    if AO.family~="forever" or not (C_Item and C_Item.GetItemInfoInstant) then return item end
+    local function readable(value) return not issecretvalue or not issecretvalue(value) end
+    local link=item.link
+    if not readable(link) or type(link)~="string" or #link==0 or #link>4096 then return item end
+    local function read()
+        local id,_,_,location=C_Item.GetItemInfoInstant(link)
+        if not readable(id) or id~=item.item_id or not readable(location) or type(location)~="string"
+            or #location>64 or (location~="" and not location:match("^INVTYPE_[A-Z0-9_]+$")) then return end
+        return location
+    end
+    local ok,first=pcall(read)
+    if ok and first~=nil then
+        local nextOk,second=pcall(read)
+        if nextOk and first==second then item.equip_location=first end
+    end
+    return item
+end
+
 local function itemRequiredLevel(item)
+    item=itemEquipLocation(item)
     item=itemNativeStats(item)
     if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
     local function readable(value) return not issecretvalue or not issecretvalue(value) end

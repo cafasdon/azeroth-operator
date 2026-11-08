@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable native linked-item equip-location tokens and annotate saved equipment drafts by slot category, retaining unknown/conditional placement and unverified equip eligibility.
+
 - Capture public weapon-enchant lists and summarise reported types, IDs, countdowns and charges, preserving unreadable hands and unknown details without expiry or performance inference.
 
 - Capture stable numeric native item-stat tokens from exact links and compare shared tokens in equipment reviews, preserving one-sided observations and unknown performance effects.

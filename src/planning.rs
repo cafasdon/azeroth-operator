@@ -141,6 +141,7 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"selected_item_observed":item,
             "previous_item_observed":previous,"native_stat_comparison":native_stat_comparison,
+            "native_slot_category":if snapshot.client.family==crate::Family::Forever {native_slot_category(item,selection.target_slot)} else {Value::Null},
             "status":if same_location {"already_selected"} else {"requested_change"}}),
         );
     }
@@ -171,6 +172,42 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
           "This is a desired selection review, not a game import, macro, move order or equipment optimisation",
           "Displaced items have no assigned destination; review inventory capacity in the game"]}),
     )
+}
+
+fn native_slot_category(item: &Value, target: u32) -> Value {
+    let location = item["equip_location"].as_str();
+    let slots: Option<&[u32]> = match location {
+        Some("INVTYPE_HEAD") => Some(&[1]),
+        Some("INVTYPE_NECK") => Some(&[2]),
+        Some("INVTYPE_SHOULDER") => Some(&[3]),
+        Some("INVTYPE_BODY") => Some(&[4]),
+        Some("INVTYPE_CHEST" | "INVTYPE_ROBE") => Some(&[5]),
+        Some("INVTYPE_WAIST") => Some(&[6]),
+        Some("INVTYPE_LEGS") => Some(&[7]),
+        Some("INVTYPE_FEET") => Some(&[8]),
+        Some("INVTYPE_WRIST") => Some(&[9]),
+        Some("INVTYPE_HAND") => Some(&[10]),
+        Some("INVTYPE_FINGER") => Some(&[11, 12]),
+        Some("INVTYPE_TRINKET") => Some(&[13, 14]),
+        Some("INVTYPE_CLOAK") => Some(&[15]),
+        Some("INVTYPE_WEAPONMAINHAND") => Some(&[16]),
+        Some("INVTYPE_WEAPONOFFHAND" | "INVTYPE_SHIELD" | "INVTYPE_HOLDABLE") => Some(&[17]),
+        Some("INVTYPE_WEAPON" | "INVTYPE_2HWEAPON") => Some(&[16, 17]),
+        Some("INVTYPE_RANGED" | "INVTYPE_RANGEDRIGHT" | "INVTYPE_THROWN" | "INVTYPE_RELIC") => {
+            Some(&[18])
+        }
+        Some("INVTYPE_TABARD") => Some(&[19]),
+        _ => None,
+    };
+    let matches = slots.and_then(|slots| {
+        if location == Some("INVTYPE_2HWEAPON") && target == 17 {
+            None
+        } else {
+            Some(slots.contains(&target))
+        }
+    });
+    json!({"observed_equip_location":location,"candidate_equipment_slots":slots,"target_slot_category_matches":matches,
+        "eligibility_verified":false})
 }
 
 #[cfg(test)]

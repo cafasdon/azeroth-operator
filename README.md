@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever linked-item captures can include stable `equip_location` tokens.
+Equipment reviews annotate the selected item's native slot category, keeping
+unknown tokens and conditional two-handed off-hand placement explicit.
+A category match does not prove equip eligibility; overall compatibility
+and simulation checks retain their separate rules.
+[Offline verification](docs/native-equip-location-verification-2026-11-08.md).
+
 Forever exports can include `weapon_enchants`, recording public enchant lists
 for main hand, off hand and ranged slots. `character_summary` exposes the
 reported enchant types, IDs, timers and charges with explicit unobserved hands.

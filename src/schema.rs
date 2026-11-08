@@ -12,6 +12,7 @@ struct Item<'a> {
     count: Option<u32>,
     guid: Option<&'a str>,
     required_level: Option<u32>,
+    equip_location: Option<&'a str>,
     native_stats: Option<std::collections::BTreeMap<String, f64>>,
 }
 
@@ -31,6 +32,22 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
     for (slot, value) in slots {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
+        if value.get("equip_location").is_some() {
+            let location = item
+                .equip_location
+                .ok_or_else(|| anyhow::anyhow!("Invalid native equip location"))?;
+            ensure!(
+                item.link.is_some_and(|link| !link.is_empty())
+                    && location.len() <= 64
+                    && (location.is_empty()
+                        || location.strip_prefix("INVTYPE_").is_some_and(|token| !token
+                            .is_empty()
+                            && token.bytes().all(|b| b.is_ascii_uppercase()
+                                || b.is_ascii_digit()
+                                || b == b'_'))),
+                "Invalid native equip location"
+            );
+        }
         if value.get("native_stats").is_some() {
             let stats = item
                 .native_stats
