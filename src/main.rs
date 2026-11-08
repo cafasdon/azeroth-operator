@@ -344,6 +344,9 @@ struct RecipeReview {
     inventory_snapshot_id: Option<String>,
     /// Up to seven other saved recipes checked against the same inventory capture.
     additional_recipes: Option<Vec<RecipeBatchEntry>>,
+    /// Match material shortfalls against the merchant stock in the inventory capture.
+    #[serde(default)]
+    merchant_reagent_plan: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -834,6 +837,12 @@ impl Operator {
                 if inventory.is_none() {
                     review["inventory_snapshot_id"] = serde_json::json!(args.snapshot_id);
                 }
+            }
+            if args.merchant_reagent_plan {
+                review["merchant_reagent_plan"] = azeroth_operator::analysis::recipe_merchant_plan(
+                    &review,
+                    inventory.as_ref().unwrap_or(&snapshot),
+                );
             }
             Ok::<_, anyhow::Error>(review)
         })();

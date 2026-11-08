@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Match Forever crafting shortfalls against captured merchant offers.
+
 - Plan whole bundles and copper for a target quantity across matching Forever merchant offers.
 
 - Reserve copper for other expenses when budgeting captured Forever flights.

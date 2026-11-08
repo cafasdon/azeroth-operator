@@ -1943,22 +1943,61 @@ pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
     };
     let rows: BTreeMap<_, _> = offers
         .iter()
-        .filter_map(|(slot, offer)| {
-            let size = offer["bundle_size"].as_u64().filter(|size| *size > 0)?;
-            let bundles = u64::from(quantity).div_ceil(size);
-            let units = bundles.checked_mul(size)?;
-            let copper = offer["price_copper"].as_u64()?.checked_mul(bundles)?;
-            Some((
-                slot,
-                json!({
-                    "bundles":bundles,"units":units,"extra_units":units - u64::from(quantity),
-                    "required_copper":copper,"extended_cost":offer["extended_cost"],
-                    "captured_available":offer["available"]
-                }),
-            ))
-        })
+        .map(|(slot, offer)| (slot, merchant_quantity_row(offer, u64::from(quantity))))
         .collect();
     json!({"target_quantity":quantity,"offers_by_slot":rows})
+}
+
+fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {
+    let size = offer["bundle_size"].as_u64().filter(|size| *size > 0)?;
+    let bundles = quantity.div_ceil(size);
+    let units = bundles.checked_mul(size)?;
+    let copper = offer["price_copper"].as_u64()?.checked_mul(bundles);
+    Some(json!({
+        "bundles":bundles,"units":units,"extra_units":units - quantity,
+        "required_copper":copper,"extended_cost":offer["extended_cost"],
+        "captured_available":offer["available"]
+    }))
+}
+
+pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
+    let materials = if let Some(ordered) = review.get("ordered_starting_materials") {
+        ordered.as_array()
+    } else {
+        review["materials"]
+            .as_array()
+            .filter(|_| review["recipe"]["requirements"] == "fixed_items")
+    };
+    let Some((materials, offers)) = materials.zip(
+        stock
+            .sections
+            .get("merchant_stock")
+            .and_then(Value::as_object),
+    ) else {
+        return Value::Null;
+    };
+    let reagents: Vec<_> = materials
+        .iter()
+        .filter_map(|material| {
+            let item = material["item_id"].as_u64()?;
+            let shortfall = material["shortfall_vs_observed"].as_u64();
+            if shortfall == Some(0) {
+                return None;
+            }
+            let options: BTreeMap<_, _> = offers
+                .iter()
+                .filter(|(_, offer)| offer["item_id"].as_u64() == Some(item))
+                .map(|(slot, offer)| {
+                    (
+                        slot,
+                        shortfall.and_then(|quantity| merchant_quantity_row(offer, quantity)),
+                    )
+                })
+                .collect();
+            Some(json!({"item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options}))
+        })
+        .collect();
+    json!({"merchant_captured_at":stock.captured_at,"reagents":reagents})
 }
 
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {

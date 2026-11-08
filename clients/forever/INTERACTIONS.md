@@ -281,6 +281,14 @@ units received, surplus and copper for each matching offer. Extended
 costs and recorded stock are flagged separately. Use the returned slot
 and bundle count in a merchant offer review for the full resource budget.
 
+Set `merchant_reagent_plan: true` in `review_forever_recipe` to match
+reagent shortfalls against offers in the same capture as the inventory.
+For batches this uses starting materials in the supplied recipe order.
+Missing inventory coverage can overstate what needs buying. When no
+storage was observed, matching slots can still be listed but their
+quantities stay unknown. The plan estimates bundles and copper, with
+stock and extended costs reported separately.
+
 Use `merchant_item_id` with `family: "forever"` in `list_snapshots`
 to search across captures. Results include the matching offer count and
 the player's captured map when known. This is the map at export, so it
