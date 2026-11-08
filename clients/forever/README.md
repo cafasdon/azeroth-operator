@@ -489,6 +489,14 @@ point estimates. These are two fixture runs with different final iteration
 counts. They measure shortlist agreement on those inputs, including an
 actual cull. Near-tie recall on other gear pools remains unmeasured.
 
+A separate offline timing check used 49 distinct public Hunter gear sets,
+45-second fights with three seconds of variation, and a five-set bulk
+shortlist. Two exports of the same simulation inputs took 6.39 seconds
+end to end. The ranker reused the first result and returned identical
+rows for the second export. Changing only the second seed from 20261107
+to 20261108 took 11.69 seconds and ran both profiles. These are single
+CLI timings through the local MCP and pinned engine.
+
 An offline follow-up held that gear pool, duration and duration variation
 fixed and used seed 20261109 for both `Default/Raid Target` and
 `Default/Movement`. Both profiles came from the local MCP catalogue. The
