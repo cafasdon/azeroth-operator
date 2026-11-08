@@ -658,6 +658,7 @@ pub struct ComparisonSelectors {
     pub faction_id: Option<u32>,
     pub quest_id: Option<u32>,
     pub quest_waypoints: bool,
+    pub quest_readiness_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -981,6 +982,39 @@ pub fn compare_observations(
                            "after":new_objectives.map(quest_objective_counts)});
             }
         }
+    }
+    if selectors.quest_readiness_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Quest readiness comparison requires Forever"
+        );
+        let logs = before
+            .sections
+            .get("quests")
+            .and_then(Value::as_object)
+            .zip(after.sections.get("quests").and_then(Value::as_object));
+        comparison["quest_readiness_changes"] = json!(logs.map(|(before, after)| {
+            let mut changes = BTreeMap::new();
+            let mut only_before = BTreeSet::new();
+            let mut only_after = BTreeSet::new();
+            for key in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
+                let Ok(id) = key.parse::<u32>() else { continue };
+                match (before.get(key), after.get(key)) {
+                    (Some(old), Some(new)) => {
+                        let previous = quest_readiness(old);
+                        let current = quest_readiness(new);
+                        if previous != current {
+                            changes.insert(id, json!({"quest_id":id,"before":previous,"after":current}));
+                        }
+                    }
+                    (Some(_), None) => { only_before.insert(id); }
+                    (None, Some(_)) => { only_after.insert(id); }
+                    (None, None) => {}
+                }
+            }
+            json!({"changes":changes.into_values().collect::<Vec<_>>(),
+                "quest_ids_observed_only_before":only_before,"quest_ids_observed_only_after":only_after})
+        }));
     }
     if selectors.quest_waypoints {
         ensure!(

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare readiness transitions across two saved Forever quest logs.
+
 - Find saved Forever captures by quest ID and recorded readiness.
 
 - Estimate XP from the affordable prefix of a saved Forever quest turn-in plan.

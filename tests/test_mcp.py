@@ -1134,6 +1134,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(renown.content[0].text)["wallet_change"], {
                             "before_copper": 0, "after_copper": None, "delta_copper": None})
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
+                        del reputation_after["sections"]["quests"]["43"]
+                        reputation_after["sections"]["quests"]["999"] = {"title": "New quest", "level": 10}
                         reputation_after["sections"]["quests"]["42"]["timer"]["remaining_seconds"] = 0
                         reputation_after["sections"]["trainer_services"]["entries"]["1"]["price_copper"] = 0
                         del reputation_after["sections"]["trainer_services"]["entries"]["3"]["price_copper"]
@@ -1157,9 +1159,33 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         progress_key = SnapshotStore(Path(folder)).ingest(reputation_after)
                         progress = await session.call_tool("compare_snapshots", {
                             "before_id": after_key, "after_id": progress_key, "quest_id": 42,
-                            "achievement_id": 101, "profession_skill_line": 164})
+                            "achievement_id": 101, "profession_skill_line": 164,
+                            "quest_readiness_changes": True})
                         self.assertFalse(progress.isError)
                         progress_data = json.loads(progress.content[0].text)
+                        self.assertEqual(progress_data["quest_readiness_changes"], {
+                            "changes": [{"quest_id": 42, "before": "not_ready", "after": "ready"}],
+                            "quest_ids_observed_only_before": [43],
+                            "quest_ids_observed_only_after": [999],
+                        })
+                        for quest_log, expected in [
+                            ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
+                                  "quest_ids_observed_only_after": []}),
+                            (None, None),
+                        ]:
+                            missing_log = json.loads(json.dumps(reputation_after))
+                            if quest_log is None:
+                                del missing_log["sections"]["quests"]
+                            else:
+                                missing_log["sections"]["quests"] = quest_log
+                            missing_log_id = SnapshotStore(Path(folder)).ingest(missing_log)
+                            compared_log = await session.call_tool("compare_snapshots", {
+                                "before_id": progress_key, "after_id": missing_log_id,
+                                "quest_readiness_changes": True,
+                            })
+                            self.assertFalse(compared_log.isError)
+                            self.assertEqual(json.loads(compared_log.content[0].text)[
+                                "quest_readiness_changes"], expected)
                         trainer_changes = progress_data["trainer_service_changes"]
                         self.assertEqual(trainer_changes["price_unit"], "copper")
                         self.assertEqual(trainer_changes["status_changes"], [])

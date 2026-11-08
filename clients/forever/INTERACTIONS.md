@@ -560,6 +560,11 @@ captures where that quest was observed. Add `quest_readiness` as
 Unknown means the quest was observed without enough readiness evidence.
 A missing quest does not match. Results return the ID and recorded status.
 
+Use `quest_readiness_changes: true` in `compare_snapshots` to compare
+the readiness of quests present in both Forever logs. IDs seen on only
+one side are listed separately. A one-sided observation does not establish
+why a quest appeared or disappeared. Missing quest logs yield null.
+
 `character_summary.quest_objective_workload` counts unfinished objective
 rows by captured kind and counts quests with unavailable objective maps.
 It excludes explicitly failed quests. An observed empty map contributes

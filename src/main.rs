@@ -349,6 +349,9 @@ struct Compare {
     /// Compare next waypoint maps for quests present in both Forever captures.
     #[serde(default)]
     quest_waypoints: bool,
+    /// Compare recorded readiness across both Forever quest logs.
+    #[serde(default)]
+    quest_readiness_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1112,6 +1115,7 @@ impl Operator {
                     faction_id: args.faction_id.map(|id| id.get()),
                     quest_id: args.quest_id.map(|id| id.get()),
                     quest_waypoints: args.quest_waypoints,
+                    quest_readiness_changes: args.quest_readiness_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,
