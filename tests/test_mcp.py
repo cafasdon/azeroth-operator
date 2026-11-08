@@ -1161,6 +1161,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         food_data = json.loads(food_offers.content[0].text)
                         self.assertEqual(list(food_data["data"]), ["1"])
                         self.assertEqual(food_data["merchant_match_count"], 1)
+                        food_listing = {"family": "forever", "merchant_pet_food_snapshot_id": travel_before,
+                                        "merchant_affordable_only": True}
+                        food_visits = await session.call_tool("list_snapshots", food_listing)
+                        self.assertFalse(food_visits.isError)
+                        food_rows = json.loads(food_visits.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in food_rows], [food_merchant_id])
+                        self.assertEqual(food_rows[0]["merchant_match"]["offer_count"], 1)
+                        self.assertEqual(food_rows[0]["merchant_match"]["pet_food_snapshot_id"], travel_before)
+                        for invalid_food in [{"merchant_item_id": 117},
+                                             {"merchant_pet_food_snapshot_id": forever_key}]:
+                            self.assertTrue((await session.call_tool("list_snapshots", {
+                                **food_listing, **invalid_food,
+                            })).isError)
+                        capped_food = await session.call_tool("list_snapshots", {
+                            **food_listing, "merchant_max_price_copper": 7,
+                        })
+                        self.assertFalse(capped_food.isError)
+                        self.assertEqual(json.loads(capped_food.content[0].text)["snapshots"], [])
                         unknown_food = await session.call_tool("inspect_snapshot", {
                             **food_offer_query, "merchant_pet_food_snapshot_id": forever_key,
                         })

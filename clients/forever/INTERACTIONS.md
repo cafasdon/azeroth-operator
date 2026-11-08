@@ -109,6 +109,12 @@ an unknown match count, and an observed empty classification matches
 no offers. `merchant_target_quantity` can estimate bundles per offer.
 Use this for historical sourcing. Pet acceptance can change between captures.
 
+Use the same `merchant_pet_food_snapshot_id` in `list_snapshots` to
+search all compatible saved merchant visits. It replaces an exact item
+or currency selector and combines with the stock, price and affordability
+filters. A missing food classification returns an error. An observed
+empty classification returns no matches.
+
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have
 food classifications, it compares accepted carried quantities by item ID.

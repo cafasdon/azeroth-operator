@@ -279,6 +279,8 @@ struct List {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
+    /// Find merchant visits for the character and build of this saved pet food classification.
+    merchant_pet_food_snapshot_id: Option<String>,
     /// Limit the captured copper component per bundle of a matching merchant offer.
     merchant_max_price_copper: Option<u64>,
     /// Require an offer with unlimited or positive captured stock.
@@ -1173,6 +1175,7 @@ impl Operator {
                 pet_food: args.pet_food,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
+                merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),
                 merchant_max_price_copper: args.merchant_max_price_copper,
                 merchant_in_stock_only: args.merchant_in_stock_only,
                 merchant_copper_only: args.merchant_copper_only,

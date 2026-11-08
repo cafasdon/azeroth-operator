@@ -323,6 +323,7 @@ pub struct CaptureFilters<'a> {
     pub pet_food: Option<PetFoodCaptureFilter>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
+    pub merchant_pet_food_snapshot_id: Option<&'a str>,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
     pub merchant_copper_only: bool,
@@ -449,6 +450,7 @@ impl Store {
             pet_food,
             merchant_item_id,
             merchant_currency_id,
+            merchant_pet_food_snapshot_id,
             merchant_max_price_copper,
             merchant_in_stock_only,
             merchant_copper_only,
@@ -511,24 +513,52 @@ impl Store {
             "Flight filtering requires Forever"
         );
         ensure!(
-            (merchant_item_id.is_none() || merchant_currency_id.is_none())
-                && (family == Family::Forever
-                    || (merchant_item_id.is_none() && merchant_currency_id.is_none())),
-            "Merchant filtering requires Forever and one product ID"
+            [
+                merchant_item_id.is_some(),
+                merchant_currency_id.is_some(),
+                merchant_pet_food_snapshot_id.is_some()
+            ]
+            .into_iter()
+            .filter(|selected| *selected)
+            .count()
+                <= 1,
+            "Use one merchant product or pet food selector"
         );
         let merchant_product = merchant_item_id
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
+        let filter_merchant = merchant_product.is_some() || merchant_pet_food_snapshot_id.is_some();
+        ensure!(
+            !filter_merchant || family == Family::Forever,
+            "Merchant filtering requires Forever"
+        );
         ensure!(
             !(merchant_in_stock_only || merchant_copper_only || merchant_affordable_only)
-                || merchant_product.is_some(),
-            "Merchant stock and cost filters require a product ID"
+                || filter_merchant,
+            "Merchant stock and cost filters require an offer selector"
         );
         ensure!(
             merchant_max_price_copper
-                .is_none_or(|price| merchant_product.is_some() && price <= 9_999_999_999_999),
-            "Merchant price filtering requires a product ID and a valid copper amount"
+                .is_none_or(|price| filter_merchant && price <= 9_999_999_999_999),
+            "Merchant price filtering requires an offer selector and a valid copper amount"
         );
+        let food_capture = merchant_pet_food_snapshot_id
+            .map(|id| self.read(id))
+            .transpose()?;
+        let accepted_food = food_capture
+            .as_ref()
+            .map(|capture| {
+                ensure!(
+                    capture.client.family == Family::Forever,
+                    "Expected Forever pet food capture"
+                );
+                capture
+                    .sections
+                    .get("pet_care")
+                    .and_then(|pet| pet["carried_food"].as_object())
+                    .ok_or_else(|| anyhow::anyhow!("Missing food classification"))
+            })
+            .transpose()?;
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
@@ -679,6 +709,11 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    if food_capture.as_ref().is_some_and(|food| {
+                        analysis::ensure_same_character_and_client(food, &s).is_err()
+                    }) {
+                        continue;
+                    }
                     let pet_food_match = if let Some(filter) = &pet_food {
                         let Some(food) = s
                             .sections
@@ -791,7 +826,7 @@ impl Store {
                     if profession_skill_line.is_some() && profession_match.is_none() {
                         continue;
                     }
-                    let merchant_matches = merchant_product.map(|(field, id)| {
+                    let merchant_matches = filter_merchant.then(|| {
                         let wallet = s
                             .sections
                             .get("wallet")
@@ -803,13 +838,18 @@ impl Store {
                                 offers
                                     .values()
                                     .filter(|offer| {
-                                        offer[field].as_u64() == Some(u64::from(id))
-                                            && (!(merchant_in_stock_only
-                                                || merchant_affordable_only)
-                                                || matches!(
-                                                    offer["available"].as_i64(),
-                                                    Some(-1 | 1..)
-                                                ))
+                                        merchant_product.is_none_or(|(field, id)| {
+                                            offer[field].as_u64() == Some(u64::from(id))
+                                        }) && accepted_food.is_none_or(|food| {
+                                            offer["item_id"].as_u64().is_some_and(|id| {
+                                                food.contains_key(&id.to_string())
+                                            })
+                                        }) && (!(merchant_in_stock_only
+                                            || merchant_affordable_only)
+                                            || matches!(
+                                                offer["available"].as_i64(),
+                                                Some(-1 | 1..)
+                                            ))
                                             && (!(merchant_copper_only || merchant_affordable_only)
                                                 || offer["extended_cost"] == false)
                                             && (!merchant_affordable_only
@@ -934,16 +974,19 @@ impl Store {
                     if let Some(route) = flight_match {
                         summary["flight_match"] = route;
                     }
-                    if let Some((count, (field, product_id))) =
-                        merchant_matches.zip(merchant_product)
-                    {
+                    if let Some(count) = merchant_matches {
                         let stats = s.sections.get("stats");
                         summary["merchant_match"] = json!({
-                            (field):product_id,
                             "offer_count":count,
                             "captured_player_map_id":stats.and_then(|stats| stats["map_id"].as_u64()),
                             "captured_player_map_name":stats.and_then(|stats| stats["map_name"].as_str()),
                         });
+                        if let Some((field, product_id)) = merchant_product {
+                            summary["merchant_match"][field] = json!(product_id);
+                        }
+                        if let Some(food_id) = merchant_pet_food_snapshot_id {
+                            summary["merchant_match"]["pet_food_snapshot_id"] = json!(food_id);
+                        }
                     }
                     if filter_instance {
                         summary["instance_context"] = s.sections["instance_context"].clone();

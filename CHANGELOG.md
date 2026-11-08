@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved Forever merchant visits for previously accepted pet food, including stock and price filters.
+
 - Find saved merchant offers for foods accepted in a compatible Forever pet capture.
 
 - Find saved Forever captures by accepted carried pet food quantity.
