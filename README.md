@@ -13,6 +13,16 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever's visible local profession list can include stable reported recipe
+difficulty, skill-up flags and skill-up counts. `character_summary` adds
+`profession_skill_up_candidates`: up to 50 learned rows with a known true
+skill-up flag, sorted by recipe ID, with totals and unknown counts.
+`list_snapshots.profession_recipe` accepts `can_skill_up` and
+`minimum_skill_ups_reported` alongside the exact recipe ID. Unknown values
+do not match false or zero. These are historical observations from a filtered
+list, not guaranteed gains or proof of craftability.
+[Offline verification](docs/recipe-skill-up-verification-2026-11-08.md).
+
 Forever flight-map snapshots can include optional `entries.<slot>.map_position`
 with numeric `x` and `y` in `[0,1]`. Saved route legs expose these as
 `origin_map_position` and `destination_map_position` when known. Coordinates

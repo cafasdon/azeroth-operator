@@ -4581,6 +4581,17 @@ pub fn summary(s: &Snapshot) -> Value {
             "unlearned":rows.values().filter(|row| row["learned"] == false).count(),
             "learning_unknown":rows.values().filter(|row| row["learned"].as_bool().is_none()).count()})
     }).unwrap_or(Value::Null);
+    summary["profession_skill_up_candidates"] = s.sections.get("profession_recipe_view").map(|view| {
+        let rows=view["entries"].as_object().unwrap();
+        let mut candidates:Vec<_>=rows.iter().filter(|(_,row)|row["learned"]==true && row["can_skill_up"]==true).collect();
+        candidates.sort_by_key(|(id,_)|id.parse::<u32>().unwrap());
+        json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
+            "candidate_count":candidates.len(),"truncated":candidates.len()>50,
+            "learned_rows_with_unknown_skill_up_flag":rows.values().filter(|row|row["learned"]==true && row["can_skill_up"].as_bool().is_none()).count(),
+            "eligibility_verified":false,
+            "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
+                "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
+    }).unwrap_or(Value::Null);
     summary["saved_world_bosses_observed"] = json!(
         s.sections
             .get("saved_world_bosses")

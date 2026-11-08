@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable reported skill-up metadata from the visible local recipe list, search exact recipe observations and summarise learned skill-up candidates with explicit partial coverage and unknowns.
+
 - Capture stable public flight-route preview nodes and annotate saved routes without splitting flights or fares; preserve unknown and incomplete previews.
 
 - Capture optional stable flight-map node positions and annotate saved route legs in their recorded map frame, preserving unknowns, fares and route selection.

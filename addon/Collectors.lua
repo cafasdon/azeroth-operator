@@ -877,6 +877,27 @@ AO.collectors.profession_recipe_view = function()
             end
             local learned=readable(info.learned)
             if learned~=nil then assert(type(learned)=="boolean", "Invalid recipe learning flag");row.learned=learned end
+            local function optionalSkillUp(value,kind)
+                if issecretvalue and issecretvalue(value) then return end
+                if kind=="bool" then if type(value)=="boolean" then return value end
+                elseif type(value)=="number" and value%1==0 and value>=0 and value<=4294967295 then return value end
+            end
+            local difficulty=optionalSkillUp(info.relativeDifficulty,"uint")
+            local labels={[0]="optimal","medium","easy","trivial"}
+            row.relative_difficulty=difficulty and labels[difficulty] or nil
+            row.can_skill_up=optionalSkillUp(info.canSkillUp,"bool")
+            row.skill_ups_reported=optionalSkillUp(info.numSkillUps,"uint")
+            -- Only keep optional metadata that agrees in another public read.
+            local ok,nextInfo=pcall(api.GetRecipeInfo,id)
+            if ok and (not issecretvalue or not issecretvalue(nextInfo)) and type(nextInfo)=="table"
+                and (not issecretvalue or not issecretvalue(nextInfo.recipeID)) and nextInfo.recipeID==id then
+                local nextDifficulty=optionalSkillUp(nextInfo.relativeDifficulty,"uint")
+                if row.relative_difficulty~=(nextDifficulty and labels[nextDifficulty] or nil) then row.relative_difficulty=nil end
+                if row.can_skill_up~=optionalSkillUp(nextInfo.canSkillUp,"bool") then row.can_skill_up=nil end
+                if row.skill_ups_reported~=optionalSkillUp(nextInfo.numSkillUps,"uint") then row.skill_ups_reported=nil end
+            else
+                row.relative_difficulty=nil;row.can_skill_up=nil;row.skill_ups_reported=nil
+            end
         end
         rows[tostring(id)]=row
     end

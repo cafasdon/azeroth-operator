@@ -169,11 +169,15 @@ def validate_snapshot(value):
         for key, row in view["entries"].items():
             if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()
                     or str(int(key)) != key or not 1 <= int(key) <= 4_294_967_295
-                    or not isinstance(row, dict) or set(row) - {"name", "learned"}
+                    or not isinstance(row, dict) or set(row) - {"name", "learned", "relative_difficulty", "can_skill_up", "skill_ups_reported"}
                     or (row.get("name") is not None and (not isinstance(row["name"], str)
                         or not 1 <= len(row["name"].encode()) <= 256))
                     or (row.get("learned") is not None and type(row["learned"]) is not bool)):
                 raise ValueError("Invalid profession recipe row")
+            if ("relative_difficulty" in row and row["relative_difficulty"] not in ("optimal","medium","easy","trivial")
+                    or "can_skill_up" in row and type(row["can_skill_up"]) is not bool
+                    or "skill_ups_reported" in row and (type(row["skill_ups_reported"]) is not int or not 0 <= row["skill_ups_reported"] <= 4_294_967_295)):
+                raise ValueError("Invalid recipe skill-up observation")
     if "saved_world_bosses" in sections:
         saved = sections["saved_world_bosses"]
         if (c["family"] != "forever" or not isinstance(saved, dict)

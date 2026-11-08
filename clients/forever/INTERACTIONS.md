@@ -2,6 +2,14 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+The filtered local profession list can expose optional stable difficulty,
+skill-up flags and reported counts. Summary candidates require observed
+learning and a true skill-up flag; they are bounded, ID-ordered and retain
+unknown metadata. Exact-recipe search can require a flag/count without
+treating unknowns as false or zero. These are reported observations, not
+guaranteed gains, full profession coverage or crafting eligibility.
+[Offline evidence](../../docs/recipe-skill-up-verification-2026-11-08.md).
+
 Reachable flight destinations can include stable observed route-preview node
 IDs from the visible panel. Saved route legs retain origin/intermediate/target
 sequences as annotations, without splitting a quoted flight into multiple

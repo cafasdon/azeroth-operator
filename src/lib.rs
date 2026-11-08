@@ -360,6 +360,10 @@ pub struct ProfessionRecipeFilter {
     pub profession_id: Option<std::num::NonZeroU32>,
     /// Unknown requires an observed row with no readable learning flag.
     pub learning: Option<RecipeLearning>,
+    /// Require an observed skill-up flag; unknown does not match false.
+    pub can_skill_up: Option<bool>,
+    /// Require an observed reported skill-up count at or above this bound.
+    pub minimum_skill_ups_reported: Option<u32>,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
@@ -1218,9 +1222,17 @@ impl Store {
                         let view = s.sections.get("profession_recipe_view")?;
                         let row = view["entries"].get(key)?;
                         (filter.profession_id.is_none_or(|id| view["profession_id"].as_u64() == Some(u64::from(id.get())))
-                            && filter.learning.is_none_or(|state| row["learned"].as_bool() == state.observed()))
-                            .then(|| json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
-                                "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]}))
+                            && filter.learning.is_none_or(|state| row["learned"].as_bool() == state.observed())
+                            && filter.can_skill_up.is_none_or(|flag| row["can_skill_up"].as_bool()==Some(flag))
+                            && filter.minimum_skill_ups_reported.is_none_or(|minimum|row["skill_ups_reported"].as_u64().is_some_and(|n|n>=u64::from(minimum))))
+                            .then(|| {
+                                let mut observation=json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
+                                    "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]});
+                                for field in ["relative_difficulty","can_skill_up","skill_ups_reported"] {
+                                    if let Some(value)=row.get(field) { observation[field]=value.clone(); }
+                                }
+                                observation
+                            })
                     });
                     if profession_recipe.is_some() && profession_recipe_match.is_none() {
                         continue;

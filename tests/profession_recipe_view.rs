@@ -6,7 +6,7 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
 -> Result<(), Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.load(r#"
-        AO={family='forever',variant='live'}; SlashCmdList={};mode='normal';reads=0
+        AO={family='forever',variant='live'}; SlashCmdList={};mode='normal';reads=0;infoReads={}
         function InCombatLockdown() return false end
         function GetBuildInfo() return '1.60.1','70862','',16001 end
         function UnitName() return 'Fixture' end
@@ -34,8 +34,13 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
                 return {7,8,9}
             end,
             GetRecipeInfo=function(id)
+                infoReads[id]=(infoReads[id] or 0)+1
                 if id==9 then return nil end
+                if mode=='metadata_error' and infoReads[id]>1 then error('PRIVATE-SOURCE') end
                 return {recipeID=mode=='wrong_id' and 99 or id,name='Recipe',learned=id==7,
+                    relativeDifficulty=mode=='metadata_secret' and 'PRIVATE-SOURCE' or mode=='metadata_invalid' and 4 or (mode=='metadata_changed' and infoReads[id]>1) and 1 or id==7 and 0 or 3,
+                    canSkillUp=mode=='metadata_secret' and 'PRIVATE-SOURCE' or mode=='metadata_invalid' and 1 or (mode=='metadata_changed' and infoReads[id]>1) or id==7,
+                    numSkillUps=mode=='metadata_secret' and 'PRIVATE-SOURCE' or mode=='metadata_invalid' and -1 or (mode=='metadata_changed' and infoReads[id]>1) and 3 or id==7 and 2 or 0,
                     crafterName='DO-NOT-EXPORT',playerGUID='DO-NOT-EXPORT'}
             end,
             CraftRecipe=function() error('craft forbidden') end,
@@ -47,7 +52,7 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
     lua.load(include_str!("../addon/Core.lua"))
         .call::<()>(("AzerothOperator", namespace))?;
     let capture = || -> Result<azeroth_operator::Snapshot, Box<dyn std::error::Error>> {
-        lua.load("reads=0;AO.Capture()").exec()?;
+        lua.load("reads=0;infoReads={};AO.Capture()").exec()?;
         let encoded: String = lua.globals().get("AzerothOperatorExport")?;
         Ok(decode(
             format!("AzerothOperatorExport = \"{encoded}\"").as_bytes(),
@@ -67,6 +72,38 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
         serde_json::json!({"observed":3,"learned":1,"unlearned":1,"learning_unknown":1})
     );
     assert!(!serde_json::to_string(&saved)?.contains("DO-NOT-EXPORT"));
+    assert_eq!(
+        saved.sections["profession_recipe_view"]["entries"]["7"]["relative_difficulty"],
+        "optimal"
+    );
+    assert_eq!(
+        saved.sections["profession_recipe_view"]["entries"]["7"]["skill_ups_reported"],
+        2
+    );
+    assert_eq!(
+        saved.sections["profession_recipe_view"]["entries"]["8"]["can_skill_up"],
+        false
+    );
+    assert_eq!(
+        azeroth_operator::analysis::summary(&saved)["profession_skill_up_candidates"]["candidate_count"],
+        1
+    );
+    for mode in ["metadata_secret", "metadata_invalid", "metadata_error"] {
+        lua.globals().set("mode", mode)?;
+        let observed = capture()?;
+        let row = &observed.sections["profession_recipe_view"]["entries"]["7"];
+        for field in ["relative_difficulty", "can_skill_up", "skill_ups_reported"] {
+            assert!(row.get(field).is_none(), "{mode}/{field}");
+        }
+        assert_eq!(row["learned"], true);
+        assert!(!serde_json::to_string(&observed)?.contains("PRIVATE-SOURCE"));
+    }
+    lua.globals().set("mode", "metadata_changed")?;
+    let observed = capture()?;
+    let row = &observed.sections["profession_recipe_view"]["entries"]["7"];
+    assert!(row.get("relative_difficulty").is_none());
+    assert!(row.get("skill_ups_reported").is_none());
+    assert_eq!(row["can_skill_up"], true);
     lua.load("mode='empty'").exec()?;
     assert_eq!(
         azeroth_operator::analysis::summary(&capture()?)["profession_recipe_view_counts"]["observed"],

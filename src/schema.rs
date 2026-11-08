@@ -215,7 +215,13 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             );
             entries(
                 &value["entries"],
-                &[("name", "text", false), ("learned", "bool", false)],
+                &[
+                    ("name", "text", false),
+                    ("learned", "bool", false),
+                    ("relative_difficulty", "text", false),
+                    ("can_skill_up", "bool", false),
+                    ("skill_ups_reported", "uint", false),
+                ],
             )?;
             let rows = value["entries"].as_object().unwrap();
             ensure!(
@@ -225,6 +231,18 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         .is_none_or(|name| !name.is_empty() && name.len() <= 256)),
                 "Invalid profession recipe rows"
             );
+            for row in rows.values() {
+                ensure!(
+                    row.get("relative_difficulty").is_none_or(|v| matches!(
+                        v.as_str(),
+                        Some("optimal" | "medium" | "easy" | "trivial")
+                    )) && row.get("can_skill_up").is_none_or(Value::is_boolean)
+                        && row
+                            .get("skill_ups_reported")
+                            .is_none_or(|v| v.as_u64().is_some_and(|n| n <= u32::MAX as u64)),
+                    "Invalid recipe skill-up observation"
+                );
+            }
         }
         "saved_world_bosses" => {
             object(
