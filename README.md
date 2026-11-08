@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.merge_forever_prepared_windows --journal PATH PREPARED_JSON...`
+groups compatible prepared windows against their exact saved journal rows.
+Identical requests share a global review ID and retain original references;
+changed profiles, provenance labels or source material reject. This prepares
+a request set without executing simulations or proving full BiS.
+[Evidence](docs/prepared-window-merge-verification-2026-11-09.md).
+
 `python -m tools.prepare_forever_gear_window --help` prepares simulator requests
 from one exact retained journal window. It rechecks saved selections through the
 local MCP, requires identical gear inputs, and applies the existing character,

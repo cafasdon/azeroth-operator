@@ -1,5 +1,9 @@
 # Changelog
 
+- Aggregate compatible prepared gear windows against exact journal rows, group
+  repeated requests with global review references, and reject changed request
+  contexts or provenance while preserving partial coverage and false BiS claims.
+
 - Prepare bounded simulation requests from an exact retained gear window using
   fresh read-only MCP reviews, exact saved gear matching and existing model
   guards, with local input fingerprints and no simulator execution.

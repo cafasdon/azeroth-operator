@@ -118,3 +118,8 @@ rechecks retained saved selections via local MCP and applies existing adapter
 guards before producing bounded requests. It skips candidate enumeration but
 still needs fresh reviews; engine execution, resumable result storage and global
 simulation ranking/full owned BiS remain unfinished.
+
+Later [prepared-window aggregation](prepared-window-merge-verification-2026-11-09.md)
+checks selected source journal rows, groups identical gear requests under one
+shared profile and preserves source references/coverage gaps. Request grouping
+does not execute simulations, authenticate artifacts or complete global ranking.
