@@ -1363,6 +1363,32 @@ fn xp_to_next_level(xp: &Value) -> Option<u64> {
         .checked_sub(xp["current_xp"].as_u64()?)
 }
 
+pub fn quest_list_xp_projection(
+    quests: &serde_json::Map<String, Value>,
+    experience: Option<&Value>,
+) -> Value {
+    let mut unknown = 0;
+    let mut known_xp = 0u128;
+    for quest in quests.values() {
+        match quest["reward_amounts"]["xp"].as_u64() {
+            Some(xp) => known_xp += u128::from(xp),
+            None => unknown += 1,
+        }
+    }
+    let total = u64::try_from(known_xp).ok();
+    let disabled = experience.and_then(|xp| xp["xp_disabled"].as_bool());
+    let remaining = experience.and_then(xp_to_next_level);
+    let estimate = remaining.zip(total).filter(|_| disabled != Some(true));
+    json!({
+        "known_reward_xp":total,"unknown_reward_count":unknown,
+        "xp_to_next_level":remaining,"xp_disabled":disabled,
+        "covers_recorded_xp_threshold":estimate.and_then(|(remaining,total)| {
+            if total >= remaining { Some(true) } else if unknown == 0 { Some(false) } else { None }
+        }),
+        "xp_shortfall_after_known_rewards":estimate.map(|(remaining,total)| remaining.saturating_sub(total))
+    })
+}
+
 pub fn quest_xp_projection(quest: Option<&Value>, experience: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

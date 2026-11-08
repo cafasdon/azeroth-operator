@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Project combined XP from filtered saved Forever quests against the captured level threshold.
+
 - Filter saved Forever quests by their recorded XP reward.
 
 - Filter saved Forever quests by affordability against the same capture's wallet.

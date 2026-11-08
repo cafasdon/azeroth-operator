@@ -577,6 +577,9 @@ in the same capture. An optional copper cap can narrow the results further.
 If wallet data is unavailable, the filtered result is unknown.
 Use `quest_min_reward_xp` to keep quests with at least that much captured
 XP. Unknown rewards are excluded and counted before the copper filters.
+Set `quest_list_xp_projection` to total observed XP across retained quests.
+Combine it with readiness for a turn-in plan. If known rewards fall short
+and some rewards are unknown, coverage of the level threshold remains unknown.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its
