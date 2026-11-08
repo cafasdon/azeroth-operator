@@ -46,6 +46,8 @@ struct Inspect {
     /// Keep reachable flights with a recorded fare covered by the wallet in this capture.
     #[serde(default)]
     flight_affordable_only: bool,
+    /// Copper to reserve before evaluating captured flight fares.
+    flight_wallet_reserve_copper: Option<u64>,
     /// Budget all lessons marked available in the saved Forever trainer list.
     #[serde(default)]
     trainer_wallet_projection: bool,
@@ -1144,6 +1146,14 @@ impl Operator {
         let filter_flight = args.flight_node_id.is_some()
             || args.flight_reachable_only
             || args.flight_affordable_only;
+        if args.flight_wallet_reserve_copper.is_some_and(|reserve| {
+            reserve > 9_999_999_999_999
+                || !(args.flight_wallet_projection || args.flight_affordable_only)
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Flight reserve requires an affordability filter or wallet projection and a valid copper amount",
+            )]);
+        }
         if (args.flight_wallet_projection || filter_flight)
             && args.section.as_deref() != Some("flight_map")
         {
@@ -1553,14 +1563,21 @@ impl Operator {
                 } else {
                     None
                 };
-                let flight_wallet = flight_context
+                let flight_balance = flight_context
                     .as_ref()
-                    .and_then(|snapshot| snapshot.sections.get("wallet"));
+                    .and_then(|snapshot| snapshot.sections.get("wallet"))
+                    .and_then(|wallet| wallet["copper"].as_u64());
+                let flight_reserve = args.flight_wallet_reserve_copper.unwrap_or_default();
+                if args.flight_wallet_reserve_copper.is_some() {
+                    value["flight_wallet_reserve_copper"] = serde_json::json!(flight_reserve);
+                }
                 if filter_flight {
-                    let balance = flight_wallet.and_then(|wallet| wallet["copper"].as_u64());
+                    let spendable =
+                        flight_balance.and_then(|balance| balance.checked_sub(flight_reserve));
                     if args.flight_affordable_only {
-                        value["flight_wallet_observed"] = serde_json::json!(balance.is_some());
-                        if balance.is_none() {
+                        value["flight_wallet_observed"] =
+                            serde_json::json!(flight_balance.is_some());
+                        if flight_balance.is_none() {
                             value["data"] = serde_json::Value::Null;
                         }
                     }
@@ -1577,7 +1594,7 @@ impl Operator {
                                     && (!args.flight_affordable_only
                                         || node["fare_copper"]
                                             .as_u64()
-                                            .zip(balance)
+                                            .zip(spendable)
                                             .is_some_and(|(fare, balance)| fare <= balance))
                             });
                             entries.len()
@@ -1588,7 +1605,8 @@ impl Operator {
                     value["flight_wallet_projection"] =
                         azeroth_operator::analysis::flight_wallet_projection(
                             &value["data"],
-                            flight_wallet,
+                            flight_balance,
+                            flight_reserve,
                         );
                 }
                 if let Some(id) = args.quest_id {

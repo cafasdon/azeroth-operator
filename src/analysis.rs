@@ -2113,17 +2113,17 @@ pub fn merchant_cart_budget(
     Ok(result)
 }
 
-pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
+pub fn flight_wallet_projection(map: &Value, balance: Option<u64>, reserve: u64) -> Value {
     let Some(entries) = map["entries"].as_object() else {
         return Value::Null;
     };
-    let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
     Value::Object(
         entries.iter().map(|(slot, node)| {
-            let fare_and_balance = node["fare_copper"].as_u64().zip(balance);
+            let cost_and_balance = node["fare_copper"].as_u64()
+                .and_then(|fare| fare.checked_add(reserve)).zip(balance);
             (slot.clone(), json!({
-                "affordable":fare_and_balance.map(|(fare, balance)| fare <= balance),
-                "shortfall_copper":fare_and_balance.map(|(fare, balance)| fare.saturating_sub(balance)),
+                "affordable":cost_and_balance.map(|(cost, balance)| cost <= balance),
+                "shortfall_copper":cost_and_balance.map(|(cost, balance)| cost.saturating_sub(balance)),
             }))
         }).collect()
     )

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reserve copper for other expenses when budgeting captured Forever flights.
+
 - Include destination names and observed fares when comparing Forever flight routes.
 
 - Locate captured food for the active Forever pet in carried bags.

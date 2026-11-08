@@ -598,6 +598,12 @@ slot. A missing fare or wallet leaves both values unknown. Each comparison
 uses the same saved balance independently. The result covers the copper
 fare at capture time.
 
+Set `flight_wallet_reserve_copper` with either affordability option to
+budget a separate expense such as a saved repair quote. Supply the reserve
+amount explicitly. The projection compares fare plus reserve with the
+flight capture's wallet, and the filter retains only routes that fit both
+costs. An unknown fare or wallet still leaves affordability unknown.
+
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability
 changes and signed copper differences for shared destination IDs.
