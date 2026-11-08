@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Reject mixed encounter or character templates in fast Forever gear comparisons.
+- Record simulator research and the remaining caching and encounter-validation work.
+
 - Match saved Forever paragon rewards against their linked quest readiness.
 
 - Find saved Forever paragon factions by pending reward and level restriction.

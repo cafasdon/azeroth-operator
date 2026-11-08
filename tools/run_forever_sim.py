@@ -411,6 +411,7 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
 def compare_bulk(engine, expected_hash, requests, top_results):
     verify_engine(engine, expected_hash)
     baseline = requests[0]
+    baseline_context = None
     candidates = []
     reviews = {}
     seen = {}
@@ -420,6 +421,13 @@ def compare_bulk(engine, expected_hash, requests, top_results):
         first_party = request["raid"]["parties"][0].get("players", [])
         if not first_party:
             raise ValueError("Bulk comparisons require the player in the first party")
+        context = deepcopy(request)
+        context["raid"]["parties"][0]["players"][0]["equipment"] = None
+        context = json.dumps(context, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        if baseline_context is None:
+            baseline_context = context
+        if context != baseline_context:
+            raise ValueError("Bulk comparisons require matching encounters and templates; only equipment may differ")
         equipment = first_party[0]["equipment"]
         key = json.dumps(equipment, sort_keys=True, separators=(",", ":"), allow_nan=False)
         index = seen.setdefault(key, review)
