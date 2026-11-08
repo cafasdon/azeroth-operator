@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show captured Forever weapon skills for the projected equipment in a gear draft.
+
 - Link owned Forever weapons to the character's captured weapon skill and remaining base ranks.
 
 - Keep Forever skill modifiers and temporary points separate from trained ranks.

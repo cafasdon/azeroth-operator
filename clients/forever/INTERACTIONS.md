@@ -42,6 +42,12 @@ and two-handed axes, maces and swords use separate skill IDs. Missing
 observations remain unknown. The link does not establish equip eligibility
 or change simulation inputs. [Forever weapon skill IDs](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Camelot/SkillsFrame.lua) · [Pinned simulator weapon types](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)
 
+`review_equipment_selection` also reports `checks.catalogue_projected_weapon_skills`
+for mapped main-hand, off-hand and ranged weapons in the draft, including
+weapons carried forward from the baseline. A projected off-hand clear removes
+that slot from the list. The list describes the draft even when other checks
+find a conflict.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

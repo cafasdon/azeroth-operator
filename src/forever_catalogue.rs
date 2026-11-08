@@ -2311,6 +2311,19 @@ pub fn review_equipment_catalogue(
         }
     };
     let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
+    let projected_weapon_skills: Vec<_> = [16, 17, 18]
+        .into_iter()
+        .filter_map(|slot| {
+            let id = projected_item(slot)?;
+            let item = find(id)?;
+            let target = simulator_slot_for_equipment(slot)?;
+            if !simulator_slots(item).contains(&target) {
+                return None;
+            }
+            let skill = weapon_skill(snapshot, item)?;
+            Some(json!({"slot":slot,"item_id":id,"weapon_skill":skill}))
+        })
+        .collect();
     let pairing = match (projected_item(16), projected_item(17)) {
         (Some(main), Some(_)) => match find(main).and_then(|item| item["handType"].as_u64()) {
             Some(4) => "two_hand_conflict",
@@ -2426,6 +2439,7 @@ pub fn review_equipment_catalogue(
     Ok(json!({
         "catalogue_two_hand_pairing":pairing,
         "catalogue_slot_fit":fit,
+        "catalogue_projected_weapon_skills":projected_weapon_skills,
         "catalogue_requirement_conflicts":requirement_conflicts,
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
@@ -2486,6 +2500,17 @@ fn weapon_skill_line_id(item: &Value) -> Option<u32> {
         },
         _ => None,
     }
+}
+
+fn weapon_skill(snapshot: &Snapshot, item: &Value) -> Option<Value> {
+    let id = weapon_skill_line_id(item)?;
+    let observed = snapshot
+        .sections
+        .get("skill_lines")
+        .and_then(|lines| lines.get(id.to_string()));
+    let points_to_cap =
+        observed.and_then(|row| row["max_rank"].as_u64()?.checked_sub(row["rank"].as_u64()?));
+    Some(json!({"skill_line_id":id,"observed":observed,"base_points_to_cap":points_to_cap}))
 }
 
 pub fn review_owned(
@@ -2583,11 +2608,7 @@ pub fn review_owned(
                     .as_ref()
                     .zip(reference)
                     .and_then(|(selection, item)| check_requirements(item, selection));
-                let weapon_skill = reference.and_then(|item| weapon_skill_line_id(item)).map(|id| {
-                    let observed = snapshot.sections.get("skill_lines").and_then(|lines| lines.get(id.to_string()));
-                    let points_to_cap = observed.and_then(|row| row["max_rank"].as_u64()?.checked_sub(row["rank"].as_u64()?));
-                    json!({"skill_line_id":id,"observed":observed,"base_points_to_cap":points_to_cap})
-                });
+                let weapon_skill = reference.and_then(|item| weapon_skill(snapshot, item));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
                     "catalogue_requirement_conflict":requirement_conflict,
