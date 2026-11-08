@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Project combined renown rewards across saved Forever quest lists.
+
 - Compare combined fixed Forever quest currency rewards with captured cap headroom.
 
 - Budget combined copper costs and rewards for filtered saved Forever quest lists.

@@ -82,6 +82,9 @@ struct Inspect {
     /// Combine fixed currency rewards from retained quests against recorded currency cap headroom.
     #[serde(default)]
     quest_list_currency_projection: bool,
+    /// Combine renown rewards from retained quests against the same capture's faction progress.
+    #[serde(default)]
+    quest_list_renown_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -1172,6 +1175,7 @@ impl Operator {
                 || args.quest_list_xp_projection
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
+                || args.quest_list_renown_projection
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -1237,7 +1241,8 @@ impl Operator {
             || args.quest_min_reward_xp.is_some()
             || args.quest_list_xp_projection
             || args.quest_list_wallet_projection
-            || args.quest_list_currency_projection)
+            || args.quest_list_currency_projection
+            || args.quest_list_renown_projection)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1485,6 +1490,7 @@ impl Operator {
                     || args.quest_list_xp_projection
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
+                    || args.quest_list_renown_projection
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -1499,6 +1505,7 @@ impl Operator {
                         || args.quest_list_xp_projection
                         || args.quest_list_wallet_projection
                         || args.quest_list_currency_projection
+                        || args.quest_list_renown_projection
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
                             Ok(snapshot) => snapshot,
@@ -1680,6 +1687,18 @@ impl Operator {
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
                                 azeroth_operator::analysis::quest_list_currency_projection(
                                     quests, balances,
+                                )
+                            });
+                    }
+                    if args.quest_list_renown_projection {
+                        let reputation = context
+                            .as_ref()
+                            .and_then(|snapshot| snapshot.sections.get("reputation"))
+                            .unwrap_or(&serde_json::Value::Null);
+                        value["quest_list_renown_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_list_renown_projection(
+                                    quests, reputation,
                                 )
                             });
                     }
