@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Total the cheapest unlimited copper-only offers for captured Forever reagent shortfalls.
+
 - Use a separate same-character merchant capture for Forever reagent plans.
 
 - Match Forever crafting shortfalls against captured merchant offers.

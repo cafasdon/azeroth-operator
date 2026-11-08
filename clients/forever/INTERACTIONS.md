@@ -289,6 +289,13 @@ storage was observed, matching slots can still be listed but their
 quantities stay unknown. The plan estimates bundles and copper, with
 stock and extended costs reported separately.
 
+For each shortfall, `lowest_unlimited_copper_only_offer` selects the
+least copper among captured unlimited offers with no extended cost.
+Equal prices use the lowest slot. `unlimited_copper_only_total` sums
+those choices when every shortfall is known and covered by such an
+offer. Zero is a valid total when no reagents need buying. Limited
+offers and offers with extended costs remain visible for manual review.
+
 Pass `merchant_snapshot_id` with this option to use offers from a separate
 visit. It must match the recipe character and exact client/build. The
 offer capture can predate the inventory. Its timestamp is reported

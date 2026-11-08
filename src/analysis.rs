@@ -1986,7 +1986,7 @@ pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
         .filter_map(|material| {
             let item = material["item_id"].as_u64()?;
             let shortfall = material["shortfall_vs_observed"].as_u64();
-            if shortfall == Some(0) {
+            if shortfall == Some(0) || material["required_before_batch"].as_u64() == Some(0) {
                 return None;
             }
             let options: BTreeMap<_, _> = offers
@@ -1999,10 +1999,32 @@ pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
                     )
                 })
                 .collect();
-            Some(json!({"item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options}))
+            let lowest_copper = options
+                .iter()
+                .filter_map(|(slot, offer)| {
+                    let offer = offer.as_ref()?;
+                    if offer["captured_available"] != -1 || offer["extended_cost"] != false {
+                        return None;
+                    }
+                    Some((
+                        offer["required_copper"].as_u64()?,
+                        slot.parse::<u32>().ok()?,
+                    ))
+                })
+                .min()
+                .map(|(copper, slot)| json!({"slot":slot,"required_copper":copper}));
+            Some(json!({
+                "item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options,
+                "lowest_unlimited_copper_only_offer":lowest_copper
+            }))
         })
         .collect();
-    json!({"merchant_captured_at":stock.captured_at,"reagents":reagents})
+    let total = reagents.iter().try_fold(0u64, |total, reagent| {
+        total
+            .checked_add(reagent["lowest_unlimited_copper_only_offer"]["required_copper"].as_u64()?)
+    });
+    json!({"merchant_captured_at":stock.captured_at,"reagents":reagents,
+        "unlimited_copper_only_total":total})
 }
 
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {
