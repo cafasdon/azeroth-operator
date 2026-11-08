@@ -81,3 +81,8 @@ exposes reported baseline, exclusion, resolved-instance, equivalent and unresolv
 counts across merged windows and restart status. It distinguishes collected
 coordinates from fully resolved proposals, without establishing feasible-set
 coverage or simulation ranking.
+
+New [coordinate outcomes](gear-coordinate-outcomes-verification-2026-11-08.md)
+make individual saved-window gaps diagnosable with fixed reason codes and local
+review references. Legacy payloads retain explicit unavailable details; this
+does not promote collected or resolved plans into simulation/BiS qualification.

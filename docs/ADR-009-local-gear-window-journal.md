@@ -44,3 +44,10 @@ reports. No stored schema or payload migration is needed. Counts distinguish
 coordinate zero from the baseline review reused in every window, and resolved
 draft instances from globally distinct gear identities. Unresolved proposals
 remain visible even when all reported coordinate ranges are present.
+
+Exact-window inspection is a separate read-only query by saved start offset.
+New windowed plan payloads may include a coordinate outcome ledger, validated
+against the existing counts and local review ordering. Existing payloads have
+explicitly unavailable details. Only fixed reasons and numeric references leave
+the inspection path; no selection payload is returned. No schema change or
+implicit whole-journal integrity claim is introduced by inspecting one window.

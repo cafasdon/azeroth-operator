@@ -9,7 +9,7 @@ import sqlite3
 import stat
 from time import monotonic
 
-from tools.merge_forever_gear_windows import ACCOUNTING_FIELDS, MAX_REPORT_BYTES, empty_accounting, integer, merge_reports, parse_report, require
+from tools.merge_forever_gear_windows import ACCOUNTING_FIELDS, MAX_REPORT_BYTES, coordinate_outcomes, empty_accounting, integer, merge_reports, parse_report, require
 
 APPLICATION_ID = 0x415A4757
 SCHEMA = '''CREATE TABLE windows (
@@ -188,10 +188,32 @@ def journal_status(path, deadline=None):
         connection.close()
 
 
+def journal_window(path, offset):
+    start = coordinate(offset)
+    connection, deadline = connect(path)
+    try:
+        row = connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows WHERE start_key=?', (start,)).fetchone()
+        require(row is not None)
+        report, summary = checked_row(row)
+        outcomes = coordinate_outcomes(report)
+        require(monotonic() <= deadline)
+        return {'mode': 'gear_window_inspection', 'snapshot_id': summary['snapshot_id'],
+                'scope_sha256': summary['scope_sha256'], 'offset_decimal': str(offset),
+                'considered': report['gear_search']['combination_window']['considered'],
+                'coordinate_outcomes_available': outcomes is not None, 'coordinate_outcomes': outcomes,
+                'resolution_accounting': summary['resolution_accounting'],
+                'best_in_slot_verified': False, 'feasible_set_coverage_verified': False,
+                'simulation_performed': False, 'game_execution': False}
+    finally:
+        connection.close()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--journal', required=True, type=Path)
-    parser.add_argument('--add', type=Path, help='Append one validated plan report; omission reads progress only.')
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('--add', type=Path, help='Append one validated plan report; omission reads progress only.')
+    action.add_argument('--window-offset', type=int, help='Inspect coordinate outcomes at an exact saved window start.')
     parser.add_argument('--max-payload-mib', type=int, default=64, choices=range(1, 513), metavar='1-512')
     args = parser.parse_args(argv)
     try:
@@ -199,6 +221,8 @@ def main(argv=None):
             with args.add.open('rb') as handle:
                 data = handle.read(MAX_REPORT_BYTES + 1)
             result = append_report(args.journal, parse_report(data), args.max_payload_mib * 1024 * 1024)
+        elif args.window_offset is not None:
+            result = journal_window(args.journal, args.window_offset)
         else:
             result = journal_status(args.journal)
         print(json.dumps(result, allow_nan=False))

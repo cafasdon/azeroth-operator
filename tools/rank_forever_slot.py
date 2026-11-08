@@ -296,23 +296,30 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 "The search exceeds 1,024 combinations. Use fewer slots, --max-swaps or a narrower candidate filter."
             )
         proposed = []
-        for combination in drafts_to_scan:
+        outcomes, proposed_outcomes = [], []
+        for coordinate, combination in enumerate(drafts_to_scan, combination_offset):
+            outcome = {'coordinate_decimal': str(coordinate), 'status': 'unresolved'}
+            outcomes.append(outcome)
             selections = [choice for choice in combination if choice is not None]
             if not selections:
+                outcome.update(status='baseline', review=1)
                 continue
             targets = {selection["target_slot"] for selection in selections}
             if any(selection["source"]["kind"] == "equipment" and selection["source"]["slot"] not in targets
                    for selection in selections):
                 skipped.append({"selections": selections, "reason": "would_vacate_another_slot"})
+                outcome.update(status='excluded', reason='would_vacate_another_slot')
                 continue
             sources = {json.dumps(selection["source"], sort_keys=True) for selection in selections}
             if len(sources) != len(selections):
                 skipped.append({"selections": selections, "reason": "reused_source_location"})
+                outcome.update(status='excluded', reason='reused_source_location')
                 continue
             draft_args = {"selections": selections}
             if 16 in targets and 17 not in targets:
                 draft_args["allow_two_hand_off_hand_clear"] = True
             proposed.append(draft_args)
+            proposed_outcomes.append(outcome)
             if not collapse_identical and len(proposed) > max_drafts:
                 raise GearSearchLimit(
                     "The search exceeds --max-drafts. Narrow the candidates or increase that limit up to 128."
@@ -333,7 +340,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             extra = review.pop("additional_draft_reviews", [])
             if not isinstance(extra, list) or len(extra) != len(additional):
                 raise ValueError("Local MCP returned an incomplete equipment review batch")
-            for draft_args, draft in zip(proposed[start:start + batch_size], [review, *extra], strict=True):
+            for draft_args, draft, outcome in zip(proposed[start:start + batch_size], [review, *extra],
+                                                  proposed_outcomes[start:start + batch_size], strict=True):
                 selections = draft_args["selections"]
                 spec = draft["checks"]["simulator_equipment_spec"]
                 if spec:
@@ -342,6 +350,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                         equivalent_drafts += 1
                         skipped.append({"selections": selections, "reason": "equivalent_simulator_draft",
                                         "representative_review": resolved_keys[key]})
+                        outcome.update(status='equivalent', review=resolved_keys[key])
                         continue
                     if len(drafts) > max_drafts:
                         raise GearSearchLimit(
@@ -349,6 +358,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                         )
                     resolved_keys.setdefault(key, len(drafts) + 1)
                     drafts.append((selections, draft))
+                    outcome.update(status='resolved', review=len(drafts))
                 elif conflicts := draft["checks"].get("native_slot_category_conflicts"):
                     skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
                                     "reason":"native_slot_category_conflict","conflicts":conflicts})
@@ -365,6 +375,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                     skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
                 else:
                     skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
+                if not spec:
+                    outcome['reason'] = skipped[-1]['reason']
         search = {
             "snapshot_id": snapshot_id,
             "inventory_evidence": inventory_evidence,
@@ -405,6 +417,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 "next_offset": end if end < combination_count else None,
                 "covers_requested_combinations": combination_offset == 0 and count == combination_count,
                 "baseline_reused": True,
+                "coordinate_outcomes": outcomes,
             }
         return drafts, skipped, coverage, stats.get("data") or {}, selected_capture, set_observation, search
 

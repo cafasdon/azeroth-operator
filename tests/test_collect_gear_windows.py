@@ -17,7 +17,7 @@ from test_snapshots import fixture
 from test_simulator_level import inputs
 from test_merge_gear_windows import report
 from tools import collect_forever_gear_windows as controller
-from tools.journal_forever_gear_windows import append_report, journal_status
+from tools.journal_forever_gear_windows import append_report, journal_status, journal_window
 from tools.merge_forever_gear_windows import merge_reports
 
 
@@ -80,6 +80,19 @@ class CollectGearWindowTests(unittest.TestCase):
                 report_value = json.loads(payload)
                 self.assertFalse(report_value['best_in_slot_verified'])
                 self.assertLessEqual(len(report_value['resolved_drafts']), 129)
+            for start, end in intervals:
+                inspection = journal_window(journal, start)
+                self.assertTrue(inspection['coordinate_outcomes_available'])
+                self.assertEqual([row['coordinate_decimal'] for row in inspection['coordinate_outcomes']],
+                                 [str(i) for i in range(start, end)])
+                for row in inspection['coordinate_outcomes']:
+                    first_choice, second_choice = divmod(int(row['coordinate_decimal']), 33)
+                    if first_choice == second_choice and first_choice > 0:
+                        self.assertEqual(row['status'], 'excluded')
+                        self.assertEqual(row['reason'], 'reused_source_location')
+                    else:
+                        self.assertNotEqual(row.get('reason'), 'reused_source_location')
+                self.assertNotIn('selections', json.dumps(inspection))
             before = journal.read_bytes()
             complete = launch(1)
             self.assertEqual(complete['windows_attempted'], 0)

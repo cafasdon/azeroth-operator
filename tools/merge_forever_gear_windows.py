@@ -34,6 +34,45 @@ def digest(value):
     return value
 
 
+def coordinate_outcomes(report):
+    window = report['gear_search']['combination_window']
+    if 'coordinate_outcomes' not in window:
+        return None
+    rows = window['coordinate_outcomes']
+    require(isinstance(rows, list) and len(rows) == window['considered'])
+    counts = {status: 0 for status in ['baseline', 'excluded', 'resolved', 'equivalent', 'unresolved']}
+    latest_review = 1
+    for coordinate, row in enumerate(rows, window['offset']):
+        require(isinstance(row, dict) and row.get('coordinate_decimal') == str(coordinate))
+        status = row.get('status')
+        require(isinstance(status, str) and status in counts)
+        counts[status] += 1
+        if status in ('baseline', 'resolved', 'equivalent'):
+            require(set(row) == {'coordinate_decimal', 'status', 'review'})
+            review = integer(row['review'], 1, len(report['resolved_drafts']))
+            if status == 'baseline':
+                require(coordinate == 0 and review == 1)
+            elif status == 'resolved':
+                require(review == latest_review + 1)
+                latest_review = review
+            else:
+                require(review <= latest_review)
+        else:
+            require(set(row) == {'coordinate_decimal', 'status', 'reason'})
+            reasons = ('would_vacate_another_slot', 'reused_source_location') if status == 'excluded' else (
+                'native_slot_category_conflict', 'native_required_level_shortfall',
+                'catalogue_requirement_conflict', 'unresolved_simulator_draft')
+            require(isinstance(row['reason'], str) and row['reason'] in reasons)
+    search = report['gear_search']
+    proposed = search['proposed_alternative_drafts']
+    resolved = len(report['resolved_drafts']) - 1
+    baseline = int(window['offset'] == 0 and window['considered'] > 0)
+    require(counts == {'baseline': baseline, 'excluded': window['considered'] - baseline - proposed,
+                       'resolved': resolved, 'equivalent': search['equivalent_simulator_drafts'],
+                       'unresolved': proposed - resolved - search['equivalent_simulator_drafts']})
+    return rows
+
+
 def merge_reports(reports):
     require(isinstance(reports, list) and 1 <= len(reports) <= 64)
     signature = baseline = scope = snapshot = binding = None
@@ -112,6 +151,7 @@ def merge_reports(reports):
         if baseline is None:
             baseline = keys[0]
         require(baseline == keys[0])
+        coordinate_outcomes(report)
         if considered:
             intervals.append((offset, end))
         windows.append({'window_index': index, 'offset_decimal': str(offset), 'considered': considered})

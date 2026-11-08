@@ -1,5 +1,9 @@
 # Changelog
 
+- Record per-coordinate outcomes in new bounded gear plans and inspect exact
+  saved journal windows, retaining local review references and fixed diagnostic
+  reasons without exposing raw selections or inventing legacy details.
+
 - Expose gear-plan resolution accounting in merged windows and journal status,
   distinguishing covered coordinates, pre-review exclusions, resolved draft
   instances, equivalent proposals and unresolved proposals across restart.

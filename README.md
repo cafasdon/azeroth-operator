@@ -29,6 +29,13 @@ resolved instances can repeat between windows. Complete coordinate coverage can
 still contain unresolved proposals and does not prove full BiS.
 [Accounting evidence](docs/gear-resolution-accounting-verification-2026-11-08.md).
 
+New windowed plans also retain a bounded coordinate outcome ledger. Use
+`python -m tools.journal_forever_gear_windows --journal PATH --window-offset N`
+to inspect an exact saved window start. It returns baseline/resolved/equivalent/
+excluded/unresolved outcomes, window-local review references and fixed diagnostic
+codes, without raw selections. Older reports return unavailable details rather
+than inferred outcomes. [Evidence](docs/gear-coordinate-outcomes-verification-2026-11-08.md).
+
 `python -m tools.journal_forever_gear_windows --journal PATH --add REPORT`
 stores validated plan windows transactionally in an explicitly chosen local
 SQLite journal. Omit `--add` to inspect saved coverage and the next uncovered
