@@ -561,6 +561,13 @@ impl Operator {
             let mut data =
                 azeroth_operator::forever_catalogue::lookup(path, &query, snapshot.as_ref())?;
             if let Some((id, snapshot)) = query.acquisition_snapshot_id.zip(snapshot) {
+                if matches!(
+                    query.section,
+                    azeroth_operator::forever_catalogue::Section::Enchants
+                ) {
+                    data["recipe_observation"] = serde_json::json!({"snapshot_id": id});
+                    return Ok(data);
+                }
                 let mut progress = if matches!(
                     query.section,
                     azeroth_operator::forever_catalogue::Section::Consumables

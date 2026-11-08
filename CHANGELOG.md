@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever enchant effects linked to a captured learned recipe without treating effect IDs as item IDs.
+
 - Find Forever catalogue items linked to the explicitly learned recipe in a saved capture.
 
 - Discover Forever catalogue crafting outputs by the recorded source profession.

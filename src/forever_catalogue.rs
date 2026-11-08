@@ -160,7 +160,7 @@ pub struct Query {
     pub recipe_spell_id: Option<u32>,
     /// Restrict items or enchants to a crafted source with this pinned simulator Profession enum ID.
     pub crafted_profession_id: Option<std::num::NonZeroU32>,
-    /// Match only the learned recipe explicitly observed in the supplied item acquisition snapshot.
+    /// Match items or enchants to the learned recipe explicitly observed in the supplied acquisition snapshot.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
@@ -219,7 +219,7 @@ pub struct Query {
     /// Join explicit NPC, zone and faction IDs on returned item sources to catalogue names.
     #[serde(default)]
     pub include_source_references: bool,
-    /// Optional owner-scoped Forever snapshot for stock counts and, for items, observed source progress.
+    /// Owner-scoped Forever snapshot for stock counts, item source progress or learned enchant filtering.
     pub acquisition_snapshot_id: Option<String>,
     /// Filter by base item presence in the supplied snapshot. Absent requires all four storage sections.
     pub observed_ownership: Option<ObservedOwnership>,
@@ -652,10 +652,13 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             || matches!(query.section, Section::Items | Section::Enchants),
         "Crafted profession filters require items or enchants"
     );
+    let learned_enchant_filter =
+        query.only_observed_learned_recipe && matches!(query.section, Section::Enchants);
     let learned_recipe = if query.only_observed_learned_recipe {
         ensure!(
-            matches!(query.section, Section::Items) && query.acquisition_snapshot_id.is_some(),
-            "Learned recipe filtering requires items and an acquisition snapshot"
+            matches!(query.section, Section::Items | Section::Enchants)
+                && query.acquisition_snapshot_id.is_some(),
+            "Learned recipe filtering requires items or enchants and an acquisition snapshot"
         );
         let snapshot = snapshot.ok_or_else(|| anyhow::anyhow!("Missing acquisition snapshot"))?;
         ensure!(
@@ -807,8 +810,10 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Source references require a filtered item lookup"
     );
     ensure!(
-        query.acquisition_snapshot_id.is_none() || (has_inventory_context && filtered),
-        "Snapshot context requires a filtered item or consumable lookup"
+        query.acquisition_snapshot_id.is_none()
+            || (has_inventory_context && filtered)
+            || learned_enchant_filter,
+        "Snapshot context requires a filtered item or consumable lookup, or learned enchant filtering"
     );
     if filtered {
         let id = key.and_then(|key| key.parse::<u32>().ok());
@@ -866,9 +871,16 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                                     source["crafted"]["spellId"]
                                         .as_u64()
                                         .is_some_and(|id| recipe["recipe_id"].as_u64() == Some(id))
-                                        && recipe["output_item_id"]
-                                            .as_u64()
-                                            .is_none_or(|id| row["id"].as_u64() == Some(id))
+                                        && recipe["output_item_id"].as_u64().is_none_or(|id| {
+                                            if learned_enchant_filter {
+                                                row["itemId"]
+                                                    .as_u64()
+                                                    .filter(|item| *item > 0)
+                                                    .is_none_or(|item| item == id)
+                                            } else {
+                                                row["id"].as_u64() == Some(id)
+                                            }
+                                        })
                                 }))
                     })
                 });
