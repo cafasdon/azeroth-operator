@@ -679,6 +679,9 @@ map and fare when known. The filter applies before pagination and can
 be combined with an explicit character. Routes describe past captures.
 Add `flight_origin_node_id` to match a specific departure point before
 pagination. This option requires a destination ID.
+Add `flight_max_fare_copper` to keep only routes with a recorded fare
+within your ceiling. It requires a destination ID. Zero matches free
+flights, and unknown fares are excluded when a ceiling is supplied.
 
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters

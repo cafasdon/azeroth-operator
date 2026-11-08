@@ -277,6 +277,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
+    pub flight_max_fare_copper: Option<u64>,
 }
 
 impl Store {
@@ -368,7 +369,14 @@ impl Store {
             merchant_item_id,
             flight_destination_node_id,
             flight_origin_node_id,
+            flight_max_fare_copper,
         } = query;
+        ensure!(
+            flight_max_fare_copper.is_none_or(|fare| {
+                flight_destination_node_id.is_some() && fare <= 9_999_999_999_999
+            }),
+            "Flight fare filtering requires a destination and a valid copper amount"
+        );
         ensure!(
             flight_origin_node_id.is_none() || flight_destination_node_id.is_some(),
             "Flight origin filtering requires a destination"
@@ -507,6 +515,10 @@ impl Store {
                                 flight_origin_node_id.is_none_or(|origin| {
                                     route["origin_node_id"].as_u64()
                                         == Some(u64::from(origin.get()))
+                                }) && flight_max_fare_copper.is_none_or(|maximum| {
+                                    route["fare_copper"]
+                                        .as_u64()
+                                        .is_some_and(|fare| fare <= maximum)
                                 })
                             })
                     });

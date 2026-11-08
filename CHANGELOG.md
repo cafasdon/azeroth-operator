@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever flight routes by a captured fare ceiling.
+
 - Filter saved Forever flight routes by exact departure and destination nodes.
 
 - Find saved Forever departure points for a reachable flight destination.
