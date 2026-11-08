@@ -1573,11 +1573,23 @@ impl Operator {
                         .sections
                         .get("stats")
                         .and_then(|stats| stats["level"].as_u64());
-                    value["trainer_requirements_review"] =
-                        azeroth_operator::analysis::trainer_requirements_review(
-                            &value["data"],
-                            level,
-                        );
+                    let requirements = azeroth_operator::analysis::trainer_requirements_review(
+                        &value["data"],
+                        level,
+                    );
+                    for projection in ["trainer_wallet_projection", "trainer_points_projection"] {
+                        if let Some(blocked) = value
+                            .get_mut(projection)
+                            .and_then(|value| value.get_mut("ordered_lesson_budget"))
+                            .and_then(|value| value.get_mut("first_uncovered_lesson"))
+                            && let Some(slot) = blocked["slot"].as_u64()
+                            && let Some(requirements) =
+                                requirements["unavailable_lessons_by_slot"].get(slot.to_string())
+                        {
+                            blocked["observed_requirements"] = requirements.clone();
+                        }
+                    }
+                    value["trainer_requirements_review"] = requirements;
                 }
                 if let Some((field, id)) = merchant_search {
                     if value["client"]["family"] != "forever" {

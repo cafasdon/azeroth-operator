@@ -197,6 +197,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "1": {"name": "Fixture Potion", "status": "available", "price_copper": 10},
                             "2": {"name": "Other Lesson", "status": "used"},
                             "3": {"name": "Expensive Lesson", "status": "available", "price_copper": 5_000_000_001},
+                            "4": {"name": "Blocked Lesson", "status": "unavailable",
+                                  "skill_requirement": {"name": "Alchemy", "required_rank": 50, "met": False}},
                         }}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
@@ -228,6 +230,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(ordered_budget, {
                             "covered_prefix_lessons": 1,
                             "first_uncovered_lesson": {"slot": 2, "reason": "lesson_not_available"},
+                        })
+                        blocked_trainer = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "trainer_services",
+                            "trainer_service_slots": [1, 4], "trainer_wallet_projection": True,
+                            "trainer_requirements_review": True,
+                        })
+                        self.assertFalse(blocked_trainer.isError)
+                        blocked = json.loads(blocked_trainer.content[0].text)[
+                            "trainer_wallet_projection"]["ordered_lesson_budget"]["first_uncovered_lesson"]
+                        self.assertEqual(blocked, {
+                            "slot": 4, "reason": "lesson_not_available",
+                            "observed_requirements": {"level_shortfall": None,
+                                "skill_requirement_unmet": True, "unmet_ability_names": None},
                         })
                         short_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",

@@ -167,6 +167,9 @@ A missing balance leaves the ordered budget unknown.
 For insufficient balance, the first uncovered slot reports
 `additional_balance_needed` in the projection's currency after the
 earlier lessons' recorded costs.
+With `trainer_requirements_review: true`, the first uncovered lesson also
+includes the requirement review for that slot when it was recorded as
+unavailable.
 
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.

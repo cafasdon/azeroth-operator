@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Link the first blocked Forever trainer lesson to its captured prerequisite review.
+
 - Show how much extra copper or training points the first unaffordable Forever lesson needs.
 
 - Budget Forever trainer lessons in the player's requested slot order.
