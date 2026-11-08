@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Narrow Forever gear ranking and preview candidates by recorded equip level.
+
 - Explain which Forever gear search limit was reached and how to narrow the search.
 
 - Show how many candidate locations, combinations and distinct gear sets a Forever gear search resolves.

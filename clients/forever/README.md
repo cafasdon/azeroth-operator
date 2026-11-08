@@ -591,6 +591,9 @@ counts, with bonus effects evaluated by the simulator.
 Use `--storage` with `equipment`, `bags`, `character_bank` or `account_bank`
 to restrict alternatives before draft expansion. The equipped set remains
 the baseline, and storage coverage still describes the full capture.
+Use `--minimum-required-level` and `--maximum-required-level` to narrow
+alternatives by their recorded equip level. Unknown levels are excluded
+when a bound is supplied. The captured character's requirements still apply.
 
 Use `--all-slots --single-swaps` to compare one replacement at a time across
 all simulator slots. This avoids the multi-slot combination search. A

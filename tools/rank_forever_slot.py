@@ -62,7 +62,7 @@ def check_template_identity(template, stats):
 
 
 async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
-                          selected_slots=None, set_id=None, storage=None):
+                          selected_slots=None, set_id=None, storage=None, required_levels=(None, None)):
     candidates = []
     skipped = []
     offset = 0
@@ -73,6 +73,9 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
         filters["set_id"] = set_id
     if storage is not None:
         filters["storage"] = storage
+    for field, value in zip(("minimum_required_level", "maximum_required_level"), required_levels, strict=True):
+        if value is not None:
+            filters[field] = value
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
@@ -150,7 +153,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
-                  max_swaps=None):
+                  max_swaps=None, required_levels=(None, None)):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -191,7 +194,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             simultaneous_slots = (slot,) if max_swaps == 1 else slots
             candidates, exclusions, coverage = await slot_candidates(
                 call, slot, multi, collapse_identical, item_ids, can_dual_wield,
-                simultaneous_slots, set_id, storage,
+                simultaneous_slots, set_id, storage, required_levels,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
@@ -412,6 +415,8 @@ def main():
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
     parser.add_argument("--storage", choices=("equipment", "bags", "character_bank", "account_bank"),
                         help="Restrict alternatives to one captured storage section.")
+    parser.add_argument("--minimum-required-level", type=int, help="Inclusive minimum recorded equip level.")
+    parser.add_argument("--maximum-required-level", type=int, help="Inclusive maximum recorded equip level.")
     swap_limit = parser.add_mutually_exclusive_group()
     swap_limit.add_argument("--single-swaps", action="store_const", const=1, dest="max_swaps",
                             help="Compare one selected replacement at a time across the requested slots.")
@@ -438,6 +443,10 @@ def main():
     parser.add_argument("--audit-shortlist", action="store_true",
                         help="Compare the staged shortlist with a bounded fixed-iteration run of every candidate")
     args = parser.parse_args()
+    minimum, maximum = args.minimum_required_level, args.maximum_required_level
+    if (any(value is not None and not 0 <= value <= 2**32 - 1 for value in (minimum, maximum))
+            or minimum is not None and maximum is not None and minimum > maximum):
+        parser.error("Provide ordered non-negative required-level bounds")
     if args.plan_only:
         if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
                 or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
@@ -486,7 +495,7 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
-                        args.max_swaps), timeout=45,
+                        args.max_swaps, (minimum, maximum)), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
@@ -528,6 +537,8 @@ def main():
                       gear_search=search)
         if args.storage is not None:
             result["requested_storage"] = args.storage
+        if minimum is not None or maximum is not None:
+            result["requested_required_levels"] = {"minimum": minimum, "maximum": maximum}
         if args.max_swaps is not None:
             result["max_swaps"] = args.max_swaps
         if args.max_swaps == 1:
