@@ -2,7 +2,7 @@
 
 import argparse
 import asyncio
-from itertools import product
+from itertools import combinations, product
 import json
 import logging
 from math import fsum, isfinite, prod
@@ -142,7 +142,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
-                  single_swaps=False):
+                  max_swaps=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -180,23 +180,29 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         coverage = None
         multi = len(slots) > 1
         for slot in slots:
-            simultaneous_slots = (slot,) if single_swaps else slots
+            simultaneous_slots = (slot,) if max_swaps == 1 else slots
             candidates, exclusions, coverage = await slot_candidates(
                 call, slot, multi, collapse_identical, item_ids, can_dual_wield,
                 simultaneous_slots, set_id, storage,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
-        if single_swaps:
-            combination_count = 1 + sum(len(choices) - 1 for choices in options)
-            combinations = ((choice,) for choices in options for choice in choices[1:])
+        if max_swaps is not None:
+            candidate_groups = [choices[1:] for choices in options if len(choices) > 1]
+            groups = [
+                group
+                for size in range(1, max_swaps + 1)
+                for group in combinations(candidate_groups, size)
+            ]
+            combination_count = 1 + sum(prod(map(len, group)) for group in groups)
+            drafts_to_scan = (draft for group in groups for draft in product(*group))
         else:
             combination_count = prod(map(len, options))
-            combinations = product(*options)
+            drafts_to_scan = product(*options)
         if combination_count > 1024:
             raise ValueError("Slot combinations exceed the 1024-combination scan limit")
         proposed = []
-        for combination in combinations:
+        for combination in drafts_to_scan:
             selections = [choice for choice in combination if choice is not None]
             if not selections:
                 continue
@@ -376,8 +382,11 @@ def main():
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")
     parser.add_argument("--storage", choices=("equipment", "bags", "character_bank", "account_bank"),
                         help="Restrict alternatives to one captured storage section.")
-    parser.add_argument("--single-swaps", action="store_true",
-                        help="Compare one selected replacement at a time across the requested slots.")
+    swap_limit = parser.add_mutually_exclusive_group()
+    swap_limit.add_argument("--single-swaps", action="store_const", const=1, dest="max_swaps",
+                            help="Compare one selected replacement at a time across the requested slots.")
+    swap_limit.add_argument("--max-swaps", type=int, choices=(1, 2),
+                            help="Compare up to this many selected replacements across the requested slots.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
     parser.add_argument("--engine", type=Path, required=True)
@@ -437,7 +446,7 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
-                        args.single_swaps), timeout=45,
+                        args.max_swaps), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
@@ -468,7 +477,9 @@ def main():
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity)
         if args.storage is not None:
             result["requested_storage"] = args.storage
-        if args.single_swaps:
+        if args.max_swaps is not None:
+            result["max_swaps"] = args.max_swaps
+        if args.max_swaps == 1:
             result["single_swaps"] = True
         if selected_capture is not None:
             result["selected_capture"] = selected_capture

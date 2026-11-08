@@ -596,6 +596,8 @@ Use `--all-slots --single-swaps` to compare one replacement at a time across
 all simulator slots. This avoids the multi-slot combination search. A
 two-handed replacement may still clear the off-hand. The draft and
 simulation budgets still apply.
+Use `--max-swaps 2` to compare singles and pairs across the requested slots.
+This evaluates two-item interactions while skipping larger combinations.
 
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing

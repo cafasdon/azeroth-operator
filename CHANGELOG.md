@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare up to two Forever gear replacements across slots without enumerating larger combinations.
+
 - Scan single-item upgrades across Forever slots without building multi-slot combinations.
 
 - Scope local Forever gear ranking alternatives to one captured storage section.
