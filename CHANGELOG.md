@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Save skill and ability prerequisites for observed Forever trainer lessons.
+
 - Capture the open Forever trainer's lesson status, requirements and copper prices.
 
 - Find saved Forever captures whose observed merchant offered a requested item.

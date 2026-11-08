@@ -924,6 +924,19 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+local function trainerAbilityRequirements(index)
+    local count=GetTrainerServiceNumAbilityReq(index)
+    if not questRewardInteger(count,0,16) then return end
+    local requirements={}
+    for requirement=1,count do
+        local name,met=GetTrainerServiceAbilityReq(index,requirement)
+        if not (questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
+            and questRewardAccessible(met) and type(met)=="boolean") then return end
+        requirements[tostring(requirement)]={name=name,met=met}
+    end
+    return requirements
+end
+
 AO.collectors.trainer_services = function()
     local frame=ClassTrainerFrame
     assert(frame and frame:IsVisible(), "Trainer panel is not open")
@@ -943,6 +956,13 @@ AO.collectors.trainer_services = function()
         if status~="used" then
             local ok,cost=pcall(GetTrainerServiceCost,index)
             if ok and questRewardInteger(cost,0,9999999999999) then row.price_copper=cost end
+            local observed,skill,required,met=pcall(GetTrainerServiceSkillReq,index)
+            if observed and questRewardAccessible(skill) and type(skill)=="string" and #skill>0 and #skill<=256
+                and questRewardInteger(required,0,4294967295) and questRewardAccessible(met) and type(met)=="boolean" then
+                row.skill_requirement={name=skill,required_rank=required,met=met}
+            end
+            local read,abilities=pcall(trainerAbilityRequirements,index)
+            if read then row.ability_requirements=abilities end
         end
         entries[tostring(index)]=row
     end

@@ -30,6 +30,11 @@ level requirements and copper prices. The capture excludes pet trainers
 and leaves training and filter changes to the player. Update the importer
 and reader before syncing new captures. [Forever trainer UI](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_TrainerUI/Mainline/Blizzard_TrainerUI.lua)
 
+Lessons that have yet to be learned can include the required skill rank
+and prerequisite ability names, along with the game's recorded met flags.
+An empty ability list means the trainer reported zero prerequisites of
+that type. Missing detail remains unknown.
+
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.
 Outside an instance the observation contains only `kind: "none"`.

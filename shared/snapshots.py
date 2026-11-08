@@ -64,9 +64,25 @@ def validate_snapshot(value):
                 or set(rows) != {str(i) for i in range(1, len(rows) + 1)}):
             raise ValueError("Invalid trainer service count")
         for row in rows.values():
-            if not isinstance(row, dict) or set(row) - {"name", "status", "required_level", "rank_label", "price_copper"}:
+            if not isinstance(row, dict) or set(row) - {"name", "status", "required_level", "rank_label", "price_copper",
+                                                        "skill_requirement", "ability_requirements"}:
                 raise ValueError("Invalid trainer service")
             name, status = row.get("name"), row.get("status")
+            if "skill_requirement" in row:
+                skill = row["skill_requirement"]
+                if (status == "used" or not isinstance(skill, dict) or set(skill) != {"name", "required_rank", "met"}
+                        or not isinstance(skill["name"], str) or not 1 <= len(skill["name"].encode()) <= 256
+                        or type(skill["required_rank"]) is not int or not 0 <= skill["required_rank"] <= 4_294_967_295
+                        or type(skill["met"]) is not bool):
+                    raise ValueError("Invalid trainer skill requirement")
+            if "ability_requirements" in row:
+                abilities = row["ability_requirements"]
+                if (status == "used" or not isinstance(abilities, dict) or len(abilities) > 16
+                        or set(abilities) != {str(i) for i in range(1, len(abilities) + 1)}
+                        or any(not isinstance(ability, dict) or set(ability) != {"name", "met"}
+                               or not isinstance(ability["name"], str) or not 1 <= len(ability["name"].encode()) <= 256
+                               or type(ability["met"]) is not bool for ability in abilities.values())):
+                    raise ValueError("Invalid trainer ability requirements")
             level, rank, price = row.get("required_level"), row.get("rank_label"), row.get("price_copper")
             if (not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
                     or status not in ("available", "unavailable", "used")

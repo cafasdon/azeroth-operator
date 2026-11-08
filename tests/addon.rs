@@ -578,6 +578,9 @@ pub fn verify_forever_capture_fixture(
             return "Known lesson","used"
         end
         function GetTrainerServiceCost(index) assert(index==1); return 500 end
+        function GetTrainerServiceSkillReq(index) assert(index==1); return "Fixture skill",50,true end
+        function GetTrainerServiceNumAbilityReq(index) assert(index==1); return fixtureEmptyAbilities and 0 or 1 end
+        function GetTrainerServiceAbilityReq(index,ability) assert(index==1 and ability==1); return "Fixture prerequisite",false end
         GetMerchantNumItems=function() return 2 end
         GetMerchantItemID=function(index) assert(index==1); return 744 end
         C_MerchantFrame={GetItemInfo=function(index)
@@ -776,10 +779,18 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(
         snapshot.sections["trainer_services"],
         serde_json::json!({"kind":"tradeskills","entries":{
-            "1":{"name":"Fixture lesson","status":"available","required_level":10,"rank_label":"Rank 2","price_copper":500},
+            "1":{"name":"Fixture lesson","status":"available","required_level":10,"rank_label":"Rank 2","price_copper":500,
+                "skill_requirement":{"name":"Fixture skill","required_rank":50,"met":true},
+                "ability_requirements":{"1":{"name":"Fixture prerequisite","met":false}}},
             "2":{"name":"Known lesson","status":"used"}
         }})
     );
+    lua.load("fixtureEmptyAbilities=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["trainer_services"]["entries"]["1"]["ability_requirements"],
+        serde_json::json!({})
+    );
+    lua.load("fixtureEmptyAbilities=false").exec()?;
     lua.load("fixtureTrainerKind=3;AO.Capture()").exec()?;
     assert!(read()?.unavailable.contains_key("trainer_services"));
     lua.load("fixtureTrainerKind=nil;closedTrainer=true;AO.Capture()")

@@ -886,6 +886,8 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("status", "text", true),
                         ("required_level", "positive", false),
                         ("rank_label", "text", false),
+                        ("skill_requirement", "map", false),
+                        ("ability_requirements", "map", false),
                         ("price_copper", "wallet_copper", false),
                     ],
                 )?;
@@ -907,6 +909,42 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             .is_none_or(|price| !price.is_null() && row["status"] != "used"),
                     "Invalid trainer service"
                 );
+                if let Some(skill) = row.get("skill_requirement") {
+                    object(
+                        skill,
+                        &[
+                            ("name", "text", true),
+                            ("required_rank", "uint", true),
+                            ("met", "bool", true),
+                        ],
+                    )?;
+                    ensure!(
+                        row["status"] != "used"
+                            && skill["name"]
+                                .as_str()
+                                .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                        "Invalid trainer skill requirement"
+                    );
+                }
+                if let Some(abilities) = row.get("ability_requirements") {
+                    let abilities = abilities
+                        .as_object()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid trainer ability requirements"))?;
+                    ensure!(
+                        row["status"] != "used" && abilities.len() <= 16,
+                        "Invalid trainer ability requirements"
+                    );
+                    for (key, ability) in abilities {
+                        index(key, 1, abilities.len() as u32)?;
+                        object(ability, &[("name", "text", true), ("met", "bool", true)])?;
+                        ensure!(
+                            ability["name"]
+                                .as_str()
+                                .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                            "Invalid trainer ability name"
+                        );
+                    }
+                }
             }
         }
         "merchant_stock" => {
