@@ -1738,6 +1738,41 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_auras" => {
+            object(
+                value,
+                &[("coverage", "text", true), ("groups", "map", true)],
+            )?;
+            ensure!(
+                value["coverage"] == "readable_nonprivate_player_aura_lists",
+                "Invalid player aura coverage"
+            );
+            object(
+                &value["groups"],
+                &[("helpful", "map", false), ("harmful", "map", false)],
+            )?;
+            let groups = value["groups"].as_object().unwrap();
+            ensure!(!groups.is_empty(), "No observed aura groups");
+            for group in groups.values() {
+                object(group, &[("entries", "map", true)])?;
+                entries(
+                    &group["entries"],
+                    &[
+                        ("spell_id", "positive", true),
+                        ("applications", "uint", false),
+                    ],
+                )?;
+                let rows = group["entries"].as_object().unwrap();
+                ensure!(rows.len() <= 256, "Too many player aura rows");
+                for (key, row) in rows {
+                    index(key, 1, rows.len() as u32)?;
+                    ensure!(
+                        row.get("applications").is_none_or(|v| v.as_u64().is_some()),
+                        "Invalid aura applications"
+                    );
+                }
+            }
+        }
         "player_resources" => {
             object(
                 value,

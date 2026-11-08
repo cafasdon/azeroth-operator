@@ -56,6 +56,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="tracked_achievements"
         sectionNames[#sectionNames+1]="experience"
         sectionNames[#sectionNames+1]="player_resources"
+        sectionNames[#sectionNames+1]="player_auras"
         sectionNames[#sectionNames+1]="spellbook"
         sectionNames[#sectionNames+1]="flight_map"
         sectionNames[#sectionNames+1]="durability_alerts"

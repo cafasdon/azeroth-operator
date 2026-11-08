@@ -4633,6 +4633,17 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["player_aura_observations"] = s.sections.get("player_auras").map(|section| {
+        let describe=|group:Option<&Value>|group.map(|group| {
+            let rows=group["entries"].as_object().unwrap();
+            let ids:BTreeSet<_>=rows.values().map(|row|row["spell_id"].as_u64().unwrap()).collect();
+            json!({"observed_rows":rows.len(),"distinct_spell_ids":ids.len(),
+                "spell_ids":ids.iter().take(50).collect::<Vec<_>>(),"spell_ids_truncated":ids.len()>50,
+                "rows_with_unknown_applications":rows.values().filter(|row|row.get("applications").is_none()).count()})
+        });
+        json!({"coverage":section["coverage"],"helpful":describe(section["groups"].get("helpful")),
+            "harmful":describe(section["groups"].get("harmful")),"effectiveness_verified":false,"cast_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
     summary["profession_spell_observations"] = s.sections.get("profession_spells").map(|section| {
         let mut ids: Vec<_>=section["entries"].as_object().unwrap().keys().map(|key|key.parse::<u32>().unwrap()).collect();
         ids.sort_unstable();

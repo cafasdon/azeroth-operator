@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can include public nonprivate player aura lists. Inspect
+`player_auras` or read `character_summary.player_aura_observations` for reported
+spell IDs and readable application counts. Missing lists remain unknown;
+no caster identity, effectiveness or cast eligibility is inferred.
+[Offline evidence](docs/player-auras-verification-2026-11-08.md).
+
 `compare_snapshots` can opt into `profession_spell_changes` and
 `player_resource_changes`. Spell differences require the same profession;
 power deltas require the same type and units. Missing context stays unknown,

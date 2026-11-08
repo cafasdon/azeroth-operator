@@ -21,6 +21,7 @@ SECTIONS = SECTIONS | {"weapon_enchants"}
 SECTIONS = SECTIONS | {"pet_action_bar"}
 SECTIONS = SECTIONS | {"player_resources"}
 SECTIONS = SECTIONS | {"profession_spells"}
+SECTIONS = SECTIONS | {"player_auras"}
 
 
 def _validate_action_bar_observation(observation):
@@ -539,6 +540,24 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "player_auras" in sections:
+        auras=sections["player_auras"]
+        if (c["family"]!="forever" or not isinstance(auras,dict) or set(auras)!={"coverage","groups"}
+                or auras["coverage"]!="readable_nonprivate_player_aura_lists"
+                or not isinstance(auras["groups"],dict) or not auras["groups"]
+                or set(auras["groups"])-{"helpful","harmful"}):
+            raise ValueError("Invalid player aura coverage")
+        for group in auras["groups"].values():
+            if not isinstance(group,dict) or set(group)!={"entries"} or not isinstance(group["entries"],dict):
+                raise ValueError("Invalid player aura group")
+            rows=group["entries"]
+            if len(rows)>256 or set(rows)!={str(i) for i in range(1,len(rows)+1)}:
+                raise ValueError("Invalid player aura rows")
+            for row in rows.values():
+                if (not isinstance(row,dict) or not {"spell_id"}<=row.keys() or set(row)-{"spell_id","applications"}
+                        or type(row["spell_id"]) is not int or not 1<=row["spell_id"]<=4_294_967_295
+                        or "applications" in row and (type(row["applications"]) is not int or not 0<=row["applications"]<=4_294_967_295)):
+                    raise ValueError("Invalid player aura row")
     if "player_resources" in sections:
         resources=sections["player_resources"]
         if (c["family"]!="forever" or not isinstance(resources,dict)

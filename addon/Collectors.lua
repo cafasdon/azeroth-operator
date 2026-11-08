@@ -478,6 +478,59 @@ end
 AO.collectors.character_bank = function() return bankItems("Character") end
 AO.collectors.account_bank = function() return bankItems("Account") end
 
+AO.collectors.player_auras = function()
+    local api=C_UnitAuras
+    assert(AO.family=="forever" and api and type(api.GetUnitAuras)=="function"
+        and type(api.AuraIsPrivate)=="function" and type(UnitExists)=="function"
+        and type(UnitIsVisible)=="function", "Player auras unavailable")
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted aura observation")
+        return value
+    end
+    local function uint(value)
+        return (not issecretvalue or not issecretvalue(value)) and type(value)=="number"
+            and value%1==0 and value>=0 and value<=4294967295
+    end
+    local function context()
+        assert(public(UnitExists("player"))==true and public(UnitIsVisible("player"))==true,
+            "Player aura context unavailable")
+    end
+    local function read(filter)
+        local values=public(api.GetUnitAuras("player",filter,257))
+        assert(type(values)=="table" and #values<=256, "Aura list unavailable or too large")
+        local rows,count={},0
+        for index,aura in pairs(values) do
+            index=public(index);aura=public(aura)
+            assert(type(index)=="number" and index%1==0 and index>=1 and index<=#values
+                and type(aura)=="table", "Invalid aura list")
+            local spell=public(aura.spellId)
+            assert(uint(spell) and spell>0 and public(api.AuraIsPrivate(spell))==false, "Aura not public")
+            local row={spell_id=spell}
+            if uint(aura.applications) then row.applications=aura.applications end
+            rows[tostring(index)]=row;count=count+1
+        end
+        assert(count==#values, "Incomplete aura list")
+        return rows,count
+    end
+    context()
+    local groups={}
+    for name,filter in pairs({helpful="HELPFUL",harmful="HARMFUL"}) do
+        local ok,first,count=pcall(read,filter)
+        local again,second,laterCount=pcall(read,filter)
+        if ok and again and count==laterCount then
+            local stable=true
+            for key,row in pairs(first) do
+                if not second[key] or row.spell_id~=second[key].spell_id then stable=false;break end
+                if row.applications~=second[key].applications then row.applications=nil end
+            end
+            if stable then groups[name]={entries=first} end
+        end
+    end
+    context()
+    assert(next(groups), "Player aura lists unreadable")
+    return {coverage="readable_nonprivate_player_aura_lists",groups=groups}
+end
+
 AO.collectors.player_resources = function()
     assert(AO.family=="forever", "Player resources unavailable")
     local function uint(value,maximum)

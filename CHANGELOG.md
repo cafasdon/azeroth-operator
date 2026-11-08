@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture bounded public nonprivate player buff/debuff observations, keeping
+  unreadable lists unknown and omitting caster identity and gameplay actions.
+
 - Add opt-in historical profession-spell and player-resource comparisons with
   numeric bounds, context matching and explicit unknowns.
 

@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Manual player aura capture reads helpful/harmful lists independently and retains
+only stable public nonprivate spell IDs plus readable application counts. Private,
+restricted or changing lists remain unknown. Caster names/GUIDs, instance IDs,
+timers and targets are omitted; no aura is cancelled, applied or simulated.
+[Offline evidence](../../docs/player-auras-verification-2026-11-08.md).
+
 Opt-in saved comparisons cover reported profession spell sets and player resource
 counters. Profession ID and primary-power context must match for derived results;
 missing observations stay unknown. Spell additions/removals are reported-set
