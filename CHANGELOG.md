@@ -1,5 +1,9 @@
 # Changelog
 
+- Expose gear-plan resolution accounting in merged windows and journal status,
+  distinguishing covered coordinates, pre-review exclusions, resolved draft
+  instances, equivalent proposals and unresolved proposals across restart.
+
 - Verify restarted offline plan collection over a 1,089-coordinate gear product,
   including contiguous journal intervals, per-window draft bounds and a completed
   no-recollection retry; retain separate feasible-set and BiS qualification.

@@ -9,7 +9,7 @@ import sqlite3
 import stat
 from time import monotonic
 
-from tools.merge_forever_gear_windows import MAX_REPORT_BYTES, integer, merge_reports, parse_report, require
+from tools.merge_forever_gear_windows import ACCOUNTING_FIELDS, MAX_REPORT_BYTES, empty_accounting, integer, merge_reports, parse_report, require
 
 APPLICATION_ID = 0x415A4757
 SCHEMA = '''CREATE TABLE windows (
@@ -146,9 +146,12 @@ def journal_status(path, deadline=None):
         anchor = summary = None
         cursor = covered = count = gap_count = 0
         gaps = []
+        accounting = empty_accounting()
         for row in connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows ORDER BY start_key'):
             require(monotonic() <= deadline)
             report, current = checked_row(row)
+            for field in ACCOUNTING_FIELDS:
+                accounting[field] += current['resolution_accounting'][field]
             if anchor is None:
                 anchor, summary = report, current
             else:
@@ -174,6 +177,7 @@ def journal_status(path, deadline=None):
                    if summary and 'collection_binding_sha256' in summary else {}),
                 'scope_sha256': summary['scope_sha256'] if summary else None,
                 'window_count': count, 'covered_coordinate_count': covered,
+                'resolution_accounting': accounting,
                 'total_combinations_decimal': str(total) if total is not None else None,
                 'reported_coordinate_coverage_complete': total is not None and gap_count == 0,
                 'uncovered_ranges': gaps, 'uncovered_range_count': gap_count, 'ranges_truncated': gap_count > len(gaps),

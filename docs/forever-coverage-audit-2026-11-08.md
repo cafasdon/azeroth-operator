@@ -75,3 +75,9 @@ The later [resumable collection controller](gear-window-collection-verification-
 automates bounded offline plan-window collection with explicit snapshot and
 input binding. Simulation ranking aggregation, full owned-gear/model proof,
 active-character qualification and native testing remain open.
+
+Later [resolution accounting](gear-resolution-accounting-verification-2026-11-08.md)
+exposes reported baseline, exclusion, resolved-instance, equivalent and unresolved
+counts across merged windows and restart status. It distinguishes collected
+coordinates from fully resolved proposals, without establishing feasible-set
+coverage or simulation ranking.

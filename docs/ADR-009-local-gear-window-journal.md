@@ -38,3 +38,9 @@ separate outcomes, as do native qualification and active-character detection.
 
 Subsequent extension: ADR 010 adds a separate bounded collection controller.
 The journal itself still does not execute stored commands or simulations.
+
+Status also sums metadata-derived resolution accounting while streaming existing
+reports. No stored schema or payload migration is needed. Counts distinguish
+coordinate zero from the baseline review reused in every window, and resolved
+draft instances from globally distinct gear identities. Unresolved proposals
+remain visible even when all reported coordinate ranges are present.

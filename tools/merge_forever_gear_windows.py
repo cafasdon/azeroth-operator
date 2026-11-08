@@ -8,6 +8,15 @@ from tools.rank_forever_slot import SIMULATOR_SLOTS
 
 MAX_REPORT_BYTES = 4 * 1024 * 1024
 MAX_TOTAL_BYTES = 16 * 1024 * 1024
+ACCOUNTING_FIELDS = ('baseline_coordinates', 'pre_review_excluded_coordinates',
+                    'proposed_alternative_coordinates', 'resolved_alternative_draft_instances',
+                    'equivalent_alternative_coordinates', 'unresolved_proposed_coordinates',
+                    'baseline_review_instances')
+
+
+def empty_accounting():
+    return {'basis': 'validated_local_plan_report_metadata',
+            **{field: 0 for field in ACCOUNTING_FIELDS}}
 
 
 def require(condition):
@@ -29,6 +38,7 @@ def merge_reports(reports):
     require(isinstance(reports, list) and 1 <= len(reports) <= 64)
     signature = baseline = scope = snapshot = binding = None
     intervals, windows, gear = [], [], {}
+    accounting = empty_accounting()
     for index, report in enumerate(reports, 1):
         require(isinstance(report, dict) and report.get('mode') == 'plan_only'
                 and report.get('best_in_slot_verified') is False)
@@ -84,6 +94,12 @@ def merge_reports(reports):
                            considered - (1 if offset == 0 and considered else 0))
         equivalent = integer(search.get('equivalent_simulator_drafts'), 0, proposed)
         require(len(drafts) - 1 + equivalent <= proposed)
+        baseline_coordinates = int(offset == 0 and considered > 0)
+        counts_for_window = (baseline_coordinates, considered - baseline_coordinates - proposed,
+                             proposed, len(drafts) - 1, equivalent,
+                             proposed - (len(drafts) - 1) - equivalent, 1)
+        for field, value in zip(ACCOUNTING_FIELDS, counts_for_window, strict=True):
+            accounting[field] += value
         keys = []
         for review, row in enumerate(drafts, 1):
             require(isinstance(row, dict) and integer(row.get('review'), 1, 129) == review)
@@ -111,6 +127,7 @@ def merge_reports(reports):
     return {'mode': 'gear_window_coverage', 'basis': 'validated_local_plan_report_metadata',
             **({'collection_binding_sha256': binding} if binding is not None else {}),
             'snapshot_id': snapshot, 'scope_sha256': scope, 'window_count': len(windows),
+            'resolution_accounting': accounting,
             'total_combinations_decimal': str(total), 'covered_coordinate_count': sum(end - start for start, end in intervals),
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,
             'next_uncovered_offset_decimal': gaps[0]['start_decimal'] if gaps else None,

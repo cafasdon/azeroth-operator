@@ -22,6 +22,13 @@ must match. Budgets and page size can change; changed inputs require a new journ
 This does not run simulations or establish full owned BiS.
 [Offline evidence](docs/gear-window-collection-verification-2026-11-08.md).
 
+Merged windows and journal status include `resolution_accounting`: baseline,
+pre-review exclusions, proposed alternatives, resolved draft instances,
+equivalences and unresolved proposals. Counts use validated report metadata;
+resolved instances can repeat between windows. Complete coordinate coverage can
+still contain unresolved proposals and does not prove full BiS.
+[Accounting evidence](docs/gear-resolution-accounting-verification-2026-11-08.md).
+
 `python -m tools.journal_forever_gear_windows --journal PATH --add REPORT`
 stores validated plan windows transactionally in an explicitly chosen local
 SQLite journal. Omit `--add` to inspect saved coverage and the next uncovered
