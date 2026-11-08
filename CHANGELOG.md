@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Calculate saved Forever XP progression across a single observed level-up.
+
 - Compare saved Forever rested XP, resting, XP lock and cap status.
 
 - Cap the full bundle cost of a requested quantity in saved Forever merchant searches.

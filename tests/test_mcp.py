@@ -927,6 +927,32 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(xp["resting_changed"])
                         self.assertFalse(xp["xp_disabled_changed"])
                         self.assertFalse(xp["status_changed"])
+                        self.assertIsNone(xp["single_level_up_xp_delta"])
+                        levelled = json.loads(json.dumps(travel))
+                        levelled["sections"]["stats"]["level"] = 61
+                        levelled["sections"]["experience"].update({
+                            "current_xp": 20, "level_threshold_xp": 250,
+                        })
+                        levelled_id = SnapshotStore(Path(folder)).ingest(levelled)
+                        level_up = await session.call_tool("compare_snapshots", {
+                            "before_id": travel_before, "after_id": levelled_id, "experience": True,
+                        })
+                        self.assertFalse(level_up.isError)
+                        level_up_xp = json.loads(level_up.content[0].text)["experience_change"]
+                        self.assertEqual(level_up_xp["level_delta"], 1)
+                        self.assertEqual(level_up_xp["single_level_up_xp_delta"], 100)
+                        self.assertIsNone(level_up_xp["within_level_xp_delta"])
+                        levelled["sections"]["stats"]["level"] = 1
+                        level_one_id = SnapshotStore(Path(folder)).ingest(levelled)
+                        levelled["sections"]["stats"]["level"] = 0
+                        level_zero_id = SnapshotStore(Path(folder)).ingest(levelled)
+                        invalid_level = await session.call_tool("compare_snapshots", {
+                            "before_id": level_zero_id, "after_id": level_one_id, "experience": True,
+                        })
+                        self.assertFalse(invalid_level.isError)
+                        invalid_xp = json.loads(invalid_level.content[0].text)["experience_change"]
+                        self.assertEqual(invalid_xp["level_delta"], 1)
+                        self.assertIsNone(invalid_xp["single_level_up_xp_delta"])
                         capped_travel = json.loads(json.dumps(travel))
                         capped_travel["sections"]["experience"] = {"status": "level_capped"}
                         capped_id = SnapshotStore(Path(folder)).ingest(capped_travel)
@@ -938,6 +964,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(capped_xp["status_changed"])
                         self.assertIsNone(capped_xp["rested_xp_delta"])
                         self.assertIsNone(capped_xp["resting_changed"])
+                        self.assertIsNone(capped_xp["single_level_up_xp_delta"])
                         self.assertEqual(travel_changes["pet_care_change"], {
                             "before": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
                             "after": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},

@@ -274,6 +274,10 @@ time. The separately observed `rested_xp` is the saved XP bonus pool.
 With `experience: true`, `compare_snapshots` reports the signed change
 in that pool and whether the resting flag, XP-disabled flag or progress
 status changed. Each comparison requires that observation on both sides.
+`single_level_up_xp_delta` adds the XP remaining in the earlier level
+to the XP recorded in the next level. It requires a positive starting
+level, exactly one level of increase and observed progress counters in both captures. Capped or
+skipped levels leave that estimate unknown.
 Update the importer and reader before syncing new captures. [Player frame source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UnitFrame/Mainline/PlayerFrame.lua)
 
 `character_summary` reports the saved `new_mail_indicator` when the

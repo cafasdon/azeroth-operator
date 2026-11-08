@@ -1086,6 +1086,7 @@ pub fn compare_observations(
             .get("stats")
             .and_then(|stats| stats["level"].as_i64());
         let levels = before_level.zip(after_level);
+        let level_delta = levels.and_then(|(before, after)| after.checked_sub(before));
         let within_level = previous.zip(current).and_then(|(a, b)| {
             let (before_level, after_level) = levels?;
             let threshold = a["level_threshold_xp"].as_u64()?;
@@ -1095,9 +1096,19 @@ pub fn compare_observations(
             Some(b["current_xp"].as_i64()? - a["current_xp"].as_i64()?)
         });
         let observed = previous.zip(current);
+        let single_level_up = observed.and_then(|(before, after)| {
+            if level_delta != Some(1) || before_level.is_none_or(|level| level <= 0) {
+                return None;
+            }
+            let remaining = before["level_threshold_xp"]
+                .as_u64()?
+                .checked_sub(before["current_xp"].as_u64()?)?;
+            Some(remaining + after["current_xp"].as_u64()?)
+        });
         comparison["experience_change"] = json!({
             "before":previous,"after":current,"before_level":before_level,"after_level":after_level,
-            "level_delta":levels.and_then(|(a,b)| b.checked_sub(a)),"within_level_xp_delta":within_level,
+            "level_delta":level_delta,"within_level_xp_delta":within_level,
+            "single_level_up_xp_delta":single_level_up,
             "rested_xp_delta":observed.and_then(|(a,b)| Some(b["rested_xp"].as_i64()? - a["rested_xp"].as_i64()?)),
             "resting_changed":observed_flag_changed(previous, current, "resting"),
             "xp_disabled_changed":observed_flag_changed(previous, current, "xp_disabled"),
