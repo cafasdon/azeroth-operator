@@ -32,3 +32,9 @@ equipment or establish an absolute optimum. `best_in_slot_verified` remains
 false. Future cross-window aggregation needs its own coverage, duplicate,
 model/encounter/seed and interruption evidence; matching enumeration hashes alone
 would not prove those requirements.
+
+The subsequent plan-artifact aggregator adds producer-calculated simulator-input
+digests, bounded local JSON validation, scope/baseline checks, nonoverlapping
+reported coordinate coverage and digest grouping. It does not merge simulation
+rankings or replace the missing native/model/feasible-set evidence. Input hashes
+remain identity references from trusted local producer artifacts, not signatures.

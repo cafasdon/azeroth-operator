@@ -775,6 +775,10 @@ def main():
                 "baseline_review": 1,
                 "resolved_drafts": [
                     {"review": index, "selections": selections,
+                     **({"simulator_gear_sha256": hashlib.sha256(json.dumps(
+                         draft["checks"]["simulator_equipment_spec"], sort_keys=True,
+                         separators=(",", ":"), allow_nan=False).encode()).hexdigest()}
+                        if args.combination_limit is not None else {}),
                      "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
                     for index, (selections, draft) in enumerate(drafts, 1)
                 ],

@@ -1,5 +1,9 @@
 # Changelog
 
+- Aggregate bounded local gear plan windows with validated scopes/counts,
+  explicit coverage gaps and cross-window simulator-input identity grouping,
+  without promoting metadata coverage into a full-BiS claim.
+
 - Review bounded gear-combination windows beyond the whole-request product
   limit, with direct coordinate indexing, exact counts, scope fingerprints and
   explicit continuation metadata; retain draft limits and false BiS claims.

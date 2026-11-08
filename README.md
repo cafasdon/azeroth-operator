@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.merge_forever_gear_windows` aggregates local windowed plan-only
+reports. It checks scope/baseline/count consistency, rejects overlapping ranges,
+reports gaps and groups repeated simulator-input hashes with original report
+references. Reported coordinate coverage remains separate from feasible-set,
+simulation and full-BiS verification. Raw selections and filenames are omitted.
+[Offline evidence](docs/gear-window-aggregation-verification-2026-11-08.md).
+
 The local gear ranker accepts explicit-snapshot `--combination-offset` and
 `--combination-limit` windows for larger candidate spaces. Each page retains
 the existing draft/time limits and baseline, with a scope fingerprint and next
