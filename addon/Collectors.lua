@@ -1656,6 +1656,18 @@ AO.collectors.flight_map = function()
         local key=tostring(slot)
         assert(not entries[key], "Duplicate flight destination slot")
         local entry={node_id=id,name=name,state=labels[state],map_transition=transition}
+        local positioned,position=pcall(function()
+            local vector=row.position
+            if not questRewardAccessible(vector) or vector==nil then return end
+            local function unit(value)
+                return questRewardAccessible(value) and type(value)=="number" and value>=0 and value<=1
+            end
+            local x,y=vector:GetXY()
+            if not unit(x) or not unit(y) then return end
+            local nextX,nextY=vector:GetXY()
+            if unit(nextX) and unit(nextY) and x==nextX and y==nextY then return {x=x,y=y} end
+        end)
+        if positioned then entry.map_position=position end
         if state==states.Reachable and not transition then
             local ok,cost=pcall(TaxiNodeCost,slot)
             if ok and questRewardInteger(cost,0,9999999999999) then entry.fare_copper=cost end

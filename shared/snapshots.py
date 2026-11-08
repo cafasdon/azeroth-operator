@@ -475,11 +475,16 @@ def validate_snapshot(value):
         for slot, row in flight_map["entries"].items():
             required = {"node_id", "name", "state", "map_transition"}
             if (not isinstance(slot, str) or not re.fullmatch(r"[1-9][0-9]{0,3}", slot) or int(slot) > 4096
-                    or not isinstance(row, dict) or not required <= row.keys() or set(row) - required - {"fare_copper"}
+                    or not isinstance(row, dict) or not required <= row.keys() or set(row) - required - {"fare_copper", "map_position"}
                     or type(row["node_id"]) is not int or not 1 <= row["node_id"] <= 4_294_967_295
                     or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode("utf-8")) <= 256
                     or row["state"] not in ("current", "reachable", "unreachable") or type(row["map_transition"]) is not bool):
                 raise ValueError("Invalid Forever flight destination")
+            if "map_position" in row:
+                position=row["map_position"]
+                if (not isinstance(position,dict) or set(position)!={"x","y"}
+                        or any(type(n) not in (int,float) or not 0 <= n <= 1 for n in position.values())):
+                    raise ValueError("Invalid flight map position")
             fare = row.get("fare_copper")
             if fare is not None and (type(fare) is not int or not 0 <= fare <= 9_999_999_999_999
                                      or row["state"] != "reachable" or row["map_transition"]):

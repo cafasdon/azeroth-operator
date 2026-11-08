@@ -3131,11 +3131,16 @@ pub(crate) fn captured_flight_route(map: &Value, destination_id: u32) -> Option<
     if destination["state"] != "reachable" {
         return None;
     }
-    Some(
-        json!({"map_id":map["map_id"],"origin_node_id":origin_id,"origin_name":origin["name"],
+    let mut route = json!({"map_id":map["map_id"],"origin_node_id":origin_id,"origin_name":origin["name"],
         "destination_node_id":destination_id,"destination_name":destination["name"],
-        "fare_copper":destination["fare_copper"]}),
-    )
+        "fare_copper":destination["fare_copper"]});
+    if let Some(position) = origin.get("map_position") {
+        route["origin_map_position"] = position.clone();
+    }
+    if let Some(position) = destination.get("map_position") {
+        route["destination_map_position"] = position.clone();
+    }
+    Some(route)
 }
 
 pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> {

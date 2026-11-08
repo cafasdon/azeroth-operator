@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture optional stable flight-map node positions and annotate saved route legs in their recorded map frame, preserving unknowns, fares and route selection.
+
 - Capture trainer profession-acquisition flags and primary-slot fullness, report known slot blockers separately from monetary affordability, and reject changing lesson observations.
 
 - Search saved visible spellbook rows by base/reported spell ID, passive/off-spec flags and reported learn-level bounds, retaining partial coverage and unknown metadata.

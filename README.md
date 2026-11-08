@@ -13,6 +13,15 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever flight-map snapshots can include optional `entries.<slot>.map_position`
+with numeric `x` and `y` in `[0,1]`. Saved route legs expose these as
+`origin_map_position` and `destination_map_position` when known. Coordinates
+refer to that leg's recorded `map_id` and UI frame; they do not establish
+world distance, travel time or movement instructions. Missing positions stay
+absent, including on legacy captures. Fares and route selection are unchanged.
+Only the open flight map at the recorded flight master is observed.
+[Offline verification](docs/flight-map-positions-verification-2026-11-08.md).
+
 Hosted read-only MCP: `https://mcp.cafas.com.br/scopes/azeroth/mcp`, using a dedicated
 bearer token. A separate restricted SSH credential supports the Rust CLI
 `azeroth-operator upload <export-file>`. Configure the absolute

@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Open flight-map nodes can include stable public map-relative positions.
+Saved route legs retain each map's coordinate frame through `map_id` and
+optional origin/destination positions. Unknown positions remain absent;
+coordinates do not alter fares, reachability or route choice and do not
+establish distance, travel time or movement instructions.
+[Offline evidence](../../docs/flight-map-positions-verification-2026-11-08.md).
+
 Trainer observations can include the native profession-acquisition flag and
 stable derived primary-slot fullness. Requirements review reports known
 slot blockers independently of budgets, preserving unknowns and leaving

@@ -75,6 +75,9 @@ fn object(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
         let valid = match *kind {
             "text" => v.as_str().is_some_and(|s| s.len() <= 16384),
             "uint" => v.as_u64().is_some_and(|n| n <= u32::MAX as u64),
+            "unit_interval" => v
+                .as_f64()
+                .is_some_and(|n| n.is_finite() && (0.0..=1.0).contains(&n)),
             "wallet_copper" => v.as_u64().is_some_and(|n| n <= 9_999_999_999_999),
             "faction_tag" => matches!(v.as_str(), Some("Alliance" | "Horde")),
             "positive" => v.as_u64().is_some_and(|n| n > 0 && n <= u32::MAX as u64),
@@ -1545,6 +1548,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("name", "text", true),
                     ("state", "text", true),
                     ("map_transition", "bool", true),
+                    ("map_position", "map", false),
                     ("fare_copper", "wallet_copper", false),
                 ],
             )?;
@@ -1552,6 +1556,12 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             ensure!(rows.len() <= 512, "Too many flight map observations");
             for (key, row) in rows {
                 index(key, 1, 4096)?;
+                if let Some(position) = row.get("map_position") {
+                    object(
+                        position,
+                        &[("x", "unit_interval", true), ("y", "unit_interval", true)],
+                    )?;
+                }
                 ensure!(
                     row["name"]
                         .as_str()
