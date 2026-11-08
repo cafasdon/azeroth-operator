@@ -1719,6 +1719,47 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_resources" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("health", "map", false),
+                    ("primary_power", "map", false),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "readable_player_resources"
+                    && (value.get("health").is_some() || value.get("primary_power").is_some()),
+                "Invalid player resource coverage"
+            );
+            for field in ["health", "primary_power"] {
+                if let Some(row) = value.get(field) {
+                    if field == "health" {
+                        object(row, &[("current", "uint", true), ("maximum", "uint", true)])?;
+                    } else {
+                        object(
+                            row,
+                            &[
+                                ("current", "uint", true),
+                                ("maximum", "uint", true),
+                                ("power_type", "uint", true),
+                                ("units", "text", true),
+                            ],
+                        )?;
+                        ensure!(
+                            row["power_type"].as_u64().unwrap() <= 63
+                                && row["units"] == "unmodified",
+                            "Invalid primary power context"
+                        );
+                    }
+                    ensure!(
+                        row["current"].as_u64().unwrap() <= row["maximum"].as_u64().unwrap(),
+                        "Invalid player resource pair"
+                    );
+                }
+            }
+        }
         "equipment_durability" => {
             object(
                 value,

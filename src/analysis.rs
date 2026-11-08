@@ -4592,6 +4592,18 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["player_resource_observations"] = s.sections.get("player_resources").map(|resources| {
+        let describe = |row: Option<&Value>| row.map(|row| {
+            let current=row["current"].as_u64().unwrap();
+            let maximum=row["maximum"].as_u64().unwrap();
+            let mut value=json!({"current":current,"maximum":maximum,"missing":maximum-current,
+                "percent":if maximum>0 {Some(current as f64*100.0/maximum as f64)} else {None}});
+            if let Some(kind)=row.get("power_type") {value["power_type"]=kind.clone();value["units"]=row["units"].clone();}
+            value
+        });
+        json!({"coverage":resources["coverage"],"health":describe(resources.get("health")),
+            "primary_power":describe(resources.get("primary_power")),"readiness_verified":false})
+    }).unwrap_or(Value::Null);
     summary["pet_action_bar_observations"] = s.sections.get("pet_action_bar").map(|bar| {
         let rows=bar["entries"].as_object().unwrap();
         let mut slots:Vec<_>=rows.iter().map(|(slot,row)|(slot.parse::<u32>().unwrap(),row)).collect();slots.sort_by_key(|(slot,_)|*slot);

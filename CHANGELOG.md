@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture public stable player health and primary power independently during
+  manual Forever export, with strict readers and historical resource summaries.
+
 - Join saved profession-list learning to local crafted item/enchant searches,
   preserving conflicting observations and selected-schematic planning boundaries.
 

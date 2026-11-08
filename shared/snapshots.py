@@ -19,6 +19,7 @@ SECTIONS = SECTIONS | {"pet_collection_view"}
 SECTIONS = SECTIONS | {"equipment_durability"}
 SECTIONS = SECTIONS | {"weapon_enchants"}
 SECTIONS = SECTIONS | {"pet_action_bar"}
+SECTIONS = SECTIONS | {"player_resources"}
 
 
 def _validate_action_bar_observation(observation):
@@ -526,6 +527,23 @@ def validate_snapshot(value):
                             or not (1 if field=="enchant_id" else 0)<=row[field]<=4_294_967_295
                             for field in ("enchant_id","charges","remaining_milliseconds") if field in row)):
                     raise ValueError("Invalid weapon enchant observation")
+    if "player_resources" in sections:
+        resources=sections["player_resources"]
+        if (c["family"]!="forever" or not isinstance(resources,dict)
+                or resources.get("coverage")!="readable_player_resources"
+                or set(resources)-{"coverage","health","primary_power"}
+                or not ({"health","primary_power"}&resources.keys())):
+            raise ValueError("Invalid player resource coverage")
+        for field in ("health","primary_power"):
+            if field not in resources:continue
+            row=resources[field]
+            fields={"current","maximum"} | ({"power_type","units"} if field=="primary_power" else set())
+            if (not isinstance(row,dict) or set(row)!=fields
+                    or type(row.get("current")) is not int or type(row.get("maximum")) is not int
+                    or not 0<=row["current"]<=row["maximum"]<=4_294_967_295):
+                raise ValueError("Invalid player resource pair")
+            if field=="primary_power" and (type(row["power_type"]) is not int or not 0<=row["power_type"]<=63 or row["units"]!="unmodified"):
+                raise ValueError("Invalid primary power context")
     if "equipment_durability" in sections:
         durability=sections["equipment_durability"]
         if (c["family"]!="forever" or not isinstance(durability,dict) or set(durability)!={"coverage","entries"}

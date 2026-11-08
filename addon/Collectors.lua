@@ -478,6 +478,41 @@ end
 AO.collectors.character_bank = function() return bankItems("Character") end
 AO.collectors.account_bank = function() return bankItems("Account") end
 
+AO.collectors.player_resources = function()
+    assert(AO.family=="forever", "Player resources unavailable")
+    local function uint(value,maximum)
+        return (not issecretvalue or not issecretvalue(value)) and type(value)=="number"
+            and value%1==0 and value>=0 and value<=maximum
+    end
+    local function health()
+        assert(type(UnitHealth)=="function" and type(UnitHealthMax)=="function")
+        local current,maximum=UnitHealth("player",false),UnitHealthMax("player")
+        assert(uint(current,4294967295) and uint(maximum,4294967295) and current<=maximum)
+        return current,maximum
+    end
+    local function power()
+        assert(type(UnitPowerType)=="function" and type(UnitPower)=="function" and type(UnitPowerMax)=="function")
+        local kind=UnitPowerType("player")
+        assert(uint(kind,63))
+        local current,maximum=UnitPower("player",kind,true),UnitPowerMax("player",kind,true)
+        assert(uint(current,4294967295) and uint(maximum,4294967295) and current<=maximum)
+        local after=UnitPowerType("player")
+        assert(uint(after,63) and after==kind)
+        return current,maximum,kind
+    end
+    local result={coverage="readable_player_resources"}
+    local ok,a,b=pcall(health)
+    local again,c,d=pcall(health)
+    if ok and again and a==c and b==d then result.health={current=a,maximum=b} end
+    local first,current,maximum,kind=pcall(power)
+    local second,later,laterMax,laterKind=pcall(power)
+    if first and second and current==later and maximum==laterMax and kind==laterKind then
+        result.primary_power={current=current,maximum=maximum,power_type=kind,units="unmodified"}
+    end
+    assert(result.health or result.primary_power, "Player resources unreadable")
+    return result
+end
+
 AO.collectors.stats = function()
     local version = GetBuildInfo()
     local stats = { level = UnitLevel("player"), class = select(2, UnitClass("player")), race = select(2, UnitRace("player")), client_version = version }

@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can include `player_resources`: readable stable health
+and primary power, independently. `character_summary.player_resource_observations`
+shows observed amounts, deficits and percentages; zero maximum leaves percentage
+unknown. Power uses unmodified API units. These are historical observations,
+with no readiness inference or resource-use action.
+[Offline evidence](docs/player-resources-verification-2026-11-08.md).
+
 Catalogue crafting searches can use exact-ID learning observations from saved
 profession recipe lists as well as the selected schematic. Conflicts and known
 output mismatches remain unknown; list observations do not supply materials,

@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Manual player-resource observations retain readable stable health and primary
+power independently. Restricted, failed or changing components stay unknown;
+power units are explicitly unmodified. Summaries expose deficits and percentages
+without inferring combat readiness, death or actions to restore resources.
+[Offline evidence](../../docs/player-resources-verification-2026-11-08.md).
+
 Local crafted-output searches can match positive saved recipe-list learning by
 exact spell ID. Selected/list conflicts and selected output mismatches prevent
 positive learned matches. Crafted acquisition sources retain both observations;
