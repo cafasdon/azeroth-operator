@@ -1,5 +1,9 @@
 # Changelog
 
+- Qualify saved-window encounter resume and checkpoint reuse with the pinned
+  real simulator, public Hunter rotation and synthetic owner captures; retain
+  an opt-in offline regression without downloading or installing anything.
+
 - Resume saved-window DPS comparisons across encounters with shared execution
   budgets, complete-only weighted gains, profile comparability checks and
   encounter sensitivity; add revalidated checkpoint-only reporting.

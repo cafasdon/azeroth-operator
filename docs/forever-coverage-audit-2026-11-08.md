@@ -141,3 +141,10 @@ adds shared budgets across up to eight DPS profiles, weighted gains only after
 complete comparable results, and point-estimate sensitivity. Checkpoint-only
 inspection still revalidates source/model inputs. This is bounded selected-work
 comparison, not full ownership/encounter qualification or unconditional BiS.
+
+The [real simulator saved-window qualification](real-saved-window-verification-2026-11-09.md)
+subsequently exercised this path with the pinned executable and public Hunter
+rotation against sparse synthetic captures: four resumed unique requests,
+six checkpoint hits on retry, and exact agreement with four uncached reference
+runs. This qualifies persistence and execution for that fixture only; live
+and full owned-BiS qualification remain pending.
