@@ -17,6 +17,18 @@ excluded from owned-item quantities, gear search and recipe material stock;
 their presence does not establish ownership, retrieval eligibility or cost.
 See [verification](../../docs/mail-attachment-verification-2026-11-08.md).
 
+Search pending observations with `list_snapshots.mail_attachment`, for example
+`{"family":"forever","mail_attachment":{"kind":"item","id":720,"minimum_quantity":2},"latest_per_character":true}`.
+`kind` is `item` or `currency`, with a positive ID in that namespace. The
+optional minimum defaults to one and applies to summed known quantities in the
+loaded inbox. An observed matching slot is required even when the minimum is
+zero. Missing sections, absent IDs and unresolved slots never match. A failure
+to match cannot establish absence from unloaded or unresolved attachments.
+`mail_attachment_match` retains partial coverage and loaded/total counts,
+the quantity across all matches and at most 20 numerically ordered locations,
+with total matched count and truncation flagged. Date/character/newest filters
+and pagination apply normally. These quantities remain pending mail, not stock.
+
 `inspect_snapshot` accepts `section: "profession_recipe_view"` for the saved
 filtered recipe list of a visible local crafting page. It includes the current
 profession ID and recipe IDs, with names and learned flags where readable.

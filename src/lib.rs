@@ -360,6 +360,22 @@ pub struct ProfessionRecipeFilter {
     pub learning: Option<RecipeLearning>,
 }
 
+#[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MailAttachmentKind {
+    Item,
+    Currency,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MailAttachmentFilter {
+    pub kind: MailAttachmentKind,
+    pub id: std::num::NonZeroU32,
+    /// Minimum summed quantity in the loaded inbox only; defaults to one.
+    pub minimum_quantity: Option<u64>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -389,6 +405,7 @@ pub struct CaptureFilters<'a> {
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
     pub profession_recipe: Option<ProfessionRecipeFilter>,
+    pub mail_attachment: Option<MailAttachmentFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -583,6 +600,7 @@ impl Store {
             saved_instance,
             saved_world_boss,
             profession_recipe,
+            mail_attachment,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -645,6 +663,10 @@ impl Store {
         let profession_recipe_key = profession_recipe
             .as_ref()
             .map(|filter| filter.recipe_id.to_string());
+        ensure!(
+            mail_attachment.is_none() || family == Family::Forever,
+            "Pending mail attachment filtering requires Forever"
+        );
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -982,6 +1004,33 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let mail_attachment_match = mail_attachment.as_ref().and_then(|filter| {
+                        let mail=s.sections.get("mail_attachments")?;
+                        let (kind,field)=match filter.kind {
+                            MailAttachmentKind::Item=>("item","item_id"),
+                            MailAttachmentKind::Currency=>("currency","currency_id"),
+                        };
+                        let mut locations=Vec::new();
+                        for (message,attachments) in mail["messages"].as_object()?.iter() {
+                            for (slot,row) in attachments.as_object()?.iter() {
+                                if row["kind"]==kind && row[field].as_u64()==Some(u64::from(filter.id.get())) {
+                                    locations.push((message.parse::<u32>().unwrap(),slot.parse::<u32>().unwrap(),row["count"].as_u64().unwrap()));
+                                }
+                            }
+                        }
+                        // Validated coverage bounds this sum to 100 * 16 * u32::MAX.
+                        let quantity:u64=locations.iter().map(|(_,_,count)| count).sum();
+                        if locations.is_empty() || quantity<filter.minimum_quantity.unwrap_or(1) {return None;}
+                        locations.sort_by_key(|(message,slot,_)| (*message,*slot));
+                        Some(json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
+                            "total_messages":mail["total_messages"],"kind":filter.kind,"id":filter.id,
+                            "quantity":quantity,"matched_locations":locations.len(),"truncated":locations.len()>20,
+                            "locations":locations.iter().take(20).map(|(message,slot,count)|json!({
+                                "message_slot":message,"attachment_slot":slot,"count":count})).collect::<Vec<_>>()}))
+                    });
+                    if mail_attachment.is_some() && mail_attachment_match.is_none() {
+                        continue;
+                    }
                     let profession_recipe_match = profession_recipe.as_ref().zip(profession_recipe_key.as_ref()).and_then(|(filter, key)| {
                         let view = s.sections.get("profession_recipe_view")?;
                         let row = view["entries"].get(key)?;
@@ -1510,6 +1559,9 @@ impl Store {
                     }
                     if let Some(observation) = profession_recipe_match {
                         summary["profession_recipe_match"] = observation;
+                    }
+                    if let Some(observation) = mail_attachment_match {
+                        summary["mail_attachment_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

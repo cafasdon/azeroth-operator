@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved characters for pending loaded mail attachments by item/currency ID and known quantity, preserving partial coverage and inventory separation.
+
 - Capture pending loaded inbox attachments without correspondence or mail actions, separating items, currencies and unresolved slots from owned inventory.
 
 - Search saved local profession recipe views by recipe ID, profession and explicit learned/unlearned/unknown observations.

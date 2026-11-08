@@ -51,6 +51,34 @@ Offline verification:
 
 The archive was not installed. Live game testing remains deferred.
 
+## Saved-character attachment search
+
+`list_snapshots.mail_attachment` requires `kind: item|currency` and a positive
+u32 `id`, with optional unsigned-u64 `minimum_quantity` (default one). Matching
+requires at least one known row in that namespace. Unknown rows, missing data
+and absent IDs never match, including at minimum zero. Failure to match says
+nothing about unresolved or unloaded attachments. The aggregation remains
+separate from item stock, owned-gear and recipe material routes.
+
+The sum covers all matching loaded rows, independently of the returned location
+cap. Validated coverage bounds it to 100 x 16 x u32 maximum, safely inside u64
+and JSON's exactly representable integer range. Metadata preserves partial
+coverage, loaded/total messages, namespace/ID, full quantity and matched count.
+The first 20 locations are sorted numerically by message then attachment slot,
+with truncation explicit. Positions are capture-local observations only.
+
+Existing owner-root reads and character/client/date/newest selection remain in
+effect. Newest selection precedes this filter, so a missing-newest section
+suppresses an older match; time bounds precede newest selection. Default
+listings do not acquire match metadata when the filter is omitted.
+
+`cargo build --locked --offline` passed. With `PYTHONPATH=.;tests`,
+`python -m unittest test_mail_attachments test_mcp test_snapshots` passed 11
+tests. The real-MCP test covers repeated-ID sums, item/currency namespace
+separation, quantity boundaries (including u64 maximum), absence at zero,
+newest/time behavior, 32-row truncation/numeric ordering, malformed arguments,
+family restriction and unchanged defaults. Formatting and diff checks passed.
+
 Independent reader/caller review (gpt-6.1-sol, high effort) found no concrete
 flaw. `PYTHONPATH=. python -m unittest discover -s tests -p test_mail_attachments.py -v`
 passed one test in 0.238 seconds. A separate 56-case real stdio/Python validator
@@ -74,3 +102,25 @@ read hidden/pending states rejected. Every probe checked omission of the ignored
 private item name. Static caller inspection found no header/body/link/GUID or
 mutation calls and no stock aggregation of mail. The temporary harness was
 removed. Native qualification remains pending.
+
+Jev 1.14.0 advisory search-scope assessment returned supported (request
+`1bb61979d6f3d45a6c6b983c2fc71c352222486cf8dc5d3ccd55fcdc4bbea59d`,
+603 input / 46 output tokens, 0.278 seconds), separately from runtime evidence.
+
+Independent search reviews used gpt-6.1-sol at high effort, with no concrete
+findings:
+
+- Failure: `python -m unittest discover -s tests -p test_mail_attachments.py -v`
+  passed one test in 0.517 seconds. Real stdio probes verified 1,600 matching
+  u32-max rows summed exactly to 6,871,947,672,000; inclusive thresholds;
+  numeric truncation and exactly-20 behavior; 20 malformed filters; absent,
+  empty and unknown data at minimum zero; namespace isolation; conjunction;
+  newest/date ordering; and paginated slices of five matches.
+- Callers/data boundaries: the same command passed in 0.461 seconds. Additional
+  real stdio probes verified four observed matches, three newest-per-variant
+  matches, three stable/disjoint pages, conjunction failure, case-insensitive
+  character identity, outside-root exclusion, eight malformed filters and the
+  exact metadata key set. The real call path retains owner/hash/schema checks.
+
+Supplementary fixtures were transient synthetic owner stores. No source edits,
+installation, mail actions or live game testing occurred during review.

@@ -306,6 +306,8 @@ struct List {
     saved_world_boss: Option<azeroth_operator::SavedWorldBossFilter>,
     /// Match a recipe observed in the saved local filtered profession list, optionally by learning state.
     profession_recipe: Option<azeroth_operator::ProfessionRecipeFilter>,
+    /// Match a known pending attachment in the saved loaded inbox, never spendable stock.
+    mail_attachment: Option<azeroth_operator::MailAttachmentFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1286,6 +1288,7 @@ impl Operator {
                 saved_instance: args.saved_instance,
                 saved_world_boss: args.saved_world_boss,
                 profession_recipe: args.profession_recipe,
+                mail_attachment: args.mail_attachment,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
