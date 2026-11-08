@@ -632,7 +632,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(recipe_data["craftability_verified"])
                         self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
                         self.assertEqual(recipe_data["material_capacity_by_item"], {
-                            "744": {"bags": None, "all_observed_storage": 0},
+                            "744": {"bags": None, "all_observed_storage": 0,
+                                    "craft_shortfall_vs_bags": None, "craft_shortfall_vs_observed_storage": 2},
                         })
                         self.assertEqual(recipe_data["material_capacity"], {
                             "bags": None,
@@ -648,8 +649,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "snapshot_id": stocked_key, "crafts": 1})
                         self.assertFalse(stocked.isError)
                         self.assertEqual(json.loads(stocked.content[0].text)["material_capacity_by_item"], {
-                            "744": {"bags": 2, "all_observed_storage": 3},
-                            "10": {"bags": 3, "all_observed_storage": 3},
+                            "744": {"bags": 2, "all_observed_storage": 3,
+                                    "craft_shortfall_vs_bags": 0, "craft_shortfall_vs_observed_storage": 0},
+                            "10": {"bags": 3, "all_observed_storage": 3,
+                                   "craft_shortfall_vs_bags": 0, "craft_shortfall_vs_observed_storage": 0},
                         })
                         self.assertEqual(json.loads(stocked.content[0].text)["material_capacity"], {
                             "bags": {"supported_crafts": 2, "limiting_item_ids": [744]},

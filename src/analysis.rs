@@ -125,10 +125,19 @@ pub fn review_recipe_with_inventory(
             let observed_capacity = available / per_craft;
             bag_limits.push((item_id, bags_capacity));
             observed_limits.push((item_id, observed_capacity));
-            capacity_by_item.insert(item_id, json!({
-                "bags":(!missing_storage.contains(&"bags")).then_some(bags_capacity),
-                "all_observed_storage":(missing_storage.len()<storage.len()).then_some(observed_capacity)
-            }));
+            let bags_capacity = (!missing_storage.contains(&"bags")).then_some(bags_capacity);
+            let observed_capacity =
+                (missing_storage.len() < storage.len()).then_some(observed_capacity);
+            let craft_shortfall = |capacity: u64| u64::from(crafts).saturating_sub(capacity);
+            capacity_by_item.insert(
+                item_id,
+                json!({
+                    "bags":bags_capacity,
+                    "all_observed_storage":observed_capacity,
+                    "craft_shortfall_vs_bags":bags_capacity.map(craft_shortfall),
+                    "craft_shortfall_vs_observed_storage":observed_capacity.map(craft_shortfall)
+                }),
+            );
             let by_storage: BTreeMap<_, _> = storage
                 .into_iter()
                 .zip(quantities)

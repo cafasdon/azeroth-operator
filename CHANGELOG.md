@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report per-reagent shortfalls in whole crafts for Forever recipe reviews.
+
 - Show how many Forever crafts each individual reagent can support.
 
 - List the cheapest reachable destinations in a saved Forever flight panel.
