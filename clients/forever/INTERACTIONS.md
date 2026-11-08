@@ -68,6 +68,9 @@ Use `minimum_required_level` or `maximum_required_level` to narrow owned-gear
 results by the catalogue's recorded required character level before paging.
 These inclusive bounds exclude items with no recorded requirement.
 Storage coverage and set totals describe the full capture.
+Use `storage` to limit matching locations to `equipment`, `bags`,
+`character_bank` or `account_bank`. Check storage coverage to distinguish
+an empty result from a bank that was unavailable at capture.
 
 Use `observed_enchant_effect_id` to find captured items whose links encode
 that exact nonzero effect ID. The filter works before paging and includes

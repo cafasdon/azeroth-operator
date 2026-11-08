@@ -264,6 +264,8 @@ struct OwnedGearReview {
     /// Exclude known catalogue conflicts against the saved character. Unknown eligibility can still match.
     #[serde(default)]
     exclude_observed_requirement_conflicts: bool,
+    /// Restrict matching gear locations to one captured storage section before paging.
+    storage: Option<azeroth_operator::forever_catalogue::GearStorage>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -648,6 +650,7 @@ impl Operator {
                 args.observed_enchant_effect_id,
                 args.observed_random_suffix_id,
                 args.exclude_observed_requirement_conflicts,
+                args.storage,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

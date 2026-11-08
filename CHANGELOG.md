@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search owned Forever gear within equipment, bags, character bank or account bank.
+
 - Filter owned Forever gear to omit known requirement conflicts against the captured character.
 
 - Preview regular stats for compatible Forever enchants, optionally including a listed suffix.

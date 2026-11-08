@@ -2733,6 +2733,26 @@ fn required_level_check(
     })
 }
 
+#[derive(Clone, Copy, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GearStorage {
+    Equipment,
+    Bags,
+    CharacterBank,
+    AccountBank,
+}
+
+impl GearStorage {
+    fn section(self) -> &'static str {
+        match self {
+            Self::Equipment => "equipment",
+            Self::Bags => "bags",
+            Self::CharacterBank => "character_bank",
+            Self::AccountBank => "account_bank",
+        }
+    }
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
@@ -2746,6 +2766,7 @@ pub fn review_owned(
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
     observed_random_suffix_id: Option<i32>,
     exclude_observed_requirement_conflicts: bool,
+    storage_filter: Option<GearStorage>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -2827,6 +2848,7 @@ pub fn review_owned(
                 || wrong_set
                 || wrong_item
                 || wrong_slot
+                || storage_filter.is_some_and(|wanted| wanted.section() != storage)
                 || !matches_required_level(reference.copied())
             {
                 return;
