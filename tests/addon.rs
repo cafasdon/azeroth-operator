@@ -402,6 +402,11 @@ pub fn verify_forever_capture_fixture(
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
         function HasNewMail() return fixtureNewMail end
+        C_SkillInfo={GetNumSkillLines=function() return 3 end,GetSkillLineInfo=function(index)
+            if index==1 then return {isHeader=true,isCollapsed=true} end
+            if index==2 then return {isHeader=false,skillID=45,name="Bows",rank=25,maxRank=35,skillLineCategoryID=6,tempPoints=10} end
+            return {isHeader=false,skillID=fixtureDuplicateSkill and 45 or 95,name="Defense",rank=35,maxRank=35}
+        end}
         function GetBindLocation() return fixtureBindName or "Fixture Inn" end
         function GetInstanceInfo() return "Fixture Dungeon",fixtureInstanceKind or "party",1,"Normal",5,nil,nil,123 end
         fixtureLockDialog={IsVisible=function() return fixtureLockVisible end}
@@ -921,6 +926,16 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
     assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     let summary = azeroth_operator::analysis::summary(&snapshot);
+    assert_eq!(
+        snapshot.sections["skill_lines"],
+        serde_json::json!({
+            "45":{"name":"Bows","rank":25,"max_rank":35,"category_id":6},
+            "95":{"name":"Defense","rank":35,"max_rank":35}
+        })
+    );
+    lua.load("fixtureDuplicateSkill=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("skill_lines"));
+    lua.load("fixtureDuplicateSkill=false").exec()?;
     assert_eq!(
         summary["instance_context"],
         serde_json::json!({"kind":"party","name":"Fixture Dungeon","difficulty_id":1,"instance_map_id":123})

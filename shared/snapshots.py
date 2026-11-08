@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -54,6 +54,21 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "skill_lines" in sections:
+        skills = sections["skill_lines"]
+        if c["family"] != "forever" or not isinstance(skills, dict) or len(skills) > 512:
+            raise ValueError("Invalid skill lines")
+        for key, row in skills.items():
+            if (not isinstance(key, str) or not 1 <= len(key) <= 10 or not key.isascii()
+                    or not key.isdecimal() or key.startswith("0") or int(key) > 4_294_967_295
+                    or not isinstance(row, dict) or set(row) - {"name", "rank", "max_rank", "category_id"}):
+                raise ValueError("Invalid skill line")
+            name, rank, cap = row.get("name"), row.get("rank"), row.get("max_rank")
+            category = row.get("category_id")
+            if (not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
+                    or type(rank) is not int or type(cap) is not int or not 0 <= rank <= cap <= 4_294_967_295
+                    or ("category_id" in row and (type(category) is not int or not 1 <= category <= 4_294_967_295))):
+                raise ValueError("Invalid skill line")
     if "pet_care" in sections:
         pet = sections["pet_care"]
         if (c["family"] != "forever" or not isinstance(pet, dict)

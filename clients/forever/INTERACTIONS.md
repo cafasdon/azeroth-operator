@@ -23,6 +23,12 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`skill_lines` records the game-exposed skill names, base ranks, rank caps
+and category IDs when available. Rows use stable skill-line IDs. The
+export leaves collapsed headers as they are, so missing rows do not
+establish that a skill is unlearned. Temporary modifiers are excluded.
+Update the importer and reader before syncing new captures. [Forever skill API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SkillInfoDocumentation.lua)
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

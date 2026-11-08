@@ -866,6 +866,29 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "skill_lines" => {
+            entries(
+                value,
+                &[
+                    ("name", "text", true),
+                    ("rank", "uint", true),
+                    ("max_rank", "uint", true),
+                    ("category_id", "positive", false),
+                ],
+            )?;
+            let rows = value.as_object().unwrap();
+            ensure!(rows.len() <= 512, "Too many skill lines");
+            for row in rows.values() {
+                ensure!(
+                    row["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256)
+                        && row["rank"].as_u64() <= row["max_rank"].as_u64()
+                        && row.get("category_id").is_none_or(|id| !id.is_null()),
+                    "Invalid skill line"
+                );
+            }
+        }
         "pet_care" => {
             object(
                 value,

@@ -924,6 +924,31 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+AO.collectors.skill_lines = function()
+    local api=C_SkillInfo
+    local count=api.GetNumSkillLines()
+    assert(questRewardInteger(count,1,512), "Skill lines unavailable")
+    local entries={}
+    for index=1,count do
+        local row=api.GetSkillLineInfo(index)
+        assert(questRewardAccessible(row) and type(row)=="table"
+            and questRewardAccessible(row.isHeader) and type(row.isHeader)=="boolean", "Invalid skill line")
+        if not row.isHeader then
+            local id,name,rank,maximum=row.skillID,row.name,row.rank,row.maxRank
+            assert(questRewardInteger(id,1,4294967295) and questRewardAccessible(name) and type(name)=="string"
+                and #name>0 and #name<=256 and questRewardInteger(maximum,0,4294967295)
+                and questRewardInteger(rank,0,maximum), "Invalid skill rank")
+            local key=tostring(id)
+            assert(not entries[key], "Duplicate skill line")
+            local entry={name=name,rank=rank,max_rank=maximum}
+            if questRewardInteger(row.skillLineCategoryID,1,4294967295) then entry.category_id=row.skillLineCategoryID end
+            entries[key]=entry
+        end
+    end
+    assert(questRewardInteger(api.GetNumSkillLines(),count,count), "Skill lines changed")
+    return entries
+end
+
 local function petCarriedFood(api,bags)
     if type(api.CanPetEatItem)~="function" or type(bags)~="table" then return end
     local quantities,unique,slots={},0,0

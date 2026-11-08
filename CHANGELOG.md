@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Save observed Forever skill-line IDs and base ranks for weapon and skill review.
+
 - Identify carried food that the active Forever pet accepts.
 
 - Capture Forever active-pet happiness, loyalty and accepted food types for offline care review.
