@@ -34,6 +34,10 @@ Use `reputation_rank` with `faction_id` and `minimum_reaction`
 The threshold is inclusive. Missing factions and specialised progression
 types are excluded. Results include the matched rank and account-scope
 flag. This can be combined with time bounds and newest-capture selection.
+For renown, use `renown` with `faction_id`, `minimum_level` and an
+optional `capped` flag. It requires an observed renown level for that
+faction. Standard reputation and unavailable renown detail are excluded.
+The result includes the recorded level, capped flag and account scope.
 
 Use `tracked_achievement` with `achievement_id` and optional
 `completed` or `earned_by_character` flags to search saved Forever

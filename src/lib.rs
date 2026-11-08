@@ -326,6 +326,7 @@ pub struct CaptureFilters<'a> {
     pub pet_food: Option<PetFoodCaptureFilter>,
     pub currency_balance: Option<CurrencyBalanceFilter>,
     pub reputation_rank: Option<ReputationRankFilter>,
+    pub renown: Option<RenownFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
@@ -382,6 +383,14 @@ pub struct ReputationRankFilter {
     /// Inclusive minimum standard reputation reaction, from 1 to 8.
     #[schemars(range(min = 1, max = 8))]
     pub minimum_reaction: u8,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RenownFilter {
+    pub faction_id: std::num::NonZeroU32,
+    pub minimum_level: u32,
+    pub capped: Option<bool>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -496,6 +505,7 @@ impl Store {
             pet_food,
             currency_balance,
             reputation_rank,
+            renown,
             tracked_achievement,
             minimum_rested_xp,
             xp_gain_enabled_only,
@@ -722,6 +732,11 @@ impl Store {
             .as_ref()
             .map(|filter| filter.faction_id.to_string());
         ensure!(
+            renown.is_none() || family == Family::Forever,
+            "Renown filtering requires Forever"
+        );
+        let renown_key = renown.as_ref().map(|filter| filter.faction_id.to_string());
+        ensure!(
             tracked_achievement.is_none() || family == Family::Forever,
             "Tracked achievement filtering requires Forever"
         );
@@ -859,6 +874,23 @@ impl Store {
                             .then_some(row)
                         });
                     if tracked_achievement.is_some() && achievement_match.is_none() {
+                        continue;
+                    }
+                    let renown_match =
+                        renown
+                            .as_ref()
+                            .zip(renown_key.as_ref())
+                            .and_then(|(filter, key)| {
+                                let row = s.sections.get("reputation")?["entries"].get(key)?;
+                                (row["kind"] == "renown"
+                                    && row["renown"]["level"].as_u64()?
+                                        >= u64::from(filter.minimum_level)
+                                    && filter.capped.is_none_or(|capped| {
+                                        row["renown"]["capped"].as_bool() == Some(capped)
+                                    }))
+                                .then_some(row)
+                            });
+                    if renown.is_some() && renown_match.is_none() {
                         continue;
                     }
                     let reputation_match = reputation_rank
@@ -1199,6 +1231,12 @@ impl Store {
                         summary["tracked_achievement_match"] = json!({
                             "achievement_id":filter.achievement_id,"completed":row["completed"],
                             "earned_by_character":row["earned_by_character"],"account_wide":row["account_wide"],
+                        });
+                    }
+                    if let Some((filter, row)) = renown.as_ref().zip(renown_match) {
+                        summary["renown_match"] = json!({
+                            "faction_id":filter.faction_id,"level":row["renown"]["level"],
+                            "capped":row["renown"]["capped"],"account_wide":row["account_wide"],
                         });
                     }
                     if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {

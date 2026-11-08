@@ -1238,6 +1238,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         freshness = json.loads(json.dumps(reputation_after))
                         freshness["character"]["name"] = "Freshness"
                         freshness["sections"]["reputation"]["entries"]["10"]["kind"] = "standard"
+                        freshness["sections"]["reputation"]["entries"]["20"] = {
+                            "name": "Fixture renown", "kind": "renown", "account_wide": True,
+                            "reaction": 4, "standing": 0, "threshold": 0, "next_threshold": 0,
+                            "renown": {"level": 5, "earned_in_level": 10, "level_threshold": 100, "capped": False},
+                        }
                         freshness["captured_at"] = "2025-01-01T00:00:00Z"
                         freshness["sections"]["quests"]["43"] = {"title": "Old observation", "level": 10}
                         freshness["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 10
@@ -1323,6 +1328,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "faction_id": 10, "minimum_reaction": invalid_rank,
                                 },
                             })).isError)
+                        for selection, expected_ids in [
+                            ({"faction_id": 20, "minimum_level": 5, "capped": False}, [new_freshness_id]),
+                            ({"faction_id": 20, "minimum_level": 6}, []),
+                            ({"faction_id": 20, "minimum_level": 0, "capped": True}, []),
+                            ({"faction_id": 10, "minimum_level": 0}, []),
+                        ]:
+                            renown_search = await session.call_tool("list_snapshots", {
+                                **latest_query, "renown": selection,
+                            })
+                            self.assertFalse(renown_search.isError)
+                            renown_rows = json.loads(renown_search.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in renown_rows], expected_ids)
+                            if renown_rows:
+                                self.assertEqual(renown_rows[0]["renown_match"], {
+                                    "faction_id": 20, "level": 5, "capped": False, "account_wide": True,
+                                })
                         for selection, expected_ids in [
                             ({"achievement_id": 101, "completed": True, "earned_by_character": False},
                              [new_freshness_id]),

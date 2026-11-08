@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever renown levels and recorded capped status.
+
 - Compare completion and character credit across saved Forever tracked achievement lists.
 
 - Find saved Forever tracked achievements by completion and character credit.
