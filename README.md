@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.run_forever_encounter_windows --help` compares saved windows
+across up to eight DPS encounter profiles under shared work budgets. Repeat
+`--encounter-lookup` and optional positive `--encounter-weight`. Complete,
+comparable results produce weighted gains and encounter sensitivity; missing
+profiles stay unknown. Both saved-window runners offer `--checkpoint-only`.
+[Evidence](docs/encounter-window-execution-verification-2026-11-09.md).
+
 `python -m tools.run_forever_saved_windows --help` executes explicitly selected
 retained windows after fresh local MCP/model checks. It groups identical requests,
 uses private numeric checkpoints, and reports completed, missing and uninspected

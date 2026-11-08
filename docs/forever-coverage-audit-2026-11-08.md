@@ -135,3 +135,9 @@ connects fresh MCP preparation, compatible request grouping and private numeric
 checkpoints under explicit work budgets. It ranks selected completed observations
 and retains missing/uninspected work. Native qualification, full ownership/model
 coverage, automatic all-window scheduling and full owned BiS remain unfinished.
+
+Later [saved-window encounter comparison](encounter-window-execution-verification-2026-11-09.md)
+adds shared budgets across up to eight DPS profiles, weighted gains only after
+complete comparable results, and point-estimate sensitivity. Checkpoint-only
+inspection still revalidates source/model inputs. This is bounded selected-work
+comparison, not full ownership/encounter qualification or unconditional BiS.

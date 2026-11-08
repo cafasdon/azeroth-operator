@@ -1,7 +1,9 @@
 """Revalidate, deduplicate and execute bounded saved windows with private checkpoints."""
 import argparse
 import asyncio
+from copy import deepcopy
 import hashlib
+from math import isfinite
 from pathlib import Path
 from time import monotonic
 
@@ -12,14 +14,16 @@ from tools.merge_forever_prepared_windows import merge_prepared
 from tools.simulation_journal import SimulationJournal
 
 
-async def execute(args):
+async def execute(args, *, deadline=None):
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.max_new_runs, 1, 128)
     integer(args.iteration_budget, 1, 100000)
     integer(args.simulation_journal_mib, 1, 512)
     require(1 <= len(args.window_offset) <= 64 and len(set(args.window_offset)) == len(args.window_offset))
     for offset in args.window_offset: integer(offset)
-    deadline = monotonic() + args.time_budget_seconds
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+    deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     finalize_deadline = deadline + 5
     expected_hash = digest(args.engine_sha256.lower())
     require(args.engine.is_absolute())
@@ -55,9 +59,10 @@ async def execute(args):
         status = 'hit'
         if summary is None:
             iterations = job['request']['simOptions']['iterations']
-            if new_runs >= args.max_new_runs or new_iterations + iterations > args.iteration_budget:
+            if getattr(args, 'checkpoint_only', False) or new_runs >= args.max_new_runs or new_iterations + iterations > args.iteration_budget:
                 pending.append(job['global_review'])
-                stop = 'run_budget' if new_runs >= args.max_new_runs else 'iteration_budget'
+                stop = ('checkpoint_only' if getattr(args, 'checkpoint_only', False) else
+                        'run_budget' if new_runs >= args.max_new_runs else 'iteration_budget')
                 checked += 1
                 continue
             summary = adapter.run(args.engine, expected_hash, job['request'], deadline=deadline,
@@ -95,7 +100,13 @@ async def execute(args):
     metric = {'death': 'simulated_deaths', 'oom': 'mean_seconds_oom'}.get(args.rank_by, f'mean_{args.rank_by}')
     rows.sort(key=lambda row: (-(row[metric]) if args.rank_by in ('dps', 'tps', 'hps') else row[metric], row['review']))
     require(preparer.file_digest(args.engine, finalize_deadline) == expected_hash)
+    profile = deepcopy(work['requests'][0]['request'])
+    adapter.single_player(profile['raid']).pop('equipment')
+    profile.pop('encounter')
+    profile.pop('simOptions')
     result = {'mode': 'saved_window_simulation', 'work_set_sha256': work_key, 'engine_sha256': expected_hash,
+        'simulation_profile_sha256': hashlib.sha256(preparer.encoded(profile)).hexdigest(),
+        'fingerprints': work['fingerprints'], 'encounter_settings': adapter.encounter_summary(work['requests'][0]['request']),
         'search_coverage': work['search_coverage'], 'requested_request_count': len(bindings),
         'completed_request_count': len(rows), 'uninspected_request_count': uninspected,
         'missing_request_count': len(pending), 'missing_reviews': pending[:128],
@@ -122,6 +133,7 @@ def main(argv=None):
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--window-offset', type=int, action='append', required=True)
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--checkpoint-only', action='store_true', help='Revalidate and inspect completed results without new engine runs')
     cli.add_argument('--rank-by', choices=['dps', 'dtps', 'tps', 'death', 'hps', 'oom'], default='dps')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)

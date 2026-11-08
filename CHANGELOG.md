@@ -1,5 +1,9 @@
 # Changelog
 
+- Resume saved-window DPS comparisons across encounters with shared execution
+  budgets, complete-only weighted gains, profile comparability checks and
+  encounter sensitivity; add revalidated checkpoint-only reporting.
+
 - Execute selected saved gear windows with fresh MCP/model checks, deduplicated
   requests, private resumable checkpoints and bounded work/progress reporting;
   verify engine identity again before committing newly executed results.

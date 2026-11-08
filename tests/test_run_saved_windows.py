@@ -38,7 +38,8 @@ class RunSavedWindowTests(unittest.TestCase):
             jobs = [{'global_review': i, 'request': deepcopy(request), 'simulator_gear_sha256': str(i) * 64,
                      'request_sha256': str(i) * 64, 'references': []} for i in [1, 2]]
             jobs[1]['request']['raid']['parties'][0]['players'][0]['equipment']['items'][10] = {'id': 4549}
-            work = {'requests': jobs, 'search_coverage': {'snapshot_id': '1' * 64, 'scope_sha256': '2' * 64}}
+            work = {'requests': jobs, 'search_coverage': {'snapshot_id': '1' * 64, 'scope_sha256': '2' * 64},
+                    'fingerprints': {}}
             args = SimpleNamespace(time_budget_seconds=1, max_new_runs=1, iteration_budget=100000,
                 simulation_journal_mib=64, window_offset=[0], engine_sha256=sha, engine=engine,
                 simulation_journal=base / 'journal', mcp=base / 'mcp.exe', journal=base / 'gears.sqlite',
