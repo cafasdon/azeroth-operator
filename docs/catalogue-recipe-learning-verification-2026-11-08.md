@@ -1,5 +1,10 @@
 # Catalogue recipe learning — 8 November 2026
 
+Later source extension: [reported profession spells](profession-spells-verification-2026-11-08.md)
+adds a third positive observation by exact crafting-source spell ID. The evidence
+below records the original selected/list join. Current lookups also consider that
+reported-spell observation, preserving known learning conflicts and output checks.
+
 `lookup_forever_catalogue.only_observed_learned_recipe` can now discover crafted
 item/enchant references from an owner-local saved `profession_recipe_view`, as
 well as the saved selected schematic. Both join to a pinned catalogue crafting

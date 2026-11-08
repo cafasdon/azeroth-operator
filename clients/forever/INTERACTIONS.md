@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Visible local profession capture can retain stable reported known spell IDs
+without filter changes. Exact crafted-source IDs can support local learned-output
+searches; conflicts stay unknown. The spell report does not establish complete
+recipe coverage, reagent availability or current craftability.
+[Offline evidence](../../docs/profession-spells-verification-2026-11-08.md).
+
 Manual player-resource observations retain readable stable health and primary
 power independently. Restricted, failed or changing components stay unknown;
 power units are explicitly unmodified. Summaries expose deficits and percentages

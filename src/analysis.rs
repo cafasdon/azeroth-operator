@@ -4592,6 +4592,13 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["profession_spell_observations"] = s.sections.get("profession_spells").map(|section| {
+        let mut ids: Vec<_>=section["entries"].as_object().unwrap().keys().map(|key|key.parse::<u32>().unwrap()).collect();
+        ids.sort_unstable();
+        json!({"coverage":section["coverage"],"profession_id":section["profession_id"],
+            "reported_spell_count":ids.len(),"spell_ids":ids.iter().take(50).collect::<Vec<_>>(),
+            "truncated":ids.len()>50,"complete_recipe_knowledge_verified":false,"craftability_verified":false})
+    }).unwrap_or(Value::Null);
     summary["player_resource_observations"] = s.sections.get("player_resources").map(|resources| {
         let describe = |row: Option<&Value>| row.map(|row| {
             let current=row["current"].as_u64().unwrap();

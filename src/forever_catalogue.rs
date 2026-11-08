@@ -170,7 +170,7 @@ pub struct Query {
     pub suffix_target_item_id: Option<std::num::NonZeroU32>,
     /// List items that explicitly reference this random suffix ID.
     pub item_random_suffix_id: Option<std::num::NonZeroI32>,
-    /// Match crafted sources to consistent positive selected-recipe or filtered recipe-list learning observations.
+    /// Match crafted sources to consistent positive selected/list learning or reported known profession spells.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
@@ -1563,6 +1563,7 @@ struct RecipeLearning {
     selected_recipe_learned: Option<bool>,
     recipe_list_observed: bool,
     recipe_list_learned: Option<bool>,
+    profession_spell_reported: bool,
     learning_conflict: bool,
     selected_output_matches_catalogue: Option<bool>,
     learned: Option<bool>,
@@ -1579,24 +1580,30 @@ fn recipe_learning(snapshot: &Snapshot, recipe_id: u64, output_id: Option<u64>) 
         .and_then(|view| view["entries"].get(recipe_id.to_string()));
     let selected_learned = selected.and_then(|row| row["learned"].as_bool());
     let listed_learned = listed.and_then(|row| row["learned"].as_bool());
+    let reported = snapshot
+        .sections
+        .get("profession_spells")
+        .is_some_and(|section| section["entries"].get(recipe_id.to_string()).is_some());
     let output_matches = selected
         .and_then(|row| row["output_item_id"].as_u64())
         .zip(output_id)
         .map(|(observed, expected)| observed == expected);
-    let conflict = selected_learned
-        .zip(listed_learned)
-        .is_some_and(|(a, b)| a != b);
+    let flags = [selected_learned, listed_learned, reported.then_some(true)];
+    let conflict = flags.contains(&Some(true)) && flags.contains(&Some(false));
     RecipeLearning {
         selected_recipe_observed: selected.is_some(),
         selected_recipe_learned: selected_learned,
         recipe_list_observed: listed.is_some(),
         recipe_list_learned: listed_learned,
+        profession_spell_reported: reported,
         learning_conflict: conflict,
         selected_output_matches_catalogue: output_matches,
         learned: if conflict || output_matches == Some(false) {
             None
         } else {
-            selected_learned.or(listed_learned)
+            selected_learned
+                .or(listed_learned)
+                .or(reported.then_some(true))
         },
     }
 }

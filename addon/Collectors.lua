@@ -932,6 +932,56 @@ AO.collectors.mail_attachments = function()
     end
     return result
 end
+AO.collectors.profession_spells = function()
+    local api=C_TradeSkillUI
+    local page=ProfessionsFrame and ProfessionsFrame.CraftingPage
+    assert(AO.family=="forever" and page and page.IsVisible and Professions
+        and Professions.InLocalCraftingMode and Professions.IsViewingExternalCraftingList
+        and Professions.GetProfessionInfo and api and api.GetProfessionSpells
+        and api.IsNPCCrafting and api.IsDataSourceChanging, "Profession spells unavailable")
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted profession spell observation")
+        return value
+    end
+    local function id(value)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=1 and value<=4294967295, "Invalid profession spell ID")
+        return value
+    end
+    local function context()
+        assert(public(api.IsDataSourceChanging())==false, "Changing profession source")
+        local inspection=page.SchematicForm and public(page.SchematicForm.isInspection)
+        assert(inspection==nil or inspection==false, "Inspection profession source")
+        assert(public(page:IsVisible())==true and public(Professions.InLocalCraftingMode())==true
+            and public(Professions.IsViewingExternalCraftingList())==false
+            and public(api.IsNPCCrafting())==false, "Nonlocal profession source")
+        local info=public(Professions.GetProfessionInfo())
+        assert(type(info)=="table", "Profession context unavailable")
+        return id(info.professionID)
+    end
+    local function read(profession)
+        local values=public(api.GetProfessionSpells(profession))
+        assert(type(values)=="table" and #values<=4096, "Profession spell list unavailable")
+        local result,count={},0
+        for index,value in pairs(values) do
+            index=public(index)
+            assert(type(index)=="number" and index%1==0 and index>=1 and index<=#values, "Sparse profession spell list")
+            local key=tostring(id(value))
+            assert(not result[key], "Duplicate profession spell ID")
+            result[key]={};count=count+1
+        end
+        assert(count==#values, "Incomplete profession spell list")
+        return result
+    end
+    local profession=context()
+    local first=read(profession)
+    local second=read(profession)
+    assert(context()==profession, "Profession context changed")
+    for key in pairs(first) do assert(second[key], "Profession spell list changed") end
+    for key in pairs(second) do assert(first[key], "Profession spell list changed") end
+    return {coverage="reported_known_profession_spells",profession_id=profession,entries=first}
+end
+
 AO.collectors.profession_recipe_view = function()
     local api=C_TradeSkillUI
     local page=ProfessionsFrame and ProfessionsFrame.CraftingPage

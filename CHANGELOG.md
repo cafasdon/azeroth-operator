@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture stable reported known profession spell IDs and join exact IDs to
+  local crafted-output discovery without changing profession filters.
+
 - Capture public stable player health and primary power independently during
   manual Forever export, with strict readers and historical resource summaries.
 

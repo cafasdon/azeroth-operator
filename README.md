@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can capture the visible local profession's reported
+known spell IDs without changing filters. Inspect `profession_spells` or its
+summary; exact catalogue crafting-source IDs can support learned-output searches.
+This remains separate from complete recipe coverage and craftability.
+[Offline evidence](docs/profession-spells-verification-2026-11-08.md).
+
 Forever manual exports can include `player_resources`: readable stable health
 and primary power, independently. `character_summary.player_resource_observations`
 shows observed amounts, deficits and percentages; zero maximum leaves percentage

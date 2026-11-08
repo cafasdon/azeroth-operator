@@ -262,6 +262,25 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "profession_spells" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("profession_id", "positive", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "reported_known_profession_spells",
+                "Invalid profession spell coverage"
+            );
+            entries(&value["entries"], &[])?;
+            ensure!(
+                value["entries"].as_object().unwrap().len() <= 4096,
+                "Too many profession spells"
+            );
+        }
         "profession_recipe_view" => {
             object(
                 value,

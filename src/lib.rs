@@ -54,6 +54,7 @@ const SECTIONS: &[&str] = &[
     "saved_instances",
     "saved_world_bosses",
     "profession_recipe_view",
+    "profession_spells",
     "mail_attachments",
     "pet_collection_view",
     "skill_lines",
@@ -224,6 +225,7 @@ impl Snapshot {
                         | "saved_instances"
                         | "saved_world_bosses"
                         | "profession_recipe_view"
+                        | "profession_spells"
                         | "mail_attachments"
                         | "pet_collection_view"
                         | "skill_lines"

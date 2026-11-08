@@ -20,6 +20,7 @@ SECTIONS = SECTIONS | {"equipment_durability"}
 SECTIONS = SECTIONS | {"weapon_enchants"}
 SECTIONS = SECTIONS | {"pet_action_bar"}
 SECTIONS = SECTIONS | {"player_resources"}
+SECTIONS = SECTIONS | {"profession_spells"}
 
 
 def _validate_action_bar_observation(observation):
@@ -527,6 +528,17 @@ def validate_snapshot(value):
                             or not (1 if field=="enchant_id" else 0)<=row[field]<=4_294_967_295
                             for field in ("enchant_id","charges","remaining_milliseconds") if field in row)):
                     raise ValueError("Invalid weapon enchant observation")
+    if "profession_spells" in sections:
+        spells=sections["profession_spells"]
+        if (c["family"]!="forever" or not isinstance(spells,dict) or set(spells)!={"coverage","profession_id","entries"}
+                or spells["coverage"]!="reported_known_profession_spells" or type(spells["profession_id"]) is not int
+                or not 1<=spells["profession_id"]<=4_294_967_295 or not isinstance(spells["entries"],dict)
+                or len(spells["entries"])>4096):
+            raise ValueError("Invalid profession spell observation")
+        for key,row in spells["entries"].items():
+            if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
+                    or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
+                raise ValueError("Invalid profession spell ID")
     if "player_resources" in sections:
         resources=sections["player_resources"]
         if (c["family"]!="forever" or not isinstance(resources,dict)
