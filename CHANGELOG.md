@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cross-test the combined Forever gear shortlist across weighted encounters.
+
 - Filter saved Forever merchant visits by recorded stock and copper-only offers.
 
 - Filter saved Forever merchant visits by the copper price per bundle.

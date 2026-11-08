@@ -765,12 +765,27 @@ For a combined ranking, repeat `--encounter-weight` once per encounter in input
 order. Use positive weights such as `--encounter-weight 70 --encounter-weight 30`.
 The ranker normalises the weights and averages each draft's percentage DPS change
 from its encounter baseline. This keeps a high-DPS encounter from dominating
-solely because of its DPS scale. The combined view requires fixed mode so every
-draft is evaluated in every encounter, and each baseline must have positive DPS.
-It reports weighted point estimates with the original per-encounter results.
+solely because of its DPS scale. Each baseline must have positive DPS.
+Without the bulk adapter every draft is evaluated in every encounter.
+With the bulk adapter, each encounter screens the full draft pool. The
+ranker then runs the union of the shortlists plus equipped gear at the
+exported fixed iteration count in every encounter. The output includes
+`screening_encounters`, `finalist_reviews` and the fixed finalist results
+in `encounters`. `--top` caps the distinct alternatives returned by each
+screen. The weighted ranking can miss a consistently strong set
+that never makes any individual shortlist. Use fixed mode when the
+weighted result needs to cover every draft. Fixed iteration budgets still
+apply to each finalist comparison. If requested, fresh-seed confirmation
+compares the leading pair in each fixed finalist ranking.
 Within one command, matching encounter and simulator options reuse the first
 result. The repeated row reports `reused_encounter_index` and keeps its own
 weight and position. Different seeds or iteration counts run separately.
+
+On the 49-set Hunter fixture above, a paired comparison of Raid Target,
+Movement and a repeated Raid Target export at weights 5:3:2 took 11.08 s
+with staged weighting and 27.64 s with exhaustive weighting. Seven review
+rows reached the final pass. Every finalist row and the weighted winner
+matched the exhaustive result. Both modes reused the repeated export.
 
 To build an encounter and iteration input, call `lookup_forever_catalogue`
 with `section:"encounters"`, the exact preset path as `key`, and a

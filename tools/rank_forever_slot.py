@@ -318,16 +318,19 @@ def tradeoff_reviews(rows, score_for):
     ]
 
 
-def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
+def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finalist_reviews=None):
+    if finalist_reviews is not None:
+        drafts = [drafts[review - 1] for review in finalist_reviews]
     requests = [request_from(template, draft, encounter) for _, draft in drafts]
     tank_ranking = args.rank_by in ("dtps", "tps", "death")
     healing_ranking = args.rank_by in ("hps", "oom")
     start = monotonic()
+    screening = finalist_reviews is None and args.bulk_engine
     fixed = (compare(args.engine, args.engine_sha256, requests, paired=args.paired)
-             if args.audit_shortlist else None)
+             if screening and args.audit_shortlist else None)
     after_fixed = monotonic()
     result = (compare_bulk(args.bulk_engine, args.bulk_engine_sha256, requests, args.top)
-              if args.bulk_engine else None)
+              if screening else None)
     staged_wall = monotonic() - after_fixed if result is not None else None
     audit = audit_shortlist(result, fixed, requests, args.top) if fixed is not None else None
     if result is None:
@@ -335,7 +338,7 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
             args.engine, args.engine_sha256, requests, paired=args.paired,
             tank_metrics=tank_ranking, healing_metrics=healing_ranking)
     result.update(encounter_summary(requests[0]))
-    if args.confirm_leading_seed is not None:
+    if args.confirm_leading_seed is not None and not (screening and args.encounter_weight):
         pair = result.get("observed_leading_dps_pair")
         if result.get("mode") == "staged_bulk":
             leaders = {}
@@ -402,7 +405,30 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
     if healing_ranking:
         result["healing_tradeoff_reviews"] = tradeoff_reviews(
             result["results"], lambda row: (row["mean_seconds_oom"], -row["mean_hps"]))
+    if finalist_reviews is not None:
+        for row in result["results"]:
+            row["review"] = finalist_reviews[row["review"] - 1]
+        for field in ("observed_leading_dps_pair", "leading_dps_confirmation"):
+            pair = result.get(field, {})
+            for key in ("leading_review", "runner_up_review"):
+                if key in pair:
+                    pair[key] = finalist_reviews[pair[key] - 1]
     return result
+
+
+def rank_encounters(args, template, encounters, keys, drafts, set_piece_ids, finalist_reviews=None):
+    rankings = []
+    simulated = {}
+    for index, (encounter, key) in enumerate(zip(encounters, keys, strict=True), 1):
+        previous = simulated.get(key)
+        if previous is None:
+            ranking = rank_encounter(args, template, encounter, drafts, set_piece_ids, finalist_reviews)
+            simulated[key] = index
+        else:
+            ranking = {**rankings[previous - 1], "reused_encounter_index": previous}
+        ranking["encounter_index"] = index
+        rankings.append(ranking)
+    return rankings
 
 
 def weighted_ranking(rankings, weights):
@@ -466,7 +492,7 @@ def main():
     parser.add_argument("--encounter-lookup", type=Path, action="append",
                         help="Encounter export. Repeat for separate rankings.")
     parser.add_argument("--encounter-weight", type=float, action="append",
-                        help="Relative weight in encounter input order. Fixed comparisons only.")
+                        help="Relative weight in encounter input order. Bulk mode cross-tests the combined shortlist.")
     parser.add_argument("--paired", action="store_true")
     parser.add_argument("--confirm-leading-seed", type=int,
                         help="Rerun the top two distinct DPS sets with this fresh seed.")
@@ -530,9 +556,9 @@ def main():
             raise ValueError("Provide up to four encounter exports")
         weights = args.encounter_weight
         if weights is not None:
-            if (args.bulk_engine or len(weights) < 2 or len(weights) != len(args.encounter_lookup)
+            if (len(weights) < 2 or len(weights) != len(args.encounter_lookup)
                     or any(not isfinite(weight) or weight <= 0 for weight in weights)):
-                raise ValueError("Provide one positive finite weight per encounter in fixed mode")
+                raise ValueError("Provide one positive finite weight per encounter")
             largest = max(weights)
             scaled = [weight / largest for weight in weights]
             total = fsum(scaled)
@@ -584,18 +610,14 @@ def main():
             for encounter in encounters:
                 request = request_from(template, drafts[0][1], encounter)
                 keys.append(encounter_key(request))
-            rankings = []
-            simulated = {}
-            for index, (encounter, key) in enumerate(zip(encounters, keys, strict=True), 1):
-                previous = simulated.get(key)
-                if previous is None:
-                    ranking = rank_encounter(args, template, encounter, drafts, set_piece_ids)
-                    simulated[key] = index
-                else:
-                    ranking = {**rankings[previous - 1], "reused_encounter_index": previous}
-                ranking["encounter_index"] = index
-                rankings.append(ranking)
-            result = {"encounters": rankings}
+            rankings = rank_encounters(args, template, encounters, keys, drafts, set_piece_ids)
+            result = {}
+            if weights is not None and args.bulk_engine:
+                finalist_reviews = sorted({row["review"] for ranking in rankings for row in ranking["results"]})
+                result.update(screening_encounters=rankings, finalist_reviews=finalist_reviews)
+                rankings = rank_encounters(
+                    args, template, encounters, keys, drafts, set_piece_ids, finalist_reviews)
+            result["encounters"] = rankings
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity,
