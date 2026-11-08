@@ -1030,6 +1030,12 @@ XP. Unknown rewards are excluded and counted before the copper filters.
 Set `quest_list_xp_projection` to total observed XP across retained quests.
 Combine it with readiness for a turn-in plan. If known rewards fall short
 and some rewards are unknown, coverage of the level threshold remains unknown.
+The `ready_turn_in_plan` uses only retained quests explicitly ready for
+turn-in with a recorded XP reward. It picks the fewest quests needed
+to reach the saved threshold by taking larger rewards first, breaking
+ties by quest ID. If known ready rewards fall short, the plan reports
+that shortfall and leaves the selected list null. A missing threshold
+or explicitly disabled XP gain leaves the entire plan unknown.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its

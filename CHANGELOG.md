@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find the fewest observed ready quest turn-ins that cover the saved Forever XP threshold.
+
 - Find saved Forever captures by rested XP and explicitly enabled XP gain.
 
 - Calculate saved Forever XP progression across a single observed level-up.

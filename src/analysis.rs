@@ -2394,9 +2394,36 @@ pub fn quest_list_xp_projection(
     let disabled = experience.and_then(|xp| xp["xp_disabled"].as_bool());
     let remaining = experience.and_then(xp_to_next_level);
     let estimate = remaining.zip(total).filter(|_| disabled != Some(true));
+    let ready_turn_in_plan = remaining
+        .filter(|_| disabled != Some(true))
+        .map(|remaining| {
+            let mut rewards: Vec<_> = quests
+                .iter()
+                .filter_map(|(id, quest)| {
+                    (quest_readiness(quest) == QuestReadiness::Ready).then_some(())?;
+                    Some((
+                        std::cmp::Reverse(quest["reward_amounts"]["xp"].as_u64()?),
+                        id.parse::<u32>().ok()?,
+                    ))
+                })
+                .collect();
+            rewards.sort_unstable();
+            let mut shortfall = remaining;
+            let mut selected = Vec::new();
+            for (std::cmp::Reverse(xp), id) in rewards {
+                if shortfall == 0 {
+                    break;
+                }
+                shortfall = shortfall.saturating_sub(xp);
+                selected.push(id);
+            }
+            json!({"quest_ids_to_threshold":(shortfall == 0).then_some(selected),
+            "xp_shortfall_after_known_ready_rewards":shortfall})
+        });
     json!({
         "known_reward_xp":total,"unknown_reward_count":unknown,
         "xp_to_next_level":remaining,"xp_disabled":disabled,
+        "ready_turn_in_plan":ready_turn_in_plan,
         "covers_recorded_xp_threshold":estimate.and_then(|(remaining,total)| {
             if total >= remaining { Some(true) } else if unknown == 0 { Some(false) } else { None }
         }),

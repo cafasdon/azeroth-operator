@@ -818,6 +818,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "status": "progress", "current_xp": 120, "level_threshold_xp": 200,
                             "rested_xp": 40, "resting": True, "xp_disabled": False,
                         }
+                        for quest_id, reward in [("10", 50), ("2", 50), ("42", 1000), ("44", 1000)]:
+                            travel["sections"]["quests"][quest_id]["reward_amounts"] = {"xp": reward}
                         travel["sections"]["bags"] = {"0": {"1": {"item_id": 117, "count": 3}}}
                         travel["sections"]["pet_care"] = {
                             "present": True, "happiness": 2, "loyalty": "Fixture loyal",
@@ -956,11 +958,38 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         capped_travel = json.loads(json.dumps(travel))
                         capped_travel["sections"]["experience"] = {"status": "level_capped"}
                         capped_id = SnapshotStore(Path(folder)).ingest(capped_travel)
+                        for capture_id, expected in [
+                            (travel_before, {"quest_ids_to_threshold": [2, 10],
+                                             "xp_shortfall_after_known_ready_rewards": 0}),
+                            (travel_after, {"quest_ids_to_threshold": [2],
+                                            "xp_shortfall_after_known_ready_rewards": 0}),
+                            (capped_id, None),
+                        ]:
+                            quest_xp = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": capture_id, "section": "quests",
+                                "quest_list_xp_projection": True,
+                            })
+                            self.assertFalse(quest_xp.isError)
+                            projection = json.loads(quest_xp.content[0].text)["quest_list_xp_projection"]
+                            self.assertEqual(projection["ready_turn_in_plan"], expected)
                         locked_travel = json.loads(json.dumps(travel))
                         locked_travel["sections"]["experience"].update({
                             "rested_xp": 40, "xp_disabled": True,
                         })
                         locked_id = SnapshotStore(Path(folder)).ingest(locked_travel)
+                        for capture_id, extra, expected in [
+                            (travel_before, {"quest_min_reward_xp": 100},
+                             {"quest_ids_to_threshold": None,
+                              "xp_shortfall_after_known_ready_rewards": 80}),
+                            (locked_id, {}, None),
+                        ]:
+                            quest_xp = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": capture_id, "section": "quests",
+                                "quest_list_xp_projection": True, **extra,
+                            })
+                            self.assertFalse(quest_xp.isError)
+                            projection = json.loads(quest_xp.content[0].text)["quest_list_xp_projection"]
+                            self.assertEqual(projection["ready_turn_in_plan"], expected)
                         rested_query = {"family": "forever", "minimum_rested_xp": 40,
                                         "xp_gain_enabled_only": True}
                         rested = await session.call_tool("list_snapshots", rested_query)
