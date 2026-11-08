@@ -48,6 +48,11 @@ weapons carried forward from the baseline. A projected off-hand clear removes
 that slot from the list. The list describes the draft even when other checks
 find a conflict.
 
+The local gear ranker includes the same observations as
+`projected_weapon_skills` on per-encounter and weighted results. These are
+captured character data for interpreting a result. They do not affect the
+score.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

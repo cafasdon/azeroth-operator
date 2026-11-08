@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Carry projected Forever weapon skills into local encounter and weighted gear rankings.
+
 - Show captured Forever weapon skills for the projected equipment in a gear draft.
 
 - Link owned Forever weapons to the character's captured weapon skill and remaining base ranks.

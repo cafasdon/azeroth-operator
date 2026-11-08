@@ -296,10 +296,14 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
         result["shortlist_audit"] = audit
     for row in result["results"]:
         selections, draft = drafts[row["review"] - 1]
+        checks = draft["checks"]
         if set_piece_ids is not None:
-            equipment = draft["checks"]["simulator_equipment_spec"]["items"]
+            equipment = checks["simulator_equipment_spec"]["items"]
             row["selected_set_equipped_pieces"] = sum(item.get("id") in set_piece_ids for item in equipment)
-        cleared = draft["checks"].get("simulator_cleared_equipment_slots")
+        weapon_skills = checks.get("catalogue_projected_weapon_skills")
+        if weapon_skills is not None:
+            row["projected_weapon_skills"] = weapon_skills
+        cleared = checks.get("simulator_cleared_equipment_slots")
         if cleared:
             row["cleared_equipment_slots"] = cleared
         if len(args.slot) == 1:
@@ -332,11 +336,12 @@ def weighted_ranking(rankings, weights):
         raise ValueError("Weighted ranking requires every draft in every encounter")
     results = [{"review": review, "weighted_dps_gain_pct": 100 * fsum(parts)}
                for review, parts in gains.items()]
-    set_counts = {row["review"]: row["selected_set_equipped_pieces"]
-                  for row in rankings[0]["results"] if "selected_set_equipped_pieces" in row}
+    first_rows = {row["review"]: row for row in rankings[0]["results"]}
     for row in results:
-        if row["review"] in set_counts:
-            row["selected_set_equipped_pieces"] = set_counts[row["review"]]
+        first = first_rows[row["review"]]
+        for field in ("selected_set_equipped_pieces", "projected_weapon_skills"):
+            if field in first:
+                row[field] = first[field]
     results.sort(key=lambda row: (-row["weighted_dps_gain_pct"], row["review"]))
     return {"encounter_weights": weights, "results": results}
 
