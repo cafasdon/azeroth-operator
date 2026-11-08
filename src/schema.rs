@@ -952,6 +952,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("kind", "text", true),
                     ("entries", "map", true),
                     ("pet_training_points_available", "uint", false),
+                    ("pet_level", "positive", false),
                 ],
             )?;
             let pet = value["kind"] == "pet";
@@ -961,7 +962,12 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     Some("general" | "tradeskills" | "pet")
                 ) && value
                     .get("pet_training_points_available")
-                    .is_none_or(|points| pet && !points.is_null()),
+                    .is_none_or(|points| pet && !points.is_null())
+                    && value.get("pet_level").is_none_or(|level| {
+                        pet && level
+                            .as_u64()
+                            .is_some_and(|level| (1..=255).contains(&level))
+                    }),
                 "Invalid trainer kind"
             );
             let rows = value["entries"].as_object().unwrap();

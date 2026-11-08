@@ -396,7 +396,10 @@ pub fn verify_forever_capture_fixture(
         function date() return '2025-01-01T00:00:00Z' end
         walletCalls=0;walletCopper=0
         function GetMoney() walletCalls=walletCalls+1; return walletCopper end
-        function UnitLevel() return 60 end
+        function UnitLevel(unit)
+            if unit=="pet" then return fixturePetLevel or 17 end
+            return 60
+        end
         function UnitClass() return 'Hunter','HUNTER' end
         function UnitRace() return 'Orc','Orc' end
         factionTag='Horde'
@@ -807,9 +810,15 @@ pub fn verify_forever_capture_fixture(
     lua.load("fixtureTrainerKind=3;AO.Capture()").exec()?;
     let pet = read()?.sections["trainer_services"].clone();
     assert_eq!(pet["kind"], "pet");
+    assert_eq!(pet["pet_level"], 17);
     assert_eq!(pet["pet_training_points_available"], 15);
     assert_eq!(pet["entries"]["1"]["price_training_points"], 500);
     assert!(pet["entries"]["1"].get("price_copper").is_none());
+    lua.load("fixturePetLevel=-1;AO.Capture()").exec()?;
+    let unavailable_level = read()?.sections["trainer_services"].clone();
+    assert!(unavailable_level.get("pet_level").is_none());
+    assert_eq!(unavailable_level["pet_training_points_available"], 15);
+    lua.load("fixturePetLevel=nil").exec()?;
     lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
     assert_eq!(
         snapshot.sections["pet_care"],
@@ -839,6 +848,11 @@ pub fn verify_forever_capture_fixture(
     assert!(
         read()?.sections["trainer_services"]
             .get("pet_training_points_available")
+            .is_none()
+    );
+    assert!(
+        read()?.sections["trainer_services"]
+            .get("pet_level")
             .is_none()
     );
     lua.load("fixtureTrainerKind=nil;closedTrainer=true;AO.Capture()")

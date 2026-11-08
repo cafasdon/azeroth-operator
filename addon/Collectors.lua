@@ -1062,6 +1062,11 @@ AO.collectors.trainer_services = function()
     end
     local result={kind=pet and "pet" or (kind==types.General and "general" or "tradeskills"),entries=entries}
     if pet then
+        local levelRead,level=pcall(function()
+            local exists=UnitExists("pet")
+            if questRewardAccessible(exists) and exists==true then return UnitLevel("pet") end
+        end)
+        if levelRead and questRewardInteger(level,1,255) then result.pet_level=level end
         local ok,points=pcall(function()
             local exists=UnitExists("pet")
             if not questRewardAccessible(exists) or exists~=true then return end

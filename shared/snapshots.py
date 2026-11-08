@@ -110,10 +110,14 @@ def validate_snapshot(value):
     if "trainer_services" in sections:
         trainer = sections["trainer_services"]
         if (c["family"] != "forever" or not isinstance(trainer, dict)
-                or set(trainer) - {"pet_training_points_available"} != {"kind", "entries"}
+                or set(trainer) - {"pet_training_points_available", "pet_level"} != {"kind", "entries"}
                 or trainer["kind"] not in ("general", "tradeskills", "pet")):
             raise ValueError("Invalid trainer services")
         pet = trainer["kind"] == "pet"
+        if "pet_level" in trainer:
+            level = trainer["pet_level"]
+            if not pet or type(level) is not int or not 1 <= level <= 255:
+                raise ValueError("Invalid pet level")
         if "pet_training_points_available" in trainer:
             points = trainer["pet_training_points_available"]
             if not pet or type(points) is not int or not 0 <= points <= 4_294_967_295:

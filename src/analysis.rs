@@ -1769,7 +1769,12 @@ pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value
     let Some(entries) = trainer["entries"].as_object() else {
         return Value::Null;
     };
-    let requirement_level = level.filter(|_| trainer["kind"] != "pet");
+    let pet_level = trainer["pet_level"].as_u64();
+    let requirement_level = if trainer["kind"] == "pet" {
+        pet_level
+    } else {
+        level
+    };
     let lessons: BTreeMap<_, _> = entries
         .iter()
         .filter(|(_, lesson)| lesson["status"] == "unavailable")
@@ -1798,7 +1803,12 @@ pub fn trainer_requirements_review(trainer: &Value, level: Option<u64>) -> Value
             )
         })
         .collect();
-    json!({"captured_character_level":level,"unavailable_lessons_by_slot":lessons})
+    let mut review =
+        json!({"captured_character_level":level,"unavailable_lessons_by_slot":lessons});
+    if trainer["kind"] == "pet" {
+        review["captured_pet_level"] = json!(pet_level);
+    }
+    review
 }
 
 fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize, usize, u64)> {

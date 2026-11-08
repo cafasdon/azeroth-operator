@@ -108,8 +108,8 @@ that type. Missing detail remains unknown.
 Set `trainer_requirements_review: true` with `section: "trainer_services"`
 to see the observed level shortfall, unmet skill flag and unmet ability
 names for each retained unavailable lesson. Level comes from the same
-capture. Pet lessons omit level shortfalls because the saved player level
-does not establish the pet's level. Missing requirement data remains unknown. The trainer's saved
+capture. Pet lessons use the active pet level recorded in the trainer
+section when available. Missing requirement data remains unknown. The trainer's saved
 availability remains authoritative for that observation.
 
 Set `trainer_wallet_projection: true` with `section: "trainer_services"`

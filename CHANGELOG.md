@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture active pet level in Forever trainer panels and use it for lesson level gaps.
+
 - Summarise recorded blockers for unavailable Forever trainer lessons.
 
 - Show how many merchant bundles saved resources cover in Forever offer reviews.
