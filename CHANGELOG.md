@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show how many Forever crafts each individual reagent can support.
+
 - List the cheapest reachable destinations in a saved Forever flight panel.
 
 - Explain where the saved starting wallet stops covering a Forever itinerary.

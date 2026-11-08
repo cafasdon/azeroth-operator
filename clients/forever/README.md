@@ -840,6 +840,10 @@ storage separately. Unobserved storage, unsupported requirements and recipes
 without fixed reagents can make a result unavailable. Partial storage gives a
 lower bound for material capacity. Crafting eligibility remains unverified.
 
+`material_capacity_by_item` shows the whole crafts each fixed reagent
+supports on its own, for bags and all observed storage. Missing storage
+stays unknown, and partial coverage can understate the available stock.
+
 Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include
 all observed stacks. These are locations in the saved export.

@@ -631,6 +631,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }])
                         self.assertFalse(recipe_data["craftability_verified"])
                         self.assertEqual(recipe_data["unobserved_storage"], ["bags"])
+                        self.assertEqual(recipe_data["material_capacity_by_item"], {
+                            "744": {"bags": None, "all_observed_storage": 0},
+                        })
                         self.assertEqual(recipe_data["material_capacity"], {
                             "bags": None,
                             "all_observed_storage": {"supported_crafts": 0, "limiting_item_ids": [744]},
@@ -644,6 +647,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         stocked = await session.call_tool("review_forever_recipe", {
                             "snapshot_id": stocked_key, "crafts": 1})
                         self.assertFalse(stocked.isError)
+                        self.assertEqual(json.loads(stocked.content[0].text)["material_capacity_by_item"], {
+                            "744": {"bags": 2, "all_observed_storage": 3},
+                            "10": {"bags": 3, "all_observed_storage": 3},
+                        })
                         self.assertEqual(json.loads(stocked.content[0].text)["material_capacity"], {
                             "bags": {"supported_crafts": 2, "limiting_item_ids": [744]},
                             "all_observed_storage": {"supported_crafts": 3, "limiting_item_ids": [10, 744]},

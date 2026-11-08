@@ -106,6 +106,7 @@ pub fn review_recipe_with_inventory(
     let mut materials = Vec::new();
     let mut bag_limits = Vec::new();
     let mut observed_limits = Vec::new();
+    let mut capacity_by_item = BTreeMap::new();
     if fixed {
         for (id, quantity) in recipe["reagents"]
             .as_object()
@@ -120,8 +121,14 @@ pub fn review_recipe_with_inventory(
             let reagent = observed.remove(id.as_str()).unwrap_or_default();
             let quantities = reagent.quantities;
             let available: u64 = quantities.iter().sum();
-            bag_limits.push((item_id, quantities[0] / per_craft));
-            observed_limits.push((item_id, available / per_craft));
+            let bags_capacity = quantities[0] / per_craft;
+            let observed_capacity = available / per_craft;
+            bag_limits.push((item_id, bags_capacity));
+            observed_limits.push((item_id, observed_capacity));
+            capacity_by_item.insert(item_id, json!({
+                "bags":(!missing_storage.contains(&"bags")).then_some(bags_capacity),
+                "all_observed_storage":(missing_storage.len()<storage.len()).then_some(observed_capacity)
+            }));
             let by_storage: BTreeMap<_, _> = storage
                 .into_iter()
                 .zip(quantities)
@@ -201,6 +208,7 @@ pub fn review_recipe_with_inventory(
     if let Some(inventory) = inventory {
         review["inventory_captured_at"] = json!(inventory.captured_at);
     }
+    review["material_capacity_by_item"] = json!(fixed.then_some(capacity_by_item));
     Ok(review)
 }
 
