@@ -179,7 +179,7 @@ struct Inspect {
     #[serde(default)]
     action_bar_item_stock_audit: bool,
     /// Filter saved tracked crafts and recrafts by observed learned status.
-    tracked_recipe_learning: Option<RecipeLearning>,
+    tracked_recipe_learning: Option<azeroth_operator::RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
 }
@@ -198,14 +198,6 @@ impl QuestDifficulty {
             Self::SuggestedGroup => quest["suggested_group_size"].as_u64().map(|size| size > 1),
         }
     }
-}
-
-#[derive(Clone, Copy, Deserialize, serde::Serialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-enum RecipeLearning {
-    Learned,
-    Unlearned,
-    Unknown,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -244,6 +236,10 @@ struct List {
     recipe_profession_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever captures that track this exact recipe as a craft or recraft.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
+    /// Restrict the match to a tracked craft or recraft. Requires tracked_recipe_id.
+    tracked_recipe_kind: Option<azeroth_operator::TrackedRecipeKind>,
+    /// Restrict the matched tracking row by its learned status. Requires tracked_recipe_id.
+    tracked_recipe_learning: Option<azeroth_operator::RecipeLearning>,
     /// Find saved Forever captures with a uniquely observed profession skill line.
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Minimum observed rank for the selected profession skill line.
@@ -1114,6 +1110,8 @@ impl Operator {
                     profession_id: args.recipe_profession_id,
                 },
                 tracked_recipe_id: args.tracked_recipe_id,
+                tracked_recipe_kind: args.tracked_recipe_kind,
+                tracked_recipe_learning: args.tracked_recipe_learning,
                 profession_skill_line: args.profession_skill_line,
                 profession_min_rank: args.profession_min_rank,
                 instance: azeroth_operator::InstanceCaptureFilters {
@@ -2133,11 +2131,7 @@ impl Operator {
                     }
                     value["tracked_recipe_learning"] = serde_json::json!(learning);
                     if let Some(data) = value["data"].as_object_mut() {
-                        let expected = match learning {
-                            RecipeLearning::Learned => Some(true),
-                            RecipeLearning::Unlearned => Some(false),
-                            RecipeLearning::Unknown => None,
-                        };
+                        let expected = learning.observed();
                         for group in ["crafts", "recrafts"] {
                             if let Some(rows) = data
                                 .get_mut(group)

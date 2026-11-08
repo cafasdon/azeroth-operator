@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever tracked recipe matches by craft or recraft and learned status.
+
 - Find saved Forever captures that tracked a specific craft or recraft.
 
 - Compare saved Forever profession ranks and caps across all observed skill lines.

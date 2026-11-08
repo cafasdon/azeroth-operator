@@ -270,10 +270,37 @@ pub struct InstanceCaptureFilters<'a> {
     pub map_id: Option<std::num::NonZeroU32>,
 }
 
+#[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeLearning {
+    Learned,
+    Unlearned,
+    Unknown,
+}
+
+impl RecipeLearning {
+    pub fn observed(self) -> Option<bool> {
+        match self {
+            Self::Learned => Some(true),
+            Self::Unlearned => Some(false),
+            Self::Unknown => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TrackedRecipeKind {
+    Craft,
+    Recraft,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
+    pub tracked_recipe_kind: Option<TrackedRecipeKind>,
+    pub tracked_recipe_learning: Option<RecipeLearning>,
     pub profession_skill_line: Option<std::num::NonZeroU32>,
     pub profession_min_rank: Option<u32>,
     pub instance: InstanceCaptureFilters<'a>,
@@ -381,6 +408,8 @@ impl Store {
         let CaptureFilters {
             recipe: filters,
             tracked_recipe_id,
+            tracked_recipe_kind,
+            tracked_recipe_learning,
             profession_skill_line,
             profession_min_rank,
             instance,
@@ -474,6 +503,11 @@ impl Store {
             "Recipe filtering requires Forever"
         );
         let tracked_recipe_key = tracked_recipe_id.map(|id| id.to_string());
+        ensure!(
+            (tracked_recipe_kind.is_none() && tracked_recipe_learning.is_none())
+                || tracked_recipe_key.is_some(),
+            "Tracked recipe kind and learning filters require a recipe ID"
+        );
         ensure!(
             profession_skill_line.is_none_or(|_| family == Family::Forever)
                 && (profession_min_rank.is_none() || profession_skill_line.is_some()),
@@ -580,7 +614,19 @@ impl Store {
                         let tracking = s.sections.get("tracked_recipes")?;
                         let craft = tracking["crafts"].get(key);
                         let recraft = tracking["recrafts"].get(key);
-                        (craft.is_some() || recraft.is_some()).then_some((craft, recraft))
+                        let matches = |row: Option<&Value>| {
+                            row.is_some_and(|row| {
+                                tracked_recipe_learning.is_none_or(|learning| {
+                                    row["learned"].as_bool() == learning.observed()
+                                })
+                            })
+                        };
+                        let matched = match tracked_recipe_kind {
+                            Some(TrackedRecipeKind::Craft) => matches(craft),
+                            Some(TrackedRecipeKind::Recraft) => matches(recraft),
+                            None => matches(craft) || matches(recraft),
+                        };
+                        matched.then_some((craft, recraft))
                     });
                     if tracked_recipe_key.is_some() && tracked_match.is_none() {
                         continue;

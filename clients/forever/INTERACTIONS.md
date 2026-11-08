@@ -962,6 +962,11 @@ craft and recraft membership plus each recorded learned flag. The
 learned flag is null when the recipe is absent from that group or its
 status was unavailable. The filter combines with character and selected
 recipe filters before pagination.
+With that ID, set `tracked_recipe_kind` to `craft` or `recraft`,
+and optionally set `tracked_recipe_learning` to `learned`, `unlearned`
+or `unknown`. Both filters must match the same observed tracking row.
+Unknown means a row was captured without a learned flag. Results still
+show the observations from both groups.
 
 Pass `tracked_recipe_id` with `section: "tracked_recipes"` to check one
 recipe. `tracked_as_craft` and `tracked_as_recraft` are independent. False

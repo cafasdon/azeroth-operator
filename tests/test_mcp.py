@@ -184,7 +184,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                   "standing":-50,"threshold":-100,"next_threshold":0}}}
                         forever["sections"]["tracked_recipes"] = {"coverage": "player_tracked_recipes_only",
                             "crafts": {"100": {"name": "Tracked fixture"}, "101": {}},
-                            "recrafts": {"100": {}}}
+                            "recrafts": {"100": {"learned": True}}}
                         forever["sections"]["selected_recipe"] = {"recipe_id":100,"name":"Fixture recipe","learned":True,
                             "requirements":"fixed_items","reagents":{"744":3}}
                         forever["sections"]["flight_map"] = {"map_id": 1414, "entries": {
@@ -369,10 +369,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             {"recipe_id": 100, "tracked_as_craft": True, "tracked_as_recraft": False,
                              "craft_learned": False, "recraft_learned": None},
                             {"recipe_id": 100, "tracked_as_craft": True, "tracked_as_recraft": True,
-                             "craft_learned": None, "recraft_learned": None},
+                             "craft_learned": None, "recraft_learned": True},
                         ])
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "retail", "tracked_recipe_id": 100,
+                        })).isError)
+                        for kind, learning, expected in [
+                            ("craft", "unlearned", [after_tracking_key]),
+                            ("recraft", "unlearned", []),
+                            ("craft", "unknown", [forever_key]),
+                            ("recraft", "learned", [forever_key]),
+                            ("craft", "learned", []),
+                        ]:
+                            matched_tracking = await session.call_tool("list_snapshots", {
+                                **tracking_query, "tracked_recipe_kind": kind,
+                                "tracked_recipe_learning": learning,
+                            })
+                            self.assertFalse(matched_tracking.isError)
+                            matches = json.loads(matched_tracking.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in matches], expected)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "tracked_recipe_learning": "unknown",
                         })).isError)
                         bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
                         bank_summary_data = json.loads(bank_summary.content[0].text)
