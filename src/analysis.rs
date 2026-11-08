@@ -1695,8 +1695,15 @@ pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Resu
         tokens.push(json!({"item_id":id,"required_quantity":required,"shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
     }
     let costs_observed = offer["extended_cost"].as_bool() == Some(false) || components.is_some();
+    let stock = match offer["available"].as_i64() {
+        Some(-1) => "unlimited",
+        Some(0) => "sold_out",
+        Some(1..) => "limited_quantity_unverified",
+        _ => "unknown",
+    };
     Ok(json!({
         "requested_bundles":bundles,"requested_quantity":size * bundles,"required_copper":copper,
+        "captured_stock_status":stock,"captured_available":offer["available"],
         "wallet_shortfall_copper":wallet.map(|balance| copper.saturating_sub(balance)),
         "item_token_costs":costs_observed.then_some(tokens),
         "named_currency_costs":costs_observed.then_some(named_currencies)
@@ -1720,12 +1727,16 @@ pub fn merchant_cart_budget(
     let mut token_costs = BTreeMap::<u32, u64>::new();
     let mut unknown_token_cost_slots = Vec::new();
     let mut named_currency_cost_slots = Vec::new();
+    let mut sold_out_slots = Vec::new();
     for (slot, bundles) in cart {
         let Some(offer) = offers.get(&slot.to_string()) else {
             missing.push(slot);
             continue;
         };
         let mut line = merchant_budget(snapshot, offer, bundles)?;
+        if line["captured_stock_status"] == "sold_out" {
+            sold_out_slots.push(slot);
+        }
         copper = copper
             .checked_add(line["required_copper"].as_u64().unwrap())
             .ok_or_else(|| anyhow::anyhow!("Merchant cart cost is too large"))?;
@@ -1781,6 +1792,7 @@ pub fn merchant_cart_budget(
         "item_token_costs_complete":item_costs_complete,
         "unknown_item_token_cost_slots":unknown_token_cost_slots,
         "named_currency_cost_slots":named_currency_cost_slots,
+        "sold_out_slots":sold_out_slots,
         "known_copper_shortfall":copper_shortfall,"resource_budget_status":budget_status}),
     )
 }

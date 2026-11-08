@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Flag captured sold-out Forever merchant offers in shopping carts.
+
 - Distinguish insufficient, covered and unknown resources for saved Forever merchant carts.
 
 - Combine Forever merchant cart item-token requirements and check them against captured bags.

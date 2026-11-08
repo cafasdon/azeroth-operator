@@ -234,6 +234,9 @@ Named currency costs remain per line because their names are not stable IDs.
 The cart's `resource_budget_status` distinguishes a known shortfall,
 covered costs and unknown resources. It describes recorded costs and
 balances only. Stock and purchase eligibility are separate.
+Offer budgets report the raw captured stock and distinguish sold-out,
+unlimited and limited offers. Carts list captured sold-out slots. A
+positive limited count does not establish how many requested bundles fit.
 
 Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.
