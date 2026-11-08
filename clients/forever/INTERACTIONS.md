@@ -332,8 +332,11 @@ stock gives an unknown match count.
 `compare_snapshots.merchant_offer_changes` compares copper prices, raw
 stock and extended-cost flags for offers with the same product kind,
 ID and bundle size. A match must be unique in both captures. The result
-compares the saved panels and does not identify a merchant or compare
-extended cost components. Missing stock on either side leaves it unknown.
+compares the saved panels without assuming merchant identity. Missing
+stock on either side leaves it unknown. When extended cost observations
+differ, `cost_component_change` shows both lists regardless of row order.
+An unknown extended cost is null. A copper-only offer has an empty list.
+Currency names are compared as captured labels.
 
 Add `merchant_target_quantity` from 1 to 1000 to calculate whole bundles,
 units received, surplus and copper for each matching offer. Extended

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare item-token and named-currency costs for saved Forever merchant offers.
+
 - Compare copper and stock for matched saved Forever merchant offers.
 
 - Report lessons seen in only one saved Forever trainer panel.

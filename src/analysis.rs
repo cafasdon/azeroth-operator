@@ -1645,19 +1645,46 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<Vec<Value>> 
         }
         Some(offers)
     }
+    fn costs(offer: &Value) -> Option<Vec<&Value>> {
+        if offer["extended_cost"] == false {
+            return Some(Vec::new());
+        }
+        let mut rows: Vec<_> = offer["cost_components"].as_object()?.values().collect();
+        rows.sort_unstable_by(|a, b| {
+            (
+                a["item_id"].as_u64(),
+                a["currency_name"].as_str(),
+                a["quantity"].as_u64(),
+            )
+                .cmp(&(
+                    b["item_id"].as_u64(),
+                    b["currency_name"].as_str(),
+                    b["quantity"].as_u64(),
+                ))
+        });
+        Some(rows)
+    }
     let current = by_product(after)?;
     Some(by_product(before)?.into_iter().filter_map(|((kind, id, size), old)| {
         let (old, new) = old.zip(current.get(&(kind, id, size)).copied().flatten())?;
         let old_price = old["price_copper"].as_i64()?;
         let new_price = new["price_copper"].as_i64()?;
+        let (old_costs, new_costs) = (costs(old), costs(new));
+        let components_changed = old_costs != new_costs;
         (old_price != new_price || old["available"] != new["available"]
-            || old["extended_cost"] != new["extended_cost"]).then(|| json!({
+            || old["extended_cost"] != new["extended_cost"] || components_changed).then(|| {
+            let mut change = json!({
                 "product_kind":kind,"product_id":id,"bundle_size":size,
                 "before_price_copper":old_price,"after_price_copper":new_price,
                 "price_copper_delta":new_price-old_price,
                 "before_available":old["available"],"after_available":new["available"],
                 "before_extended_cost":old["extended_cost"],"after_extended_cost":new["extended_cost"]
-            }))
+            });
+            if components_changed {
+                change["cost_component_change"] = json!({"before":old_costs,"after":new_costs});
+            }
+            change
+        })
     }).collect())
 }
 
