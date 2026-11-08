@@ -198,11 +198,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "2": {"name": "Other Lesson", "status": "used"},
                             "3": {"name": "Expensive Lesson", "status": "available", "price_copper": 5_000_000_001},
                             "4": {"name": "Blocked Lesson", "status": "unavailable",
-                                  "skill_requirement": {"name": "Alchemy", "required_rank": 50, "met": False}},
+                                  "skill_requirement": {"name": "Alchemy", "required_rank": 50, "met": False},
+                                  "ability_requirements": {
+                                      "1": {"name": "Brew", "met": False},
+                                      "2": {"name": "Distil", "met": False},
+                                  }},
                         }}
                         forever["sections"]["skill_lines"] = {
                             "171": {"name": "Alchemy", "rank": 35, "max_rank": 75, "modifier": 10},
                         }
+                        forever["sections"]["spellbook"] = {"coverage": "visible_player_spell_slots", "entries": {
+                            "1": {"base_spell_id": 77, "spell_id": 78, "name": "Brew"},
+                        }}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
                         SnapshotStore(Path(folder)).ingest(forever)
@@ -245,7 +252,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(blocked, {
                             "slot": 4, "reason": "lesson_not_available",
                             "observed_requirements": {"level_shortfall": None,
-                                "skill_requirement_unmet": True, "unmet_ability_names": None,
+                                "skill_requirement_unmet": True, "unmet_ability_names": ["Brew", "Distil"],
+                                "unmet_ability_names_observed_in_spellbook": ["Brew"],
                                 "captured_skill_rank_comparison": {"skill_line_id": 171,
                                     "captured_rank": 35, "required_rank": 50, "rank_shortfall": 15}},
                         })

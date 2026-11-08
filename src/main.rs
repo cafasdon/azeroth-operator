@@ -1577,6 +1577,7 @@ impl Operator {
                         &value["data"],
                         level,
                         snapshot.sections.get("skill_lines"),
+                        snapshot.sections.get("spellbook"),
                     );
                     for projection in ["trainer_wallet_projection", "trainer_points_projection"] {
                         if let Some(blocked) = value

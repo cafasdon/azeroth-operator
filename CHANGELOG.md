@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cross-reference unmet Forever trainer ability names with the captured spellbook.
+
 - Compare Forever trainer skill requirements with uniquely matched captured skill ranks.
 
 - Link the first blocked Forever trainer lesson to its captured prerequisite review.

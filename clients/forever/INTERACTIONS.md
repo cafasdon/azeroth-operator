@@ -118,6 +118,10 @@ For character lessons, `captured_skill_rank_comparison` compares the
 required rank with a uniquely matching exact skill name in the same
 capture. It uses the recorded rank field without applying modifiers.
 Missing or ambiguous matches and pet lessons leave this comparison unknown.
+`unmet_ability_names_observed_in_spellbook` lists exact name matches
+between unmet prerequisites and captured character spellbook rows.
+A match preserves the trainer's unmet flag. Missing ability data,
+missing spellbook data and pet lessons leave the cross-reference unknown.
 
 Set `trainer_wallet_projection: true` with `section: "trainer_services"`
 in `inspect_snapshot` to budget lessons the trainer marked available.

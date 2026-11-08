@@ -2180,6 +2180,7 @@ pub fn trainer_requirements_review(
     trainer: &Value,
     level: Option<u64>,
     skills: Option<&Value>,
+    spellbook: Option<&Value>,
 ) -> Value {
     let Some(entries) = trainer["entries"].as_object() else {
         return Value::Null;
@@ -2191,6 +2192,14 @@ pub fn trainer_requirements_review(
         level
     };
     let mut ranks_by_name = BTreeMap::new();
+    let spell_names = spellbook
+        .filter(|_| trainer["kind"] != "pet")
+        .and_then(|book| book["entries"].as_object())
+        .map(|rows| {
+            rows.values()
+                .filter_map(|row| row["name"].as_str())
+                .collect::<BTreeSet<_>>()
+        });
     if trainer["kind"] != "pet" {
         for (id, row) in skills.and_then(Value::as_object).into_iter().flatten() {
             if let Some((name, rank)) = row["name"].as_str().zip(row["rank"].as_u64()) {
@@ -2230,13 +2239,24 @@ pub fn trainer_requirements_review(
                     .map(|ability| &ability["name"])
                     .collect::<Vec<_>>()
             });
+            let observed_unmet_abilities =
+                unmet_abilities
+                    .as_ref()
+                    .zip(spell_names.as_ref())
+                    .map(|(abilities, names)| {
+                        abilities
+                            .iter()
+                            .filter_map(|name| name.as_str().filter(|name| names.contains(name)))
+                            .collect::<BTreeSet<_>>()
+                    });
             (
                 slot,
                 json!({
                     "level_shortfall":level_shortfall,
                     "skill_requirement_unmet":unmet_skill,
                     "captured_skill_rank_comparison":skill_comparison,
-                    "unmet_ability_names":unmet_abilities
+                    "unmet_ability_names":unmet_abilities,
+                    "unmet_ability_names_observed_in_spellbook":observed_unmet_abilities
                 }),
             )
         })
