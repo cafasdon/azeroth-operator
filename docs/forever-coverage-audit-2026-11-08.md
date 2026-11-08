@@ -123,3 +123,9 @@ Later [prepared-window aggregation](prepared-window-merge-verification-2026-11-0
 checks selected source journal rows, groups identical gear requests under one
 shared profile and preserves source references/coverage gaps. Request grouping
 does not execute simulations, authenticate artifacts or complete global ranking.
+
+Later [numeric simulation checkpoints](simulation-journal-verification-2026-11-09.md)
+preserve fixed-run results beyond the optional cache's 128-entry eviction limit.
+Current callers retain model/engine guards and can reuse completed numeric work;
+automatic prepared-set execution, scalable scheduling/global ranking and full
+owned BiS remain unfinished.

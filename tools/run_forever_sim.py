@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import re
+import sqlite3
 import stat
 import statistics
 import subprocess
@@ -17,10 +18,12 @@ import time
 
 if __package__:
     from .simulation_cache import SimulationCache
+    from .simulation_journal import SimulationJournal
     from .sync_exports import ordinary
     from .sync_forever_catalogue import MAX_BYTES, verify
 else:
     from simulation_cache import SimulationCache
+    from simulation_journal import SimulationJournal
     from sync_exports import ordinary
     from sync_forever_catalogue import MAX_BYTES, verify
 
@@ -740,10 +743,17 @@ def main():
                         help="Report damage taken, threat per second and simulated deaths for an explicit tank")
     parser.add_argument("--healing-metrics", action="store_true",
                         help="Report simulated healing per second and time out of mana")
-    parser.add_argument("--cache", action="store_true", help="Reuse exact fixed-run results in this OS user's local cache")
+    persistence = parser.add_mutually_exclusive_group()
+    persistence.add_argument("--cache", action="store_true", help="Reuse exact fixed-run results in this OS user's local cache")
+    persistence.add_argument("--simulation-journal", type=Path, help="Private non-evicting numeric checkpoint directory")
+    parser.add_argument("--simulation-journal-mib", type=int, help="Checkpoint ciphertext budget, 1 to 512 MiB (default 64)")
     args = parser.parse_args()
+    if args.simulation_journal_mib is not None and not args.simulation_journal:
+        parser.error("--simulation-journal-mib requires --simulation-journal")
     try:
-        cache = SimulationCache.for_current_user() if args.cache else None
+        budget = 64 if args.simulation_journal_mib is None else args.simulation_journal_mib
+        cache = (SimulationJournal(args.simulation_journal, max_payload_bytes=budget * 1024 * 1024) if args.simulation_journal else
+                 SimulationCache.for_current_user() if args.cache else None)
         if len(args.equipment_review) > 8:
             raise ValueError("Use at most eight equipment reviews")
         if args.paired and len(args.equipment_review) < 2:
@@ -779,7 +789,7 @@ def main():
         parser.exit(1, "Native slot-category conflicts require refreshed item observations or catalogue data before simulation.\n")
     except UnsupportedSimulationPetLevel as error:
         parser.exit(1, f"{error}\n")
-    except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, sqlite3.Error, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 
 

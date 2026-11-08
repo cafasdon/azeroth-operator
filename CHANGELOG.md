@@ -1,5 +1,9 @@
 # Changelog
 
+- Add private non-evicting numeric simulation checkpoints to fixed-run and
+  ranking CLIs, with per-user protection, exact request/software identity,
+  configurable quotas and fail-closed corruption/conflict handling.
+
 - Aggregate compatible prepared gear windows against exact journal rows, group
   repeated requests with global review references, and reject changed request
   contexts or provenance while preserving partial coverage and false BiS claims.

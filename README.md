@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+The fixed-run simulator and gear ranker accept `--simulation-journal ROOT` for
+private numeric checkpoints that do not evict completed results. It is separate
+from `--cache`; `--simulation-journal-mib` sets a 1–512 MiB ciphertext budget
+(default 64). Engine, request, metric mode and adapter/validator identity must
+match for reuse. Quota, corruption and conflicting results stop safely.
+[Evidence](docs/simulation-journal-verification-2026-11-09.md).
+
 `python -m tools.merge_forever_prepared_windows --journal PATH PREPARED_JSON...`
 groups compatible prepared windows against their exact saved journal rows.
 Identical requests share a global review ID and retain original references;

@@ -18,6 +18,7 @@ from tools.run_forever_sim import (
     ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
     encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
     SimulationCache,
+    SimulationJournal,
     SIMULATOR_CHARACTER_LEVEL, UnsupportedSimulationLevel,
     check_profession_identity, ConflictingProfessions,
     check_character_identity, ConflictingCharacterIdentity,
@@ -692,7 +693,10 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Bulk mode cross-tests the combined shortlist.")
     parser.add_argument("--paired", action="store_true")
-    parser.add_argument("--cache", action="store_true", help="Reuse exact simulation results in this OS user's local cache")
+    persistence = parser.add_mutually_exclusive_group()
+    persistence.add_argument("--cache", action="store_true", help="Reuse exact simulation results in this OS user's local cache")
+    persistence.add_argument("--simulation-journal", type=Path, help="Private non-evicting fixed-run checkpoint directory")
+    parser.add_argument("--simulation-journal-mib", type=int, help="Checkpoint ciphertext budget, 1 to 512 MiB (default 64)")
     parser.add_argument("--confirm-leading-seed", type=int,
                         help="Rerun the top two distinct DPS sets with this fresh seed.")
     parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",
@@ -703,6 +707,8 @@ def main():
     parser.add_argument("--audit-shortlist", action="store_true",
                         help="Compare the staged shortlist with a bounded fixed-iteration run of every candidate")
     args = parser.parse_args()
+    if args.simulation_journal_mib is not None and not args.simulation_journal:
+        parser.error("--simulation-journal-mib requires --simulation-journal")
     minimum, maximum = args.minimum_required_level, args.maximum_required_level
     if (any(value is not None and not 0 <= value <= 2**32 - 1 for value in (minimum, maximum))
             or minimum is not None and maximum is not None and minimum > maximum):
@@ -724,7 +730,7 @@ def main():
         if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
                 or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
                 or args.encounter_weight or args.rank_by != "dps"
-                or args.confirm_leading_seed is not None or args.cache):
+                or args.confirm_leading_seed is not None or args.cache or args.simulation_journal):
             parser.error("--plan-only takes no simulator or encounter options")
     elif not (args.engine and args.engine_sha256 and args.encounter_lookup):
         parser.error("--engine, --engine-sha256 and --encounter-lookup are required for simulation")
@@ -733,8 +739,12 @@ def main():
         or not args.paired or args.rank_by != "dps"
     ):
         parser.error("Confirmation requires a positive 32-bit seed and paired DPS mode")
+    if args.simulation_journal and args.bulk_engine:
+        parser.error("--simulation-journal supports fixed runs; staged bulk results use --cache")
     try:
-        args.simulation_cache = SimulationCache.for_current_user() if args.cache else None
+        budget = 64 if args.simulation_journal_mib is None else args.simulation_journal_mib
+        args.simulation_cache = (SimulationJournal(args.simulation_journal, max_payload_bytes=budget * 1024 * 1024) if args.simulation_journal else
+                                 SimulationCache.for_current_user() if args.cache else None)
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
         if len(set(args.slot)) != len(args.slot):
