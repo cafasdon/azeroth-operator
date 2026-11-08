@@ -30,6 +30,13 @@ repairs are outside this capture. Disabled repairs or an unavailable
 alert API leave the section unavailable. Update the importer and reader
 before syncing this section. [Forever durability display](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_DurabilityFrame/DurabilityFrame.lua)
 
+Export while a repair-capable merchant's goods tab is open to save its
+repair-all copper quote in `repair_quote`. A recorded zero is a quote.
+A closed merchant, another tab or an unavailable quote leaves the
+section unavailable. The export records the price and leaves the repair
+to the player. Update the importer and reader before syncing this
+section. [Forever merchant source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Vanilla/MerchantFrame.lua)
+
 `inspect_snapshot` with `section: "action_bar_observation"` shows loaded
 built-in button slots, including observed empty slots and a count of missing
 buttons. Multiple buttons can reference the same slot. This works separately

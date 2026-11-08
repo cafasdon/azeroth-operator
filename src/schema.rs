@@ -850,7 +850,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 &[("name", "text", true), ("quantity", "uint", true)],
             )?;
         }
-        "wallet" => object(value, &[("copper", "wallet_copper", true)])?,
+        "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
         "durability_alerts" => {
             let alerts = value
                 .as_object()

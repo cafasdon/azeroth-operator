@@ -540,6 +540,9 @@ pub fn verify_forever_capture_fixture(
         end}
         TaxiNodeCost=function(slot) assert(slot==3); return 250 end
         Enum.GameRule={RepairArmorDisabled=42}
+        MerchantFrame={IsVisible=function() return not closedMerchant end,selectedTab=1}
+        CanMerchantRepair=function() return not nonRepairMerchant end
+        GetRepairAllCost=function() assert(not closedMerchant and not nonRepairMerchant); return fixtureRepairCost or 325,false end
         C_GameRules={IsGameRuleActive=function(rule) assert(rule==42); return repairsDisabled==true end}
         GetInventoryAlertStatus=function(index)
             assert(index>=1 and index<=11)
@@ -714,6 +717,21 @@ pub fn verify_forever_capture_fixture(
     assert!(read()?.unavailable.contains_key("durability_alerts"));
     lua.load("repairsDisabled=false;clearDurability=false")
         .exec()?;
+    assert_eq!(
+        snapshot.sections["repair_quote"],
+        serde_json::json!({"copper":325})
+    );
+    lua.load("fixtureRepairCost=0;AO.Capture()").exec()?;
+    assert_eq!(read()?.sections["repair_quote"]["copper"], 0);
+    lua.load("MerchantFrame.selectedTab=2;AO.Capture()")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("repair_quote"));
+    lua.load("MerchantFrame.selectedTab=1;closedMerchant=true;AO.Capture()")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("repair_quote"));
+    lua.load("closedMerchant=false;nonRepairMerchant=true;AO.Capture()")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("repair_quote"));
     assert_eq!(
         snapshot.sections["action_bar_observation"],
         serde_json::json!({

@@ -840,6 +840,17 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.repair_quote = function()
+    local frame=MerchantFrame
+    assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")
+    local canRepair=CanMerchantRepair()
+    assert(questRewardAccessible(canRepair) and canRepair==true, "Merchant repair unavailable")
+    local cost=GetRepairAllCost()
+    assert(questRewardInteger(cost,0,9999999999999) and frame:IsVisible()
+        and questRewardInteger(frame.selectedTab,1,1), "Repair quote unavailable")
+    return {copper=cost}
+end
+
 AO.collectors.durability_alerts = function()
     local disabled=C_GameRules.IsGameRuleActive(Enum.GameRule.RepairArmorDisabled)
     assert(questRewardAccessible(disabled) and disabled==false, "Durability alerts unavailable")

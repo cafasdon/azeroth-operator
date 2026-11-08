@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Save the repair-all copper quote shown by an open Forever repair merchant.
+
 - Save the built-in Forever low and broken equipment durability alerts for offline inspection.
 
 - Compare captured Forever flight fares with the wallet balance from the same snapshot.
