@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report lessons seen in only one saved Forever trainer panel.
+
 - Compare captured Forever trainer lesson prerequisites across saved visits.
 
 - Compare saved Forever trainer lesson prices in copper or pet training points.

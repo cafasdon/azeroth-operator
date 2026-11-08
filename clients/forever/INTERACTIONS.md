@@ -170,6 +170,10 @@ It also compares observed level, skill and ability prerequisites for
 matched lessons. Reordering ability rows alone produces no change.
 An unavailable requirement observation remains distinct from an
 observed empty list.
+Lessons seen only before or only after are listed separately by exact
+name and rank label. Repeated matching rows on one side are marked
+ambiguous. A one-sided observation can reflect different trainer panels
+or filters.
 `trainer_service_status` works alone or alongside the name filter.
 When both are supplied, the same captured lesson must match both.
 Use one price ceiling, `trainer_max_price_copper` for ordinary lessons

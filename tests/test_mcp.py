@@ -656,6 +656,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after["sections"]["trainer_services"]["entries"]["1"]["price_copper"] = 0
                         del reputation_after["sections"]["trainer_services"]["entries"]["3"]["price_copper"]
                         blocked_lesson = reputation_after["sections"]["trainer_services"]["entries"]["4"]
+                        reputation_after["sections"]["trainer_services"]["entries"]["2"]["name"] = "New Lesson"
                         blocked_lesson["skill_requirement"]["met"] = True
                         abilities = blocked_lesson["ability_requirements"]
                         abilities["1"], abilities["2"] = abilities["2"], abilities["1"]
@@ -676,6 +677,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         trainer_changes = progress_data["trainer_service_changes"]
                         self.assertEqual(trainer_changes["price_unit"], "copper")
                         self.assertEqual(trainer_changes["status_changes"], [])
+                        self.assertEqual(trainer_changes["lessons_observed_only_before"], [
+                            {"name": "Other Lesson", "rank_label": None, "ambiguous": False},
+                        ])
+                        self.assertEqual(trainer_changes["lessons_observed_only_after"], [
+                            {"name": "New Lesson", "rank_label": None, "ambiguous": False},
+                        ])
                         requirement = trainer_changes["requirement_changes"]
                         self.assertEqual([row["name"] for row in requirement], ["Blocked Lesson"])
                         self.assertFalse(requirement[0]["before"]["skill_requirement"]["met"])

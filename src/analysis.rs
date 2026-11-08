@@ -1636,6 +1636,21 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
     }
     let previous = by_name(before)?;
     let current = by_name(after)?;
+    let observed_only =
+        |entries: &BTreeMap<(&str, Option<&str>), Option<&Value>>,
+         other: &BTreeMap<(&str, Option<&str>), Option<&Value>>| {
+            entries
+                .iter()
+                .filter(|(key, _)| !other.contains_key(*key))
+                .map(|((name, rank), row)| {
+                    json!({
+                        "name":name,"rank_label":rank,"ambiguous":row.is_none()
+                    })
+                })
+                .collect::<Vec<_>>()
+        };
+    let observed_only_before = observed_only(&previous, &current);
+    let observed_only_after = observed_only(&current, &previous);
     let (price_field, price_unit) = if after["kind"] == "pet" {
         ("price_training_points", "training_points")
     } else {
@@ -1682,7 +1697,9 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
     }
     Some(json!({"kind":after["kind"],"status_changes":status_changes,
         "price_unit":price_unit,"price_changes":price_changes,
-        "requirement_changes":requirement_changes}))
+        "requirement_changes":requirement_changes,
+        "lessons_observed_only_before":observed_only_before,
+        "lessons_observed_only_after":observed_only_after}))
 }
 
 fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'static str> {
