@@ -370,12 +370,13 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         row = {"review": index, **results[key],
                "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline}
         if paired and key != keys[0] and row["iterations"] >= 200:
-            delta = row["mean_dps_delta_from_baseline"]
-            half_width = 1.96 * row["paired_dps_standard_error"]
-            lower, upper = delta - half_width, delta + half_width
-            row["paired_dps_delta_interval_approx_95"] = {
-                "lower": lower, "upper": upper, "includes_zero": lower <= 0 <= upper,
-            }
+            for metric in metrics:
+                delta = row[f"mean_{metric}_delta_from_baseline"]
+                half_width = 1.96 * row[f"paired_{metric}_standard_error"]
+                lower, upper = delta - half_width, delta + half_width
+                row[f"paired_{metric}_delta_interval_approx_95"] = {
+                    "lower": lower, "upper": upper, "includes_zero": lower <= 0 <= upper,
+                }
         rows.append(row)
     comparison = {
         "unique_runs": len(results),

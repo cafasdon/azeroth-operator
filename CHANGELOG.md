@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show paired uncertainty for simulated damage taken, threat and healing in fixed Forever comparisons.
+
 - Report the observed DPS gap and paired standard error between the leading distinct Forever gear inputs.
 
 - Show approximate paired DPS intervals versus equipped gear in fixed Forever simulations.

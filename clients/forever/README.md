@@ -646,6 +646,9 @@ Fixed `--paired` comparisons with at least 200 iterations report an
 approximate 95% interval for each distinct alternative's DPS delta versus
 the baseline. An interval containing zero leaves the direction unresolved.
 These are individual comparisons without a multiple-comparison adjustment.
+Tank comparisons also include damage taken and threat per second.
+Healing comparisons include healing per second. An interval below zero
+for damage taken indicates an estimated reduction.
 The ranker continues to sort by the point estimate.
 Fixed paired DPS runs with at least two distinct inputs also report
 `observed_leading_dps_pair`, the observed gap and paired standard error
