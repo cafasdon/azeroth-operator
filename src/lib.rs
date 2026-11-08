@@ -324,6 +324,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
+    pub merchant_target_quantity: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
     pub merchant_copper_only: bool,
@@ -451,6 +452,7 @@ impl Store {
             merchant_item_id,
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
+            merchant_target_quantity,
             merchant_max_price_copper,
             merchant_in_stock_only,
             merchant_copper_only,
@@ -528,6 +530,11 @@ impl Store {
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
         let filter_merchant = merchant_product.is_some() || merchant_pet_food_snapshot_id.is_some();
+        ensure!(
+            merchant_target_quantity
+                .is_none_or(|quantity| filter_merchant && quantity.get() <= 1000),
+            "Merchant quantity filtering requires an offer selector and up to 1000 units"
+        );
         ensure!(
             !filter_merchant || family == Family::Forever,
             "Merchant filtering requires Forever"
@@ -834,10 +841,10 @@ impl Store {
                         s.sections
                             .get("merchant_stock")
                             .and_then(Value::as_object)
-                            .map_or(0, |offers| {
-                                offers
-                                    .values()
-                                    .filter(|offer| {
+                            .map_or((0, None), |offers| {
+                                let matching = offers
+                                    .iter()
+                                    .filter(|(_, offer)| {
                                         merchant_product.is_none_or(|(field, id)| {
                                             offer[field].as_u64() == Some(u64::from(id))
                                         }) && accepted_food.is_none_or(|food| {
@@ -853,6 +860,7 @@ impl Store {
                                             && (!(merchant_copper_only || merchant_affordable_only)
                                                 || offer["extended_cost"] == false)
                                             && (!merchant_affordable_only
+                                                || merchant_target_quantity.is_some()
                                                 || wallet
                                                     .zip(offer["price_copper"].as_u64())
                                                     .is_some_and(|(balance, price)| {
@@ -863,11 +871,38 @@ impl Store {
                                                     .as_u64()
                                                     .is_some_and(|price| price <= maximum)
                                             })
-                                    })
-                                    .count()
+                                    });
+                                let Some(quantity) = merchant_target_quantity else {
+                                    return (matching.count(), None);
+                                };
+                                let mut count = 0;
+                                let mut best = None;
+                                for (slot, offer) in matching {
+                                    if offer["available"] != -1 || offer["extended_cost"] != false {
+                                        continue;
+                                    }
+                                    let Some(plan) = analysis::merchant_quantity_row(offer, u64::from(quantity.get())) else {
+                                        continue;
+                                    };
+                                    let Some(cost) = plan["required_copper"].as_u64() else {
+                                        continue;
+                                    };
+                                    if merchant_affordable_only && !wallet.is_some_and(|balance| cost <= balance) {
+                                        continue;
+                                    }
+                                    let Ok(slot) = slot.parse::<u32>() else { continue };
+                                    count += 1;
+                                    let key = (cost, slot);
+                                    if best.as_ref().is_none_or(|(previous, _)| key < *previous) {
+                                        best = Some((key, json!({"slot":slot,"target_quantity":quantity,
+                                            "item_id":offer["item_id"],"currency_id":offer["currency_id"],
+                                            "plan":plan})));
+                                    }
+                                }
+                                (count, best.map(|(_, plan)| plan))
                             })
                     });
-                    if merchant_matches == Some(0) {
+                    if matches!(merchant_matches, Some((0, _))) {
                         continue;
                     }
                     let trainer_match = filter_trainer.then(|| {
@@ -974,7 +1009,7 @@ impl Store {
                     if let Some(route) = flight_match {
                         summary["flight_match"] = route;
                     }
-                    if let Some(count) = merchant_matches {
+                    if let Some((count, quantity_plan)) = merchant_matches {
                         let stats = s.sections.get("stats");
                         summary["merchant_match"] = json!({
                             "offer_count":count,
@@ -986,6 +1021,9 @@ impl Store {
                         }
                         if let Some(food_id) = merchant_pet_food_snapshot_id {
                             summary["merchant_match"]["pet_food_snapshot_id"] = json!(food_id);
+                        }
+                        if let Some(plan) = quantity_plan {
+                            summary["merchant_match"]["lowest_cost_quantity_plan"] = plan;
                         }
                     }
                     if filter_instance {

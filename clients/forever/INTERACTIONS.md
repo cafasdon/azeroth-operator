@@ -115,6 +115,14 @@ or currency selector and combines with the stock, price and affordability
 filters. A missing food classification returns an error. An observed
 empty classification returns no matches.
 
+Add `merchant_target_quantity` (1–1,000 units) to a merchant listing
+with a pet food, item or currency selector. Each matching offer must
+show unlimited stock and a copper-only price. The listing reports the
+cheapest single-offer bundle plan per visit as `lowest_cost_quantity_plan`.
+Equal costs prefer the lower merchant slot. Affordability, when requested,
+uses the full bundle cost. The price ceiling still applies per bundle.
+This estimate uses captured offers and keeps different items separate.
+
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have
 food classifications, it compares accepted carried quantities by item ID.

@@ -3025,7 +3025,7 @@ pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
     json!({"target_quantity":quantity,"offers_by_slot":rows})
 }
 
-fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {
+pub(crate) fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {
     let size = offer["bundle_size"].as_u64().filter(|size| *size > 0)?;
     let bundles = quantity.div_ceil(size);
     let units = bundles.checked_mul(size)?;

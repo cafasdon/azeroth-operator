@@ -1169,6 +1169,21 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["snapshot_id"] for row in food_rows], [food_merchant_id])
                         self.assertEqual(food_rows[0]["merchant_match"]["offer_count"], 1)
                         self.assertEqual(food_rows[0]["merchant_match"]["pet_food_snapshot_id"], travel_before)
+                        restock = await session.call_tool("list_snapshots", {
+                            **food_listing, "merchant_target_quantity": 7,
+                        })
+                        self.assertFalse(restock.isError)
+                        restock_rows = json.loads(restock.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in restock_rows], [food_merchant_id])
+                        restock_plan = restock_rows[0]["merchant_match"]["lowest_cost_quantity_plan"]
+                        self.assertEqual(restock_plan["slot"], 1)
+                        self.assertEqual(restock_plan["plan"]["bundles"], 2)
+                        self.assertEqual(restock_plan["plan"]["required_copper"], 16)
+                        over_budget = await session.call_tool("list_snapshots", {
+                            **food_listing, "merchant_target_quantity": 65,
+                        })
+                        self.assertFalse(over_budget.isError)
+                        self.assertEqual(json.loads(over_budget.content[0].text)["snapshots"], [])
                         for invalid_food in [{"merchant_item_id": 117},
                                              {"merchant_pet_food_snapshot_id": forever_key}]:
                             self.assertTrue((await session.call_tool("list_snapshots", {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever merchant visits that can cover a target quantity using an unlimited copper-only offer.
+
 - Search saved Forever merchant visits for previously accepted pet food, including stock and price filters.
 
 - Find saved merchant offers for foods accepted in a compatible Forever pet capture.
