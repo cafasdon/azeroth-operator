@@ -13,6 +13,55 @@ MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
+def _validate_action_bar_observation(observation):
+    def index(key, maximum):
+        return (isinstance(key, str) and 1 <= len(key) <= 4 and key.isascii()
+                and key.isdecimal() and not key.startswith("0") and int(key) <= maximum)
+
+    def text(value, maximum):
+        return isinstance(value, str) and 1 <= len(value.encode()) <= maximum
+
+    if (not isinstance(observation, dict)
+            or set(observation) - {"coverage", "slots", "observed_buttons", "missing_buttons", "button_hotkeys"}
+            or observation.get("coverage") != "loaded_builtin_buttons_only"):
+        raise ValueError("Invalid action bar observation")
+    observed = observation.get("observed_buttons")
+    missing = observation.get("missing_buttons")
+    slots = observation.get("slots")
+    if (type(observed) is not int or type(missing) is not int
+            or observed < 1 or missing < 0 or observed + missing > 2048
+            or not isinstance(slots, dict) or not 1 <= len(slots) <= observed):
+        raise ValueError("Invalid action bar coverage")
+    for slot, row in slots.items():
+        if not index(slot, 4096) or not isinstance(row, dict) or type(row.get("empty")) is not bool:
+            raise ValueError("Invalid action bar slot")
+        if row["empty"]:
+            if set(row) != {"empty"}:
+                raise ValueError("Empty action contains data")
+            continue
+        action_id = row.get("id")
+        subtype = row.get("sub_type")
+        if (set(row) - {"empty", "kind", "id", "sub_type"} or not text(row.get("kind"), 16384)
+                or (action_id is not None and (type(action_id) is not int or not 1 <= action_id <= 4_294_967_295))
+                or (subtype is not None and (not isinstance(subtype, str) or len(subtype.encode()) > 16384))):
+            raise ValueError("Invalid occupied action slot")
+    hotkeys = observation.get("button_hotkeys")
+    if hotkeys is None:
+        return
+    if not isinstance(hotkeys, dict) or len(hotkeys) > observed:
+        raise ValueError("Invalid action button hotkeys")
+    buttons = set()
+    for key, row in hotkeys.items():
+        if not index(key, observed) or not isinstance(row, dict) or set(row) - {"button", "slot", "key1", "key2"}:
+            raise ValueError("Invalid action button hotkeys")
+        button, slot = row.get("button"), row.get("slot")
+        if (not text(button, 132) or not re.fullmatch(r"[A-Za-z0-9_]+", button) or button in buttons
+                or type(slot) is not int or str(slot) not in slots
+                or any(row.get(key) is not None and not text(row[key], 128) for key in ("key1", "key2"))):
+            raise ValueError("Invalid action button hotkeys")
+        buttons.add(button)
+
+
 def validate_snapshot(value):
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("Expected snapshot schema_version 1")
@@ -29,6 +78,8 @@ def validate_snapshot(value):
     sections = value.get("sections")
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
+    if "action_bar_observation" in sections:
+        _validate_action_bar_observation(sections["action_bar_observation"])
     stats = sections.get("stats")
     if isinstance(stats, dict) and {"hearthstone_item_id", "hearthstone_cooldown_seconds"} & stats.keys():
         item = stats.get("hearthstone_item_id")

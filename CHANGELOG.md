@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Validate loaded action-bar observations consistently in the Python importer and Rust reader.
+
 - Flag saved Forever shortcuts whose spell IDs no longer match the captured spellbook.
 
 - Include observed names for spells added to or removed from saved Forever spellbooks.

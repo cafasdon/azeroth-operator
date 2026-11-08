@@ -28,6 +28,28 @@ class SnapshotTests(unittest.TestCase):
         self.assertGreater(result["age_seconds"], 0)
         self.assertFalse(self.store.inspect(key, "bags")["available"])
 
+    def test_action_bar_requires_at_least_one_observed_slot(self):
+        sample = fixture()
+        observation = {
+            "coverage": "loaded_builtin_buttons_only",
+            "observed_buttons": 2,
+            "missing_buttons": 0,
+            "slots": {},
+        }
+        sample["sections"]["action_bar_observation"] = observation
+        with self.assertRaisesRegex(ValueError, "Invalid action bar coverage"):
+            self.store.ingest(sample)
+        observation["slots"] = {"1": {"empty": True}}
+        observation["button_hotkeys"] = {
+            "1": {"button": "ActionButton1", "slot": 1},
+            "2": {"button": "OtherButton1", "slot": 1, "key1": "SHIFT-1"},
+        }
+        key = self.store.ingest(sample)
+        self.assertEqual(self.store.read(key)["sections"]["action_bar_observation"], observation)
+        observation["button_hotkeys"]["2"]["slot"] = 2
+        with self.assertRaisesRegex(ValueError, "Invalid action button hotkeys"):
+            self.store.ingest(sample)
+
     def test_traversal_and_tampering_rejected(self):
         with self.assertRaises(ValueError):
             self.store.read("../secret")
