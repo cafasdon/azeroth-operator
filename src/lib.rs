@@ -304,6 +304,8 @@ pub struct CaptureFilters<'a> {
     pub profession_skill_line: Option<std::num::NonZeroU32>,
     pub profession_min_rank: Option<u32>,
     pub instance: InstanceCaptureFilters<'a>,
+    pub player_map_id: Option<std::num::NonZeroU32>,
+    pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
@@ -413,6 +415,8 @@ impl Store {
             profession_skill_line,
             profession_min_rank,
             instance,
+            player_map_id,
+            player_parent_map_id,
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
@@ -539,6 +543,11 @@ impl Store {
             "Invalid instance filters"
         );
         let instance_name = instance.name.map(str::to_lowercase);
+        let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
+        ensure!(
+            !filter_player_map || family == Family::Forever,
+            "Player map filtering requires Forever"
+        );
         ensure!((1..=100).contains(&limit), "Limit must be 1..100");
         if let Some(character) = character {
             ensure!(
@@ -614,6 +623,16 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let player_map = s.sections.get("stats").filter(|stats| {
+                        player_map_id
+                            .is_none_or(|id| stats["map_id"].as_u64() == Some(u64::from(id.get())))
+                            && player_parent_map_id.is_none_or(|id| {
+                                stats["map_parent_id"].as_u64() == Some(u64::from(id.get()))
+                            })
+                    });
+                    if filter_player_map && player_map.is_none() {
+                        continue;
+                    }
                     let tracked_match = tracked_recipe_key.as_ref().and_then(|key| {
                         let tracking = s.sections.get("tracked_recipes")?;
                         let craft = tracking["crafts"].get(key);
@@ -758,6 +777,12 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if filter_player_map && let Some(stats) = player_map {
+                        summary["player_map_match"] = json!({
+                            "map_id":stats["map_id"],"map_name":stats["map_name"],
+                            "map_parent_id":stats["map_parent_id"],
+                        });
+                    }
                     if let Some((recipe_id, (craft, recraft))) =
                         tracked_recipe_id.zip(tracked_match)
                     {

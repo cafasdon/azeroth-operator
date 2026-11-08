@@ -699,7 +699,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         travel = json.loads(json.dumps(reputation_after))
                         travel["sections"]["stats"] = {
                             "level": 60, "class": "Hunter", "race": "Human", "client_version": "1.60.1",
-                            "map_id": 1414, "map_name": "First map", "hearthstone_bind_name": "First inn",
+                            "map_id": 1414, "map_name": "First map", "map_parent_id": 100,
+                            "hearthstone_bind_name": "First inn",
                             "hearthstone_item_id": 6948, "hearthstone_cooldown_seconds": 30,
                         }
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
@@ -709,6 +710,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "hearthstone_cooldown_seconds": 0,
                         })
                         travel_after = SnapshotStore(Path(folder)).ingest(travel)
+                        map_query = {"family": "forever", "player_parent_map_id": 100}
+                        maps = await session.call_tool("list_snapshots", {**map_query, "limit": 1})
+                        self.assertFalse(maps.isError)
+                        map_results = json.loads(maps.content[0].text)
+                        self.assertTrue(map_results["has_more"])
+                        self.assertEqual([row["snapshot_id"] for row in map_results["snapshots"]],
+                                         [travel_after])
+                        exact = await session.call_tool("list_snapshots", {
+                            **map_query, "player_map_id": 1414,
+                        })
+                        self.assertFalse(exact.isError)
+                        exact_maps = json.loads(exact.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in exact_maps], [travel_before])
+                        self.assertEqual(exact_maps[0]["player_map_match"], {
+                            "map_id": 1414, "map_name": "First map", "map_parent_id": 100,
+                        })
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "retail", "player_map_id": 1414,
+                        })).isError)
                         changed_travel = await session.call_tool("compare_snapshots", {
                             "before_id": travel_before, "after_id": travel_after,
                         })

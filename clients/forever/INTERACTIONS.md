@@ -251,6 +251,12 @@ map IDs and captured bind names when both values are available. A
 cooldown delta requires the same observed item ID and a timer in both
 captures. It describes recorded timers rather than current usability.
 
+Use `list_snapshots` with `family: "forever"` and `player_map_id`
+to find saves from an exact player map. `player_parent_map_id` matches
+only the recorded immediate parent. Both can be supplied to match the
+same saved location. The filters run before pagination and return
+`player_map_match` with the recorded map ID, name and parent ID.
+
 `bag_capacity` records total and free slots per carried bag, including the
 backpack, with the game-reported bag family when available.
 `character_summary` reports combined capacity, free slots and free slots

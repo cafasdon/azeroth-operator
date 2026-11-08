@@ -254,6 +254,10 @@ struct List {
     instance_difficulty_id: Option<u32>,
     /// Filter by the saved Forever instance map ID, independent of the localized name.
     instance_map_id: Option<std::num::NonZeroU32>,
+    /// Match the player's exact map ID recorded in a saved Forever capture.
+    player_map_id: Option<std::num::NonZeroU32>,
+    /// Match the recorded immediate parent of the player's map in a saved Forever capture.
+    player_parent_map_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1090,7 +1094,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured profession, selected or tracked recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1124,6 +1128,8 @@ impl Operator {
                     difficulty_id: args.instance_difficulty_id,
                     map_id: args.instance_map_id,
                 },
+                player_map_id: args.player_map_id,
+                player_parent_map_id: args.player_parent_map_id,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_max_price_copper: args.merchant_max_price_copper,

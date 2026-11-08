@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by player map or its observed immediate parent.
+
 - Compare saved Forever map, Hearthstone bind name and cooldown observations.
 
 - Show the first observed learning, condition or charge shortfall in a saved Forever crafting batch.
