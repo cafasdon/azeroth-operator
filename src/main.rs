@@ -282,7 +282,7 @@ struct List {
     xp_gain_enabled_only: bool,
     /// Match an exact quest ID in a saved Forever quest log.
     quest_id: Option<std::num::NonZeroU32>,
-    /// Match the captured readiness of the selected quest.
+    /// Match the selected quest's readiness, or count matching quests when no ID is supplied.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,

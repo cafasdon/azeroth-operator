@@ -235,9 +235,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(history_rows[0]["quest_match"], {
                                     "quest_id": quest_id, "readiness": readiness,
                                 })
-                        self.assertTrue((await session.call_tool("list_snapshots", {
-                            **quest_history, "quest_readiness": "ready",
-                        })).isError)
+                        for readiness, count in [("ready", 2), ("not_ready", 1),
+                                                 ("failed", 1), ("unknown", 1)]:
+                            matching_quests = await session.call_tool("list_snapshots", {
+                                **quest_history, "quest_readiness": readiness,
+                            })
+                            self.assertFalse(matching_quests.isError)
+                            quest_rows = json.loads(matching_quests.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in quest_rows], [forever_key])
+                            self.assertEqual(quest_rows[0]["quest_match"], {
+                                "readiness": readiness, "quest_count": count,
+                            })
                         by_quest_id = await session.call_tool("list_snapshots", {
                             **quest_history, "quest_id": 10,
                         })

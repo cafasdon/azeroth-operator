@@ -651,9 +651,8 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
         ensure!(
-            quest_id.is_none_or(|_| family == Family::Forever)
-                && (quest_readiness.is_none() || quest_id.is_some()),
-            "Quest filtering requires Forever and a quest ID"
+            (quest_id.is_none() && quest_readiness.is_none()) || family == Family::Forever,
+            "Quest filtering requires Forever"
         );
         let quest_key = quest_id.map(|id| id.to_string());
         ensure!(
@@ -752,6 +751,25 @@ impl Store {
                             .then_some(readiness)
                     });
                     if quest_key.is_some() && quest_match.is_none() {
+                        continue;
+                    }
+                    let quest_count =
+                        quest_readiness
+                            .filter(|_| quest_key.is_none())
+                            .map(|expected| {
+                                s.sections.get("quests").and_then(Value::as_object).map_or(
+                                    0,
+                                    |quests| {
+                                        quests
+                                            .values()
+                                            .filter(|quest| {
+                                                analysis::quest_readiness(quest) == expected
+                                            })
+                                            .count()
+                                    },
+                                )
+                            });
+                    if quest_count == Some(0) {
                         continue;
                     }
                     let experience_match = if filter_experience {
@@ -1033,6 +1051,10 @@ impl Store {
                     }
                     if let Some((id, readiness)) = quest_id.zip(quest_match) {
                         summary["quest_match"] = json!({"quest_id":id,"readiness":readiness});
+                    }
+                    if let Some(count) = quest_count {
+                        summary["quest_match"] =
+                            json!({"readiness":quest_readiness,"quest_count":count});
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

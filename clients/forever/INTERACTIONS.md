@@ -559,6 +559,9 @@ captures where that quest was observed. Add `quest_readiness` as
 `ready`, `not_ready`, `failed` or `unknown` to narrow the results.
 Unknown means the quest was observed without enough readiness evidence.
 A missing quest does not match. Results return the ID and recorded status.
+Omit `quest_id` to find captures with any quest in the requested state.
+The result reports `quest_count` for that state. Empty or unavailable
+logs do not match, including when searching for unknown readiness.
 
 Use `quest_readiness_changes: true` in `compare_snapshots` to compare
 the readiness of quests present in both Forever logs. IDs seen on only

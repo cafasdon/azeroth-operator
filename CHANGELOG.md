@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by quest readiness without specifying a quest ID.
+
 - Compare readiness transitions across two saved Forever quest logs.
 
 - Find saved Forever captures by quest ID and recorded readiness.
