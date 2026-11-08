@@ -242,6 +242,8 @@ struct List {
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
     recipe_profession_id: Option<std::num::NonZeroU32>,
+    /// Find saved Forever captures that track this exact recipe as a craft or recraft.
+    tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever captures with a uniquely observed profession skill line.
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Minimum observed rank for the selected profession skill line.
@@ -1088,7 +1090,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured profession, recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured profession, selected or tracked recipe, instance, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1111,6 +1113,7 @@ impl Operator {
                     output_item_id: args.recipe_output_item_id,
                     profession_id: args.recipe_profession_id,
                 },
+                tracked_recipe_id: args.tracked_recipe_id,
                 profession_skill_line: args.profession_skill_line,
                 profession_min_rank: args.profession_min_rank,
                 instance: azeroth_operator::InstanceCaptureFilters {

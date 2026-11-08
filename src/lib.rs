@@ -273,6 +273,7 @@ pub struct InstanceCaptureFilters<'a> {
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub recipe: RecipeCaptureFilters,
+    pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub profession_skill_line: Option<std::num::NonZeroU32>,
     pub profession_min_rank: Option<u32>,
     pub instance: InstanceCaptureFilters<'a>,
@@ -379,6 +380,7 @@ impl Store {
     ) -> Result<Value> {
         let CaptureFilters {
             recipe: filters,
+            tracked_recipe_id,
             profession_skill_line,
             profession_min_rank,
             instance,
@@ -468,9 +470,10 @@ impl Store {
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
         ensure!(
-            !filter_recipes || family == Family::Forever,
+            !(filter_recipes || tracked_recipe_id.is_some()) || family == Family::Forever,
             "Recipe filtering requires Forever"
         );
+        let tracked_recipe_key = tracked_recipe_id.map(|id| id.to_string());
         ensure!(
             profession_skill_line.is_none_or(|_| family == Family::Forever)
                 && (profession_min_rank.is_none() || profession_skill_line.is_some()),
@@ -573,6 +576,15 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let tracked_match = tracked_recipe_key.as_ref().and_then(|key| {
+                        let tracking = s.sections.get("tracked_recipes")?;
+                        let craft = tracking["crafts"].get(key);
+                        let recraft = tracking["recrafts"].get(key);
+                        (craft.is_some() || recraft.is_some()).then_some((craft, recraft))
+                    });
+                    if tracked_recipe_key.is_some() && tracked_match.is_none() {
+                        continue;
+                    }
                     let profession_match = profession_skill_line.and_then(|skill_line| {
                         let (_, row) = analysis::profession_by_skill_line(
                             s.sections.get("professions"),
@@ -691,6 +703,16 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some((recipe_id, (craft, recraft))) =
+                        tracked_recipe_id.zip(tracked_match)
+                    {
+                        summary["tracked_recipe_match"] = json!({
+                            "recipe_id":recipe_id,
+                            "tracked_as_craft":craft.is_some(),"tracked_as_recraft":recraft.is_some(),
+                            "craft_learned":craft.and_then(|row| row["learned"].as_bool()),
+                            "recraft_learned":recraft.and_then(|row| row["learned"].as_bool()),
+                        });
+                    }
                     if let Some(profession) = profession_match {
                         summary["profession_match"] = json!({
                             "skill_line":profession["skill_line"],"rank":profession["rank"],

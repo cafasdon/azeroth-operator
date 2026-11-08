@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures that tracked a specific craft or recraft.
+
 - Compare saved Forever profession ranks and caps across all observed skill lines.
 
 - Find saved Forever captures by profession skill line and minimum observed rank.

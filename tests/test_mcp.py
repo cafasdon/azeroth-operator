@@ -342,7 +342,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         tracked_after["character"]["realm"] = "First"
                         tracked_after["captured_at"] = "2025-01-02T00:00:00Z"
                         groups = tracked_after["sections"]["tracked_recipes"]
-                        groups["crafts"] = {"2": {}, "11": {}, "100": {"name": "Renamed fixture"}}
+                        groups["crafts"] = {"2": {}, "11": {},
+                                            "100": {"name": "Renamed fixture", "learned": False}}
                         groups["recrafts"] = {}
                         after_tracking_key = SnapshotStore(Path(folder)).ingest(tracked_after)
                         async def compare_tracking(after_id):
@@ -357,6 +358,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         del tracked_after["sections"]["tracked_recipes"]
                         missing_tracking_key = SnapshotStore(Path(folder)).ingest(tracked_after)
                         self.assertIsNone(await compare_tracking(missing_tracking_key))
+                        tracking_query = {"family": "forever", "tracked_recipe_id": 100,
+                                          "character": tracked_after["character"]}
+                        tracked_visits = await session.call_tool("list_snapshots", tracking_query)
+                        self.assertFalse(tracked_visits.isError)
+                        visits = json.loads(tracked_visits.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in visits],
+                                         [after_tracking_key, forever_key])
+                        self.assertEqual([row["tracked_recipe_match"] for row in visits], [
+                            {"recipe_id": 100, "tracked_as_craft": True, "tracked_as_recraft": False,
+                             "craft_learned": False, "recraft_learned": None},
+                            {"recipe_id": 100, "tracked_as_craft": True, "tracked_as_recraft": True,
+                             "craft_learned": None, "recraft_learned": None},
+                        ])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "retail", "tracked_recipe_id": 100,
+                        })).isError)
                         bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
                         bank_summary_data = json.loads(bank_summary.content[0].text)
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)

@@ -956,6 +956,13 @@ was tracked in the same list and both captures supplied a learned flag.
 An empty list means no known changes were found. One missing tracking
 section yields null. With both sections missing, the field is omitted.
 
+To find captures where a recipe was tracked, pass `tracked_recipe_id`
+and `family: "forever"` to `list_snapshots`. A matching row includes
+craft and recraft membership plus each recorded learned flag. The
+learned flag is null when the recipe is absent from that group or its
+status was unavailable. The filter combines with character and selected
+recipe filters before pagination.
+
 Pass `tracked_recipe_id` with `section: "tracked_recipes"` to check one
 recipe. `tracked_as_craft` and `tracked_as_recraft` are independent. False
 means the ID was absent from an observed list, while null means the list
