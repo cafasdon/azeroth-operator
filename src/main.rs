@@ -850,11 +850,12 @@ impl Operator {
                     azeroth_operator::analysis::combine_recipe_materials(
                         std::iter::once(&review).chain(&extra_reviews),
                     )?;
-                review["ordered_starting_materials"] =
-                    azeroth_operator::analysis::ordered_recipe_materials(
-                        std::iter::once(&review).chain(&extra_reviews),
-                        &review["combined_materials"],
-                    )?;
+                let (materials, checkpoint) = azeroth_operator::analysis::ordered_recipe_materials(
+                    std::iter::once(&review).chain(&extra_reviews),
+                    &review["combined_materials"],
+                )?;
+                review["ordered_starting_materials"] = materials;
+                review["ordered_material_checkpoint"] = checkpoint;
                 review["ordered_starting_material_coverage"] =
                     azeroth_operator::analysis::ordered_recipe_material_coverage(
                         &review["ordered_starting_materials"],

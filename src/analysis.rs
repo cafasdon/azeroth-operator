@@ -268,13 +268,17 @@ pub fn combine_recipe_materials<'a>(reviews: impl Iterator<Item = &'a Value>) ->
 pub fn ordered_recipe_materials<'a>(
     reviews: impl Iterator<Item = &'a Value>,
     combined_materials: &Value,
-) -> Result<Value> {
+) -> Result<(Value, Value)> {
     let Some(materials) = combined_materials.as_array() else {
-        return Ok(Value::Null);
+        return Ok((Value::Null, Value::Null));
     };
     let mut balance = BTreeMap::<u64, i64>::new();
     let mut starting_stock = BTreeMap::<u64, u64>::new();
-    for review in reviews {
+    let mut covered_prefix = 0usize;
+    let mut first_uncovered = None;
+    for (index, review) in reviews.enumerate() {
+        let mut unknown_stock = false;
+        let mut insufficient_stock = false;
         for material in review["materials"].as_array().into_iter().flatten() {
             let item = material["item_id"]
                 .as_u64()
@@ -288,6 +292,22 @@ pub fn ordered_recipe_materials<'a>(
                 .ok_or_else(|| anyhow::anyhow!("Reagent balance overflow"))?;
             let minimum = starting_stock.entry(item).or_default();
             *minimum = (*minimum).max((*available).min(0).unsigned_abs());
+            if first_uncovered.is_none() && *available < 0 {
+                let needed = available.unsigned_abs();
+                match material["quantity_observed"].as_u64() {
+                    Some(count) => insufficient_stock |= count < needed,
+                    None => unknown_stock = true,
+                }
+            }
+        }
+        if first_uncovered.is_none() {
+            if insufficient_stock || unknown_stock {
+                first_uncovered = Some(json!({"recipe_number":index + 1,
+                    "recipe_id":review["recipe"]["recipe_id"],
+                    "reason":if insufficient_stock {"shortfall_vs_observed_stock"} else {"stock_unknown"}}));
+            } else {
+                covered_prefix += 1;
+            }
         }
         let output = &review["base_output_if_completed"];
         if let Some((item, minimum)) = output["item_id"].as_u64().zip(output["minimum"].as_i64()) {
@@ -318,7 +338,11 @@ pub fn ordered_recipe_materials<'a>(
             "estimated_units_after_batch_in_observed_storage":remaining
         }));
     }
-    Ok(json!(starting_materials))
+    Ok((
+        json!(starting_materials),
+        json!({"covered_prefix_recipes":covered_prefix,
+        "first_uncovered_recipe":first_uncovered}),
+    ))
 }
 
 pub fn ordered_recipe_material_coverage(materials: &Value) -> Value {

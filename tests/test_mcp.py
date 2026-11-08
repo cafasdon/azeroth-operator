@@ -733,6 +733,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(batch_data["ordered_starting_material_coverage"], {
                             "bags": False, "all_observed_storage": False,
                         })
+                        self.assertEqual(batch_data["ordered_material_checkpoint"], {
+                            "covered_prefix_recipes": 1,
+                            "first_uncovered_recipe": {
+                                "recipe_number": 2, "recipe_id": 101,
+                                "reason": "shortfall_vs_observed_stock",
+                            },
+                        })
                         combined = {row["item_id"]: row for row in batch_data["combined_materials"]}
                         self.assertEqual(combined[744], {
                             "item_id": 744, "required": 13, "quantity_observed": 12, "shortfall_vs_observed": 1,

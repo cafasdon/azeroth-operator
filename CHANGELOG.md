@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Identify the first Forever batch recipe whose materials are not covered by observed stock.
+
 - Summarise whether captured stock covers all starting materials for an ordered Forever recipe batch.
 
 - Estimate remaining reagent units across ordered Forever crafting batches.
