@@ -76,6 +76,8 @@ struct Inspect {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
+    /// Calculate whole bundles needed for this quantity in each matching merchant offer.
+    merchant_target_quantity: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare captured quest currency rewards against caps from the same snapshot.
@@ -1097,6 +1099,14 @@ impl Operator {
             .merchant_item_id
             .map(|id| ("item_id", id))
             .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
+        if args
+            .merchant_target_quantity
+            .is_some_and(|quantity| merchant_search.is_none() || quantity.get() > 1000)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant quantity planning requires an item or currency search and 1 to 1000 units",
+            )]);
+        }
         if args.merchant_cart_include_repair && args.merchant_cart.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Repair reservation requires a merchant cart",
@@ -1494,6 +1504,13 @@ impl Operator {
                         offers.len()
                     });
                     value["merchant_match_count"] = serde_json::json!(count);
+                    if let Some(quantity) = args.merchant_target_quantity {
+                        value["merchant_quantity_plan"] =
+                            azeroth_operator::analysis::merchant_quantity_plan(
+                                &value["data"],
+                                quantity.get(),
+                            );
+                    }
                 }
                 if let Some(slot) = args.merchant_offer_slot {
                     if value["client"]["family"] != "forever" {

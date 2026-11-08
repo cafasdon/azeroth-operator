@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Plan whole bundles and copper for a target quantity across matching Forever merchant offers.
+
 - Reserve copper for other expenses when budgeting captured Forever flights.
 
 - Include destination names and observed fares when comparing Forever flight routes.

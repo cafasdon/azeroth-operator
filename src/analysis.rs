@@ -1937,6 +1937,30 @@ pub fn trainer_points_projection(trainer: &Value) -> Value {
     })
 }
 
+pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
+    let Some(offers) = offers.as_object() else {
+        return Value::Null;
+    };
+    let rows: BTreeMap<_, _> = offers
+        .iter()
+        .filter_map(|(slot, offer)| {
+            let size = offer["bundle_size"].as_u64().filter(|size| *size > 0)?;
+            let bundles = u64::from(quantity).div_ceil(size);
+            let units = bundles.checked_mul(size)?;
+            let copper = offer["price_copper"].as_u64()?.checked_mul(bundles)?;
+            Some((
+                slot,
+                json!({
+                    "bundles":bundles,"units":units,"extra_units":units - u64::from(quantity),
+                    "required_copper":copper,"extended_cost":offer["extended_cost"],
+                    "captured_available":offer["available"]
+                }),
+            ))
+        })
+        .collect();
+    json!({"target_quantity":quantity,"offers_by_slot":rows})
+}
+
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {
     ensure!((1..=1000).contains(&bundles), "Invalid bundle count");
     let bundles = u64::from(bundles);

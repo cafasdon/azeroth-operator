@@ -276,6 +276,11 @@ offers retain their original slots for later budget review. A zero match
 count means the stock was captured and had no matching offers. Unknown
 stock gives an unknown match count.
 
+Add `merchant_target_quantity` from 1 to 1000 to calculate whole bundles,
+units received, surplus and copper for each matching offer. Extended
+costs and recorded stock are flagged separately. Use the returned slot
+and bundle count in a merchant offer review for the full resource budget.
+
 Use `merchant_item_id` with `family: "forever"` in `list_snapshots`
 to search across captures. Results include the matching offer count and
 the player's captured map when known. This is the map at export, so it
