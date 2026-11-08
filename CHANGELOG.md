@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Link saved Forever paragon rewards to captured quest-log readiness.
+
 - Summarise pending and level-restricted Forever paragon rewards.
 
 - List captured standard Forever factions closest to their next reputation rank.

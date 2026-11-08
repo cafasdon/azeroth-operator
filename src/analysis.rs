@@ -1540,7 +1540,10 @@ fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'st
     })
 }
 
-fn paragon_reward_summary(section: &Value) -> Option<Value> {
+fn paragon_reward_summary(
+    section: &Value,
+    quests: Option<&serde_json::Map<String, Value>>,
+) -> Option<Value> {
     let entries = section["entries"].as_object()?;
     let mut pending = BTreeMap::new();
     let mut restricted = BTreeMap::new();
@@ -1557,10 +1560,16 @@ fn paragon_reward_summary(section: &Value) -> Option<Value> {
                 continue;
             }
         };
+        let quest_key = detail["reward_quest_id"].as_u64().map(|id| id.to_string());
+        let quest_lookup = quests
+            .zip(quest_key.as_deref())
+            .map(|(quests, key)| quests.get(key));
         group.insert(
             id,
             json!({"name":entry["name"],"account_wide":entry["account_wide"],
-            "reward_quest_id":detail["reward_quest_id"]}),
+            "reward_quest_id":detail["reward_quest_id"],
+            "reward_quest_observed":quest_lookup.map(|quest| quest.is_some()),
+            "reward_quest_readiness":quest_lookup.flatten().map(quest_readiness)}),
         );
     }
     unknown.sort_unstable();
@@ -2912,7 +2921,7 @@ pub fn summary(s: &Snapshot) -> Value {
     summary["paragon_reward_summary"] = json!(
         s.sections
             .get("reputation")
-            .and_then(paragon_reward_summary)
+            .and_then(|section| paragon_reward_summary(section, quests))
     );
     summary
 }

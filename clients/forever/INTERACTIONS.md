@@ -423,6 +423,10 @@ special reputation types are outside this ranking.
 faction and separates those with a captured level restriction. It includes
 the reward quest ID when observed and lists paragon factions with unknown
 reward status separately. The result describes the saved panel.
+Each reward row also checks its quest ID against the same capture's quest
+log and reports captured readiness when the quest was observed. Missing
+quest IDs or quest logs leave the observation unknown. A ready quest flag
+does not override the separately reported paragon level restriction.
 
 On the Rust MCP, pass `currency_id` with `section: "currency_balances"`
 to return one currency and its cap headroom. The observation flag is false

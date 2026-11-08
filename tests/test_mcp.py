@@ -400,11 +400,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         factions["21"] = {**factions["12"], "renown": {
                             **factions["12"]["renown"], "earned_in_level": 101,
                         }}
+                        more_factions["sections"]["quests"]["314"] = {
+                            "title": "Fixture reward", "level": 10, "ready_for_turn_in": True,
+                        }
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
                         reward_summary = await session.call_tool("character_summary", {"snapshot_id": more_key})
                         self.assertFalse(reward_summary.isError)
                         paragon = json.loads(reward_summary.content[0].text)["paragon_reward_summary"]
-                        reward = {"name": "Fixture faction", "account_wide": False, "reward_quest_id": 314}
+                        reward = {"name": "Fixture faction", "account_wide": False, "reward_quest_id": 314,
+                                  "reward_quest_observed": True, "reward_quest_readiness": "ready"}
                         self.assertEqual(paragon["pending_by_faction_id"], {"15": reward})
                         self.assertEqual(paragon["level_restricted_by_faction_id"], {"16": reward})
                         more = await session.call_tool("inspect_snapshot", {
