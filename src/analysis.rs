@@ -742,6 +742,18 @@ pub fn compare_observations(
                 "total_seconds_delta":pair.map(|(old,new)| new.1 - old.1)
             });
         }
+        if before.client.family == crate::Family::Forever {
+            let old_objectives = previous
+                .as_ref()
+                .and_then(|quest| quest["objectives"].as_object());
+            let new_objectives = current
+                .as_ref()
+                .and_then(|quest| quest["objectives"].as_object());
+            if old_objectives.is_some() || new_objectives.is_some() {
+                comparison["quest_change"]["objective_counts_by_kind"] = json!({"before":old_objectives.map(quest_objective_counts),
+                           "after":new_objectives.map(quest_objective_counts)});
+            }
+        }
     }
     if selectors.quest_waypoints {
         ensure!(
@@ -2447,6 +2459,28 @@ pub fn tracked_achievement_work(section: &Value) -> Value {
                 Some((id.clone(), Value::Object(unfinished)))
             })
             .collect(),
+    )
+}
+
+fn quest_objective_counts(objectives: &serde_json::Map<String, Value>) -> Value {
+    let mut counts = BTreeMap::<&str, (usize, usize)>::new();
+    for row in objectives.values() {
+        if let Some((kind, finished)) = row["kind"].as_str().zip(row["finished"].as_bool()) {
+            let (done, pending) = counts.entry(kind).or_default();
+            if finished {
+                *done += 1;
+            } else {
+                *pending += 1;
+            }
+        }
+    }
+    json!(
+        counts
+            .into_iter()
+            .map(|(kind, (finished, unfinished))| {
+                (kind, json!({"finished":finished,"unfinished":unfinished}))
+            })
+            .collect::<BTreeMap<_, _>>()
     )
 }
 

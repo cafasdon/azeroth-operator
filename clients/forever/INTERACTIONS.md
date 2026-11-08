@@ -514,6 +514,10 @@ the timer continued without changes after capture.
 With `quest_id` in `compare_snapshots`, the timer comparison reports
 which captures recorded a timer and gives signed remaining and total
 second changes when both did. A missing timer does not establish expiry.
+Selected quest comparisons also show `objective_counts_by_kind` for
+each observed objective map. Counts are split into finished and unfinished
+rows. This avoids matching individual objectives by row position, which
+can change between exports. A missing map remains unknown.
 Update the importer and reader before syncing the new field. [Forever quest tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_QuestObjectiveTracker.lua)
 
 The selected quest can include `currency_rewards`, indexed by reward row.

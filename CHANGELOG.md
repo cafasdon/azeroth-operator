@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare finished and unfinished objective counts for a selected Forever quest.
+
 - Compare captured Forever quest timer observations and signed duration changes.
 
 - Include captured durations and estimated end times for Forever quest timers.

@@ -476,6 +476,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "before_copper": 0, "after_copper": None, "delta_copper": None})
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
                         reputation_after["sections"]["quests"]["42"]["timer"]["remaining_seconds"] = 0
+                        reputation_after["sections"]["quests"]["42"]["objectives"]["2"]["finished"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
                         criteria["1"], criteria["2"] = criteria["2"], criteria["1"]
@@ -495,6 +496,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(quest["timer_change"], {
                             "before_observed": True, "after_observed": True,
                             "remaining_seconds_delta": -74, "total_seconds_delta": 0,
+                        })
+                        self.assertEqual(quest["objective_counts_by_kind"], {
+                            "before": {"event": {"finished": 0, "unfinished": 1},
+                                       "item": {"finished": 1, "unfinished": 2}},
+                            "after": {"event": {"finished": 1, "unfinished": 0},
+                                      "item": {"finished": 1, "unfinished": 2}},
                         })
                         self.assertEqual(quest["after"]["objectives"]["1"]["fulfilled"], 2)
                         achievement = progress_data["achievement_change"]
