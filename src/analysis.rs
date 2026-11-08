@@ -868,6 +868,57 @@ fn compare_action_bar_hotkeys(before: &Snapshot, after: &Snapshot) -> Value {
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
+pub fn action_bar_item_stock_audit(actions: &Value, snapshot: &Snapshot) -> Option<Value> {
+    let slots = actions["slots"].as_object()?;
+    let mut items = BTreeMap::<u64, BTreeSet<u32>>::new();
+    for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == "item") {
+        if let (Ok(slot), Some(id)) = (slot.parse(), row["id"].as_u64()) {
+            items.entry(id).or_default().insert(slot);
+        }
+    }
+    let equipment = snapshot
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object);
+    let bags = snapshot.sections.get("bags").and_then(Value::as_object);
+    let count = |observations: &mut dyn Iterator<Item = (&Value, u64)>| {
+        let mut counts = BTreeMap::<u64, u64>::new();
+        for (row, quantity) in observations {
+            if let Some(id) = row["item_id"].as_u64().filter(|id| items.contains_key(id)) {
+                *counts.entry(id).or_default() += quantity;
+            }
+        }
+        counts
+    };
+    let equipped = equipment.map(|rows| count(&mut rows.values().map(|row| (row, 1))));
+    let carried = bags.map(|bags| {
+        count(
+            &mut bags
+                .values()
+                .filter_map(Value::as_object)
+                .flat_map(|rows| rows.values())
+                .filter_map(|row| Some((row, row["count"].as_u64()?))),
+        )
+    });
+    Some(json!(
+        items
+            .into_iter()
+            .map(|(id, slots)| {
+                let equipment = equipped
+                    .as_ref()
+                    .map(|counts| counts.get(&id).copied().unwrap_or(0));
+                let bags = carried
+                    .as_ref()
+                    .map(|counts| counts.get(&id).copied().unwrap_or(0));
+                (
+                    id,
+                    json!({"slots":slots,"equipment_quantity":equipment,"bag_quantity":bags}),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    ))
+}
+
 pub fn shared_action_bar_hotkeys(actions: &Value) -> Option<BTreeMap<String, BTreeSet<u64>>> {
     let buttons = actions["button_hotkeys"].as_object()?;
     let mut slots_by_key = BTreeMap::<String, BTreeSet<u64>>::new();

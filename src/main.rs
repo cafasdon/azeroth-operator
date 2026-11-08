@@ -166,6 +166,9 @@ struct Inspect {
     /// Show equipment and bag quantities for the matched item shortcut in the same capture.
     #[serde(default)]
     action_bar_item_stock: bool,
+    /// Show carried stock for every retained item shortcut in the same capture.
+    #[serde(default)]
+    action_bar_item_stock_audit: bool,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -1201,6 +1204,7 @@ impl Operator {
             .map(|id| ("spell", id))
             .or_else(|| args.action_bar_item_id.map(|id| ("item", id)));
         let review_action_bar = args.action_bar_spellbook
+            || args.action_bar_item_stock_audit
             || args.action_bar_shared_hotkeys
             || args.action_bar_slot.is_some()
             || action_id_filter.is_some()
@@ -2024,6 +2028,18 @@ impl Operator {
                     value["action_bar_shared_hotkeys"] = serde_json::json!(
                         azeroth_operator::analysis::shared_action_bar_hotkeys(&value["data"])
                     );
+                }
+                if args.action_bar_item_stock_audit {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read captured action bar item stock",
+                        )]);
+                    };
+                    value["action_bar_item_stock_audit"] =
+                        serde_json::json!(azeroth_operator::analysis::action_bar_item_stock_audit(
+                            &value["data"],
+                            &snapshot
+                        ));
                 }
                 if args.action_bar_item_stock {
                     let mut stock = serde_json::Value::Null;

@@ -305,6 +305,9 @@ and spell searches are mutually exclusive and keep their ID types separate.
 Set `action_bar_item_stock` with the item selector to include captured
 equipment and bag quantities when a shortcut matches. A missing storage
 section stays unknown. Counts do not establish that the shortcut can be used.
+Use `action_bar_item_stock_audit` to check every retained item shortcut at
+once. Results group captured slots by item ID and report equipment and bag
+counts only for those IDs.
 `action_bar_slot_observed` is false for an unobserved slot and null for an
 unavailable section. An observed empty slot has `empty: true`. You can
 include its spellbook match, but the reverse list requires the full capture.
