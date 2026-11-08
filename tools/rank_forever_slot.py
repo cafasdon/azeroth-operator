@@ -238,7 +238,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             if 16 in targets and 17 not in targets:
                 draft_args["allow_two_hand_off_hand_clear"] = True
             proposed.append(draft_args)
-            if len(proposed) > max_drafts:
+            if not collapse_identical and len(proposed) > max_drafts:
                 raise GearSearchLimit(
                     "The search exceeds --max-drafts. Narrow the candidates or increase that limit up to 128."
                 )
@@ -248,7 +248,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             if any(tool.name == "review_equipment_selection"
                    and "additional_drafts" in tool.inputSchema.get("properties", {}) for tool in tools):
                 batch_size = 8
-        reviews = []
+        resolved_keys = {json.dumps(baseline["checks"]["simulator_equipment_spec"],
+                                    sort_keys=True, separators=(",", ":"), allow_nan=False): 1}
+        equivalent_drafts = 0
         for start in range(0, len(proposed), batch_size):
             primary, *additional = proposed[start:start + batch_size]
             arguments = {**primary, "additional_drafts": additional} if additional else primary
@@ -256,27 +258,40 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             extra = review.pop("additional_draft_reviews", [])
             if not isinstance(extra, list) or len(extra) != len(additional):
                 raise ValueError("Local MCP returned an incomplete equipment review batch")
-            reviews.extend([review, *extra])
-        for draft_args, draft in zip(proposed, reviews, strict=True):
-            selections = draft_args["selections"]
-            if draft["checks"]["simulator_equipment_spec"]:
-                drafts.append((selections, draft))
-            elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):
-                skipped.append({
-                    **({"selections": selections} if multi else {"selection": selections[0]}),
-                    "reason": "catalogue_requirement_conflict",
-                    "conflicts": conflicts,
-                })
-            elif multi:
-                skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
-            else:
-                skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
+            for draft_args, draft in zip(proposed[start:start + batch_size], [review, *extra], strict=True):
+                selections = draft_args["selections"]
+                spec = draft["checks"]["simulator_equipment_spec"]
+                if spec:
+                    key = json.dumps(spec, sort_keys=True, separators=(",", ":"), allow_nan=False)
+                    if collapse_identical and key in resolved_keys:
+                        equivalent_drafts += 1
+                        skipped.append({"selections": selections, "reason": "equivalent_simulator_draft",
+                                        "representative_review": resolved_keys[key]})
+                        continue
+                    if len(drafts) > max_drafts:
+                        raise GearSearchLimit(
+                            "The resolved search exceeds --max-drafts. Narrow the candidates or increase that limit up to 128."
+                        )
+                    resolved_keys.setdefault(key, len(drafts) + 1)
+                    drafts.append((selections, draft))
+                elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):
+                    skipped.append({
+                        **({"selections": selections} if multi else {"selection": selections[0]}),
+                        "reason": "catalogue_requirement_conflict",
+                        "conflicts": conflicts,
+                    })
+                elif multi:
+                    skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
+                else:
+                    skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
         search = {
             "candidate_locations_by_slot": {
                 slot: len(choices) - 1 for slot, choices in zip(slots, options, strict=True)
             },
             "combinations_including_baseline": combination_count,
             "proposed_alternative_drafts": len(proposed),
+            "max_drafts_basis": "distinct_resolved_alternative_drafts" if collapse_identical else "proposed_alternative_drafts",
+            "equivalent_simulator_drafts": equivalent_drafts,
             "resolved_drafts_including_baseline": len(drafts),
             "distinct_simulator_gear_sets": len({
                 json.dumps(draft["checks"]["simulator_equipment_spec"], sort_keys=True)
@@ -505,7 +520,7 @@ def main():
     slots.add_argument("--all-slots", action="store_const", const=SIMULATOR_SLOTS, dest="slot",
                        help="Consider all 17 simulator slots within the search limits.")
     parser.add_argument("--collapse-identical-items", action="store_true",
-                        help="Keep only the storage copies needed to fill equivalent simulator slots.")
+                        help="Keep needed physical copies and count distinct resolved simulator drafts against --max-drafts.")
     parser.add_argument("--item-id", type=int, action="append",
                         help="Restrict alternatives to this base item ID. Repeat for a shortlist.")
     parser.add_argument("--set-id", type=int, help="Restrict alternatives to a pinned catalogue set ID.")

@@ -804,6 +804,19 @@ copy for a single slot, or two physical copies when both ring, trinket or
 one-handed weapon slots are selected. Each skipped copy records its retained
 replacement locations. Equipped items keep their separate locations.
 
+The same option now collapses complete resolved simulator equipment drafts,
+including alternatives identical to the baseline. Exact item order, IDs and
+resolved modifiers must agree. Each skipped draft retains its physical
+selections and `representative_review`; the first validated representation is
+kept. With this option, `--max-drafts` limits distinct resolved alternatives,
+excluding the baseline. Without it, the limit continues to count proposed
+alternatives. `gear_search.max_drafts_basis` reports which basis was used,
+and `equivalent_simulator_drafts` counts these draft-level collapses. The
+1,024-combination scan limit still applies before full-draft resolution.
+Reviews are processed in batches of at most eight without retaining every
+unfiltered response. This reduces duplicate budget use; it does not raise the
+distinct-candidate cap or establish complete gear legality.
+
 For adaptive bulk ranking, build the local adapter from the pinned WoWSims
 checkout with its generated protobuf files and embedded database:
 
