@@ -320,6 +320,7 @@ pub struct CaptureFilters<'a> {
     pub minimum_free_bag_slots: Option<u32>,
     pub minimum_general_free_bag_slots: Option<u32>,
     pub bag_family_space: Option<BagFamilySpaceFilter>,
+    pub pet_food: Option<PetFoodCaptureFilter>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
@@ -336,6 +337,15 @@ pub struct CaptureFilters<'a> {
     pub flight_max_fare_copper: Option<u64>,
     pub flight_departure_map_id: Option<std::num::NonZeroU32>,
     pub flight_affordable_only: bool,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PetFoodCaptureFilter {
+    /// Count only this base item ID when supplied.
+    pub item_id: Option<std::num::NonZeroU32>,
+    /// Inclusive minimum accepted units in the captured carried bags.
+    pub minimum_quantity: u32,
 }
 
 impl Store {
@@ -436,6 +446,7 @@ impl Store {
             minimum_free_bag_slots,
             minimum_general_free_bag_slots,
             bag_family_space,
+            pet_food,
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
@@ -578,6 +589,13 @@ impl Store {
             "Bag space filtering requires Forever"
         );
         ensure!(
+            pet_food.is_none() || family == Family::Forever,
+            "Pet food filtering requires Forever"
+        );
+        let pet_food_key = pet_food
+            .as_ref()
+            .and_then(|filter| filter.item_id.map(|id| id.to_string()));
+        ensure!(
             (!filter_repair || family == Family::Forever)
                 && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999),
             "Repair quote filtering requires Forever and a valid copper amount"
@@ -661,6 +679,25 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let pet_food_match = if let Some(filter) = &pet_food {
+                        let Some(food) = s
+                            .sections
+                            .get("pet_care")
+                            .and_then(|pet| pet["carried_food"].as_object())
+                        else {
+                            continue;
+                        };
+                        let quantity = match &pet_food_key {
+                            Some(key) => food.get(key).and_then(Value::as_u64).unwrap_or(0),
+                            None => food.values().filter_map(Value::as_u64).sum(),
+                        };
+                        if quantity < u64::from(filter.minimum_quantity) {
+                            continue;
+                        }
+                        Some(json!({"item_id":filter.item_id,"accepted_quantity":quantity}))
+                    } else {
+                        None
+                    };
                     let bag_space = if filter_bag_space {
                         let Some(space) = analysis::carried_bag_space(&s).filter(|space| {
                             minimum_free_bag_slots.is_none_or(|minimum| {
@@ -856,6 +893,9 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(food) = pet_food_match {
+                        summary["pet_food_match"] = food;
+                    }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;
                     }

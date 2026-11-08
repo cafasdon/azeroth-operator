@@ -271,6 +271,8 @@ struct List {
     minimum_general_free_bag_slots: Option<u32>,
     /// Require an exact observed bag family and a minimum number of free slots in it.
     bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
+    /// Find saved captures with enough carried food classified as accepted by the active pet.
+    pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1125,7 +1127,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, bag space, repair quote, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, bag space, pet food, repair quote, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1166,6 +1168,7 @@ impl Operator {
                 minimum_free_bag_slots: args.minimum_free_bag_slots,
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
                 bag_family_space: args.bag_family_space,
+                pet_food: args.pet_food,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_max_price_copper: args.merchant_max_price_copper,

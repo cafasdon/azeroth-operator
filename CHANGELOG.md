@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by accepted carried pet food quantity.
+
 - Compare saved Forever active-pet observations and accepted carried food quantities.
 
 - Compare saved Forever free-slot changes by exact bag family.

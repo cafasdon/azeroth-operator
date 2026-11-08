@@ -95,6 +95,12 @@ In `character_summary`, `pet_food_locations` reports the matching stack
 count and up to 50 saved bag slots. A missing classification stays unknown,
 while an observed empty map gives zero matching stacks.
 
+Use `list_snapshots` with `family: "forever"` and a `pet_food`
+filter containing `minimum_quantity` and optionally `item_id`. The
+filter counts accepted units across all classified food or for the
+specified item. A zero minimum still requires a captured classification.
+Results include the accepted quantity and omit bag locations.
+
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have
 food classifications, it compares accepted carried quantities by item ID.

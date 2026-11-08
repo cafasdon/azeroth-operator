@@ -838,6 +838,20 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "hearthstone_cooldown_seconds": 0,
                         })
                         travel_after = SnapshotStore(Path(folder)).ingest(travel)
+                        for filter_args in [{"minimum_quantity": 3},
+                                            {"minimum_quantity": 3, "item_id": 117}]:
+                            pet_food = await session.call_tool("list_snapshots", {
+                                "family": "forever", "pet_food": filter_args,
+                            })
+                            self.assertFalse(pet_food.isError)
+                            food_rows = json.loads(pet_food.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in food_rows], [travel_before])
+                            self.assertEqual(food_rows[0]["pet_food_match"], {
+                                "item_id": filter_args.get("item_id"), "accepted_quantity": 3,
+                            })
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "retail", "pet_food": {"minimum_quantity": 0},
+                        })).isError)
                         bag_query = {"family": "forever", "minimum_free_bag_slots": 10,
                                      "minimum_general_free_bag_slots": 1}
                         bag_visits = await session.call_tool("list_snapshots", bag_query)
