@@ -1,5 +1,8 @@
 # Changelog
 
+- Observe visible merchant buyback entries and historical quotes separately
+  from owned inventory, stock budgets and simulator candidates.
+
 - Discover local catalogue quest reward references from saved gossip lists,
   with same-source quest/completion filters and explicit observation gaps.
 

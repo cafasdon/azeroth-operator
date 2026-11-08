@@ -1449,6 +1449,34 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "merchant_buyback" => {
+            object(
+                value,
+                &[("coverage", "text", true), ("entries", "map", true)],
+            )?;
+            ensure!(
+                value["coverage"] == "visible_merchant_buyback",
+                "Invalid buyback coverage"
+            );
+            entries(
+                &value["entries"],
+                &[
+                    ("item_id", "positive", true),
+                    ("count", "positive", true),
+                    ("buyback_price_copper", "wallet_copper", false),
+                ],
+            )?;
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(rows.len() <= 12, "Too many buyback entries");
+            for (key, row) in rows {
+                index(key, 1, rows.len() as u32)?;
+                ensure!(
+                    row.get("buyback_price_copper")
+                        .is_none_or(|v| v.as_u64().is_some()),
+                    "Invalid buyback price"
+                );
+            }
+        }
         "merchant_stock" => {
             let rows = value
                 .as_object()

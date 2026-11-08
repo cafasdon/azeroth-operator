@@ -4633,6 +4633,17 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["merchant_buyback_observations"] = s.sections.get("merchant_buyback").map(|section| {
+        let rows=section["entries"].as_object().unwrap();
+        let prices:Vec<_>=rows.values().filter_map(|row|row["buyback_price_copper"].as_u64()).collect();
+        let subtotal:u64=prices.iter().sum();
+        let ids:BTreeSet<_>=rows.values().map(|row|row["item_id"].as_u64().unwrap()).collect();
+        json!({"coverage":section["coverage"],"listed_item_locations":rows.len(),
+            "listed_units":rows.values().map(|row|row["count"].as_u64().unwrap()).sum::<u64>(),
+            "item_ids":ids,"priced_entries":prices.len(),"unknown_price_entries":rows.len()-prices.len(),
+            "known_price_subtotal_copper":subtotal,"total_listed_quote_copper":if prices.len()==rows.len() {Some(subtotal)} else {None},
+            "included_in_owned_inventory":false,"buyback_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
     summary["gossip_quest_observations"] = s.sections.get("gossip_quests").map(|section| {
         let describe=|rows:Option<&Value>|rows.map(|rows| {
             let rows=rows.as_object().unwrap();

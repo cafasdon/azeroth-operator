@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Manual merchant buyback capture records stable IDs/quantities and readable entry
+quotes only while the buyback tab is visible. Names and merchant identity are
+omitted. Buyback never contributes owned stock, funds or simulator candidates;
+current recovery eligibility and repurchase actions remain unverified/unperformed.
+[Offline evidence](../../docs/merchant-buyback-verification-2026-11-08.md).
+
 Local item catalogue searches can use saved gossip available/active quest IDs
 and explicit completion flags. Quest-ID and dialogue predicates must match one
 reward source. Missing lists remain unknown, separate from quest-log observations;

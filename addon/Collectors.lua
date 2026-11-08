@@ -1877,6 +1877,50 @@ local function merchantCostComponents(index)
     if questRewardInteger(GetMerchantItemCostInfo(index),count,count) then return components end
 end
 
+AO.collectors.merchant_buyback = function()
+    local api=C_MerchantFrame
+    assert(AO.family=="forever" and MerchantFrame and type(MerchantFrame.IsVisible)=="function"
+        and type(GetNumBuybackItems)=="function", "Buyback unavailable")
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted buyback observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid buyback number")
+        return value
+    end
+    local function context()
+        assert(public(MerchantFrame:IsVisible())==true and integer(MerchantFrame.selectedTab,2,2)==2,
+            "Buyback tab is not open")
+    end
+    local function read()
+        context()
+        local count=integer(GetNumBuybackItems(),0,12)
+        if count>0 then assert(api and type(api.GetBuybackItemID)=="function" and type(GetBuybackItemInfo)=="function", "Buyback item APIs unavailable") end
+        local entries={}
+        for slot=1,count do
+            local id=integer(api.GetBuybackItemID(slot),1,4294967295)
+            local _,_,price,quantity=GetBuybackItemInfo(slot)
+            local row={item_id=id,count=integer(quantity,1,4294967295)}
+            if (not issecretvalue or not issecretvalue(price)) and type(price)=="number"
+                and price%1==0 and price>=0 and price<=9999999999999 then row.buyback_price_copper=price end
+            entries[tostring(slot)]=row
+        end
+        assert(integer(GetNumBuybackItems(),0,12)==count, "Buyback count changed")
+        context()
+        return entries,count
+    end
+    local first,count=read()
+    local second,laterCount=read()
+    assert(count==laterCount,"Buyback list changed")
+    for key,row in pairs(first) do
+        assert(second[key] and row.item_id==second[key].item_id and row.count==second[key].count, "Buyback item changed")
+        if row.buyback_price_copper~=second[key].buyback_price_copper then row.buyback_price_copper=nil end
+    end
+    return {coverage="visible_merchant_buyback",entries=first}
+end
+
 AO.collectors.merchant_stock = function()
     local frame=MerchantFrame
     assert(frame and frame:IsVisible() and questRewardInteger(frame.selectedTab,1,1), "Merchant goods tab is not open")

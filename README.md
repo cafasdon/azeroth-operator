@@ -13,6 +13,11 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can inspect an already open merchant buyback tab:
+stable base item IDs, quantities and readable entry quotes. Buyback stays outside
+owned inventory and simulator candidates; no repurchase or recovery is attempted.
+[Offline evidence](docs/merchant-buyback-verification-2026-11-08.md).
+
 Local item lookups can find catalogue quest rewards tied to saved gossip
 `available` or `active` lists, optionally matching a known completion flag.
 Missing observations remain distinct from empty lists; references do not prove

@@ -23,6 +23,7 @@ SECTIONS = SECTIONS | {"player_resources"}
 SECTIONS = SECTIONS | {"profession_spells"}
 SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
+SECTIONS = SECTIONS | {"merchant_buyback"}
 
 
 def _validate_action_bar_observation(observation):
@@ -541,6 +542,18 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "merchant_buyback" in sections:
+        buyback=sections["merchant_buyback"]
+        if (c["family"]!="forever" or not isinstance(buyback,dict) or set(buyback)!={"coverage","entries"}
+                or buyback["coverage"]!="visible_merchant_buyback" or not isinstance(buyback["entries"],dict)
+                or len(buyback["entries"])>12 or set(buyback["entries"])!={str(i) for i in range(1,len(buyback["entries"])+1)}):
+            raise ValueError("Invalid buyback coverage")
+        for row in buyback["entries"].values():
+            if (not isinstance(row,dict) or not {"item_id","count"}<=row.keys()
+                    or set(row)-{"item_id","count","buyback_price_copper"}
+                    or any(type(row[field]) is not int or not 1<=row[field]<=4_294_967_295 for field in ("item_id","count"))
+                    or "buyback_price_copper" in row and (type(row["buyback_price_copper"]) is not int or not 0<=row["buyback_price_copper"]<=9_999_999_999_999)):
+                raise ValueError("Invalid buyback observation")
     if "gossip_quests" in sections:
         gossip=sections["gossip_quests"]
         if (c["family"]!="forever" or not isinstance(gossip,dict) or gossip.get("coverage")!="visible_gossip_quest_lists"
