@@ -407,6 +407,9 @@ struct Compare {
     /// Compare learning observations for shared recipes only when captured profession IDs agree.
     #[serde(default)]
     profession_recipe_changes: bool,
+    /// Compare shared pet-journal species row counts without inferring collection gains or losses.
+    #[serde(default)]
+    pet_view_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1177,7 +1180,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare same-character same-client snapshots, with optional item, quest, profession, Forever wallet, currency, reputation and tracked achievement comparisons. Forever quest comparisons can include waypoint map changes.",
+        description = "Compare same-character same-client snapshots, with optional item, quest, profession, filtered pet-journal, Forever wallet, currency, reputation and tracked achievement comparisons. Forever quest comparisons can include waypoint map changes.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1204,6 +1207,7 @@ impl Operator {
                     toy_view_changes: args.toy_view_changes,
                     saved_instance_changes: args.saved_instance_changes,
                     profession_recipe_changes: args.profession_recipe_changes,
+                    pet_view_changes: args.pet_view_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,

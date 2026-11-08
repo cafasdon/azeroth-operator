@@ -795,6 +795,7 @@ pub struct ComparisonSelectors {
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
     pub profession_recipe_changes: bool,
+    pub pet_view_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -890,6 +891,18 @@ pub fn compare_observations(
             .get("profession_recipe_view")
             .zip(after.sections.get("profession_recipe_view"))
             .map(|(old, new)| compare_profession_recipe_views(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.pet_view_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Pet journal view comparison requires Forever"
+        );
+        comparison["pet_view_changes"] = before
+            .sections
+            .get("pet_collection_view")
+            .zip(after.sections.get("pet_collection_view"))
+            .map(|(old, new)| compare_pet_views(old, new))
             .unwrap_or(Value::Null);
     }
     let skills_before = before
@@ -1874,6 +1887,44 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_pet_views(before: &Value, after: &Value) -> Value {
+    let old = before["entries"].as_object().unwrap();
+    let new = after["entries"].as_object().unwrap();
+    let ids: BTreeSet<u32> = old
+        .keys()
+        .chain(new.keys())
+        .map(|key| key.parse().unwrap())
+        .collect();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut changes = Vec::new();
+    for id in ids {
+        match (old.get(&id.to_string()), new.get(&id.to_string())) {
+            (Some(a), Some(b)) => {
+                let owned_before = a["owned_rows"].as_i64().unwrap();
+                let owned_after = b["owned_rows"].as_i64().unwrap();
+                let unowned_before = a["unowned_rows"].as_i64().unwrap();
+                let unowned_after = b["unowned_rows"].as_i64().unwrap();
+                if owned_before != owned_after || unowned_before != unowned_after {
+                    changes.push(json!({"species_id":id,
+                        "before_owned_rows":owned_before,"after_owned_rows":owned_after,
+                        "owned_rows_delta":owned_after-owned_before,
+                        "before_unowned_rows":unowned_before,"after_unowned_rows":unowned_after,
+                        "unowned_rows_delta":unowned_after-unowned_before}));
+                }
+            }
+            (Some(_), None) => only_before.push(id),
+            (None, Some(_)) => only_after.push(id),
+            _ => {}
+        }
+    }
+    json!({"coverage":"filtered_journal_species","equal_filters":"unverified",
+        "collection_gains_or_losses":"unverified",
+        "before_displayed_rows":before["displayed_rows"],"after_displayed_rows":after["displayed_rows"],
+        "observed_only_before":only_before,"observed_only_after":only_after,
+        "observed_count_changes":changes})
 }
 
 fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {

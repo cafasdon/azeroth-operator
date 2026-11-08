@@ -43,6 +43,13 @@ not establish complete account ownership. The exporter does not open the
 journal, change filters, rename, cage, release, summon or start pet battles.
 See [verification](../../docs/pet-collection-view-verification-2026-11-08.md).
 
+Set `pet_view_changes: true` in `compare_snapshots` to compare two saved
+pet-journal views. Shared species report changed owned/unowned row counts;
+one-sided IDs are listed as observed only before or after. Names do not
+trigger changes. Missing either view returns null. Filter equality and
+collection gains/losses remain unverified. Same-character/client and capture
+ordering checks apply. See [comparison evidence](../../docs/pet-view-comparison-verification-2026-11-08.md).
+
 Search saved species observations with `list_snapshots.pet_species`, for example
 `{"family":"forever","pet_species":{"species_id":7,"minimum_owned_rows":1},"latest_per_character":true}`.
 Only `species_id` is required. Optional `minimum_owned_rows` and

@@ -2,6 +2,11 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+`compare_snapshots.pet_view_changes` compares saved filtered pet-journal
+views: shared species count changes and one-sided observed species IDs.
+It does not infer collection gains/losses or equal journal filters; missing
+views remain null. [Offline evidence](../../docs/pet-view-comparison-verification-2026-11-08.md).
+
 Basic profession observations retain sparse slots and reject unreadable,
 malformed or changing public rows as an unavailable section, preserving
 other valid export sections. This does not establish full profession or
