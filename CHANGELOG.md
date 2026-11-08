@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include destination names and observed fares when comparing Forever flight routes.
+
 - Locate captured food for the active Forever pet in carried bags.
 
 - Capture active pet level in Forever trainer panels and use it for lesson level gaps.

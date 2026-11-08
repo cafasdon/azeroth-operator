@@ -1757,7 +1757,9 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
                 .filter(|delta| *delta != 0);
             (state_changed || fare_delta.is_some()).then(|| {
                 json!({
-                    "node_id":id,"before_state":old["state"],"after_state":new["state"],
+                    "node_id":id,"name":new["name"],
+                    "before_state":old["state"],"after_state":new["state"],
+                    "before_fare_copper":old["fare_copper"],"after_fare_copper":new["fare_copper"],
                     "fare_copper_delta":fare_delta,
                 })
             })
@@ -1771,7 +1773,7 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
                 let before_fare = old["fare_copper"].as_u64();
                 let after_fare = new["fare_copper"].as_u64();
                 (before_fare.is_some() != after_fare.is_some()).then(|| json!({
-            "node_id":id,"before_fare_copper":before_fare,"after_fare_copper":after_fare,
+            "node_id":id,"name":new["name"],"before_fare_copper":before_fare,"after_fare_copper":after_fare,
             "status":if after_fare.is_some() {"became_observed"} else {"became_unknown"}
         }))
             })

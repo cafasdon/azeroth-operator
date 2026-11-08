@@ -601,6 +601,9 @@ fare at capture time.
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability
 changes and signed copper differences for shared destination IDs.
+Changed rows also show the destination name from the later capture and
+the observed fare on each side, so a newly reachable destination can show
+its current captured fare even when there is no price delta.
 Map transitions are excluded. Destinations seen on only one side are
 reported separately as coverage differences. A fare difference requires
 an observed quote on both sides. Quotes that appear or become unknown
