@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show whether a selected Forever currency entered or left its observed weekly cap.
+
 - Compare weekly earnings counters between saved Forever currency observations.
 
 - Reject malformed Forever currency balance captures in the Python importer before storage.

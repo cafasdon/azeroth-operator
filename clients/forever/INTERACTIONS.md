@@ -427,6 +427,9 @@ remain visible with their flags. These counters describe the capture.
 With `currency_id`, `compare_snapshots` reports `weekly_earned_delta`
 when both entries share the same account scope. A decrease records the
 counter change without establishing that a weekly reset occurred.
+The comparison also reports `weekly_headroom_change` when both entries
+share scope and have positive caps. It shows headroom on each side and
+whether it crossed zero. A change in the cap itself can cause a crossing.
 
 Add `currency_reward_quantity` to compare a proposed reward against the
 tightest recorded cap. An explicit `can_earn_per_week: false` excludes the

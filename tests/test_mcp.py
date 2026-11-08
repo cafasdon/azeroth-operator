@@ -815,6 +815,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(currency["after"]["earned_this_week"], 1)
                         self.assertEqual(currency["before"]["earned_this_week"], 10)
                         self.assertEqual(currency["weekly_earned_delta"], -9)
+                        self.assertEqual(currency["weekly_headroom_change"], {
+                            "before_remaining": 30, "after_remaining": 39,
+                            "reached_cap": False, "left_cap": False,
+                        })
                         self.assertEqual(currency["change"], {"direction": "increased", "amount": 5})
                         item_change = comparison_data["item_quantity_change"]
                         self.assertEqual(item_change["net_delta"], 0)
@@ -828,6 +832,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         currency = comparison_data["currency_balance_change"]
                         self.assertIsNone(currency["after"])
                         self.assertIsNone(currency["weekly_earned_delta"])
+                        self.assertIsNone(currency["weekly_headroom_change"])
                         self.assertIsNone(currency["change"])
                         item_change = comparison_data["item_quantity_change"]
                         self.assertIsNone(item_change["net_delta"])

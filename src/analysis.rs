@@ -675,8 +675,14 @@ pub fn compare_observations(
         let weekly_earned_delta = same_scope.and_then(|(a, b)| {
             Some(b["earned_this_week"].as_i64()? - a["earned_this_week"].as_i64()?)
         });
+        let weekly_headroom_change = same_scope.and_then(|(a, b)| {
+            let from = weekly_cap_remaining(a)?;
+            let to = weekly_cap_remaining(b)?;
+            Some(json!({"before_remaining":from,"after_remaining":to,
+                "reached_cap":from > 0 && to == 0,"left_cap":from == 0 && to > 0}))
+        });
         comparison["currency_balance_change"] = json!({"currency_id":currency_id,"before":previous,"after":current,"change":change,
-                "weekly_earned_delta":weekly_earned_delta});
+                "weekly_earned_delta":weekly_earned_delta,"weekly_headroom_change":weekly_headroom_change});
     }
     if let Some(faction_id) = selectors.faction_id {
         ensure!(
@@ -1540,6 +1546,13 @@ pub fn special_reputation_progress(section: &Value) -> Value {
     )
 }
 
+fn weekly_cap_remaining(entry: &Value) -> Option<u64> {
+    let cap = entry["max_weekly_quantity"]
+        .as_u64()
+        .filter(|cap| *cap > 0)?;
+    Some(cap.saturating_sub(entry["earned_this_week"].as_u64()?))
+}
+
 pub fn currency_cap_headroom(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;
@@ -1555,7 +1568,7 @@ pub fn currency_cap_headroom(section: &Value) -> Value {
         entries
             .iter()
             .filter_map(|(id, entry)| {
-                let weekly = remaining(entry, "max_weekly_quantity", "earned_this_week");
+                let weekly = weekly_cap_remaining(entry);
                 let basis = if entry["cap_uses_total_earned"].as_bool()? {
                     "total_earned"
                 } else {
