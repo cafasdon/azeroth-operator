@@ -165,6 +165,8 @@ struct Inspect {
     quest_reward_spell_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever currency by ID. Requires section "currency_balances".
     currency_id: Option<std::num::NonZeroU32>,
+    /// Filter saved Forever currencies by captured flags and cap headroom; no exact ID selection.
+    currency_filter: Option<azeroth_operator::analysis::CurrencyFilter>,
     /// Compare a proposed reward against this currency's recorded cap headroom.
     currency_reward_quantity: Option<std::num::NonZeroU64>,
     /// Select one saved Forever faction by ID. Requires section "reputation".
@@ -1830,6 +1832,7 @@ impl Operator {
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
+                || args.currency_filter.is_some()
                 || args.faction_id.is_some()
                 || args.reputation_filter.is_some()
                 || args.achievement_id.is_some()
@@ -1903,6 +1906,15 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest reward selection requires the quests section without a quest ID",
+            )]);
+        }
+        if args.currency_filter.as_ref().is_some_and(|filter| {
+            filter.is_empty()
+                || args.section.as_deref() != Some("currency_balances")
+                || args.currency_id.is_some()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Currency filters require nonempty predicates and currency_balances without currency_id",
             )]);
         }
         if args.currency_id.is_some() && args.section.as_deref() != Some("currency_balances") {
@@ -2893,8 +2905,33 @@ impl Operator {
                     }
                 }
                 if args.section.as_deref() == Some("currency_balances") {
-                    let headroom =
+                    let mut headroom =
                         azeroth_operator::analysis::currency_cap_headroom(&value["data"]);
+                    if let Some(filter) = args.currency_filter.as_ref() {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Currency filters require a saved Forever snapshot",
+                            )]);
+                        }
+                        value["currency_filter"] = serde_json::json!(filter);
+                        value["currency_filter_unknown_count"] = serde_json::json!(
+                            value["data"]
+                                .get_mut("entries")
+                                .and_then(serde_json::Value::as_object_mut)
+                                .map(|entries| {
+                                    let mut unknown = 0;
+                                    entries.retain(|id, entry| {
+                                        let matched = filter.matches(entry, &headroom[id]);
+                                        unknown += usize::from(matched.is_none());
+                                        matched == Some(true)
+                                    });
+                                    unknown
+                                })
+                        );
+                        if let Some(rows) = headroom.as_object_mut() {
+                            rows.retain(|id, _| value["data"]["entries"].get(id).is_some());
+                        }
+                    }
                     if let Some(id) = args.currency_id {
                         if value["client"]["family"] != "forever" {
                             return CallToolResult::error(vec![ContentBlock::text(

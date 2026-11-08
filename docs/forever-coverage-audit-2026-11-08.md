@@ -102,3 +102,8 @@ Later [reputation filtering](reputation-filter-verification-2026-11-08.md) adds
 visible-faction discovery by progression kind, caps/rank distance and captured
 paragon reward state. Explicit kind requirements keep different progression
 units separate; missing details remain unknown and native eligibility is unproven.
+
+Later [currency filtering](currency-filter-verification-2026-11-08.md) adds
+visible-currency discovery by recorded flags, positive caps and weekly/total
+headroom. It retains cap basis and unknown earning observations; current earning
+eligibility, reset behaviour and complete currency coverage remain unqualified.

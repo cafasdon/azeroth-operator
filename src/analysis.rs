@@ -3118,6 +3118,79 @@ pub(crate) fn currency_entry_cap_headroom(entry: &Value) -> Option<Value> {
     })
 }
 
+#[derive(Clone, Default, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CurrencyFilter {
+    pub account_wide: Option<bool>,
+    pub inactive: Option<bool>,
+    pub can_earn_per_week: Option<bool>,
+    pub has_weekly_cap: Option<bool>,
+    pub has_total_cap: Option<bool>,
+    pub maximum_weekly_remaining: Option<u64>,
+    pub maximum_total_remaining: Option<u64>,
+}
+
+impl CurrencyFilter {
+    pub fn is_empty(&self) -> bool {
+        self.account_wide.is_none()
+            && self.inactive.is_none()
+            && self.can_earn_per_week.is_none()
+            && self.has_weekly_cap.is_none()
+            && self.has_total_cap.is_none()
+            && self.maximum_weekly_remaining.is_none()
+            && self.maximum_total_remaining.is_none()
+    }
+
+    pub fn matches(&self, entry: &Value, headroom: &Value) -> Option<bool> {
+        let mut unknown = false;
+        for (actual, expected) in [
+            (entry["account_wide"].as_bool(), self.account_wide),
+            (entry["inactive"].as_bool(), self.inactive),
+            (entry["can_earn_per_week"].as_bool(), self.can_earn_per_week),
+            (
+                entry["max_weekly_quantity"].as_u64().map(|cap| cap > 0),
+                self.has_weekly_cap,
+            ),
+            (
+                entry["max_quantity"].as_u64().map(|cap| cap > 0),
+                self.has_total_cap,
+            ),
+        ] {
+            if let Some(expected) = expected {
+                match actual {
+                    Some(actual) if actual != expected => return Some(false),
+                    Some(_) => {}
+                    None => unknown = true,
+                }
+            }
+        }
+        for (maximum, cap_field, remaining_field) in [
+            (
+                self.maximum_weekly_remaining,
+                "max_weekly_quantity",
+                "weekly_remaining",
+            ),
+            (
+                self.maximum_total_remaining,
+                "max_quantity",
+                "maximum_remaining",
+            ),
+        ] {
+            if let Some(maximum) = maximum {
+                if entry[cap_field].as_u64() == Some(0) {
+                    return Some(false);
+                }
+                match headroom[remaining_field].as_u64() {
+                    Some(remaining) if remaining > maximum => return Some(false),
+                    Some(_) => {}
+                    None => unknown = true,
+                }
+            }
+        }
+        if unknown { None } else { Some(true) }
+    }
+}
+
 pub fn currency_cap_headroom(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;

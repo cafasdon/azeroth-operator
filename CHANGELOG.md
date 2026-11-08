@@ -1,5 +1,9 @@
 # Changelog
 
+- Search saved currencies by captured flags, positive weekly/total caps and
+  remaining headroom, retaining lifetime-earned cap basis, unknown earning flags
+  and matching-only derived maps without claiming live earning eligibility.
+
 - Search visible saved reputation by explicit progression kind, account-wide
   status, rank cap/distance and paragon reward state, preserving unknown progress
   and filtering derived maps to the same retained factions.

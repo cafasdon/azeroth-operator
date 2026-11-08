@@ -13,6 +13,11 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`inspect_snapshot` accepts `currency_filter` for saved Forever `currency_balances`:
+captured account/inactive/weekly-earning flags, positive-cap presence and weekly/
+total headroom bounds. Missing earning observations remain unknown; zero cap
+values do not become zero headroom. [Evidence](docs/currency-filter-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `reputation_filter` on the saved Forever `reputation`
 section: progression kind, account-wide flag, capped state, rank distance and
 paragon reward status. Rank predicates require an explicit compatible kind;
