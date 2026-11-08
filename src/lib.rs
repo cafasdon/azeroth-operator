@@ -321,6 +321,8 @@ pub struct CaptureFilters<'a> {
     pub minimum_general_free_bag_slots: Option<u32>,
     pub bag_family_space: Option<BagFamilySpaceFilter>,
     pub pet_food: Option<PetFoodCaptureFilter>,
+    pub minimum_rested_xp: Option<u32>,
+    pub xp_gain_enabled_only: bool,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
@@ -451,6 +453,8 @@ impl Store {
             minimum_general_free_bag_slots,
             bag_family_space,
             pet_food,
+            minimum_rested_xp,
+            xp_gain_enabled_only,
             merchant_item_id,
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
@@ -641,6 +645,11 @@ impl Store {
         let pet_food_key = pet_food
             .as_ref()
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
+        let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
+        ensure!(
+            !filter_experience || family == Family::Forever,
+            "Experience filtering requires Forever"
+        );
         ensure!(
             (!filter_repair || family == Family::Forever)
                 && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999),
@@ -725,6 +734,22 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let experience_match = if filter_experience {
+                        let Some(xp) = s.sections.get("experience").filter(|xp| {
+                            xp["status"] == "progress"
+                                && (!xp_gain_enabled_only || xp["xp_disabled"] == false)
+                                && minimum_rested_xp.is_none_or(|minimum| {
+                                    xp["rested_xp"]
+                                        .as_u64()
+                                        .is_some_and(|rested| rested >= u64::from(minimum))
+                                })
+                        }) else {
+                            continue;
+                        };
+                        Some(json!({"rested_xp":xp["rested_xp"],"xp_disabled":xp["xp_disabled"]}))
+                    } else {
+                        None
+                    };
                     if food_capture.as_ref().is_some_and(|food| {
                         analysis::ensure_same_character_and_client(food, &s).is_err()
                     }) {
@@ -982,6 +1007,9 @@ impl Store {
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
                     if let Some(food) = pet_food_match {
                         summary["pet_food_match"] = food;
+                    }
+                    if let Some(experience) = experience_match {
+                        summary["experience_match"] = experience;
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

@@ -278,6 +278,12 @@ status changed. Each comparison requires that observation on both sides.
 to the XP recorded in the next level. It requires a positive starting
 level, exactly one level of increase and observed progress counters in both captures. Capped or
 skipped levels leave that estimate unknown.
+
+Use `list_snapshots` with `family: "forever"` and `minimum_rested_xp`
+to find captures with an observed bonus pool at or above the threshold.
+`xp_gain_enabled_only` requires an explicit unlocked XP flag.
+Both filters exclude capped captures and can be combined. A zero
+threshold still requires an observed pool. Results describe saved XP.
 Update the importer and reader before syncing new captures. [Player frame source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UnitFrame/Mainline/PlayerFrame.lua)
 
 `character_summary` reports the saved `new_mail_indicator` when the

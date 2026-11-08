@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by rested XP and explicitly enabled XP gain.
+
 - Calculate saved Forever XP progression across a single observed level-up.
 
 - Compare saved Forever rested XP, resting, XP lock and cap status.

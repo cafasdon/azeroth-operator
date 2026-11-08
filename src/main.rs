@@ -275,6 +275,11 @@ struct List {
     bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
     /// Find saved captures with enough carried food classified as accepted by the active pet.
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
+    /// Minimum rested XP recorded in a saved Forever capture.
+    minimum_rested_xp: Option<u32>,
+    /// Require an uncapped XP observation with XP gain explicitly enabled.
+    #[serde(default)]
+    xp_gain_enabled_only: bool,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1180,6 +1185,8 @@ impl Operator {
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
                 bag_family_space: args.bag_family_space,
                 pet_food: args.pet_food,
+                minimum_rested_xp: args.minimum_rested_xp,
+                xp_gain_enabled_only: args.xp_gain_enabled_only,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),

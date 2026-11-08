@@ -956,6 +956,37 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         capped_travel = json.loads(json.dumps(travel))
                         capped_travel["sections"]["experience"] = {"status": "level_capped"}
                         capped_id = SnapshotStore(Path(folder)).ingest(capped_travel)
+                        locked_travel = json.loads(json.dumps(travel))
+                        locked_travel["sections"]["experience"].update({
+                            "rested_xp": 40, "xp_disabled": True,
+                        })
+                        locked_id = SnapshotStore(Path(folder)).ingest(locked_travel)
+                        rested_query = {"family": "forever", "minimum_rested_xp": 40,
+                                        "xp_gain_enabled_only": True}
+                        rested = await session.call_tool("list_snapshots", rested_query)
+                        self.assertFalse(rested.isError)
+                        rested_rows = json.loads(rested.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in rested_rows], [travel_before])
+                        self.assertEqual(rested_rows[0]["experience_match"], {
+                            "rested_xp": 40, "xp_disabled": False,
+                        })
+                        any_lock_state = await session.call_tool("list_snapshots", {
+                            **rested_query, "xp_gain_enabled_only": False,
+                        })
+                        self.assertFalse(any_lock_state.isError)
+                        self.assertEqual([row["snapshot_id"] for row in
+                                          json.loads(any_lock_state.content[0].text)["snapshots"]],
+                                         [locked_id, travel_before])
+                        zero_rested = await session.call_tool("list_snapshots", {
+                            **rested_query, "minimum_rested_xp": 0,
+                        })
+                        self.assertFalse(zero_rested.isError)
+                        zero_rows = json.loads(zero_rested.content[0].text)["snapshots"]
+                        self.assertIn(travel_after, [row["snapshot_id"] for row in zero_rows])
+                        self.assertNotIn(capped_id, [row["snapshot_id"] for row in zero_rows])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **rested_query, "family": "retail",
+                        })).isError)
                         cap_change = await session.call_tool("compare_snapshots", {
                             "before_id": travel_before, "after_id": capped_id, "experience": True,
                         })
