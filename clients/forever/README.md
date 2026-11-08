@@ -4,6 +4,30 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+## Execute a saved gear journal page offline
+
+`python -m tools.run_forever_journal_page --help` exposes the same trusted MCP,
+template, encounter, pinned engine and private simulation-journal arguments as
+the saved-window encounter executor. It selects the next saved window starts
+automatically, with `--page-limit 1..64` (default eight), instead of requiring
+individual `--window-offset` arguments. Encounter lookup and weight arguments
+may repeat; run, iteration and time budgets apply across the selected page and
+its encounters. `--checkpoint-only` revalidates and reports saved results.
+
+Start without `--after-window-offset`. If `journal_page.resume_same_page` is
+true, repeat the same invocation to resume missing results. Otherwise pass the
+returned `journal_page.resume_after_window_offset_decimal` as
+`--after-window-offset` to select the next page. A null continuation with a
+complete page means no later saved row was observed. Reaching the end of stored
+rows does not establish complete search coverage. An empty page reports
+`no_saved_windows_after_cursor` without running the MCP or simulator.
+
+The cursor is a caller-selected position, not a receipt for previous pages.
+Each comparison ranks only selected resolved work. Prior-page verification,
+global ranking, feasible-set coverage and verified BiS remain false. Changed
+selected rows or next-row observations reject the report; completed private
+numeric checkpoints remain available. See [ADR 017](../../docs/ADR-017-saved-journal-page-execution.md).
+
 Non-pet `trainer_services` can include optional `primary_profession_slots_full`
 and per-lesson `is_profession`, reflecting the API's profession-acquisition
 flag. With `inspect_snapshot.trainer_requirements_review: true`,

@@ -20,6 +20,24 @@ from tools.rank_forever_slot import collect, plan_report
 from tools import run_forever_encounter_windows as runner
 
 
+class InheritedEncounterDeadlineTests(unittest.TestCase):
+    def test_inherited_deadline_validation_and_clamping(self):
+        args = SimpleNamespace(encounter_lookup=[Path('encounter.json')], encounter_weight=None,
+            max_new_runs=1, iteration_budget=3, time_budget_seconds=1)
+        observed = []
+        async def saved(options, *, deadline=None):
+            observed.append(deadline)
+            raise RuntimeError('captured inherited deadline')
+        with patch.object(runner, 'monotonic', return_value=1.0), patch.object(runner.saved, 'execute', saved):
+            for invalid in [1.0, 0, True, float('nan'), float('inf'), float('-inf'), '2']:
+                with self.assertRaises(ValueError): asyncio.run(runner.execute(args, deadline=invalid))
+            self.assertEqual(observed, [])
+            for inherited in [1.2, 10.0]:
+                with self.assertRaisesRegex(RuntimeError, 'captured inherited deadline'):
+                    asyncio.run(runner.execute(args, deadline=inherited))
+        self.assertEqual(observed, [1.2, 2.0])
+
+
 class RunEncounterWindowTests(unittest.TestCase):
     def test_shared_finalization_rejects_late_weighted_result(self):
         args = SimpleNamespace(encounter_lookup=['fixture'], encounter_weight=[1], max_new_runs=1,

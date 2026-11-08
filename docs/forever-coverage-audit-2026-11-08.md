@@ -148,3 +148,10 @@ rotation against sparse synthetic captures: four resumed unique requests,
 six checkpoint hits on retry, and exact agreement with four uncached reference
 runs. This qualifies persistence and execution for that fixture only; live
 and full owned-BiS qualification remain pending.
+
+The [saved-journal page runner](journal-page-execution-verification-2026-11-09.md)
+then adds indexed next-window selection and an explicit continuation cursor,
+with partial-page retries using existing checkpoints. It supports processing
+larger journals without manual offset lists, while leaving past-page/global
+ranking and full owned BiS unverified. Automatic invocation scheduling and
+global result aggregation are still unfinished.

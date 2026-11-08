@@ -24,14 +24,16 @@ def normalise_weights(weights, count):
     return result
 
 
-async def execute(args):
+async def execute(args, *, deadline=None):
     count = len(args.encounter_lookup)
     require(1 <= count <= 8)
     weights = normalise_weights(args.encounter_weight, count)
     integer(args.max_new_runs, 1, 128)
     integer(args.iteration_budget, 1, 100000)
     integer(args.time_budget_seconds, 1, 3600)
-    deadline = monotonic() + args.time_budget_seconds
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+    deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     profiles, results, identities, gear = [], [], None, {}
     new_runs = new_iterations = hits = size = 0
     for index, path in enumerate(args.encounter_lookup, 1):

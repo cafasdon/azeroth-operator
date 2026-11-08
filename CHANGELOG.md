@@ -1,5 +1,9 @@
 # Changelog
 
+- Run saved gear journals by bounded indexed pages, with explicit continuation
+  cursors, same-page retry for incomplete work, shared encounter budgets and
+  selection drift checks; keep prior-page and global ranking claims false.
+
 - Qualify saved-window encounter resume and checkpoint reuse with the pinned
   real simulator, public Hunter rotation and synthetic owner captures; retain
   an opt-in offline regression without downloading or installing anything.
