@@ -253,6 +253,13 @@ currency requirements separately. Missing stock, balances or components
 remain unknown. The review does not check stock sufficiency, spending
 eligibility or current purchase availability.
 
+Each offer budget also reports `captured_resource_capacity`. It shows the
+maximum bundles covered by the saved wallet and bags when the costs are
+known. A known zero capacity is conclusive for that capture even if
+another cost is unknown. An offer with no recorded resource cost has no
+resource-based cap. Cart lines show capacity for each offer on its own.
+Use the combined cart budget to account for resources shared by lines.
+
 With `section: "merchant_stock"`, use `merchant_item_id` or
 `merchant_currency_id` to find offers selling that exact ID. Matching
 offers retain their original slots for later budget review. A zero match

@@ -1892,12 +1892,30 @@ pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Resu
         }
     }
     let mut tokens = Vec::new();
+    let mut resource_limits = Vec::new();
+    let mut balances_known = price == 0 || wallet.is_some();
+    if price > 0 {
+        resource_limits.extend(wallet.map(|balance| balance / price));
+    }
     for (id, required) in token_costs {
         let found = find_item(snapshot, id, 0, 1)?;
         let carried = found["quantity_by_storage"]["bags"].as_u64();
+        balances_known &= carried.is_some();
+        resource_limits.extend(carried.map(|count| count / (required / bundles)));
         tokens.push(json!({"item_id":id,"required_quantity":required,"shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
     }
     let costs_observed = offer["extended_cost"].as_bool() == Some(false) || components.is_some();
+    let resource_upper_bound = resource_limits.into_iter().min();
+    let resource_capacity = if resource_upper_bound == Some(0)
+        || (costs_observed && named_currencies.is_empty() && balances_known)
+    {
+        json!({
+            "status":if resource_upper_bound.is_some() {"bounded"} else {"no_recorded_cost"},
+            "max_bundles":resource_upper_bound
+        })
+    } else {
+        json!({"status":"unknown","max_bundles":null})
+    };
     let stock = match offer["available"].as_i64() {
         Some(-1) => "unlimited",
         Some(0) => "sold_out",
@@ -1907,6 +1925,7 @@ pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Resu
     Ok(json!({
         "requested_bundles":bundles,"requested_quantity":size * bundles,"required_copper":copper,
         "captured_stock_status":stock,"captured_available":offer["available"],
+        "captured_resource_capacity":resource_capacity,
         "wallet_shortfall_copper":wallet.map(|balance| copper.saturating_sub(balance)),
         "item_token_costs":costs_observed.then_some(tokens),
         "named_currency_costs":costs_observed.then_some(named_currencies)
