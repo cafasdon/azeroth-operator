@@ -1702,12 +1702,55 @@ pub fn quest_list_wallet_projection(
     json!({
         "known_required_copper":known_cost,"unknown_cost_count":unknown_cost,
         "known_reward_copper":u64::try_from(known_reward).ok(),"unknown_reward_count":unknown_reward,
+        "ready_turn_in_order":quest_wallet_turn_in_order(quests, balance),
         "wallet_observed":balance.is_some(),
         "known_cost_shortfall_without_rewards_copper":estimate.map(|(cost,balance)| cost.saturating_sub(balance)),
         "all_costs_fit_wallet_without_rewards":estimate.and_then(|(cost,balance)| {
             if cost > balance { Some(false) } else if unknown_cost == 0 { Some(true) } else { None }
         })
     })
+}
+
+fn quest_wallet_turn_in_order(
+    quests: &serde_json::Map<String, Value>,
+    balance: Option<u64>,
+) -> Option<Value> {
+    let mut steps = quests
+        .iter()
+        .map(|(id, quest)| {
+            if quest_readiness(quest) != QuestReadiness::Ready {
+                return None;
+            }
+            Some((
+                id,
+                quest["required_copper"].as_u64()?,
+                quest["reward_amounts"]["copper"].as_u64()?,
+            ))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    if steps.is_empty() {
+        return None;
+    }
+    // Do net gains first (cheapest first), then net losses (largest reward first).
+    steps.sort_by_key(|(_, cost, reward)| {
+        if reward >= cost {
+            (false, *cost)
+        } else {
+            (true, u64::MAX - reward)
+        }
+    });
+    let mut net = 0i128;
+    let mut minimum = 0i128;
+    for (_, cost, reward) in &steps {
+        minimum = minimum.max(i128::from(*cost) - net);
+        net += i128::from(*reward) - i128::from(*cost);
+    }
+    let minimum = u64::try_from(minimum).ok()?;
+    Some(json!({
+        "quest_ids":steps.into_iter().map(|(id, _, _)| id).collect::<Vec<_>>(),
+        "minimum_starting_copper":minimum,
+        "shortfall_copper":balance.map(|balance| minimum.saturating_sub(balance))
+    }))
 }
 
 pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
