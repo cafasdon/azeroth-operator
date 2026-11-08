@@ -299,11 +299,15 @@ pub fn ordered_recipe_materials<'a>(
                     .map(|count| needed.saturating_sub(count));
                 if shortfall != Some(0) {
                     insufficient_stock |= shortfall.is_some();
+                    let (bag_shortfall, withdrawals) =
+                        bag_restock(&material["quantity_by_storage"], needed);
                     blocking_reagents.insert(
                         item,
                         json!({
                             "starting_units_needed_through_recipe":needed,
-                            "shortfall_vs_observed":shortfall
+                            "shortfall_vs_observed":shortfall,
+                            "shortfall_vs_bags":bag_shortfall,
+                            "suggested_bank_withdrawals":withdrawals
                         }),
                     );
                 }

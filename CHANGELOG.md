@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Suggest observed bank withdrawals for reagents blocking a Forever batch checkpoint.
+
 - Identify missing reagent quantities at the first uncovered Forever batch recipe.
 
 - Identify the first Forever batch recipe whose materials are not covered by observed stock.

@@ -864,6 +864,8 @@ minimum output. This checks materials in the supplied order.
 The first uncovered recipe lists blocking reagents by item ID. It reports
 starting units needed through that recipe after earlier consumption and
 known outputs, plus the shortfall when stock was observed.
+It also shows the bag shortfall and suggested withdrawals from observed
+banks through that checkpoint. A withdrawal can cover part of a shortage.
 
 Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include

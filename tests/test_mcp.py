@@ -740,7 +740,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "reason": "shortfall_vs_observed_stock",
                                 "blocking_reagents_by_item_id": {
                                     "744": {"starting_units_needed_through_recipe": 13,
-                                            "shortfall_vs_observed": 1},
+                                            "shortfall_vs_observed": 1, "shortfall_vs_bags": 1,
+                                            "suggested_bank_withdrawals": {
+                                                "character_bank": None, "account_bank": 0,
+                                            }},
                                 },
                             },
                         })
