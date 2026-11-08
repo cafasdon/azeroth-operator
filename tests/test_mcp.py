@@ -738,6 +738,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "first_uncovered_recipe": {
                                 "recipe_number": 2, "recipe_id": 101,
                                 "reason": "shortfall_vs_observed_stock",
+                                "blocking_reagents_by_item_id": {
+                                    "744": {"starting_units_needed_through_recipe": 13,
+                                            "shortfall_vs_observed": 1},
+                                },
                             },
                         })
                         combined = {row["item_id"]: row for row in batch_data["combined_materials"]}

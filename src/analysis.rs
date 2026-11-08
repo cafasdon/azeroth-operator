@@ -277,7 +277,7 @@ pub fn ordered_recipe_materials<'a>(
     let mut covered_prefix = 0usize;
     let mut first_uncovered = None;
     for (index, review) in reviews.enumerate() {
-        let mut unknown_stock = false;
+        let mut blocking_reagents = BTreeMap::new();
         let mut insufficient_stock = false;
         for material in review["materials"].as_array().into_iter().flatten() {
             let item = material["item_id"]
@@ -294,17 +294,27 @@ pub fn ordered_recipe_materials<'a>(
             *minimum = (*minimum).max((*available).min(0).unsigned_abs());
             if first_uncovered.is_none() && *available < 0 {
                 let needed = available.unsigned_abs();
-                match material["quantity_observed"].as_u64() {
-                    Some(count) => insufficient_stock |= count < needed,
-                    None => unknown_stock = true,
+                let shortfall = material["quantity_observed"]
+                    .as_u64()
+                    .map(|count| needed.saturating_sub(count));
+                if shortfall != Some(0) {
+                    insufficient_stock |= shortfall.is_some();
+                    blocking_reagents.insert(
+                        item,
+                        json!({
+                            "starting_units_needed_through_recipe":needed,
+                            "shortfall_vs_observed":shortfall
+                        }),
+                    );
                 }
             }
         }
         if first_uncovered.is_none() {
-            if insufficient_stock || unknown_stock {
+            if !blocking_reagents.is_empty() {
                 first_uncovered = Some(json!({"recipe_number":index + 1,
                     "recipe_id":review["recipe"]["recipe_id"],
-                    "reason":if insufficient_stock {"shortfall_vs_observed_stock"} else {"stock_unknown"}}));
+                    "reason":if insufficient_stock {"shortfall_vs_observed_stock"} else {"stock_unknown"},
+                    "blocking_reagents_by_item_id":blocking_reagents}));
             } else {
                 covered_prefix += 1;
             }
