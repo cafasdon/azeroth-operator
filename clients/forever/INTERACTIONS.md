@@ -122,6 +122,9 @@ cheapest single-offer bundle plan per visit as `lowest_cost_quantity_plan`.
 Equal costs prefer the lower merchant slot. Affordability, when requested,
 uses the full bundle cost. The price ceiling still applies per bundle.
 This estimate uses captured offers and keeps different items separate.
+Set `merchant_cheapest_first: true` with a target quantity to rank visits
+by that total before pagination. Equal totals use the usual newest-first
+order, then the snapshot ID.
 
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side. When both captures have

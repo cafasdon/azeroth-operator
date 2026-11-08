@@ -325,6 +325,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
     pub merchant_target_quantity: Option<std::num::NonZeroU32>,
+    pub merchant_cheapest_first: bool,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
     pub merchant_copper_only: bool,
@@ -453,6 +454,7 @@ impl Store {
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
             merchant_target_quantity,
+            merchant_cheapest_first,
             merchant_max_price_copper,
             merchant_in_stock_only,
             merchant_copper_only,
@@ -534,6 +536,10 @@ impl Store {
             merchant_target_quantity
                 .is_none_or(|quantity| filter_merchant && quantity.get() <= 1000),
             "Merchant quantity filtering requires an offer selector and up to 1000 units"
+        );
+        ensure!(
+            !merchant_cheapest_first || merchant_target_quantity.is_some(),
+            "Cheapest-first merchant ordering requires a target quantity"
         );
         ensure!(
             !filter_merchant || family == Family::Forever,
@@ -1048,7 +1054,21 @@ impl Store {
                 Err(_) => invalid += 1,
             }
         }
-        rows.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+        let purchase_cost = |summary: &Value| {
+            summary["merchant_match"]["lowest_cost_quantity_plan"]["plan"]["required_copper"]
+                .as_u64()
+                .unwrap_or(u64::MAX)
+        };
+        rows.sort_by(|a, b| {
+            let cost_order = if merchant_cheapest_first {
+                purchase_cost(&a.2).cmp(&purchase_cost(&b.2))
+            } else {
+                std::cmp::Ordering::Equal
+            };
+            cost_order
+                .then_with(|| b.0.cmp(&a.0))
+                .then_with(|| a.1.cmp(&b.1))
+        });
         let has_more = rows.len().saturating_sub(offset) > limit;
         let snapshots: Vec<_> = rows
             .into_iter()

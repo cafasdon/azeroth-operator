@@ -283,6 +283,9 @@ struct List {
     merchant_pet_food_snapshot_id: Option<String>,
     /// Require one unlimited copper-only offer to cover this quantity, up to 1000 units.
     merchant_target_quantity: Option<std::num::NonZeroU32>,
+    /// Sort matching merchant visits by the full bundle cost. Requires merchant_target_quantity.
+    #[serde(default)]
+    merchant_cheapest_first: bool,
     /// Limit the captured copper component per bundle of a matching merchant offer.
     merchant_max_price_copper: Option<u64>,
     /// Require an offer with unlimited or positive captured stock.
@@ -1179,6 +1182,7 @@ impl Operator {
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),
                 merchant_target_quantity: args.merchant_target_quantity,
+                merchant_cheapest_first: args.merchant_cheapest_first,
                 merchant_max_price_copper: args.merchant_max_price_copper,
                 merchant_in_stock_only: args.merchant_in_stock_only,
                 merchant_copper_only: args.merchant_copper_only,

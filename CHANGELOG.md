@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Sort saved Forever merchant visits by total bundle cost for a requested quantity.
+
 - Find saved Forever merchant visits that can cover a target quantity using an unlimited copper-only offer.
 
 - Search saved Forever merchant visits for previously accepted pet food, including stock and price filters.
