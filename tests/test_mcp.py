@@ -154,6 +154,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "1": {"name": "Fixture profession", "rank": 20, "max_rank": 75, "skill_line": 164}}
                         forever["sections"]["quests"] = {
                             "42":{"title":"Fixture quest","level":10,"ready_for_turn_in":False,
+                                  "timer":{"total_seconds":100,"remaining_seconds":74},
                                   "objectives":{
                                       "1":{"kind":"item","finished":False,"fulfilled":0,"required":5},
                                       "2":{"kind":"event","finished":False},
@@ -474,6 +475,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(renown.content[0].text)["wallet_change"], {
                             "before_copper": 0, "after_copper": None, "delta_copper": None})
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
+                        reputation_after["sections"]["quests"]["42"]["timer"]["remaining_seconds"] = 0
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
                         criteria["1"], criteria["2"] = criteria["2"], criteria["1"]
@@ -490,6 +492,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         quest = progress_data["quest_change"]
                         self.assertTrue(quest["ready_for_turn_in_changed"])
                         self.assertIsNone(quest["failed_changed"])
+                        self.assertEqual(quest["timer_change"], {
+                            "before_observed": True, "after_observed": True,
+                            "remaining_seconds_delta": -74, "total_seconds_delta": 0,
+                        })
                         self.assertEqual(quest["after"]["objectives"]["1"]["fulfilled"], 2)
                         achievement = progress_data["achievement_change"]
                         self.assertTrue(achievement["completed_changed"])

@@ -724,6 +724,24 @@ pub fn compare_observations(
             "ready_for_turn_in_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "ready_for_turn_in"),
             "failed_changed":observed_flag_changed(previous.as_ref(), current.as_ref(), "failed")
         });
+        let timer = |quest: Option<&Value>| {
+            let timer = quest?.get("timer")?;
+            Some((
+                timer["remaining_seconds"].as_i64()?,
+                timer["total_seconds"].as_i64()?,
+            ))
+        };
+        let (old_timer, new_timer) = (timer(previous.as_ref()), timer(current.as_ref()));
+        if before.client.family == crate::Family::Forever
+            && (old_timer.is_some() || new_timer.is_some())
+        {
+            let pair = old_timer.zip(new_timer);
+            comparison["quest_change"]["timer_change"] = json!({
+                "before_observed":old_timer.is_some(),"after_observed":new_timer.is_some(),
+                "remaining_seconds_delta":pair.map(|(old,new)| new.0 - old.0),
+                "total_seconds_delta":pair.map(|(old,new)| new.1 - old.1)
+            });
+        }
     }
     if selectors.quest_waypoints {
         ensure!(

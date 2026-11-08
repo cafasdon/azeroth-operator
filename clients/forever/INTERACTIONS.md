@@ -511,6 +511,9 @@ returned. These are saved observations and do not count down after export.
 Each row includes the captured total and `estimated_end_at`, calculated
 as capture time plus the recorded remaining seconds. The estimate assumes
 the timer continued without changes after capture.
+With `quest_id` in `compare_snapshots`, the timer comparison reports
+which captures recorded a timer and gives signed remaining and total
+second changes when both did. A missing timer does not establish expiry.
 Update the importer and reader before syncing the new field. [Forever quest tracker](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_ObjectiveTracker/Blizzard_QuestObjectiveTracker.lua)
 
 The selected quest can include `currency_rewards`, indexed by reward row.
