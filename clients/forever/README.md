@@ -15,6 +15,16 @@ not establish complete account ownership. The exporter does not open the
 journal, change filters, rename, cage, release, summon or start pet battles.
 See [verification](../../docs/pet-collection-view-verification-2026-11-08.md).
 
+Search saved species observations with `list_snapshots.pet_species`, for example
+`{"family":"forever","pet_species":{"species_id":7,"minimum_owned_rows":1},"latest_per_character":true}`.
+Only `species_id` is required. Optional `minimum_owned_rows` and
+`minimum_unowned_rows` are inclusive and must match that same species. An
+observed row is required even at zero thresholds. Bare species queries match
+either ownership state in the filtered view; missing species never match.
+Results include `pet_species_match` with the captured counts, public name and
+partial coverage. They do not prove complete account ownership or absence.
+Date, character, newest-capture and pagination filters still apply.
+
 `inspect_snapshot` accepts `section: "mail_attachments"` for pending attachments
 in the loaded inbox while the player's inbox panel is visible and idle. It
 records loaded/total message counts and attachment positions, IDs and quantities

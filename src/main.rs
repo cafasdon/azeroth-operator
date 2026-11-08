@@ -308,6 +308,8 @@ struct List {
     profession_recipe: Option<azeroth_operator::ProfessionRecipeFilter>,
     /// Match a known pending attachment in the saved loaded inbox, never spendable stock.
     mail_attachment: Option<azeroth_operator::MailAttachmentFilter>,
+    /// Match a species observed in the saved filtered pet journal, not full account ownership.
+    pet_species: Option<azeroth_operator::PetSpeciesFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1293,6 +1295,7 @@ impl Operator {
                 saved_world_boss: args.saved_world_boss,
                 profession_recipe: args.profession_recipe,
                 mail_attachment: args.mail_attachment,
+                pet_species: args.pet_species,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved filtered pet-journal observations by species ID and owned/unowned row thresholds, preserving partial-view scope.
+
 - Capture filtered pet-journal species observations without individual pet GUIDs, custom names or journal actions.
 
 - Compare observed learning flags across compatible saved profession recipe views, preserving unknowns, profession changes and filtered-list scope.

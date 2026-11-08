@@ -378,6 +378,15 @@ pub struct MailAttachmentFilter {
     pub minimum_quantity: Option<u64>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PetSpeciesFilter {
+    pub species_id: std::num::NonZeroU32,
+    /// Minimum owned rows in the captured filtered view, not the whole account.
+    pub minimum_owned_rows: Option<u32>,
+    pub minimum_unowned_rows: Option<u32>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -408,6 +417,7 @@ pub struct CaptureFilters<'a> {
     pub saved_world_boss: Option<SavedWorldBossFilter>,
     pub profession_recipe: Option<ProfessionRecipeFilter>,
     pub mail_attachment: Option<MailAttachmentFilter>,
+    pub pet_species: Option<PetSpeciesFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -603,6 +613,7 @@ impl Store {
             saved_world_boss,
             profession_recipe,
             mail_attachment,
+            pet_species,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -669,6 +680,13 @@ impl Store {
             mail_attachment.is_none() || family == Family::Forever,
             "Pending mail attachment filtering requires Forever"
         );
+        ensure!(
+            pet_species.is_none() || family == Family::Forever,
+            "Pet species view filtering requires Forever"
+        );
+        let pet_species_key = pet_species
+            .as_ref()
+            .map(|filter| filter.species_id.to_string());
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -1006,6 +1024,18 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
+                        let view=s.sections.get("pet_collection_view")?;
+                        let row=view["entries"].get(key)?;
+                        (filter.minimum_owned_rows.is_none_or(|minimum|row["owned_rows"].as_u64().unwrap()>=u64::from(minimum))
+                            && filter.minimum_unowned_rows.is_none_or(|minimum|row["unowned_rows"].as_u64().unwrap()>=u64::from(minimum)))
+                            .then(||json!({"coverage":view["coverage"],"displayed_rows":view["displayed_rows"],
+                                "species_id":filter.species_id,"name":row["name"],
+                                "owned_rows":row["owned_rows"],"unowned_rows":row["unowned_rows"]}))
+                    });
+                    if pet_species.is_some() && pet_species_match.is_none() {
+                        continue;
+                    }
                     let mail_attachment_match = mail_attachment.as_ref().and_then(|filter| {
                         let mail=s.sections.get("mail_attachments")?;
                         let (kind,field)=match filter.kind {
@@ -1564,6 +1594,9 @@ impl Store {
                     }
                     if let Some(observation) = mail_attachment_match {
                         summary["mail_attachment_match"] = observation;
+                    }
+                    if let Some(observation) = pet_species_match {
+                        summary["pet_species_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

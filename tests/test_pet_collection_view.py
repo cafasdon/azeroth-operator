@@ -27,10 +27,15 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
             value['sections']['pet_collection_view']=view
             key=store.ingest(value)
             empty=copy.deepcopy(value)
+            empty['character']['name']='Empty'
             empty['sections']['pet_collection_view'].update(displayed_rows=0,entries={})
             empty_key=store.ingest(empty)
-            missing=copy.deepcopy(value);missing['sections'].pop('pet_collection_view')
+            missing=copy.deepcopy(value);missing['character']['name']='Missing';missing['sections'].pop('pet_collection_view')
             missing_key=store.ingest(missing)
+            later=copy.deepcopy(value)
+            later['captured_at']='2025-01-02T00:00:00Z'
+            later['sections'].pop('pet_collection_view')
+            store.ingest(later)
             bad_keys=[]
             for change in [
                 lambda x:x['client'].update(family='retail'),
@@ -52,6 +57,34 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    async def search(**arguments):
+                        response=await session.call_tool('list_snapshots',{'family':'forever',**arguments})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+                    for species,owned,unowned,expected in [(7,2,0,1),(7,3,0,0),(7,1,1,0),
+                        (8,0,1,1),(8,1,0,0),(9,0,0,0)]:
+                        args={'character':value['character'],'pet_species':{'species_id':species,
+                            'minimum_owned_rows':owned,'minimum_unowned_rows':unowned}}
+                        rows=(await search(**args))['snapshots']
+                        self.assertEqual(len(rows),expected)
+                        if rows:
+                            self.assertEqual(rows[0]['snapshot_id'],key)
+                            self.assertEqual(rows[0]['pet_species_match'],{
+                                'coverage':'filtered_journal_species','displayed_rows':3,'species_id':species,
+                                **view['entries'][str(species)]})
+                    args={'character':value['character'],'pet_species':{'species_id':7}}
+                    self.assertEqual(len((await search(**args))['snapshots']),1)
+                    self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
+                    self.assertEqual(len((await search(**args,latest_per_character=True,
+                        captured_through='2025-01-01T00:00:00Z'))['snapshots']),1)
+                    self.assertTrue(all('pet_species_match' not in row for row in (await search())['snapshots']))
+                    for bad in [{'species_id':0},{'species_id':True},{'species_id':2**32},
+                        {'species_id':7,'minimum_owned_rows':-1},{'species_id':7,'minimum_unowned_rows':True},
+                        {'species_id':7,'minimum_owned_rows':2**32},{'species_id':7,'pet_guid':'private'},{}]:
+                        response=await session.call_tool('list_snapshots',{'family':'forever','pet_species':bad})
+                        self.assertTrue(response.isError)
+                    response=await session.call_tool('list_snapshots',{'family':'retail','pet_species':{'species_id':7}})
+                    self.assertTrue(response.isError)
                     response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_collection_view'})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)['data'],view)
