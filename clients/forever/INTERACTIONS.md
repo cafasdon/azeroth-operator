@@ -271,6 +271,9 @@ rows are readable and agree with the aggregate counts.
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture
 time. The separately observed `rested_xp` is the saved XP bonus pool.
+With `experience: true`, `compare_snapshots` reports the signed change
+in that pool and whether the resting flag, XP-disabled flag or progress
+status changed. Each comparison requires that observation on both sides.
 Update the importer and reader before syncing new captures. [Player frame source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UnitFrame/Mainline/PlayerFrame.lua)
 
 `character_summary` reports the saved `new_mail_indicator` when the

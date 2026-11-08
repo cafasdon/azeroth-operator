@@ -814,6 +814,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         travel["sections"]["flight_map"]["entries"]["2"]["fare_copper"] = 1
                         travel["sections"]["repair_quote"] = {"copper": 1}
+                        travel["sections"]["experience"] = {
+                            "status": "progress", "current_xp": 120, "level_threshold_xp": 200,
+                            "rested_xp": 40, "resting": True, "xp_disabled": False,
+                        }
                         travel["sections"]["bags"] = {"0": {"1": {"item_id": 117, "count": 3}}}
                         travel["sections"]["pet_care"] = {
                             "present": True, "happiness": 2, "loyalty": "Fixture loyal",
@@ -829,6 +833,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
+                        travel["sections"]["experience"].update({
+                            "current_xp": 150, "rested_xp": 0, "resting": False,
+                        })
                         travel["sections"]["bags"]["0"]["1"]["count"] = 1
                         travel["sections"]["pet_care"]["carried_food"] = {"117": 1}
                         del travel["sections"]["bag_capacity"]
@@ -910,10 +917,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "retail", "player_map_id": 1414,
                         })).isError)
                         changed_travel = await session.call_tool("compare_snapshots", {
-                            "before_id": travel_before, "after_id": travel_after,
+                            "before_id": travel_before, "after_id": travel_after, "experience": True,
                         })
                         self.assertFalse(changed_travel.isError)
                         travel_changes = json.loads(changed_travel.content[0].text)
+                        xp = travel_changes["experience_change"]
+                        self.assertEqual(xp["within_level_xp_delta"], 30)
+                        self.assertEqual(xp["rested_xp_delta"], -40)
+                        self.assertTrue(xp["resting_changed"])
+                        self.assertFalse(xp["xp_disabled_changed"])
+                        self.assertFalse(xp["status_changed"])
+                        capped_travel = json.loads(json.dumps(travel))
+                        capped_travel["sections"]["experience"] = {"status": "level_capped"}
+                        capped_id = SnapshotStore(Path(folder)).ingest(capped_travel)
+                        cap_change = await session.call_tool("compare_snapshots", {
+                            "before_id": travel_before, "after_id": capped_id, "experience": True,
+                        })
+                        self.assertFalse(cap_change.isError)
+                        capped_xp = json.loads(cap_change.content[0].text)["experience_change"]
+                        self.assertTrue(capped_xp["status_changed"])
+                        self.assertIsNone(capped_xp["rested_xp_delta"])
+                        self.assertIsNone(capped_xp["resting_changed"])
                         self.assertEqual(travel_changes["pet_care_change"], {
                             "before": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
                             "after": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},

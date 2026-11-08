@@ -1094,9 +1094,14 @@ pub fn compare_observations(
             }
             Some(b["current_xp"].as_i64()? - a["current_xp"].as_i64()?)
         });
+        let observed = previous.zip(current);
         comparison["experience_change"] = json!({
             "before":previous,"after":current,"before_level":before_level,"after_level":after_level,
-            "level_delta":levels.and_then(|(a,b)| b.checked_sub(a)),"within_level_xp_delta":within_level
+            "level_delta":levels.and_then(|(a,b)| b.checked_sub(a)),"within_level_xp_delta":within_level,
+            "rested_xp_delta":observed.and_then(|(a,b)| Some(b["rested_xp"].as_i64()? - a["rested_xp"].as_i64()?)),
+            "resting_changed":observed_flag_changed(previous, current, "resting"),
+            "xp_disabled_changed":observed_flag_changed(previous, current, "xp_disabled"),
+            "status_changed":observed.map(|(a,b)| a["status"] != b["status"]),
         });
     }
     if selectors.wallet {

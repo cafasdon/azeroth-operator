@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved Forever rested XP, resting, XP lock and cap status.
+
 - Cap the full bundle cost of a requested quantity in saved Forever merchant searches.
 
 - Sort saved Forever merchant visits by total bundle cost for a requested quantity.
