@@ -1385,6 +1385,47 @@ fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     json!({"status":"compared","map_id":before["map_id"],"origin_node_id":from,"changes":changes})
 }
 
+pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {
+    ensure!((1..=1000).contains(&bundles), "Invalid bundle count");
+    let bundles = u64::from(bundles);
+    let price = offer["price_copper"]
+        .as_u64()
+        .ok_or_else(|| anyhow::anyhow!("Invalid merchant price"))?;
+    let size = offer["bundle_size"]
+        .as_u64()
+        .ok_or_else(|| anyhow::anyhow!("Invalid merchant bundle"))?;
+    let copper = price * bundles;
+    let wallet = snapshot
+        .sections
+        .get("wallet")
+        .and_then(|wallet| wallet["copper"].as_u64());
+    let mut token_costs = BTreeMap::<u32, u64>::new();
+    let mut named_currencies = Vec::new();
+    let components = offer["cost_components"].as_object();
+    for cost in components.into_iter().flat_map(|rows| rows.values()) {
+        let quantity = cost["quantity"].as_u64().unwrap() * bundles;
+        if let Some(id) = cost["item_id"].as_u64() {
+            *token_costs.entry(u32::try_from(id)?).or_default() += quantity;
+        } else {
+            named_currencies
+                .push(json!({"currency_name":cost["currency_name"],"required_quantity":quantity}));
+        }
+    }
+    let mut tokens = Vec::new();
+    for (id, required) in token_costs {
+        let found = find_item(snapshot, id, 0, 1)?;
+        let carried = found["quantity_by_storage"]["bags"].as_u64();
+        tokens.push(json!({"item_id":id,"required_quantity":required,"shortfall_vs_bags":carried.map(|count| required.saturating_sub(count))}));
+    }
+    let costs_observed = offer["extended_cost"].as_bool() == Some(false) || components.is_some();
+    Ok(json!({
+        "requested_bundles":bundles,"requested_quantity":size * bundles,"required_copper":copper,
+        "wallet_shortfall_copper":wallet.map(|balance| copper.saturating_sub(balance)),
+        "item_token_costs":costs_observed.then_some(tokens),
+        "named_currency_costs":costs_observed.then_some(named_currencies)
+    }))
+}
+
 pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
     let Some(entries) = map["entries"].as_object() else {
         return Value::Null;

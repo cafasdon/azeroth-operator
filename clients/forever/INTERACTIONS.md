@@ -112,6 +112,14 @@ by the merchant cost API. Missing components leave the extended cost
 unknown. Currency names are recorded without inferring balance matches.
 [Forever merchant cost display](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Mainline/MerchantFrame.lua)
 
+With `section: "merchant_stock"`, set `merchant_offer_slot` to select an
+offer and optionally `merchant_bundles` for the requested bundle count.
+The review scales the copper and token costs, compares them with the
+opt-in wallet and carried bags from the same capture, and lists named
+currency requirements separately. Missing stock, balances or components
+remain unknown. The review does not check stock sufficiency, spending
+eligibility or current purchase availability.
+
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured

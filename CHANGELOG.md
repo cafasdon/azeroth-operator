@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget saved Forever merchant bundles against the captured wallet and carried item tokens.
+
 - Save item-token and named currency costs for readable Forever merchant offers.
 
 - Capture open Forever merchant offers with bundle prices, stock and an extended-cost flag.

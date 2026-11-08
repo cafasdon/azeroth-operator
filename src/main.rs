@@ -38,6 +38,10 @@ struct Inspect {
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
+    /// Review a saved merchant offer by its 1-based goods-tab slot.
+    merchant_offer_slot: Option<std::num::NonZeroU32>,
+    /// Requested bundles for the saved merchant offer. Defaults to one.
+    merchant_bundles: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare captured quest currency rewards against caps from the same snapshot.
@@ -944,6 +948,18 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if (args.merchant_offer_slot.is_some() && args.section.as_deref() != Some("merchant_stock"))
+            || args
+                .merchant_offer_slot
+                .is_some_and(|slot| slot.get() > 256)
+            || args
+                .merchant_bundles
+                .is_some_and(|bundles| args.merchant_offer_slot.is_none() || bundles.get() > 1000)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant review requires merchant_stock, a slot from 1 to 256 and up to 1000 bundles",
+            )]);
+        }
         if args.flight_wallet_projection && args.section.as_deref() != Some("flight_map") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Flight wallet projection requires the flight_map section",
@@ -1162,6 +1178,34 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(slot) = args.merchant_offer_slot {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Merchant review requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let offers = value["data"].take();
+                    let offer = offers.get(slot.to_string());
+                    value["merchant_offer_slot"] = serde_json::json!(slot.get());
+                    value["merchant_offer_observed"] =
+                        serde_json::json!(offers.as_object().map(|_| offer.is_some()));
+                    if let Some(offer) = offer {
+                        let projection = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                            azeroth_operator::analysis::merchant_budget(
+                                &snapshot,
+                                offer,
+                                args.merchant_bundles.map_or(1, std::num::NonZeroU32::get),
+                            )
+                        });
+                        let Ok(projection) = projection else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Could not review captured merchant costs",
+                            )]);
+                        };
+                        value["merchant_budget"] = projection;
+                        value["data"] = offer.clone();
+                    }
+                }
                 if args.flight_wallet_projection {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
