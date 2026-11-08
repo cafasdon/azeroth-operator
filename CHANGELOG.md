@@ -1,5 +1,8 @@
 # Changelog
 
+- Search owner-local bulk recipe observations by recipe/output/reagent/status,
+  with bounded numeric pagination, explicit observation gaps and planner IDs.
+
 - Plan exact bulk-observed recipes by ID, including shared-inventory batches,
   output targets and dependency/merchant estimates, preserving unknowns and
   rejecting conflicting saved recipe observations.

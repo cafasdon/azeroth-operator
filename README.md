@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`search_forever_recipes` searches one owner-local capture's bulk recipe rows by
+exact recipe, output item, required reagent or captured status. Filters match
+the same row, with numeric recipe ordering and pages of at most 50 records.
+Missing capture data remains distinct from an observed empty list. Returned
+recipe IDs can be supplied directly to `review_forever_recipe`; search results
+do not establish craftability or complete profession coverage.
+[Offline evidence](docs/recipe-search-verification-2026-11-08.md).
+
 Forever manual exports can record bulk fixed-item material observations for the
 visible local profession's reported known spell IDs. Inspect
 `profession_recipe_materials` or its summary. Unreadable recipes, unsupported

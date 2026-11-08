@@ -117,7 +117,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                     tools = await session.list_tools()
                     expected = {"capabilities", "inspect_snapshot"}
                     if rust_binary:
-                        expected.update({"list_snapshots", "resolve_character", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "find_snapshot_item"})
+                        expected.update({"list_snapshots", "resolve_character", "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "search_forever_recipes", "find_snapshot_item"})
                     self.assertEqual({t.name for t in tools.tools}, expected)
                     if rust_binary:
                         self.assertEqual(set(TOOLS), expected)

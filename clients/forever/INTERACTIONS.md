@@ -1,5 +1,13 @@
 # Forever interaction map
 
+`search_forever_recipes` discovers captured bulk material rows by exact recipe,
+output item, required reagent and/or status, with same-row filters and bounded
+numeric ordering. It reads only the chosen owner-local snapshot. Missing sections
+return unknown counts; observed-empty sections return zero. Results retain the
+captured status and materials, and their IDs work with recipe planning. Searches
+do not refresh captures, consult a catalogue, prove learning/craftability or
+execute game actions.
+
 Bulk profession material capture observes the visible local profession's
 reported known spell IDs without selecting recipes or changing filters.
 `profession_recipe_materials` retains fixed item quantities and optional output

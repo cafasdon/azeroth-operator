@@ -79,6 +79,78 @@ pub fn plan_recipe(
     }
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeMaterialStatus {
+    FixedItems,
+    Unavailable,
+    UnsupportedRequiredSlots,
+    BudgetExhausted,
+}
+
+/// Search only observed rows; unknown fields do not satisfy positive filters.
+pub fn search_recipe_materials(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Expected a Forever snapshot"
+    );
+    ensure!(
+        (1..=50).contains(&limit),
+        "Recipe search page size out of range"
+    );
+    let section = snapshot.sections.get("profession_recipe_materials");
+    let rows = section.and_then(|value| value["entries"].as_object());
+    let status_value = status.map(|value| json!(value));
+    let mut matches: Vec<_> = rows
+        .into_iter()
+        .flat_map(|rows| rows.iter())
+        .filter(|(id, row)| {
+            recipe_id.is_none_or(|value| id.as_str() == value.to_string())
+                && output_item_id.is_none_or(|value| {
+                    row["output_item_id"].as_u64() == Some(u64::from(value.get()))
+                })
+                && reagent_item_id
+                    .is_none_or(|value| row["reagents"].get(value.to_string()).is_some())
+                && status_value
+                    .as_ref()
+                    .is_none_or(|value| row["status"] == *value)
+        })
+        .collect();
+    matches.sort_unstable_by_key(|(id, _)| id.parse::<u32>().unwrap());
+    let records: Vec<_> = matches
+        .iter()
+        .skip(offset)
+        .take(limit)
+        .map(|(id, row)| {
+            let mut record = (*row).clone();
+            record["recipe_id"] = json!(id.parse::<u32>().unwrap());
+            record
+        })
+        .collect();
+    let next = if offset < matches.len() && records.len() < matches.len() - offset {
+        Some(offset + records.len())
+    } else {
+        None
+    };
+    Ok(
+        json!({"section_observed":section.is_some(),"coverage":section.map(|s|&s["coverage"]),
+        "profession_id":section.map(|s|&s["profession_id"]),
+        "captured_spell_count":rows.map(|rows|rows.len()),
+        "matched_row_count":rows.map(|_|matches.len()),"offset":offset,"limit":limit,
+        "records":records,"next_offset":next,
+        "filters":{"recipe_id":recipe_id,"output_item_id":output_item_id,"reagent_item_id":reagent_item_id,"status":status},
+        "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false}),
+    )
+}
+
 /// Explicit IDs select only the bulk observation, never a fallback schematic.
 pub fn plan_recipe_by_id(
     snapshot: &Snapshot,

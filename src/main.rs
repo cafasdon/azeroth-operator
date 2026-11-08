@@ -21,6 +21,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "lookup_forever_catalogue",
     "review_forever_owned_gear",
     "review_forever_recipe",
+    "search_forever_recipes",
     "find_snapshot_item",
 ];
 
@@ -560,6 +561,19 @@ struct RecipeBatchEntry {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct RecipeSearch {
+    snapshot_id: String,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<azeroth_operator::analysis::RecipeMaterialStatus>,
+    offset: Option<usize>,
+    /// Page size, 1 to 50; defaults to 20. Ordering is numeric recipe ID.
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct FindItem {
     snapshot_id: String,
     item_id: std::num::NonZeroU32,
@@ -969,6 +983,36 @@ impl Operator {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
                 "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50.",
+            )]),
+        }
+    }
+    #[tool(
+        description = "Search owner-local captured Forever recipe material rows by exact recipe, output item, reagent item or status. Filters match the same row; numeric recipe order, up to 50 rows per page. Missing observations remain unknown. No catalogue lookup or game action.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn search_forever_recipes(&self, Parameters(args): Parameters<RecipeSearch>) -> CallToolResult {
+        let result = (|| {
+            let snapshot = self.store.read(&args.snapshot_id)?;
+            let mut found = azeroth_operator::analysis::search_recipe_materials(
+                &snapshot,
+                args.recipe_id,
+                args.output_item_id,
+                args.reagent_item_id,
+                args.status,
+                args.offset.unwrap_or(0),
+                args.limit.unwrap_or(20),
+            )?;
+            found["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            Ok::<_, anyhow::Error>(found)
+        })();
+        match result {
+            Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Recipe search requires an owned valid Forever snapshot, exact positive IDs and a page size from 1 to 50.",
             )]),
         }
     }
