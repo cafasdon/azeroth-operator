@@ -79,11 +79,11 @@ class EncounterSensitivityTests(unittest.TestCase):
                         "executeProportion20": 0, "executeProportion35": 0, "targets": [{}]},
                         "simOptions": {"iterations": 1000, "randomSeed": "1"}}}))
                 encounters.append(path)
-            drafts = [([], {"client": {"family": "forever"}, "checks": {
+            drafts = [([], {"client": {"family": "forever"}, "captured_character_level":60, "checks": {
                 "simulator_equipment_spec": {"items": [{}] * 17}}})] * 3
 
             async def collect(*args, **kwargs):
-                return drafts, [], {}, {}, None, None, {}
+                return drafts, [], {}, {"level":60}, None, None, {}
 
             argv = ["rank", "--mcp", str(executable), "--snapshot-id", "fixture", "--slot", "head",
                     "--engine", str(executable), "--engine-sha256", "a" * 64, "--template", str(template)]

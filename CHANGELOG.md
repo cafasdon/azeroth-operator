@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bind character simulations to captured level 60, matching the pinned engine, while preserving plan-only review for other or unknown levels and explaining legacy-review re-export.
+
 - Capture optional item-link required levels and reject known shortfalls in changed equipment drafts and owned-gear ranking, preserving unknowns and existing baselines.
 
 - Search saved filtered pet-journal observations by species ID and owned/unowned row thresholds, preserving partial-view scope.

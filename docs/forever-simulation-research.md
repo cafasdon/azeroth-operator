@@ -97,7 +97,11 @@ gear or an equip-legality qualification. It was built as follows:
   all its original modifiers. The other 80 inputs remain synthetic alternatives.
 - Use each pinned catalogue preset's `targets[].target` records, 45 seconds,
   three seconds of variation, execute proportions 0.2/0.35 and 1,000 fixed
-  iterations. Pass the resolved equipment and profile through `request_from`.
+  iterations. Pass the resolved equipment and profile through `request_from`,
+  using `captured_character_level: 60` in the synthetic equipment-review wrapper
+  to state the public fixture's stipulated engine level. This is not a game
+  capture claim. The resulting simulator request payload is unchanged by the
+  later level-metadata validation.
 - Invoke the qualification CLI for each profile with seeds 100000000, 200000000
   and 300000000, `--top 5` and the recorded executable hashes. Run profiles
   sequentially. These seed choices are not proof of independent samples.

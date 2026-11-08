@@ -43,7 +43,9 @@ class NativeLevelTests(unittest.IsolatedAsyncioTestCase):
                     for key,level in cases:
                         response=await session.call_tool('review_equipment_selection',{'snapshot_id':key,'selections':[selection]})
                         self.assertFalse(response.isError)
-                        checks=json.loads(response.content[0].text)['checks']
+                        data=json.loads(response.content[0].text)
+                        self.assertEqual(data['captured_character_level'],20)
+                        checks=data['checks']
                         if level==30:
                             self.assertIsNone(checks['simulator_equipment_spec'])
                             self.assertEqual(checks['native_required_level_shortfalls'][0]['levels_remaining'],10)

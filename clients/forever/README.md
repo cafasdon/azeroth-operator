@@ -4,6 +4,18 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+The pinned simulator models level 60 only. Equipment reviews now expose
+`captured_character_level` from saved stats, or null when unknown. The ranker
+and direct adapter require an explicit integer 60 before constructing character-
+bound simulation requests. A template field cannot change the engine's fixed
+level. Other or unknown levels remain available through ranker `--plan-only`,
+with `template_identity.level` reporting unsupported/unverified and
+`simulator_character_level: 60`. Class/race checks remain in force.
+Older exported reviews must be re-exported with an updated MCP reader; a saved
+capture already containing level 60 does not need another game capture.
+This prevents incorrect-level results; it does not add simulation support for
+other levels. See [verification](../../docs/simulation-level-verification-2026-11-08.md).
+
 Forever item observations can include optional `required_level`, read from the
 captured item link after checking that its native base ID matches the observed
 item ID. Missing APIs, unreadable data, unloaded details and errors leave it

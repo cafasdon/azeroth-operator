@@ -24,6 +24,14 @@ else:
     from sync_exports import ordinary
     from sync_forever_catalogue import MAX_BYTES, verify
 
+# Pinned 9dc32ac constants.go and NewCharacter use this fixed level.
+SIMULATOR_CHARACTER_LEVEL = 60
+
+
+class UnsupportedSimulationLevel(ValueError):
+    """The pinned simulator cannot represent the captured character level."""
+
+
 # Class enum IDs from the pinned Forever common.proto.
 CLASS_IDS = {
     "warrior": 1, "paladin": 2, "hunter": 3, "rogue": 4, "priest": 5,
@@ -157,6 +165,9 @@ def player_spec(player):
 
 
 def request_from(template, equipment_review, encounter_lookup):
+    captured_level=equipment_review.get("captured_character_level")
+    if type(captured_level) is not int or captured_level!=SIMULATOR_CHARACTER_LEVEL:
+        raise UnsupportedSimulationLevel("Pinned Forever simulation requires an explicitly captured level of 60.")
     raid = deepcopy(template["raid"])
     player = single_player(raid)
     healing_dummy_count(raid)
@@ -548,6 +559,8 @@ def main():
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
+    except UnsupportedSimulationLevel:
+        parser.exit(1, "Simulation requires a current equipment review with captured_character_level=60. Re-export the saved capture with an updated MCP reader; other or unknown levels remain plan-only.\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 

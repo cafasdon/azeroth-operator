@@ -17,6 +17,7 @@ from tools.run_forever_sim import (
     CLASS_IDS, ConflictingConsumables, check_consumable_groups, compare, compare_bulk,
     encounter_key, encounter_summary, player_spec, read_object, request_from, single_player,
     SimulationCache,
+    SIMULATOR_CHARACTER_LEVEL, UnsupportedSimulationLevel,
 )
 
 
@@ -39,7 +40,7 @@ class GearSearchLimit(ValueError):
     """A local search limit with a diagnostic safe to print."""
 
 
-def check_template_identity(template, stats):
+def check_template_identity(template, stats, require_simulator_level=True):
     player = single_player(template["raid"])
     captured_class = (stats.get("class") or "").lower()
     captured_race = (stats.get("race") or "").lower()
@@ -59,6 +60,14 @@ def check_template_identity(template, stats):
             checks[field] = "matches"
         else:
             checks[field] = "unverified"
+    level=stats.get("level")
+    checks["simulator_character_level"]=SIMULATOR_CHARACTER_LEVEL
+    checks["level"]=("matches" if level==SIMULATOR_CHARACTER_LEVEL else "unsupported_for_simulation") \
+        if type(level) is int and level>0 else "unverified"
+    if require_simulator_level and checks["level"]!="matches":
+        raise UnsupportedSimulationLevel(
+            "Forever simulation requires a captured level of 60; use --plan-only for other or unknown levels."
+        )
     return checks
 
 
@@ -640,7 +649,7 @@ def main():
                         args.character, args.set_id, args.max_drafts, args.storage,
                         args.max_swaps, candidate_filters), timeout=45,
             ))
-        identity = check_template_identity(template, stats)
+        identity = check_template_identity(template, stats, require_simulator_level=not args.plan_only)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
                          if set_observation is not None else None)
         if args.confirm_leading_seed is not None:
@@ -716,7 +725,7 @@ def main():
         # The stdio client's task groups wrap errors raised during collection.
         while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
             error = error.exceptions[0]
-        if isinstance(error, GearSearchLimit):
+        if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel)):
             parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")

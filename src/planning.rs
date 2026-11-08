@@ -132,7 +132,13 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     }
     changes.sort_by_key(|row| row["target_slot"].as_u64().unwrap());
     let vacated: Vec<_> = moved_equipment.difference(&targets).copied().collect();
-    Ok(json!({"format":"azeroth_operator.equipment_review.v1",
+    let captured_level = snapshot
+        .sections
+        .get("stats")
+        .and_then(|stats| stats["level"].as_u64())
+        .filter(|level| *level > 0);
+    Ok(
+        json!({"format":"azeroth_operator.equipment_review.v1","captured_character_level":captured_level,
         "client":snapshot.client,"character":snapshot.character,"captured_at":snapshot.captured_at,
         "source":snapshot.source,"live":false,"game_execution":false,"requires_player_review":true,
         "status":"draft_unverified_compatibility","changes":changes,"vacated_equipment_slots":vacated,
@@ -143,7 +149,8 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
         "limitations":["Observed locations are bound to this capture and may have changed",
           "No item GUIDs or account/region identity are available in this snapshot schema",
           "This is a desired selection review, not a game import, macro, move order or equipment optimisation",
-          "Displaced items have no assigned destination; review inventory capacity in the game"]}))
+          "Displaced items have no assigned destination; review inventory capacity in the game"]}),
+    )
 }
 
 #[cfg(test)]
