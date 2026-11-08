@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Item catalogue acquisition sources expose `bulk_recipe_review` separately from
+selected-schematic fields. Exact-ID compatible bulk rows use the existing
+one-craft planner against the same capture. Learning conflicts and known output
+mismatches block the review; missing rows are null, unreadable/budget states
+carry no plan, and planner rejection is a generic `review_unavailable` state.
+Unsupported required materials remain unsupported inside a completed review.
+No cooldowns, conditions, stock or craft eligibility are invented.
+
 Catalogue `only_observed_learned_recipe` searches can use exact-ID learning from
 bulk schematics and tracked craft/recraft rows alongside selected/list/known-spell
 observations. Fixed or unsupported-readable bulk statuses support positive

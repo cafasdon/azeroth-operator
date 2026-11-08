@@ -1,5 +1,8 @@
 # Changelog
 
+- Connect item catalogue crafted sources to separately qualified one-craft bulk
+  material reviews, with explicit blocked states and per-request recipe caching.
+
 - Join bulk schematic and tracked recipe-learning observations into local
   catalogue discovery, preserving conflicts, missing evidence and exact output
   matching for item and enchant references.

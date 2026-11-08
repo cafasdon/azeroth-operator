@@ -1785,6 +1785,7 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
             .map(|(observed, recorded)| observed == recorded)
     };
     let mut recipe_review = None;
+    let mut bulk_recipe_reviews = BTreeMap::<u64, Value>::new();
     let mut sources = Vec::new();
     let owned_quantities = owned_quantities(snapshot, records)?;
     let mut requirement_conflicts = serde_json::Map::new();
@@ -1872,9 +1873,35 @@ pub fn acquisition_progress(snapshot: &Snapshot, records: &Value) -> Result<Valu
                 } else {
                     None
                 };
+                let learning = recipe_learning(snapshot, id, item["id"].as_u64());
+                let bulk_recipe_review = snapshot.sections.get("profession_recipe_materials")
+                    .and_then(|section|section["entries"].get(&key)).map(|row| {
+                        if learning.learning_conflict {
+                            return json!({"status":"learning_conflict","review":Value::Null});
+                        }
+                        if learning.selected_output_matches_catalogue == Some(false)
+                            || learning.bulk_output_matches_catalogue == Some(false) {
+                            return json!({"status":"catalogue_output_mismatch","review":Value::Null});
+                        }
+                        if !matches!(row["status"].as_str(), Some("fixed_items" | "unsupported_required_slots")) {
+                            return json!({"status":row["status"],"review":Value::Null});
+                        }
+                        if learning.learned != Some(true) {
+                            return json!({"status":"review_unavailable","review":Value::Null});
+                        }
+                        bulk_recipe_reviews.entry(id).or_insert_with(|| {
+                            let recipe_id = u32::try_from(id).ok().and_then(std::num::NonZeroU32::new);
+                            let result = recipe_id.ok_or_else(||anyhow::anyhow!("Recipe ID unavailable"))
+                                .and_then(|id|crate::analysis::plan_recipe_by_id(snapshot,Some(id),Some(1),None,None));
+                            match result {
+                                Ok(review) => json!({"status":"reviewed","review":review}),
+                                Err(_) => json!({"status":"review_unavailable","review":Value::Null}),
+                            }
+                        }).clone()
+                    });
                 sources.push(json!({
                     "item_id":item["id"],"source_index":index+1,"recipe_spell_id":id,
-                    "recipe_learning":recipe_learning(snapshot, id, item["id"].as_u64()),
+                    "recipe_learning":learning,"bulk_recipe_review":bulk_recipe_review,
                     "recipe_observed":recipe.is_some(),"output_matches":output_matches,
                     "tracked_as_craft":tracked("crafts"),"tracked_as_recraft":tracked("recrafts"),
                     "learned":matched_recipe.and_then(|row| row["learned"].as_bool()),

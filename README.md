@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Catalogue item acquisition sources can include a separate `bulk_recipe_review`
+for one craft from compatible saved bulk materials. It reports material stock,
+shortfalls and unknown preparation requirements through the existing planner.
+Missing rows, unreadable data, learning conflicts, output mismatches and rejected
+reviews remain explicit; selected-schematic fields retain their original scope.
+[Offline evidence](docs/catalogue-bulk-materials-verification-2026-11-08.md).
+
 Local catalogue learned-recipe filters also use bulk schematic and tracked
 craft/recraft learning observations. Conflicting exact-ID learning flags and known catalogue
 output mismatches leave combined learning unknown. Unavailable bulk materials
