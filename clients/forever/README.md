@@ -598,6 +598,8 @@ two-handed replacement may still clear the off-hand. The draft and
 simulation budgets still apply.
 Use `--max-swaps 2` to compare singles and pairs across the requested slots.
 This evaluates two-item interactions while skipping larger combinations.
+The limit accepts 1–17 selected replacements. Higher limits still stop at
+the existing 1,024-combination scan cap and the configured draft limit.
 
 The ranker checks the template's class and race against the saved stats when
 it recognises the captured tokens. A known mismatch stops the run. Missing

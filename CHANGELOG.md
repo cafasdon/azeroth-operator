@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Allow bounded Forever searches above two swaps while stopping at the existing combination cap.
+
 - Compare up to two Forever gear replacements across slots without enumerating larger combinations.
 
 - Scan single-item upgrades across Forever slots without building multi-slot combinations.

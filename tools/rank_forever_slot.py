@@ -189,12 +189,18 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             options.append([None, *candidates])
         if max_swaps is not None:
             candidate_groups = [choices[1:] for choices in options if len(choices) > 1]
-            groups = [
+            slot_groups = (
                 group
                 for size in range(1, max_swaps + 1)
                 for group in combinations(candidate_groups, size)
-            ]
-            combination_count = 1 + sum(prod(map(len, group)) for group in groups)
+            )
+            groups = []
+            combination_count = 1
+            for group in slot_groups:
+                combination_count += prod(map(len, group))
+                if combination_count > 1024:
+                    break
+                groups.append(group)
             drafts_to_scan = (draft for group in groups for draft in product(*group))
         else:
             combination_count = prod(map(len, options))
@@ -385,7 +391,8 @@ def main():
     swap_limit = parser.add_mutually_exclusive_group()
     swap_limit.add_argument("--single-swaps", action="store_const", const=1, dest="max_swaps",
                             help="Compare one selected replacement at a time across the requested slots.")
-    swap_limit.add_argument("--max-swaps", type=int, choices=(1, 2),
+    swap_limit.add_argument("--max-swaps", type=int, choices=range(1, len(SIMULATOR_SLOTS) + 1),
+                            metavar="1-17",
                             help="Compare up to this many selected replacements across the requested slots.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
