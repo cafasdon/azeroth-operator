@@ -642,6 +642,12 @@ stage iterations separately. `encounter_settings_sha256` fingerprints the
 validated encounter and simulator options, including target inputs and seed.
 It excludes character, gear and template data.
 
+Fixed `--paired` comparisons with at least 200 iterations report an
+approximate 95% interval for each distinct alternative's DPS delta versus
+the baseline. An interval containing zero leaves the direction unresolved.
+These are individual comparisons without a multiple-comparison adjustment.
+The ranker continues to sort by the point estimate.
+
 Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
 separately for each encounter. Output uses an `encounters` array in input order,
 with a one-based encounter index, duration, duration variation and target count.

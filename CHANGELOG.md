@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show approximate paired DPS intervals versus equipped gear in fixed Forever simulations.
+
 - Filter captured Forever equipment, bags and banks by required character level before paging.
 
 - Find Forever catalogue gear by its recorded required character level range.

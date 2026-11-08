@@ -353,14 +353,22 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
                 result[f"paired_{metric}_standard_error"] = statistics.stdev(differences) / math.sqrt(len(samples))
     if time.monotonic() >= deadline:
         raise ValueError("Comparison deadline exceeded")
+    rows = []
+    for index, key in enumerate(keys, 1):
+        row = {"review": index, **results[key],
+               "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline}
+        if paired and key != keys[0] and row["iterations"] >= 200:
+            delta = row["mean_dps_delta_from_baseline"]
+            half_width = 1.96 * row["paired_dps_standard_error"]
+            lower, upper = delta - half_width, delta + half_width
+            row["paired_dps_delta_interval_approx_95"] = {
+                "lower": lower, "upper": upper, "includes_zero": lower <= 0 <= upper,
+            }
+        rows.append(row)
     return {
         "unique_runs": len(results),
         "baseline_review": 1,
-        "results": [
-            {"review": index, **results[key],
-             "mean_dps_delta_from_baseline": results[key]["mean_dps"] - baseline}
-            for index, key in enumerate(keys, 1)
-        ],
+        "results": rows,
     }
 
 
