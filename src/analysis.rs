@@ -4633,6 +4633,19 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["gossip_quest_observations"] = s.sections.get("gossip_quests").map(|section| {
+        let describe=|rows:Option<&Value>|rows.map(|rows| {
+            let rows=rows.as_object().unwrap();
+            let mut ids:Vec<_>=rows.keys().map(|id|id.parse::<u32>().unwrap()).collect();ids.sort_unstable();
+            let complete:Vec<_>=ids.iter().filter(|id|rows[&id.to_string()]["is_complete"]==true).copied().collect();
+            json!({"observed_quest_count":ids.len(),"quest_ids":ids.iter().take(50).collect::<Vec<_>>(),"quest_ids_truncated":ids.len()>50,
+                "reported_complete_quest_count":complete.len(),"reported_complete_quest_ids":complete.iter().take(50).collect::<Vec<_>>(),
+                "reported_complete_truncated":complete.len()>50,
+                "quests_with_unknown_completion":rows.values().filter(|row|row.get("is_complete").is_none()).count()})
+        });
+        json!({"coverage":section["coverage"],"available":describe(section.get("available")),"active":describe(section.get("active")),
+            "acceptance_eligibility_verified":false,"turn_in_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
     summary["player_aura_observations"] = s.sections.get("player_auras").map(|section| {
         let describe=|group:Option<&Value>|group.map(|group| {
             let rows=group["entries"].as_object().unwrap();

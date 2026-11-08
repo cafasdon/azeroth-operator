@@ -1738,6 +1738,44 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "gossip_quests" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("available", "map", false),
+                    ("active", "map", false),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "visible_gossip_quest_lists"
+                    && (value.get("available").is_some() || value.get("active").is_some()),
+                "Invalid gossip quest coverage"
+            );
+            for field in ["available", "active"] {
+                if let Some(rows) = value.get(field) {
+                    entries(
+                        rows,
+                        &[
+                            ("repeatable", "bool", false),
+                            ("is_complete", "bool", false),
+                            ("is_trivial", "bool", false),
+                            ("is_ignored", "bool", false),
+                        ],
+                    )?;
+                    ensure!(
+                        rows.as_object().unwrap().len() <= 128,
+                        "Too many gossip quests"
+                    );
+                    for row in rows.as_object().unwrap().values() {
+                        ensure!(
+                            row.as_object().unwrap().values().all(Value::is_boolean),
+                            "Invalid gossip quest flag"
+                        );
+                    }
+                }
+            }
+        }
         "player_auras" => {
             object(
                 value,

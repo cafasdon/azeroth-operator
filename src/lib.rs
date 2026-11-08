@@ -40,6 +40,7 @@ const SECTIONS: &[&str] = &[
     "experience",
     "player_resources",
     "player_auras",
+    "gossip_quests",
     "spellbook",
     "flight_map",
     "durability_alerts",
@@ -212,6 +213,7 @@ impl Snapshot {
                         | "experience"
                         | "player_resources"
                         | "player_auras"
+                        | "gossip_quests"
                         | "spellbook"
                         | "flight_map"
                         | "durability_alerts"

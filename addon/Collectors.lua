@@ -478,6 +478,71 @@ end
 AO.collectors.character_bank = function() return bankItems("Character") end
 AO.collectors.account_bank = function() return bankItems("Account") end
 
+AO.collectors.gossip_quests = function()
+    local api=C_GossipInfo
+    assert(AO.family=="forever" and api and GossipFrame and type(GossipFrame.IsVisible)=="function",
+        "Gossip quest lists unavailable")
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted gossip observation")
+        return value
+    end
+    local function uint(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid gossip number")
+        return value
+    end
+    local function visible() assert(public(GossipFrame:IsVisible())==true, "Gossip panel hidden") end
+    local fields={repeatable="repeatable",is_complete="isComplete",is_trivial="isTrivial",is_ignored="isIgnored"}
+    local function repeatable(info)
+        -- Generated API metadata and the native UI use different field names.
+        local a,b=info.repeatable,info.isRepeatable
+        if issecretvalue and (issecretvalue(a) or issecretvalue(b)) then return end
+        if (a~=nil and type(a)~="boolean") or (b~=nil and type(b)~="boolean")
+            or (a~=nil and b~=nil and a~=b) then return end
+        if a~=nil then return a end
+        return b
+    end
+    local function read(fetch,number)
+        assert(type(fetch)=="function" and type(number)=="function", "Gossip list API unavailable")
+        local count=uint(number(),0,128)
+        local values=public(fetch())
+        assert(type(values)=="table" and #values==count, "Gossip list count mismatch")
+        local rows,seen={},0
+        for index,info in pairs(values) do
+            uint(index,1,count);info=public(info)
+            assert(type(info)=="table", "Gossip quest row unavailable")
+            local key=tostring(uint(info.questID,1,4294967295))
+            assert(not rows[key], "Duplicate gossip quest ID")
+            local row={}
+            for field,native in pairs(fields) do
+                local value=info[native]
+                if field=="repeatable" then value=repeatable(info) end
+                if (not issecretvalue or not issecretvalue(value)) and type(value)=="boolean" then row[field]=value end
+            end
+            rows[key]=row;seen=seen+1
+        end
+        assert(seen==count and uint(number(),0,128)==count, "Gossip quest list changed")
+        return rows,count
+    end
+    visible()
+    local result={coverage="visible_gossip_quest_lists"}
+    for name,methods in pairs({available={api.GetAvailableQuests,api.GetNumAvailableQuests},active={api.GetActiveQuests,api.GetNumActiveQuests}}) do
+        local ok,first,count=pcall(read,methods[1],methods[2])
+        local again,second,laterCount=pcall(read,methods[1],methods[2])
+        if ok and again and count==laterCount then
+            local stable=true
+            for key,row in pairs(first) do
+                if not second[key] then stable=false;break end
+                for field in pairs(fields) do if row[field]~=second[key][field] then row[field]=nil end end
+            end
+            if stable then result[name]=first end
+        end
+    end
+    visible()
+    assert(result.available or result.active, "Gossip quest lists unreadable")
+    return result
+end
+
 AO.collectors.player_auras = function()
     local api=C_UnitAuras
     assert(AO.family=="forever" and api and type(api.GetUnitAuras)=="function"

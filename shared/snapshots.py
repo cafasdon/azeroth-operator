@@ -22,6 +22,7 @@ SECTIONS = SECTIONS | {"pet_action_bar"}
 SECTIONS = SECTIONS | {"player_resources"}
 SECTIONS = SECTIONS | {"profession_spells"}
 SECTIONS = SECTIONS | {"player_auras"}
+SECTIONS = SECTIONS | {"gossip_quests"}
 
 
 def _validate_action_bar_observation(observation):
@@ -540,6 +541,20 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "gossip_quests" in sections:
+        gossip=sections["gossip_quests"]
+        if (c["family"]!="forever" or not isinstance(gossip,dict) or gossip.get("coverage")!="visible_gossip_quest_lists"
+                or set(gossip)-{"coverage","available","active"} or not ({"available","active"}&gossip.keys())):
+            raise ValueError("Invalid gossip quest coverage")
+        for field in ("available","active"):
+            if field not in gossip:continue
+            rows=gossip[field]
+            if not isinstance(rows,dict) or len(rows)>128:raise ValueError("Invalid gossip quest list")
+            for key,row in rows.items():
+                if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key) or int(key)>4_294_967_295
+                        or not isinstance(row,dict) or set(row)-{"repeatable","is_complete","is_trivial","is_ignored"}
+                        or any(type(value) is not bool for value in row.values())):
+                    raise ValueError("Invalid gossip quest observation")
     if "player_auras" in sections:
         auras=sections["player_auras"]
         if (c["family"]!="forever" or not isinstance(auras,dict) or set(auras)!={"coverage","groups"}

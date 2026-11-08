@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever manual exports can observe quest IDs and readable flags from an already
+visible gossip panel. Inspect `gossip_quests` or its summary; available and active
+lists retain separate unknown/empty states. No quest is selected, accepted or
+turned in, and dialogue text and speaker identity are omitted.
+[Offline evidence](docs/gossip-quests-verification-2026-11-08.md).
+
 Consumable catalogue lookups with an owner-local capture can match recorded
 effect spell IDs to saved helpful aura IDs. Matches can be shared across items;
 they do not prove item use, effectiveness or inactivity when absent. Stock,

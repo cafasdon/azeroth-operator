@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture read-only visible gossip quest lists with stable IDs/flags, strict
+  readers and bounded summaries, without quest selection or acceptance.
+
 - Associate local consumable effect references with saved helpful aura spell IDs,
   preserving unknowns and shared matches independently of stock/restock plans.
 

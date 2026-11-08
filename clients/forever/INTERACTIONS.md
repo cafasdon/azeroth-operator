@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Manual capture can observe available/active quest lists from an already visible
+gossip frame. IDs and stable public flags survive without titles, dialogue or
+speaker identity. Lists remain historical and partial; acceptance/turn-in
+eligibility and NPC continuity are unverified. No dialogue action is issued.
+[Offline evidence](../../docs/gossip-quests-verification-2026-11-08.md).
+
 Consumable catalogue lookups can join exact recorded effect spell IDs to saved
 helpful aura observations. Unknown lists/reference associations remain unknown;
 shared matches do not identify a consumed item. No inactivity, effect strength,
