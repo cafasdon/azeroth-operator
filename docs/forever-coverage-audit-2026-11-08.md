@@ -53,3 +53,9 @@ The subsequent [profession bulk-data audit](profession-bulk-data-audit-2026-11-0
 pins the documented per-recipe schematic API and separates the existing
 known-spell ID capture from the missing bulk material capture. Native
 availability and responsiveness remain unqualified.
+
+The subsequent [owned-gear search gap audit](owned-gear-search-gap-audit-2026-11-08.md)
+verifies the current 1,024-combination and 128-alternative limits with synthetic
+real-MCP probes. Identical-copy collapse works, but a successful single-swap
+search does not establish full two-slot or full-set coverage. Complete owned
+optimisation remains an open requirement.
