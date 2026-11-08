@@ -1486,6 +1486,21 @@ pub fn summary(s: &Snapshot) -> Value {
         json!({"suggested_groups":groups.into_iter().map(|(quest_id,size)| json!({"quest_id":quest_id,"suggested_group_size":size})).collect::<Vec<_>>(),"elite_quest_ids":elite})
     });
     let is_forever = s.client.family == crate::Family::Forever;
+    let wallet = s
+        .sections
+        .get("wallet")
+        .and_then(|wallet| wallet["copper"].as_u64());
+    let repair_status = is_forever.then(|| {
+        let alerts = s.sections.get("durability_alerts").and_then(Value::as_object);
+        let quote = s.sections.get("repair_quote").and_then(|quote| quote["copper"].as_u64());
+        let shortfall = quote.zip(wallet).map(|(cost, balance)| cost.saturating_sub(balance));
+        json!({
+            "low_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("low")).count()),
+            "broken_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("broken")).count()),
+            "repair_all_quote_copper":quote,
+            "wallet_shortfall_copper":shortfall
+        })
+    });
     let waypoint_maps = quests.filter(|_| is_forever).map(quest_waypoint_maps);
     let captured_map = s
         .sections
@@ -1504,10 +1519,6 @@ pub fn summary(s: &Snapshot) -> Value {
     let quest_money = quests
         .filter(|_| s.client.family == crate::Family::Forever)
         .map(|quests| {
-            let wallet = s
-                .sections
-                .get("wallet")
-                .and_then(|wallet| wallet["copper"].as_u64());
             let mut unknown = 0;
             let mut costs = BTreeMap::new();
             for (id, quest) in quests {
@@ -1555,6 +1566,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "captured_map_max_level":captured_map.and_then(|_| s.sections["stats"]["map_max_level"].as_u64()),
       "quests_with_waypoint_on_captured_map":quests_on_captured_map,
       "quest_money":quest_money,
+      "repair_status":repair_status,
       "observed_quest_timers":timed_quests,
       "observed_quest_difficulty":group_quests,
       "carried_item_review":carried_items(s),

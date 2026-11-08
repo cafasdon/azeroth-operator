@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Summarise saved Forever durability alerts, repair quote and wallet shortfall.
+
 - Save the repair-all copper quote shown by an open Forever repair merchant.
 
 - Save the built-in Forever low and broken equipment durability alerts for offline inspection.

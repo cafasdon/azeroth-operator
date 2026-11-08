@@ -37,6 +37,11 @@ section unavailable. The export records the price and leaves the repair
 to the player. Update the importer and reader before syncing this
 section. [Forever merchant source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Vanilla/MerchantFrame.lua)
 
+`character_summary` groups these observations under `repair_status`.
+Alert counts and the repair quote can be independently unknown. Copper
+shortfall is calculated only if the quote and opt-in wallet were captured
+together. A zero shortfall means the saved balance covered the saved price.
+
 `inspect_snapshot` with `section: "action_bar_observation"` shows loaded
 built-in button slots, including observed empty slots and a count of missing
 buttons. Multiple buttons can reference the same slot. This works separately
