@@ -120,6 +120,16 @@ excluded from owned-item quantities, gear search and recipe material stock;
 their presence does not establish ownership, retrieval eligibility or cost.
 See [verification](../../docs/mail-attachment-verification-2026-11-08.md).
 
+Set `mail_attachment_changes: true` in `compare_snapshots` to compare saved
+known attachment totals by kind and ID. Shared observations report quantity
+and attachment-slot count changes; one-sided IDs retain their known totals
+without a zero or transfer assumption. Item and currency IDs are separate.
+Message positions can reorder without a quantity change. Loaded/total message
+counts and unresolved-slot counts keep partial coverage explicit. Missing
+either section returns null; message identity, deliveries/retrievals and
+inventory transfers remain unverified. No correspondence or mail actions
+are added. See [offline comparison evidence](../../docs/mail-comparison-verification-2026-11-08.md).
+
 Search pending observations with `list_snapshots.mail_attachment`, for example
 `{"family":"forever","mail_attachment":{"kind":"item","id":720,"minimum_quantity":2},"latest_per_character":true}`.
 `kind` is `item` or `currency`, with a positive ID in that namespace. The

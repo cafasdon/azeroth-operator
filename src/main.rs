@@ -412,6 +412,9 @@ struct Compare {
     /// Compare shared pet-journal species row counts without inferring collection gains or losses.
     #[serde(default)]
     pet_view_changes: bool,
+    /// Compare known loaded mail attachment totals; never infer deliveries or inventory transfers.
+    #[serde(default)]
+    mail_attachment_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured profession by its skill-line ID.
@@ -1210,6 +1213,7 @@ impl Operator {
                     saved_instance_changes: args.saved_instance_changes,
                     profession_recipe_changes: args.profession_recipe_changes,
                     pet_view_changes: args.pet_view_changes,
+                    mail_attachment_changes: args.mail_attachment_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,

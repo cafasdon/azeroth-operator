@@ -796,6 +796,7 @@ pub struct ComparisonSelectors {
     pub saved_instance_changes: bool,
     pub profession_recipe_changes: bool,
     pub pet_view_changes: bool,
+    pub mail_attachment_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -903,6 +904,18 @@ pub fn compare_observations(
             .get("pet_collection_view")
             .zip(after.sections.get("pet_collection_view"))
             .map(|(old, new)| compare_pet_views(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.mail_attachment_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Mail attachment comparison requires Forever"
+        );
+        comparison["mail_attachment_changes"] = before
+            .sections
+            .get("mail_attachments")
+            .zip(after.sections.get("mail_attachments"))
+            .map(|(old, new)| compare_mail_attachments(old, new))
             .unwrap_or(Value::Null);
     }
     let skills_before = before
@@ -1887,6 +1900,57 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
+    let aggregate = |mail: &Value| {
+        let mut totals = BTreeMap::<(&str, u64), (u64, u32)>::new();
+        let mut unknown = 0u32;
+        for message in mail["messages"].as_object().unwrap().values() {
+            for row in message.as_object().unwrap().values() {
+                let (kind, field) = match row["kind"].as_str().unwrap() {
+                    "item" => ("item", "item_id"),
+                    "currency" => ("currency", "currency_id"),
+                    _ => {
+                        unknown += 1;
+                        continue;
+                    }
+                };
+                let entry = totals
+                    .entry((kind, row[field].as_u64().unwrap()))
+                    .or_default();
+                // Validated inbox coverage bounds totals to 100 * 16 * u32::MAX.
+                entry.0 += row["count"].as_u64().unwrap();
+                entry.1 += 1;
+            }
+        }
+        (totals, unknown)
+    };
+    let (old, old_unknown) = aggregate(before);
+    let (new, new_unknown) = aggregate(after);
+    let ids: BTreeSet<_> = old.keys().chain(new.keys()).copied().collect();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut changes = Vec::new();
+    for (kind, id) in ids {
+        match (old.get(&(kind, id)), new.get(&(kind, id))) {
+            (Some(a), Some(b)) if a != b => changes.push(json!({"kind":kind,"id":id,
+                "before_known_quantity":a.0,"after_known_quantity":b.0,
+                "known_quantity_delta":(b.0 as i64)-(a.0 as i64),
+                "before_attachment_slots":a.1,"after_attachment_slots":b.1})),
+            (Some(a), None) => only_before
+                .push(json!({"kind":kind,"id":id,"known_quantity":a.0,"attachment_slots":a.1})),
+            (None, Some(b)) => only_after
+                .push(json!({"kind":kind,"id":id,"known_quantity":b.0,"attachment_slots":b.1})),
+            _ => {}
+        }
+    }
+    json!({"coverage":"loaded_inbox_attachments","message_identity":"unverified","inventory_transfers":"unverified",
+        "deliveries_or_retrievals":"unverified",
+        "before_loaded_messages":before["loaded_messages"],"after_loaded_messages":after["loaded_messages"],
+        "before_total_messages":before["total_messages"],"after_total_messages":after["total_messages"],
+        "before_unknown_attachment_slots":old_unknown,"after_unknown_attachment_slots":new_unknown,
+        "observed_only_before":only_before,"observed_only_after":only_after,"shared_observation_changes":changes})
 }
 
 fn compare_pet_views(before: &Value, after: &Value) -> Value {

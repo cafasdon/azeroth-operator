@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare known loaded pending mail attachment quantities and slot counts by item/currency ID, retaining partial coverage and avoiding delivery or inventory-transfer claims.
+
 - Search saved active-pet observations by presence, family, level and signed training-point balance, preserving unknowns and newest-capture selection.
 
 - Capture stable active-pet training-point totals and used counters, preserving signed balances and unknowns without inferring training eligibility or pet continuity.

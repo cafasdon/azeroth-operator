@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+`compare_snapshots.mail_attachment_changes` compares known loaded pending
+attachment quantities/slot counts by kind and ID, retaining unknown slots
+and loaded/total message counts. No correspondence or mail actions are
+added, and no delivery, retrieval or inventory transfer is inferred.
+[Offline evidence](../../docs/mail-comparison-verification-2026-11-08.md).
+
 `list_snapshots.active_pet` searches saved pet presence, family, inclusive
 level ranges and signed training-point balance ranges. Unknown data cannot
 match a threshold, even zero. Newest-capture/date/character/pagination filters
