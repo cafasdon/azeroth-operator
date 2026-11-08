@@ -575,6 +575,10 @@ costs are counted separately among rows matching the other filters.
 Set `quest_within_captured_wallet` to compare each cost with the wallet
 in the same capture. An optional copper cap can narrow the results further.
 If wallet data is unavailable, the filtered result is unknown.
+Set `quest_list_wallet_projection` to total captured costs and rewards
+across retained quests. The affordability check compares the combined
+cost with the saved wallet before any reward is credited. Unknown costs
+and rewards are counted separately.
 Use `quest_min_reward_xp` to keep quests with at least that much captured
 XP. Unknown rewards are excluded and counted before the copper filters.
 Set `quest_list_xp_projection` to total observed XP across retained quests.

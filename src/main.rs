@@ -76,6 +76,9 @@ struct Inspect {
     /// Project combined observed XP for retained quests against the saved level threshold.
     #[serde(default)]
     quest_list_xp_projection: bool,
+    /// Project total costs and rewards for the retained quests using the same captured wallet.
+    #[serde(default)]
+    quest_list_wallet_projection: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -1164,6 +1167,7 @@ impl Operator {
                 || args.quest_max_required_copper.is_some()
                 || args.quest_min_reward_xp.is_some()
                 || args.quest_list_xp_projection
+                || args.quest_list_wallet_projection
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -1225,7 +1229,10 @@ impl Operator {
                 "Quest cost filtering requires the quests section without a quest ID",
             )]);
         }
-        if (filter_rewards || args.quest_min_reward_xp.is_some() || args.quest_list_xp_projection)
+        if (filter_rewards
+            || args.quest_min_reward_xp.is_some()
+            || args.quest_list_xp_projection
+            || args.quest_list_wallet_projection)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1471,6 +1478,7 @@ impl Operator {
                     || args.quest_max_required_copper.is_some()
                     || args.quest_min_reward_xp.is_some()
                     || args.quest_list_xp_projection
+                    || args.quest_list_wallet_projection
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -1483,6 +1491,7 @@ impl Operator {
                     let context = if args.quest_on_captured_map
                         || args.quest_within_captured_wallet
                         || args.quest_list_xp_projection
+                        || args.quest_list_wallet_projection
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
                             Ok(snapshot) => snapshot,
@@ -1641,6 +1650,17 @@ impl Operator {
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
                                 azeroth_operator::analysis::quest_list_xp_projection(
                                     quests, experience,
+                                )
+                            });
+                    }
+                    if args.quest_list_wallet_projection {
+                        let wallet = context
+                            .as_ref()
+                            .and_then(|snapshot| snapshot.sections.get("wallet"));
+                        value["quest_list_wallet_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_list_wallet_projection(
+                                    quests, wallet,
                                 )
                             });
                     }

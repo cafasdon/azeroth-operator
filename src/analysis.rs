@@ -1572,6 +1572,38 @@ pub fn flight_wallet_projection(map: &Value, wallet: Option<&Value>) -> Value {
     )
 }
 
+pub fn quest_list_wallet_projection(
+    quests: &serde_json::Map<String, Value>,
+    wallet: Option<&Value>,
+) -> Value {
+    let mut known_cost = 0u128;
+    let mut known_reward = 0u128;
+    let mut unknown_cost = 0;
+    let mut unknown_reward = 0;
+    for quest in quests.values() {
+        match quest["required_copper"].as_u64() {
+            Some(copper) => known_cost += u128::from(copper),
+            None => unknown_cost += 1,
+        }
+        match quest["reward_amounts"]["copper"].as_u64() {
+            Some(copper) => known_reward += u128::from(copper),
+            None => unknown_reward += 1,
+        }
+    }
+    let known_cost = u64::try_from(known_cost).ok();
+    let balance = wallet.and_then(|row| row["copper"].as_u64());
+    let estimate = known_cost.zip(balance);
+    json!({
+        "known_required_copper":known_cost,"unknown_cost_count":unknown_cost,
+        "known_reward_copper":u64::try_from(known_reward).ok(),"unknown_reward_count":unknown_reward,
+        "wallet_observed":balance.is_some(),
+        "known_cost_shortfall_without_rewards_copper":estimate.map(|(cost,balance)| cost.saturating_sub(balance)),
+        "all_costs_fit_wallet_without_rewards":estimate.and_then(|(cost,balance)| {
+            if cost > balance { Some(false) } else if unknown_cost == 0 { Some(true) } else { None }
+        })
+    })
+}
+
 pub fn quest_wallet_projection(quest: Option<&Value>, wallet: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

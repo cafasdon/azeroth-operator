@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Budget combined copper costs and rewards for filtered saved Forever quest lists.
+
 - Project combined XP from filtered saved Forever quests against the captured level threshold.
 
 - Filter saved Forever quests by their recorded XP reward.
