@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Distinguish captured achievement completion from Forever character credit.
+
 - Summarise unfinished criteria across saved Forever tracked achievements.
 
 - Compare finished and unfinished objective counts for a selected Forever quest.

@@ -2436,7 +2436,12 @@ pub fn profession_rank_progress(profession: &Value) -> Value {
 fn tracked_achievement_workload(section: &Value) -> Option<Value> {
     let entries = section["entries"].as_object()?;
     let mut unfinished = Vec::new();
+    let mut completed_without_credit = Vec::new();
     for (id, achievement) in entries {
+        let Ok(id) = id.parse::<u32>() else { continue };
+        if achievement["completed"] == true && achievement["earned_by_character"] == false {
+            completed_without_credit.push(id);
+        }
         let Some(criteria) = achievement["criteria"].as_object() else {
             continue;
         };
@@ -2444,12 +2449,11 @@ fn tracked_achievement_workload(section: &Value) -> Option<Value> {
             .values()
             .filter(|row| row["completed"] == false)
             .count();
-        if count > 0
-            && let Ok(id) = id.parse::<u32>()
-        {
+        if count > 0 {
             unfinished.push((count, id, achievement));
         }
     }
+    completed_without_credit.sort_unstable();
     unfinished.sort_unstable_by_key(|&(count, id, _)| (std::cmp::Reverse(count), id));
     let rows: Vec<_> = unfinished
         .iter()
@@ -2457,13 +2461,15 @@ fn tracked_achievement_workload(section: &Value) -> Option<Value> {
         .map(|(count, id, achievement)| {
             json!({
                 "achievement_id":id,"name":achievement["name"],"completed":achievement["completed"],
+                "earned_by_character":achievement["earned_by_character"],"account_wide":achievement["account_wide"],
                 "unfinished_criteria":count
             })
         })
         .collect();
     Some(
         json!({"achievements_with_unfinished_criteria":unfinished.len(),
-        "achievements_with_most_unfinished_criteria":rows}),
+        "achievements_with_most_unfinished_criteria":rows,
+        "completed_without_character_credit_ids":completed_without_credit}),
     )
 }
 

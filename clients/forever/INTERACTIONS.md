@@ -403,7 +403,11 @@ means the list was unavailable. Only player-tracked achievements are covered.
 
 `character_summary.tracked_achievement_workload` lists up to 20 tracked
 achievements ranked by the number of observed unfinished criteria.
-The achievement completion flag is shown separately from those counts.
+Each ranked row shows the captured completion, character credit and
+account-wide flags separately from the criterion count.
+`completed_without_character_credit_ids` lists tracked achievements
+observed complete without credit for the captured character, even if
+they have no unfinished criterion rows.
 A missing tracked list leaves the whole workload unknown.
 
 On the Rust MCP, pass `faction_id` with `section: "reputation"` to inspect

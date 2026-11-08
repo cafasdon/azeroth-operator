@@ -272,9 +272,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["tracked_achievements_observed"], 2)
                         self.assertEqual(bank_summary_data["tracked_achievement_workload"], {
                             "achievements_with_unfinished_criteria": 1,
+                            "completed_without_character_credit_ids": [],
                             "achievements_with_most_unfinished_criteria": [
                                 {"achievement_id": 101, "name": "Fixture achievement",
-                                 "completed": False, "unfinished_criteria": 3},
+                                 "completed": False, "earned_by_character": False,
+                                 "account_wide": True, "unfinished_criteria": 3},
                             ],
                         })
                         training = json.loads(json.dumps(forever))
