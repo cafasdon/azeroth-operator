@@ -312,6 +312,11 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                        for value in (mean, deviation, oom)):
                 raise ValueError("Simulator returned invalid healing metrics")
             summary.update(mean_hps=mean, hps_standard_deviation=deviation, mean_seconds_oom=oom)
+            duration = result.get("avgIterationDuration")
+            if type(duration) in (int, float) and math.isfinite(duration) and duration > 0:
+                summary["mean_iteration_duration_seconds"] = duration
+                if oom <= duration:
+                    summary["simulated_time_oom_fraction"] = oom / duration
             if paired:
                 paired_distributions["hps"] = metrics["hps"]
         for metric, distribution in paired_distributions.items():

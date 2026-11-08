@@ -652,6 +652,9 @@ fraction, including zero observed deaths. It estimates uncertainty for
 that gear set under the chosen simulator settings.
 Healing comparisons include healing per second. An interval below zero
 for damage taken indicates an estimated reduction.
+Healing results also report mean realised fight duration and the share of
+total simulated fight time spent waiting for mana when the engine provides
+usable duration data. The engine exports aggregate mana downtime only.
 The ranker continues to sort by the point estimate.
 Fixed paired DPS runs with at least two distinct inputs also report
 `observed_leading_dps_pair`, the observed gap and paired standard error

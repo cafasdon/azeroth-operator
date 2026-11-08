@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Put Forever healing mana downtime in context with the realised simulation duration and fraction of simulated time.
+
 - Show Wilson intervals for tank death fractions in fixed Forever simulations.
 
 - Show paired uncertainty for simulated damage taken, threat and healing in fixed Forever comparisons.
