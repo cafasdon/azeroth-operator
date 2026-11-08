@@ -59,13 +59,23 @@ def validate_snapshot(value):
                 raise ValueError("Invalid instance context")
             if "lock_warning" in instance:
                 warning = instance["lock_warning"]
+                keys = {"remaining_seconds", "encounters_total", "encounters_completed"}
                 if (instance["kind"] not in ("party", "raid") or not isinstance(warning, dict)
-                        or set(warning) != {"remaining_seconds", "encounters_total", "encounters_completed"}
-                        or any(type(n) is not int for n in warning.values())
+                        or set(warning) - {"encounters"} != keys
+                        or any(type(warning[key]) is not int for key in keys)
                         or not 0 <= warning["remaining_seconds"] <= 4_294_967_295
                         or not 1 <= warning["encounters_total"] <= 256
                         or not 0 <= warning["encounters_completed"] <= warning["encounters_total"]):
                     raise ValueError("Invalid instance lock warning")
+                if "encounters" in warning:
+                    rows = warning["encounters"]
+                    if (warning["encounters_completed"] == 0 or not isinstance(rows, dict)
+                            or set(rows) != {str(index) for index in range(1, warning["encounters_total"] + 1)}
+                            or any(not isinstance(row, dict) or set(row) != {"name", "killed"}
+                                   or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
+                                   or type(row["killed"]) is not bool for row in rows.values())
+                            or sum(row["killed"] for row in rows.values()) != warning["encounters_completed"]):
+                        raise ValueError("Invalid lock encounter rows")
     if "bag_capacity" in sections:
         bags = sections["bag_capacity"]
         if (c["family"] != "forever" or not isinstance(bags, dict) or len(bags) not in (5, 6)

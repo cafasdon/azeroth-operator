@@ -886,6 +886,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             ("remaining_seconds", "uint", true),
                             ("encounters_total", "positive", true),
                             ("encounters_completed", "uint", true),
+                            ("encounters", "map", false),
                         ],
                     )?;
                     ensure!(
@@ -895,6 +896,30 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             .is_some_and(|(total, completed)| total <= 256 && completed <= total),
                         "Invalid instance lock progress"
                     );
+                    if let Some(rows) = warning.get("encounters") {
+                        let total = warning["encounters_total"].as_u64().unwrap() as u32;
+                        let completed = warning["encounters_completed"].as_u64().unwrap();
+                        let rows = rows
+                            .as_object()
+                            .ok_or_else(|| anyhow::anyhow!("Invalid lock encounter rows"))?;
+                        ensure!(
+                            completed > 0 && rows.len() == total as usize,
+                            "Incomplete lock encounter rows"
+                        );
+                        let mut killed = 0;
+                        for (key, row) in rows {
+                            index(key, 1, total)?;
+                            object(row, &[("name", "text", true), ("killed", "bool", true)])?;
+                            ensure!(
+                                row["name"]
+                                    .as_str()
+                                    .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                                "Invalid lock encounter name"
+                            );
+                            killed += u64::from(row["killed"].as_bool() == Some(true));
+                        }
+                        ensure!(killed == completed, "Lock encounter count mismatch");
+                    }
                 }
             }
             _ => anyhow::bail!("Invalid instance type"),

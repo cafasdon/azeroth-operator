@@ -45,6 +45,10 @@ and aggregate encounter counts. This is the warning at capture time.
 It does not track the character's saved raid lockouts or accept the prompt.
 The snapshot listing excludes the warning details. [Forever lock warning source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
 
+When the warning reports completed encounters, it can also include the
+tooltip's boss names and defeat flags. The list is saved only when all
+rows are readable and agree with the aggregate counts.
+
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture
 time. The separately observed `rested_xp` is the saved XP bonus pool.

@@ -406,6 +406,10 @@ pub fn verify_forever_capture_fixture(
         fixtureLockDialog={IsVisible=function() return fixtureLockVisible end}
         function StaticPopup_FindVisible(key) assert(key=="INSTANCE_LOCK"); return fixtureLockVisible and fixtureLockDialog end
         function GetInstanceLockTimeRemaining() assert(fixtureLockVisible); return 14.1,false,8,3 end
+        function GetInstanceLockTimeRemainingEncounter(index)
+            assert(fixtureLockVisible and index>=1 and index<=8)
+            return "Boss "..index,"Fixture texture",index<=3 and not fixtureBadEncounter,true
+        end
         fixtureNewMail=true
         C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
             GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end,
@@ -813,6 +817,16 @@ pub fn verify_forever_capture_fixture(
     assert!(read()?.unavailable.contains_key("instance_context"));
     lua.load("fixtureInstanceKind=nil").exec()?;
     lua.load("fixtureLockVisible=true;AO.Capture()").exec()?;
+    let warning = read()?.sections["instance_context"]["lock_warning"].clone();
+    assert_eq!(
+        warning["encounters"]["3"],
+        serde_json::json!({"name":"Boss 3","killed":true})
+    );
+    assert_eq!(
+        warning["encounters"]["8"],
+        serde_json::json!({"name":"Boss 8","killed":false})
+    );
+    lua.load("fixtureBadEncounter=true;AO.Capture()").exec()?;
     assert_eq!(
         read()?.sections["instance_context"]["lock_warning"],
         serde_json::json!({

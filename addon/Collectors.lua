@@ -861,7 +861,22 @@ AO.collectors.instance_context = function()
             if questRewardAccessible(seconds) and type(seconds)=="number" and seconds>=0 and seconds<=4294967295
                 and questRewardInteger(total,1,256) and questRewardInteger(completed,0,total)
                 and dialog:IsVisible() and StaticPopup_FindVisible("INSTANCE_LOCK")==dialog then
-                return {remaining_seconds=math.ceil(seconds),encounters_total=total,encounters_completed=completed}
+                local result={remaining_seconds=math.ceil(seconds),encounters_total=total,encounters_completed=completed}
+                if completed>0 then
+                    local read,encounters=pcall(function()
+                        local rows,killedCount={},0
+                        for index=1,total do
+                            local boss,_,killed=GetInstanceLockTimeRemainingEncounter(index)
+                            if not (questRewardAccessible(boss) and type(boss)=="string" and #boss>0 and #boss<=256
+                                and questRewardAccessible(killed) and type(killed)=="boolean") then return end
+                            rows[tostring(index)]={name=boss,killed=killed}
+                            if killed then killedCount=killedCount+1 end
+                        end
+                        if killedCount==completed then return rows end
+                    end)
+                    if read then result.encounters=encounters end
+                end
+                if dialog:IsVisible() and StaticPopup_FindVisible("INSTANCE_LOCK")==dialog then return result end
             end
         end)
         if ok then context.lock_warning=warning end
