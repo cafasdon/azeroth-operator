@@ -1172,6 +1172,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("present", "bool", true),
                     ("family_id", "positive", false),
                     ("level", "positive", false),
+                    ("training_points", "map", false),
                     ("happiness", "uint", false),
                     ("loyalty", "text", false),
                     ("food_types", "map", false),
@@ -1179,6 +1180,10 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 ],
             )?;
             let present = value["present"] == true;
+            if let Some(points) = value.get("training_points") {
+                ensure!(present, "Pet training points require a present pet");
+                object(points, &[("total", "int", true), ("used", "int", true)])?;
+            }
             for field in ["family_id", "level"] {
                 ensure!(
                     value.get(field).is_none_or(|v| present && !v.is_null()),

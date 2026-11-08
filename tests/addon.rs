@@ -822,7 +822,7 @@ pub fn verify_forever_capture_fixture(
     lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
     assert_eq!(
         snapshot.sections["pet_care"],
-        serde_json::json!({"present":true,"happiness":3,"level":17,
+        serde_json::json!({"present":true,"happiness":3,"level":17,"training_points":{"total":25,"used":10},
         "loyalty":"Fixture loyalty","food_types":{"1":"Meat","2":"Fish"},"carried_food":{}})
     );
     assert_eq!(

@@ -2187,7 +2187,7 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
             let mut observed = json!({
                 "present":pet["present"],"happiness":pet["happiness"],"loyalty":pet["loyalty"],
             });
-            for field in ["family_id", "level"] {
+            for field in ["family_id", "level", "training_points"] {
                 if let Some(value) = pet.get(field) {
                     observed[field] = value.clone();
                 }
@@ -4406,9 +4406,20 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
-    summary["active_pet_observation"] = s.sections.get("pet_care").map(|pet| {
-        json!({"present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]})
-    }).unwrap_or(Value::Null);
+    summary["active_pet_observation"] = s
+        .sections
+        .get("pet_care")
+        .map(|pet| {
+            let mut observed =
+                json!({"present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]});
+            if let Some(points) = pet.get("training_points") {
+                observed["training_points"] = points.clone();
+                observed["training_points_balance"] =
+                    json!(points["total"].as_i64().unwrap() - points["used"].as_i64().unwrap());
+            }
+            observed
+        })
+        .unwrap_or(Value::Null);
     summary["pet_collection_view_counts"] = s.sections.get("pet_collection_view").map(|view| {
         let rows=view["entries"].as_object().unwrap();
         json!({"displayed_rows":view["displayed_rows"],"species_observed":rows.len(),

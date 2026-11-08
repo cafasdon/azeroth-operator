@@ -43,6 +43,16 @@ individual pet or a level gain. No pet names, GUIDs, summon or training actions
 are added. Update readers before importing the new fields. See
 [offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
 
+`pet_care.training_points` can include the public `total` and `used` counters
+without a trainer window. Both must be readable and stable during capture;
+missing or partial data stays absent. Summary `active_pet_observation` includes
+the raw counters and `training_points_balance` as signed total minus used,
+so deficits are preserved. Pet-care comparisons show the counters on each
+side without deriving points gained or spent across potentially different
+pets. This does not verify learned skills or lesson eligibility. Update
+readers before using the new export field. See
+[offline evidence](../../docs/pet-training-points-verification-2026-11-08.md).
+
 Equipment reviews now include `captured_active_pet` with presence, family ID
 and level, or null for an unavailable pet observation. The pinned engine also
 fixes Hunter pets at level 60. If a Hunter template models a pet (nonzero

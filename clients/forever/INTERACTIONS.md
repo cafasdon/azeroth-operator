@@ -8,6 +8,12 @@ as observations, with unknowns preserved and no individual-pet continuity
 or level-gain inference. No pet names, GUIDs or pet actions are added.
 [Offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
 
+Active-pet training-point totals and used counters can also be captured
+without opening a trainer. Summary preserves their signed difference;
+comparisons expose raw before/after observations without a same-pet or
+points-earned/spent inference. Unknown data remains absent. No training
+action or eligibility claim is added. [Offline evidence](../../docs/pet-training-points-verification-2026-11-08.md).
+
 Character-bound Hunter simulations that model a pet require captured present
 pet level 60, matching the pinned engine. Other/unknown pet levels remain
 plan-only; no-pet and zero-uptime templates are unaffected. Family, happiness

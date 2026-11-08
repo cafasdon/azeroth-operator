@@ -35,6 +35,18 @@ fn active_pet_public_details_preserve_unknowns_and_reject_changes()
             if mode=='invalid' then return -1 end
             return mode=='changed_level' and reads>1 and 18 or 17
         end
+        C_PetInfo={GetPetTrainingPoints=function()
+            if mode=='training_known' then return 25,10 end
+            if mode=='training_zero' then return 0,0 end
+            if mode=='training_deficit' then return 10,20 end
+            if mode=='training_negative' then return -10,20 end
+            if mode=='training_secret' then return 'PRIVATE',10 end
+            if mode=='training_partial' then return 25,nil end
+            if mode=='training_invalid' then return 2147483648,0 end
+            if mode=='training_error' then error('PRIVATE') end
+            if mode=='training_changed' then return 25,reads>1 and 11 or 10 end
+            return nil,nil
+        end}
     "#,
     )
     .exec()?;
@@ -62,7 +74,30 @@ fn active_pet_public_details_preserve_unknowns_and_reject_changes()
             serde_json::json!({"present":true})
         );
     }
-    for mode in ["changed_family", "changed_level"] {
+    for (mode, total, used) in [
+        ("training_known", 25, 10),
+        ("training_zero", 0, 0),
+        ("training_deficit", 10, 20),
+        ("training_negative", -10, 20),
+    ] {
+        lua.globals().set("mode", mode)?;
+        assert_eq!(
+            capture()?.sections["pet_care"]["training_points"],
+            serde_json::json!({"total":total,"used":used})
+        );
+    }
+    for mode in [
+        "training_secret",
+        "training_partial",
+        "training_invalid",
+        "training_error",
+    ] {
+        lua.globals().set("mode", mode)?;
+        let saved = capture()?;
+        assert!(saved.sections["pet_care"].get("training_points").is_none());
+        assert!(!serde_json::to_string(&saved)?.contains("PRIVATE"));
+    }
+    for mode in ["changed_family", "changed_level", "training_changed"] {
         lua.globals().set("mode", mode)?;
         let saved = capture()?;
         assert!(saved.unavailable.contains_key("pet_care"));

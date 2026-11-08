@@ -1402,16 +1402,24 @@ AO.collectors.pet_care = function(bags)
     assert(questRewardAccessible(present) and type(present)=="boolean", "Active pet state unavailable")
     local result={present=present}
     if not present then return result end
+    local api=C_PetInfo
     local function details()
         local observed={}
         local ok,_,family=pcall(UnitCreatureFamily,"pet")
         if ok and questRewardInteger(family,1,4294967295) then observed.family_id=family end
         local read,level=pcall(UnitLevel,"pet")
         if read and questRewardInteger(level,1,4294967295) then observed.level=level end
+        if api then
+            local read,total,used=pcall(api.GetPetTrainingPoints)
+            if read and questRewardInteger(total,-2147483648,2147483647)
+                and questRewardInteger(used,-2147483648,2147483647) then
+                observed.training_total=total
+                observed.training_used=used
+            end
+        end
         return observed
     end
     local first=details()
-    local api=C_PetInfo
     if api then
         local ok,happiness=pcall(api.GetPetHappiness)
         if ok and questRewardInteger(happiness,0,255) then result.happiness=happiness end
@@ -1439,8 +1447,13 @@ AO.collectors.pet_care = function(bags)
     assert(questRewardAccessible(current) and current==true, "Active pet unavailable")
     local second=details()
     assert(first.family_id==second.family_id and first.level==second.level,"Active pet details changed")
+    assert(first.training_total==second.training_total and first.training_used==second.training_used,
+        "Active pet training points changed")
     result.family_id=first.family_id
     result.level=first.level
+    if first.training_total~=nil then
+        result.training_points={total=first.training_total,used=first.training_used}
+    end
     return result
 end
 
