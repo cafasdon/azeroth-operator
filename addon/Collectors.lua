@@ -924,6 +924,38 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+AO.collectors.pet_care = function()
+    local present=UnitExists("pet")
+    assert(questRewardAccessible(present) and type(present)=="boolean", "Active pet state unavailable")
+    local result={present=present}
+    if not present then return result end
+    local api=C_PetInfo
+    if api then
+        local ok,happiness=pcall(api.GetPetHappiness)
+        if ok and questRewardInteger(happiness,0,255) then result.happiness=happiness end
+        local observed,loyalty=pcall(api.GetPetLoyalty)
+        if observed and questRewardAccessible(loyalty) and type(loyalty)=="string" and #loyalty>0 and #loyalty<=256 then
+            result.loyalty=loyalty
+        end
+        local read,foods=pcall(function()
+            local rows=api.GetPetFoodTypes()
+            if not (questRewardAccessible(rows) and type(rows)=="table" and #rows<=16) then return end
+            local names,count={},0
+            for index,name in pairs(rows) do
+                if not (questRewardInteger(index,1,#rows) and questRewardAccessible(name)
+                    and type(name)=="string" and #name>0 and #name<=256) then return end
+                names[tostring(index)]=name
+                count=count+1
+            end
+            if count==#rows then return names end
+        end)
+        if read then result.food_types=foods end
+    end
+    local current=UnitExists("pet")
+    assert(questRewardAccessible(current) and current==true, "Active pet unavailable")
+    return result
+end
+
 local function trainerAbilityRequirements(index)
     local count=GetTrainerServiceNumAbilityReq(index)
     if not questRewardInteger(count,0,16) then return end

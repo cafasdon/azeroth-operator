@@ -23,6 +23,12 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`pet_care` records whether an active pet was present and, when readable,
+its game-reported happiness value, localized loyalty label and accepted
+food types. An empty food list means the game reported none. The capture
+omits pet identity and leaves feeding to the player. Update the importer
+and reader before syncing new captures. [Forever pet API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/PetInfoDocumentation.lua)
+
 `trainer_services` saves the open general, profession or pet trainer's API
 list under the player's current trainer filters. It records lesson names,
 available, unavailable or known status, and readable rank labels,

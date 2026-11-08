@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture Forever active-pet happiness, loyalty and accepted food types for offline care review.
+
 - Budget available Forever pet lessons against the active pet's captured training points.
 
 - Capture Forever pet trainer lessons and training-point prices separately from copper.

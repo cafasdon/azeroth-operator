@@ -866,6 +866,42 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "pet_care" => {
+            object(
+                value,
+                &[
+                    ("present", "bool", true),
+                    ("happiness", "uint", false),
+                    ("loyalty", "text", false),
+                    ("food_types", "map", false),
+                ],
+            )?;
+            let present = value["present"] == true;
+            ensure!(
+                value
+                    .get("happiness")
+                    .is_none_or(|h| present && h.as_u64().is_some_and(|h| h <= 255))
+                    && value.get("loyalty").is_none_or(|name| present
+                        && name
+                            .as_str()
+                            .is_some_and(|name| !name.is_empty() && name.len() <= 256)),
+                "Invalid pet care data"
+            );
+            if let Some(foods) = value.get("food_types") {
+                let foods = foods
+                    .as_object()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid pet food types"))?;
+                ensure!(present && foods.len() <= 16, "Invalid pet food types");
+                for (key, name) in foods {
+                    index(key, 1, foods.len() as u32)?;
+                    ensure!(
+                        name.as_str()
+                            .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                        "Invalid pet food type"
+                    );
+                }
+            }
+        }
         "trainer_services" => {
             object(
                 value,

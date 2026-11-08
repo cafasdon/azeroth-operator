@@ -573,7 +573,10 @@ pub fn verify_forever_capture_fixture(
         Enum.TrainerType={General=0,Tradeskills=2,Pet=3}
         C_Trainer={GetTrainerType=function() return fixtureTrainerKind or 2 end}
         function UnitExists(unit) assert(unit=="pet"); return not fixtureNoPet end
-        C_PetInfo={GetPetTrainingPoints=function() return 25,10 end}
+        C_PetInfo={GetPetTrainingPoints=function() return 25,10 end,
+            GetPetHappiness=function() return 3,125,10 end,
+            GetPetLoyalty=function() return "Fixture loyalty" end,
+            GetPetFoodTypes=function() return fixtureEmptyFood and {} or {"Meat","Fish"} end}
         function GetNumTrainerServices() return 2 end
         function GetTrainerServiceInfo(index)
             if index==1 then return "Fixture lesson","available",nil,10,"Rank 2" end
@@ -799,6 +802,22 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(pet["pet_training_points_available"], 15);
     assert_eq!(pet["entries"]["1"]["price_training_points"], 500);
     assert!(pet["entries"]["1"].get("price_copper").is_none());
+    lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
+    assert_eq!(
+        snapshot.sections["pet_care"],
+        serde_json::json!({"present":true,"happiness":3,
+        "loyalty":"Fixture loyalty","food_types":{"1":"Meat","2":"Fish"}})
+    );
+    assert_eq!(
+        read()?.sections["pet_care"],
+        serde_json::json!({"present":false})
+    );
+    lua.load("fixtureNoPet=false;fixtureEmptyFood=true;AO.Capture()")
+        .exec()?;
+    assert_eq!(
+        read()?.sections["pet_care"]["food_types"],
+        serde_json::json!({})
+    );
     lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
     assert!(
         read()?.sections["trainer_services"]

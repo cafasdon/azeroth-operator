@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -54,6 +54,22 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "pet_care" in sections:
+        pet = sections["pet_care"]
+        if (c["family"] != "forever" or not isinstance(pet, dict)
+                or set(pet) - {"present", "happiness", "loyalty", "food_types"}
+                or type(pet.get("present")) is not bool or (not pet["present"] and len(pet) != 1)):
+            raise ValueError("Invalid pet care data")
+        if "happiness" in pet and (type(pet["happiness"]) is not int or not 0 <= pet["happiness"] <= 255):
+            raise ValueError("Invalid pet happiness")
+        if "loyalty" in pet and (not isinstance(pet["loyalty"], str) or not 1 <= len(pet["loyalty"].encode()) <= 256):
+            raise ValueError("Invalid pet loyalty")
+        if "food_types" in pet:
+            foods = pet["food_types"]
+            if (not isinstance(foods, dict) or len(foods) > 16
+                    or set(foods) != {str(i) for i in range(1, len(foods) + 1)}
+                    or any(not isinstance(name, str) or not 1 <= len(name.encode()) <= 256 for name in foods.values())):
+                raise ValueError("Invalid pet food types")
     if "trainer_services" in sections:
         trainer = sections["trainer_services"]
         if (c["family"] != "forever" or not isinstance(trainer, dict)
