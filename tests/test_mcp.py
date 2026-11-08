@@ -820,6 +820,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         for quest_id, reward in [("10", 50), ("2", 50), ("42", 1000), ("44", 1000)]:
                             travel["sections"]["quests"][quest_id]["reward_amounts"] = {"xp": reward}
+                        for quest_id, cost in [("2", 20), ("10", 40), ("42", 500)]:
+                            travel["sections"]["quests"][quest_id]["required_copper"] = cost
                         travel["sections"]["bags"] = {"0": {"1": {"item_id": 117, "count": 3}}}
                         travel["sections"]["pet_care"] = {
                             "present": True, "happiness": 2, "loyalty": "Fixture loyal",
@@ -958,6 +960,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         capped_travel = json.loads(json.dumps(travel))
                         capped_travel["sections"]["experience"] = {"status": "level_capped"}
                         capped_id = SnapshotStore(Path(folder)).ingest(capped_travel)
+                        xp_budget = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": travel_before, "section": "quests",
+                            "quest_list_xp_projection": True, "quest_list_wallet_projection": True,
+                        })
+                        self.assertFalse(xp_budget.isError)
+                        xp_budget_data = json.loads(xp_budget.content[0].text)
+                        self.assertEqual(xp_budget_data["quest_list_wallet_projection"]["known_required_copper"], 560)
+                        selected_budget = xp_budget_data["quest_list_xp_projection"][
+                            "ready_turn_in_plan"]["wallet_projection"]
+                        self.assertEqual(selected_budget["known_required_copper"], 60)
+                        self.assertEqual(selected_budget["known_cost_shortfall_without_rewards_copper"], 59)
+                        self.assertFalse(selected_budget["all_costs_fit_wallet_without_rewards"])
                         for capture_id, expected in [
                             (travel_before, {"quest_ids_to_threshold": [2, 10],
                                              "xp_shortfall_after_known_ready_rewards": 0}),

@@ -1036,6 +1036,11 @@ to reach the saved threshold by taking larger rewards first, breaking
 ties by quest ID. If known ready rewards fall short, the plan reports
 that shortfall and leaves the selected list null. A missing threshold
 or explicitly disabled XP gain leaves the entire plan unknown.
+Request `quest_list_wallet_projection` alongside the XP projection
+to show a separate wallet estimate for just the selected quests. It
+uses the same capture's wallet and reports observed costs, unknowns and
+the cost shortfall without crediting rewards. The XP selection itself
+still prioritises the fewest recorded turn-ins.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its
