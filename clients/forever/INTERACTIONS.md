@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+`list_snapshots.active_pet` searches saved pet presence, family, inclusive
+level ranges and signed training-point balance ranges. Unknown data cannot
+match a threshold, even zero. Newest-capture/date/character/pagination filters
+remain in force; no current-character or live-pet claim is made.
+[Offline evidence](../../docs/active-pet-search-verification-2026-11-08.md).
+
 Saved active-pet care can include readable public family ID and level,
 checked for consistency during capture. Summary and comparison expose these
 as observations, with unknowns preserved and no individual-pet continuity

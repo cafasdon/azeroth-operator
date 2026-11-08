@@ -310,6 +310,8 @@ struct List {
     mail_attachment: Option<azeroth_operator::MailAttachmentFilter>,
     /// Match a species observed in the saved filtered pet journal, not full account ownership.
     pet_species: Option<azeroth_operator::PetSpeciesFilter>,
+    /// Match saved active-pet presence, family, level and signed training-point balance.
+    active_pet: Option<azeroth_operator::ActivePetCaptureFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1300,6 +1302,7 @@ impl Operator {
                 profession_recipe: args.profession_recipe,
                 mail_attachment: args.mail_attachment,
                 pet_species: args.pet_species,
+                active_pet: args.active_pet,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

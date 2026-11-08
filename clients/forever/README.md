@@ -53,6 +53,19 @@ pets. This does not verify learned skills or lesson eligibility. Update
 readers before using the new export field. See
 [offline evidence](../../docs/pet-training-points-verification-2026-11-08.md).
 
+`list_snapshots.active_pet` searches saved pet-care observations. For example,
+`{"family_id":1,"minimum_level":60,"minimum_training_points_balance":10}`
+requires all three recorded conditions. Use
+`{"maximum_training_points_balance":-1}` for observed deficits, or
+`{"present":false}` for an explicitly absent pet. Missing fields/sections
+never match a requested threshold, even zero. At least one predicate is
+required; absent-pet searches cannot also require pet details. Inclusive
+level and balance bounds must be ordered, with balance bounds limited to
+±4,294,967,295. Results include compact `active_pet_match` metadata.
+Character, date, newest-capture and pagination filters compose normally.
+These are saved observations, not the character currently in play or live
+pet readiness. See [offline evidence](../../docs/active-pet-search-verification-2026-11-08.md).
+
 Equipment reviews now include `captured_active_pet` with presence, family ID
 and level, or null for an unavailable pet observation. The pinned engine also
 fixes Hunter pets at level 60. If a Hunter template models a pet (nonzero

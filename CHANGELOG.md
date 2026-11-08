@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved active-pet observations by presence, family, level and signed training-point balance, preserving unknowns and newest-capture selection.
+
 - Capture stable active-pet training-point totals and used counters, preserving signed balances and unknowns without inferring training eligibility or pet continuity.
 
 - Require saved active-pet level 60 for character-bound Hunter simulations that model a pet, matching the pinned engine; keep other/unknown levels available for plan-only review.

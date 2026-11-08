@@ -387,6 +387,94 @@ pub struct PetSpeciesFilter {
     pub minimum_unowned_rows: Option<u32>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ActivePetCaptureFilter {
+    /// Recorded pet presence, not current game state.
+    pub present: Option<bool>,
+    pub family_id: Option<std::num::NonZeroU32>,
+    pub minimum_level: Option<std::num::NonZeroU32>,
+    pub maximum_level: Option<std::num::NonZeroU32>,
+    /// Inclusive signed total-minus-used bound; requires observed counters.
+    pub minimum_training_points_balance: Option<i64>,
+    pub maximum_training_points_balance: Option<i64>,
+}
+
+impl ActivePetCaptureFilter {
+    fn validate(&self) -> Result<()> {
+        let details = self.family_id.is_some()
+            || self.minimum_level.is_some()
+            || self.maximum_level.is_some()
+            || self.minimum_training_points_balance.is_some()
+            || self.maximum_training_points_balance.is_some();
+        ensure!(
+            self.present.is_some() || details,
+            "Select an active-pet observation filter"
+        );
+        ensure!(
+            self.present != Some(false) || !details,
+            "Absent-pet filtering cannot require pet details"
+        );
+        ensure!(
+            self.minimum_level
+                .zip(self.maximum_level)
+                .is_none_or(|(a, b)| a <= b),
+            "Reversed pet level bounds"
+        );
+        for bound in [
+            self.minimum_training_points_balance,
+            self.maximum_training_points_balance,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            ensure!(
+                (-(i64::from(u32::MAX))..=i64::from(u32::MAX)).contains(&bound),
+                "Pet training balance bound out of range"
+            );
+        }
+        ensure!(
+            self.minimum_training_points_balance
+                .zip(self.maximum_training_points_balance)
+                .is_none_or(|(a, b)| a <= b),
+            "Reversed pet training balance bounds"
+        );
+        Ok(())
+    }
+
+    fn observation_match(&self, pet: &Value) -> Option<Value> {
+        let present = pet["present"].as_bool()?;
+        if self.present.is_some_and(|expected| present != expected)
+            || (!present && self.present != Some(false))
+        {
+            return None;
+        }
+        let level = pet["level"].as_u64();
+        let balance = analysis::pet_training_points_balance(pet);
+        if !self
+            .family_id
+            .is_none_or(|id| pet["family_id"].as_u64() == Some(u64::from(id.get())))
+            || !self
+                .minimum_level
+                .is_none_or(|minimum| level.is_some_and(|n| n >= u64::from(minimum.get())))
+            || !self
+                .maximum_level
+                .is_none_or(|maximum| level.is_some_and(|n| n <= u64::from(maximum.get())))
+            || !self
+                .minimum_training_points_balance
+                .is_none_or(|minimum| balance.is_some_and(|n| n >= minimum))
+            || !self
+                .maximum_training_points_balance
+                .is_none_or(|maximum| balance.is_some_and(|n| n <= maximum))
+        {
+            return None;
+        }
+        Some(
+            json!({"present":present,"family_id":pet["family_id"],"level":pet["level"],"training_points_balance":balance}),
+        )
+    }
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -418,6 +506,7 @@ pub struct CaptureFilters<'a> {
     pub profession_recipe: Option<ProfessionRecipeFilter>,
     pub mail_attachment: Option<MailAttachmentFilter>,
     pub pet_species: Option<PetSpeciesFilter>,
+    pub active_pet: Option<ActivePetCaptureFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -614,6 +703,7 @@ impl Store {
             profession_recipe,
             mail_attachment,
             pet_species,
+            active_pet,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -687,6 +777,13 @@ impl Store {
         let pet_species_key = pet_species
             .as_ref()
             .map(|filter| filter.species_id.to_string());
+        ensure!(
+            active_pet.is_none() || family == Family::Forever,
+            "Active-pet filtering requires Forever"
+        );
+        if let Some(filter) = &active_pet {
+            filter.validate()?;
+        }
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
             Ok(DateTime::parse_from_rfc3339(value)?.with_timezone(&Utc))
@@ -1034,6 +1131,12 @@ impl Store {
                                 "owned_rows":row["owned_rows"],"unowned_rows":row["unowned_rows"]}))
                     });
                     if pet_species.is_some() && pet_species_match.is_none() {
+                        continue;
+                    }
+                    let active_pet_match = active_pet
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(s.sections.get("pet_care")?));
+                    if active_pet.is_some() && active_pet_match.is_none() {
                         continue;
                     }
                     let mail_attachment_match = mail_attachment.as_ref().and_then(|filter| {
@@ -1597,6 +1700,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_species_match {
                         summary["pet_species_match"] = observation;
+                    }
+                    if let Some(observation) = active_pet_match {
+                        summary["active_pet_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

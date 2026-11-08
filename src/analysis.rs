@@ -2181,6 +2181,13 @@ fn compare_professions(before: &Value, after: &Value) -> Option<Value> {
                 "observed_only_after":only_after,"ambiguous_skill_lines":ambiguous}))
 }
 
+pub fn pet_training_points_balance(pet: &Value) -> Option<i64> {
+    let points = pet.get("training_points")?;
+    points["total"]
+        .as_i64()?
+        .checked_sub(points["used"].as_i64()?)
+}
+
 fn compare_pet_care(before: &Value, after: &Value) -> Value {
     let observation = |pet: &Value| {
         pet.as_object().map(|_| {
@@ -4414,8 +4421,7 @@ pub fn summary(s: &Snapshot) -> Value {
                 json!({"present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]});
             if let Some(points) = pet.get("training_points") {
                 observed["training_points"] = points.clone();
-                observed["training_points_balance"] =
-                    json!(points["total"].as_i64().unwrap() - points["used"].as_i64().unwrap());
+                observed["training_points_balance"] = json!(pet_training_points_balance(pet));
             }
             observed
         })
