@@ -1,5 +1,9 @@
 # Changelog
 
+- Filter captured recipe searches by fixed reagent support in bags or all
+  observed storage, with explicit unknowns, bounded paging and no inferred
+  learning, complete ownership or live craftability.
+
 - Extend pinned real-simulator qualification to combined saved-journal rankings,
   cold multi-page resumptions, warm checkpoint reuse and saved gear references.
 

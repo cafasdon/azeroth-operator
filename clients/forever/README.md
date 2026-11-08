@@ -4,6 +4,33 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+## Find recipes supported by observed materials
+
+`search_forever_recipes` accepts optional `material_filter`, for example
+`{"scope":"bags","minimum_crafts":5}`. Scope is required and can instead be
+`all_observed_storage` to combine observed bags, character bank and account bank
+from the same snapshot. The minimum is a positive 32-bit integer. This finds
+bulk-captured fixed recipes whose observed item counts support that many crafts;
+it does not verify learning, cooldowns, conditions or actual crafting eligibility.
+Each recipe is evaluated independently against the same stock, so matching rows
+are alternatives, not a jointly affordable crafting batch.
+
+Results keep numeric recipe ordering and existing pagination/ID/status filters.
+`material_support` reports the observed `supported_crafts` bound. Explicitly
+empty required reagent lists match any minimum, with `no_required_items: true`
+and a null finite capacity. Unsupported/unreadable material rows or completely
+missing selected storage are unknown and do not satisfy the filter. Unknown and
+insufficient-observed counts cover rows passing the other filters, before
+paging. Missing recipe observations yield null counts; observed-empty lists
+yield zero. Inventory coverage reports missing sections and never verifies
+complete ownership. Equipment, mail and merchant stock do not contribute.
+
+Omitting the filter, or supplying null, preserves the original search result.
+Use `review_forever_recipe` with the returned exact recipe ID for its separate
+preparation and learning checks; an explicit learning conflict can still block
+review even when observed materials support the request. No game action or
+external lookup is performed.
+
 ## Execute a saved gear journal page offline
 
 For execution across pages and a combined observed ranking, use

@@ -169,3 +169,10 @@ subsequently checks two saved pages against pinned actual simulator results,
 including warm reuse, cold bounded resumptions, exact metrics and gear draft
 references. It remains a fixed-seed sparse synthetic fixture; broad native,
 ownership, feasibility and model qualification remain open.
+
+[Material-supported recipe discovery](recipe-material-search-verification-2026-11-09.md)
+then adds an optional same-snapshot bags/all-observed-storage filter to bulk recipe
+search. Independent exact-integer and planner comparisons cover missing storage,
+large captures and paging. It answers material-support questions without
+inferring learning, live craftability, complete knowledge or profession
+progression; those broader requirements remain unfinished.

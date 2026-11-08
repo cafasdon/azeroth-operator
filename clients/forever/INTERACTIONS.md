@@ -1,5 +1,16 @@
 # Forever interaction map
 
+Recipe discovery can require observed fixed material support with
+`search_forever_recipes.material_filter`: explicit bags or all-observed-storage
+scope and a positive minimum craft count. Counts aggregate once from the same
+owner-local snapshot, then each captured row is tested independently. Matched
+rows report capacity; unsupported/missing data remains unknown, separately from
+insufficient observed counts. No-cost fixed recipes have no finite material
+bound. Other filters apply to the same row before material filtering and paging.
+This does not infer learning, cooldowns, joint recipe budgets, ownership
+completeness or live craftability. Default search is unchanged.
+[Offline evidence](../../docs/recipe-material-search-verification-2026-11-09.md).
+
 Restock crafting can opt into `restock_merchant_reagent_plan`. It prices combined
 reagent shortfalls once, rather than pricing each recipe against the same stock
 independently. Offers default to the inventory capture or an explicit compatible

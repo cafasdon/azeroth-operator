@@ -88,6 +88,82 @@ pub enum RecipeMaterialStatus {
     BudgetExhausted,
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeMaterialScope {
+    Bags,
+    AllObservedStorage,
+}
+
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeMaterialFilter {
+    pub scope: RecipeMaterialScope,
+    pub minimum_crafts: std::num::NonZeroU32,
+}
+
+struct RecipeMaterialStock {
+    quantities: BTreeMap<u64, u64>,
+    observed: Vec<&'static str>,
+    missing: Vec<&'static str>,
+}
+
+impl RecipeMaterialStock {
+    fn from_snapshot(snapshot: &Snapshot, scope: RecipeMaterialScope) -> Result<Self> {
+        let storages: &[&'static str] = match scope {
+            RecipeMaterialScope::Bags => &["bags"],
+            RecipeMaterialScope::AllObservedStorage => &["bags", "character_bank", "account_bank"],
+        };
+        let mut stock = Self {
+            quantities: BTreeMap::new(),
+            observed: Vec::new(),
+            missing: Vec::new(),
+        };
+        for &storage in storages {
+            let Some(containers) = snapshot.sections.get(storage).and_then(Value::as_object) else {
+                stock.missing.push(storage);
+                continue;
+            };
+            stock.observed.push(storage);
+            for item in containers
+                .values()
+                .filter_map(Value::as_object)
+                .flat_map(|slots| slots.values())
+            {
+                if let (Some(id), Some(count)) = (item["item_id"].as_u64(), item["count"].as_u64())
+                {
+                    let quantity = stock.quantities.entry(id).or_default();
+                    *quantity = quantity
+                        .checked_add(count)
+                        .ok_or_else(|| anyhow::anyhow!("Observed material quantity overflow"))?;
+                }
+            }
+        }
+        Ok(stock)
+    }
+
+    fn support(&self, row: &Value, minimum: u32) -> Option<Value> {
+        if row["status"] != "fixed_items" {
+            return None;
+        }
+        let reagents = row["reagents"].as_object()?;
+        if !reagents.is_empty() && self.observed.is_empty() {
+            return None;
+        }
+        let mut capacity: Option<u64> = None;
+        for (id, quantity) in reagents {
+            let id = id.parse::<u32>().ok()?;
+            let required = quantity.as_u64().filter(|value| *value > 0)?;
+            let supported = self.quantities.get(&u64::from(id)).copied().unwrap_or(0) / required;
+            capacity = Some(capacity.map_or(supported, |current| current.min(supported)));
+        }
+        Some(
+            json!({"supported_crafts":capacity,"no_required_items":reagents.is_empty(),
+            "covers_minimum_crafts":capacity.is_none_or(|value|value >= u64::from(minimum))}),
+        )
+    }
+}
+
 /// Search only observed rows; unknown fields do not satisfy positive filters.
 pub fn search_recipe_materials(
     snapshot: &Snapshot,
@@ -97,6 +173,28 @@ pub fn search_recipe_materials(
     status: Option<RecipeMaterialStatus>,
     offset: usize,
     limit: usize,
+) -> Result<Value> {
+    search_recipe_materials_with_filter(
+        snapshot,
+        recipe_id,
+        output_item_id,
+        reagent_item_id,
+        status,
+        offset,
+        limit,
+        None,
+    )
+}
+
+pub fn search_recipe_materials_with_filter(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+    material_filter: Option<&RecipeMaterialFilter>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
@@ -108,6 +206,11 @@ pub fn search_recipe_materials(
     );
     let section = snapshot.sections.get("profession_recipe_materials");
     let rows = section.and_then(|value| value["entries"].as_object());
+    let stock = material_filter
+        .map(|filter| RecipeMaterialStock::from_snapshot(snapshot, filter.scope))
+        .transpose()?;
+    let mut unknown = 0;
+    let mut insufficient = 0;
     let status_value = status.map(|value| json!(value));
     let mut matches: Vec<_> = rows
         .into_iter()
@@ -123,15 +226,36 @@ pub fn search_recipe_materials(
                     .as_ref()
                     .is_none_or(|value| row["status"] == *value)
         })
+        .filter_map(|(id, row)| {
+            let support = if let (Some(filter), Some(stock)) = (material_filter, stock.as_ref()) {
+                match stock.support(row, filter.minimum_crafts.get()) {
+                    Some(support) if support["covers_minimum_crafts"] == true => Some(support),
+                    Some(_) => {
+                        insufficient += 1;
+                        return None;
+                    }
+                    None => {
+                        unknown += 1;
+                        return None;
+                    }
+                }
+            } else {
+                None
+            };
+            Some((id, row, support))
+        })
         .collect();
-    matches.sort_unstable_by_key(|(id, _)| id.parse::<u32>().unwrap());
+    matches.sort_unstable_by_key(|(id, _, _)| id.parse::<u32>().unwrap());
     let records: Vec<_> = matches
         .iter()
         .skip(offset)
         .take(limit)
-        .map(|(id, row)| {
+        .map(|(id, row, support)| {
             let mut record = (*row).clone();
             record["recipe_id"] = json!(id.parse::<u32>().unwrap());
+            if let Some(support) = support {
+                record["material_support"] = support.clone();
+            }
             record
         })
         .collect();
@@ -140,15 +264,22 @@ pub fn search_recipe_materials(
     } else {
         None
     };
-    Ok(
-        json!({"section_observed":section.is_some(),"coverage":section.map(|s|&s["coverage"]),
+    let mut result = json!({"section_observed":section.is_some(),"coverage":section.map(|s|&s["coverage"]),
         "profession_id":section.map(|s|&s["profession_id"]),
         "captured_spell_count":rows.map(|rows|rows.len()),
         "matched_row_count":rows.map(|_|matches.len()),"offset":offset,"limit":limit,
         "records":records,"next_offset":next,
         "filters":{"recipe_id":recipe_id,"output_item_id":output_item_id,"reagent_item_id":reagent_item_id,"status":status},
-        "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false}),
-    )
+        "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false});
+    if let Some(filter) = material_filter {
+        let stock = stock.as_ref().unwrap();
+        result["filters"]["material_filter"] = json!(filter);
+        result["material_support_unknown_count"] = json!(rows.map(|_| unknown));
+        result["material_support_insufficient_observed_count"] = json!(rows.map(|_| insufficient));
+        result["material_inventory_coverage"] = json!({"observed_storage":stock.observed,
+            "unobserved_storage":stock.missing,"complete_ownership_verified":false});
+    }
+    Ok(result)
 }
 
 /// Explicit IDs select only the bulk observation, never a fallback schematic.

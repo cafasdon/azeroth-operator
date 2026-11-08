@@ -581,6 +581,8 @@ struct RecipeSearch {
     output_item_id: Option<std::num::NonZeroU32>,
     reagent_item_id: Option<std::num::NonZeroU32>,
     status: Option<azeroth_operator::analysis::RecipeMaterialStatus>,
+    /// Filter fixed reagent support in observed items, not actual craftability.
+    material_filter: Option<azeroth_operator::analysis::RecipeMaterialFilter>,
     offset: Option<usize>,
     /// Page size, 1 to 50; defaults to 20. Ordering is numeric recipe ID.
     limit: Option<usize>,
@@ -1041,7 +1043,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Search owner-local captured Forever recipe material rows by exact recipe, output item, reagent item or status. Filters match the same row; numeric recipe order, up to 50 rows per page. Missing observations remain unknown. No catalogue lookup or game action.",
+        description = "Search owner-local captured Forever recipe rows by exact IDs/status, optionally requiring fixed reagent support for a minimum craft count in bags or all observed storage. Material support is not learning or craftability. Same-row filters, numeric order, up to 50 rows per page. Unknowns stay unknown; no external lookup or game action.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1051,7 +1053,7 @@ impl Operator {
     fn search_forever_recipes(&self, Parameters(args): Parameters<RecipeSearch>) -> CallToolResult {
         let result = (|| {
             let snapshot = self.store.read(&args.snapshot_id)?;
-            let mut found = azeroth_operator::analysis::search_recipe_materials(
+            let mut found = azeroth_operator::analysis::search_recipe_materials_with_filter(
                 &snapshot,
                 args.recipe_id,
                 args.output_item_id,
@@ -1059,6 +1061,7 @@ impl Operator {
                 args.status,
                 args.offset.unwrap_or(0),
                 args.limit.unwrap_or(20),
+                args.material_filter.as_ref(),
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(found)
