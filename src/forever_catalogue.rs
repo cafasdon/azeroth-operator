@@ -2561,6 +2561,7 @@ pub fn review_owned(
         (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
     });
     let check_requirements = requirement_check(snapshot);
+    let check_item_requirements = item_requirement_check(snapshot);
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             coverage.insert(
@@ -2611,6 +2612,7 @@ pub fn review_owned(
                 let weapon_skill = reference.and_then(|item| weapon_skill(snapshot, item));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
+                    "catalogue_item_requirement_conflict":reference.and_then(|item| check_item_requirements(item)),
                     "catalogue_requirement_conflict":requirement_conflict,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),

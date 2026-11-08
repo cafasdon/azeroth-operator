@@ -53,6 +53,12 @@ The local gear ranker includes the same observations as
 captured character data for interpreting a result. They do not affect the
 score.
 
+Owned-gear searches report `catalogue_item_requirement_conflict` for known
+catalogue restrictions that conflict with captured character data, even
+without a target slot. Null means no conflict was detected from the
+available evidence. The separate draft conflict still applies to the
+proposed placement.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

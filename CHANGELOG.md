@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show observed Forever item requirement conflicts in owned-gear searches without a target slot.
+
 - Report the same encounter fingerprint in standalone Forever simulations and gear rankings.
 
 - Report encounter settings and a reproducibility fingerprint in local Forever gear rankings.
