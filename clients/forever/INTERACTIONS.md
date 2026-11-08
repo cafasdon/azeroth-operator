@@ -29,6 +29,12 @@ food types. An empty food list means the game reported none. The capture
 omits pet identity and leaves feeding to the player. Update the importer
 and reader before syncing new captures. [Forever pet API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/PetInfoDocumentation.lua)
 
+`pet_care.carried_food` groups accepted item IDs and quantities from the
+same export's carried bags. An empty map means none of the checked items
+were accepted. Unavailable bags or any unreadable classification leave
+the map unknown. The importer checks each reported quantity against the
+saved bag stacks. The classification does not estimate feeding effects.
+
 `trainer_services` saves the open general, profession or pet trainer's API
 list under the player's current trainer filters. It records lesson names,
 available, unavailable or known status, and readable rank labels,

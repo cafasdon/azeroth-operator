@@ -874,6 +874,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("happiness", "uint", false),
                     ("loyalty", "text", false),
                     ("food_types", "map", false),
+                    ("carried_food", "map", false),
                 ],
             )?;
             let present = value["present"] == true;
@@ -898,6 +899,21 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         name.as_str()
                             .is_some_and(|name| !name.is_empty() && name.len() <= 256),
                         "Invalid pet food type"
+                    );
+                }
+            }
+            if let Some(foods) = value.get("carried_food") {
+                let foods = foods
+                    .as_object()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid carried pet food"))?;
+                ensure!(present && foods.len() <= 256, "Invalid carried pet food");
+                for (key, count) in foods {
+                    index(key, 1, u32::MAX)?;
+                    ensure!(
+                        count
+                            .as_u64()
+                            .is_some_and(|count| (1..=u64::from(u32::MAX)).contains(&count)),
+                        "Invalid carried pet food quantity"
                     );
                 }
             }

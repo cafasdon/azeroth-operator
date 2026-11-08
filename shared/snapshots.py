@@ -57,7 +57,7 @@ def validate_snapshot(value):
     if "pet_care" in sections:
         pet = sections["pet_care"]
         if (c["family"] != "forever" or not isinstance(pet, dict)
-                or set(pet) - {"present", "happiness", "loyalty", "food_types"}
+                or set(pet) - {"present", "happiness", "loyalty", "food_types", "carried_food"}
                 or type(pet.get("present")) is not bool or (not pet["present"] and len(pet) != 1)):
             raise ValueError("Invalid pet care data")
         if "happiness" in pet and (type(pet["happiness"]) is not int or not 0 <= pet["happiness"] <= 255):
@@ -70,6 +70,25 @@ def validate_snapshot(value):
                     or set(foods) != {str(i) for i in range(1, len(foods) + 1)}
                     or any(not isinstance(name, str) or not 1 <= len(name.encode()) <= 256 for name in foods.values())):
                 raise ValueError("Invalid pet food types")
+        if "carried_food" in pet:
+            food = pet["carried_food"]
+            bags = sections.get("bags")
+            if (not isinstance(bags, dict) or not isinstance(food, dict) or len(food) > 256
+                    or any(not isinstance(key, str) or not 1 <= len(key) <= 10 or not key.isascii()
+                           or not key.isdecimal() or key.startswith("0") or int(key) > 4_294_967_295
+                           or type(count) is not int or not 1 <= count <= 4_294_967_295 for key, count in food.items())):
+                raise ValueError("Invalid carried pet food")
+            totals = {}
+            for bag in bags.values():
+                if not isinstance(bag, dict):
+                    continue
+                for item in bag.values():
+                    if isinstance(item, dict):
+                        item_id, count = item.get("item_id"), item.get("count")
+                        if type(item_id) is int and type(count) is int and 1 <= count <= 4_294_967_295:
+                            totals[item_id] = totals.get(item_id, 0) + count
+            if any(totals.get(int(key)) != count for key, count in food.items()):
+                raise ValueError("Carried pet food does not match bags")
     if "trainer_services" in sections:
         trainer = sections["trainer_services"]
         if (c["family"] != "forever" or not isinstance(trainer, dict)

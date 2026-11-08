@@ -65,7 +65,7 @@ function AO.Capture(includeWallet)
     for _, name in ipairs(sectionNames) do
         local collector = AO.collectors and AO.collectors[name]
         if collector then
-            local ok, data = pcall(collector)
+            local ok, data = pcall(collector, name=="pet_care" and sections.bags or nil)
             if ok and data then
                 local serializable, text = pcall(json, data)
                 if serializable then

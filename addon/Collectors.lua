@@ -924,7 +924,36 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
-AO.collectors.pet_care = function()
+local function petCarriedFood(api,bags)
+    if type(api.CanPetEatItem)~="function" or type(bags)~="table" then return end
+    local quantities,unique,slots={},0,0
+    for _,bag in pairs(bags) do
+        for _,item in pairs(bag) do
+            slots=slots+1
+            if slots>1024 or not questRewardInteger(item.item_id,1,4294967295)
+                or not questRewardInteger(item.count,1,4294967295) then return end
+            local id=item.item_id
+            if quantities[id]==nil then
+                unique=unique+1
+                if unique>256 then return end
+                quantities[id]=0
+            end
+            quantities[id]=quantities[id]+item.count
+        end
+    end
+    local foods={}
+    for id,quantity in pairs(quantities) do
+        local edible=api.CanPetEatItem(id)
+        if not questRewardAccessible(edible) or type(edible)~="boolean" then return end
+        if edible then
+            if not questRewardInteger(quantity,1,4294967295) then return end
+            foods[tostring(id)]=quantity
+        end
+    end
+    return foods
+end
+
+AO.collectors.pet_care = function(bags)
     local present=UnitExists("pet")
     assert(questRewardAccessible(present) and type(present)=="boolean", "Active pet state unavailable")
     local result={present=present}
@@ -950,6 +979,8 @@ AO.collectors.pet_care = function()
             if count==#rows then return names end
         end)
         if read then result.food_types=foods end
+        local classified,carried=pcall(petCarriedFood,api,bags)
+        if classified then result.carried_food=carried end
     end
     local current=UnitExists("pet")
     assert(questRewardAccessible(current) and current==true, "Active pet unavailable")

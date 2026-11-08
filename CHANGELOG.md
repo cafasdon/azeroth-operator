@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Identify carried food that the active Forever pet accepts.
+
 - Capture Forever active-pet happiness, loyalty and accepted food types for offline care review.
 
 - Budget available Forever pet lessons against the active pet's captured training points.

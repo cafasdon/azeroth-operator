@@ -446,6 +446,8 @@ pub fn verify_forever_capture_fixture(
                 return freeSlots
             end,
             GetContainerItemInfo=function(bag,slot)
+                if fixturePetFoodBags and bag==0 and slot<=2 then return {itemID=9001,stackCount=slot} end
+                if fixturePetFoodBags and bag==1 and slot==1 then return {itemID=9002,stackCount=1} end
                 if bag==6 and slot==1 then return {itemID=744,stackCount=malformed and 0 or 1,hyperlink='item:744:7'} end
             end
         }
@@ -576,7 +578,8 @@ pub fn verify_forever_capture_fixture(
         C_PetInfo={GetPetTrainingPoints=function() return 25,10 end,
             GetPetHappiness=function() return 3,125,10 end,
             GetPetLoyalty=function() return "Fixture loyalty" end,
-            GetPetFoodTypes=function() return fixtureEmptyFood and {} or {"Meat","Fish"} end}
+            GetPetFoodTypes=function() return fixtureEmptyFood and {} or {"Meat","Fish"} end,
+            CanPetEatItem=function(id) assert(id==9001 or id==9002); if not fixtureUnknownFood then return id==9001 end end}
         function GetNumTrainerServices() return 2 end
         function GetTrainerServiceInfo(index)
             if index==1 then return "Fixture lesson","available",nil,10,"Rank 2" end
@@ -806,7 +809,7 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(
         snapshot.sections["pet_care"],
         serde_json::json!({"present":true,"happiness":3,
-        "loyalty":"Fixture loyalty","food_types":{"1":"Meat","2":"Fish"}})
+        "loyalty":"Fixture loyalty","food_types":{"1":"Meat","2":"Fish"},"carried_food":{}})
     );
     assert_eq!(
         read()?.sections["pet_care"],
@@ -818,6 +821,15 @@ pub fn verify_forever_capture_fixture(
         read()?.sections["pet_care"]["food_types"],
         serde_json::json!({})
     );
+    lua.load("fixturePetFoodBags=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["pet_care"]["carried_food"],
+        serde_json::json!({"9001":3})
+    );
+    lua.load("fixtureUnknownFood=true;AO.Capture()").exec()?;
+    assert!(read()?.sections["pet_care"].get("carried_food").is_none());
+    lua.load("fixturePetFoodBags=false;fixtureUnknownFood=false")
+        .exec()?;
     lua.load("fixtureNoPet=true;AO.Capture()").exec()?;
     assert!(
         read()?.sections["trainer_services"]

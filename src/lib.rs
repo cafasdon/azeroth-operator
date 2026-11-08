@@ -127,6 +127,37 @@ impl Snapshot {
             "Capture timestamp is in the future"
         );
         for (name, value) in &self.sections {
+            if name == "pet_care"
+                && let Some(food) = value.get("carried_food").and_then(Value::as_object)
+            {
+                let bags = self
+                    .sections
+                    .get("bags")
+                    .and_then(Value::as_object)
+                    .ok_or_else(|| anyhow::anyhow!("Carried pet food requires captured bags"))?;
+                let mut totals = std::collections::BTreeMap::<u64, u64>::new();
+                for item in bags
+                    .values()
+                    .filter_map(Value::as_object)
+                    .flat_map(|bag| bag.values())
+                {
+                    if let Some((id, count)) = item["item_id"].as_u64().zip(item["count"].as_u64())
+                    {
+                        let total = totals.entry(id).or_default();
+                        *total = total
+                            .checked_add(count)
+                            .ok_or_else(|| anyhow::anyhow!("Invalid carried item count"))?;
+                    }
+                }
+                ensure!(
+                    food.iter().all(|(id, count)| id
+                        .parse::<u64>()
+                        .ok()
+                        .and_then(|id| totals.get(&id).copied())
+                        == count.as_u64()),
+                    "Carried pet food does not match bags"
+                );
+            }
             if name == "stats"
                 && (value.get("hearthstone_item_id").is_some()
                     || value.get("hearthstone_cooldown_seconds").is_some())
