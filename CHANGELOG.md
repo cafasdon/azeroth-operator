@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Link owned Forever weapons to the character's captured weapon skill and remaining base ranks.
+
 - Keep Forever skill modifiers and temporary points separate from trained ranks.
 
 - Compare saved Forever skill rank and cap changes by stable skill-line ID.

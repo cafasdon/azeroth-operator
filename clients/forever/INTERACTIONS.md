@@ -36,6 +36,12 @@ Update the importer and reader before syncing new captures. [Forever skill API](
 only one side are counted separately because collapsed headers can hide
 rows. A missing section leaves the progress comparison unknown.
 
+`review_forever_owned_gear` links supported catalogue weapons to their
+captured `weapon_skill` row, with base points to the cap. One-handed
+and two-handed axes, maces and swords use separate skill IDs. Missing
+observations remain unknown. The link does not establish equip eligibility
+or change simulation inputs. [Forever weapon skill IDs](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Camelot/SkillsFrame.lua) · [Pinned simulator weapon types](https://github.com/wowsims/forever/blob/9dc32ac8ca0d8d1b76337861d38b93c0f884af11/proto/common.proto)
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

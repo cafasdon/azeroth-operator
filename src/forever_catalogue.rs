@@ -2460,6 +2460,34 @@ fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {
     }
 }
 
+fn weapon_skill_line_id(item: &Value) -> Option<u32> {
+    // The pinned simulator weapon enums and Forever SkillsFrame use different IDs.
+    match item["type"].as_u64()? {
+        13 => match (item["weaponType"].as_u64()?, item["handType"].as_u64()) {
+            (1, Some(1..=3)) => Some(44),
+            (1, Some(4)) => Some(172),
+            (2, _) => Some(173),
+            (3, _) => Some(162),
+            (4, Some(1..=3)) => Some(54),
+            (4, Some(4)) => Some(160),
+            (6, _) => Some(229),
+            (8, _) => Some(136),
+            (9, Some(1..=3)) => Some(43),
+            (9, Some(4)) => Some(55),
+            _ => None,
+        },
+        14 => match item["rangedWeaponType"].as_u64()? {
+            1 => Some(45),
+            2 => Some(226),
+            3 => Some(46),
+            4 => Some(176),
+            5 => Some(228),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
@@ -2555,7 +2583,13 @@ pub fn review_owned(
                     .as_ref()
                     .zip(reference)
                     .and_then(|(selection, item)| check_requirements(item, selection));
+                let weapon_skill = reference.and_then(|item| weapon_skill_line_id(item)).map(|id| {
+                    let observed = snapshot.sections.get("skill_lines").and_then(|lines| lines.get(id.to_string()));
+                    let points_to_cap = observed.and_then(|row| row["max_rank"].as_u64()?.checked_sub(row["rank"].as_u64()?));
+                    json!({"skill_line_id":id,"observed":observed,"base_points_to_cap":points_to_cap})
+                });
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                    "weapon_skill":weapon_skill,
                     "catalogue_requirement_conflict":requirement_conflict,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),
