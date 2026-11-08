@@ -855,12 +855,10 @@ impl Operator {
                         &snapshot, merchant,
                     )?;
                 }
-                let offers = merchant
-                    .as_ref()
-                    .or(inventory.as_ref())
-                    .unwrap_or(&snapshot);
+                let stock = inventory.as_ref().unwrap_or(&snapshot);
+                let offers = merchant.as_ref().unwrap_or(stock);
                 review["merchant_reagent_plan"] =
-                    azeroth_operator::analysis::recipe_merchant_plan(&review, offers);
+                    azeroth_operator::analysis::recipe_merchant_plan(&review, offers, stock);
                 if let Some(id) = args.merchant_snapshot_id {
                     review["merchant_snapshot_id"] = serde_json::json!(id);
                 }

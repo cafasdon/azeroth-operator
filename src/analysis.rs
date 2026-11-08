@@ -1965,7 +1965,7 @@ fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {
     }))
 }
 
-pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
+pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Snapshot) -> Value {
     let materials = if let Some(ordered) = review.get("ordered_starting_materials") {
         ordered.as_array()
     } else {
@@ -1974,7 +1974,7 @@ pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
             .filter(|_| review["recipe"]["requirements"] == "fixed_items")
     };
     let Some((materials, offers)) = materials.zip(
-        stock
+        merchant
             .sections
             .get("merchant_stock")
             .and_then(Value::as_object),
@@ -2023,8 +2023,15 @@ pub fn recipe_merchant_plan(review: &Value, stock: &Snapshot) -> Value {
         total
             .checked_add(reagent["lowest_unlimited_copper_only_offer"]["required_copper"].as_u64()?)
     });
-    json!({"merchant_captured_at":stock.captured_at,"reagents":reagents,
-        "unlimited_copper_only_total":total})
+    let wallet = inventory
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let budget = total.zip(wallet);
+    json!({"merchant_captured_at":merchant.captured_at,"reagents":reagents,
+        "unlimited_copper_only_total":total,
+        "unlimited_copper_only_affordable":budget.map(|(cost, balance)| cost <= balance),
+        "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance))})
 }
 
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {

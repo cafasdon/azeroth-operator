@@ -295,6 +295,10 @@ Equal prices use the lowest slot. `unlimited_copper_only_total` sums
 those choices when every shortfall is known and covered by such an
 offer. Zero is a valid total when no reagents need buying. Limited
 offers and offers with extended costs remain visible for manual review.
+The plan also reports `unlimited_copper_only_affordable` and
+`unlimited_copper_only_shortfall` when the total and the opt-in wallet
+from the inventory capture are known. A separate merchant visit supplies
+prices only.
 
 Pass `merchant_snapshot_id` with this option to use offers from a separate
 visit. It must match the recipe character and exact client/build. The

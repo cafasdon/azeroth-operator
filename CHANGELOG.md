@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Check captured wallet affordability for Forever copper-only reagent baskets.
+
 - Total the cheapest unlimited copper-only offers for captured Forever reagent shortfalls.
 
 - Use a separate same-character merchant capture for Forever reagent plans.
