@@ -164,6 +164,10 @@ pub struct Query {
     pub enchant_target_item_id: Option<std::num::NonZeroU32>,
     /// Restrict enchant effects to those linked to this exact enchant application item ID.
     pub enchant_application_item_id: Option<std::num::NonZeroU32>,
+    /// List random suffix records referenced by this exact base item ID.
+    pub suffix_target_item_id: Option<std::num::NonZeroU32>,
+    /// List items that explicitly reference this random suffix ID.
+    pub item_random_suffix_id: Option<std::num::NonZeroI32>,
     /// Match items or enchants to the learned recipe explicitly observed in the supplied acquisition snapshot.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
@@ -622,6 +626,22 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         None
     };
     let mut records = Vec::new();
+    let suffix_target = if let Some(id) = query.suffix_target_item_id {
+        ensure!(
+            matches!(query.section, Section::RandomSuffixes),
+            "Suffix target requires random suffixes"
+        );
+        Some(
+            db["items"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|item| item["id"].as_u64() == Some(u64::from(id.get())))
+                .ok_or_else(|| anyhow::anyhow!("Unknown suffix target item"))?,
+        )
+    } else {
+        None
+    };
     let mut has_more = false;
     let key = query.key.as_deref().map(str::trim);
     if let Some(key) = key {
@@ -810,6 +830,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
+        || query.item_random_suffix_id.is_some()
         || required_level_filter
         || weapon_filter.iter().any(Option::is_some)
         || effect_filter
@@ -829,6 +850,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     );
     let filtered = key.is_some()
         || enchant_target.is_some()
+        || suffix_target.is_some()
         || query.enchant_application_item_id.is_some()
         || crafted_filter
         || item_filter
@@ -1019,6 +1041,14 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 })
             });
             if matches
+                && suffix_target.is_none_or(|item| {
+                    row["id"]
+                        .as_i64()
+                        .is_some_and(|id| lists_random_suffix(item, id))
+                })
+                && query
+                    .item_random_suffix_id
+                    .is_none_or(|id| lists_random_suffix(row, i64::from(id.get())))
                 && enchant_target.is_none_or(|(item, kind)| enchant_type_fits(row, item, kind))
                 && query
                     .enchant_application_item_id
@@ -1832,13 +1862,14 @@ fn combine_regular_stats(
     Some(Value::Object(stats))
 }
 
+fn lists_random_suffix(item: &Value, id: i64) -> bool {
+    item["randomSuffixOptions"]
+        .as_array()
+        .is_some_and(|options| options.iter().any(|option| option.as_i64() == Some(id)))
+}
+
 fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)> {
-    let id = suffix["id"].as_i64()?;
-    let listed = item["randomSuffixOptions"]
-        .as_array()?
-        .iter()
-        .any(|option| option.as_i64() == Some(id));
-    if !listed {
+    if !lists_random_suffix(item, suffix["id"].as_i64()?) {
         return None;
     }
     let scaling = &item["scalingOptions"]["0"];

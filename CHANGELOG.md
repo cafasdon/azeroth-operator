@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up Forever random suffixes for a base item and find items that list a specific suffix.
+
 - Find captured Forever gear by exact signed random suffix, including explicitly encoded zero.
 
 - Find captured Forever gear by the enchant effect ID encoded in its item link.

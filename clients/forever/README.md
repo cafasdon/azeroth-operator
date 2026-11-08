@@ -197,6 +197,10 @@ with crafting filters and does not require a character capture.
 Use `enchant_application_item_id` to search by the item that applies the
 effect, such as a shield spike. Combine it with `enchant_target_item_id`
 to check a specific pairing under the simulator rules.
+For `random_suffixes`, use `suffix_target_item_id` to list the catalogue
+suffixes referenced by a base item. For `items`, use
+`item_random_suffix_id` to find base items that list a specific suffix.
+These are catalogue possibilities. Saved links show which variant was observed.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip
