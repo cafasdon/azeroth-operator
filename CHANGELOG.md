@@ -1,5 +1,9 @@
 # Changelog
 
+- Join bulk schematic and tracked recipe-learning observations into local
+  catalogue discovery, preserving conflicts, missing evidence and exact output
+  matching for item and enchant references.
+
 - Search owner-local bulk recipe observations by recipe/output/reagent/status,
   with bounded numeric pagination, explicit observation gaps and planner IDs.
 

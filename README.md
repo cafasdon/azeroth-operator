@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Local catalogue learned-recipe filters also use bulk schematic and tracked
+craft/recraft learning observations. Conflicting exact-ID learning flags and known catalogue
+output mismatches leave combined learning unknown. Unavailable bulk materials
+do not imply unlearning, and learned output discovery does not establish
+craftability or supply uncaptured conditions/cooldowns.
+[Offline evidence](docs/bulk-catalogue-learning-verification-2026-11-08.md).
+
 `search_forever_recipes` searches one owner-local capture's bulk recipe rows by
 exact recipe, output item, required reagent or captured status. Filters match
 the same row, with numeric recipe ordering and pages of at most 50 records.

@@ -1,5 +1,14 @@
 # Forever interaction map
 
+Catalogue `only_observed_learned_recipe` searches can use exact-ID learning from
+bulk schematics and tracked craft/recraft rows alongside selected/list/known-spell
+observations. Fixed or unsupported-readable bulk statuses support positive
+learning; unavailable/budget rows are unknown. Conflicting flags or known selected
+or bulk output mismatches suppress a positive result. The nested learning record
+reports separate bulk status, output match and tracked flags without names.
+Selected-only material capacity, cooldowns and conditions keep their original
+scope; this join is discovery, not a crafting eligibility check.
+
 `search_forever_recipes` discovers captured bulk material rows by exact recipe,
 output item, required reagent and/or status, with same-row filters and bounded
 numeric ordering. It reads only the chosen owner-local snapshot. Missing sections

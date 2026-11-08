@@ -186,7 +186,7 @@ pub struct Query {
     pub suffix_target_item_id: Option<std::num::NonZeroU32>,
     /// List items that explicitly reference this random suffix ID.
     pub item_random_suffix_id: Option<std::num::NonZeroI32>,
-    /// Match crafted sources to consistent positive selected/list learning or reported known profession spells.
+    /// Match crafted sources to consistent positive selected/list/bulk/tracked learning or reported known profession spells.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
@@ -1664,8 +1664,14 @@ struct RecipeLearning {
     recipe_list_observed: bool,
     recipe_list_learned: Option<bool>,
     profession_spell_reported: bool,
+    bulk_recipe_observed: bool,
+    bulk_material_status: Option<String>,
+    bulk_recipe_learned: Option<bool>,
+    tracked_craft_learned: Option<bool>,
+    tracked_recraft_learned: Option<bool>,
     learning_conflict: bool,
     selected_output_matches_catalogue: Option<bool>,
+    bulk_output_matches_catalogue: Option<bool>,
     learned: Option<bool>,
 }
 
@@ -1684,11 +1690,41 @@ fn recipe_learning(snapshot: &Snapshot, recipe_id: u64, output_id: Option<u64>) 
         .sections
         .get("profession_spells")
         .is_some_and(|section| section["entries"].get(recipe_id.to_string()).is_some());
+    let bulk = snapshot
+        .sections
+        .get("profession_recipe_materials")
+        .and_then(|section| section["entries"].get(recipe_id.to_string()));
+    let bulk_status = bulk.and_then(|row| row["status"].as_str());
+    let bulk_learned = matches!(
+        bulk_status,
+        Some("fixed_items" | "unsupported_required_slots")
+    )
+    .then_some(true);
+    let tracked = |group: &str| {
+        snapshot
+            .sections
+            .get("tracked_recipes")
+            .and_then(|section| section[group].get(recipe_id.to_string()))
+            .and_then(|row| row["learned"].as_bool())
+    };
+    let tracked_craft = tracked("crafts");
+    let tracked_recraft = tracked("recrafts");
     let output_matches = selected
         .and_then(|row| row["output_item_id"].as_u64())
         .zip(output_id)
         .map(|(observed, expected)| observed == expected);
-    let flags = [selected_learned, listed_learned, reported.then_some(true)];
+    let bulk_output_matches = bulk
+        .and_then(|row| row["output_item_id"].as_u64())
+        .zip(output_id)
+        .map(|(observed, expected)| observed == expected);
+    let flags = [
+        selected_learned,
+        listed_learned,
+        reported.then_some(true),
+        bulk_learned,
+        tracked_craft,
+        tracked_recraft,
+    ];
     let conflict = flags.contains(&Some(true)) && flags.contains(&Some(false));
     RecipeLearning {
         selected_recipe_observed: selected.is_some(),
@@ -1696,14 +1732,19 @@ fn recipe_learning(snapshot: &Snapshot, recipe_id: u64, output_id: Option<u64>) 
         recipe_list_observed: listed.is_some(),
         recipe_list_learned: listed_learned,
         profession_spell_reported: reported,
+        bulk_recipe_observed: bulk.is_some(),
+        bulk_material_status: bulk_status.map(str::to_owned),
+        bulk_recipe_learned: bulk_learned,
+        tracked_craft_learned: tracked_craft,
+        tracked_recraft_learned: tracked_recraft,
         learning_conflict: conflict,
         selected_output_matches_catalogue: output_matches,
-        learned: if conflict || output_matches == Some(false) {
+        bulk_output_matches_catalogue: bulk_output_matches,
+        learned: if conflict || output_matches == Some(false) || bulk_output_matches == Some(false)
+        {
             None
         } else {
-            selected_learned
-                .or(listed_learned)
-                .or(reported.then_some(true))
+            flags.into_iter().flatten().next()
         },
     }
 }
