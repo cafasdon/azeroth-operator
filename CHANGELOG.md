@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures with a recorded currency balance meeting a requested minimum.
+
 - Evaluate saved searches against only the newest capture per character and variant when requested.
 
 - Filter saved snapshots by inclusive capture timestamps before pagination.

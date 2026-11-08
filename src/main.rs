@@ -282,6 +282,8 @@ struct List {
     bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
     /// Find saved captures with enough carried food classified as accepted by the active pet.
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
+    /// Find a recorded currency balance at or above the requested quantity.
+    currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -1160,7 +1162,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Forever listings can filter by captured player map, profession, selected or tracked recipe, instance, bag space, pet food, repair quote, merchant offer, trainer lesson or flight destination. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Supports capture time bounds and newest-per-character selection. Forever listings can filter captured quests, currency, XP, maps, professions, recipes, bag space, pet food, repair quotes, merchant offers, trainer lessons and flights. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1205,6 +1207,7 @@ impl Operator {
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
                 bag_family_space: args.bag_family_space,
                 pet_food: args.pet_food,
+                currency_balance: args.currency_balance,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,

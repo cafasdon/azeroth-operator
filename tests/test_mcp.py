@@ -1219,9 +1219,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         freshness["character"]["name"] = "Freshness"
                         freshness["captured_at"] = "2025-01-01T00:00:00Z"
                         freshness["sections"]["quests"]["43"] = {"title": "Old observation", "level": 10}
+                        freshness["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 10
                         old_freshness_id = SnapshotStore(Path(folder)).ingest(freshness)
                         del freshness["sections"]["quests"]["43"]
                         freshness["captured_at"] = "2025-01-03T00:00:00Z"
+                        freshness["sections"]["currency_balances"]["entries"]["100"]["quantity"] = 0
                         new_freshness_id = SnapshotStore(Path(folder)).ingest(freshness)
                         latest_query = {"family": "forever", "character": {
                             "name": "Freshness", "realm": "First"}, "latest_per_character": True}
@@ -1243,6 +1245,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(historical_match.isError)
                         self.assertEqual(json.loads(historical_match.content[0].text)["snapshots"][0][
                             "snapshot_id"], old_freshness_id)
+                        for minimum, latest_only, expected_ids in [
+                            (10, False, [old_freshness_id]),
+                            (10, True, []),
+                            (0, True, [new_freshness_id]),
+                        ]:
+                            balances = await session.call_tool("list_snapshots", {
+                                **latest_query, "latest_per_character": latest_only,
+                                "currency_balance": {"currency_id": 100, "minimum_quantity": minimum},
+                            })
+                            self.assertFalse(balances.isError)
+                            balance_rows = json.loads(balances.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in balance_rows], expected_ids)
+                            if minimum == 0:
+                                self.assertEqual(balance_rows[0]["currency_balance_match"]["quantity"], 0)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "retail",
+                            "currency_balance": {"currency_id": 100, "minimum_quantity": 0},
+                        })).isError)
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
                                   "quest_ids_observed_only_after": []}),

@@ -324,6 +324,7 @@ pub struct CaptureFilters<'a> {
     pub minimum_general_free_bag_slots: Option<u32>,
     pub bag_family_space: Option<BagFamilySpaceFilter>,
     pub pet_food: Option<PetFoodCaptureFilter>,
+    pub currency_balance: Option<CurrencyBalanceFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -358,6 +359,14 @@ pub struct PetFoodCaptureFilter {
     pub item_id: Option<std::num::NonZeroU32>,
     /// Inclusive minimum accepted units in the captured carried bags.
     pub minimum_quantity: u32,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CurrencyBalanceFilter {
+    pub currency_id: std::num::NonZeroU32,
+    /// Inclusive minimum recorded quantity.
+    pub minimum_quantity: u64,
 }
 
 impl Store {
@@ -462,6 +471,7 @@ impl Store {
             minimum_general_free_bag_slots,
             bag_family_space,
             pet_food,
+            currency_balance,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -671,6 +681,13 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
         ensure!(
+            currency_balance.is_none() || family == Family::Forever,
+            "Currency balance filtering requires Forever"
+        );
+        let currency_key = currency_balance
+            .as_ref()
+            .map(|filter| filter.currency_id.to_string());
+        ensure!(
             (quest_id.is_none() && quest_readiness.is_none() && quest_waypoint_map_id.is_none())
                 || family == Family::Forever,
             "Quest filtering requires Forever"
@@ -786,6 +803,16 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let currency_match = currency_balance
+                        .as_ref()
+                        .zip(currency_key.as_ref())
+                        .and_then(|(filter, key)| {
+                            let row = s.sections.get("currency_balances")?["entries"].get(key)?;
+                            (row["quantity"].as_u64()? >= filter.minimum_quantity).then_some(row)
+                        });
+                    if currency_balance.is_some() && currency_match.is_none() {
+                        continue;
+                    }
                     let matches_quest = |quest: &Value| {
                         quest_readiness
                             .is_none_or(|expected| analysis::quest_readiness(quest) == expected)
@@ -1084,6 +1111,12 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some((filter, row)) = currency_balance.as_ref().zip(currency_match) {
+                        summary["currency_balance_match"] = json!({
+                            "currency_id":filter.currency_id,"quantity":row["quantity"],
+                            "account_wide":row["account_wide"],"inactive":row["inactive"],
+                        });
+                    }
                     if let Some(food) = pet_food_match {
                         summary["pet_food_match"] = food;
                     }

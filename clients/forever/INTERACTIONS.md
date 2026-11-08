@@ -16,6 +16,13 @@ newest capture lacks the requested observation. Equal timestamps prefer
 the lowest snapshot ID. This option uses the requested client family and
 does not identify the character currently in play.
 
+For a saved currency balance, pass `currency_balance` with
+`currency_id` and `minimum_quantity` to `list_snapshots` using the
+Forever family. The result includes only that currency's quantity,
+account scope and inactive flag. A zero minimum requires an observed
+balance. Combine with `latest_per_character` to evaluate each
+character's newest capture before matching the balance.
+
 | Area | MCP role and current state | Evidence needed next |
 | --- | --- | --- |
 | Character selection | Exact name and realm filter on saved snapshots. Explicit target takes precedence. | Qualify a supported, fresh active-character signal. Until then a saved capture remains historical. |
