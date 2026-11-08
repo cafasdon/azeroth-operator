@@ -677,6 +677,8 @@ Use `flight_destination_node_id` with `family: "forever"` in
 unambiguous origin. Results include the captured origin, destination,
 map and fare when known. The filter applies before pagination and can
 be combined with an explicit character. Routes describe past captures.
+Add `flight_origin_node_id` to match a specific departure point before
+pagination. This option requires a destination ID.
 
 Use `flight_node_id` to select a recorded node, or `flight_reachable_only`
 to keep reachable destinations and exclude map transitions. Both filters

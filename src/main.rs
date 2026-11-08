@@ -254,6 +254,8 @@ struct List {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
+    /// Narrow the flight destination search to this captured departure node.
+    flight_origin_node_id: Option<std::num::NonZeroU32>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -1068,6 +1070,7 @@ impl Operator {
                 },
                 merchant_item_id: args.merchant_item_id,
                 flight_destination_node_id: args.flight_destination_node_id,
+                flight_origin_node_id: args.flight_origin_node_id,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),

@@ -276,6 +276,7 @@ pub struct CaptureFilters<'a> {
     pub instance: InstanceCaptureFilters<'a>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
+    pub flight_origin_node_id: Option<std::num::NonZeroU32>,
 }
 
 impl Store {
@@ -366,7 +367,12 @@ impl Store {
             instance,
             merchant_item_id,
             flight_destination_node_id,
+            flight_origin_node_id,
         } = query;
+        ensure!(
+            flight_origin_node_id.is_none() || flight_destination_node_id.is_some(),
+            "Flight origin filtering requires a destination"
+        );
         ensure!(
             flight_destination_node_id.is_none() || family == Family::Forever,
             "Flight filtering requires Forever"
@@ -497,6 +503,12 @@ impl Store {
                     }
                     let flight_match = flight_destination_node_id.and_then(|node| {
                         analysis::captured_flight_route(s.sections.get("flight_map")?, node.get())
+                            .filter(|route| {
+                                flight_origin_node_id.is_none_or(|origin| {
+                                    route["origin_node_id"].as_u64()
+                                        == Some(u64::from(origin.get()))
+                                })
+                            })
                     });
                     if flight_destination_node_id.is_some() && flight_match.is_none() {
                         continue;

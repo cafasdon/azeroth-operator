@@ -202,7 +202,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
                         flight = await session.call_tool("list_snapshots", {
                             "family": "forever", "character": {"name": "example", "realm": "FIRST"},
-                            "flight_destination_node_id": 14, "limit": 1,
+                            "flight_origin_node_id": 12, "flight_destination_node_id": 14, "limit": 1,
                         })
                         self.assertFalse(flight.isError)
                         route = json.loads(flight.content[0].text)["snapshots"][0]
@@ -212,6 +212,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "destination_node_id": 14, "destination_name": "Fixture destination",
                             "fare_copper": 0,
                         })
+                        other_origin = await session.call_tool("list_snapshots", {
+                            "family": "forever", "flight_origin_node_id": 13, "flight_destination_node_id": 14,
+                        })
+                        self.assertFalse(other_origin.isError)
+                        self.assertEqual(json.loads(other_origin.content[0].text)["snapshots"], [])
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "flight_origin_node_id": 12,
+                        })).isError)
                         self.assertFalse(filtered_data["has_more"])
                         bank = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"character_bank"})
                         self.assertEqual(json.loads(bank.content[0].text)["data"]["6"]["1"]["link"], "item:744:7")

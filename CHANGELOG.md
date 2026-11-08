@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever flight routes by exact departure and destination nodes.
+
 - Find saved Forever departure points for a reachable flight destination.
 
 - Link saved Forever paragon rewards to captured quest-log readiness.
