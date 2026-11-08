@@ -218,6 +218,35 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "character":{"name":"example","realm":"FIRST"},"limit":1})
                         filtered_data = json.loads(filtered.content[0].text)
                         self.assertEqual([row["snapshot_id"] for row in filtered_data["snapshots"]], [forever_key])
+                        quest_history = {"family": "forever",
+                                         "character": {"name": "Example", "realm": "First"}}
+                        for quest_id, readiness, expected in [
+                            (10, "ready", [forever_key]), (42, "not_ready", [forever_key]),
+                            (43, "unknown", [forever_key]), (44, "failed", [forever_key]),
+                            (999, "unknown", []), (44, "ready", []),
+                        ]:
+                            history = await session.call_tool("list_snapshots", {
+                                **quest_history, "quest_id": quest_id, "quest_readiness": readiness,
+                            })
+                            self.assertFalse(history.isError)
+                            history_rows = json.loads(history.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in history_rows], expected)
+                            if expected:
+                                self.assertEqual(history_rows[0]["quest_match"], {
+                                    "quest_id": quest_id, "readiness": readiness,
+                                })
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **quest_history, "quest_readiness": "ready",
+                        })).isError)
+                        by_quest_id = await session.call_tool("list_snapshots", {
+                            **quest_history, "quest_id": 10,
+                        })
+                        self.assertFalse(by_quest_id.isError)
+                        self.assertEqual(json.loads(by_quest_id.content[0].text)["snapshots"][0]["quest_match"],
+                                         {"quest_id": 10, "readiness": "ready"})
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "retail", "quest_id": 10,
+                        })).isError)
                         trainers = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": " PoTiOn ",
                             "trainer_service_status": "available",

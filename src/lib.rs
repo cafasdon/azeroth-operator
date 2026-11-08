@@ -323,6 +323,8 @@ pub struct CaptureFilters<'a> {
     pub pet_food: Option<PetFoodCaptureFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
+    pub quest_id: Option<std::num::NonZeroU32>,
+    pub quest_readiness: Option<analysis::QuestReadiness>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
@@ -455,6 +457,8 @@ impl Store {
             pet_food,
             minimum_rested_xp,
             xp_gain_enabled_only,
+            quest_id,
+            quest_readiness,
             merchant_item_id,
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
@@ -647,6 +651,12 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
         ensure!(
+            quest_id.is_none_or(|_| family == Family::Forever)
+                && (quest_readiness.is_none() || quest_id.is_some()),
+            "Quest filtering requires Forever and a quest ID"
+        );
+        let quest_key = quest_id.map(|id| id.to_string());
+        ensure!(
             !filter_experience || family == Family::Forever,
             "Experience filtering requires Forever"
         );
@@ -734,6 +744,16 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let quest_match = quest_key.as_ref().and_then(|key| {
+                        let quest = s.sections.get("quests")?.get(key)?;
+                        let readiness = analysis::quest_readiness(quest);
+                        quest_readiness
+                            .is_none_or(|expected| readiness == expected)
+                            .then_some(readiness)
+                    });
+                    if quest_key.is_some() && quest_match.is_none() {
+                        continue;
+                    }
                     let experience_match = if filter_experience {
                         let Some(xp) = s.sections.get("experience").filter(|xp| {
                             xp["status"] == "progress"
@@ -1010,6 +1030,9 @@ impl Store {
                     }
                     if let Some(experience) = experience_match {
                         summary["experience_match"] = experience;
+                    }
+                    if let Some((id, readiness)) = quest_id.zip(quest_match) {
+                        summary["quest_match"] = json!({"quest_id":id,"readiness":readiness});
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

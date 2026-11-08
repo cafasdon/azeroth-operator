@@ -280,6 +280,10 @@ struct List {
     /// Require an uncapped XP observation with XP gain explicitly enabled.
     #[serde(default)]
     xp_gain_enabled_only: bool,
+    /// Match an exact quest ID in a saved Forever quest log.
+    quest_id: Option<std::num::NonZeroU32>,
+    /// Match the captured readiness of the selected quest.
+    quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -1187,6 +1191,8 @@ impl Operator {
                 pet_food: args.pet_food,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
+                quest_id: args.quest_id,
+                quest_readiness: args.quest_readiness,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),

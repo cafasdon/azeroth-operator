@@ -554,6 +554,12 @@ You can combine this with an exact slot or the forward spellbook check.
 
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
 
+Use `list_snapshots` with `family: "forever"` and `quest_id` to find
+captures where that quest was observed. Add `quest_readiness` as
+`ready`, `not_ready`, `failed` or `unknown` to narrow the results.
+Unknown means the quest was observed without enough readiness evidence.
+A missing quest does not match. Results return the ID and recorded status.
+
 `character_summary.quest_objective_workload` counts unfinished objective
 rows by captured kind and counts quests with unavailable objective maps.
 It excludes explicitly failed quests. An observed empty map contributes

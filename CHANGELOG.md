@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever captures by quest ID and recorded readiness.
+
 - Estimate XP from the affordable prefix of a saved Forever quest turn-in plan.
 
 - Budget the quests selected by the saved Forever XP turn-in plan.
