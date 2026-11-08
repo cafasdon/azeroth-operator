@@ -257,6 +257,8 @@ struct OwnedGearReview {
     minimum_required_level: Option<u32>,
     /// Maximum recorded character level required to equip the item, inclusive.
     maximum_required_level: Option<u32>,
+    /// Filter by the exact nonzero enchant effect ID encoded in a captured item link.
+    observed_enchant_effect_id: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -638,6 +640,7 @@ impl Operator {
                 item_ids,
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),
+                args.observed_enchant_effect_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

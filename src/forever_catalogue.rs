@@ -2649,6 +2649,7 @@ pub fn review_owned(
     observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
     required_levels: (Option<u32>, Option<u32>),
+    observed_enchant_effect_id: Option<std::num::NonZeroU32>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -2734,8 +2735,19 @@ pub fn review_owned(
             {
                 return;
             }
-            if included >= offset && entries.len() < limit {
-                let modifiers = link_modifiers(item);
+            let on_page = included >= offset && entries.len() < limit;
+            let modifiers = (on_page || observed_enchant_effect_id.is_some())
+                .then(|| link_modifiers(item))
+                .flatten();
+            if observed_enchant_effect_id.is_some_and(|id| {
+                modifiers
+                    .as_ref()
+                    .and_then(|fields| fields["enchant_id"].as_u64())
+                    != Some(u64::from(id.get()))
+            }) {
+                return;
+            }
+            if on_page {
                 let draft_selection = target_slot
                     .and_then(|target| draft_selection(target, storage, container, slot, item_id?));
                 let requirement_conflict = draft_selection

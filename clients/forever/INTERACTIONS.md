@@ -67,6 +67,11 @@ results by the catalogue's recorded required character level before paging.
 These inclusive bounds exclude items with no recorded requirement.
 Storage coverage and set totals describe the full capture.
 
+Use `observed_enchant_effect_id` to find captured items whose links encode
+that exact nonzero effect ID. The filter works before paging and includes
+items absent from the catalogue when the link agrees with the captured
+base ID. Missing or unreadable modifier data cannot match.
+
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
 food types. An empty food list means the game reported none. The capture

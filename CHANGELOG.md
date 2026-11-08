@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured Forever gear by the enchant effect ID encoded in its item link.
+
 - Find Forever enchant effects by the item that applies them.
 
 - Find Forever catalogue enchants that fit a specified base item under the pinned simulator rules.
