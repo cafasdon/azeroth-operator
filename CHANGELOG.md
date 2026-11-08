@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever quests by affordability against the same capture's wallet.
+
 - Filter saved Forever quests by their observed required copper cost.
 
 - Confirm the leading distinct Forever bulk shortlist sets on fresh fixed samples.

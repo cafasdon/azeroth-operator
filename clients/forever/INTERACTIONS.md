@@ -572,6 +572,9 @@ this comparison.
 and `inspect_snapshot` accepts `quest_max_required_copper` for the quests
 section. Zero finds quests with an explicitly recorded zero cost. Unknown
 costs are counted separately among rows matching the other filters.
+Set `quest_within_captured_wallet` to compare each cost with the wallet
+in the same capture. An optional copper cap can narrow the results further.
+If wallet data is unavailable, the filtered result is unknown.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its

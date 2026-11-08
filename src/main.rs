@@ -86,6 +86,9 @@ struct Inspect {
     quest_max_remaining_seconds: Option<u32>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
     quest_max_required_copper: Option<u64>,
+    /// Keep quests whose recorded copper cost fits the wallet in the same saved Forever snapshot.
+    #[serde(default)]
+    quest_within_captured_wallet: bool,
     /// Keep saved Forever quests that offer this base item as a fixed reward or choice.
     quest_reward_item_id: Option<std::num::NonZeroU32>,
     /// Keep saved Forever quests that offer this currency as a fixed reward or choice.
@@ -1154,6 +1157,7 @@ impl Operator {
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
                 || args.quest_max_required_copper.is_some()
+                || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
@@ -1207,7 +1211,7 @@ impl Operator {
                 "Quest timer selection requires the quests section without a quest ID",
             )]);
         }
-        if args.quest_max_required_copper.is_some()
+        if (args.quest_max_required_copper.is_some() || args.quest_within_captured_wallet)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -1457,6 +1461,7 @@ impl Operator {
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
                     || args.quest_max_required_copper.is_some()
+                    || args.quest_within_captured_wallet
                     || filter_rewards
                 {
                     if value["client"]["family"] != "forever" {
@@ -1465,19 +1470,27 @@ impl Operator {
                         )]);
                     }
                     let mut data = value["data"].take();
-                    let map = if args.quest_on_captured_map {
+                    let context = if args.quest_on_captured_map || args.quest_within_captured_wallet
+                    {
                         let snapshot = match self.store.read(&args.snapshot_id) {
                             Ok(snapshot) => snapshot,
                             Err(_) => {
                                 return CallToolResult::error(vec![ContentBlock::text(
-                                    "Could not read the captured player map",
+                                    "Could not read the saved quest filter context",
                                 )]);
                             }
                         };
-                        let map = snapshot
-                            .sections
-                            .get("stats")
-                            .and_then(|stats| stats["map_id"].as_u64());
+                        Some(snapshot)
+                    } else {
+                        None
+                    };
+                    let map = if args.quest_on_captured_map {
+                        let map = context.as_ref().and_then(|snapshot| {
+                            snapshot
+                                .sections
+                                .get("stats")
+                                .and_then(|stats| stats["map_id"].as_u64())
+                        });
                         value["quest_on_captured_map"] = serde_json::json!(true);
                         if map.is_none() {
                             data = serde_json::Value::Null;
@@ -1558,6 +1571,28 @@ impl Operator {
                     }
                     if let Some(maximum) = args.quest_max_required_copper {
                         value["quest_max_required_copper"] = serde_json::json!(maximum);
+                    }
+                    let maximum = if args.quest_within_captured_wallet {
+                        let wallet = context.as_ref().and_then(|snapshot| {
+                            snapshot
+                                .sections
+                                .get("wallet")
+                                .and_then(|wallet| wallet["copper"].as_u64())
+                        });
+                        value["quest_within_captured_wallet"] = serde_json::json!(true);
+                        value["quest_wallet_observed"] = serde_json::json!(wallet.is_some());
+                        if wallet.is_none() {
+                            data = serde_json::Value::Null;
+                            value["quest_cost_unknown_count"] = serde_json::Value::Null;
+                        }
+                        wallet.map(|balance| {
+                            args.quest_max_required_copper
+                                .map_or(balance, |cap| balance.min(cap))
+                        })
+                    } else {
+                        args.quest_max_required_copper
+                    };
+                    if let Some(maximum) = maximum {
                         value["quest_cost_unknown_count"] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
