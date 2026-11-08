@@ -697,6 +697,9 @@ capture times and describe historical routes.
 The review compares the total with the first capture's opt-in wallet
 and reports affordability and any copper shortfall when both are known.
 Later captures supply fares only.
+`starting_wallet_affordable_prefix_legs` counts consecutive legs from the
+start, stopping at the first unknown fare or fare above the remaining
+budget. A missing starting wallet leaves the count unknown.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an

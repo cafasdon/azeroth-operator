@@ -1987,9 +1987,19 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         .get("wallet")
         .and_then(|wallet| wallet["copper"].as_u64());
     let budget = total.zip(starting_wallet);
+    let affordable_prefix = starting_wallet.map(|balance| {
+        routes
+            .iter()
+            .scan(balance, |remaining, route| {
+                *remaining = remaining.checked_sub(route["fare_copper"].as_u64()?)?;
+                Some(())
+            })
+            .count()
+    });
     Ok(json!({"legs":routes,"total_fare_copper":total,
         "affordable_from_starting_wallet":budget.map(|(fare, balance)| fare <= balance),
-        "starting_wallet_shortfall_copper":budget.map(|(fare, balance)| fare.saturating_sub(balance))}))
+        "starting_wallet_shortfall_copper":budget.map(|(fare, balance)| fare.saturating_sub(balance)),
+        "starting_wallet_affordable_prefix_legs":affordable_prefix}))
 }
 
 fn compare_flight_maps(before: &Value, after: &Value) -> Value {

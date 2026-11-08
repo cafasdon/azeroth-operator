@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show how many consecutive Forever itinerary legs fit the starting wallet.
+
 - Check saved Forever itinerary fares against the starting capture's wallet.
 
 - Review connected Forever flight legs and total their recorded fares.
