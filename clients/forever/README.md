@@ -78,6 +78,12 @@ the quantity across all matches and at most 20 numerically ordered locations,
 with total matched count and truncation flagged. Date/character/newest filters
 and pagination apply normally. These quantities remain pending mail, not stock.
 
+Basic `professions` capture validates public names, ranks and skill-line IDs
+and checks two consecutive reads for consistency. Missing or changing data
+marks this section unavailable while retaining valid sections in the export.
+This shared collector also applies to other client families. See the
+[offline verification](../../docs/profession-capture-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "profession_recipe_view"` for the saved
 filtered recipe list of a visible local crafting page. It includes the current
 profession ID and recipe IDs, with names and learned flags where readable.

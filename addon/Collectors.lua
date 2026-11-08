@@ -645,16 +645,73 @@ end
 
 AO.collectors.professions = function()
     assert(GetProfessions and GetProfessionInfo, "Profession API unavailable")
-    local result = {}
-    local ids = {GetProfessions()}
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted profession observation")
+        return value
+    end
+    local function integer(value, low)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=4294967295,
+            "Invalid profession number")
+        return value
+    end
+    local function text(value)
+        value=readable(value)
+        assert(type(value)=="string" and #value<=16384, "Invalid profession name")
+        local offset=1
+        while offset<=#value do
+            local first=value:byte(offset)
+            local length,low,high=1,128,191
+            if first<=127 then
+                length=1
+            elseif first>=194 and first<=223 then
+                length=2
+            elseif first>=224 and first<=239 then
+                length=3
+                if first==224 then low=160 elseif first==237 then high=159 end
+            elseif first>=240 and first<=244 then
+                length=4
+                if first==240 then low=144 elseif first==244 then high=143 end
+            else error("Invalid profession name encoding") end
+            for part=1,length-1 do
+                local byte=value:byte(offset+part)
+                assert(byte and byte>=(part==1 and low or 128)
+                    and byte<=(part==1 and high or 191), "Invalid profession name encoding")
+            end
+            offset=offset+length
+        end
+        return value
+    end
+    local function read()
+        local result, indices = {}, {}
+        local ids = {GetProfessions()}
+        for slot=1,6 do
+            local index=readable(ids[slot])
+            if index~=nil then
+                index=integer(index,1)
+                local name, _, rank, maxRank, _, _, skillLine = GetProfessionInfo(index)
+                name=text(name)
+                local key=tostring(slot)
+                indices[key]=index
+                result[key]={name=name,rank=integer(rank,0),max_rank=integer(maxRank,0),
+                    skill_line=integer(skillLine,1)}
+            end
+        end
+        return result, indices
+    end
+    local first, indices=read()
+    local second, nextIndices=read()
     for slot=1,6 do
-        local index=ids[slot]
-        if index then
-            local name, icon, rank, maxRank, _, _, skillLine = GetProfessionInfo(index)
-            result[tostring(slot)]={name=name,rank=rank,max_rank=maxRank,skill_line=skillLine}
+        local key=tostring(slot)
+        assert(indices[key]==nextIndices[key], "Profession slots changed")
+        local before, after=first[key],second[key]
+        if before then
+            assert(after and before.name==after.name and before.rank==after.rank
+                and before.max_rank==after.max_rank and before.skill_line==after.skill_line,
+                "Profession observation changed")
         end
     end
-    return result
+    return first
 end
 
 AO.collectors.pet_collection_view = function()

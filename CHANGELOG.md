@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep malformed, unloaded or changing profession observations out of exports so valid equipment and other sections remain importable.
+
 - Bind character simulations to captured level 60, matching the pinned engine, while preserving plan-only review for other or unknown levels and explaining legacy-review re-export.
 
 - Capture optional item-link required levels and reject known shortfalls in changed equipment drafts and owned-gear ranking, preserving unknowns and existing baselines.
