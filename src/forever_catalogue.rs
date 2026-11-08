@@ -162,6 +162,8 @@ pub struct Query {
     pub crafted_profession_id: Option<std::num::NonZeroU32>,
     /// Restrict enchant effects to simulator fits for this exact catalogue base item ID.
     pub enchant_target_item_id: Option<std::num::NonZeroU32>,
+    /// Include this listed random suffix in the target's regular-stat preview.
+    pub enchant_target_random_suffix_id: Option<std::num::NonZeroI32>,
     /// Restrict enchant effects to those linked to this exact enchant application item ID.
     pub enchant_application_item_id: Option<std::num::NonZeroU32>,
     /// List random suffix records referenced by this exact base item ID.
@@ -622,6 +624,27 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             .filter(|kind| (1..=14).contains(kind))
             .ok_or_else(|| anyhow::anyhow!("Unknown enchant target item type"))?;
         Some((item, kind))
+    } else {
+        None
+    };
+    let enchant_target_suffix = if let Some(id) = query.enchant_target_random_suffix_id {
+        let (item, _) =
+            enchant_target.ok_or_else(|| anyhow::anyhow!("Suffix requires an enchant target"))?;
+        let id = i64::from(id.get());
+        ensure!(
+            lists_random_suffix(item, id),
+            "Suffix is not listed for the enchant target"
+        );
+        let mut matches = db["randomSuffixes"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|suffix| suffix["id"].as_i64() == Some(id));
+        let suffix = matches
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Unknown target suffix"))?;
+        ensure!(matches.next().is_none(), "Ambiguous target suffix");
+        Some(suffix)
     } else {
         None
     };
@@ -1112,6 +1135,30 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if let Some((item, _)) = enchant_target {
+        let base_stats = default_regular_stats(item).and_then(|base| {
+            if let Some(suffix) = enchant_target_suffix {
+                let (allocation, _) = scaled_suffix_effects(item, suffix)?;
+                combine_regular_stats(base, &allocation["by_simulator_stat_id"])
+            } else {
+                Some(Value::Object(base))
+            }
+        });
+        let variants: Vec<_> = records
+            .iter()
+            .map(|enchant| {
+                json!({
+                    "effect_id": enchant["effectId"],
+                    "default_scaling_regular_stats_with_enchant": base_stats.as_ref()
+                        .and_then(|base| add_enchant_regular_stats(base, enchant))
+                })
+            })
+            .collect();
+        result["enchant_target_preview"] = json!({
+            "item_id": item["id"], "suffix_id": query.enchant_target_random_suffix_id,
+            "default_scaling_regular_stats_before_enchant": base_stats, "variants": variants
+        });
+    }
     if let Some(item) = suffix_target {
         let base_stats = default_regular_stats(item);
         let variants: Vec<_> = records.iter().map(|suffix| {

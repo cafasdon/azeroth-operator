@@ -194,6 +194,10 @@ record an output item ID, those IDs must agree.
 For enchant lookups, supply `enchant_target_item_id` to keep effects that
 fit the specified base item under the pinned simulator rules. It combines
 with crafting filters and does not require a character capture.
+The `enchant_target_preview` reports regular stats before and after each
+returned enchant at default scaling. Add `enchant_target_random_suffix_id`
+to include a listed suffix in the base. These totals exclude procs and
+pseudo-stats. Missing stat evidence yields null.
 Use `enchant_application_item_id` to search by the item that applies the
 effect, such as a shield spike. Combine it with `enchant_target_item_id`
 to check a specific pairing under the simulator rules.

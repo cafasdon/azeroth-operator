@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preview regular stats for compatible Forever enchants, optionally including a listed suffix.
+
 - Preview resulting regular stats for each Forever suffix before enchants.
 
 - Preview item-specific stat allocations and extra effects for Forever catalogue suffixes.
