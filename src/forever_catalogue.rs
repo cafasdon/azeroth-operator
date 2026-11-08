@@ -1113,10 +1113,15 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
     if let Some(item) = suffix_target {
+        let base_stats = default_regular_stats(item);
         let variants: Vec<_> = records.iter().map(|suffix| {
             let effects = scaled_suffix_effects(item, suffix);
+            let regular_stats = effects.as_ref().and_then(|(allocation, _)| {
+                combine_regular_stats(base_stats.clone()?, &allocation["by_simulator_stat_id"])
+            });
             json!({
                 "suffix_id": suffix["id"],
+                "default_scaling_regular_stats_before_enchant": regular_stats,
                 "default_scaling_suffix_allocation_delta": effects.as_ref().map(|(stats, _)| stats),
                 "default_scaling_suffix_extra_effects": effects.as_ref().map(|(_, extra)| extra)
             })

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preview resulting regular stats for each Forever suffix before enchants.
+
 - Preview item-specific stat allocations and extra effects for Forever catalogue suffixes.
 
 - Look up Forever random suffixes for a base item and find items that list a specific suffix.
