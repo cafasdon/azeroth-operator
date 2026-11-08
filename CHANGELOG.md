@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture saved world-boss names and reset timers from passive cache updates, with strict owner-scoped readback and unavailable-state handling.
+
 - Compare saved-instance public descriptions and recorded timer/lock flags, marking duplicate descriptions ambiguous.
 
 - Search saved characters by observed instance name, difficulty, lock flags, reset timer and cache age.

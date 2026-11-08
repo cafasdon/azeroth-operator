@@ -98,6 +98,40 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "saved_world_bosses" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("update_age_seconds", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(
+                value["coverage"] == "updated_cache" && entries.len() <= 128,
+                "Invalid saved world boss coverage"
+            );
+            for slot in 1..=entries.len() {
+                ensure!(
+                    entries.contains_key(&slot.to_string()),
+                    "Sparse saved world bosses"
+                );
+            }
+            for (slot, row) in entries {
+                index(slot, 1, 128)?;
+                object(
+                    row,
+                    &[("name", "text", true), ("reset_seconds", "int", true)],
+                )?;
+                ensure!(
+                    row["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid saved world boss name"
+                );
+            }
+        }
         "saved_instances" => {
             object(
                 value,

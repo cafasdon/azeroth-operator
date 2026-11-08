@@ -61,6 +61,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="mount_collection"
         sectionNames[#sectionNames+1]="toy_collection_view"
         sectionNames[#sectionNames+1]="saved_instances"
+        sectionNames[#sectionNames+1]="saved_world_bosses"
         sectionNames[#sectionNames+1]="skill_lines"
         sectionNames[#sectionNames+1]="bag_capacity"
         sectionNames[#sectionNames+1]="instance_context"

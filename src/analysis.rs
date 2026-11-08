@@ -4295,6 +4295,11 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    summary["saved_world_bosses_observed"] = json!(
+        s.sections
+            .get("saved_world_bosses")
+            .map(|section| section["entries"].as_object().unwrap().len())
+    );
     let saved_instances = s
         .sections
         .get("saved_instances")

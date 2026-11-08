@@ -20,6 +20,35 @@ if AO.family=="forever" and CreateFrame then
     end)
     if ok then AO.savedInstanceObserver=observer end
 end
+AO.collectors.saved_world_bosses = function()
+    assert(AO.family=="forever" and savedInstanceUpdate and GetServerTime
+        and GetNumSavedWorldBosses and GetSavedWorldBossInfo, "Saved world boss cache unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted saved world boss observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high,
+            "Invalid saved world boss number")
+        return value
+    end
+    local updated=savedInstanceUpdate
+    local now=integer(GetServerTime(),updated,4294967295)
+    local count=integer(GetNumSavedWorldBosses(),0,128)
+    local result={coverage="updated_cache",update_age_seconds=now-updated,entries={}}
+    for index=1,count do
+        local name,_,reset=GetSavedWorldBossInfo(index)
+        name=readable(name); reset=readable(reset)
+        assert(type(name)=="string" and #name>0 and #name<=256, "Invalid saved world boss name")
+        assert(type(reset)=="number", "Invalid saved world boss timer")
+        result.entries[tostring(index)]={name=name,
+            reset_seconds=integer(math.ceil(reset),-2147483648,2147483647)}
+    end
+    assert(integer(GetNumSavedWorldBosses(),0,128)==count and savedInstanceUpdate==updated,
+        "Saved world boss cache changed")
+    return result
+end
 AO.collectors.saved_instances = function()
     assert(AO.family=="forever" and savedInstanceUpdate and GetServerTime
         and GetNumSavedInstances and GetSavedInstanceInfo, "Saved instance cache unavailable")

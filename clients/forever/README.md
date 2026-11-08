@@ -65,6 +65,13 @@ deltas. One-sided descriptions are observations only; they do not prove a reset
 or new lockout. Missing cache sections remain unknown, and cache ages describe
 the capture time. Ordinary character/client/build/time comparison guards apply.
 
+`inspect_snapshot` also accepts `section: "saved_world_bosses"`. It records
+world-boss names and reset timers separately from dungeon/raid instances after
+the same passive instance-info update. Unique identifiers are omitted.
+`character_summary.saved_world_bosses_observed` distinguishes a captured empty
+list (zero) from an unavailable cache (null). These observations do not establish
+present loot eligibility; timers and update age describe the capture time.
+
 For saved-instance searches, use `list_snapshots.saved_instance`, for example
 `{"name":"Molten Core","locked":true,"maximum_reset_seconds":86400}` with
 `family: "forever"`. Names match exactly without case sensitivity. Optional
