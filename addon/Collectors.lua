@@ -1676,8 +1676,52 @@ AO.collectors.flight_map = function()
         observed=observed+1
     end
     assert(observed==#rows and frame:IsVisible(), "Flight map changed during capture")
+    -- Preview geometry belongs to this visible panel, not a global flight graph.
+    local origin,unique,ids=nil,true,{}
+    for _,entry in pairs(entries) do
+        if ids[entry.node_id] then unique=false end
+        ids[entry.node_id]=true
+        if entry.state=="current" and not entry.map_transition then
+            if origin then unique=false end
+            origin=entry.node_id
+        end
+    end
+    local function route(slot,target)
+        local count=GetNumRoutes(slot)
+        if not questRewardInteger(count,1,64) then return end
+        local path,seen,previous={}, {},origin
+        path["1"]=origin;seen[origin]=true
+        for segment=1,count do
+            local source=TaxiGetNodeSlot(slot,segment,true)
+            local destination=TaxiGetNodeSlot(slot,segment,false)
+            if not questRewardInteger(source,1,4096) or not questRewardInteger(destination,1,4096) then return end
+            local from,to=entries[tostring(source)],entries[tostring(destination)]
+            if not from or not to or from.map_transition or to.map_transition
+                or from.node_id~=previous or seen[to.node_id] then return end
+            path[tostring(segment+1)]=to.node_id;seen[to.node_id]=true;previous=to.node_id
+        end
+        if previous==target then return path,count end
+    end
+    if unique and origin then
+        for slot,entry in pairs(entries) do
+            if entry.state=="reachable" and not entry.map_transition then
+                local ok,path,count=pcall(route,tonumber(slot),entry.node_id)
+                if ok and path then
+                    local nextOk,nextPath,nextCount=pcall(route,tonumber(slot),entry.node_id)
+                    local same=nextOk and nextPath and count==nextCount
+                    if same then
+                        for index=1,count+1 do
+                            local key=tostring(index)
+                            if path[key]~=nextPath[key] then same=false;break end
+                        end
+                    end
+                    if same then entry.observed_route_node_ids=path end
+                end
+            end
+        end
+    end
     local current=frame:GetMapID()
-    assert(questRewardInteger(current,1,4294967295) and current==map, "Flight map changed during capture")
+    assert(frame:IsVisible() and questRewardInteger(current,1,4294967295) and current==map, "Flight map changed during capture")
     return {map_id=map,entries=entries}
 end
 

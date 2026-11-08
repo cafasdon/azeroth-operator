@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture stable public flight-route preview nodes and annotate saved routes without splitting flights or fares; preserve unknown and incomplete previews.
+
 - Capture optional stable flight-map node positions and annotate saved route legs in their recorded map frame, preserving unknowns, fares and route selection.
 
 - Capture trainer profession-acquisition flags and primary-slot fullness, report known slot blockers separately from monetary affordability, and reject changing lesson observations.

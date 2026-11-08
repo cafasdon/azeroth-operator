@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Reachable flight destinations can include stable observed route-preview node
+IDs from the visible panel. Saved route legs retain origin/intermediate/target
+sequences as annotations, without splitting a quoted flight into multiple
+itinerary legs or imputing segment fares. Unknown, unresolved, changing or
+ambiguous previews remain absent. No flight is selected or taken.
+[Offline evidence](../../docs/flight-route-preview-verification-2026-11-08.md).
+
 Open flight-map nodes can include stable public map-relative positions.
 Saved route legs retain each map's coordinate frame through `map_id` and
 optional origin/destination positions. Unknown positions remain absent;
@@ -1051,8 +1058,8 @@ instance eligibility. [Forever map API](https://raw.githubusercontent.com/Gethe/
 Export while the built-in flight map is open to inspect `flight_map` later.
 It records the viewed map ID, node names and IDs, recorded availability,
 map transition markers and available fares for reachable destinations.
-The capture omits coordinates and leaves opening the map and travelling
-to the player. It covers the open flight map, so availability and fares
+Optional stable map-relative coordinates are included when readable;
+opening the map and travelling remain with the player. It covers the open flight map, so availability and fares
 can differ at another flight master. Update the importer and reader before
 syncing this section. [Forever flight map source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_FlightMap/FM_FlightPathDataProvider.lua)
 

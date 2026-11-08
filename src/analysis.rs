@@ -3140,6 +3140,9 @@ pub(crate) fn captured_flight_route(map: &Value, destination_id: u32) -> Option<
     if let Some(position) = destination.get("map_position") {
         route["destination_map_position"] = position.clone();
     }
+    if let Some(path) = destination.get("observed_route_node_ids") {
+        route["observed_route_node_ids"] = path.clone();
+    }
     Some(route)
 }
 

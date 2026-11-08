@@ -1549,6 +1549,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("state", "text", true),
                     ("map_transition", "bool", true),
                     ("map_position", "map", false),
+                    ("observed_route_node_ids", "map", false),
                     ("fare_copper", "wallet_copper", false),
                 ],
             )?;
@@ -1556,6 +1557,47 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             ensure!(rows.len() <= 512, "Too many flight map observations");
             for (key, row) in rows {
                 index(key, 1, 4096)?;
+                if let Some(path) = row.get("observed_route_node_ids") {
+                    let path = path
+                        .as_object()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid flight route nodes"))?;
+                    ensure!(
+                        (2..=65).contains(&path.len())
+                            && row["state"] == "reachable"
+                            && row["map_transition"] == false,
+                        "Invalid flight route nodes"
+                    );
+                    let origins: Vec<_> = rows
+                        .values()
+                        .filter(|node| {
+                            node["state"] == "current" && node["map_transition"] == false
+                        })
+                        .collect();
+                    ensure!(
+                        origins.len() == 1
+                            && path.get("1") == origins[0].get("node_id")
+                            && path.get(&path.len().to_string()) == row.get("node_id"),
+                        "Invalid flight route endpoints"
+                    );
+                    let mut seen = std::collections::BTreeSet::new();
+                    for position in 1..=path.len() {
+                        let id = path
+                            .get(&position.to_string())
+                            .and_then(Value::as_u64)
+                            .filter(|id| *id > 0 && *id <= u32::MAX as u64)
+                            .ok_or_else(|| anyhow::anyhow!("Invalid flight route node"))?;
+                        let matching: Vec<_> = rows
+                            .values()
+                            .filter(|node| node["node_id"].as_u64() == Some(id))
+                            .collect();
+                        ensure!(
+                            seen.insert(id)
+                                && matching.len() == 1
+                                && matching[0]["map_transition"] == false,
+                            "Ambiguous flight route node"
+                        );
+                    }
+                }
                 if let Some(position) = row.get("map_position") {
                     object(
                         position,

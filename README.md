@@ -22,6 +22,14 @@ absent, including on legacy captures. Fares and route selection are unchanged.
 Only the open flight map at the recorded flight master is observed.
 [Offline verification](docs/flight-map-positions-verification-2026-11-08.md).
 
+Reachable destinations can also include `observed_route_node_ids`, a compact
+object keyed `"1"` through `"N"` containing the origin, intermediate nodes and
+destination from the panel's readable route preview. Saved route legs retain
+this annotation when known. The preview describes one quoted flight; its
+segments do not become separate itinerary legs or individual fare quotes.
+Unknown, incomplete or changing paths stay absent.
+[Offline verification](docs/flight-route-preview-verification-2026-11-08.md).
+
 Hosted read-only MCP: `https://mcp.cafas.com.br/scopes/azeroth/mcp`, using a dedicated
 bearer token. A separate restricted SSH credential supports the Rust CLI
 `azeroth-operator upload <export-file>`. Configure the absolute

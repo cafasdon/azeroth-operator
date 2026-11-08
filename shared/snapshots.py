@@ -475,11 +475,24 @@ def validate_snapshot(value):
         for slot, row in flight_map["entries"].items():
             required = {"node_id", "name", "state", "map_transition"}
             if (not isinstance(slot, str) or not re.fullmatch(r"[1-9][0-9]{0,3}", slot) or int(slot) > 4096
-                    or not isinstance(row, dict) or not required <= row.keys() or set(row) - required - {"fare_copper", "map_position"}
+                    or not isinstance(row, dict) or not required <= row.keys() or set(row) - required - {"fare_copper", "map_position", "observed_route_node_ids"}
                     or type(row["node_id"]) is not int or not 1 <= row["node_id"] <= 4_294_967_295
                     or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode("utf-8")) <= 256
                     or row["state"] not in ("current", "reachable", "unreachable") or type(row["map_transition"]) is not bool):
                 raise ValueError("Invalid Forever flight destination")
+            if "observed_route_node_ids" in row:
+                path=row["observed_route_node_ids"]
+                nodes=list(flight_map["entries"].values())
+                if (not isinstance(path,dict) or not 2 <= len(path) <= 65
+                        or set(path)!={str(i) for i in range(1,len(path)+1)}
+                        or any(type(n) is not int or not 1 <= n <= 4_294_967_295 for n in path.values())
+                        or len(set(path.values()))!=len(path) or row["state"]!="reachable" or row["map_transition"]):
+                    raise ValueError("Invalid flight route nodes")
+                origins=[node for node in nodes if isinstance(node,dict) and node.get("state")=="current" and node.get("map_transition") is False]
+                if (len(origins)!=1 or path["1"]!=origins[0].get("node_id") or path[str(len(path))]!=row["node_id"]
+                        or any(len(matches:=[node for node in nodes if isinstance(node,dict) and node.get("node_id")==n])!=1
+                               or matches[0].get("map_transition") is not False for n in path.values())):
+                    raise ValueError("Invalid flight route context")
             if "map_position" in row:
                 position=row["map_position"]
                 if (not isinstance(position,dict) or set(position)!={"x","y"}
