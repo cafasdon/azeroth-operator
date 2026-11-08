@@ -140,6 +140,8 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     Ok(
         json!({"format":"azeroth_operator.equipment_review.v1","captured_character_level":captured_level,
         "captured_professions":snapshot.sections.get("professions"),
+        "captured_active_pet":snapshot.sections.get("pet_care").map(|pet| json!({
+            "present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]})),
         "captured_character_identity":{
             "class":snapshot.sections.get("stats").and_then(|stats| stats.get("class")),
             "race":snapshot.sections.get("stats").and_then(|stats| stats.get("race"))},

@@ -99,7 +99,8 @@ gear or an equip-legality qualification. It was built as follows:
   three seconds of variation, execute proportions 0.2/0.35 and 1,000 fixed
   iterations. Pass the resolved equipment and profile through `request_from`,
   using `captured_character_level: 60` in the synthetic equipment-review wrapper
-  to state the public fixture's stipulated engine level. This is not a game
+  and `captured_active_pet: {"present": true, "level": 60}` to state the
+  public fixture's stipulated player and Hunter-pet engine levels. This is not a game
   capture claim. The resulting simulator request payload is unchanged by the
   later level-metadata validation.
 - Invoke the qualification CLI for each profile with seeds 100000000, 200000000

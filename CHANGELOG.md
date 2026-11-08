@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Require saved active-pet level 60 for character-bound Hunter simulations that model a pet, matching the pinned engine; keep other/unknown levels available for plan-only review.
+
 - Capture optional stable active-pet family IDs and levels without pet names or GUIDs, and expose them in saved summaries and comparison observations.
 
 - Compare saved filtered pet-journal species counts and one-sided observations without inferring collection gains or losses.

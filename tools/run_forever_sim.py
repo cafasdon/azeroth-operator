@@ -266,6 +266,63 @@ def player_spec(player):
     return spec
 
 
+class UnsupportedSimulationPetLevel(ValueError):
+    """The pinned Hunter pet model cannot represent the captured pet level."""
+
+
+HUNTER_PET_TYPES = ("PetNone", "Bat", "Bear", "BirdOfPrey", "Boar", "CarrionBird",
+                    "Cat", "CoreHound", "Crab", "Crocilisk", "Fox", "Gorilla", "Hyena",
+                    "Raptor", "Scorpid", "Spider", "Tallstrider", "Turtle", "WindSerpent", "Wolf")
+
+
+def proto_option(value, camel, snake, default):
+    """Read protobuf JSON spellings without allowing a duplicate-field bypass."""
+    if not isinstance(value, dict):
+        raise ValueError("Invalid Hunter pet options")
+    if camel in value and snake in value:
+        raise ValueError("Duplicate Hunter pet option")
+    selected = value.get(camel, value.get(snake))
+    return default if selected is None else selected
+
+
+def check_hunter_pet_level(player, observed, require_level=True):
+    report = {"level": "not_applicable", "simulator_pet_level": None,
+              "family_and_training": "unverified", "happiness": "unverified"}
+    if player_spec(player) != "hunter":
+        return report
+    options = player["hunter"].get("options")
+    options = {} if options is None else options
+    class_options = proto_option(options, "classOptions", "class_options", {})
+    pet_type = proto_option(class_options, "petType", "pet_type", 0)
+    if isinstance(pet_type, str):
+        pet_type = HUNTER_PET_TYPES.index(pet_type) if pet_type in HUNTER_PET_TYPES else None
+    if type(pet_type) is not int or not 0 <= pet_type < len(HUNTER_PET_TYPES):
+        raise ValueError("Invalid Hunter pet type")
+    uptime = proto_option(class_options, "petUptime", "pet_uptime", 0)
+    if isinstance(uptime, str) and JSON_NUMBER.fullmatch(uptime):
+        uptime = float(uptime)
+    if type(uptime) not in (int, float) or not 0 <= uptime <= 1:
+        raise ValueError("Invalid Hunter pet uptime")
+    report["template_pet_type"] = HUNTER_PET_TYPES[pet_type]
+    report["template_pet_uptime"] = uptime
+    if not pet_type or uptime == 0:
+        return report
+    if observed is not None and not isinstance(observed, dict):
+        raise ValueError("Invalid captured active pet")
+    observed = observed or {}
+    level = observed.get("level")
+    known = observed.get("present") is True and type(level) is int and level > 0
+    report["simulator_pet_level"] = SIMULATOR_CHARACTER_LEVEL
+    report["captured_pet_level"] = level if known else None
+    report["level"] = ("matches" if level == SIMULATOR_CHARACTER_LEVEL else "unsupported_for_simulation") \
+        if known else "unverified"
+    if require_level and report["level"] != "matches":
+        raise UnsupportedSimulationPetLevel(
+            "Hunter pet simulation requires a saved active-pet level of 60. Re-export the saved capture with an updated reader; other or unknown pet levels remain plan-only."
+        )
+    return report
+
+
 def request_from(template, equipment_review, encounter_lookup):
     captured_level=equipment_review.get("captured_character_level")
     if type(captured_level) is not int or captured_level!=SIMULATOR_CHARACTER_LEVEL:
@@ -281,6 +338,7 @@ def request_from(template, equipment_review, encounter_lookup):
     ):
         raise ValueError("Provide a single-player template with an explicit APL")
     spec = player_spec(player)
+    check_hunter_pet_level(player, equipment_review.get("captured_active_pet"))
     if (not isinstance(player.get("talentsString"), str)
             or not player.get("class") or player["class"] == "ClassUnknown"
             or not player.get("race") or player["race"] == "RaceUnknown"):
@@ -664,6 +722,8 @@ def main():
             single_player(template["raid"]), review.get("captured_professions")) for review in reviews]
         result["character_identities"] = [check_character_identity(
             single_player(template["raid"]), review.get("captured_character_identity")) for review in reviews]
+        result["hunter_pet_assumptions"] = [check_hunter_pet_level(
+            single_player(template["raid"]), review.get("captured_active_pet")) for review in reviews]
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
@@ -673,6 +733,8 @@ def main():
         parser.exit(1, "Simulator template professions disagree with the saved character observation. Match the template to that capture before simulation.\n")
     except ConflictingCharacterIdentity:
         parser.exit(1, "Simulator template class or race disagrees with the saved character observation. Match the template to that capture before simulation.\n")
+    except UnsupportedSimulationPetLevel as error:
+        parser.exit(1, f"{error}\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Forever simulation failed ({type(error).__name__}). Check inputs and engine.\n")
 

@@ -43,6 +43,19 @@ individual pet or a level gain. No pet names, GUIDs, summon or training actions
 are added. Update readers before importing the new fields. See
 [offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
 
+Equipment reviews now include `captured_active_pet` with presence, family ID
+and level, or null for an unavailable pet observation. The pinned engine also
+fixes Hunter pets at level 60. If a Hunter template models a pet (nonzero
+`petType` and positive `petUptime`), simulation requires a saved present pet
+with integer level 60. Other or unknown pet levels remain available with
+`--plan-only`. No-pet/zero-uptime templates and other classes are unaffected.
+Rankings report `template_identity.hunter_pet`; direct adapter results report
+`hunter_pet_assumptions` per review. Family, happiness and training remain
+unverified even when level matches. Update the reader and re-export an
+existing capture if it already contains the required pet metadata; otherwise
+a new native capture is still needed later. See
+[offline verification](../../docs/simulation-pet-level-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "pet_collection_view"` for species-level
 observations while the pet journal is visible. The capture aggregates owned and
 unowned rows by species ID, using public species names. Individual pet GUIDs,

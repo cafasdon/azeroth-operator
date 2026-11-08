@@ -8,6 +8,11 @@ as observations, with unknowns preserved and no individual-pet continuity
 or level-gain inference. No pet names, GUIDs or pet actions are added.
 [Offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
 
+Character-bound Hunter simulations that model a pet require captured present
+pet level 60, matching the pinned engine. Other/unknown pet levels remain
+plan-only; no-pet and zero-uptime templates are unaffected. Family, happiness
+and training compatibility remain unverified. [Offline evidence](../../docs/simulation-pet-level-verification-2026-11-08.md).
+
 `compare_snapshots.pet_view_changes` compares saved filtered pet-journal
 views: shared species count changes and one-sided observed species IDs.
 It does not infer collection gains/losses or equal journal filters; missing

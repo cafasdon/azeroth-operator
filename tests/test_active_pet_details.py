@@ -22,6 +22,7 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
             for pet in [{'present':True,'family_id':1,'level':17}, {'present':True}, {'present':False},None]:
                 value=fixture()
                 value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+                value['sections']['equipment']={'16':{'item_id':123}}
                 if pet is not None:value['sections']['pet_care']=pet
                 cases.append((store.ingest(value),value))
             bad_keys=[]
@@ -47,6 +48,10 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                         pet=value['sections'].get('pet_care')
                         expected=None if pet is None else {field:pet.get(field) for field in ['present','family_id','level']}
                         self.assertEqual(json.loads(response.content[0].text)['active_pet_observation'],expected)
+                        response=await session.call_tool('review_equipment_selection',{'snapshot_id':key,
+                            'selections':[{'target_slot':16,'source':{'kind':'equipment','slot':16},'expected_item_id':123}]})
+                        self.assertFalse(response.isError)
+                        self.assertEqual(json.loads(response.content[0].text)['captured_active_pet'],expected)
                         if pet is not None:
                             response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})
                             self.assertFalse(response.isError)
