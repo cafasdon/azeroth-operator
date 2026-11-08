@@ -548,6 +548,39 @@ pub fn compare_observations(
             .map(|(before, after)| compare_flight_maps(before, after))
             .unwrap_or(Value::Null);
     }
+    let old_alerts = before
+        .sections
+        .get("durability_alerts")
+        .and_then(Value::as_object);
+    let new_alerts = after
+        .sections
+        .get("durability_alerts")
+        .and_then(Value::as_object);
+    if old_alerts.is_some() || new_alerts.is_some() {
+        comparison["durability_alert_changes"] = json!(old_alerts.zip(new_alerts).map(|(old, new)| {
+            old.keys().chain(new.keys()).collect::<BTreeSet<_>>().into_iter()
+                .filter_map(|slot| {
+                    let previous = old.get(slot).and_then(Value::as_str);
+                    let current = new.get(slot).and_then(Value::as_str);
+                    (previous != current).then(|| (slot, json!({
+                        "before":previous.unwrap_or("no_alert"),"after":current.unwrap_or("no_alert")
+                    })))
+                }).collect::<BTreeMap<_, _>>()
+        }));
+    }
+    let repair_quote = |snapshot: &Snapshot| {
+        snapshot
+            .sections
+            .get("repair_quote")
+            .and_then(|quote| quote["copper"].as_i64())
+    };
+    let (old_quote, new_quote) = (repair_quote(before), repair_quote(after));
+    if old_quote.is_some() || new_quote.is_some() {
+        comparison["repair_quote_change"] = json!({
+            "before_copper":old_quote,"after_copper":new_quote,
+            "delta_copper":old_quote.zip(new_quote).map(|(old,new)| new - old)
+        });
+    }
     let previous_space = carried_bag_space(before);
     let current_space = carried_bag_space(after);
     if previous_space.is_some() || current_space.is_some() {

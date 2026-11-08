@@ -210,6 +210,10 @@ section unavailable. The export records the price and leaves the repair
 to the player. Update the importer and reader before syncing this
 section. [Forever merchant source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_UIPanels_Game/Vanilla/MerchantFrame.lua)
 
+`compare_snapshots` reports changed durability alert slots when both
+captures contain alert maps. A cleared alert can also reflect a gear swap.
+Repair quote deltas require two observed quotes, and zero remains a quote.
+
 `merchant_stock` captures the open merchant's goods tab across its pages.
 Each offer identifies the item or currency and records the copper price
 per bundle, bundle size and game-reported stock. The stock value `-1`

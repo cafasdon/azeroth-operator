@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare observed Forever durability alerts and repair quotes between saved captures.
+
 - Audit carried stock for all retained Forever item shortcuts in one request.
 
 - Find captured Forever hotkeys shared across multiple action-bar slots.
