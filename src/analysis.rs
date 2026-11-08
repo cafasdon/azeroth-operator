@@ -1643,6 +1643,22 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
     };
     let mut status_changes = Vec::new();
     let mut price_changes = Vec::new();
+    let mut requirement_changes = Vec::new();
+    let requirements = |row: &Value| {
+        let abilities = row["ability_requirements"].as_object().map(|rows| {
+            let mut observed: Vec<_> = rows
+                .values()
+                .filter_map(|row| Some((row["name"].as_str()?, row["met"].as_bool()?)))
+                .collect();
+            observed.sort_unstable();
+            observed
+                .into_iter()
+                .map(|(name, met)| json!({"name":name,"met":met}))
+                .collect::<Vec<_>>()
+        });
+        json!({"required_level":row["required_level"],"skill_requirement":row["skill_requirement"],
+            "ability_requirements":abilities})
+    };
     for ((name, rank), old) in previous {
         let Some((old, new)) = old.zip(current.get(&(name, rank)).copied().flatten()) else {
             continue;
@@ -1658,9 +1674,15 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
                 "after_price":new_price,"price_delta":old_price.zip(new_price).map(|(a,b)| b-a)}),
             );
         }
+        let (before_requirements, after_requirements) = (requirements(old), requirements(new));
+        if before_requirements != after_requirements {
+            requirement_changes.push(json!({"name":name,"rank_label":rank,
+                "before":before_requirements,"after":after_requirements}));
+        }
     }
     Some(json!({"kind":after["kind"],"status_changes":status_changes,
-        "price_unit":price_unit,"price_changes":price_changes}))
+        "price_unit":price_unit,"price_changes":price_changes,
+        "requirement_changes":requirement_changes}))
 }
 
 fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'static str> {

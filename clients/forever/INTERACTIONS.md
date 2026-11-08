@@ -166,6 +166,10 @@ trainer, so a status change describes the two saved observations.
 The same comparison reports price changes separately, in copper or pet
 training points. A quote appearing or disappearing has an unknown
 delta, while a recorded free lesson retains a zero price.
+It also compares observed level, skill and ability prerequisites for
+matched lessons. Reordering ability rows alone produces no change.
+An unavailable requirement observation remains distinct from an
+observed empty list.
 `trainer_service_status` works alone or alongside the name filter.
 When both are supplied, the same captured lesson must match both.
 Use one price ceiling, `trainer_max_price_copper` for ordinary lessons

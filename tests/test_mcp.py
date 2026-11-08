@@ -655,6 +655,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         reputation_after["sections"]["quests"]["42"]["timer"]["remaining_seconds"] = 0
                         reputation_after["sections"]["trainer_services"]["entries"]["1"]["price_copper"] = 0
                         del reputation_after["sections"]["trainer_services"]["entries"]["3"]["price_copper"]
+                        blocked_lesson = reputation_after["sections"]["trainer_services"]["entries"]["4"]
+                        blocked_lesson["skill_requirement"]["met"] = True
+                        abilities = blocked_lesson["ability_requirements"]
+                        abilities["1"], abilities["2"] = abilities["2"], abilities["1"]
                         reputation_after["sections"]["quests"]["42"]["objectives"]["2"]["finished"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
@@ -672,6 +676,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         trainer_changes = progress_data["trainer_service_changes"]
                         self.assertEqual(trainer_changes["price_unit"], "copper")
                         self.assertEqual(trainer_changes["status_changes"], [])
+                        requirement = trainer_changes["requirement_changes"]
+                        self.assertEqual([row["name"] for row in requirement], ["Blocked Lesson"])
+                        self.assertFalse(requirement[0]["before"]["skill_requirement"]["met"])
+                        self.assertTrue(requirement[0]["after"]["skill_requirement"]["met"])
+                        self.assertEqual(requirement[0]["before"]["ability_requirements"],
+                                         requirement[0]["after"]["ability_requirements"])
                         self.assertEqual(trainer_changes["price_changes"], [
                             {"name": "Expensive Lesson", "rank_label": None,
                              "before_price": 5_000_000_001, "after_price": None, "price_delta": None},

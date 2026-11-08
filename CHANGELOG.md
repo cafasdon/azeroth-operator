@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare captured Forever trainer lesson prerequisites across saved visits.
+
 - Compare saved Forever trainer lesson prices in copper or pet training points.
 
 - Compare recorded lesson status across saved Forever trainer visits.
