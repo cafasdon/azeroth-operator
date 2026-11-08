@@ -85,6 +85,10 @@ struct Inspect {
     /// Include the repair quote from the same saved merchant capture in the cart budget.
     #[serde(default)]
     merchant_cart_include_repair: bool,
+    /// Review whole-entry buyback quotes for 1 to 12 distinct captured slots; requires merchant_buyback.
+    buyback_slots: Option<Vec<std::num::NonZeroU32>>,
+    /// Reserve this much of the same captured wallet before reviewing buyback quotes.
+    buyback_wallet_reserve_copper: Option<u64>,
     /// Find saved merchant offers that sell this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
@@ -1403,6 +1407,27 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.buyback_wallet_reserve_copper.is_some() && args.buyback_slots.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Buyback reserve requires selected buyback slots",
+            )]);
+        }
+        if let Some(slots) = &args.buyback_slots {
+            let unique: std::collections::BTreeSet<_> =
+                slots.iter().map(|slot| slot.get()).collect();
+            if args.section.as_deref() != Some("merchant_buyback")
+                || !(1..=12).contains(&slots.len())
+                || unique.len() != slots.len()
+                || slots.iter().any(|slot| slot.get() > 12)
+                || args
+                    .buyback_wallet_reserve_copper
+                    .is_some_and(|reserve| reserve > 9_999_999_999_999)
+            {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Buyback review requires merchant_buyback, 1 to 12 distinct slots and a valid reserve",
+                )]);
+            }
+        }
         let trainer_name = args.trainer_service_name.as_deref().map(str::trim);
         let trainer_status = args.trainer_service_status.as_deref();
         let trainer_slots = args.trainer_service_slots.as_ref().map(|slots| {
@@ -1984,6 +2009,21 @@ impl Operator {
                         value["merchant_budget"] = projection;
                         value["data"] = offer.clone();
                     }
+                }
+                if let Some(slots) = &args.buyback_slots {
+                    let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                        azeroth_operator::analysis::buyback_cost_review(
+                            &snapshot,
+                            &slots.iter().map(|slot| slot.get()).collect::<Vec<_>>(),
+                            args.buyback_wallet_reserve_copper.unwrap_or_default(),
+                        )
+                    });
+                    let Ok(review) = result else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not review saved buyback quotes",
+                        )]);
+                    };
+                    value["buyback_cost_review"] = review;
                 }
                 if let Some(cart) = &args.merchant_cart {
                     if value["client"]["family"] != "forever" {

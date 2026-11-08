@@ -13,6 +13,11 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`inspect_snapshot` can review selected saved buyback entry quotes against the
+same captured wallet, with a copper reserve. Missing quotes and wallet data stay
+explicit. This is a cost comparison, not a repurchase plan or eligibility check.
+[Offline evidence](docs/buyback-cost-review-verification-2026-11-08.md).
+
 Forever manual exports can inspect an already open merchant buyback tab:
 stable base item IDs, quantities and readable entry quotes. Buyback stays outside
 owned inventory and simulator candidates; no repurchase or recovery is attempted.

@@ -1,5 +1,8 @@
 # Changelog
 
+- Add same-capture buyback quote cost review with wallet reserves, partial-price
+  lower bounds and explicit unknowns, without purchase actions.
+
 - Observe visible merchant buyback entries and historical quotes separately
   from owned inventory, stock budgets and simulator candidates.
 

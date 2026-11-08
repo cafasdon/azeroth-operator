@@ -3892,6 +3892,66 @@ fn merchant_reagent_budget(
         "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance))})
 }
 
+pub fn buyback_cost_review(snapshot: &Snapshot, slots: &[u32], reserve: u64) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever
+            && (1..=12).contains(&slots.len())
+            && slots.iter().all(|slot| (1..=12).contains(slot))
+            && slots.iter().collect::<BTreeSet<_>>().len() == slots.len()
+            && reserve <= 9_999_999_999_999,
+        "Invalid buyback review"
+    );
+    let Some(entries) = snapshot
+        .sections
+        .get("merchant_buyback")
+        .and_then(|section| section["entries"].as_object())
+    else {
+        return Ok(Value::Null);
+    };
+    let mut lines = Vec::new();
+    let mut missing = Vec::new();
+    let mut unknown_prices = Vec::new();
+    let mut subtotal = 0u64;
+    for slot in slots {
+        let row = entries.get(&slot.to_string());
+        if let Some(row) = row {
+            if let Some(price) = row["buyback_price_copper"].as_u64() {
+                subtotal = subtotal
+                    .checked_add(price)
+                    .ok_or_else(|| anyhow::anyhow!("Buyback quote total too large"))?;
+            } else {
+                unknown_prices.push(slot);
+            }
+        } else {
+            missing.push(slot);
+        }
+        lines.push(json!({"captured_slot":slot,"observed":row.is_some(),"item":row}));
+    }
+    let total = (missing.is_empty() && unknown_prices.is_empty()).then_some(subtotal);
+    let wallet = snapshot
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let spendable = wallet.map(|balance| balance.saturating_sub(reserve));
+    let reserve_shortfall = wallet.map(|balance| reserve.saturating_sub(balance));
+    let known_shortfall = spendable.map(|balance| subtotal.saturating_sub(balance));
+    let affordable = if reserve_shortfall.is_some_and(|gap| gap > 0)
+        || known_shortfall.is_some_and(|gap| gap > 0)
+    {
+        Some(false)
+    } else {
+        total.zip(spendable).map(|(cost, balance)| cost <= balance)
+    };
+    Ok(
+        json!({"lines":lines,"missing_captured_slots":missing,"slots_with_unknown_price":unknown_prices,
+        "known_price_subtotal_copper":subtotal,"total_selected_quote_copper":total,
+        "captured_wallet_copper":wallet,"wallet_reserve_copper":reserve,"spendable_after_reserve_copper":spendable,
+        "reserve_shortfall_copper":reserve_shortfall,"known_shortfall_vs_spendable_copper":known_shortfall,
+        "total_shortfall_vs_spendable_copper":total.zip(spendable).map(|(cost,balance)|cost.saturating_sub(balance)),
+        "affordable_from_captured_wallet":affordable,"buyback_eligibility_verified":false,"game_action_performed":false}),
+    )
+}
+
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {
     ensure!((1..=1000).contains(&bundles), "Invalid bundle count");
     let bundles = u64::from(bundles);

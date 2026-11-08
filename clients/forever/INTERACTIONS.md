@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Saved buyback quote review can compare selected whole-entry quotes with the same
+captured wallet after a reserve. Unknown prices, missing slots and unknown wallet
+remain explicit. Captured indices are historical references, not a click sequence;
+purchase, recovery eligibility and inventory changes are not performed or inferred.
+[Offline evidence](../../docs/buyback-cost-review-verification-2026-11-08.md).
+
 Manual merchant buyback capture records stable IDs/quantities and readable entry
 quotes only while the buyback tab is visible. Names and merchant identity are
 omitted. Buyback never contributes owned stock, funds or simulator candidates;
