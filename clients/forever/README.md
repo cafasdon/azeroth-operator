@@ -179,6 +179,11 @@ The sync command uses curl for a bounded HTTPS download, checks the SHA-256 pinn
 For crafting references, pass `{"section":"items","recipe_spell_id":2675}` to find catalogue items associated with that recipe. The `enchants` section supports the same filter for enchant references. A supplied `key` further narrows the matches. These associations come from the pinned simulator catalogue and can be incomplete or list several variants. Use the saved recipe observation for reagent requirements.
 
 Use `simulator_slot` and `minimum_item_level` to narrow gear searches.
+Use `crafted_profession_id` in item or enchant lookups to find outputs
+for a pinned simulator profession, such as Blacksmithing (2).
+If `recipe_spell_id` is also supplied, the same crafting source must
+match both. These records identify catalogue outputs, and recipe
+availability still depends on separate evidence.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip

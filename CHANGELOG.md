@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Discover Forever catalogue crafting outputs by the recorded source profession.
+
 - Put Forever healing mana downtime in context with the realised simulation duration and fraction of simulated time.
 
 - Show Wilson intervals for tank death fractions in fixed Forever simulations.

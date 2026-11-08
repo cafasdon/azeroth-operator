@@ -158,6 +158,8 @@ pub struct Query {
     pub consumable_group_key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
+    /// Restrict items or enchants to a crafted source with this pinned simulator Profession enum ID.
+    pub crafted_profession_id: Option<std::num::NonZeroU32>,
     /// Restrict items to this pinned catalogue set ID.
     pub set_id: Option<std::num::NonZeroU32>,
     /// Restrict items to catalogue placements for this simulator equipment slot.
@@ -642,6 +644,12 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             "Expected a positive recipe spell ID for items or enchants"
         );
     }
+    ensure!(
+        query.crafted_profession_id.is_none()
+            || matches!(query.section, Section::Items | Section::Enchants),
+        "Crafted profession filters require items or enchants"
+    );
+    let crafted_filter = query.recipe_spell_id.is_some() || query.crafted_profession_id.is_some();
     let drop_label = query.drop_label.as_deref().map(str::trim);
     if let Some(label) = drop_label {
         ensure!(
@@ -768,7 +776,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Inventory filters require items or consumables"
     );
     let filtered = key.is_some()
-        || query.recipe_spell_id.is_some()
+        || crafted_filter
         || item_filter
         || inventory_filter
         || consumable_group.is_some();
@@ -820,13 +828,19 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                     .zip(name.as_deref())
                     .is_some_and(|(s, name)| s.to_lowercase().contains(name))
             };
-            let matches_recipe = query.recipe_spell_id.is_none_or(|recipe| {
-                row["sources"].as_array().is_some_and(|sources| {
+            let matches_recipe = !crafted_filter
+                || row["sources"].as_array().is_some_and(|sources| {
                     sources.iter().any(|source| {
-                        source["crafted"]["spellId"].as_u64() == Some(u64::from(recipe))
+                        source["crafted"].is_object()
+                            && query.recipe_spell_id.is_none_or(|recipe| {
+                                source["crafted"]["spellId"].as_u64() == Some(u64::from(recipe))
+                            })
+                            && query.crafted_profession_id.is_none_or(|profession| {
+                                source["crafted"]["profession"].as_u64()
+                                    == Some(u64::from(profession.get()))
+                            })
                     })
-                })
-            });
+                });
             let matches_gear = query
                 .simulator_slot
                 .is_none_or(|slot| simulator_slots(row).contains(&slot))
