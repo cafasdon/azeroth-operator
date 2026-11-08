@@ -194,6 +194,9 @@ record an output item ID, those IDs must agree.
 For enchant lookups, supply `enchant_target_item_id` to keep effects that
 fit the specified base item under the pinned simulator rules. It combines
 with crafting filters and does not require a character capture.
+Use `enchant_application_item_id` to search by the item that applies the
+effect, such as a shield spike. Combine it with `enchant_target_item_id`
+to check a specific pairing under the simulator rules.
 Use `minimum_required_level` and `maximum_required_level` to find items
 whose recorded character level requirement falls in an inclusive range.
 These filters exclude items with no recorded requirement. Equip

@@ -162,6 +162,8 @@ pub struct Query {
     pub crafted_profession_id: Option<std::num::NonZeroU32>,
     /// Restrict enchant effects to simulator fits for this exact catalogue base item ID.
     pub enchant_target_item_id: Option<std::num::NonZeroU32>,
+    /// Restrict enchant effects to those linked to this exact enchant application item ID.
+    pub enchant_application_item_id: Option<std::num::NonZeroU32>,
     /// Match items or enchants to the learned recipe explicitly observed in the supplied acquisition snapshot.
     #[serde(default)]
     pub only_observed_learned_recipe: bool,
@@ -596,6 +598,10 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let rows = db[section]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Missing catalogue section"))?;
+    ensure!(
+        query.enchant_application_item_id.is_none() || matches!(query.section, Section::Enchants),
+        "Enchant application item filters require enchants"
+    );
     let enchant_target = if let Some(id) = query.enchant_target_item_id {
         ensure!(
             matches!(query.section, Section::Enchants),
@@ -823,6 +829,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     );
     let filtered = key.is_some()
         || enchant_target.is_some()
+        || query.enchant_application_item_id.is_some()
         || crafted_filter
         || item_filter
         || inventory_filter
@@ -1013,6 +1020,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             });
             if matches
                 && enchant_target.is_none_or(|(item, kind)| enchant_type_fits(row, item, kind))
+                && query
+                    .enchant_application_item_id
+                    .is_none_or(|id| row["itemId"].as_u64() == Some(u64::from(id.get())))
                 && matches_recipe
                 && matches_set
                 && matches_gear

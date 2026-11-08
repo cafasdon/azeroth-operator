@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever enchant effects by the item that applies them.
+
 - Find Forever catalogue enchants that fit a specified base item under the pinned simulator rules.
 
 - Find Forever enchant effects linked to a captured learned recipe without treating effect IDs as item IDs.
