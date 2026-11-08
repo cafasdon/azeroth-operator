@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare recorded lesson status across saved Forever trainer visits.
+
 - Link unmet Forever trainer prerequisites to available lessons with matching names.
 
 - Cross-reference unmet Forever trainer ability names with the captured spellbook.

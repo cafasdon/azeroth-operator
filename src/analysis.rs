@@ -647,6 +647,14 @@ pub fn compare_observations(
     }
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
+    let trainer_before = before.sections.get("trainer_services");
+    let trainer_after = after.sections.get("trainer_services");
+    if trainer_before.is_some() || trainer_after.is_some() {
+        comparison["trainer_service_changes"] = trainer_before
+            .zip(trainer_after)
+            .and_then(|(old, new)| compare_trainer_services(old, new))
+            .unwrap_or(Value::Null);
+    }
     if flight_before.is_some() || flight_after.is_some() {
         comparison["flight_map_changes"] = flight_before
             .zip(flight_after)
@@ -1609,6 +1617,37 @@ fn standard_reputation_workload(section: &Value) -> Option<Value> {
         json!({"capped_factions":capped,"factions_with_observed_rank_gap":rows.len(),
         "closest_to_next_rank":closest}),
     )
+}
+
+fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
+    if before["kind"] != after["kind"] {
+        return None;
+    }
+    fn by_name(panel: &Value) -> Option<BTreeMap<(&str, Option<&str>), Option<&Value>>> {
+        let mut lessons = BTreeMap::new();
+        for row in panel["entries"].as_object()?.values() {
+            let key = (row["name"].as_str()?, row["rank_label"].as_str());
+            lessons
+                .entry(key)
+                .and_modify(|row| *row = None)
+                .or_insert(Some(row));
+        }
+        Some(lessons)
+    }
+    let previous = by_name(before)?;
+    let current = by_name(after)?;
+    let changes: Vec<_> = previous
+        .iter()
+        .filter_map(|(&(name, rank), old)| {
+            let (old, new) = old.as_ref().zip(current.get(&(name, rank))?.as_ref())?;
+            let old_status = &old["status"];
+            let new_status = &new["status"];
+            (old_status != new_status).then(|| json!({
+            "name":name,"rank_label":rank,"before_status":old_status,"after_status":new_status
+        }))
+        })
+        .collect();
+    Some(json!({"kind":after["kind"],"status_changes":changes}))
 }
 
 fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'static str> {

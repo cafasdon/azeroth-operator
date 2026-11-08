@@ -158,6 +158,11 @@ Use `trainer_service_name` in `list_snapshots` with `family: "forever"`
 to find saved visits by a case-insensitive lesson name substring. Matching
 captures include the trainer kind, lesson count and player map if known.
 Results describe the trainer list and filters recorded at capture time.
+When both captures contain the same trainer kind, `compare_snapshots`
+reports status changes for shared lessons with a unique exact name and
+rank label in each panel. It ignores row order. Missing panels or different
+kinds leave the comparison unknown. The captures do not identify the
+trainer, so a status change describes the two saved observations.
 `trainer_service_status` works alone or alongside the name filter.
 When both are supplied, the same captured lesson must match both.
 Use one price ceiling, `trainer_max_price_copper` for ordinary lessons
