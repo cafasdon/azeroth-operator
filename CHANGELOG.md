@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search saved visible spellbook rows by base/reported spell ID, passive/off-spec flags and reported learn-level bounds, retaining partial coverage and unknown metadata.
+
 - Capture optional stable reported learn levels for observed spellbook spells and compare exact-spell metadata sets, preserving unknowns and level-linked changes.
 
 - Annotate fixed-reagent recipe reviews with known pending-mail materials from the selected inventory capture, keeping mail outside stock, capacity and purchase calculations.

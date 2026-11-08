@@ -389,6 +389,18 @@ pub struct PetSpeciesFilter {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct SpellbookSpellFilter {
+    /// Match either the base or reported spell ID in one saved player spellbook row.
+    pub spell_id: std::num::NonZeroU32,
+    pub passive: Option<bool>,
+    pub off_spec: Option<bool>,
+    /// Inclusive reported learn-level bound; level linking may affect this observation.
+    pub minimum_level_learned: Option<u32>,
+    pub maximum_level_learned: Option<u32>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ActivePetCaptureFilter {
     /// Recorded pet presence, not current game state.
     pub present: Option<bool>,
@@ -507,6 +519,7 @@ pub struct CaptureFilters<'a> {
     pub mail_attachment: Option<MailAttachmentFilter>,
     pub pet_species: Option<PetSpeciesFilter>,
     pub active_pet: Option<ActivePetCaptureFilter>,
+    pub spellbook_spell: Option<SpellbookSpellFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -704,6 +717,7 @@ impl Store {
             mail_attachment,
             pet_species,
             active_pet,
+            spellbook_spell,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -783,6 +797,19 @@ impl Store {
         );
         if let Some(filter) = &active_pet {
             filter.validate()?;
+        }
+        ensure!(
+            spellbook_spell.is_none() || family == Family::Forever,
+            "Spellbook filtering requires Forever"
+        );
+        if let Some(filter) = &spellbook_spell {
+            ensure!(
+                filter
+                    .minimum_level_learned
+                    .zip(filter.maximum_level_learned)
+                    .is_none_or(|(a, b)| a <= b),
+                "Reversed reported spell learn-level bounds"
+            );
         }
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
             ensure!(value.len() <= 64, "Capture timestamp is too long");
@@ -1137,6 +1164,27 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(s.sections.get("pet_care")?));
                     if active_pet.is_some() && active_pet_match.is_none() {
+                        continue;
+                    }
+                    let spellbook_match=spellbook_spell.as_ref().and_then(|filter| {
+                        let book=s.sections.get("spellbook")?;
+                        let requested=Some(u64::from(filter.spell_id.get()));
+                        let mut matches=book["entries"].as_object()?.iter().filter(|(_,row)| {
+                            (row["base_spell_id"].as_u64()==requested || row["spell_id"].as_u64()==requested)
+                                && filter.passive.is_none_or(|flag|row["passive"].as_bool()==Some(flag))
+                                && filter.off_spec.is_none_or(|flag|row["off_spec"].as_bool()==Some(flag))
+                                && filter.minimum_level_learned.is_none_or(|minimum|row["level_learned"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
+                                && filter.maximum_level_learned.is_none_or(|maximum|row["level_learned"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
+                        }).map(|(slot,row)|(slot.parse::<u32>().unwrap(),row)).collect::<Vec<_>>();
+                        if matches.is_empty() {return None;}
+                        matches.sort_by_key(|(slot,_)|*slot);
+                        Some(json!({"coverage":book["coverage"],"spell_id":filter.spell_id,
+                            "matched_slots":matches.len(),"truncated":matches.len()>20,
+                            "entries":matches.iter().take(20).map(|(slot,row)|json!({"slot":slot,
+                                "base_spell_id":row["base_spell_id"],"spell_id":row["spell_id"],
+                                "passive":row["passive"],"off_spec":row["off_spec"],"level_learned":row["level_learned"]})).collect::<Vec<_>>()}))
+                    });
+                    if spellbook_spell.is_some() && spellbook_match.is_none() {
                         continue;
                     }
                     let mail_attachment_match = mail_attachment.as_ref().and_then(|filter| {
@@ -1703,6 +1751,9 @@ impl Store {
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;
+                    }
+                    if let Some(observation) = spellbook_match {
+                        summary["spellbook_spell_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

@@ -17,6 +17,18 @@ This reports metadata changes rather than newly learned spells or level gains.
 Update readers before syncing the new field. See
 [offline evidence](../../docs/spell-learned-level-verification-2026-11-08.md).
 
+`list_snapshots.spellbook_spell` finds saved rows matching a required
+`spell_id` in either the base or reported ID field. Optional `passive`,
+`off_spec`, `minimum_level_learned` and `maximum_level_learned` must all match
+that same row. Unknown flags/levels never satisfy requested false/zero values.
+For example, `{"spell_id":100,"passive":false,"maximum_level_learned":20}`
+finds those recorded observations, not current spell usability or complete
+learning. Results add `spellbook_spell_match`, with total matched slots and
+up to 20 numerically ordered metadata rows; names are omitted. Character,
+date, newest-capture and other feature filters still apply. Absence from the
+saved view does not prove a spell unlearned. See
+[offline search evidence](../../docs/spellbook-search-verification-2026-11-08.md).
+
 The pinned simulator models level 60 only. Equipment reviews now expose
 `captured_character_level` from saved stats, or null when unknown. The ranker
 and direct adapter require an explicit integer 60 before constructing character-

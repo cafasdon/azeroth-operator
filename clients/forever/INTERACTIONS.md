@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+`list_snapshots.spellbook_spell` searches saved visible player spell rows by
+base/reported ID and optional passive/off-spec/reported-learn-level metadata.
+Predicates apply to one row; unknowns do not count as false or zero. Output
+is bounded and does not establish current usability or complete learning.
+[Offline evidence](../../docs/spellbook-search-verification-2026-11-08.md).
+
 Spellbook observations can include a readable stable `level_learned` from
 the public spell API, including level-linked adjustments. Existing inspection
 and optional spellbook comparison expose it without an eligibility or new-
