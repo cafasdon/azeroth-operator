@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Scan single-item upgrades across Forever slots without building multi-slot combinations.
+
 - Scope local Forever gear ranking alternatives to one captured storage section.
 
 - Search owned Forever gear within equipment, bags, character bank or account bank.
