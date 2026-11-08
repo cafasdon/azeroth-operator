@@ -321,6 +321,25 @@ pub fn ordered_recipe_materials<'a>(
     Ok(json!(starting_materials))
 }
 
+pub fn ordered_recipe_material_coverage(materials: &Value) -> Value {
+    let Some(rows) = materials.as_array() else {
+        return Value::Null;
+    };
+    let covered = |field: &str| {
+        let mut all_known = true;
+        for row in rows.iter().filter(|row| row["required_before_batch"] != 0) {
+            match row[field].as_u64() {
+                Some(0) => {}
+                Some(_) => return Some(false),
+                None => all_known = false,
+            }
+        }
+        all_known.then_some(true)
+    };
+    json!({"bags":covered("shortfall_vs_bags"),
+        "all_observed_storage":covered("shortfall_vs_observed")})
+}
+
 pub fn bag_restock(by_storage: &Value, required: u64) -> (Option<u64>, Option<Value>) {
     let bag_shortfall = by_storage["bags"]
         .as_u64()

@@ -730,6 +730,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         batch = await session.call_tool("review_forever_recipe", batch_request)
                         self.assertFalse(batch.isError)
                         batch_data = json.loads(batch.content[0].text)
+                        self.assertEqual(batch_data["ordered_starting_material_coverage"], {
+                            "bags": False, "all_observed_storage": False,
+                        })
                         combined = {row["item_id"]: row for row in batch_data["combined_materials"]}
                         self.assertEqual(combined[744], {
                             "item_id": 744, "required": 13, "quantity_observed": 12, "shortfall_vs_observed": 1,

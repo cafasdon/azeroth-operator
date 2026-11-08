@@ -855,6 +855,10 @@ impl Operator {
                         std::iter::once(&review).chain(&extra_reviews),
                         &review["combined_materials"],
                     )?;
+                review["ordered_starting_material_coverage"] =
+                    azeroth_operator::analysis::ordered_recipe_material_coverage(
+                        &review["ordered_starting_materials"],
+                    );
                 review["combined_base_output_if_completed"] =
                     azeroth_operator::analysis::combine_recipe_outputs(
                         std::iter::once(&review).chain(&extra_reviews),

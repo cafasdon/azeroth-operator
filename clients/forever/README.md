@@ -853,6 +853,10 @@ remaining across observed storage after all requested consumption and
 known minimum outputs. The estimate is conditional on completing the
 batch and requires enough observed starting stock for that item in the
 supplied order. Unknown outputs contribute zero.
+`ordered_starting_material_coverage` shows whether all starting needs
+fit in captured bags or all observed storage. A known shortfall takes
+priority over missing data. A zero starting need needs no inventory
+observation. Partial storage can leave an actual supply unobserved.
 
 Each reagent also includes its observed stack count and up to 20 captured
 locations, with storage, container, slot and stack quantity. Totals include
