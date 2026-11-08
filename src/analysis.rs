@@ -2435,19 +2435,37 @@ pub fn tracked_achievement_work(section: &Value) -> Value {
 fn quest_objective_workload(quests: &serde_json::Map<String, Value>) -> Value {
     let mut by_kind = BTreeMap::<&str, usize>::new();
     let mut quests_without_objectives = 0usize;
-    for quest in quests.values().filter(|quest| quest["failed"] != true) {
+    let mut quests_with_work = Vec::new();
+    for (id, quest) in quests.iter().filter(|(_, quest)| quest["failed"] != true) {
         let Some(objectives) = quest["objectives"].as_object() else {
             quests_without_objectives += 1;
             continue;
         };
+        let mut unfinished = 0usize;
         for objective in objectives.values().filter(|row| row["finished"] == false) {
             if let Some(kind) = objective["kind"].as_str() {
                 *by_kind.entry(kind).or_default() += 1;
+                unfinished += 1;
             }
         }
+        if unfinished > 0
+            && let Ok(id) = id.parse::<u32>()
+        {
+            quests_with_work.push((unfinished, id, &quest["title"]));
+        }
     }
+    quests_with_work.sort_unstable_by_key(|&(count, id, _)| (std::cmp::Reverse(count), id));
+    let most_unfinished: Vec<_> = quests_with_work
+        .iter()
+        .take(20)
+        .map(
+            |(count, id, title)| json!({"quest_id":id,"title":title,"unfinished_objectives":count}),
+        )
+        .collect();
     json!({"unfinished_objectives_by_kind":by_kind,
-        "quests_without_objective_observations":quests_without_objectives})
+        "quests_without_objective_observations":quests_without_objectives,
+        "quests_with_unfinished_objectives":quests_with_work.len(),
+        "quests_with_most_unfinished_objectives":most_unfinished})
 }
 
 pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {

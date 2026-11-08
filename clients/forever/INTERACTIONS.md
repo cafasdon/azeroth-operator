@@ -388,6 +388,8 @@ Use `inspect_snapshot` with `section: "quests"` for quest details. `character_su
 rows by captured kind and counts quests with unavailable objective maps.
 It excludes explicitly failed quests. An observed empty map contributes
 zero rows, and a missing quest section leaves the whole summary unknown.
+It also lists up to 20 quests with the most observed unfinished rows.
+This ranks objective counts, without estimating time or difficulty.
 
 On the Rust MCP, pass `profession_skill_line` with `section: "professions"`
 to inspect one saved profession and its observed rank cap. Duplicate

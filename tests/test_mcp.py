@@ -229,6 +229,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["quest_objective_workload"], {
                             "unfinished_objectives_by_kind": {"event": 1, "item": 2},
                             "quests_without_objective_observations": 2,
+                            "quests_with_unfinished_objectives": 1,
+                            "quests_with_most_unfinished_objectives": [
+                                {"quest_id": 42, "title": "Fixture quest", "unfinished_objectives": 3},
+                            ],
                         })
                         self.assertEqual(bank_summary_data["quest_checklist"], {
                             "ready_for_turn_in": [2, 10], "turn_in_not_ready": [42],
