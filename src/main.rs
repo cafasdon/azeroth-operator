@@ -48,6 +48,8 @@ struct Inspect {
     trainer_service_name: Option<String>,
     /// Saved trainer lesson status: available, unavailable, or used.
     trainer_service_status: Option<String>,
+    /// Select up to 32 distinct slots from the captured trainer list.
+    trainer_service_slots: Option<Vec<std::num::NonZeroU32>>,
     /// Review a saved merchant offer by its 1-based goods-tab slot.
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
@@ -1016,7 +1018,25 @@ impl Operator {
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
         let trainer_name = args.trainer_service_name.as_deref().map(str::trim);
         let trainer_status = args.trainer_service_status.as_deref();
-        let filter_trainer = trainer_name.is_some() || trainer_status.is_some();
+        let trainer_slots = args.trainer_service_slots.as_ref().map(|slots| {
+            slots
+                .iter()
+                .map(|slot| slot.to_string())
+                .collect::<std::collections::BTreeSet<_>>()
+        });
+        if let Some(slots) = &args.trainer_service_slots
+            && (!(1..=32).contains(&slots.len())
+                || slots.iter().any(|slot| slot.get() > 512)
+                || trainer_slots
+                    .as_ref()
+                    .is_some_and(|keys| keys.len() != slots.len()))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Expected 1 to 32 distinct trainer slots from 1 to 512",
+            )]);
+        }
+        let filter_trainer =
+            trainer_name.is_some() || trainer_status.is_some() || trainer_slots.is_some();
         let review_trainer =
             args.trainer_wallet_projection || args.trainer_points_projection || filter_trainer;
         if review_trainer && args.section.as_deref() != Some("trainer_services") {
@@ -1304,13 +1324,27 @@ impl Operator {
                     )]);
                 }
                 if filter_trainer {
+                    if let Some(slots) = &args.trainer_service_slots {
+                        value["trainer_missing_requested_slots"] = serde_json::json!(
+                            value["data"]["entries"].as_object().map(|entries| {
+                                slots
+                                    .iter()
+                                    .filter(|slot| !entries.contains_key(&slot.to_string()))
+                                    .collect::<Vec<_>>()
+                            })
+                        );
+                    }
                     let count = value["data"]
                         .get_mut("entries")
                         .and_then(serde_json::Value::as_object_mut)
                         .map(|entries| {
-                            entries.retain(|_, lesson| {
-                                trainer_status
-                                    .is_none_or(|status| lesson["status"].as_str() == Some(status))
+                            entries.retain(|slot, lesson| {
+                                trainer_slots
+                                    .as_ref()
+                                    .is_none_or(|slots| slots.contains(slot))
+                                    && trainer_status.is_none_or(|status| {
+                                        lesson["status"].as_str() == Some(status)
+                                    })
                                     && trainer_name.as_ref().is_none_or(|search| {
                                         lesson["name"].as_str().is_some_and(|name| {
                                             name.to_lowercase().contains(search)

@@ -132,6 +132,9 @@ substring and `trainer_service_status` matches `available`, `unavailable`
 or `used`. The filters combine, keep the original lesson slots and apply
 before the optional wallet calculation. Zero matches and unavailable
 trainer data are reported separately.
+Use `trainer_service_slots` to select up to 32 exact slots from the same
+capture. Slots missing from that capture are reported separately from rows
+excluded by the name or status filters.
 
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.

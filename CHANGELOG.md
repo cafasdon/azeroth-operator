@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Select exact saved Forever trainer lesson slots before comparing lesson costs.
+
 - Budget the largest number of known-price Forever trainer lessons that fit the captured balance.
 
 - Show individual affordability for captured Forever trainer and pet trainer lessons.
