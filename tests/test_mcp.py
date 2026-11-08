@@ -653,6 +653,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "before_copper": 0, "after_copper": None, "delta_copper": None})
                         reputation_after["sections"]["quests"]["42"]["ready_for_turn_in"] = True
                         reputation_after["sections"]["quests"]["42"]["timer"]["remaining_seconds"] = 0
+                        reputation_after["sections"]["trainer_services"]["entries"]["1"]["price_copper"] = 0
+                        del reputation_after["sections"]["trainer_services"]["entries"]["3"]["price_copper"]
                         reputation_after["sections"]["quests"]["42"]["objectives"]["2"]["finished"] = True
                         reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["completed"] = True
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
@@ -667,6 +669,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "achievement_id": 101, "profession_skill_line": 164})
                         self.assertFalse(progress.isError)
                         progress_data = json.loads(progress.content[0].text)
+                        trainer_changes = progress_data["trainer_service_changes"]
+                        self.assertEqual(trainer_changes["price_unit"], "copper")
+                        self.assertEqual(trainer_changes["status_changes"], [])
+                        self.assertEqual(trainer_changes["price_changes"], [
+                            {"name": "Expensive Lesson", "rank_label": None,
+                             "before_price": 5_000_000_001, "after_price": None, "price_delta": None},
+                            {"name": "Fixture Potion", "rank_label": None,
+                             "before_price": 10, "after_price": 0, "price_delta": -10},
+                        ])
                         quest = progress_data["quest_change"]
                         self.assertTrue(quest["ready_for_turn_in_changed"])
                         self.assertIsNone(quest["failed_changed"])

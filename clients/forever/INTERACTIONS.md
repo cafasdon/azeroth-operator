@@ -163,6 +163,9 @@ reports status changes for shared lessons with a unique exact name and
 rank label in each panel. It ignores row order. Missing panels or different
 kinds leave the comparison unknown. The captures do not identify the
 trainer, so a status change describes the two saved observations.
+The same comparison reports price changes separately, in copper or pet
+training points. A quote appearing or disappearing has an unknown
+delta, while a recorded free lesson retains a zero price.
 `trainer_service_status` works alone or alongside the name filter.
 When both are supplied, the same captured lesson must match both.
 Use one price ceiling, `trainer_max_price_copper` for ordinary lessons

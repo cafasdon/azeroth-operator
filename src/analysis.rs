@@ -1636,18 +1636,31 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
     }
     let previous = by_name(before)?;
     let current = by_name(after)?;
-    let changes: Vec<_> = previous
-        .iter()
-        .filter_map(|(&(name, rank), old)| {
-            let (old, new) = old.as_ref().zip(current.get(&(name, rank))?.as_ref())?;
-            let old_status = &old["status"];
-            let new_status = &new["status"];
-            (old_status != new_status).then(|| json!({
-            "name":name,"rank_label":rank,"before_status":old_status,"after_status":new_status
-        }))
-        })
-        .collect();
-    Some(json!({"kind":after["kind"],"status_changes":changes}))
+    let (price_field, price_unit) = if after["kind"] == "pet" {
+        ("price_training_points", "training_points")
+    } else {
+        ("price_copper", "copper")
+    };
+    let mut status_changes = Vec::new();
+    let mut price_changes = Vec::new();
+    for ((name, rank), old) in previous {
+        let Some((old, new)) = old.zip(current.get(&(name, rank)).copied().flatten()) else {
+            continue;
+        };
+        if old["status"] != new["status"] {
+            status_changes.push(json!({"name":name,"rank_label":rank,
+                "before_status":old["status"],"after_status":new["status"]}));
+        }
+        let (old_price, new_price) = (old[price_field].as_i64(), new[price_field].as_i64());
+        if old_price != new_price {
+            price_changes.push(
+                json!({"name":name,"rank_label":rank,"before_price":old_price,
+                "after_price":new_price,"price_delta":old_price.zip(new_price).map(|(a,b)| b-a)}),
+            );
+        }
+    }
+    Some(json!({"kind":after["kind"],"status_changes":status_changes,
+        "price_unit":price_unit,"price_changes":price_changes}))
 }
 
 fn paragon_reward_status(detail: &serde_json::Map<String, Value>) -> Option<&'static str> {
