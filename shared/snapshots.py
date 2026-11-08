@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -54,6 +54,26 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "trainer_services" in sections:
+        trainer = sections["trainer_services"]
+        if (c["family"] != "forever" or not isinstance(trainer, dict)
+                or set(trainer) != {"kind", "entries"} or trainer["kind"] not in ("general", "tradeskills")):
+            raise ValueError("Invalid trainer services")
+        rows = trainer["entries"]
+        if (not isinstance(rows, dict) or not 1 <= len(rows) <= 512
+                or set(rows) != {str(i) for i in range(1, len(rows) + 1)}):
+            raise ValueError("Invalid trainer service count")
+        for row in rows.values():
+            if not isinstance(row, dict) or set(row) - {"name", "status", "required_level", "rank_label", "price_copper"}:
+                raise ValueError("Invalid trainer service")
+            name, status = row.get("name"), row.get("status")
+            level, rank, price = row.get("required_level"), row.get("rank_label"), row.get("price_copper")
+            if (not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
+                    or status not in ("available", "unavailable", "used")
+                    or ("required_level" in row and (type(level) is not int or not 1 <= level <= 255))
+                    or ("rank_label" in row and (not isinstance(rank, str) or not 1 <= len(rank.encode()) <= 256))
+                    or ("price_copper" in row and (status == "used" or type(price) is not int or not 0 <= price <= 9_999_999_999_999))):
+                raise ValueError("Invalid trainer service")
     if "merchant_stock" in sections:
         rows = sections["merchant_stock"]
         if (c["family"] != "forever" or not isinstance(rows, dict) or not 1 <= len(rows) <= 256

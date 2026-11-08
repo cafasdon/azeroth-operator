@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the open Forever trainer's lesson status, requirements and copper prices.
+
 - Find saved Forever captures whose observed merchant offered a requested item.
 
 - Find saved Forever merchant offers by the item or currency they sell.

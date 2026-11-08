@@ -866,6 +866,49 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "trainer_services" => {
+            object(value, &[("kind", "text", true), ("entries", "map", true)])?;
+            ensure!(
+                matches!(value["kind"].as_str(), Some("general" | "tradeskills")),
+                "Invalid trainer kind"
+            );
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(
+                (1..=512).contains(&rows.len()),
+                "Invalid trainer service count"
+            );
+            for (key, row) in rows {
+                index(key, 1, rows.len() as u32)?;
+                object(
+                    row,
+                    &[
+                        ("name", "text", true),
+                        ("status", "text", true),
+                        ("required_level", "positive", false),
+                        ("rank_label", "text", false),
+                        ("price_copper", "wallet_copper", false),
+                    ],
+                )?;
+                ensure!(
+                    matches!(
+                        row["status"].as_str(),
+                        Some("available" | "unavailable" | "used")
+                    ) && row["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256)
+                        && row.get("rank_label").is_none_or(|rank| rank
+                            .as_str()
+                            .is_some_and(|rank| !rank.is_empty() && rank.len() <= 256))
+                        && row
+                            .get("required_level")
+                            .is_none_or(|level| level.as_u64().is_some_and(|level| level <= 255))
+                        && row
+                            .get("price_copper")
+                            .is_none_or(|price| !price.is_null() && row["status"] != "used"),
+                    "Invalid trainer service"
+                );
+            }
+        }
         "merchant_stock" => {
             let rows = value
                 .as_object()

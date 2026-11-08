@@ -924,6 +924,33 @@ AO.collectors.bag_capacity = function()
     return result
 end
 
+AO.collectors.trainer_services = function()
+    local frame=ClassTrainerFrame
+    assert(frame and frame:IsVisible(), "Trainer panel is not open")
+    local types=Enum.TrainerType
+    local kind=C_Trainer.GetTrainerType()
+    assert(questRewardInteger(kind,0,4294967295) and (kind==types.General or kind==types.Tradeskills), "Unsupported trainer")
+    local count=GetNumTrainerServices()
+    assert(questRewardInteger(count,1,512), "Trainer services unavailable")
+    local entries={}
+    for index=1,count do
+        local name,status,_,level,rank=GetTrainerServiceInfo(index)
+        assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
+            and questRewardAccessible(status) and (status=="available" or status=="unavailable" or status=="used"), "Invalid trainer service")
+        local row={name=name,status=status}
+        if questRewardInteger(level,1,255) then row.required_level=level end
+        if questRewardAccessible(rank) and type(rank)=="string" and #rank>0 and #rank<=256 then row.rank_label=rank end
+        if status~="used" then
+            local ok,cost=pcall(GetTrainerServiceCost,index)
+            if ok and questRewardInteger(cost,0,9999999999999) then row.price_copper=cost end
+        end
+        entries[tostring(index)]=row
+    end
+    assert(frame:IsVisible() and questRewardInteger(C_Trainer.GetTrainerType(),kind,kind)
+        and questRewardInteger(GetNumTrainerServices(),count,count), "Trainer services changed")
+    return {kind=kind==types.General and "general" or "tradeskills",entries=entries}
+end
+
 local function merchantCostComponents(index)
     local count=GetMerchantItemCostInfo(index)
     if not questRewardInteger(count,1,16) then return end

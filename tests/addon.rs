@@ -569,6 +569,15 @@ pub fn verify_forever_capture_fixture(
         TaxiNodeCost=function(slot) assert(slot==3); return 250 end
         Enum.GameRule={RepairArmorDisabled=42}
         MerchantFrame={IsVisible=function() return not closedMerchant end,selectedTab=1}
+        ClassTrainerFrame={IsVisible=function() return not closedTrainer end}
+        Enum.TrainerType={General=0,Tradeskills=2,Pet=3}
+        C_Trainer={GetTrainerType=function() return fixtureTrainerKind or 2 end}
+        function GetNumTrainerServices() return 2 end
+        function GetTrainerServiceInfo(index)
+            if index==1 then return "Fixture lesson","available",nil,10,"Rank 2" end
+            return "Known lesson","used"
+        end
+        function GetTrainerServiceCost(index) assert(index==1); return 500 end
         GetMerchantNumItems=function() return 2 end
         GetMerchantItemID=function(index) assert(index==1); return 744 end
         C_MerchantFrame={GetItemInfo=function(index)
@@ -764,6 +773,19 @@ pub fn verify_forever_capture_fixture(
     );
     lua.load("fixtureRepairCost=0;AO.Capture()").exec()?;
     assert_eq!(read()?.sections["repair_quote"]["copper"], 0);
+    assert_eq!(
+        snapshot.sections["trainer_services"],
+        serde_json::json!({"kind":"tradeskills","entries":{
+            "1":{"name":"Fixture lesson","status":"available","required_level":10,"rank_label":"Rank 2","price_copper":500},
+            "2":{"name":"Known lesson","status":"used"}
+        }})
+    );
+    lua.load("fixtureTrainerKind=3;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("trainer_services"));
+    lua.load("fixtureTrainerKind=nil;closedTrainer=true;AO.Capture()")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("trainer_services"));
+    lua.load("closedTrainer=false").exec()?;
     assert_eq!(
         snapshot.sections["merchant_stock"],
         serde_json::json!({

@@ -23,6 +23,13 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`trainer_services` saves the open general or profession trainer's API
+list under the player's current trainer filters. It records lesson names,
+available, unavailable or known status, and readable rank labels,
+level requirements and copper prices. The capture excludes pet trainers
+and leaves training and filter changes to the player. Update the importer
+and reader before syncing new captures. [Forever trainer UI](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_TrainerUI/Mainline/Blizzard_TrainerUI.lua)
+
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.
 Outside an instance the observation contains only `kind: "none"`.
