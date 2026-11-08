@@ -8,6 +8,12 @@ query filters and pagination. All sections observed is distinct from complete
 ownership, exact simulator resolution and best-in-slot coverage.
 [Offline evidence](../../docs/owned-inventory-evidence-verification-2026-11-08.md).
 
+The local ranker retains this evidence in `gear_search.inventory_evidence` and
+records snapshot ID, requested slots, candidate filters and maximum simultaneous
+swaps. Missing legacy evidence remains null; changing evidence aborts collection.
+The report does not verify absolute best-in-slot.
+[Ranker evidence](../../docs/rank-inventory-evidence-verification-2026-11-08.md).
+
 `resolve_character` accepts an explicit client family and optional name/realm.
 An explicit target resolves its newest valid saved capture; no target returns
 unknown active identity without selecting another saved character. It does not

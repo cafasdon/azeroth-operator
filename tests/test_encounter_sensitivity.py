@@ -83,7 +83,7 @@ class EncounterSensitivityTests(unittest.TestCase):
                 "simulator_equipment_spec": {"items": [{}] * 17}}})] * 3
 
             async def collect(*args, **kwargs):
-                return drafts, [], {}, {"level":60}, None, None, {}
+                return drafts, [], {}, {"level":60}, None, None, {"snapshot_id":"fixture","inventory_evidence":None}
 
             argv = ["rank", "--mcp", str(executable), "--snapshot-id", "fixture", "--slot", "head",
                     "--engine", str(executable), "--engine-sha256", "a" * 64, "--template", str(template)]
@@ -105,6 +105,8 @@ class EncounterSensitivityTests(unittest.TestCase):
                     patch("tools.rank_forever_slot.rank_encounters", side_effect=[screened, final]), redirect_stdout(io.StringIO()) as output:
                 main()
             result = json.loads(output.getvalue())
+            self.assertEqual(result["gear_search"], {"snapshot_id":"fixture","inventory_evidence":None})
+            self.assertFalse(result["best_in_slot_verified"])
             self.assertTrue(result["encounter_sensitivity"]["results"][1]["fully_compared"])
             self.assertTrue(result["encounter_sensitivity"]["results"][1]["changes_sign_in_observed_encounters"])
             with patch("sys.argv", argv + ["--rank-by", "hps"]), patch("tools.rank_forever_slot.collect", collect), \

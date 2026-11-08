@@ -173,8 +173,19 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             snapshot_id = rows[0]["snapshot_id"]
             selected_capture = {"snapshot_id": snapshot_id, "captured_at": rows[0]["captured_at"]}
 
+        inventory_evidence = None
+        inventory_evidence_seen = False
+
         async def call(tool, **args):
-            return await request(tool, snapshot_id=snapshot_id, **args)
+            nonlocal inventory_evidence, inventory_evidence_seen
+            reply = await request(tool, snapshot_id=snapshot_id, **args)
+            if tool == "review_forever_owned_gear":
+                evidence = reply.get("inventory_evidence")
+                if inventory_evidence_seen and evidence != inventory_evidence:
+                    raise ValueError("Local MCP returned inconsistent inventory evidence")
+                inventory_evidence = evidence
+                inventory_evidence_seen = True
+            return reply
 
         stats = await call("inspect_snapshot", section="stats")
         baseline = await call("review_equipment_selection", selections=[])
@@ -291,6 +302,16 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 else:
                     skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
         search = {
+            "snapshot_id": snapshot_id,
+            "inventory_evidence": inventory_evidence,
+            "requested_slots": list(slots),
+            "candidate_filters": {
+                **dict(candidate_filters or {}),
+                **({"item_ids": list(item_ids)} if item_ids else {}),
+                **({"set_id": set_id} if set_id is not None else {}),
+                **({"storage": storage} if storage is not None else {}),
+            },
+            "maximum_simultaneous_swaps": max_swaps if max_swaps is not None else len(slots),
             "candidate_locations_by_slot": {
                 slot: len(choices) - 1 for slot, choices in zip(slots, options, strict=True)
             },
@@ -691,7 +712,7 @@ def main():
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity,
-                      gear_search=search)
+                      gear_search=search, best_in_slot_verified=False)
         if args.storage is not None:
             result["requested_storage"] = args.storage
         if minimum is not None or maximum is not None:

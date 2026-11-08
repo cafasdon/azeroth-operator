@@ -19,6 +19,12 @@ before filtering or paging. Seeing all sections does not prove complete ownershi
 exact simulator resolution or best-in-slot coverage.
 [Offline evidence](docs/owned-inventory-evidence-verification-2026-11-08.md).
 
+Local ranker reports retain that evidence in `gear_search.inventory_evidence`,
+along with the source snapshot, selected slots and candidate restrictions.
+Older MCP responses leave it null; inconsistent evidence aborts collection.
+All report modes keep `best_in_slot_verified: false`.
+[Ranker evidence](docs/rank-inventory-evidence-verification-2026-11-08.md).
+
 `resolve_character` resolves an explicitly named saved character within the
 configured owner's store and client family. Without an explicit character it
 returns `active_identity_unavailable`, with no selection. Saved recency never

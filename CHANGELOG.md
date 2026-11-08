@@ -1,5 +1,8 @@
 # Changelog
 
+- Preserve inventory gaps and search provenance in local ranking reports;
+  reject changing inventory evidence and keep absolute best-in-slot unverified.
+
 - Report unfiltered storage and base-catalogue gaps in owned-gear review, with
   bounded missing IDs and explicit limits on completeness claims.
 
