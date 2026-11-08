@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Look up saved collected mounts by ID and compare observed mount IDs and flags between compatible captures.
+
 - Capture and inspect saved Forever mount collections with bounded, read-only journal queries and owner-scoped validation.
 
 - Quote remaining reagent purchases for a suggested dependency order without buying intermediates produced by the batch.

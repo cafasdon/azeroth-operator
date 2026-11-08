@@ -45,3 +45,31 @@ Jev 1.14.0 scope advice returned supported, separately from verification:
 request `02c6fa8a5364ee1f65cdaf2a24b7c8e85d700027858a31a4380a8224a4843ad0`,
 508 input / 46 output tokens, 0.305 seconds. This does not establish live
 API behaviour or grant authorisation for gameplay actions.
+
+## Saved lookup and comparison
+
+Inspection now accepts `mount_id` only with the mount collection section and
+Forever family. Present rows report `observed_collected: true`; absent IDs and
+missing collections return null instead of inferring non-ownership.
+
+The optional `mount_collection_changes` comparison reports numerically ordered
+IDs observed on one side, shared spell/favourite/usability changes, observed
+count deltas and catalogue counts. Missing collections produce a null comparison.
+Names are excluded so localisation alone does not appear as a shared-row change.
+Existing owner, character, client/build and chronological checks still apply.
+
+The extended real-MCP test covers lookup, unavailable versus absent rows,
+numeric ordering, changing flags, ignored names, missing comparison input,
+disabled output and invalid family/section combinations. The regression command
+`PYTHONPATH=.;tests python -m unittest test_mcp test_snapshots test_mount_collection`
+passed 11 tests; offline build, formatting and diff checks also passed.
+
+Jev 1.14.0 scope advice for lookup/comparison returned supported, separate from
+tests: request `f26dfdab8b13801118d76b10be6c7570aeb470fe769e4e3e6ee41ad1d2fbc415`,
+472 input / 46 output tokens, 0.287 seconds.
+
+Independent caller/failure review (gpt-6.1-sol, high effort) found no defects.
+Additional real-stdio probes covered u32 boundaries and malformed selectors,
+conflicts with spending/other selectors, empty/unavailable collections,
+negative count changes, spell changes, name-only differences, default omission,
+owner separation and rejected client/character or chronological mismatches.

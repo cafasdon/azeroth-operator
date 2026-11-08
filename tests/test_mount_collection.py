@@ -39,6 +39,21 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
             missing = mount_snapshot()
             del missing["sections"]["mount_collection"]
             missing_key = store.ingest(missing)
+            before = copy.deepcopy(captured)
+            before["sections"]["mount_collection"]["entries"]["20"] = {
+                "name": "Before only", "spell_id": 40020, "usable": True, "favorite": False}
+            before_key = store.ingest(before)
+            after = copy.deepcopy(before)
+            after["captured_at"] = "2025-01-02T00:00:00Z"
+            mounts = after["sections"]["mount_collection"]
+            mounts["catalogue_count"] = 4
+            mounts["entries"].pop("20")
+            mounts["entries"]["2"].update(name="Translated name", usable=False, favorite=True)
+            for mount_id in (3, 10):
+                mounts["entries"][str(mount_id)] = {
+                    "name": "After only", "spell_id": 40000 + mount_id, "usable": True, "favorite": False}
+            after_key = store.ingest(after)
+            retail_key = store.ingest(fixture())
             invalid = []
             for mutate in (
                 lambda s: s["client"].update(family="retail"),
@@ -74,6 +89,40 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                     for bad_key in invalid:
                         response = await session.call_tool("inspect_snapshot", {"snapshot_id": bad_key, "section": "mount_collection"})
                         self.assertTrue(response.isError)
+                    found = await session.call_tool("inspect_snapshot", {
+                        "snapshot_id": key, "section": "mount_collection", "mount_id": 2})
+                    selected = json.loads(found.content[0].text)
+                    self.assertTrue(selected["observed_collected"])
+                    self.assertEqual(selected["data"]["spell_id"], 40002)
+                    for source, mount_id, available in ((key, 99, True), (missing_key, 2, False)):
+                        response = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": source, "section": "mount_collection", "mount_id": mount_id})
+                        data = json.loads(response.content[0].text)
+                        self.assertEqual(data["available"], available)
+                        self.assertIsNone(data["observed_collected"])
+                        self.assertIsNone(data["data"])
+                    compared = await session.call_tool("compare_snapshots", {
+                        "before_id": before_key, "after_id": after_key, "mount_collection_changes": True})
+                    self.assertFalse(compared.isError)
+                    changes = json.loads(compared.content[0].text)["mount_collection_changes"]
+                    self.assertEqual(changes["observed_only_before"], [20])
+                    self.assertEqual(changes["observed_only_after"], [3, 10])
+                    self.assertEqual(changes["collected_count_delta"], 1)
+                    self.assertEqual(changes["changes"], [{"mount_id": 2, "fields": {
+                        "usable": {"before": True, "after": False},
+                        "favorite": {"before": False, "after": True}}}])
+                    missing_comparison = await session.call_tool("compare_snapshots", {
+                        "before_id": before_key, "after_id": missing_key, "mount_collection_changes": True})
+                    self.assertIsNone(json.loads(missing_comparison.content[0].text)["mount_collection_changes"])
+                    ordinary = await session.call_tool("compare_snapshots", {"before_id": before_key, "after_id": after_key})
+                    self.assertNotIn("mount_collection_changes", json.loads(ordinary.content[0].text))
+                    wrong_family = await session.call_tool("compare_snapshots", {
+                        "before_id": retail_key, "after_id": retail_key, "mount_collection_changes": True})
+                    self.assertTrue(wrong_family.isError)
+                    for args in ({"snapshot_id": key, "mount_id": 2},
+                                 {"snapshot_id": key, "section": "equipment", "mount_id": 2},
+                                 {"snapshot_id": retail_key, "section": "mount_collection", "mount_id": 2}):
+                        self.assertTrue((await session.call_tool("inspect_snapshot", args)).isError)
 
 
 if __name__ == "__main__":

@@ -791,6 +791,7 @@ pub struct ComparisonSelectors {
     pub quest_readiness_changes: bool,
     pub achievement_status_changes: bool,
     pub selected_recipe_changes: bool,
+    pub mount_collection_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -839,6 +840,18 @@ pub fn compare_observations(
             before.sections.get("selected_recipe"),
             after.sections.get("selected_recipe"),
         );
+    }
+    if selectors.mount_collection_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Mount comparison requires Forever"
+        );
+        comparison["mount_collection_changes"] = before
+            .sections
+            .get("mount_collection")
+            .zip(after.sections.get("mount_collection"))
+            .map(|(old, new)| compare_mount_collection(old, new))
+            .unwrap_or(Value::Null);
     }
     let skills_before = before
         .sections
@@ -1822,6 +1835,45 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_mount_collection(before: &Value, after: &Value) -> Value {
+    let old = before["entries"].as_object().unwrap();
+    let new = after["entries"].as_object().unwrap();
+    let ids: BTreeSet<u32> = old
+        .keys()
+        .chain(new.keys())
+        .filter_map(|key| key.parse().ok())
+        .collect();
+    let mut only_before = Vec::new();
+    let mut only_after = Vec::new();
+    let mut changes = Vec::new();
+    for id in ids {
+        match (old.get(&id.to_string()), new.get(&id.to_string())) {
+            (Some(a), Some(b)) => {
+                let fields: serde_json::Map<_, _> = ["spell_id", "usable", "favorite"]
+                    .into_iter()
+                    .filter(|field| a[*field] != b[*field])
+                    .map(|field| {
+                        (
+                            field.to_owned(),
+                            json!({"before":a[field],"after":b[field]}),
+                        )
+                    })
+                    .collect();
+                if !fields.is_empty() {
+                    changes.push(json!({"mount_id":id,"fields":fields}));
+                }
+            }
+            (Some(_), None) => only_before.push(id),
+            (None, Some(_)) => only_after.push(id),
+            (None, None) => {}
+        }
+    }
+    json!({"observed_only_before":only_before,"observed_only_after":only_after,"changes":changes,
+        "before_collected_count":old.len(),"after_collected_count":new.len(),
+        "collected_count_delta":new.len() as i64 - old.len() as i64,
+        "before_catalogue_count":before["catalogue_count"],"after_catalogue_count":after["catalogue_count"]})
 }
 
 fn compare_selected_recipe(before: Option<&Value>, after: Option<&Value>) -> Value {

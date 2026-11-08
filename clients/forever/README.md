@@ -10,6 +10,14 @@ collected count. This is source-tested read-only support, with native capture
 still pending. Update both readers before using the new exporter.
 See [mount collection verification](../../docs/mount-collection-verification-2026-11-08.md).
 
+Add `mount_id` to that inspection to select one saved mount. An observed row
+returns `observed_collected: true`; an absent ID returns null, not false.
+`available` still describes whether the collection section was captured.
+Use `mount_collection_changes: true` in `compare_snapshots` to compare compatible
+captures. It lists IDs observed on only one side and changes in shared IDs'
+spell, usability and favourite fields. Names are excluded. These observations
+do not establish acquisition or loss, especially if catalogue coverage changed.
+
 ## Launch checkpoint, 7 November 2026
 
 The local `_forever_` installation identifies itself as product `wowf`, build `1.60.1.70862`. The build probe does not establish the interface number. Interface `16001` is the package candidate based on the prior fixture and existing Forever addon TOCs. The packaging command writes the requested variant into the generated adapter, so the launch package uses `live` even though the checked-in early adapter says `beta`.
