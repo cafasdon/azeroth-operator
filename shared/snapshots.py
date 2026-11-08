@@ -287,9 +287,12 @@ def validate_snapshot(value):
     if "pet_care" in sections:
         pet = sections["pet_care"]
         if (c["family"] != "forever" or not isinstance(pet, dict)
-                or set(pet) - {"present", "happiness", "loyalty", "food_types", "carried_food"}
+                or set(pet) - {"present", "happiness", "loyalty", "food_types", "carried_food", "family_id", "level"}
                 or type(pet.get("present")) is not bool or (not pet["present"] and len(pet) != 1)):
             raise ValueError("Invalid pet care data")
+        for field in ("family_id", "level"):
+            if field in pet and (type(pet[field]) is not int or not 1 <= pet[field] <= 4_294_967_295):
+                raise ValueError("Invalid active pet details")
         if "happiness" in pet and (type(pet["happiness"]) is not int or not 0 <= pet["happiness"] <= 255):
             raise ValueError("Invalid pet happiness")
         if "loyalty" in pet and (not isinstance(pet["loyalty"], str) or not 1 <= len(pet["loyalty"].encode()) <= 256):

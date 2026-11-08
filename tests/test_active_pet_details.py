@@ -1,0 +1,67 @@
+"""Active-pet family/level observations stay optional and owner-scoped."""
+from copy import deepcopy
+import hashlib
+import json
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from shared.snapshots import SnapshotStore, validate_snapshot
+from test_snapshots import fixture
+
+
+class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
+    async def test_real_mcp_preserves_details_unknowns_and_validation(self):
+        root=Path(__file__).resolve().parents[1]
+        binary=Path(os.environ.get('AZEROTH_TEST_BINARY',root/'target/debug'/(
+            'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder:
+            store=SnapshotStore(Path(folder));cases=[]
+            for pet in [{'present':True,'family_id':1,'level':17}, {'present':True}, {'present':False},None]:
+                value=fixture()
+                value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+                if pet is not None:value['sections']['pet_care']=pet
+                cases.append((store.ingest(value),value))
+            bad_keys=[]
+            for field in ['family_id','level']:
+                for invalid in [None,0,-1,True,1.5,'1',2**32]:
+                    bad=deepcopy(cases[0][1]);bad['sections']['pet_care'][field]=invalid
+                    with self.assertRaises(ValueError):validate_snapshot(bad)
+                    raw=json.dumps(bad,sort_keys=True,separators=(',',':')).encode()
+                    key=hashlib.sha256(raw).hexdigest();(Path(folder)/f'{key}.json').write_bytes(raw);bad_keys.append(key)
+                bad=deepcopy(cases[0][1]);bad['sections']['pet_care']={'present':False,field:1}
+                with self.assertRaises(ValueError):validate_snapshot(bad)
+                raw=json.dumps(bad,sort_keys=True,separators=(',',':')).encode()
+                key=hashlib.sha256(raw).hexdigest();(Path(folder)/f'{key}.json').write_bytes(raw);bad_keys.append(key)
+            later=deepcopy(cases[0][1]);later['sections']['pet_care'].update(family_id=2,level=18)
+            later_key=store.ingest(later)
+            env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
+            async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
+                async with ClientSession(read,write) as session:
+                    await session.initialize()
+                    for key,value in cases:
+                        response=await session.call_tool('character_summary',{'snapshot_id':key})
+                        self.assertFalse(response.isError)
+                        pet=value['sections'].get('pet_care')
+                        expected=None if pet is None else {field:pet.get(field) for field in ['present','family_id','level']}
+                        self.assertEqual(json.loads(response.content[0].text)['active_pet_observation'],expected)
+                        if pet is not None:
+                            response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})
+                            self.assertFalse(response.isError)
+                            self.assertEqual(json.loads(response.content[0].text)['data'],pet)
+                    response=await session.call_tool('compare_snapshots',{'before_id':cases[0][0],'after_id':later_key})
+                    self.assertFalse(response.isError)
+                    delta=json.loads(response.content[0].text)['pet_care_change']
+                    self.assertEqual(delta['before']['family_id'],1)
+                    self.assertEqual(delta['after']['family_id'],2)
+                    self.assertEqual(delta['before']['level'],17)
+                    self.assertEqual(delta['after']['level'],18)
+                    self.assertNotIn('level_delta',delta)
+                    for key in bad_keys:
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})
+                        self.assertTrue(response.isError)
+
+
+if __name__=='__main__':unittest.main()

@@ -1402,6 +1402,15 @@ AO.collectors.pet_care = function(bags)
     assert(questRewardAccessible(present) and type(present)=="boolean", "Active pet state unavailable")
     local result={present=present}
     if not present then return result end
+    local function details()
+        local observed={}
+        local ok,_,family=pcall(UnitCreatureFamily,"pet")
+        if ok and questRewardInteger(family,1,4294967295) then observed.family_id=family end
+        local read,level=pcall(UnitLevel,"pet")
+        if read and questRewardInteger(level,1,4294967295) then observed.level=level end
+        return observed
+    end
+    local first=details()
     local api=C_PetInfo
     if api then
         local ok,happiness=pcall(api.GetPetHappiness)
@@ -1428,6 +1437,10 @@ AO.collectors.pet_care = function(bags)
     end
     local current=UnitExists("pet")
     assert(questRewardAccessible(current) and current==true, "Active pet unavailable")
+    local second=details()
+    assert(first.family_id==second.family_id and first.level==second.level,"Active pet details changed")
+    result.family_id=first.family_id
+    result.level=first.level
     return result
 end
 

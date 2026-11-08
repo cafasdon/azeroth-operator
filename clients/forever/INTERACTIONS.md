@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Saved active-pet care can include readable public family ID and level,
+checked for consistency during capture. Summary and comparison expose these
+as observations, with unknowns preserved and no individual-pet continuity
+or level-gain inference. No pet names, GUIDs or pet actions are added.
+[Offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
+
 `compare_snapshots.pet_view_changes` compares saved filtered pet-journal
 views: shared species count changes and one-sided observed species IDs.
 It does not infer collection gains/losses or equal journal filters; missing
@@ -216,7 +222,7 @@ filter to find variants that match both fields.
 
 `pet_care` records whether an active pet was present and, when readable,
 its game-reported happiness value, localized loyalty label and accepted
-food types. An empty food list means the game reported none. The capture
+food types, plus optional public family ID and level. An empty food list means the game reported none. The capture
 omits pet identity and leaves feeding to the player. Update the importer
 and reader before syncing new captures. [Forever pet API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/PetInfoDocumentation.lua)
 
@@ -265,7 +271,7 @@ per-bundle price and captured-wallet filters. A zero limit matches free
 offers.
 
 `compare_snapshots` reports `pet_care_change` with the observed pet
-presence, happiness and loyalty on each side. When both captures have
+presence, happiness and loyalty on each side, plus family ID and level when known. When both captures have
 food classifications, it compares accepted carried quantities by item ID.
 An absent item in an observed classification contributes zero accepted
 units. A missing classification leaves the comparison unknown. The

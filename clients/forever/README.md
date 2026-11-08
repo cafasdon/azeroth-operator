@@ -32,6 +32,17 @@ Meeting the level requirement does not establish equip legality, proficiency,
 specialisation compatibility or current usability. Existing catalogue checks
 remain in effect. See [verification](../../docs/native-item-level-verification-2026-11-08.md).
 
+Active combat/summoned pets are separate from the pet journal:
+`section: "pet_care"` can now include optional `family_id` and `level` from
+readable public unit metadata. Missing APIs or restricted/invalid values
+leave those fields absent. Changing metadata makes the section unavailable.
+`character_summary.active_pet_observation` reports presence plus nullable
+family/level, or null for an unavailable section. Existing pet-care comparisons
+include the two observed values when available, without inferring the same
+individual pet or a level gain. No pet names, GUIDs, summon or training actions
+are added. Update readers before importing the new fields. See
+[offline evidence](../../docs/active-pet-details-verification-2026-11-08.md).
+
 `inspect_snapshot` accepts `section: "pet_collection_view"` for species-level
 observations while the pet journal is visible. The capture aggregates owned and
 unowned rows by species ID, using public species names. Individual pet GUIDs,

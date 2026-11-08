@@ -2184,9 +2184,15 @@ fn compare_professions(before: &Value, after: &Value) -> Option<Value> {
 fn compare_pet_care(before: &Value, after: &Value) -> Value {
     let observation = |pet: &Value| {
         pet.as_object().map(|_| {
-            json!({
+            let mut observed = json!({
                 "present":pet["present"],"happiness":pet["happiness"],"loyalty":pet["loyalty"],
-            })
+            });
+            for field in ["family_id", "level"] {
+                if let Some(value) = pet.get(field) {
+                    observed[field] = value.clone();
+                }
+            }
+            observed
         })
     };
     let food_changes =
@@ -4400,6 +4406,9 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    summary["active_pet_observation"] = s.sections.get("pet_care").map(|pet| {
+        json!({"present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]})
+    }).unwrap_or(Value::Null);
     summary["pet_collection_view_counts"] = s.sections.get("pet_collection_view").map(|view| {
         let rows=view["entries"].as_object().unwrap();
         json!({"displayed_rows":view["displayed_rows"],"species_observed":rows.len(),

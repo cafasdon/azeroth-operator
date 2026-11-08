@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture optional stable active-pet family IDs and levels without pet names or GUIDs, and expose them in saved summaries and comparison observations.
+
 - Compare saved filtered pet-journal species counts and one-sided observations without inferring collection gains or losses.
 
 - Bind direct simulation to saved class and race observations, sharing the owned-gear ranker's identity check and reporting legacy/unknown identity assumptions.
