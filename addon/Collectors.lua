@@ -226,6 +226,10 @@ AO.collectors.stats = function()
     end
     if AO.family == "forever" then
         local function accessible(value) return not issecretvalue or not issecretvalue(value) end
+        local observed,mail=pcall(HasNewMail)
+        if observed and accessible(mail) and (mail==nil or type(mail)=="boolean" or mail==1) then
+            stats.new_mail_indicator=mail==true or mail==1
+        end
         local function mapID(value)
             return accessible(value) and type(value)=="number" and value%1==0 and value>=1 and value<=4294967295
         end

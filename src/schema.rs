@@ -338,6 +338,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("map_parent_id", "positive", false),
                     ("map_min_level", "positive", false),
                     ("map_max_level", "positive", false),
+                    ("new_mail_indicator", "bool", false),
                     ("client_version", "text", true),
                 ],
             )?;

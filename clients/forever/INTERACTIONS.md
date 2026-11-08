@@ -23,6 +23,12 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`character_summary` reports the saved `new_mail_indicator` when the
+client exposes it. This is the game's new-mail flag at export time. A
+clear indicator can coexist with mail in the inbox. The export reads
+only the indicator and leaves senders, messages and attachments private.
+Update the importer and reader before syncing new captures. [Minimap mail source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_Minimap/Mainline/Minimap.lua)
+
 `bag_capacity` records total and free slots per carried bag, including the
 backpack, with the game-reported bag family when available.
 `character_summary` reports combined capacity, free slots and free slots

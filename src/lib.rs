@@ -123,6 +123,14 @@ impl Snapshot {
             "Capture timestamp is in the future"
         );
         for (name, value) in &self.sections {
+            if name == "stats"
+                && let Some(indicator) = value.get("new_mail_indicator")
+            {
+                ensure!(
+                    self.client.family == Family::Forever && indicator.is_boolean(),
+                    "Invalid Forever new mail indicator"
+                );
+            }
             ensure!(
                 !matches!(
                     name.as_str(),

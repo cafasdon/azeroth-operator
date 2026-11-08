@@ -401,6 +401,8 @@ pub fn verify_forever_capture_fixture(
         function UnitRace() return 'Orc','Orc' end
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
+        function HasNewMail() return fixtureNewMail end
+        fixtureNewMail=true
         C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
             GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end,
             GetMapLevels=function(id) assert(id==1411); return 5,12,1,2 end}
@@ -788,6 +790,15 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
     assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     let summary = azeroth_operator::analysis::summary(&snapshot);
+    assert_eq!(summary["new_mail_indicator"], true);
+    lua.load("fixtureNewMail=nil;AO.Capture()").exec()?;
+    assert_eq!(read()?.sections["stats"]["new_mail_indicator"], false);
+    lua.load("HasNewMail=nil;AO.Capture()").exec()?;
+    assert!(
+        read()?.sections["stats"]
+            .get("new_mail_indicator")
+            .is_none()
+    );
     assert_eq!(
         snapshot.sections["bag_capacity"]["1"],
         serde_json::json!({"total_slots":8,"free_slots":8,"family_mask":32})

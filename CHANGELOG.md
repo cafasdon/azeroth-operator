@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report the saved Forever new-mail indicator without reading mail details.
+
 - Compare saved Forever carried bag capacity and free slots across two captures.
 
 - Capture Forever carried bag capacity and separate known general-purpose free slots from total free slots.

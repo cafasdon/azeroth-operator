@@ -30,6 +30,9 @@ def validate_snapshot(value):
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
     stats = sections.get("stats")
+    if isinstance(stats, dict) and "new_mail_indicator" in stats:
+        if c["family"] != "forever" or type(stats["new_mail_indicator"]) is not bool:
+            raise ValueError("Invalid Forever new mail indicator")
     if isinstance(stats, dict) and {"map_min_level", "map_max_level"} & stats.keys():
         map_id, low, high = (stats.get(key) for key in ("map_id", "map_min_level", "map_max_level"))
         if (any(type(n) is not int for n in (map_id, low, high))
