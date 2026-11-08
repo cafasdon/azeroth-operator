@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-08",
+  "fixture": "public Hunter and chest alternatives 1981,4082",
+  "profiles": [
+    "Default/Raid Target",
+    "Default/Movement"
+  ],
+  "engine_sha256": "2ae564263fb0534aac88e59dd1d5c35447c7d6acafaeb3accc1a9c2720284059",
+  "seed": 20261116,
+  "duration_seconds": 45,
+  "encounter_sensitivity": {
+    "basis": "dps_point_estimates",
+    "encounter_count": 2,
+    "results": [
+      {
+        "review": 1,
+        "gain_pct_by_encounter": [
+          0.0,
+          0.0
+        ],
+        "missing_encounters": [],
+        "fully_compared": true,
+        "minimum_observed_gain_pct": 0.0,
+        "maximum_observed_gain_pct": 0.0,
+        "changes_sign_in_observed_encounters": false,
+        "leading_point_estimate_encounters": [
+          1,
+          2
+        ]
+      },
+      {
+        "review": 2,
+        "gain_pct_by_encounter": [
+          -0.6631424496506307,
+          -0.6634464544098568
+        ],
+        "missing_encounters": [],
+        "fully_compared": true,
+        "minimum_observed_gain_pct": -0.6634464544098568,
+        "maximum_observed_gain_pct": -0.6631424496506307,
+        "changes_sign_in_observed_encounters": false,
+        "leading_point_estimate_encounters": []
+      },
+      {
+        "review": 3,
+        "gain_pct_by_encounter": [
+          -1.5597726251539907,
+          -1.548016083407057
+        ],
+        "missing_encounters": [],
+        "fully_compared": true,
+        "minimum_observed_gain_pct": -1.5597726251539907,
+        "maximum_observed_gain_pct": -1.548016083407057,
+        "changes_sign_in_observed_encounters": false,
+        "leading_point_estimate_encounters": []
+      }
+    ]
+  }
+}

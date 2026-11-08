@@ -61,8 +61,9 @@ movement, rotation, buffs or talents could be silently discarded.
 2. Broader shortlist validation. Use multi-slot pools, close contenders and
    independent seeds across supported encounter mechanics. Measure missed
    contenders and uncertainty as well as elapsed time before changing culling.
-3. Encounter robustness reporting. Show when winners change across duration,
-   movement or add-wave profiles; keep unsupported mechanics explicit. A
+3. Extend encounter sensitivity qualification. Multi-profile DPS runs now show
+   each requested draft's gains, losses, observed range and sign changes, with
+   shortlist omissions kept unknown. These are point estimates only. A
    weighted winner depends on the supplied weights. A staged union can miss
    a balanced set that reaches no individual shortlist; use exhaustive
    evaluation when complete weighted coverage is required.
@@ -71,6 +72,18 @@ Do not lower iteration floors or add parallel processes solely to improve one
 timing. The engine already schedules parallel work, and existing processor
 limit checks did not demonstrate an improvement. Native encounter accuracy and
 live game verification remain deferred.
+
+The encounter-sensitivity extension passed five focused tests, including the
+command-line output path for ordinary and weighted finalist comparisons and
+non-DPS exclusion. An independent caller/failure review also checked
+non-contiguous finalist IDs, duplicate gear, reused profiles and entirely
+omitted reviews through the ranker chain. No remaining findings were reported.
+The real local adapter check in
+`benchmarks/encounter-sensitivity-2026-11-08.json` uses only public fixtures;
+it validates report integration, not the accuracy of a native boss model.
+The independent review used gpt-6.1-sol at high effort. Jev 1.14.0 scope advice
+returned supported (request `b26904fddf7e6e1638be0364538d02bdfa9097c050b18e0068b65a46b6dc275c`,
+509 input / 46 output tokens, 0.285 s), separate from the verification evidence.
 
 ## Change verification
 

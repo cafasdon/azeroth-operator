@@ -456,6 +456,43 @@ def weighted_ranking(rankings, weights):
     return {"encounter_weights": weights, "results": results}
 
 
+def encounter_sensitivity(rankings, review_count):
+    """Describe observed DPS differences without treating shortlist omissions as losses."""
+    observations = [{} for _ in range(review_count)]
+    leaders = [[] for _ in range(review_count)]
+    observed = [[] for _ in range(review_count)]
+    for index, ranking in enumerate(rankings, 1):
+        rows = ranking["results"]
+        baseline = next(row["mean_dps"] for row in rows if row["review"] == ranking["baseline_review"])
+        best = max(row["mean_dps"] for row in rows)
+        for row in rows:
+            review = row["review"] - 1
+            observed[review].append(index)
+            if row["mean_dps"] == best:
+                leaders[review].append(index)
+            if baseline > 0:
+                gain = 100 * ((row["mean_dps"] - baseline) / baseline)
+                if isfinite(gain):
+                    observations[review][index] = gain
+    results = []
+    for review in range(review_count):
+        gains = observations[review]
+        values = list(gains.values())
+        minimum, maximum = (min(values), max(values)) if values else (None, None)
+        results.append({
+            "review": review + 1,
+            "gain_pct_by_encounter": [gains.get(index) for index in range(1, len(rankings) + 1)],
+            "missing_encounters": [index for index in range(1, len(rankings) + 1)
+                                   if index not in observed[review]],
+            "fully_compared": len(gains) == len(rankings),
+            "minimum_observed_gain_pct": minimum,
+            "maximum_observed_gain_pct": maximum,
+            "changes_sign_in_observed_encounters": minimum < 0 < maximum if len(values) >= 2 else None,
+            "leading_point_estimate_encounters": leaders[review],
+        })
+    return {"basis": "dps_point_estimates", "encounter_count": len(rankings), "results": results}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mcp", type=Path, required=True, help="Absolute path to the trusted local MCP executable")
@@ -622,6 +659,8 @@ def main():
                 rankings = rank_encounters(
                     args, template, encounters, keys, drafts, set_piece_ids, finalist_reviews)
             result["encounters"] = rankings
+            if args.rank_by == "dps":
+                result["encounter_sensitivity"] = encounter_sensitivity(rankings, len(drafts))
             if weights is not None:
                 result["weighted_ranking"] = weighted_ranking(rankings, weights)
         result.update(skipped=skipped, storage_coverage=coverage, template_identity=identity,

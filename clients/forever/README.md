@@ -761,6 +761,28 @@ Review IDs identify the same draft across profiles. A bulk shortlist can omit
 different drafts in different profiles. Each comparison has its own iteration
 and time limits. The command prints results after all comparisons succeed.
 
+Multi-profile DPS output also includes `encounter_sensitivity`. For every
+requested review ID, `gain_pct_by_encounter` lists percentage changes from the
+equipped baseline in input order. `minimum_observed_gain_pct` and
+`maximum_observed_gain_pct` describe the available values;
+`changes_sign_in_observed_encounters` identifies gains in one profile and losses
+in another. This field is null with fewer than two usable observations.
+`leading_point_estimate_encounters` lists where the set ties for the highest
+returned DPS estimate, including ties with equipped gear.
+
+Shortlist omissions stay null and appear in `missing_encounters`; even a draft
+missing from every shortlist gets a row. Zero-baseline or non-finite percentage
+comparisons also stay null. `fully_compared` is true only when every profile has
+a usable percentage for that draft. Weighted bulk runs calculate this report
+after their fixed finalist comparisons. These are point estimates, not tests
+of statistical significance or proof that a set is universally best. Repeated
+profiles still occupy their original positions and are not independent evidence.
+
+A public-fixture offline check exercised Raid Target and Movement through the
+real local bulk adapter. Both chest alternatives remained below the equipped
+baseline in both profiles; the report did not invent a winner change.
+[Recorded report](../../docs/benchmarks/encounter-sensitivity-2026-11-08.json)
+
 For a combined ranking, repeat `--encounter-weight` once per encounter in input
 order. Use positive weights such as `--encounter-weight 70 --encounter-weight 30`.
 The ranker normalises the weights and averages each draft's percentage DPS change
