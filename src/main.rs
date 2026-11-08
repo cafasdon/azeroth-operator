@@ -882,6 +882,10 @@ impl Operator {
                 )?;
                 review["ordered_starting_materials"] = materials;
                 review["ordered_material_checkpoint"] = checkpoint;
+                review["ordered_nonmaterial_requirements"] =
+                    azeroth_operator::analysis::ordered_recipe_requirements(
+                        std::iter::once(&review).chain(&extra_reviews),
+                    );
                 review["ordered_starting_material_coverage"] =
                     azeroth_operator::analysis::ordered_recipe_material_coverage(
                         &review["ordered_starting_materials"],

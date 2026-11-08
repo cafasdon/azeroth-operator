@@ -408,6 +408,36 @@ pub fn ordered_recipe_material_coverage(materials: &Value) -> Value {
         "all_observed_storage":covered("shortfall_vs_observed")})
 }
 
+pub fn ordered_recipe_requirements<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
+    let checks = [
+        "recipe_learned",
+        "observed_conditions_met",
+        "observed_charges_cover_request",
+    ];
+    let mut first_shortfall = None;
+    let mut recipes_with_unknown_checks = 0;
+    for (index, review) in reviews.enumerate() {
+        let preparation = &review["captured_preparation"];
+        if checks.iter().any(|check| preparation[*check].is_null()) {
+            recipes_with_unknown_checks += 1;
+        }
+        if first_shortfall.is_none() {
+            let failed: Vec<_> = checks
+                .into_iter()
+                .filter(|check| preparation[*check] == false)
+                .collect();
+            if !failed.is_empty() {
+                first_shortfall = Some(json!({
+                    "recipe_number":index+1,"recipe_id":review["recipe"]["recipe_id"],
+                    "failed_checks":failed,
+                }));
+            }
+        }
+    }
+    json!({"first_observed_shortfall":first_shortfall,
+        "recipes_with_unknown_checks":recipes_with_unknown_checks})
+}
+
 pub fn bag_restock(by_storage: &Value, required: u64) -> (Option<u64>, Option<Value>) {
     let bag_shortfall = by_storage["bags"]
         .as_u64()

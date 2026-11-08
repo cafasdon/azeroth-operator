@@ -1032,6 +1032,13 @@ outputs from earlier recipes. With a later inventory capture, only the
 material checks use that capture. Learning, conditions and charges still
 reflect the recipe capture.
 
+For an ordered batch, `ordered_nonmaterial_requirements` identifies the
+first recipe with an observed learning, condition or charge shortfall.
+It lists each failed check on that recipe and counts recipes with at
+least one unknown check. A null shortfall means no failure was observed.
+The ordered material checkpoint remains separate and uses the batch's
+shared inventory and projected outputs.
+
 Recipe reviews also show `estimated_cooldown_end_at` when a positive
 remaining duration was observed. The estimate adds the rounded duration
 to the recipe capture timestamp, even when material counts come from a

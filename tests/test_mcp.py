@@ -969,6 +969,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         batch = await session.call_tool("review_forever_recipe", batch_request)
                         self.assertFalse(batch.isError)
                         batch_data = json.loads(batch.content[0].text)
+                        self.assertEqual(batch_data["ordered_nonmaterial_requirements"], {
+                            "first_observed_shortfall": {
+                                "recipe_number": 2, "recipe_id": 101,
+                                "failed_checks": ["observed_conditions_met", "observed_charges_cover_request"],
+                            },
+                            "recipes_with_unknown_checks": 1,
+                        })
                         priced_batch = await session.call_tool("review_forever_recipe", {
                             **batch_request, "merchant_reagent_plan": True,
                             "merchant_snapshot_id": merchant_key,
