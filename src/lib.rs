@@ -279,6 +279,7 @@ pub struct CaptureFilters<'a> {
     pub trainer_service_status: Option<&'a str>,
     pub trainer_max_price_copper: Option<u64>,
     pub trainer_max_price_points: Option<u32>,
+    pub trainer_affordable_only: bool,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
@@ -377,6 +378,7 @@ impl Store {
             trainer_service_status,
             trainer_max_price_copper,
             trainer_max_price_points,
+            trainer_affordable_only,
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
@@ -397,7 +399,8 @@ impl Store {
             });
         let filter_trainer = trainer_service_name.is_some()
             || trainer_service_status.is_some()
-            || trainer_price.is_some();
+            || trainer_price.is_some()
+            || trainer_affordable_only;
         ensure!(
             (!filter_trainer || family == Family::Forever)
                 && trainer_service_name.is_none_or(|name| !name.is_empty() && name.len() <= 256)
@@ -554,9 +557,16 @@ impl Store {
                     }
                     let trainer_match = filter_trainer.then(|| {
                         let trainer = s.sections.get("trainer_services")?;
+                        let (balance_field, balance) = if trainer["kind"] == "pet" {
+                            ("price_training_points", trainer["pet_training_points_available"].as_u64())
+                        } else {
+                            ("price_copper", s.sections.get("wallet").and_then(|wallet| wallet["copper"].as_u64()))
+                        };
                         let count = trainer["entries"].as_object()?.values()
                             .filter(|row| {
                                 trainer_service_status.is_none_or(|status| row["status"] == status)
+                                    && (!trainer_affordable_only || row[balance_field].as_u64()
+                                        .zip(balance).is_some_and(|(price, balance)| price <= balance))
                                     && trainer_price.is_none_or(|(field, maximum)| {
                                         row[field].as_u64().is_some_and(|price| price <= maximum)
                                     })

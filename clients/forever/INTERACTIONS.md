@@ -152,6 +152,10 @@ Use one price ceiling, `trainer_max_price_copper` for ordinary lessons
 or `trainer_max_price_points` for pet training. A zero ceiling matches
 free lessons in that price type. Unknown prices are excluded. Any name
 or status filter must match the same lesson as the price ceiling.
+Set `trainer_affordable_only` to compare the same lesson with the
+captured wallet or pet points from that visit. Both price and balance
+must be known. Use status `available` as well to require recorded lesson
+availability. Search results omit the balance.
 Use `trainer_service_slots` to select up to 32 exact slots from the same
 capture. Slots missing from that capture are reported separately from rows
 excluded by the name or status filters.

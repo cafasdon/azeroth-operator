@@ -262,6 +262,9 @@ struct List {
     trainer_max_price_copper: Option<u64>,
     /// Match pet trainer lessons with an observed point price at or below this amount.
     trainer_max_price_points: Option<u32>,
+    /// Match trainer lessons priced within the wallet or pet points from that capture.
+    #[serde(default)]
+    trainer_affordable_only: bool,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
     /// Narrow the flight destination search to this captured departure node.
@@ -1102,6 +1105,7 @@ impl Operator {
                 trainer_service_status: args.trainer_service_status.as_deref(),
                 trainer_max_price_copper: args.trainer_max_price_copper,
                 trainer_max_price_points: args.trainer_max_price_points,
+                trainer_affordable_only: args.trainer_affordable_only,
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,

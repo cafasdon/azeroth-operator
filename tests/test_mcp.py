@@ -208,6 +208,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "forever", "trainer_service_name": " PoTiOn ",
                             "trainer_service_status": "available",
                             "trainer_max_price_copper": 10,
+                            "trainer_affordable_only": True,
                             "character": {"name": "example", "realm": "FIRST"}, "limit": 1,
                         })
                         self.assertFalse(trainers.isError)

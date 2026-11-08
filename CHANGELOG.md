@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever trainer visits with lessons affordable from captured balances.
+
 - Filter saved Forever trainer visits by copper or pet training point prices.
 
 - Filter saved Forever trainer visits by observed lesson status.
