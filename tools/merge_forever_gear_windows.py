@@ -134,6 +134,12 @@ def finite_number(token):
     return value
 
 
+def parse_report(data):
+    require(len(data) <= MAX_REPORT_BYTES)
+    return json.loads(data, object_pairs_hook=unique_fields,
+                      parse_constant=reject_constant, parse_float=finite_number)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('reports', nargs='+', type=Path)
@@ -146,8 +152,7 @@ def main(argv=None):
                 data = handle.read(MAX_REPORT_BYTES + 1)
             size += len(data)
             require(len(data) <= MAX_REPORT_BYTES and size <= MAX_TOTAL_BYTES)
-            reports.append(json.loads(data, object_pairs_hook=unique_fields,
-                                      parse_constant=reject_constant, parse_float=finite_number))
+            reports.append(parse_report(data))
         print(json.dumps(merge_reports(reports), allow_nan=False))
     except Exception:
         parser.exit(1, 'Gear window aggregation rejected: invalid, incompatible or oversized plan reports.\n')

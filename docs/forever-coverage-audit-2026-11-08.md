@@ -64,3 +64,9 @@ The subsequent [combination-window increment](gear-combination-windows-verificat
 adds opt-in bounded coordinate execution for larger products. Per-call budgets
 remain; cross-window aggregation, a persistent search journal and complete
 owned-gear/model qualification remain unfinished.
+
+Later [plan-window aggregation](gear-window-aggregation-verification-2026-11-08.md)
+and a [local transactional journal](gear-window-journal-verification-2026-11-08.md)
+group reported inputs and preserve coverage across restart. This is conditional
+planning metadata; automatic collection, simulation ranking aggregation and
+complete owned-gear/native/model proof remain open.

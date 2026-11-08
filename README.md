@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.journal_forever_gear_windows --journal PATH --add REPORT`
+stores validated plan windows transactionally in an explicitly chosen local
+SQLite journal. Omit `--add` to inspect saved coverage and the next uncovered
+offset after restart. Exact retries are idempotent; scope conflicts, overlaps
+and payload-budget overruns reject without replacing earlier reports. This
+persists planning progress; it does not collect automatically or run simulations.
+[Offline evidence](docs/gear-window-journal-verification-2026-11-08.md).
+
 `python -m tools.merge_forever_gear_windows` aggregates local windowed plan-only
 reports. It checks scope/baseline/count consistency, rejects overlapping ranges,
 reports gaps and groups repeated simulator-input hashes with original report

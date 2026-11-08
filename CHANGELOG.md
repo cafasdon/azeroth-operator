@@ -1,5 +1,9 @@
 # Changelog
 
+- Persist validated gear-plan windows in a bounded local transactional journal,
+  with idempotent retry, restart coverage, streaming beyond 64 windows and
+  fail-closed identity/schema/value-size checks.
+
 - Aggregate bounded local gear plan windows with validated scopes/counts,
   explicit coverage gaps and cross-window simulator-input identity grouping,
   without promoting metadata coverage into a full-BiS claim.
