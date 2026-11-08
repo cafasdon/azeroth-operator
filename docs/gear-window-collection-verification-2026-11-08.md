@@ -82,3 +82,41 @@ interim Failure/security probe report; advisory only, not proof or permission.
 
 Full owned BiS, simulation aggregation, active-character detection and native
 qualification remain unfinished; the broad feature objective remains active.
+
+## Product beyond the old whole-request limit
+
+A subsequent real-module regression captures 32 distinct catalogue ring IDs in
+one synthetic owner-local inventory. Each requested ring slot has those 32
+candidates plus the baseline option: 33 squared, or 1,089 reported coordinates.
+This exceeds the old 1,024-coordinate whole-request limit. The test launches
+the actual controller module and offline MCP executable, not a collector stub.
+
+One invocation saves 128 coordinates, then a fresh process resumes the remaining
+eight windows. Read-only SQL independently checks the nine stored intervals
+against arithmetic ranges of width 128, with a final 65-coordinate interval.
+Expanding those intervals equals exactly integers 0 through 1,088, without gaps
+or overlaps. Every report stays within 129 resolved drafts including the reused
+baseline. A final invocation performs zero recollection and leaves journal bytes
+unchanged. All four BiS/feasible-set/simulation/game flags remain false.
+
+```powershell
+$env:PYTHONPATH='.;tests'
+python -m unittest test_collect_gear_windows.CollectGearWindowTests.test_real_module_covers_product_above_old_request_limit -v
+```
+
+Author result: one test passed, 19.071 seconds. This runtime is fixture-specific,
+not a simulator benchmark or general search latency claim. Candidate filters
+and item legality can still leave unresolved or excluded sets; arithmetic
+coordinate coverage does not close the full-owned-BiS requirement.
+
+Independent Failure/Callers review (`gpt-6-astra`, high effort; token usage not
+exposed) ran the same exact command: one test passed, 20.015 seconds. It traced
+the real controller, ranker, journal/merger and fixtures, checked the bounded
+documentation claims, and found no actionable issue. One lens was used for this
+test-only increment; no runtime guard or production code changed.
+
+Scoped Jev advisory: `jev-1.14.0`, request
+`99aa884d4fab1c862ae107c5757244fbb648107ddcf56336b2ed84b3b1a79602`,
+620 input / 52 output tokens, 0.327 s; land-scoped 0.79, fix-first 0.12,
+insufficient evidence 0.09, confidence 0.68. Advisory only. No simulator or native
+game execution, installation, deployment or CI ran.

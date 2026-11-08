@@ -1,10 +1,12 @@
 """Collect and resume explicit offline plans without executing stored instructions."""
 import asyncio
+from contextlib import closing
 from copy import deepcopy
 import json
 import os
 from pathlib import Path
 import subprocess
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -20,6 +22,72 @@ from tools.merge_forever_gear_windows import merge_reports
 
 
 class CollectGearWindowTests(unittest.TestCase):
+    def test_real_module_covers_product_above_old_request_limit(self):
+        root = Path(__file__).resolve().parents[1]
+        catalogue = Path(os.environ.get('AZEROTH_FOREVER_CATALOGUE') or root / 'local-data/forever/catalogue.json')
+        if not catalogue.is_file():
+            self.skipTest('Requires pinned local catalogue; no automatic download')
+        binary = Path(os.environ.get('AZEROTH_TEST_BINARY') or root / 'target/debug' /
+                      ('azeroth-operator.exe' if os.name == 'nt' else 'azeroth-operator')).resolve(strict=True)
+        db = json.loads(catalogue.read_text())
+        ids = [row['id'] for row in db['items'] if row.get('type') == 11
+               and not row.get('randomSuffixOptions') and not row.get('classAllowlist')
+               and not row.get('requiredProfession')][:32]
+        self.assertEqual(len(set(ids)), 32)
+        with tempfile.TemporaryDirectory() as folder:
+            value = fixture()
+            value['client'] = {'family': 'forever', 'variant': 'live', 'build': '70862', 'interface': 16001}
+            value['sections']['bags'] = {'0': {str(i): {'item_id': item, 'count': 1,
+                'link': f'item:{item}:0:0:0:0:0:0'} for i, item in enumerate(ids, 1)}}
+            key = SnapshotStore(Path(folder)).ingest(value)
+            template, _, _ = inputs()
+            template_path = Path(folder) / 'PRIVATE_template.json'
+            template_path.write_text(json.dumps(template))
+            journal = Path(folder) / 'PRIVATE_large.sqlite'
+            env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
+                   'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
+            argv = [sys.executable, '-m', 'tools.collect_forever_gear_windows',
+                '--mcp', str(binary), '--snapshot-id', key, '--slot', 'finger1', '--slot', 'finger2',
+                '--template', str(template_path), '--journal', str(journal), '--collapse-identical-items',
+                '--window-size', '128', '--max-drafts', '128', '--time-budget-seconds', '300']
+            def launch(windows):
+                process = subprocess.run([*argv, '--max-windows', str(windows)], cwd=root, env=env,
+                    capture_output=True, text=True, timeout=330)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertNotIn('PRIVATE', process.stdout + process.stderr)
+                return json.loads(process.stdout)
+            first = launch(1)
+            self.assertEqual(first['progress']['total_combinations_decimal'], str(33**2))
+            self.assertEqual(first['progress']['covered_coordinate_count'], 128)
+            self.assertFalse(first['progress']['reported_coordinate_coverage_complete'])
+            resumed = launch(8)
+            progress = resumed['progress']
+            self.assertEqual(resumed['windows_inserted'], 8)
+            self.assertEqual(progress['window_count'], 9)
+            self.assertEqual(progress['covered_coordinate_count'], 1089)
+            self.assertTrue(progress['reported_coordinate_coverage_complete'])
+            self.assertEqual(progress['uncovered_ranges'], [])
+            self.assertIsNone(progress['next_uncovered_offset_decimal'])
+            self.assertEqual(first['collection_binding_sha256'], resumed['collection_binding_sha256'])
+            with closing(sqlite3.connect(journal)) as connection:
+                rows = connection.execute('SELECT start_key,end_key,report FROM windows ORDER BY start_key').fetchall()
+            # Independent arithmetic oracle for the full 33 x 33 coordinate product.
+            intervals = [(int(start), int(end)) for start, end, _ in rows]
+            self.assertEqual(intervals, [(start, min(start + 128, 1089)) for start in range(0, 1089, 128)])
+            coordinates = [coordinate for start, end in intervals for coordinate in range(start, end)]
+            self.assertEqual(coordinates, list(range(33**2)))
+            for _, _, payload in rows:
+                report_value = json.loads(payload)
+                self.assertFalse(report_value['best_in_slot_verified'])
+                self.assertLessEqual(len(report_value['resolved_drafts']), 129)
+            before = journal.read_bytes()
+            complete = launch(1)
+            self.assertEqual(complete['windows_attempted'], 0)
+            self.assertEqual(journal.read_bytes(), before)
+            for flag in ['best_in_slot_verified', 'feasible_set_coverage_verified',
+                         'simulation_performed', 'game_execution']:
+                self.assertFalse(complete[flag])
+
     def test_binding_guards_across_merger_and_journal(self):
         first, second = report(0, ['b' * 64]), report(4, ['b' * 64])
         first['collection_binding_sha256'] = 'a' * 64

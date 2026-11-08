@@ -1,5 +1,9 @@
 # Changelog
 
+- Verify restarted offline plan collection over a 1,089-coordinate gear product,
+  including contiguous journal intervals, per-window draft bounds and a completed
+  no-recollection retry; retain separate feasible-set and BiS qualification.
+
 - Collect bounded offline gear-plan windows into an explicitly bound local
   journal and resume uncovered coordinates after restart; reject input drift
   and unbound journal adoption, retaining false simulation and BiS claims.
