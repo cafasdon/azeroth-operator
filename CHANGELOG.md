@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find Forever catalogue gear by its recorded required character level range.
+
 - Explain Forever level restrictions with the captured level, required level and levels remaining.
 
 - Show observed Forever item requirement conflicts in owned-gear searches without a target slot.

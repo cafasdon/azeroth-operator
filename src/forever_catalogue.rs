@@ -167,6 +167,10 @@ pub struct Query {
     pub preserve_equipped_set: bool,
     /// Restrict items to at least this recorded item level at default scaling.
     pub minimum_item_level: Option<std::num::NonZeroU32>,
+    /// Minimum recorded character level required to equip the item, inclusive.
+    pub minimum_required_level: Option<u32>,
+    /// Maximum recorded character level required to equip the item, inclusive.
+    pub maximum_required_level: Option<u32>,
     /// Minimum recorded default weapon DPS.
     pub minimum_weapon_dps: Option<f64>,
     /// Minimum recorded weapon swing time in seconds (inclusive).
@@ -737,11 +741,21 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         "Expected positive weapon filters and an ordered speed range"
     );
     let effect_filter = query.item_effect_buff_id.is_some() || query.item_effect_trigger.is_some();
+    let required_level_filter =
+        query.minimum_required_level.is_some() || query.maximum_required_level.is_some();
+    ensure!(
+        query
+            .minimum_required_level
+            .zip(query.maximum_required_level)
+            .is_none_or(|(min, max)| min <= max),
+        "Expected an ordered required character level range"
+    );
     let inventory_filter = item_ids.is_some() || ownership.is_some();
     let item_filter = check_requirements.is_some()
         || query.set_id.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
+        || required_level_filter
         || weapon_filter.iter().any(Option::is_some)
         || effect_filter
         || query.order_by.is_some()
@@ -826,6 +840,15 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                         .as_u64()
                         .is_some_and(|level| level >= u64::from(minimum.get()))
                 })
+                && (!required_level_filter
+                    || row["reqLvl"].as_u64().is_some_and(|level| {
+                        query
+                            .minimum_required_level
+                            .is_none_or(|min| level >= u64::from(min))
+                            && query
+                                .maximum_required_level
+                                .is_none_or(|max| level <= u64::from(max))
+                    }))
                 && minimum_upgrade_level.is_none_or(|minimum| {
                     default_item_level(row).is_some_and(|level| level >= minimum)
                 })
