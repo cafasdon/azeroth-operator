@@ -23,6 +23,13 @@ The hosted reader and importer support the bank, recipe, reputation, currency, t
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).
 
+`instance_context` records the current instance type, public name and
+difficulty ID at export. It is also visible in `character_summary`.
+Outside an instance the observation contains only `kind: "none"`.
+Unrecognised or unavailable context remains unknown. Group membership,
+lockout identifiers and encounter state are outside this capture. Update
+the importer and reader before syncing new captures. [Forever instance API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/InstanceDocumentation.lua)
+
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture
 time. The separately observed `rested_xp` is the saved XP bonus pool.

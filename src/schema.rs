@@ -852,6 +852,26 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             )?;
         }
         "wallet" | "repair_quote" => object(value, &[("copper", "wallet_copper", true)])?,
+        "instance_context" => match value["kind"].as_str() {
+            Some("none") => object(value, &[("kind", "none", true)])?,
+            Some("party" | "raid" | "pvp" | "arena" | "scenario") => {
+                object(
+                    value,
+                    &[
+                        ("kind", "text", true),
+                        ("name", "text", true),
+                        ("difficulty_id", "uint", true),
+                    ],
+                )?;
+                ensure!(
+                    value["name"]
+                        .as_str()
+                        .is_some_and(|name| !name.is_empty() && name.len() <= 256),
+                    "Invalid instance name"
+                );
+            }
+            _ => anyhow::bail!("Invalid instance type"),
+        },
         "bag_capacity" => {
             let bags = value
                 .as_object()

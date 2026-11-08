@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the observed Forever instance type, public name and difficulty ID.
+
 - Estimate when a captured Forever recipe cooldown ends using the recipe capture time.
 
 - Compare observed Forever flight destinations and fares across captures of the same departure point.

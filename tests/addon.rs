@@ -402,6 +402,7 @@ pub fn verify_forever_capture_fixture(
         factionTag='Horde'
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
         function HasNewMail() return fixtureNewMail end
+        function GetInstanceInfo() return "Fixture Dungeon",fixtureInstanceKind or "party",1,"Normal",5,nil,nil,123 end
         fixtureNewMail=true
         C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
             GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end,
@@ -795,6 +796,19 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
     assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     let summary = azeroth_operator::analysis::summary(&snapshot);
+    assert_eq!(
+        summary["instance_context"],
+        serde_json::json!({"kind":"party","name":"Fixture Dungeon","difficulty_id":1})
+    );
+    lua.load("fixtureInstanceKind='none';AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["instance_context"],
+        serde_json::json!({"kind":"none"})
+    );
+    lua.load("fixtureInstanceKind='unknown';AO.Capture()")
+        .exec()?;
+    assert!(read()?.unavailable.contains_key("instance_context"));
+    lua.load("fixtureInstanceKind=nil").exec()?;
     assert_eq!(summary["new_mail_indicator"], true);
     lua.load("fixtureNewMail=nil;AO.Capture()").exec()?;
     assert_eq!(read()?.sections["stats"]["new_mail_indicator"], false);

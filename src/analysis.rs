@@ -1652,6 +1652,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "spellbook_slots_observed":s.sections.get("spellbook").and_then(|book|book["entries"].as_object()).map(|slots|slots.len()),
       "equipped_slots_observed":occupied,"carried_item_slots_observed":container_slots(s,"bags"),
       "carried_bag_space":carried_bag_space(s),
+      "instance_context":s.sections.get("instance_context"),
       "character_bank_item_slots_observed":container_slots(s,"character_bank"),
       "account_bank_item_slots_observed":container_slots(s,"account_bank"),
       "reputation_factions_observed":s.sections.get("reputation").and_then(|v|v["entries"].as_object()).map(|v|v.len()),

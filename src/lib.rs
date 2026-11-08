@@ -43,6 +43,7 @@ const SECTIONS: &[&str] = &[
     "durability_alerts",
     "repair_quote",
     "bag_capacity",
+    "instance_context",
     "tracked_achievements",
     "talents",
     "stats",
@@ -146,6 +147,7 @@ impl Snapshot {
                         | "durability_alerts"
                         | "repair_quote"
                         | "bag_capacity"
+                        | "instance_context"
                 ) || self.client.family == Family::Forever,
                 "Observation requires Forever"
             );

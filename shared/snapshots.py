@@ -10,7 +10,7 @@ from pathlib import Path
 from shared.clients import ClientFamily, ClientIdentity
 
 MAX_BYTES = 4 * 1024 * 1024
-SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "bag_capacity", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
+SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 
 
 def validate_snapshot(value):
@@ -44,6 +44,17 @@ def validate_snapshot(value):
             if (c["family"] != "forever" or not isinstance(observation, dict) or set(observation) != {"copper"}
                     or type(observation["copper"]) is not int or not 0 <= observation["copper"] <= 9_999_999_999_999):
                 raise ValueError(f"Invalid Forever {name} observation")
+    if "instance_context" in sections:
+        instance = sections["instance_context"]
+        if c["family"] != "forever" or not isinstance(instance, dict):
+            raise ValueError("Invalid instance context")
+        if instance != {"kind": "none"}:
+            name, difficulty = instance.get("name"), instance.get("difficulty_id")
+            if (set(instance) != {"kind", "name", "difficulty_id"}
+                    or instance["kind"] not in ("party", "raid", "pvp", "arena", "scenario")
+                    or not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
+                    or type(difficulty) is not int or not 0 <= difficulty <= 4_294_967_295):
+                raise ValueError("Invalid instance context")
     if "bag_capacity" in sections:
         bags = sections["bag_capacity"]
         if (c["family"] != "forever" or not isinstance(bags, dict) or len(bags) not in (5, 6)

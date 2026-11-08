@@ -844,6 +844,16 @@ AO.collectors.currencies = function()
     return result
 end
 
+AO.collectors.instance_context = function()
+    local name,kind,difficulty=GetInstanceInfo()
+    local types={none=true,party=true,raid=true,pvp=true,arena=true,scenario=true}
+    assert(questRewardAccessible(kind) and type(kind)=="string" and types[kind], "Instance type unavailable")
+    if kind=="none" then return {kind=kind} end
+    assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
+        and questRewardInteger(difficulty,0,4294967295), "Instance details unavailable")
+    return {kind=kind,name=name,difficulty_id=difficulty}
+end
+
 AO.collectors.bag_capacity = function()
     local last=NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4
     assert(questRewardInteger(last,4,5), "Unsupported carried bag range")
