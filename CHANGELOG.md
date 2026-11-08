@@ -1,5 +1,9 @@
 # Changelog
 
+- Execute selected saved gear windows with fresh MCP/model checks, deduplicated
+  requests, private resumable checkpoints and bounded work/progress reporting;
+  verify engine identity again before committing newly executed results.
+
 - Add private non-evicting numeric simulation checkpoints to fixed-run and
   ranking CLIs, with per-user protection, exact request/software identity,
   configurable quotas and fail-closed corruption/conflict handling.

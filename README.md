@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`python -m tools.run_forever_saved_windows --help` executes explicitly selected
+retained windows after fresh local MCP/model checks. It groups identical requests,
+uses private numeric checkpoints, and reports completed, missing and uninspected
+work under run/iteration/time budgets. Fixed-run rankings support paired DPS,
+tank and healing metrics. This is not full owned BiS or native qualification.
+[Evidence](docs/saved-window-execution-verification-2026-11-09.md).
+
 The fixed-run simulator and gear ranker accept `--simulation-journal ROOT` for
 private numeric checkpoints that do not evict completed results. It is separate
 from `--cache`; `--simulation-journal-mib` sets a 1–512 MiB ciphertext budget

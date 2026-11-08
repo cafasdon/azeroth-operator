@@ -553,6 +553,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
                     or not all(type(value) in (int, float) and math.isfinite(value) for value in values)):
                 raise ValueError("Simulator returned invalid paired samples")
             summary[f"_{metric}_samples"] = values
+        verify_engine(engine, expected_hash)
         if cache:
             cache.put(cache_key, summary)
             summary["cache_status"] = "miss"
@@ -581,6 +582,26 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
         )
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
+    return comparison_from_summaries(requests, [results[key] for key in keys], paired,
+                                     tank_metrics, healing_metrics, deadline)
+
+
+def comparison_from_summaries(requests, summaries, paired=False, tank_metrics=False, healing_metrics=False, deadline=None):
+    """Compare already validated completed results without executing more work."""
+    if not requests or len(requests) != len(summaries):
+        raise ValueError("Comparison requires one completed result per request")
+    deadline = time.monotonic() + 120 if deadline is None else deadline
+    keys = [json.dumps(request, sort_keys=True, separators=(",", ":"), allow_nan=False) for request in requests]
+    unique = dict(zip(keys, requests))
+    if paired and (not 2 <= requests[0]['simOptions']['iterations'] <= 5000 or any(
+        request['simOptions'] != requests[0]['simOptions'] or request['encounter'] != requests[0]['encounter']
+        for request in requests)):
+        raise ValueError("Paired comparisons require matching bounded iterations and encounters")
+    results = {}
+    for key, summary in zip(keys, summaries, strict=True):
+        if key in results and results[key] != summary:
+            raise ValueError("Identical requests require identical completed results")
+        results[key] = deepcopy(summary)
     baseline = results[keys[0]]["mean_dps"]
     leading_pair = None
     if paired and len(unique) >= 2 and not (tank_metrics or healing_metrics):

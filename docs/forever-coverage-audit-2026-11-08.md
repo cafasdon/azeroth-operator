@@ -129,3 +129,9 @@ preserve fixed-run results beyond the optional cache's 128-entry eviction limit.
 Current callers retain model/engine guards and can reuse completed numeric work;
 automatic prepared-set execution, scalable scheduling/global ranking and full
 owned BiS remain unfinished.
+
+On 9 November, [saved-window execution](saved-window-execution-verification-2026-11-09.md)
+connects fresh MCP preparation, compatible request grouping and private numeric
+checkpoints under explicit work budgets. It ranks selected completed observations
+and retains missing/uninspected work. Native qualification, full ownership/model
+coverage, automatic all-window scheduling and full owned BiS remain unfinished.
