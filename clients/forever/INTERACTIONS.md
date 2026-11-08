@@ -294,6 +294,9 @@ have different recorded action data. Slots seen in only one capture are
 listed separately. Missing action bar data leaves the comparison unknown.
 
 Pass `action_bar_slot` with `action_bar_observation` to inspect one slot.
+Use `action_bar_spell_id` to find all captured placements of an exact
+spell action ID and their observed hotkeys. It combines with the slot
+and hotkey selectors. Other action types and different spell IDs are excluded.
 `action_bar_slot_observed` is false for an unobserved slot and null for an
 unavailable section. An observed empty slot has `empty: true`. You can
 include its spellbook match, but the reverse list requires the full capture.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured Forever action-bar placements by exact spell action ID.
+
 - Identify duplicate spell placements in a saved Forever action bar.
 
 - Compare captured passive and off-spec flags for the same Forever spell across snapshots.
