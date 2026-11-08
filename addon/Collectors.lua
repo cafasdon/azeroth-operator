@@ -853,6 +853,19 @@ AO.collectors.instance_context = function()
         and questRewardInteger(difficulty,0,4294967295), "Instance details unavailable")
     local context={kind=kind,name=name,difficulty_id=difficulty}
     if questRewardInteger(map,1,4294967295) then context.instance_map_id=map end
+    if kind=="party" or kind=="raid" then
+        local ok,warning=pcall(function()
+            local dialog=StaticPopup_FindVisible("INSTANCE_LOCK")
+            if not dialog or not dialog:IsVisible() then return end
+            local seconds,_,total,completed=GetInstanceLockTimeRemaining()
+            if questRewardAccessible(seconds) and type(seconds)=="number" and seconds>=0 and seconds<=4294967295
+                and questRewardInteger(total,1,256) and questRewardInteger(completed,0,total)
+                and dialog:IsVisible() and StaticPopup_FindVisible("INSTANCE_LOCK")==dialog then
+                return {remaining_seconds=math.ceil(seconds),encounters_total=total,encounters_completed=completed}
+            end
+        end)
+        if ok then context.lock_warning=warning end
+    end
     return context
 end
 

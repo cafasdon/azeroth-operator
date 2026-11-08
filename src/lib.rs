@@ -381,6 +381,9 @@ impl Store {
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
                     if filter_instance {
                         summary["instance_context"] = s.sections["instance_context"].clone();
+                        if let Some(context) = summary["instance_context"].as_object_mut() {
+                            context.remove("lock_warning");
+                        }
                     }
                     if filter_recipes && let Some(recipe) = s.sections.get("selected_recipe") {
                         summary["selected_recipe"] = json!({

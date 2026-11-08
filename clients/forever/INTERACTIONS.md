@@ -27,7 +27,7 @@ New MCP routes are denied until reviewed for data source, owner scope, outputs a
 difficulty ID at export. It is also visible in `character_summary`.
 Outside an instance the observation contains only `kind: "none"`.
 Unrecognised or unavailable context remains unknown. Group membership,
-lockout identifiers and encounter state are outside this capture. Update
+lockout identifiers and active combat state are outside this capture. Update
 the importer and reader before syncing new captures. [Forever instance API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/InstanceDocumentation.lua)
 
 In `list_snapshots`, set `family: "forever"` and supply any of
@@ -38,6 +38,12 @@ matching is exact and case-insensitive. Filters combine with the saved
 character and recipe selectors before pagination. `instance_kind: "none"`
 finds captures taken outside an instance. Captures without an observation
 are excluded from filtered results.
+
+When the game's instance-lock warning is already visible in a dungeon
+or raid, `instance_context.lock_warning` can include its remaining seconds
+and aggregate encounter counts. This is the warning at capture time.
+It does not track the character's saved raid lockouts or accept the prompt.
+The snapshot listing excludes the warning details. [Forever lock warning source](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_StaticPopup_Game/GameDialogDefs.lua)
 
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture

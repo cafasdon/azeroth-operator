@@ -51,12 +51,21 @@ def validate_snapshot(value):
         if instance != {"kind": "none"}:
             name, difficulty = instance.get("name"), instance.get("difficulty_id")
             map_id = instance.get("instance_map_id")
-            if (set(instance) - {"kind", "name", "difficulty_id", "instance_map_id"}
+            if (set(instance) - {"kind", "name", "difficulty_id", "instance_map_id", "lock_warning"}
                     or instance.get("kind") not in ("party", "raid", "pvp", "arena", "scenario")
                     or not isinstance(name, str) or not 1 <= len(name.encode()) <= 256
                     or type(difficulty) is not int or not 0 <= difficulty <= 4_294_967_295
                     or ("instance_map_id" in instance and (type(map_id) is not int or not 1 <= map_id <= 4_294_967_295))):
                 raise ValueError("Invalid instance context")
+            if "lock_warning" in instance:
+                warning = instance["lock_warning"]
+                if (instance["kind"] not in ("party", "raid") or not isinstance(warning, dict)
+                        or set(warning) != {"remaining_seconds", "encounters_total", "encounters_completed"}
+                        or any(type(n) is not int for n in warning.values())
+                        or not 0 <= warning["remaining_seconds"] <= 4_294_967_295
+                        or not 1 <= warning["encounters_total"] <= 256
+                        or not 0 <= warning["encounters_completed"] <= warning["encounters_total"]):
+                    raise ValueError("Invalid instance lock warning")
     if "bag_capacity" in sections:
         bags = sections["bag_capacity"]
         if (c["family"] != "forever" or not isinstance(bags, dict) or len(bags) not in (5, 6)

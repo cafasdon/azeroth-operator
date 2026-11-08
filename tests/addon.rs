@@ -403,6 +403,9 @@ pub fn verify_forever_capture_fixture(
         function UnitFactionGroup(unit) assert(unit=='player'); return factionTag end
         function HasNewMail() return fixtureNewMail end
         function GetInstanceInfo() return "Fixture Dungeon",fixtureInstanceKind or "party",1,"Normal",5,nil,nil,123 end
+        fixtureLockDialog={IsVisible=function() return fixtureLockVisible end}
+        function StaticPopup_FindVisible(key) assert(key=="INSTANCE_LOCK"); return fixtureLockVisible and fixtureLockDialog end
+        function GetInstanceLockTimeRemaining() assert(fixtureLockVisible); return 14.1,false,8,3 end
         fixtureNewMail=true
         C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
             GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end,
@@ -809,6 +812,14 @@ pub fn verify_forever_capture_fixture(
         .exec()?;
     assert!(read()?.unavailable.contains_key("instance_context"));
     lua.load("fixtureInstanceKind=nil").exec()?;
+    lua.load("fixtureLockVisible=true;AO.Capture()").exec()?;
+    assert_eq!(
+        read()?.sections["instance_context"]["lock_warning"],
+        serde_json::json!({
+            "remaining_seconds":15,"encounters_total":8,"encounters_completed":3
+        })
+    );
+    lua.load("fixtureLockVisible=false").exec()?;
     assert_eq!(summary["new_mail_indicator"], true);
     lua.load("fixtureNewMail=nil;AO.Capture()").exec()?;
     assert_eq!(read()?.sections["stats"]["new_mail_indicator"], false);

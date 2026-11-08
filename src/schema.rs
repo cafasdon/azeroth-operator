@@ -862,6 +862,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("name", "text", true),
                         ("difficulty_id", "uint", true),
                         ("instance_map_id", "positive", false),
+                        ("lock_warning", "map", false),
                     ],
                 )?;
                 ensure!(
@@ -874,6 +875,27 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     value.get("instance_map_id").is_none_or(|id| !id.is_null()),
                     "Invalid instance map ID"
                 );
+                if let Some(warning) = value.get("lock_warning") {
+                    ensure!(
+                        matches!(value["kind"].as_str(), Some("party" | "raid")),
+                        "Unexpected instance lock warning"
+                    );
+                    object(
+                        warning,
+                        &[
+                            ("remaining_seconds", "uint", true),
+                            ("encounters_total", "positive", true),
+                            ("encounters_completed", "uint", true),
+                        ],
+                    )?;
+                    ensure!(
+                        warning["encounters_total"]
+                            .as_u64()
+                            .zip(warning["encounters_completed"].as_u64())
+                            .is_some_and(|(total, completed)| total <= 256 && completed <= total),
+                        "Invalid instance lock progress"
+                    );
+                }
             }
             _ => anyhow::bail!("Invalid instance type"),
         },

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the visible Forever instance-lock warning timer and encounter counts.
+
 - Capture and filter Forever instances by their map ID independently of localized names.
 
 - Filter saved Forever captures by instance type, name and difficulty.
