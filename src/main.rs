@@ -1015,6 +1015,19 @@ impl Operator {
                 let offers = merchant.as_ref().unwrap_or(stock);
                 review["merchant_reagent_plan"] =
                     azeroth_operator::analysis::recipe_merchant_plan(&review, offers, stock);
+                if args.suggest_dependency_order {
+                    let ordered = &review["dependency_order"];
+                    let dependency_review = serde_json::json!({
+                        "ordered_starting_materials":ordered["starting_materials"],
+                        "ordered_material_checkpoint":ordered["material_checkpoint"]
+                    });
+                    review["dependency_order"]["merchant_reagent_plan"] =
+                        azeroth_operator::analysis::recipe_merchant_plan(
+                            &dependency_review,
+                            offers,
+                            stock,
+                        );
+                }
                 if let Some(id) = args.merchant_snapshot_id {
                     review["merchant_snapshot_id"] = serde_json::json!(id);
                 }

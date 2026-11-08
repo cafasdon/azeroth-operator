@@ -3370,6 +3370,9 @@ pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Sna
         let mut budget = merchant_reagent_budget(demands, offers, wallet);
         budget["recipe_number"] = checkpoint["recipe_number"].clone();
         budget["recipe_id"] = checkpoint["recipe_id"].clone();
+        if let Some(step) = checkpoint.get("suggested_step") {
+            budget["suggested_step"] = step.clone();
+        }
         plan["first_uncovered_recipe_budget"] = budget;
     }
     plan

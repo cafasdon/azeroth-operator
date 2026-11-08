@@ -48,16 +48,31 @@ class RecipeDependenciesTests(unittest.IsolatedAsyncioTestCase):
             unlearned["learned"] = False
             gated = [short[0], save(unlearned)]
             independent = [chain[2], save(recipe(601, 50, {"8": 1}))]
+            inventory = copy.deepcopy(base)
+            inventory["sections"]["bags"]["0"]["1"]["count"] = 1
+            inventory["sections"]["wallet"] = {"copper": 10}
+            inventory_id = store.ingest(inventory)
+            merchant = copy.deepcopy(inventory)
+            merchant["sections"]["wallet"] = {"copper": 999}
+            merchant["sections"]["merchant_stock"] = {
+                str(slot): {"item_id": item, "bundle_size": 1, "price_copper": price,
+                            "available": -1, "extended_cost": False}
+                for slot, item, price in ((1, 7, 4), (2, 10, 50), (3, 20, 100))
+            }
+            merchant_id = store.ingest(merchant)
+            merchant["character"]["name"] = "Other"
+            wrong_merchant_id = store.ingest(merchant)
             env = {**os.environ, "AZEROTH_DATA_DIR": directory}
             env.pop("AZEROTH_FOREVER_CATALOGUE", None)
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
 
-                    async def plan(ids, flag=True):
+                    async def plan(ids, flag=True, **options):
                         response = await session.call_tool("review_forever_recipe", {
                             "snapshot_id": ids[0], "crafts": 1, "suggest_dependency_order": flag,
                             "additional_recipes": [{"snapshot_id": key, "crafts": 1} for key in ids[1:]],
+                            **options,
                         })
                         self.assertFalse(response.isError)
                         return json.loads(response.content[0].text)
@@ -96,6 +111,29 @@ class RecipeDependenciesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(preparation["suggested_step"], 1)
                     self.assertIn("recipe_learned", preparation["failed_checks"])
                     self.assertEqual((await plan(independent))["dependency_order"]["suggested_recipe_numbers"], [1, 2])
+                    quote_options = {"inventory_snapshot_id": inventory_id,
+                                     "merchant_reagent_plan": True, "merchant_snapshot_id": merchant_id}
+                    quoted = await plan(chain, **quote_options)
+                    self.assertEqual(quoted["merchant_reagent_plan"]["unlimited_copper_only_total"], 154)
+                    suggested_quote = quoted["dependency_order"]["merchant_reagent_plan"]
+                    self.assertEqual(suggested_quote["unlimited_copper_only_total"], 4)
+                    self.assertTrue(suggested_quote["unlimited_copper_only_affordable"])
+                    self.assertEqual([row["item_id"] for row in suggested_quote["reagents"]], [7])
+                    first = suggested_quote["first_uncovered_recipe_budget"]
+                    self.assertEqual(first["recipe_number"], 3)
+                    self.assertEqual(first["suggested_step"], 1)
+                    partial_quote = (await plan(short, **quote_options))["dependency_order"]["merchant_reagent_plan"]
+                    self.assertEqual(partial_quote["unlimited_copper_only_total"], 104)
+                    self.assertFalse(partial_quote["unlimited_copper_only_affordable"])
+                    self.assertEqual(partial_quote["unlimited_copper_only_shortfall"], 94)
+                    self.assertIsNone((await plan(cycle, **quote_options))["dependency_order"]["merchant_reagent_plan"])
+                    self.assertIsNone((await plan(unknown, **quote_options))["dependency_order"]["merchant_reagent_plan"])
+                    missing_offers = await plan(chain, **{**quote_options, "merchant_snapshot_id": inventory_id})
+                    self.assertIsNone(missing_offers["dependency_order"]["merchant_reagent_plan"])
+                    wrong = await session.call_tool("review_forever_recipe", {
+                        "snapshot_id": chain[0], "crafts": 1, "additional_recipes": [{"snapshot_id": key, "crafts": 1} for key in chain[1:]],
+                        "suggest_dependency_order": True, **{**quote_options, "merchant_snapshot_id": wrong_merchant_id}})
+                    self.assertTrue(wrong.isError)
                     single = await session.call_tool("review_forever_recipe", {
                         "snapshot_id": chain[0], "crafts": 1, "suggest_dependency_order": True})
                     self.assertTrue(single.isError)

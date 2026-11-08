@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Quote remaining reagent purchases for a suggested dependency order without buying intermediates produced by the batch.
+
 - Suggest producer-first recipe batch orders with recalculated starting materials and explicit cycle/data gaps.
 
 - Compare saved selected-recipe learning, cooldown, reagent and output observations without crossing recipe identities.

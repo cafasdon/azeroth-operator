@@ -38,3 +38,27 @@ defect. Additional real-stdio probes covered multiple partial-yield producers,
 self-dependency, downstream cycle blocking, unsupported required slots, missing
 output quantities, schema advertisement, eight/nine recipe limits and rejected
 character/build mismatches. Disabled output stayed unchanged.
+
+## Merchant integration
+
+Combining dependency ordering with the existing merchant-plan flag now adds a
+separate nested quote for the suggested order. The original-order quote remains
+unchanged. The new quote reuses the validated merchant capture and inventory
+wallet. It consumes the suggested order's computed starting requirements and
+keeps original recipe numbers plus suggested-step metadata on budget failures.
+
+The extended real-stdio fixture quoted 154 copper for the original order and
+4 copper for the suggested order; only the missing base reagent remained in
+the latter. A partial-yield case retained 104 copper of purchases and a 94-copper
+shortfall against the inventory's 10-copper wallet, despite a different balance
+on the merchant snapshot. Cycles, unknown outputs and missing merchant stock
+returned null nested plans. A different merchant character was rejected.
+The regression command above passed all 13 tests after this change.
+
+Independent caller/failure review (gpt-6.1-sol, high effort) found no issues.
+Extra real-stdio checks covered sold-out/finite/extended-cost offers, missing
+offers or wallets, cheaper bundle quotes, fully covered batches, checkpoint
+mapping and rejected merchant realm/build or inventory-owner mismatches.
+Jev 1.14.0 scope advice returned supported (request
+`f6e6d61ad79a4430f3e185fdfc742ae9091c421fdd139551abc0625fb74c9f63`,
+504 input / 46 output tokens, 0.301 seconds), separate from test evidence.

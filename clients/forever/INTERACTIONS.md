@@ -76,6 +76,17 @@ not a cheapest-order optimisation, inventory-capacity check or permission to
 craft. Recipes with unobserved outputs, including enchant-only captures, keep
 their original plan and receive no automatic dependency order.
 
+When both `suggest_dependency_order` and `merchant_reagent_plan` are true,
+`dependency_order.merchant_reagent_plan` quotes the suggested order's remaining
+starting-material shortfalls. Intermediates supplied by the batch are excluded;
+insufficient intermediate output still leaves a purchase requirement. The
+top-level merchant plan continues to describe the original order. The nested
+plan uses the same captured merchant offers and inventory wallet, and its first
+uncovered-recipe budget retains the original recipe number and suggested step.
+Cycles, incomplete dependency data or unavailable merchant stock produce a null
+nested plan. These are saved quotes and conditional estimates, not purchases or
+proof that the batch can be crafted.
+
 Set `selected_recipe_changes: true` in `compare_snapshots` for a compact
 before/after view of selected-recipe learning, cooldown, fixed reagent and
 output observations. Recipe names are excluded so localisation-only changes
