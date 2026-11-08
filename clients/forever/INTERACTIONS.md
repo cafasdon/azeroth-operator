@@ -575,6 +575,8 @@ costs are counted separately among rows matching the other filters.
 Set `quest_within_captured_wallet` to compare each cost with the wallet
 in the same capture. An optional copper cap can narrow the results further.
 If wallet data is unavailable, the filtered result is unknown.
+Use `quest_min_reward_xp` to keep quests with at least that much captured
+XP. Unknown rewards are excluded and counted before the copper filters.
 
 `character_summary.quest_money` also counts quests with an unknown cost.
 If the same export includes the optional wallet, each entry shows its

@@ -86,6 +86,8 @@ struct Inspect {
     quest_max_remaining_seconds: Option<u32>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
     quest_max_required_copper: Option<u64>,
+    /// Keep saved Forever quests with at least this much recorded XP reward.
+    quest_min_reward_xp: Option<u64>,
     /// Keep quests whose recorded copper cost fits the wallet in the same saved Forever snapshot.
     #[serde(default)]
     quest_within_captured_wallet: bool,
@@ -1157,6 +1159,7 @@ impl Operator {
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
                 || args.quest_max_required_copper.is_some()
+                || args.quest_min_reward_xp.is_some()
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -1218,7 +1221,8 @@ impl Operator {
                 "Quest cost filtering requires the quests section without a quest ID",
             )]);
         }
-        if filter_rewards && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        if (filter_rewards || args.quest_min_reward_xp.is_some())
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest reward selection requires the quests section without a quest ID",
@@ -1461,6 +1465,7 @@ impl Operator {
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
                     || args.quest_max_required_copper.is_some()
+                    || args.quest_min_reward_xp.is_some()
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -1565,6 +1570,19 @@ impl Operator {
                                         !matched && lists.into_iter().any(|list| list.is_none()),
                                     );
                                     matched
+                                });
+                                unknown
+                            }));
+                    }
+                    if let Some(minimum) = args.quest_min_reward_xp {
+                        value["quest_min_reward_xp"] = serde_json::json!(minimum);
+                        value["quest_reward_xp_unknown_count"] =
+                            serde_json::json!(data.as_object_mut().map(|quests| {
+                                let mut unknown = 0;
+                                quests.retain(|_, quest| {
+                                    let xp = quest["reward_amounts"]["xp"].as_u64();
+                                    unknown += usize::from(xp.is_none());
+                                    xp.is_some_and(|xp| xp >= minimum)
                                 });
                                 unknown
                             }));

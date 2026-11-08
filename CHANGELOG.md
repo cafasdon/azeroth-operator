@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever quests by their recorded XP reward.
+
 - Filter saved Forever quests by affordability against the same capture's wallet.
 
 - Filter saved Forever quests by their observed required copper cost.
