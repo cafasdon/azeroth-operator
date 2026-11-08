@@ -464,6 +464,8 @@ flags. Conflicting observations are retained, and missing flags stay unknown.
 Missing spellbook data
 on either side leaves changes unknown. Additions and removals describe the
 observed slots and do not establish permanent learning or unlearning.
+Added and removed base IDs also list any names observed on the respective
+side. Duplicate names are collapsed and differing names are retained.
 
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.

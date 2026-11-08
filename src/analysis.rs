@@ -1103,16 +1103,37 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
     let previous = by_base(before);
     let current = by_base(after);
     let changes = previous.as_ref().zip(current.as_ref()).map(|(a,b)| {
-        let added = b.keys().filter(|id| !a.contains_key(id)).collect::<Vec<_>>();
-        let removed = a.keys().filter(|id| !b.contains_key(id)).collect::<Vec<_>>();
+        let added = b.keys().copied().filter(|id| !a.contains_key(id)).collect::<Vec<_>>();
+        let removed = a.keys().copied().filter(|id| !b.contains_key(id)).collect::<Vec<_>>();
         let changed = a.iter().filter_map(|(id, old)| {
             let new = b.get(id)?;
             (old != new).then(|| json!({"base_spell_id":id,"before_reported_spell_ids":old,"after_reported_spell_ids":new}))
         }).collect::<Vec<_>>();
         json!({"added_base_spell_ids":added,"removed_base_spell_ids":removed,"reported_spell_id_changes":changed,
+            "added_observed_names_by_base_id":spellbook_names_for(after, &added),
+            "removed_observed_names_by_base_id":spellbook_names_for(before, &removed),
             "observed_flag_changes":compare_spellbook_flags(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
+}
+
+fn spellbook_names_for<'a>(
+    snapshot: &'a Snapshot,
+    ids: &[u64],
+) -> BTreeMap<u64, BTreeSet<&'a str>> {
+    let mut names = BTreeMap::<u64, BTreeSet<&str>>::new();
+    for row in snapshot.sections["spellbook"]["entries"]
+        .as_object()
+        .into_iter()
+        .flat_map(|entries| entries.values())
+    {
+        if let Some((id, name)) = row["base_spell_id"].as_u64().zip(row["name"].as_str())
+            && ids.binary_search(&id).is_ok()
+        {
+            names.entry(id).or_default().insert(name);
+        }
+    }
+    names
 }
 
 fn compare_spellbook_flags(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
