@@ -968,6 +968,11 @@ or `unknown`. Both filters must match the same observed tracking row.
 Unknown means a row was captured without a learned flag. Results still
 show the observations from both groups.
 
+To search without a recipe ID, supply a kind, learning status or both.
+Matching visits report `tracked_recipe_counts` for crafts and recrafts.
+An excluded group counts as zero. A visit needs at least one matching
+entry, so missing and empty tracking sections are excluded.
+
 Pass `tracked_recipe_id` with `section: "tracked_recipes"` to check one
 recipe. `tracked_as_craft` and `tracked_as_recraft` are independent. False
 means the ID was absent from an observed list, while null means the list

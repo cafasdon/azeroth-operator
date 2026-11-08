@@ -388,8 +388,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(matched_tracking.isError)
                             matches = json.loads(matched_tracking.content[0].text)["snapshots"]
                             self.assertEqual([row["snapshot_id"] for row in matches], expected)
+                        for kind, learning, expected in [
+                            ("craft", "unlearned", [(after_tracking_key, 1, 0)]),
+                            ("recraft", "unlearned", []),
+                            ("craft", "unknown", [(after_tracking_key, 2, 0), (forever_key, 2, 0)]),
+                            ("recraft", "learned", [(forever_key, 0, 1)]),
+                        ]:
+                            matching_counts = await session.call_tool("list_snapshots", {
+                                "family": "forever", "character": tracked_after["character"],
+                                "tracked_recipe_kind": kind, "tracked_recipe_learning": learning,
+                            })
+                            self.assertFalse(matching_counts.isError)
+                            matches = json.loads(matching_counts.content[0].text)["snapshots"]
+                            self.assertEqual([
+                                (row["snapshot_id"], row["tracked_recipe_counts"]["crafts"],
+                                 row["tracked_recipe_counts"]["recrafts"]) for row in matches
+                            ], expected)
                         self.assertTrue((await session.call_tool("list_snapshots", {
-                            "family": "forever", "tracked_recipe_learning": "unknown",
+                            "family": "retail", "tracked_recipe_learning": "unknown",
                         })).isError)
                         bank_summary = await session.call_tool("character_summary", {"snapshot_id":forever_key})
                         bank_summary_data = json.loads(bank_summary.content[0].text)

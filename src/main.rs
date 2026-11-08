@@ -236,9 +236,9 @@ struct List {
     recipe_profession_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever captures that track this exact recipe as a craft or recraft.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
-    /// Restrict the match to a tracked craft or recraft. Requires tracked_recipe_id.
+    /// Restrict the match to tracked crafts or recrafts. Without an ID, report matching counts.
     tracked_recipe_kind: Option<azeroth_operator::TrackedRecipeKind>,
-    /// Restrict the matched tracking row by its learned status. Requires tracked_recipe_id.
+    /// Restrict tracking rows by learned status. Without an ID, report matching counts.
     tracked_recipe_learning: Option<azeroth_operator::RecipeLearning>,
     /// Find saved Forever captures with a uniquely observed profession skill line.
     profession_skill_line: Option<std::num::NonZeroU32>,

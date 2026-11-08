@@ -498,16 +498,20 @@ impl Store {
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some();
+        let filter_tracking = tracked_recipe_id.is_some()
+            || tracked_recipe_kind.is_some()
+            || tracked_recipe_learning.is_some();
         ensure!(
-            !(filter_recipes || tracked_recipe_id.is_some()) || family == Family::Forever,
+            !(filter_recipes || filter_tracking) || family == Family::Forever,
             "Recipe filtering requires Forever"
         );
         let tracked_recipe_key = tracked_recipe_id.map(|id| id.to_string());
-        ensure!(
-            (tracked_recipe_kind.is_none() && tracked_recipe_learning.is_none())
-                || tracked_recipe_key.is_some(),
-            "Tracked recipe kind and learning filters require a recipe ID"
-        );
+        let matches_learning = |row: &Value| {
+            tracked_recipe_learning
+                .is_none_or(|learning| row["learned"].as_bool() == learning.observed())
+        };
+        let craft_enabled = !matches!(tracked_recipe_kind, Some(TrackedRecipeKind::Recraft));
+        let recraft_enabled = !matches!(tracked_recipe_kind, Some(TrackedRecipeKind::Craft));
         ensure!(
             profession_skill_line.is_none_or(|_| family == Family::Forever)
                 && (profession_min_rank.is_none() || profession_skill_line.is_some()),
@@ -614,21 +618,26 @@ impl Store {
                         let tracking = s.sections.get("tracked_recipes")?;
                         let craft = tracking["crafts"].get(key);
                         let recraft = tracking["recrafts"].get(key);
-                        let matches = |row: Option<&Value>| {
-                            row.is_some_and(|row| {
-                                tracked_recipe_learning.is_none_or(|learning| {
-                                    row["learned"].as_bool() == learning.observed()
-                                })
-                            })
-                        };
-                        let matched = match tracked_recipe_kind {
-                            Some(TrackedRecipeKind::Craft) => matches(craft),
-                            Some(TrackedRecipeKind::Recraft) => matches(recraft),
-                            None => matches(craft) || matches(recraft),
-                        };
+                        let matched = (craft_enabled && craft.is_some_and(matches_learning))
+                            || (recraft_enabled && recraft.is_some_and(matches_learning));
                         matched.then_some((craft, recraft))
                     });
-                    if tracked_recipe_key.is_some() && tracked_match.is_none() {
+                    let tracked_counts = (filter_tracking && tracked_recipe_key.is_none())
+                        .then(|| {
+                            let tracking = s.sections.get("tracked_recipes")?;
+                            let count = |group: &str, enabled: bool| {
+                                tracking[group].as_object().map(|rows| {
+                                    rows.values()
+                                        .filter(|row| enabled && matches_learning(row))
+                                        .count()
+                                })
+                            };
+                            let crafts = count("crafts", craft_enabled)?;
+                            let recrafts = count("recrafts", recraft_enabled)?;
+                            (crafts > 0 || recrafts > 0).then_some((crafts, recrafts))
+                        })
+                        .flatten();
+                    if filter_tracking && tracked_match.is_none() && tracked_counts.is_none() {
                         continue;
                     }
                     let profession_match = profession_skill_line.and_then(|skill_line| {
@@ -758,6 +767,10 @@ impl Store {
                             "craft_learned":craft.and_then(|row| row["learned"].as_bool()),
                             "recraft_learned":recraft.and_then(|row| row["learned"].as_bool()),
                         });
+                    }
+                    if let Some((crafts, recrafts)) = tracked_counts {
+                        summary["tracked_recipe_counts"] =
+                            json!({"crafts":crafts,"recrafts":recrafts});
                     }
                     if let Some(profession) = profession_match {
                         summary["profession_match"] = json!({
