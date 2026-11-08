@@ -722,6 +722,11 @@ slot. A missing fare or wallet leaves both values unknown. Each comparison
 uses the same saved balance independently. The result covers the copper
 fare at capture time.
 
+`character_summary.flight_fare_summary` lists up to 20 reachable
+destinations with the cheapest observed fares, using node ID to break
+ties. It counts unknown fares separately and does not require a wallet.
+A missing flight panel or ambiguous departure leaves the summary unknown.
+
 Set `flight_wallet_reserve_copper` with either affordability option to
 budget a separate expense such as a saved repair quote. Supply the reserve
 amount explicitly. The projection compares fare plus reserve with the

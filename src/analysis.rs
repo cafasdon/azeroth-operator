@@ -2012,6 +2012,31 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
 }
 
+fn captured_flight_fare_summary(map: &Value) -> Option<Value> {
+    let (origin_id, nodes) = flight_destinations(map)?;
+    let mut unknown_fares = 0usize;
+    let mut known = Vec::new();
+    for (id, node) in nodes
+        .iter()
+        .filter(|(_, node)| node["state"] == "reachable")
+    {
+        if let Some(fare) = node["fare_copper"].as_u64() {
+            known.push((fare, id, &node["name"]));
+        } else {
+            unknown_fares += 1;
+        }
+    }
+    known.sort_unstable_by_key(|&(fare, id, _)| (fare, id));
+    let cheapest: Vec<_> = known
+        .iter()
+        .take(20)
+        .map(|(fare, id, name)| json!({"node_id":id,"name":name,"fare_copper":fare}))
+        .collect();
+    Some(json!({"map_id":map["map_id"],"origin_node_id":origin_id,
+        "known_fare_count":known.len(),"unknown_fare_count":unknown_fares,
+        "cheapest_destinations":cheapest}))
+}
+
 fn compare_flight_maps(before: &Value, after: &Value) -> Value {
     if before["map_id"] != after["map_id"] {
         return json!({"status":"different_maps"});
@@ -2996,6 +3021,11 @@ pub fn summary(s: &Snapshot) -> Value {
         s.sections
             .get("reputation")
             .and_then(|section| paragon_reward_summary(section, quests))
+    );
+    summary["flight_fare_summary"] = json!(
+        s.sections
+            .get("flight_map")
+            .and_then(captured_flight_fare_summary)
     );
     summary
 }

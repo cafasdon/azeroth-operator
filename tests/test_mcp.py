@@ -279,6 +279,13 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bank_summary_data["character_bank_item_slots_observed"], 1)
                         self.assertEqual(bank_summary_data["account_bank_item_slots_observed"], 0)
                         self.assertEqual(bank_summary_data["reputation_factions_observed"], 1)
+                        self.assertEqual(bank_summary_data["flight_fare_summary"], {
+                            "map_id": 1414, "origin_node_id": 12,
+                            "known_fare_count": 1, "unknown_fare_count": 0,
+                            "cheapest_destinations": [
+                                {"node_id": 14, "name": "Fixture destination", "fare_copper": 0},
+                            ],
+                        })
                         self.assertEqual(bank_summary_data["standard_reputation_workload"], {
                             "capped_factions": 0, "factions_with_observed_rank_gap": 1,
                             "closest_to_next_rank": [

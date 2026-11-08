@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- List the cheapest reachable destinations in a saved Forever flight panel.
+
 - Explain where the saved starting wallet stops covering a Forever itinerary.
 
 - Show how many consecutive Forever itinerary legs fit the starting wallet.
