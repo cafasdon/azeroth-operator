@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find captured Forever hotkeys shared across multiple action-bar slots.
+
 - Show captured spellbook flags behind matching Forever action-bar spells.
 
 - Check captured equipment and bag stock for a matched Forever action-bar item shortcut.

@@ -868,6 +868,27 @@ fn compare_action_bar_hotkeys(before: &Snapshot, after: &Snapshot) -> Value {
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
+pub fn shared_action_bar_hotkeys(actions: &Value) -> Option<BTreeMap<String, BTreeSet<u64>>> {
+    let buttons = actions["button_hotkeys"].as_object()?;
+    let mut slots_by_key = BTreeMap::<String, BTreeSet<u64>>::new();
+    for button in buttons.values() {
+        let Some(slot) = button["slot"].as_u64() else {
+            continue;
+        };
+        for key in [button["key1"].as_str(), button["key2"].as_str()]
+            .into_iter()
+            .flatten()
+        {
+            slots_by_key
+                .entry(key.to_ascii_uppercase())
+                .or_default()
+                .insert(slot);
+        }
+    }
+    slots_by_key.retain(|_, slots| slots.len() > 1);
+    Some(slots_by_key)
+}
+
 pub fn action_bar_spellbook(
     actions: &Value,
     spellbook: Option<&Value>,

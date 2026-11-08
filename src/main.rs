@@ -156,6 +156,9 @@ struct Inspect {
     action_bar_slot: Option<std::num::NonZeroU32>,
     /// Match an exact key on captured Forever built-in action buttons.
     action_bar_hotkey: Option<String>,
+    /// Report recorded hotkeys shared across multiple retained built-in slots.
+    #[serde(default)]
+    action_bar_shared_hotkeys: bool,
     /// Find captured action bar slots with this exact observed spell action ID.
     action_bar_spell_id: Option<std::num::NonZeroU32>,
     /// Find captured action bar slots with this exact observed item action ID.
@@ -1198,6 +1201,7 @@ impl Operator {
             .map(|id| ("spell", id))
             .or_else(|| args.action_bar_item_id.map(|id| ("item", id)));
         let review_action_bar = args.action_bar_spellbook
+            || args.action_bar_shared_hotkeys
             || args.action_bar_slot.is_some()
             || action_id_filter.is_some()
             || action_bar_hotkey.is_some();
@@ -2014,6 +2018,11 @@ impl Operator {
                 if let Some((kind, _)) = action_id_filter {
                     value[format!("action_bar_{kind}_match_count")] = serde_json::json!(
                         value["data"]["slots"].as_object().map(|slots| slots.len())
+                    );
+                }
+                if args.action_bar_shared_hotkeys {
+                    value["action_bar_shared_hotkeys"] = serde_json::json!(
+                        azeroth_operator::analysis::shared_action_bar_hotkeys(&value["data"])
                     );
                 }
                 if args.action_bar_item_stock {

@@ -324,6 +324,9 @@ map on either side leaves the changes unknown.
 Use `action_bar_hotkey` with `action_bar_observation` to find captured
 buttons and their slots by exact key, ignoring ASCII case. The match count
 is null if the hotkey map was unavailable. Zero means no captured match.
+Set `action_bar_shared_hotkeys` to list keys observed on more than one
+distinct retained slot. It compares keys without ASCII case and does not
+infer whether the bindings are active at the same time.
 You can combine this with an exact slot or the forward spellbook check.
 
 Use `inspect_snapshot` with `section: "quests"` for quest details. `character_summary` counts observed and unknown turn-in statuses separately. Its `quest_checklist` groups quest IDs as ready, explicitly not ready, failed, or unknown. A captured failure takes priority in the checklist. A missing quest section gives a null checklist, and an observed empty log gives empty groups. Objective entries are indexed within a quest and include type, completion and available counts. The addon omits objective text, and a missing objective map indicates unavailable data. Older title-only snapshots remain readable. Update the companion and hosted importer/reader before syncing new quest detail. [Forever QuestLog API](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/QuestLogDocumentation.lua)
