@@ -58,6 +58,8 @@ catalogue restrictions that conflict with captured character data, even
 without a target slot. Null means no conflict was detected from the
 available evidence. The separate draft conflict still applies to the
 proposed placement.
+Enable `exclude_observed_requirement_conflicts` to omit known item conflicts
+before paging. Items with unknown eligibility remain in the results.
 When the captured level is below the catalogue requirement, both conflict
 views include `level_shortfall` with the captured and required levels and
 the difference.

@@ -2745,6 +2745,7 @@ pub fn review_owned(
     required_levels: (Option<u32>, Option<u32>),
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
     observed_random_suffix_id: Option<i32>,
+    exclude_observed_requirement_conflicts: bool,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -2831,6 +2832,12 @@ pub fn review_owned(
                 return;
             }
             let on_page = included >= offset && entries.len() < limit;
+            let item_conflict = (on_page || exclude_observed_requirement_conflicts)
+                .then(|| reference.and_then(|item| check_item_requirements(item)))
+                .flatten();
+            if exclude_observed_requirement_conflicts && item_conflict.is_some() {
+                return;
+            }
             let modifiers = (on_page
                 || observed_enchant_effect_id.is_some()
                 || observed_random_suffix_id.is_some())
@@ -2859,7 +2866,7 @@ pub fn review_owned(
                 let weapon_skill = reference.and_then(|item| weapon_skill(snapshot, item));
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
-                    "catalogue_item_requirement_conflict":reference.and_then(|item| check_item_requirements(item)),
+                    "catalogue_item_requirement_conflict":item_conflict,
                     "catalogue_requirement_conflict":requirement_conflict,
                     "draft_selection":draft_selection,
                     "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),

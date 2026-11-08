@@ -261,6 +261,9 @@ struct OwnedGearReview {
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
     /// Filter by the exact signed random suffix ID encoded in a captured item link.
     observed_random_suffix_id: Option<i32>,
+    /// Exclude known catalogue conflicts against the saved character. Unknown eligibility can still match.
+    #[serde(default)]
+    exclude_observed_requirement_conflicts: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -644,6 +647,7 @@ impl Operator {
                 (args.minimum_required_level, args.maximum_required_level),
                 args.observed_enchant_effect_id,
                 args.observed_random_suffix_id,
+                args.exclude_observed_requirement_conflicts,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
