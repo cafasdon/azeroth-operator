@@ -196,6 +196,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         forever["sections"]["trainer_services"] = {"kind": "tradeskills", "entries": {
                             "1": {"name": "Fixture Potion", "status": "available", "price_copper": 10},
                             "2": {"name": "Other Lesson", "status": "used"},
+                            "3": {"name": "Expensive Lesson", "status": "available", "price_copper": 5_000_000_001},
                         }}
                         forever_key = SnapshotStore(Path(folder)).ingest(forever)
                         forever["character"]["realm"] = "Second"
@@ -227,6 +228,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(ordered_budget, {
                             "covered_prefix_lessons": 1,
                             "first_uncovered_lesson": {"slot": 2, "reason": "lesson_not_available"},
+                        })
+                        short_trainer = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "trainer_services",
+                            "trainer_service_slots": [1, 3], "trainer_wallet_projection": True,
+                        })
+                        self.assertFalse(short_trainer.isError)
+                        self.assertEqual(json.loads(short_trainer.content[0].text)[
+                            "trainer_wallet_projection"]["ordered_lesson_budget"], {
+                            "covered_prefix_lessons": 1,
+                            "first_uncovered_lesson": {
+                                "slot": 3, "reason": "insufficient_balance", "additional_balance_needed": 10,
+                            },
                         })
                         crossed = await session.call_tool("list_snapshots", {
                             "family": "forever", "trainer_service_name": "Potion",

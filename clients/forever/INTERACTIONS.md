@@ -164,6 +164,9 @@ an `ordered_lesson_budget`. It counts the consecutive available lessons
 with known prices that fit the captured balance and identifies the
 first uncovered slot. Slots excluded by filters stop the count.
 A missing balance leaves the ordered budget unknown.
+For insufficient balance, the first uncovered slot reports
+`additional_balance_needed` in the projection's currency after the
+earlier lessons' recorded costs.
 
 `instance_context` records the current instance type, public name and
 difficulty ID at export. It is also visible in `character_summary`.

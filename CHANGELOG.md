@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show how much extra copper or training points the first unaffordable Forever lesson needs.
+
 - Budget Forever trainer lessons in the player's requested slot order.
 
 - Find saved Forever trainer visits with lessons affordable from captured balances.

@@ -2289,18 +2289,22 @@ fn trainer_order_budget(
     };
     for (index, slot) in slots.iter().enumerate() {
         let row = &trainer["entries"][slot.to_string()];
-        let reason = match (row["status"].as_str(), row[price_field].as_u64()) {
-            (None, _) => "lesson_not_retained",
-            (Some("available"), None) => "price_unknown",
+        let (reason, shortfall) = match (row["status"].as_str(), row[price_field].as_u64()) {
+            (None, _) => ("lesson_not_retained", None),
+            (Some("available"), None) => ("price_unknown", None),
             (Some("available"), Some(price)) if price <= remaining => {
                 remaining -= price;
                 continue;
             }
-            (Some("available"), Some(_)) => "insufficient_balance",
-            _ => "lesson_not_available",
+            (Some("available"), Some(price)) => ("insufficient_balance", Some(price - remaining)),
+            _ => ("lesson_not_available", None),
         };
+        let mut uncovered = json!({"slot":slot,"reason":reason});
+        if let Some(shortfall) = shortfall {
+            uncovered["additional_balance_needed"] = json!(shortfall);
+        }
         return json!({"covered_prefix_lessons":index,
-            "first_uncovered_lesson":{"slot":slot,"reason":reason}});
+            "first_uncovered_lesson":uncovered});
     }
     json!({"covered_prefix_lessons":slots.len(),"first_uncovered_lesson":null})
 }
