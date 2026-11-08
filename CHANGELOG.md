@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Narrow Forever ranker alternatives by captured enchant effect and random suffix.
+
 - Narrow Forever gear ranking and preview candidates by recorded equip level.
 
 - Explain which Forever gear search limit was reached and how to narrow the search.

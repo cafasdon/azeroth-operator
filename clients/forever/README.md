@@ -594,6 +594,9 @@ the baseline, and storage coverage still describes the full capture.
 Use `--minimum-required-level` and `--maximum-required-level` to narrow
 alternatives by their recorded equip level. Unknown levels are excluded
 when a bound is supplied. The captured character's requirements still apply.
+Use `--observed-enchant-effect-id` and `--observed-random-suffix-id` to
+select owned variants by exact captured modifiers before paging. A zero
+suffix matches only a link with an explicit zero.
 
 Use `--all-slots --single-swaps` to compare one replacement at a time across
 all simulator slots. This avoids the multi-slot combination search. A

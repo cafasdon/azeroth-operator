@@ -62,20 +62,19 @@ def check_template_identity(template, stats):
 
 
 async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
-                          selected_slots=None, set_id=None, storage=None, required_levels=(None, None)):
+                          selected_slots=None, set_id=None, storage=None, candidate_filters=None):
     candidates = []
     skipped = []
     offset = 0
     representatives = {}
     count = None
-    filters = {"item_ids": item_ids} if item_ids else {}
+    filters = dict(candidate_filters or {})
+    if item_ids:
+        filters["item_ids"] = item_ids
     if set_id is not None:
         filters["set_id"] = set_id
     if storage is not None:
         filters["storage"] = storage
-    for field, value in zip(("minimum_required_level", "maximum_required_level"), required_levels, strict=True):
-        if value is not None:
-            filters[field] = value
     while True:
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
@@ -153,7 +152,7 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
-                  max_swaps=None, required_levels=(None, None)):
+                  max_swaps=None, candidate_filters=None):
     params = StdioServerParameters(command=str(binary), env=dict(os.environ))
     async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
         await session.initialize()
@@ -194,7 +193,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             simultaneous_slots = (slot,) if max_swaps == 1 else slots
             candidates, exclusions, coverage = await slot_candidates(
                 call, slot, multi, collapse_identical, item_ids, can_dual_wield,
-                simultaneous_slots, set_id, storage, required_levels,
+                simultaneous_slots, set_id, storage, candidate_filters,
             )
             skipped.extend(exclusions)
             options.append([None, *candidates])
@@ -417,6 +416,8 @@ def main():
                         help="Restrict alternatives to one captured storage section.")
     parser.add_argument("--minimum-required-level", type=int, help="Inclusive minimum recorded equip level.")
     parser.add_argument("--maximum-required-level", type=int, help="Inclusive maximum recorded equip level.")
+    parser.add_argument("--observed-enchant-effect-id", type=int, help="Match an exact captured enchant effect ID.")
+    parser.add_argument("--observed-random-suffix-id", type=int, help="Match an exact captured signed suffix ID.")
     swap_limit = parser.add_mutually_exclusive_group()
     swap_limit.add_argument("--single-swaps", action="store_const", const=1, dest="max_swaps",
                             help="Compare one selected replacement at a time across the requested slots.")
@@ -447,6 +448,19 @@ def main():
     if (any(value is not None and not 0 <= value <= 2**32 - 1 for value in (minimum, maximum))
             or minimum is not None and maximum is not None and minimum > maximum):
         parser.error("Provide ordered non-negative required-level bounds")
+    enchant, suffix = args.observed_enchant_effect_id, args.observed_random_suffix_id
+    if enchant is not None and not 1 <= enchant <= 2**32 - 1:
+        parser.error("Provide a positive enchant effect ID")
+    if suffix is not None and not -(2**31) <= suffix < 2**31:
+        parser.error("Provide a signed 32-bit suffix ID")
+    candidate_filters = {
+        field: value for field, value in {
+            "minimum_required_level": minimum,
+            "maximum_required_level": maximum,
+            "observed_enchant_effect_id": enchant,
+            "observed_random_suffix_id": suffix,
+        }.items() if value is not None
+    }
     if args.plan_only:
         if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
                 or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
@@ -495,7 +509,7 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
-                        args.max_swaps, (minimum, maximum)), timeout=45,
+                        args.max_swaps, candidate_filters), timeout=45,
             ))
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
@@ -539,6 +553,8 @@ def main():
             result["requested_storage"] = args.storage
         if minimum is not None or maximum is not None:
             result["requested_required_levels"] = {"minimum": minimum, "maximum": maximum}
+        if enchant is not None or suffix is not None:
+            result["requested_observed_modifiers"] = {"enchant_effect_id": enchant, "random_suffix_id": suffix}
         if args.max_swaps is not None:
             result["max_swaps"] = args.max_swaps
         if args.max_swaps == 1:
