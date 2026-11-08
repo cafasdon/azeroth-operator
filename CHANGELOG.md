@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare copper and stock for matched saved Forever merchant offers.
+
 - Report lessons seen in only one saved Forever trainer panel.
 
 - Compare captured Forever trainer lesson prerequisites across saved visits.

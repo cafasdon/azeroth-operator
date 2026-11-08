@@ -647,6 +647,15 @@ pub fn compare_observations(
     }
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
+    let merchant_before = before.sections.get("merchant_stock");
+    let merchant_after = after.sections.get("merchant_stock");
+    if merchant_before.is_some() || merchant_after.is_some() {
+        comparison["merchant_offer_changes"] = json!(
+            merchant_before
+                .zip(merchant_after)
+                .and_then(|(old, new)| compare_merchant_offers(old, new))
+        );
+    }
     let trainer_before = before.sections.get("trainer_services");
     let trainer_after = after.sections.get("trainer_services");
     if trainer_before.is_some() || trainer_after.is_some() {
@@ -1617,6 +1626,39 @@ fn standard_reputation_workload(section: &Value) -> Option<Value> {
         json!({"capped_factions":capped,"factions_with_observed_rank_gap":rows.len(),
         "closest_to_next_rank":closest}),
     )
+}
+
+fn compare_merchant_offers(before: &Value, after: &Value) -> Option<Vec<Value>> {
+    type OfferKey = (&'static str, u64, u64);
+    fn by_product(panel: &Value) -> Option<BTreeMap<OfferKey, Option<&Value>>> {
+        let mut offers = BTreeMap::new();
+        for row in panel.as_object()?.values() {
+            let (kind, id) = row["item_id"]
+                .as_u64()
+                .map(|id| ("item", id))
+                .or_else(|| row["currency_id"].as_u64().map(|id| ("currency", id)))?;
+            let key = (kind, id, row["bundle_size"].as_u64()?);
+            offers
+                .entry(key)
+                .and_modify(|row| *row = None)
+                .or_insert(Some(row));
+        }
+        Some(offers)
+    }
+    let current = by_product(after)?;
+    Some(by_product(before)?.into_iter().filter_map(|((kind, id, size), old)| {
+        let (old, new) = old.zip(current.get(&(kind, id, size)).copied().flatten())?;
+        let old_price = old["price_copper"].as_i64()?;
+        let new_price = new["price_copper"].as_i64()?;
+        (old_price != new_price || old["available"] != new["available"]
+            || old["extended_cost"] != new["extended_cost"]).then(|| json!({
+                "product_kind":kind,"product_id":id,"bundle_size":size,
+                "before_price_copper":old_price,"after_price_copper":new_price,
+                "price_copper_delta":new_price-old_price,
+                "before_available":old["available"],"after_available":new["available"],
+                "before_extended_cost":old["extended_cost"],"after_extended_cost":new["extended_cost"]
+            }))
+    }).collect())
 }
 
 fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {

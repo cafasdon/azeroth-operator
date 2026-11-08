@@ -329,6 +329,12 @@ offers retain their original slots for later budget review. A zero match
 count means the stock was captured and had no matching offers. Unknown
 stock gives an unknown match count.
 
+`compare_snapshots.merchant_offer_changes` compares copper prices, raw
+stock and extended-cost flags for offers with the same product kind,
+ID and bundle size. A match must be unique in both captures. The result
+compares the saved panels and does not identify a merchant or compare
+extended cost components. Missing stock on either side leaves it unknown.
+
 Add `merchant_target_quantity` from 1 to 1000 to calculate whole bundles,
 units received, surplus and copper for each matching offer. Extended
 costs and recorded stock are flagged separately. Use the returned slot
