@@ -717,6 +717,11 @@ Fixed paired DPS runs with at least two distinct inputs also report
 `observed_leading_dps_pair`, the observed gap and paired standard error
 between the two highest estimated results. Identical inputs count once.
 The pair is selected on the same samples, so the gap is descriptive.
+Use `--paired --confirm-leading-seed` with 200–5,000 iterations and a seed
+at least that many integers away from each original seed to rerun those two
+sets only. The confirmation reports the original leader minus the
+original runner-up on fresh samples, including when the order reverses.
+It adds a fixed comparison per distinct encounter with two eligible sets.
 
 Repeat `--encounter-lookup` up to four times to rank the same saved gear drafts
 separately for each encounter. Output uses an `encounters` array in input order,

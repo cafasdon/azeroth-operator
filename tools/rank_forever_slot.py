@@ -335,6 +335,28 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None):
             args.engine, args.engine_sha256, requests, paired=args.paired,
             tank_metrics=tank_ranking, healing_metrics=healing_ranking)
     result.update(encounter_summary(requests[0]))
+    if args.confirm_leading_seed is not None:
+        pair = result.get("observed_leading_dps_pair")
+        confirmation = {"seed": str(args.confirm_leading_seed), "status": "no_distinct_pair"}
+        if pair is not None:
+            # Keep the original runner-up as the reference even if the order reverses.
+            reviews = (pair["runner_up_review"], pair["leading_review"])
+            selected = [requests[review - 1] for review in reviews]
+            fresh = [
+                {**request, "simOptions": {**request["simOptions"], "randomSeed": confirmation["seed"]}}
+                for request in selected
+            ]
+            _, leader = compare(args.engine, args.engine_sha256, fresh, paired=True)["results"]
+            confirmation.update(
+                status="compared",
+                leading_review=reviews[1],
+                runner_up_review=reviews[0],
+                iterations=leader["iterations"],
+                mean_dps_gap=leader["mean_dps_delta_from_baseline"],
+                paired_dps_standard_error=leader["paired_dps_standard_error"],
+                paired_dps_gap_interval_approx_95=leader["paired_dps_delta_interval_approx_95"],
+            )
+        result["leading_dps_confirmation"] = confirmation
     if audit is not None:
         audit["fixed_wall_seconds"] = after_fixed - start
         audit["staged_wall_seconds"] = staged_wall
@@ -436,6 +458,8 @@ def main():
     parser.add_argument("--encounter-weight", type=float, action="append",
                         help="Relative weight in encounter input order. Fixed comparisons only.")
     parser.add_argument("--paired", action="store_true")
+    parser.add_argument("--confirm-leading-seed", type=int,
+                        help="Rerun the top two distinct fixed paired DPS sets with this fresh seed.")
     parser.add_argument("--rank-by", choices=("dps", "dtps", "tps", "death", "hps", "oom"), default="dps",
                         help="Rank by damage dealt, damage taken, threat, deaths, healing or time out of mana")
     parser.add_argument("--bulk-engine", type=Path, help="Trusted local Forever bulk adapter")
@@ -464,10 +488,16 @@ def main():
     if args.plan_only:
         if (args.engine or args.engine_sha256 or args.encounter_lookup or args.bulk_engine
                 or args.bulk_engine_sha256 or args.paired or args.audit_shortlist
-                or args.encounter_weight or args.rank_by != "dps"):
+                or args.encounter_weight or args.rank_by != "dps"
+                or args.confirm_leading_seed is not None):
             parser.error("--plan-only takes no simulator or encounter options")
     elif not (args.engine and args.engine_sha256 and args.encounter_lookup):
         parser.error("--engine, --engine-sha256 and --encounter-lookup are required for simulation")
+    if args.confirm_leading_seed is not None and (
+        not 1 <= args.confirm_leading_seed <= 2**32 - 1
+        or not args.paired or args.bulk_engine or args.rank_by != "dps"
+    ):
+        parser.error("Confirmation requires a positive 32-bit seed and fixed paired DPS mode")
     try:
         if not args.mcp.is_absolute() or not args.mcp.is_file():
             raise ValueError("Provide an absolute local MCP executable path")
@@ -514,6 +544,13 @@ def main():
         identity = check_template_identity(template, stats)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
                          if set_observation is not None else None)
+        if args.confirm_leading_seed is not None:
+            for encounter in encounters:
+                options = request_from(template, drafts[0][1], encounter)["simOptions"]
+                iterations = options["iterations"]
+                # The engine advances the seed once per iteration.
+                if not 200 <= iterations <= 5000 or abs(int(options["randomSeed"]) - args.confirm_leading_seed) < iterations:
+                    parser.exit(1, "Confirmation requires 200–5,000 iterations and non-overlapping seed ranges.\n")
         if args.plan_only:
             result = {
                 "mode": "plan_only",

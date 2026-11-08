@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rerun the two leading Forever DPS gear sets with a fresh seed for an independent paired comparison.
+
 - Narrow Forever ranker alternatives by captured enchant effect and random suffix.
 
 - Narrow Forever gear ranking and preview candidates by recorded equip level.
