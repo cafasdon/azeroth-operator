@@ -277,6 +277,8 @@ pub struct CaptureFilters<'a> {
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_max_price_copper: Option<u64>,
+    pub merchant_in_stock_only: bool,
+    pub merchant_copper_only: bool,
     pub trainer_service_name: Option<&'a str>,
     pub trainer_service_status: Option<&'a str>,
     pub trainer_max_price_copper: Option<u64>,
@@ -378,6 +380,8 @@ impl Store {
             merchant_item_id,
             merchant_currency_id,
             merchant_max_price_copper,
+            merchant_in_stock_only,
+            merchant_copper_only,
             trainer_service_name,
             trainer_service_status,
             trainer_max_price_copper,
@@ -444,6 +448,10 @@ impl Store {
         let merchant_product = merchant_item_id
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
+        ensure!(
+            !(merchant_in_stock_only || merchant_copper_only) || merchant_product.is_some(),
+            "Merchant stock and cost filters require a product ID"
+        );
         ensure!(
             merchant_max_price_copper
                 .is_none_or(|price| merchant_product.is_some() && price <= 9_999_999_999_999),
@@ -562,6 +570,13 @@ impl Store {
                                     .values()
                                     .filter(|offer| {
                                         offer[field].as_u64() == Some(u64::from(id))
+                                            && (!merchant_in_stock_only
+                                                || matches!(
+                                                    offer["available"].as_i64(),
+                                                    Some(-1 | 1..)
+                                                ))
+                                            && (!merchant_copper_only
+                                                || offer["extended_cost"] == false)
                                             && merchant_max_price_copper.is_none_or(|maximum| {
                                                 offer["price_copper"]
                                                     .as_u64()

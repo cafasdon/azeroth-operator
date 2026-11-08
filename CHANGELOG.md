@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever merchant visits by recorded stock and copper-only offers.
+
 - Filter saved Forever merchant visits by the copper price per bundle.
 
 - Find saved Forever merchant visits by the exact offered currency ID.

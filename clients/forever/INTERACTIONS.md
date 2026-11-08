@@ -379,6 +379,9 @@ combines with the character, recipe and instance filters before pagination.
 Set `merchant_max_price_copper` with a product ID to limit the captured
 copper price per bundle. A zero ceiling matches zero-copper offers.
 Stock and extended costs are separate from this price filter.
+With a product ID, set `merchant_in_stock_only` to require positive
+or unlimited recorded stock and `merchant_copper_only` to exclude
+extended costs. All selected filters must match the same offer.
 
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper

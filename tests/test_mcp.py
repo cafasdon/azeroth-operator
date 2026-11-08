@@ -824,6 +824,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(above_ceiling.isError)
                         self.assertEqual(json.loads(above_ceiling.content[0].text)["snapshots"], [])
+                        in_stock = await session.call_tool("list_snapshots", {
+                            "family": "forever", "merchant_item_id": 744,
+                            "merchant_in_stock_only": True, "merchant_copper_only": True,
+                        })
+                        self.assertFalse(in_stock.isError)
+                        in_stock_rows = json.loads(in_stock.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in in_stock_rows], [merchant_key])
+                        self.assertEqual(in_stock_rows[0]["merchant_match"]["offer_count"], 1)
                         priced_inventory = json.loads(json.dumps(refreshed))
                         priced_inventory["sections"]["wallet"] = {"copper": 11}
                         priced_inventory_key = SnapshotStore(Path(folder)).ingest(priced_inventory)
