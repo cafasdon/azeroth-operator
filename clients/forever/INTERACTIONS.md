@@ -579,6 +579,10 @@ Set `quest_list_wallet_projection` to total captured costs and rewards
 across retained quests. The affordability check compares the combined
 cost with the saved wallet before any reward is credited. Unknown costs
 and rewards are counted separately.
+Set `quest_list_currency_projection` to total known fixed currency rewards
+from the retained quests and compare them with the same capture's cap
+headroom. Choice rewards are separate, and missing fixed reward lists
+are counted. Missing cap information leaves the comparison unknown.
 Use `quest_min_reward_xp` to keep quests with at least that much captured
 XP. Unknown rewards are excluded and counted before the copper filters.
 Set `quest_list_xp_projection` to total observed XP across retained quests.

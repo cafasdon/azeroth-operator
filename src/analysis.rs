@@ -1298,6 +1298,38 @@ pub fn currency_reward_projection(proposed: u64, entry: &Value, caps: &Value) ->
     })
 }
 
+pub fn quest_list_currency_projection(
+    quests: &serde_json::Map<String, Value>,
+    balances: &Value,
+) -> Value {
+    let mut totals = BTreeMap::<String, u128>::new();
+    let mut unknown = 0;
+    for quest in quests.values() {
+        let Some(rows) = quest["currency_rewards"].as_object() else {
+            unknown += 1;
+            continue;
+        };
+        for row in rows.values() {
+            if let (Some(id), Some(quantity)) =
+                (row["currency_id"].as_u64(), row["quantity"].as_u64())
+            {
+                *totals.entry(id.to_string()).or_default() += u128::from(quantity);
+            }
+        }
+    }
+    let headroom = currency_cap_headroom(balances);
+    let projections: BTreeMap<_, _> = totals
+        .into_iter()
+        .map(|(id, total)| {
+            let projection = u64::try_from(total).ok().map(|quantity| {
+                currency_reward_projection(quantity, &balances["entries"][&id], &headroom[&id])
+            });
+            (id, projection)
+        })
+        .collect();
+    json!({"known_fixed_rewards":projections,"unknown_fixed_reward_list_count":unknown})
+}
+
 pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

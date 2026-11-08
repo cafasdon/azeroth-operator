@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare combined fixed Forever quest currency rewards with captured cap headroom.
+
 - Budget combined copper costs and rewards for filtered saved Forever quest lists.
 
 - Project combined XP from filtered saved Forever quests against the captured level threshold.
