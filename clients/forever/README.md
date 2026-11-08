@@ -4,6 +4,17 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+`inspect_snapshot` accepts `section: "profession_recipe_view"` for the saved
+filtered recipe list of a visible local crafting page. It includes the current
+profession ID and recipe IDs, with names and learned flags where readable.
+Linked, guild, NPC and inspection contexts are excluded. The exporter does not
+open the page, change filters or choose recipes. Missing detail stays unknown;
+absence from this filtered list does not mean a recipe is unlearned.
+`character_summary.profession_recipe_view_counts` reports observed, learned,
+unlearned and unknown-learning row counts, or null if the section is unavailable.
+This is not a full learned-recipe catalogue or a crafting/material review for
+every listed recipe. See [verification](../../docs/profession-recipe-view-verification-2026-11-08.md).
+
 Saved mount collections are available through `inspect_snapshot` with
 `section: "mount_collection"`; `character_summary` reports the observed
 collected count. This is source-tested read-only support, with native capture

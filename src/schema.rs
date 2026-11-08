@@ -98,6 +98,32 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "profession_recipe_view" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("profession_id", "positive", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "filtered_local_recipe_list",
+                "Invalid profession recipe coverage"
+            );
+            entries(
+                &value["entries"],
+                &[("name", "text", false), ("learned", "bool", false)],
+            )?;
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(
+                rows.len() <= 4096
+                    && rows.values().all(|row| row["name"]
+                        .as_str()
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256)),
+                "Invalid profession recipe rows"
+            );
+        }
         "saved_world_bosses" => {
             object(
                 value,

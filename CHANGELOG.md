@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture the visible local profession recipe list with explicit filtered coverage and learned/unlearned/unknown observations, excluding external crafting contexts.
+
 - Let identical-item collapsing deduplicate complete resolved gear drafts before applying the distinct alternative budget, retaining physical review locations.
 
 - Add repeated-seed offline qualification of staged gear shortlists against fixed runs, with missed-contender and timing reports.

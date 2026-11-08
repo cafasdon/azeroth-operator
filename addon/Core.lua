@@ -47,6 +47,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"
         sectionNames[#sectionNames+1]="tracked_recipes"
+        sectionNames[#sectionNames+1]="profession_recipe_view"
         sectionNames[#sectionNames+1]="reputation"
         sectionNames[#sectionNames+1]="currency_balances"
         sectionNames[#sectionNames+1]="tracked_achievements"

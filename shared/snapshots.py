@@ -12,6 +12,7 @@ from shared.clients import ClientFamily, ClientIdentity
 MAX_BYTES = 4 * 1024 * 1024
 SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "selected_recipe", "tracked_recipes", "reputation", "currency_balances", "wallet", "experience", "spellbook", "flight_map", "durability_alerts", "repair_quote", "merchant_stock", "trainer_services", "pet_care", "skill_lines", "bag_capacity", "instance_context", "tracked_achievements", "talents", "stats", "professions", "quests", "currencies", "achievements", "macros", "bindings", "action_bars", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"})
 SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instances", "saved_world_bosses"}
+SECTIONS = SECTIONS | {"profession_recipe_view"}
 
 
 def _validate_action_bar_observation(observation):
@@ -100,6 +101,22 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    if "profession_recipe_view" in sections:
+        view = sections["profession_recipe_view"]
+        if (c["family"] != "forever" or not isinstance(view, dict)
+                or set(view) != {"coverage", "profession_id", "entries"}
+                or view["coverage"] != "filtered_local_recipe_list"
+                or type(view["profession_id"]) is not int or not 1 <= view["profession_id"] <= 4_294_967_295
+                or not isinstance(view["entries"], dict) or len(view["entries"]) > 4096):
+            raise ValueError("Invalid profession recipe view")
+        for key, row in view["entries"].items():
+            if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()
+                    or str(int(key)) != key or not 1 <= int(key) <= 4_294_967_295
+                    or not isinstance(row, dict) or set(row) - {"name", "learned"}
+                    or (row.get("name") is not None and (not isinstance(row["name"], str)
+                        or not 1 <= len(row["name"].encode()) <= 256))
+                    or (row.get("learned") is not None and type(row["learned"]) is not bool)):
+                raise ValueError("Invalid profession recipe row")
     if "saved_world_bosses" in sections:
         saved = sections["saved_world_bosses"]
         if (c["family"] != "forever" or not isinstance(saved, dict)

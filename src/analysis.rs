@@ -4295,6 +4295,13 @@ pub fn summary(s: &Snapshot) -> Value {
             .and_then(|collection| collection["entries"].as_object())
             .map(|entries| entries.len())
     );
+    summary["profession_recipe_view_counts"] = s.sections.get("profession_recipe_view").map(|view| {
+        let rows = view["entries"].as_object().unwrap();
+        json!({"observed":rows.len(),
+            "learned":rows.values().filter(|row| row["learned"] == true).count(),
+            "unlearned":rows.values().filter(|row| row["learned"] == false).count(),
+            "learning_unknown":rows.values().filter(|row| row["learned"].as_bool().is_none()).count()})
+    }).unwrap_or(Value::Null);
     summary["saved_world_bosses_observed"] = json!(
         s.sections
             .get("saved_world_bosses")

@@ -642,6 +642,69 @@ AO.collectors.professions = function()
     return result
 end
 
+AO.collectors.profession_recipe_view = function()
+    local api=C_TradeSkillUI
+    local page=ProfessionsFrame and ProfessionsFrame.CraftingPage
+    assert(AO.family=="forever" and page and page.IsVisible and Professions
+        and Professions.InLocalCraftingMode and Professions.IsViewingExternalCraftingList
+        and Professions.GetProfessionInfo and api and api.GetFilteredRecipeIDs
+        and api.GetRecipeInfo and api.IsNPCCrafting and api.IsDataSourceChanging, "Local recipe list unavailable")
+    local function readable(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted recipe list observation")
+        return value
+    end
+    local function positive(value)
+        value=readable(value)
+        assert(type(value)=="number" and value%1==0 and value>=1 and value<=4294967295, "Invalid recipe list ID")
+        return value
+    end
+    local function context()
+        assert(readable(api.IsDataSourceChanging())==false, "Recipe list source is changing")
+        local inspecting=page.SchematicForm and readable(page.SchematicForm.isInspection)
+        assert(inspecting==nil or inspecting==false, "Inspection recipe list")
+        assert(readable(page:IsVisible())==true and readable(Professions.InLocalCraftingMode())==true
+            and readable(Professions.IsViewingExternalCraftingList())==false
+            and readable(api.IsNPCCrafting())==false, "Nonlocal recipe list")
+        local info=readable(Professions.GetProfessionInfo())
+        assert(type(info)=="table", "Profession unavailable")
+        return positive(info.professionID)
+    end
+    local function ids()
+        local values=readable(api.GetFilteredRecipeIDs())
+        assert(type(values)=="table" and #values<=4096, "Recipe list unavailable")
+        local result,seen,count={},{},0
+        for index,id in pairs(values) do
+            assert(type(index)=="number" and index%1==0 and index>=1 and index<=#values, "Sparse recipe list")
+            id=positive(id)
+            assert(not seen[id], "Duplicate recipe list ID")
+            seen[id]=true;result[index]=id;count=count+1
+        end
+        assert(count==#values, "Incomplete recipe list")
+        return result
+    end
+    local profession=context()
+    local list=ids()
+    local rows={}
+    for _,id in ipairs(list) do
+        local info=readable(api.GetRecipeInfo(id))
+        local row={}
+        if info~=nil then
+            assert(type(info)=="table" and positive(info.recipeID)==id, "Recipe list identity mismatch")
+            local name=readable(info.name)
+            if name~=nil then
+                assert(type(name)=="string" and #name>0 and #name<=256, "Invalid recipe list name")
+                row.name=name
+            end
+            local learned=readable(info.learned)
+            if learned~=nil then assert(type(learned)=="boolean", "Invalid recipe learning flag");row.learned=learned end
+        end
+        rows[tostring(id)]=row
+    end
+    local final=ids()
+    assert(context()==profession and #final==#list, "Recipe list context changed")
+    for index,id in ipairs(list) do assert(final[index]==id, "Recipe list changed") end
+    return {coverage="filtered_local_recipe_list",profession_id=profession,entries=rows}
+end
 AO.collectors.tracked_recipes = function()
     local api=C_TradeSkillUI
     local function accessible(value)
