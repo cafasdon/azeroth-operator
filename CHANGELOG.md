@@ -1,5 +1,8 @@
 # Changelog
 
+- Price shared consumable-restock reagent shortfalls from captured merchant
+  offers, with explicit inventory-wallet provenance and unknown quote states.
+
 - Plan confirmed consumable restock shortages from exact bulk recipe selectors,
   including mixed selected/bulk captures and shared reagent accounting, while
   retaining the legacy capture-ID input.

@@ -4004,18 +4004,11 @@ pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Sna
     ) else {
         return Value::Null;
     };
-    let demands = materials.iter().filter_map(|material| {
-        let item = material["item_id"].as_u64()?;
-        let shortfall = material["shortfall_vs_observed"].as_u64();
-        (shortfall != Some(0) && material["required_before_batch"].as_u64() != Some(0))
-            .then_some((item, shortfall))
-    });
     let wallet = inventory
         .sections
         .get("wallet")
         .and_then(|row| row["copper"].as_u64());
-    let mut plan = merchant_reagent_budget(demands, offers, wallet);
-    plan["merchant_captured_at"] = json!(merchant.captured_at);
+    let mut plan = material_merchant_plan(materials, merchant, inventory);
     let checkpoint = &review["ordered_material_checkpoint"]["first_uncovered_recipe"];
     if let Some(blockers) = checkpoint["blocking_reagents_by_item_id"].as_object() {
         let demands = blockers.iter().filter_map(|(id, row)| {
@@ -4029,6 +4022,34 @@ pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Sna
         }
         plan["first_uncovered_recipe_budget"] = budget;
     }
+    plan
+}
+
+/// Price already combined material shortfalls without inventing a recipe observation.
+pub fn material_merchant_plan(
+    materials: &[Value],
+    merchant: &Snapshot,
+    inventory: &Snapshot,
+) -> Value {
+    let Some(offers) = merchant
+        .sections
+        .get("merchant_stock")
+        .and_then(Value::as_object)
+    else {
+        return Value::Null;
+    };
+    let demands = materials.iter().filter_map(|material| {
+        let item = material["item_id"].as_u64()?;
+        let shortfall = material["shortfall_vs_observed"].as_u64();
+        (shortfall != Some(0) && material["required_before_batch"].as_u64() != Some(0))
+            .then_some((item, shortfall))
+    });
+    let wallet = inventory
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let mut plan = merchant_reagent_budget(demands, offers, wallet);
+    plan["merchant_captured_at"] = json!(merchant.captured_at);
     plan
 }
 

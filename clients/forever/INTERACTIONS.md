@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Restock crafting can opt into `restock_merchant_reagent_plan`. It prices combined
+reagent shortfalls once, rather than pricing each recipe against the same stock
+independently. Offers default to the inventory capture or an explicit compatible
+`restock_merchant_snapshot_id`; the wallet always comes from the acquisition
+inventory. Missing offers yield null, and missing applicable unlimited copper-only
+quotes leave totals/affordability unknown. Quotes retain their capture timestamp
+and do not verify purchase eligibility or execute transactions.
+
 Consumable target lookups can supply `restock_recipes`, one to eight objects
 with `snapshot_id` and optional `recipe_id`. Exact IDs use fixed bulk materials;
 omission uses the selected schematic. Multiple different outputs may use one

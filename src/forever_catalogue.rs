@@ -172,6 +172,11 @@ pub struct Query {
     pub restock_recipe_snapshot_ids: Option<Vec<String>>,
     /// Up to eight selected or exact bulk recipes for confirmed restock shortages; replaces the legacy capture-ID list.
     pub restock_recipes: Option<Vec<RestockRecipe>>,
+    /// Price combined restock reagent shortfalls against captured merchant offers.
+    #[serde(default)]
+    pub restock_merchant_reagent_plan: bool,
+    /// Optional same-character, exact-client/build offer capture; wallet remains the acquisition inventory's.
+    pub restock_merchant_snapshot_id: Option<String>,
     /// Match the exact groupKey recorded by the pinned simulator for consumable buffs.
     pub consumable_group_key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
@@ -622,6 +627,16 @@ pub struct RestockRecipe {
 }
 
 pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
+    ensure!(
+        query.restock_merchant_snapshot_id.is_none() || query.restock_merchant_reagent_plan,
+        "Restock merchant snapshot requires a reagent quote plan"
+    );
+    ensure!(
+        !query.restock_merchant_reagent_plan
+            || query.restock_recipes.is_some()
+            || query.restock_recipe_snapshot_ids.is_some(),
+        "Restock reagent quotes require restock recipes"
+    );
     ensure!(
         query.restock_recipes.is_none() || query.restock_recipe_snapshot_ids.is_none(),
         "Supply one restock recipe selector list"

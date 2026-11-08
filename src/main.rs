@@ -887,6 +887,34 @@ impl Operator {
                 if let Some(recipes) = restock_recipes {
                     self.add_restock_crafting(&snapshot, &mut progress, recipes)?;
                 }
+                if query.restock_merchant_reagent_plan {
+                    let merchant = query
+                        .restock_merchant_snapshot_id
+                        .as_deref()
+                        .map(|id| self.store.read(id))
+                        .transpose()?;
+                    if let Some(merchant) = &merchant {
+                        azeroth_operator::analysis::ensure_same_character_and_client(
+                            &snapshot, merchant,
+                        )?;
+                    }
+                    let materials = progress["crafting_plan"]["combined_materials"]
+                        .as_array()
+                        .ok_or_else(|| anyhow::anyhow!("Restock materials unavailable"))?;
+                    let mut quote = azeroth_operator::analysis::material_merchant_plan(
+                        materials,
+                        merchant.as_ref().unwrap_or(&snapshot),
+                        &snapshot,
+                    );
+                    if !quote.is_null() {
+                        quote["game_execution"] = serde_json::json!(false);
+                        quote["purchase_eligibility_verified"] = serde_json::json!(false);
+                    }
+                    progress["crafting_plan"]["merchant_reagent_plan"] = quote;
+                    if let Some(id) = query.restock_merchant_snapshot_id {
+                        progress["crafting_plan"]["merchant_snapshot_id"] = serde_json::json!(id);
+                    }
+                }
                 progress["snapshot_id"] = serde_json::json!(id);
                 data["acquisition_progress"] = progress;
             }

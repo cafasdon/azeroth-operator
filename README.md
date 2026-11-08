@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Restock crafting plans can opt into `restock_merchant_reagent_plan` to price
+combined reagent shortfalls from saved merchant offers. An optional
+`restock_merchant_snapshot_id` supplies compatible offers; affordability always
+uses the chosen inventory's wallet. Bundle rounding and incomplete/limited/
+extended-cost quotes remain explicit. These are historical estimates, with no
+purchase or craft eligibility verified.
+[Offline evidence](docs/restock-reagent-quotes-verification-2026-11-08.md).
+
 Consumable restocking accepts `restock_recipes` selectors containing a saved
 snapshot ID and optional exact bulk `recipe_id`. Several recipes can come from
 one capture; selected and bulk recipes can share one compatible inventory.
