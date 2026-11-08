@@ -48,3 +48,8 @@ does not retest their historical results or assert that every callable route is
 listed here. No game action, external data sync or live deployment was performed.
 The broad goal remains incomplete; this map keeps its largest missing outcomes
 visible alongside the implemented observations.
+
+The subsequent [profession bulk-data audit](profession-bulk-data-audit-2026-11-08.md)
+pins the documented per-recipe schematic API and separates the existing
+known-spell ID capture from the missing bulk material capture. Native
+availability and responsiveness remain unqualified.
