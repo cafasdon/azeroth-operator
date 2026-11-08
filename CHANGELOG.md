@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Check whether a saved Forever flight route fits the starting wallet while preserving a copper reserve.
+
 - Find the cheapest fully quoted Forever flight route across explicitly selected saved panels.
 
 - Compare saved flight affordability for shared reachable routes using each capture's wallet.

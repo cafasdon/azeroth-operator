@@ -1285,10 +1285,12 @@ impl Operator {
         }
         if args.flight_wallet_reserve_copper.is_some_and(|reserve| {
             reserve > 9_999_999_999_999
-                || !(args.flight_wallet_projection || args.flight_affordable_only)
+                || !(args.flight_wallet_projection
+                    || args.flight_affordable_only
+                    || args.flight_route_search.is_some())
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Flight reserve requires an affordability filter or wallet projection and a valid copper amount",
+                "Flight reserve requires an affordability filter, wallet projection or route search and a valid copper amount",
             )]);
         }
         if args.flight_route_search.as_ref().is_some_and(|search| {
@@ -1829,6 +1831,7 @@ impl Operator {
                         azeroth_operator::analysis::plan_saved_flights(
                             &captures,
                             search.destination_node_id.get(),
+                            args.flight_wallet_reserve_copper,
                         )
                     })();
                     match result {

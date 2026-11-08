@@ -2427,7 +2427,11 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
 }
 
-pub fn plan_saved_flights(captures: &[(&str, Snapshot)], destination: u32) -> Result<Value> {
+pub fn plan_saved_flights(
+    captures: &[(&str, Snapshot)],
+    destination: u32,
+    reserve: Option<u64>,
+) -> Result<Value> {
     let (_, first) = captures
         .first()
         .ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
@@ -2512,11 +2516,17 @@ pub fn plan_saved_flights(captures: &[(&str, Snapshot)], destination: u32) -> Re
         .sections
         .get("wallet")
         .and_then(|wallet| wallet["copper"].as_u64());
-    Ok(
-        json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
+    let mut plan = json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
         "legs":legs,"total_fare_copper":fare,
-        "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)}),
-    )
+        "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)});
+    if let Some(reserve) = reserve {
+        plan["affordable_with_reserve"] = json!(wallet.map(|balance| {
+            balance
+                .checked_sub(reserve)
+                .is_some_and(|spendable| fare <= spendable)
+        }));
+    }
+    Ok(plan)
 }
 
 fn captured_flight_fare_summary(map: &Value) -> Option<Value> {

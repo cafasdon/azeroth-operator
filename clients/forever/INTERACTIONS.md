@@ -830,6 +830,10 @@ prefer fewer legs, then compare each leg in order by panel input position
 and destination node ID. It uses only reachable destinations
 with quoted fares and excludes map transitions. The plan includes the
 saved panel for each leg and checks the starting wallet when available.
+Add `flight_wallet_reserve_copper` to check whether the whole route fits
+while preserving that amount. The plan reports `affordable_with_reserve`
+separately from fare-only affordability. A missing starting wallet makes
+both checks unknown.
 `no_fully_priced_route` describes the supplied captures. Routes are
 historical observations and may have different capture times.
 

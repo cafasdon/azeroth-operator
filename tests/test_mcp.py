@@ -356,6 +356,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([leg["snapshot_id"] for leg in plan["legs"]],
                                          [route_start_id, route_onward_id])
                         self.assertTrue(plan["affordable_from_starting_wallet"])
+                        self.assertNotIn("affordable_with_reserve", plan)
+                        for reserve, expected in [(4_999_999_998, True), (4_999_999_999, False)]:
+                            reserved = await session.call_tool("inspect_snapshot", {
+                                **route_request, "flight_wallet_reserve_copper": reserve,
+                            })
+                            self.assertFalse(reserved.isError)
+                            result = json.loads(reserved.content[0].text)
+                            self.assertEqual(result["flight_wallet_reserve_copper"], reserve)
+                            reserved_plan = result["flight_route_search"]
+                            self.assertTrue(reserved_plan["affordable_from_starting_wallet"])
+                            self.assertEqual(reserved_plan["affordable_with_reserve"], expected)
+                            self.assertEqual(reserved_plan["legs"], plan["legs"])
                         del route_onward["sections"]["flight_map"]
                         without_panel = SnapshotStore(Path(folder)).ingest(route_onward)
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
