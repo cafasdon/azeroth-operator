@@ -1238,9 +1238,16 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("entries", "map", true),
                     ("pet_training_points_available", "uint", false),
                     ("pet_level", "positive", false),
+                    ("primary_profession_slots_full", "bool", false),
                 ],
             )?;
             let pet = value["kind"] == "pet";
+            ensure!(
+                value
+                    .get("primary_profession_slots_full")
+                    .is_none_or(|v| !pet && !v.is_null()),
+                "Invalid trainer profession slots"
+            );
             ensure!(
                 matches!(
                     value["kind"].as_str(),
@@ -1269,12 +1276,18 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("status", "text", true),
                         ("required_level", "positive", false),
                         ("rank_label", "text", false),
+                        ("is_profession", "bool", false),
                         ("skill_requirement", "map", false),
                         ("ability_requirements", "map", false),
                         ("price_copper", "wallet_copper", false),
                         ("price_training_points", "uint", false),
                     ],
                 )?;
+                ensure!(
+                    row.get("is_profession")
+                        .is_none_or(|v| !pet && !v.is_null() && row["status"] != "used"),
+                    "Invalid trainer profession flag"
+                );
                 ensure!(
                     matches!(
                         row["status"].as_str(),

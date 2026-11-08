@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Capture trainer profession-acquisition flags and primary-slot fullness, report known slot blockers separately from monetary affordability, and reject changing lesson observations.
+
 - Search saved visible spellbook rows by base/reported spell ID, passive/off-spec flags and reported learn-level bounds, retaining partial coverage and unknown metadata.
 
 - Capture optional stable reported learn levels for observed spellbook spells and compare exact-spell metadata sets, preserving unknowns and level-linked changes.

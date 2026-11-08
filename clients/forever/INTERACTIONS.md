@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Trainer observations can include the native profession-acquisition flag and
+stable derived primary-slot fullness. Requirements review reports known
+slot blockers independently of budgets, preserving unknowns and leaving
+eligibility unverified. Lesson data must agree across two reads. No filters,
+profession changes or training actions are performed.
+[Offline evidence](../../docs/trainer-profession-slots-verification-2026-11-08.md).
+
 `list_snapshots.spellbook_spell` searches saved visible player spell rows by
 base/reported ID and optional passive/off-spec/reported-learn-level metadata.
 Predicates apply to one row; unknowns do not count as false or zero. Output

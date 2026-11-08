@@ -3568,6 +3568,18 @@ pub fn trainer_requirements_review(
     if trainer["kind"] == "pet" {
         review["captured_pet_level"] = json!(pet_level);
     }
+    review["profession_slot_checks"] = if trainer["kind"] == "pet" {
+        Value::Null
+    } else {
+        let full = trainer["primary_profession_slots_full"].as_bool();
+        let checks:BTreeMap<_,_>=entries.iter().filter(|(_,lesson)|lesson["status"]!="used")
+            .map(|(slot,lesson)| {
+                let is_profession=lesson["is_profession"].as_bool();
+                let blocked=match is_profession {Some(true)=>full,Some(false)=>Some(false),None=>None};
+                (slot,json!({"status":lesson["status"],"is_profession":is_profession,"blocked_by_primary_profession_slots":blocked}))
+            }).collect();
+        json!({"primary_profession_slots_full":full,"lessons_by_slot":checks,"eligibility_verified":false})
+    };
     review
 }
 

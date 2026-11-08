@@ -4,6 +4,18 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+Non-pet `trainer_services` can include optional `primary_profession_slots_full`
+and per-lesson `is_profession`, reflecting the API's profession-acquisition
+flag. With `inspect_snapshot.trainer_requirements_review: true`,
+`trainer_requirements_review.profession_slot_checks` reports a slot blocker
+only when the lesson flag and occupied-slot observation support it. Unknown
+metadata remains null; an explicit non-profession lesson has no profession-
+slot blocker. This is separate from price/budget projections and does not
+verify eligibility. Changed lesson observations invalidate the trainer
+section rather than mixing rows. No UI, training or profession changes are
+performed. Update readers before syncing the added fields. See
+[offline evidence](../../docs/trainer-profession-slots-verification-2026-11-08.md).
+
 Saved `spellbook.entries` can now include optional `level_learned`, reported
 by the public spell API for the captured spell ID. It can vary with level
 linking and does not establish eligibility or current usability. A readable

@@ -330,10 +330,12 @@ def validate_snapshot(value):
     if "trainer_services" in sections:
         trainer = sections["trainer_services"]
         if (c["family"] != "forever" or not isinstance(trainer, dict)
-                or set(trainer) - {"pet_training_points_available", "pet_level"} != {"kind", "entries"}
+                or set(trainer) - {"pet_training_points_available", "pet_level", "primary_profession_slots_full"} != {"kind", "entries"}
                 or trainer["kind"] not in ("general", "tradeskills", "pet")):
             raise ValueError("Invalid trainer services")
         pet = trainer["kind"] == "pet"
+        if "primary_profession_slots_full" in trainer and (pet or type(trainer["primary_profession_slots_full"]) is not bool):
+            raise ValueError("Invalid trainer profession slots")
         if "pet_level" in trainer:
             level = trainer["pet_level"]
             if not pet or type(level) is not int or not 1 <= level <= 255:
@@ -348,9 +350,11 @@ def validate_snapshot(value):
             raise ValueError("Invalid trainer service count")
         for row in rows.values():
             if not isinstance(row, dict) or set(row) - {"name", "status", "required_level", "rank_label", "price_copper",
-                                                        "skill_requirement", "ability_requirements", "price_training_points"}:
+                                                        "skill_requirement", "ability_requirements", "price_training_points", "is_profession"}:
                 raise ValueError("Invalid trainer service")
             name, status = row.get("name"), row.get("status")
+            if "is_profession" in row and (pet or status == "used" or type(row["is_profession"]) is not bool):
+                raise ValueError("Invalid trainer profession flag")
             if "skill_requirement" in row:
                 skill = row["skill_requirement"]
                 if (status == "used" or not isinstance(skill, dict) or set(skill) != {"name", "required_rank", "met"}

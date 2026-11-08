@@ -1,0 +1,86 @@
+"""Profession-slot observations remain separate from affordability and eligibility."""
+from copy import deepcopy
+import hashlib
+import json
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from shared.snapshots import SnapshotStore, validate_snapshot
+from test_snapshots import fixture
+
+
+class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
+    async def test_real_mcp_known_blockers_unknowns_and_strict_fields(self):
+        root=Path(__file__).resolve().parents[1]
+        binary=Path(os.environ.get('AZEROTH_TEST_BINARY',root/'target/debug'/(
+            'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder:
+            store=SnapshotStore(Path(folder))
+            base=fixture();base['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+            base['sections']['wallet']={'copper':1000}
+            base['sections']['trainer_services']={'kind':'tradeskills','entries':{
+                '1':{'name':'Profession','status':'available','price_copper':100,'is_profession':True},
+                '2':{'name':'Lesson','status':'available','price_copper':200,'is_profession':False},
+                '3':{'name':'Unknown','status':'unavailable','price_copper':300},
+                '4':{'name':'Known','status':'used'}}}
+            keys={}
+            for label,full in [('full',True),('open',False),('unknown',None)]:
+                value=deepcopy(base)
+                if full is not None:value['sections']['trainer_services']['primary_profession_slots_full']=full
+                keys[label]=store.ingest(value)
+            legacy=deepcopy(base)
+            for lesson in legacy['sections']['trainer_services']['entries'].values():lesson.pop('is_profession',None)
+            keys['legacy']=store.ingest(legacy)
+            pet=deepcopy(base);pet['sections']['trainer_services']={'kind':'pet','entries':{
+                '1':{'name':'Pet lesson','status':'available','price_training_points':5}}}
+            pet_key=store.ingest(pet)
+            bad_values=[]
+            for invalid in [None,0,'true']:
+                bad=deepcopy(base);bad['sections']['trainer_services']['primary_profession_slots_full']=invalid;bad_values.append(bad)
+                bad=deepcopy(base);bad['sections']['trainer_services']['entries']['1']['is_profession']=invalid;bad_values.append(bad)
+            bad=deepcopy(base);bad['sections']['trainer_services']['entries']['4']['is_profession']=False;bad_values.append(bad)
+            for field in ['primary_profession_slots_full','is_profession']:
+                bad=deepcopy(pet)
+                if field=='is_profession':bad['sections']['trainer_services']['entries']['1'][field]=False
+                else:bad['sections']['trainer_services'][field]=False
+                bad_values.append(bad)
+            bad_keys=[]
+            for value in bad_values:
+                with self.assertRaises(ValueError):validate_snapshot(value)
+                raw=json.dumps(value,sort_keys=True,separators=(',',':')).encode()
+                key=hashlib.sha256(raw).hexdigest();(Path(folder)/f'{key}.json').write_bytes(raw);bad_keys.append(key)
+            env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
+            async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
+                async with ClientSession(read,write) as session:
+                    await session.initialize()
+                    async def inspect(key,**arguments):
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
+                            'trainer_requirements_review':True,**arguments})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+                    budgets=[]
+                    for label,expected in [('full',True),('open',False),('unknown',None),('legacy',None)]:
+                        result=await inspect(keys[label],trainer_wallet_projection=True)
+                        check=result['trainer_requirements_review']['profession_slot_checks']
+                        self.assertEqual(check['primary_profession_slots_full'],expected)
+                        self.assertFalse(check['eligibility_verified'])
+                        self.assertEqual(set(check['lessons_by_slot']),{'1','2','3'})
+                        self.assertEqual(check['lessons_by_slot']['1']['blocked_by_primary_profession_slots'],expected)
+                        if label!='legacy':self.assertFalse(check['lessons_by_slot']['2']['blocked_by_primary_profession_slots'])
+                        else:self.assertIsNone(check['lessons_by_slot']['2']['blocked_by_primary_profession_slots'])
+                        self.assertIsNone(check['lessons_by_slot']['3']['blocked_by_primary_profession_slots'])
+                        budgets.append(result['trainer_wallet_projection'])
+                    self.assertTrue(all(budget==budgets[0] for budget in budgets))
+                    selected=await inspect(keys['full'],trainer_service_slots=[1])
+                    self.assertEqual(set(selected['trainer_requirements_review']['profession_slot_checks']['lessons_by_slot']),{'1'})
+                    self.assertIsNone((await inspect(pet_key))['trainer_requirements_review']['profession_slot_checks'])
+                    for key in bad_keys:
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
+                                                                          'trainer_requirements_review':True})
+                        self.assertTrue(response.isError)
+
+
+if __name__=='__main__':unittest.main()

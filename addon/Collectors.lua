@@ -1478,32 +1478,62 @@ AO.collectors.trainer_services = function()
     assert(questRewardInteger(kind,0,4294967295)
         and (kind==types.General or kind==types.Tradeskills or kind==types.Pet), "Unsupported trainer")
     local pet=kind==types.Pet
+    local function primarySlotsFull()
+        local first,second=GetProfessions()
+        if not questRewardAccessible(first) or not questRewardAccessible(second) then return end
+        if first~=nil and not questRewardInteger(first,1,4294967295) then return end
+        if second~=nil and (not questRewardInteger(second,1,4294967295) or first==nil or first==second) then return end
+        return second~=nil
+    end
+    local slotsRead,slotsFull=false,nil
+    if not pet then slotsRead,slotsFull=pcall(primarySlotsFull) end
     local count=GetNumTrainerServices()
     assert(questRewardInteger(count,1,512), "Trainer services unavailable")
-    local entries={}
-    for index=1,count do
-        local name,status,_,level,rank=GetTrainerServiceInfo(index)
-        assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
-            and questRewardAccessible(status) and (status=="available" or status=="unavailable" or status=="used"), "Invalid trainer service")
-        local row={name=name,status=status}
-        if questRewardInteger(level,1,255) then row.required_level=level end
-        if questRewardAccessible(rank) and type(rank)=="string" and #rank>0 and #rank<=256 then row.rank_label=rank end
-        if status~="used" then
-            local ok,cost=pcall(GetTrainerServiceCost,index)
-            if ok and questRewardInteger(cost,0,pet and 4294967295 or 9999999999999) then
-                if pet then row.price_training_points=cost else row.price_copper=cost end
+    local function readEntries()
+        local entries={}
+        for index=1,count do
+            local name,status,_,level,rank=GetTrainerServiceInfo(index)
+            assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256
+                and questRewardAccessible(status) and (status=="available" or status=="unavailable" or status=="used"), "Invalid trainer service")
+            local row={name=name,status=status}
+            if questRewardInteger(level,1,255) then row.required_level=level end
+            if questRewardAccessible(rank) and type(rank)=="string" and #rank>0 and #rank<=256 then row.rank_label=rank end
+            if status~="used" then
+                local ok,cost,isProfession=pcall(GetTrainerServiceCost,index)
+                if ok and questRewardInteger(cost,0,pet and 4294967295 or 9999999999999) then
+                    if pet then row.price_training_points=cost else row.price_copper=cost end
+                end
+                if not pet and ok and questRewardAccessible(isProfession) and type(isProfession)=="boolean" then
+                    row.is_profession=isProfession
+                end
+                local observed,skill,required,met=pcall(GetTrainerServiceSkillReq,index)
+                if observed and questRewardAccessible(skill) and type(skill)=="string" and #skill>0 and #skill<=256
+                    and questRewardInteger(required,0,4294967295) and questRewardAccessible(met) and type(met)=="boolean" then
+                    row.skill_requirement={name=skill,required_rank=required,met=met}
+                end
+                local read,abilities=pcall(trainerAbilityRequirements,index)
+                if read then row.ability_requirements=abilities end
             end
-            local observed,skill,required,met=pcall(GetTrainerServiceSkillReq,index)
-            if observed and questRewardAccessible(skill) and type(skill)=="string" and #skill>0 and #skill<=256
-                and questRewardInteger(required,0,4294967295) and questRewardAccessible(met) and type(met)=="boolean" then
-                row.skill_requirement={name=skill,required_rank=required,met=met}
-            end
-            local read,abilities=pcall(trainerAbilityRequirements,index)
-            if read then row.ability_requirements=abilities end
+            entries[tostring(index)]=row
         end
-        entries[tostring(index)]=row
+        return entries
     end
+    local function same(a,b)
+        if type(a)~="table" then return a==b end
+        if type(b)~="table" then return false end
+        for key,value in pairs(a) do if not same(value,b[key]) then return false end end
+        for key in pairs(b) do if a[key]==nil then return false end end
+        return true
+    end
+    local entries=readEntries()
+    assert(same(entries,readEntries()),"Trainer lesson observations changed")
     local result={kind=pet and "pet" or (kind==types.General and "general" or "tradeskills"),entries=entries}
+    if not pet then
+        local read,current=pcall(primarySlotsFull)
+        if slotsRead and read and type(slotsFull)=="boolean" and type(current)=="boolean" and slotsFull==current then
+            result.primary_profession_slots_full=slotsFull
+        end
+    end
     if pet then
         local levelRead,level=pcall(function()
             local exists=UnitExists("pet")
