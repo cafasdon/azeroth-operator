@@ -13,6 +13,14 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Consumable restocking accepts `restock_recipes` selectors containing a saved
+snapshot ID and optional exact bulk `recipe_id`. Several recipes can come from
+one capture; selected and bulk recipes can share one compatible inventory.
+Confirmed shortages determine output targets, with shared reagent totals and
+explicit unknown cooldowns/conditions. The legacy capture-ID list still works;
+the two selector forms are mutually exclusive.
+[Offline evidence](docs/bulk-consumable-restock-verification-2026-11-08.md).
+
 Catalogue item acquisition sources can include a separate `bulk_recipe_review`
 for one craft from compatible saved bulk materials. It reports material stock,
 shortfalls and unknown preparation requirements through the existing planner.

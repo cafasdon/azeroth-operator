@@ -872,8 +872,20 @@ impl Operator {
                         &data["records"],
                     )?
                 };
-                if let Some(recipe_ids) = query.restock_recipe_snapshot_ids {
-                    self.add_restock_crafting(&snapshot, &mut progress, recipe_ids)?;
+                let restock_recipes = query.restock_recipes.or_else(|| {
+                    query.restock_recipe_snapshot_ids.map(|ids| {
+                        ids.into_iter()
+                            .map(
+                                |snapshot_id| azeroth_operator::forever_catalogue::RestockRecipe {
+                                    snapshot_id,
+                                    recipe_id: None,
+                                },
+                            )
+                            .collect()
+                    })
+                });
+                if let Some(recipes) = restock_recipes {
+                    self.add_restock_crafting(&snapshot, &mut progress, recipes)?;
                 }
                 progress["snapshot_id"] = serde_json::json!(id);
                 data["acquisition_progress"] = progress;
@@ -3096,9 +3108,9 @@ impl Operator {
         &self,
         inventory: &azeroth_operator::Snapshot,
         progress: &mut serde_json::Value,
-        recipe_ids: Vec<String>,
+        recipes: Vec<azeroth_operator::forever_catalogue::RestockRecipe>,
     ) -> anyhow::Result<()> {
-        use azeroth_operator::analysis::{combine_recipe_materials, plan_recipe};
+        use azeroth_operator::analysis::{combine_recipe_materials, plan_recipe_by_id};
         use serde_json::json;
         use std::collections::BTreeMap;
         use std::num::NonZeroU32;
@@ -3116,17 +3128,31 @@ impl Operator {
             .collect();
         let mut reviews = Vec::new();
         let mut plans = Vec::new();
-        for id in recipe_ids {
+        for entry in recipes {
+            let id = entry.snapshot_id;
             let saved = self.store.read(&id)?;
-            let recipe = saved
-                .sections
-                .get("selected_recipe")
-                .ok_or_else(|| anyhow::anyhow!("Missing selected recipe"))?;
-            anyhow::ensure!(
-                recipe["learned"].as_bool() == Some(true)
-                    && recipe["requirements"] == "fixed_items",
-                "Expected a learned fixed-material recipe"
-            );
+            let recipe = if let Some(recipe_id) = entry.recipe_id {
+                let row = saved
+                    .sections
+                    .get("profession_recipe_materials")
+                    .and_then(|section| section["entries"].get(recipe_id.to_string()))
+                    .ok_or_else(|| anyhow::anyhow!("Bulk restock recipe unavailable"))?;
+                anyhow::ensure!(
+                    row["status"] == "fixed_items",
+                    "Expected fixed bulk restock materials"
+                );
+                row
+            } else {
+                let row = saved
+                    .sections
+                    .get("selected_recipe")
+                    .ok_or_else(|| anyhow::anyhow!("Missing selected recipe"))?;
+                anyhow::ensure!(
+                    row["learned"] == true && row["requirements"] == "fixed_items",
+                    "Expected a learned fixed-material recipe"
+                );
+                row
+            };
             let item = recipe["output_item_id"]
                 .as_u64()
                 .ok_or_else(|| anyhow::anyhow!("Missing recipe output"))?;
@@ -3135,16 +3161,27 @@ impl Operator {
                 .and_then(|quantity| u32::try_from(quantity).ok())
                 .and_then(NonZeroU32::new)
                 .ok_or_else(|| anyhow::anyhow!("Expected a distinct confirmed shortage"))?;
-            let review = plan_recipe(&saved, None, Some(quantity), Some(inventory))?;
-            plans.push(json!({
-                "recipe_snapshot_id":id,"recipe_id":recipe["recipe_id"],"item_id":item,
+            let review = plan_recipe_by_id(
+                &saved,
+                entry.recipe_id,
+                None,
+                Some(quantity),
+                Some(inventory),
+            )?;
+            let mut plan = json!({
+                "recipe_snapshot_id":id,"recipe_id":review["recipe"]["recipe_id"],"item_id":item,
                 "target_output_quantity":quantity,"requested_crafts":review["requested_crafts"],
                 "base_output_if_completed":review["base_output_if_completed"],
                 "observed_cooldown":recipe["cooldown"],
                 "estimated_cooldown_end_at":review["estimated_cooldown_end_at"],
                 "shortfall_vs_observed_recipe_charges":review["shortfall_vs_observed_recipe_charges"],
                 "unmet_crafting_conditions":review["unmet_crafting_conditions"]
-            }));
+            });
+            if entry.recipe_id.is_some() {
+                plan["recipe_observation_source"] = review["recipe_observation_source"].clone();
+                plan["recipe_profession_id"] = review["recipe_profession_id"].clone();
+            }
+            plans.push(plan);
             reviews.push(review);
         }
         let materials = combine_recipe_materials(reviews.iter())?;

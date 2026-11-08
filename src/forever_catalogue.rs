@@ -170,6 +170,8 @@ pub struct Query {
     pub consumable_targets: Option<Vec<ConsumableTarget>>,
     /// Up to eight saved learned recipe captures for confirmed consumable restock shortages.
     pub restock_recipe_snapshot_ids: Option<Vec<String>>,
+    /// Up to eight selected or exact bulk recipes for confirmed restock shortages; replaces the legacy capture-ID list.
+    pub restock_recipes: Option<Vec<RestockRecipe>>,
     /// Match the exact groupKey recorded by the pinned simulator for consumable buffs.
     pub consumable_group_key: Option<String>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
@@ -611,7 +613,25 @@ pub struct ConsumableTarget {
     quantity: std::num::NonZeroU32,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RestockRecipe {
+    pub snapshot_id: String,
+    /// Omit for the selected schematic; otherwise select this exact bulk-observed recipe.
+    pub recipe_id: Option<std::num::NonZeroU32>,
+}
+
 pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result<Value> {
+    ensure!(
+        query.restock_recipes.is_none() || query.restock_recipe_snapshot_ids.is_none(),
+        "Supply one restock recipe selector list"
+    );
+    if let Some(recipes) = &query.restock_recipes {
+        ensure!(
+            query.consumable_targets.is_some() && (1..=8).contains(&recipes.len()),
+            "Restock recipes require consumable targets and one to eight selectors"
+        );
+    }
     if let Some(ids) = &query.restock_recipe_snapshot_ids {
         ensure!(
             query.consumable_targets.is_some() && (1..=8).contains(&ids.len()),

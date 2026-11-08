@@ -1,5 +1,14 @@
 # Forever interaction map
 
+Consumable target lookups can supply `restock_recipes`, one to eight objects
+with `snapshot_id` and optional `recipe_id`. Exact IDs use fixed bulk materials;
+omission uses the selected schematic. Multiple different outputs may use one
+capture. Inputs are exclusive with `restock_recipe_snapshot_ids`. All plans use
+the lookup's same compatible inventory and confirmed shortages, round desired
+output using captured minimum yield, and combine shared reagent demand. Unknown
+shortages, duplicate outputs, unsupported/unreadable/conflicting bulk rows and
+restock targets used as reagents reject the request. No crafting is executed.
+
 Item catalogue acquisition sources expose `bulk_recipe_review` separately from
 selected-schematic fields. Exact-ID compatible bulk rows use the existing
 one-craft planner against the same capture. Learning conflicts and known output

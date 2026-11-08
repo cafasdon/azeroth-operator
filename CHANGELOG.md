@@ -1,5 +1,9 @@
 # Changelog
 
+- Plan confirmed consumable restock shortages from exact bulk recipe selectors,
+  including mixed selected/bulk captures and shared reagent accounting, while
+  retaining the legacy capture-ID input.
+
 - Connect item catalogue crafted sources to separately qualified one-craft bulk
   material reviews, with explicit blocked states and per-request recipe caching.
 
