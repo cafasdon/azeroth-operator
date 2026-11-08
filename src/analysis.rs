@@ -1741,15 +1741,32 @@ fn quest_wallet_turn_in_order(
     });
     let mut net = 0i128;
     let mut minimum = 0i128;
-    for (_, cost, reward) in &steps {
-        minimum = minimum.max(i128::from(*cost) - net);
+    let mut first_blocked = None;
+    for (index, (id, cost, reward)) in steps.iter().enumerate() {
+        let required = i128::from(*cost) - net;
+        minimum = minimum.max(required);
+        if first_blocked.is_none()
+            && let Some(balance) = balance
+            && required > i128::from(balance)
+        {
+            first_blocked = Some((index, *id, required - i128::from(balance)));
+        }
         net += i128::from(*reward) - i128::from(*cost);
     }
     let minimum = u64::try_from(minimum).ok()?;
+    let progress = balance.map(|_| {
+        let (affordable, blocked_id, shortfall) = first_blocked
+            .map_or((steps.len(), None, None), |(index, id, gap)| {
+                (index, Some(id), u64::try_from(gap).ok())
+            });
+        json!({"affordable_prefix_count":affordable,"first_blocked_quest_id":blocked_id,
+            "first_blocked_shortfall_copper":shortfall})
+    });
     Some(json!({
         "quest_ids":steps.into_iter().map(|(id, _, _)| id).collect::<Vec<_>>(),
         "minimum_starting_copper":minimum,
-        "shortfall_copper":balance.map(|balance| minimum.saturating_sub(balance))
+        "shortfall_copper":balance.map(|balance| minimum.saturating_sub(balance)),
+        "captured_wallet_progress":progress
     }))
 }
 

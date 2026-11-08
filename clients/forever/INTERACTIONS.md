@@ -583,6 +583,9 @@ When every retained quest is ready and both copper amounts are recorded,
 `ready_turn_in_order` shows the minimum starting copper and a suggested
 order. This assumes each reward can fund subsequent turn-ins and considers
 copper only. Travel and timing are outside this calculation.
+With a captured wallet, the order also shows how many consecutive quests
+fit, and the first blocked quest and its shortfall. This describes the
+suggested order without searching for a different partial route.
 Set `quest_list_currency_projection` to total known fixed currency rewards
 from the retained quests and compare them with the same capture's cap
 headroom. Choice rewards are separate, and missing fixed reward lists

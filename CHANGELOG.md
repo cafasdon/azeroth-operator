@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show the affordable prefix and first copper shortfall in the suggested Forever quest turn-in order.
+
 - Suggest a turn-in order that minimises upfront copper for ready Forever quests with known costs and rewards.
 
 - Tally fixed item rewards across saved Forever quest lists and identify quests with choices.
