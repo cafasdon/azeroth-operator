@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Price reagent purchases through the first uncovered Forever crafting step.
+
 - Suggest observed bank withdrawals for reagents blocking a Forever batch checkpoint.
 
 - Identify missing reagent quantities at the first uncovered Forever batch recipe.

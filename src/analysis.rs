@@ -2361,14 +2361,38 @@ pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Sna
     ) else {
         return Value::Null;
     };
-    let reagents: Vec<_> = materials
-        .iter()
-        .filter_map(|material| {
-            let item = material["item_id"].as_u64()?;
-            let shortfall = material["shortfall_vs_observed"].as_u64();
-            if shortfall == Some(0) || material["required_before_batch"].as_u64() == Some(0) {
-                return None;
-            }
+    let demands = materials.iter().filter_map(|material| {
+        let item = material["item_id"].as_u64()?;
+        let shortfall = material["shortfall_vs_observed"].as_u64();
+        (shortfall != Some(0) && material["required_before_batch"].as_u64() != Some(0))
+            .then_some((item, shortfall))
+    });
+    let wallet = inventory
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let mut plan = merchant_reagent_budget(demands, offers, wallet);
+    plan["merchant_captured_at"] = json!(merchant.captured_at);
+    let checkpoint = &review["ordered_material_checkpoint"]["first_uncovered_recipe"];
+    if let Some(blockers) = checkpoint["blocking_reagents_by_item_id"].as_object() {
+        let demands = blockers.iter().filter_map(|(id, row)| {
+            Some((id.parse().ok()?, row["shortfall_vs_observed"].as_u64()))
+        });
+        let mut budget = merchant_reagent_budget(demands, offers, wallet);
+        budget["recipe_number"] = checkpoint["recipe_number"].clone();
+        budget["recipe_id"] = checkpoint["recipe_id"].clone();
+        plan["first_uncovered_recipe_budget"] = budget;
+    }
+    plan
+}
+
+fn merchant_reagent_budget(
+    demands: impl Iterator<Item = (u64, Option<u64>)>,
+    offers: &serde_json::Map<String, Value>,
+    wallet: Option<u64>,
+) -> Value {
+    let reagents: Vec<_> = demands
+        .map(|(item, shortfall)| {
             let options: BTreeMap<_, _> = offers
                 .iter()
                 .filter(|(_, offer)| offer["item_id"].as_u64() == Some(item))
@@ -2393,22 +2417,18 @@ pub fn recipe_merchant_plan(review: &Value, merchant: &Snapshot, inventory: &Sna
                 })
                 .min()
                 .map(|(copper, slot)| json!({"slot":slot,"required_copper":copper}));
-            Some(json!({
+            json!({
                 "item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options,
                 "lowest_unlimited_copper_only_offer":lowest_copper
-            }))
+            })
         })
         .collect();
     let total = reagents.iter().try_fold(0u64, |total, reagent| {
         total
             .checked_add(reagent["lowest_unlimited_copper_only_offer"]["required_copper"].as_u64()?)
     });
-    let wallet = inventory
-        .sections
-        .get("wallet")
-        .and_then(|row| row["copper"].as_u64());
     let budget = total.zip(wallet);
-    json!({"merchant_captured_at":merchant.captured_at,"reagents":reagents,
+    json!({"reagents":reagents,
         "unlimited_copper_only_total":total,
         "unlimited_copper_only_affordable":budget.map(|(cost, balance)| cost <= balance),
         "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance))})
