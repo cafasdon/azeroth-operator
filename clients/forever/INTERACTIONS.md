@@ -120,6 +120,12 @@ currency requirements separately. Missing stock, balances or components
 remain unknown. The review does not check stock sufficiency, spending
 eligibility or current purchase availability.
 
+With `section: "merchant_stock"`, use `merchant_item_id` or
+`merchant_currency_id` to find offers selling that exact ID. Matching
+offers retain their original slots for later budget review. A zero match
+count means the stock was captured and had no matching offers. Unknown
+stock gives an unknown match count.
+
 `character_summary` groups these observations under `repair_status`.
 Alert counts and the repair quote can be independently unknown. Copper
 shortfall is calculated only if the quote and opt-in wallet were captured

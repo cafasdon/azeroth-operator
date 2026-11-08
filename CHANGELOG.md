@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Find saved Forever merchant offers by the item or currency they sell.
+
 - Budget saved Forever merchant bundles against the captured wallet and carried item tokens.
 
 - Save item-token and named currency costs for readable Forever merchant offers.

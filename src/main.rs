@@ -42,6 +42,10 @@ struct Inspect {
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
     merchant_bundles: Option<std::num::NonZeroU32>,
+    /// Find saved merchant offers that sell this exact item ID.
+    merchant_item_id: Option<std::num::NonZeroU32>,
+    /// Find saved merchant offers that sell this exact currency ID.
+    merchant_currency_id: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare captured quest currency rewards against caps from the same snapshot.
@@ -948,6 +952,19 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        let merchant_search = args
+            .merchant_item_id
+            .map(|id| ("item_id", id))
+            .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
+        if merchant_search.is_some()
+            && (args.section.as_deref() != Some("merchant_stock")
+                || args.merchant_offer_slot.is_some()
+                || (args.merchant_item_id.is_some() && args.merchant_currency_id.is_some()))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant search requires merchant_stock and exactly one item or currency ID without a slot",
+            )]);
+        }
         if (args.merchant_offer_slot.is_some() && args.section.as_deref() != Some("merchant_stock"))
             || args
                 .merchant_offer_slot
@@ -1178,6 +1195,19 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some((field, id)) = merchant_search {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Merchant search requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let count = value["data"].as_object_mut().map(|offers| {
+                        offers
+                            .retain(|_, offer| offer[field].as_u64() == Some(u64::from(id.get())));
+                        offers.len()
+                    });
+                    value["merchant_match_count"] = serde_json::json!(count);
+                }
                 if let Some(slot) = args.merchant_offer_slot {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
