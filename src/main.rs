@@ -84,6 +84,8 @@ struct Inspect {
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Keep saved Forever quests with at most this many seconds remaining at capture.
     quest_max_remaining_seconds: Option<u32>,
+    /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
+    quest_max_required_copper: Option<u64>,
     /// Keep saved Forever quests that offer this base item as a fixed reward or choice.
     quest_reward_item_id: Option<std::num::NonZeroU32>,
     /// Keep saved Forever quests that offer this currency as a fixed reward or choice.
@@ -1151,6 +1153,7 @@ impl Operator {
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
                 || args.quest_max_remaining_seconds.is_some()
+                || args.quest_max_required_copper.is_some()
                 || filter_rewards
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
@@ -1202,6 +1205,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest timer selection requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_max_required_copper.is_some()
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest cost filtering requires the quests section without a quest ID",
             )]);
         }
         if filter_rewards && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
@@ -1446,6 +1456,7 @@ impl Operator {
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
                     || args.quest_max_remaining_seconds.is_some()
+                    || args.quest_max_required_copper.is_some()
                     || filter_rewards
                 {
                     if value["client"]["family"] != "forever" {
@@ -1541,6 +1552,19 @@ impl Operator {
                                         !matched && lists.into_iter().any(|list| list.is_none()),
                                     );
                                     matched
+                                });
+                                unknown
+                            }));
+                    }
+                    if let Some(maximum) = args.quest_max_required_copper {
+                        value["quest_max_required_copper"] = serde_json::json!(maximum);
+                        value["quest_cost_unknown_count"] =
+                            serde_json::json!(data.as_object_mut().map(|quests| {
+                                let mut unknown = 0;
+                                quests.retain(|_, quest| {
+                                    let cost = quest["required_copper"].as_u64();
+                                    unknown += usize::from(cost.is_none());
+                                    cost.is_some_and(|cost| cost <= maximum)
                                 });
                                 unknown
                             }));

@@ -569,8 +569,13 @@ the comparison is null. Quests entering or leaving the log are outside
 this comparison.
 
 `character_summary.quest_money` lists saved positive quest copper requirements
-and counts quests with an unknown cost. If the same export includes the
-optional wallet, each entry shows its shortfall against that balance. These
+and `inspect_snapshot` accepts `quest_max_required_copper` for the quests
+section. Zero finds quests with an explicitly recorded zero cost. Unknown
+costs are counted separately among rows matching the other filters.
+
+`character_summary.quest_money` also counts quests with an unknown cost.
+If the same export includes the optional wallet, each entry shows its
+shortfall against that balance. These
 are individual comparisons against the captured balance. Update the importer
 and reader before syncing captures from the new addon.
 

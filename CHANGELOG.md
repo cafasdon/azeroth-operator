@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter saved Forever quests by their observed required copper cost.
+
 - Confirm the leading distinct Forever bulk shortlist sets on fresh fixed samples.
 
 - Rerun the two leading Forever DPS gear sets with a fresh seed for an independent paired comparison.
