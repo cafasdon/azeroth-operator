@@ -1,5 +1,9 @@
 # Changelog
 
+- Search saved tracked Forever achievements by completion/credit/account flags
+  and same-criterion progress, retaining unknown IDs/counts, tracked-only
+  coverage and derived work for the retained achievements.
+
 - Filter captured Forever quests by same-row objective kind, finished flag and
   remaining-unit bounds, preserving missing observations and existing reward,
   readiness and projection semantics without new game or external-data calls.

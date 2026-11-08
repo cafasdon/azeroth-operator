@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`inspect_snapshot` accepts `achievement_filter` for the saved Forever
+`tracked_achievements` section: completion, character credit and account-wide
+flags, plus same-row criterion ID, completion and maximum remaining units.
+Missing criterion observations remain unknown; an unlisted achievement is not
+inferred incomplete. [Evidence](docs/achievement-filter-verification-2026-11-08.md).
+
 `inspect_snapshot` can filter the saved Forever `quests` section by
 `quest_objective_kind`, `quest_objective_finished` and
 `quest_objective_max_remaining`. Supplied objective predicates match the same

@@ -171,6 +171,9 @@ struct Inspect {
     faction_id: Option<std::num::NonZeroU32>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
     achievement_id: Option<std::num::NonZeroU32>,
+    /// Filter tracked Forever achievements by flags and same-row criterion predicates.
+    /// Requires tracked_achievements without achievement_id; empty filters reject.
+    achievement_filter: Option<azeroth_operator::analysis::AchievementFilter>,
     /// Select a collected mount by ID. Absence does not establish non-ownership.
     mount_id: Option<std::num::NonZeroU32>,
     /// Select one item from a captured filtered toy view; absent items have unknown collection state.
@@ -1827,6 +1830,7 @@ impl Operator {
                 || args.currency_id.is_some()
                 || args.faction_id.is_some()
                 || args.achievement_id.is_some()
+                || args.achievement_filter.is_some()
                 || args.mount_id.is_some()
                 || args.toy_item_id.is_some()
                 || args.profession_skill_line.is_some()
@@ -1912,6 +1916,15 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Achievement selection requires the tracked_achievements section",
+            )]);
+        }
+        if args.achievement_filter.as_ref().is_some_and(|filter| {
+            filter.is_empty()
+                || args.section.as_deref() != Some("tracked_achievements")
+                || args.achievement_id.is_some()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Achievement filters require nonempty predicates and tracked_achievements without an achievement ID",
             )]);
         }
         if args.mount_id.is_some() && args.section.as_deref() != Some("mount_collection") {
@@ -2927,6 +2940,28 @@ impl Operator {
                         value["special_reputation_progress"] = special;
                     }
                 } else if args.section.as_deref() == Some("tracked_achievements") {
+                    if let Some(filter) = args.achievement_filter.as_ref() {
+                        if value["client"]["family"] != "forever" {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Achievement filters require a saved Forever snapshot",
+                            )]);
+                        }
+                        value["achievement_filter"] = serde_json::json!(filter);
+                        value["achievement_filter_unknown_count"] = serde_json::json!(
+                            value["data"]
+                                .get_mut("entries")
+                                .and_then(serde_json::Value::as_object_mut)
+                                .map(|entries| {
+                                    let mut unknown = 0;
+                                    entries.retain(|_, achievement| {
+                                        let matched = filter.matches(achievement);
+                                        unknown += usize::from(matched.is_none());
+                                        matched == Some(true)
+                                    });
+                                    unknown
+                                })
+                        );
+                    }
                     let work = azeroth_operator::analysis::tracked_achievement_work(&value["data"]);
                     if let Some(id) = args.achievement_id {
                         if value["client"]["family"] != "forever" {

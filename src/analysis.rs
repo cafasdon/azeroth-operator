@@ -4545,6 +4545,80 @@ fn tracked_achievement_workload(section: &Value) -> Option<Value> {
     )
 }
 
+#[derive(Clone, Default, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AchievementFilter {
+    pub completed: Option<bool>,
+    pub earned_by_character: Option<bool>,
+    pub account_wide: Option<bool>,
+    pub criterion_id: Option<std::num::NonZeroU32>,
+    pub criterion_completed: Option<bool>,
+    pub criterion_max_remaining: Option<u32>,
+}
+
+impl AchievementFilter {
+    pub fn is_empty(&self) -> bool {
+        self.completed.is_none()
+            && self.earned_by_character.is_none()
+            && self.account_wide.is_none()
+            && self.criterion_id.is_none()
+            && self.criterion_completed.is_none()
+            && self.criterion_max_remaining.is_none()
+    }
+
+    pub fn matches(&self, achievement: &Value) -> Option<bool> {
+        for (field, expected) in [
+            ("completed", self.completed),
+            ("earned_by_character", self.earned_by_character),
+            ("account_wide", self.account_wide),
+        ] {
+            if expected.is_some_and(|expected| achievement[field].as_bool() != Some(expected)) {
+                return Some(false);
+            }
+        }
+        if self.criterion_id.is_none()
+            && self.criterion_completed.is_none()
+            && self.criterion_max_remaining.is_none()
+        {
+            return Some(true);
+        }
+        let criteria = achievement["criteria"].as_object()?;
+        let mut unknown = false;
+        for criterion in criteria.values() {
+            if self
+                .criterion_completed
+                .is_some_and(|expected| criterion["completed"].as_bool() != Some(expected))
+            {
+                continue;
+            }
+            let mut row_unknown = false;
+            if let Some(id) = self.criterion_id {
+                match criterion["criterion_id"].as_u64() {
+                    Some(actual) if actual != u64::from(id.get()) => continue,
+                    Some(_) => {}
+                    None => row_unknown = true,
+                }
+            }
+            if let Some(maximum) = self.criterion_max_remaining {
+                match criterion["required"]
+                    .as_u64()
+                    .zip(criterion["quantity"].as_u64())
+                    .map(|(required, quantity)| required.saturating_sub(quantity))
+                {
+                    Some(remaining) if remaining > u64::from(maximum) => continue,
+                    Some(_) => {}
+                    None => row_unknown = true,
+                }
+            }
+            if !row_unknown {
+                return Some(true);
+            }
+            unknown = true;
+        }
+        if unknown { None } else { Some(false) }
+    }
+}
+
 pub fn tracked_achievement_work(section: &Value) -> Value {
     let Some(entries) = section["entries"].as_object() else {
         return Value::Null;

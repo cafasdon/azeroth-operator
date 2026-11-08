@@ -92,3 +92,8 @@ extends saved quest discovery by exact objective kind, finished flag and remaini
 units on the same objective row, composable with reward/readiness searches and
 existing projections. Missing observations stay unknown; native and complete
 world-database coverage remain unqualified.
+
+Later [achievement filtering](achievement-filter-verification-2026-11-08.md)
+adds local discovery by completion/character credit/account-wide flags and
+same-criterion progress. Tracked-only coverage and unknown quantities/IDs stay
+explicit; no complete achievement catalogue or native qualification is implied.
