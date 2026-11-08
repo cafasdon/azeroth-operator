@@ -13,6 +13,12 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+`resolve_character` resolves an explicitly named saved character within the
+configured owner's store and client family. Without an explicit character it
+returns `active_identity_unavailable`, with no selection. Saved recency never
+establishes current play; automatic active-character detection remains pending.
+[Selection evidence](docs/character-resolution-verification-2026-11-08.md).
+
 Forever exports can include `pet_action_bar`: partial native command/spell
 slots with reported active, autocast and range flags. Inspect the section or
 read `character_summary.pet_action_bar_observations`. Missing slots stay

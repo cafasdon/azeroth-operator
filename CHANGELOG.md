@@ -1,5 +1,8 @@
 # Changelog
 
+- Add read-only `resolve_character` for explicit owner-local saved character
+  selection, with an unknown default until active identity can be verified.
+
 ## Unreleased
 
 - Capture public pet action-bar command/spell observations with stable optional active/autocast/range flags, strict partial coverage and no command execution or identity inference.

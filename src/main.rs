@@ -13,6 +13,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "capabilities",
     "inspect_snapshot",
     "list_snapshots",
+    "resolve_character",
     "compare_snapshots",
     "character_summary",
     "review_equipment_selection",
@@ -28,6 +29,14 @@ struct Operator {
     store: Store,
     forever_catalogue: Option<std::path::PathBuf>,
     tool_router: ToolRouter<Self>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct ResolveCharacter {
+    family: Family,
+    /// Explicit saved character; no target leaves active identity unknown.
+    character: Option<azeroth_operator::Character>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1248,6 +1257,38 @@ impl Operator {
             Err(_) => {
                 CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
             }
+        }
+    }
+    #[tool(
+        description = "Resolve an explicitly requested saved character in the owner's store. Without an explicit character, return unknown: active-character detection is not yet available. Never infer current play from the newest saved snapshot. Selection is historical and does not authorise game actions.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    fn resolve_character(&self, Parameters(args): Parameters<ResolveCharacter>) -> CallToolResult {
+        let Some(character) = args.character else {
+            return CallToolResult::success(vec![ContentBlock::text(
+                serde_json::json!({"status":"active_identity_unavailable","selection":null,
+                    "live":false,"active_character_verified":false})
+                .to_string(),
+            )]);
+        };
+        match self
+            .store
+            .list_matching(args.family, Some(&character), 0, 1)
+        {
+            Ok(result) => {
+                let selection = result["snapshots"].as_array().and_then(|rows| rows.first());
+                CallToolResult::success(vec![ContentBlock::text(serde_json::json!({
+                    "status":if selection.is_some() { "explicit_saved_character" } else { "no_matching_snapshot" },
+                    "selection":selection,"live":false,"active_character_verified":false
+                }).to_string())])
+            }
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Character selection unavailable or invalid",
+            )]),
         }
     }
     #[tool(

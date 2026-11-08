@@ -2,6 +2,12 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+`resolve_character` accepts an explicit client family and optional name/realm.
+An explicit target resolves its newest valid saved capture; no target returns
+unknown active identity without selecting another saved character. It does not
+provide live detection or change snapshot-ID requirements of other tools.
+[Offline evidence](../../docs/character-resolution-verification-2026-11-08.md).
+
 The [coverage audit](../../docs/forever-coverage-audit-2026-11-08.md) separates
 implemented observations from the remaining active-character, complete owned-gear,
 local-data and native qualification requirements.

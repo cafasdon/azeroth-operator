@@ -73,7 +73,7 @@ const SECTIONS: &[&str] = &[
     "action_bar_observation",
 ];
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Family {
     Retail,
