@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Explain which Forever gear search limit was reached and how to narrow the search.
+
 - Show how many candidate locations, combinations and distinct gear sets a Forever gear search resolves.
 
 - Preview resolved Forever gear drafts and exclusions without launching the simulator.

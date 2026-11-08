@@ -34,6 +34,10 @@ CAPTURED_RACES = {
 DUAL_WIELD_SPECS = frozenset(("hunter", "rogue", "dpsWarrior", "protectionWarrior"))
 
 
+class GearSearchLimit(ValueError):
+    """A local search limit with a diagnostic safe to print."""
+
+
 def check_template_identity(template, stats):
     player = single_player(template["raid"])
     captured_class = (stats.get("class") or "").lower()
@@ -73,8 +77,12 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
         page = await call("review_forever_owned_gear", simulator_slot=slot, offset=offset, limit=50, **filters)
         if count is None:
             count = page["filtered_item_locations"]
-            if not 0 <= count <= 256:
-                raise ValueError("Slot exceeds the 256-location scan limit")
+            if count < 0:
+                raise ValueError("Invalid candidate count")
+            if count > 256:
+                raise GearSearchLimit(
+                    "A slot exceeds the 256-location scan limit. Narrow the search with --storage, --item-id or --set-id."
+                )
         rows = page["items"]
         next_offset = offset + len(rows)
         if (page["filtered_item_locations"] != count or len(rows) != min(50, count - offset)
@@ -206,7 +214,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             combination_count = prod(map(len, options))
             drafts_to_scan = product(*options)
         if combination_count > 1024:
-            raise ValueError("Slot combinations exceed the 1024-combination scan limit")
+            raise GearSearchLimit(
+                "The search exceeds 1,024 combinations. Use fewer slots, --max-swaps or a narrower candidate filter."
+            )
         proposed = []
         for combination in drafts_to_scan:
             selections = [choice for choice in combination if choice is not None]
@@ -226,7 +236,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 draft_args["allow_two_hand_off_hand_clear"] = True
             proposed.append(draft_args)
             if len(proposed) > max_drafts:
-                raise ValueError("Slot combinations exceed the configured draft limit")
+                raise GearSearchLimit(
+                    "The search exceeds --max-drafts. Narrow the candidates or increase that limit up to 128."
+                )
         batch_size = 1
         if len(proposed) > 1:
             tools = (await session.list_tools()).tools
@@ -536,6 +548,11 @@ def main():
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
     except Exception as error:
+        # The stdio client's task groups wrap errors raised during collection.
+        while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
+            error = error.exceptions[0]
+        if isinstance(error, GearSearchLimit):
+            parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")
 
