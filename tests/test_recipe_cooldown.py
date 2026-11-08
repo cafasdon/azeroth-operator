@@ -1,6 +1,7 @@
 """Exercise selected-recipe cooldown searches through the real Rust MCP."""
 
 import json
+import copy
 import os
 from pathlib import Path
 import tempfile
@@ -13,6 +14,76 @@ from test_snapshots import fixture
 
 
 class RecipeCooldownTests(unittest.IsolatedAsyncioTestCase):
+    async def test_selected_recipe_comparison(self):
+        binary = Path(__file__).resolve().parents[1] / "target/debug" / (
+            "azeroth-operator.exe" if os.name == "nt" else "azeroth-operator")
+        binary = Path(os.environ.get("AZEROTH_TEST_BINARY", binary)).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as directory:
+            store = SnapshotStore(Path(directory))
+            before = fixture()
+            before["client"] = {"family": "forever", "variant": "live", "build": "70862", "interface": 16001}
+            before["sections"]["selected_recipe"] = {
+                "recipe_id": 123, "name": "Recipe", "learned": False,
+                "requirements": "fixed_items", "reagents": {"744": 1},
+                "cooldown": {"remaining_seconds": 30, "charges": 0, "max_charges": 2},
+            }
+            before_id = store.ingest(before)
+            after = copy.deepcopy(before)
+            after["captured_at"] = "2025-01-02T00:00:00Z"
+            recipe = after["sections"]["selected_recipe"]
+            recipe["learned"] = True
+            recipe["reagents"]["744"] = 2
+            recipe["cooldown"].update(remaining_seconds=20, charges=2)
+            after_id = store.ingest(after)
+            renamed = copy.deepcopy(after)
+            renamed["sections"]["selected_recipe"]["name"] = "Localised recipe"
+            renamed_id = store.ingest(renamed)
+            changed = copy.deepcopy(after)
+            changed["sections"]["selected_recipe"]["recipe_id"] = 456
+            changed_id = store.ingest(changed)
+            unknown = copy.deepcopy(after)
+            unknown["sections"]["selected_recipe"].pop("cooldown")
+            unknown_id = store.ingest(unknown)
+            missing = copy.deepcopy(after)
+            missing["sections"].pop("selected_recipe")
+            missing_id = store.ingest(missing)
+            retail_id = store.ingest(fixture())
+            env = {**os.environ, "AZEROTH_DATA_DIR": directory}
+            env.pop("AZEROTH_FOREVER_CATALOGUE", None)
+            async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+
+                    async def compare(old, new, enabled=True):
+                        response = await session.call_tool("compare_snapshots", {
+                            "before_id": old, "after_id": new, "selected_recipe_changes": enabled})
+                        self.assertFalse(response.isError)
+                        return json.loads(response.content[0].text)
+
+                    data = (await compare(before_id, after_id))["selected_recipe_changes"]
+                    self.assertTrue(data["same_recipe"])
+                    self.assertEqual(data["observed_charge_delta"], 2)
+                    self.assertEqual(data["changed_observations"]["learned"], {"before": False, "after": True})
+                    self.assertEqual(data["changed_observations"]["cooldown_state"], {"before": "waiting", "after": "available"})
+                    self.assertEqual(data["changed_observations"]["reagents"], {"before": {"744": 1}, "after": {"744": 2}})
+                    self.assertNotIn("selected_recipe_changes", await compare(before_id, after_id, False))
+                    self.assertEqual((await compare(after_id, renamed_id))["selected_recipe_changes"]["changed_observations"], {})
+                    other = (await compare(before_id, changed_id))["selected_recipe_changes"]
+                    self.assertFalse(other["same_recipe"])
+                    self.assertIsNone(other["changed_observations"])
+                    self.assertIsNone(other["observed_charge_delta"])
+                    lost = (await compare(after_id, unknown_id))["selected_recipe_changes"]
+                    self.assertTrue(lost["same_recipe"])
+                    self.assertIsNone(lost["observed_charge_delta"])
+                    self.assertEqual(lost["after"]["cooldown_state"], "unknown")
+                    for old, new in ((before_id, missing_id), (missing_id, missing_id)):
+                        absent = (await compare(old, new))["selected_recipe_changes"]
+                        self.assertIsNone(absent["same_recipe"])
+                        self.assertIsNone(absent["changed_observations"])
+                    rejected = await session.call_tool("compare_snapshots", {
+                        "before_id": retail_id, "after_id": retail_id, "selected_recipe_changes": True})
+                    self.assertTrue(rejected.isError)
+
     async def test_saved_cooldowns_and_newest_capture(self):
         binary = Path(__file__).resolve().parents[1] / "target/debug" / (
             "azeroth-operator.exe" if os.name == "nt" else "azeroth-operator")

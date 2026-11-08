@@ -686,6 +686,7 @@ pub struct ComparisonSelectors {
     pub quest_waypoints: bool,
     pub quest_readiness_changes: bool,
     pub achievement_status_changes: bool,
+    pub selected_recipe_changes: bool,
     pub achievement_id: Option<u32>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
@@ -725,6 +726,16 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if selectors.selected_recipe_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Recipe comparison requires Forever"
+        );
+        comparison["selected_recipe_changes"] = compare_selected_recipe(
+            before.sections.get("selected_recipe"),
+            after.sections.get("selected_recipe"),
+        );
+    }
     let skills_before = before
         .sections
         .get("skill_lines")
@@ -1707,6 +1718,43 @@ pub fn profession_by_skill_line(
     } else {
         ("observed", Some(entry))
     }
+}
+
+fn compare_selected_recipe(before: Option<&Value>, after: Option<&Value>) -> Value {
+    let observation = |recipe: &Value| {
+        json!({
+            "recipe_id":recipe["recipe_id"], "learned":recipe["learned"],
+            "cooldown":recipe["cooldown"], "cooldown_state":recipe_cooldown_state(recipe),
+            "requirements":recipe["requirements"], "reagents":recipe["reagents"],
+            "output_item_id":recipe["output_item_id"], "base_output_quantity":recipe["base_output_quantity"]
+        })
+    };
+    let same_recipe = before
+        .zip(after)
+        .map(|(old, new)| old["recipe_id"] == new["recipe_id"]);
+    let old = before.map(observation);
+    let new = after.map(observation);
+    let changes = (same_recipe == Some(true)).then(|| {
+        old.as_ref()
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .iter()
+            .filter_map(|(field, value)| {
+                let current = &new.as_ref().unwrap()[field];
+                (value != current).then(|| (field.clone(), json!({"before":value,"after":current})))
+            })
+            .collect::<serde_json::Map<_, _>>()
+    });
+    let charge_delta = (same_recipe == Some(true))
+        .then(|| {
+            after?["cooldown"]["charges"]
+                .as_i64()?
+                .checked_sub(before?["cooldown"]["charges"].as_i64()?)
+        })
+        .flatten();
+    json!({"before":old,"after":new,"same_recipe":same_recipe,
+           "changed_observations":changes,"observed_charge_delta":charge_delta})
 }
 
 fn compare_professions(before: &Value, after: &Value) -> Option<Value> {

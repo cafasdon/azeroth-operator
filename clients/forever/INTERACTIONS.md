@@ -58,6 +58,17 @@ recipe does not match. Recipe reviews return the same classification in
 or full craftability. Learning, materials, tools and other conditions remain
 separate checks, and no game action is performed.
 
+Set `selected_recipe_changes: true` in `compare_snapshots` for a compact
+before/after view of selected-recipe learning, cooldown, fixed reagent and
+output observations. Recipe names are excluded so localisation-only changes
+do not appear as recipe progression. `changed_observations` and
+`observed_charge_delta` are derived only when both recipe IDs agree. A
+different recipe gives `same_recipe: false`; a missing observation gives
+`same_recipe: null`. Neither case produces field changes or a charge delta.
+Missing charge counts stay unknown. Timer and charge differences are recorded
+observations, not evidence of crafting, recharge completion or elapsed-time
+simulation. Existing same-character and same-client/build checks still apply.
+
 Use `tracked_achievement` with `achievement_id` and optional
 `completed` or `earned_by_character` flags to search saved Forever
 tracked achievements. Flags must match the same recorded achievement.

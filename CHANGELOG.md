@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Compare saved selected-recipe learning, cooldown, reagent and output observations without crossing recipe identities.
+
 - Find saved Forever selected recipes by recorded cooldown availability, sharing the state with recipe reviews.
 
 - Report each gear draft's observed DPS gains and losses across encounter profiles.
