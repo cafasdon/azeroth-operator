@@ -2,6 +2,13 @@
 
 Updated 8 November 2026. This map records source evidence and engineering scope. A callable API or a passing fixture does not qualify a live build or establish authorisation.
 
+Public weapon-enchant list observations cover main hand, off hand and ranged
+slots independently, retaining reported type/ID/timer/charge data. Summaries
+separate unreadable hands, empty lists and missing details; values remain
+historical. Permanent link parsing and simulator inputs are unchanged. No
+expiry/effectiveness inference, application or cancellation is performed.
+[Offline evidence](../../docs/weapon-enchants-verification-2026-11-08.md).
+
 Linked equipment and container-item observations can include stable native
 numeric stat-token maps. Equipment reviews show shared-token differences
 and separate one-sided observations; missing tokens are not imputed as zero.

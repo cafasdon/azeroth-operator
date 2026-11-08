@@ -42,6 +42,7 @@ const SECTIONS: &[&str] = &[
     "flight_map",
     "durability_alerts",
     "equipment_durability",
+    "weapon_enchants",
     "repair_quote",
     "merchant_stock",
     "trainer_services",
@@ -209,6 +210,7 @@ impl Snapshot {
                         | "flight_map"
                         | "durability_alerts"
                         | "equipment_durability"
+                        | "weapon_enchants"
                         | "repair_quote"
                         | "merchant_stock"
                         | "trainer_services"

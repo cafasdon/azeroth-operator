@@ -13,6 +13,13 @@ Local character analysis and player-operated configuration tools for World of Wa
 
 Status: read-only stdio MCP foundation implemented and integration-tested. No live game client qualified yet.
 
+Forever exports can include `weapon_enchants`, recording public enchant lists
+for main hand, off hand and ranged slots. `character_summary` exposes the
+reported enchant types, IDs, timers and charges with explicit unobserved hands.
+Timers describe capture time; zero or missing details do not establish expiry
+or effectiveness. No enchant is applied or cancelled.
+[Offline verification](docs/weapon-enchants-verification-2026-11-08.md).
+
 Forever item captures can include optional `native_stats` read for the exact
 item link. Equipment reviews compare numeric tokens observed on both items
 and keep tokens observed on only one side separate, without assuming zero.

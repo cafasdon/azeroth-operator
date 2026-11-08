@@ -1565,6 +1565,59 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 );
             }
         }
+        "weapon_enchants" => {
+            object(
+                value,
+                &[
+                    ("coverage", "public_weapon_enchant_lists", true),
+                    ("hands", "map", true),
+                ],
+            )?;
+            let hands = value["hands"].as_object().unwrap();
+            ensure!(
+                hands
+                    .keys()
+                    .all(|hand| matches!(hand.as_str(), "main_hand" | "off_hand" | "ranged")),
+                "Invalid weapon hand"
+            );
+            for hand in hands.values() {
+                object(hand, &[("entries", "map", true)])?;
+                entries(
+                    &hand["entries"],
+                    &[
+                        ("has_enchant", "bool", true),
+                        ("enchant_type", "text", true),
+                        ("enchant_id", "positive", false),
+                        ("charges", "uint", false),
+                        ("remaining_milliseconds", "uint", false),
+                    ],
+                )?;
+                let rows = hand["entries"].as_object().unwrap();
+                ensure!(
+                    rows.len() <= 32 && (1..=rows.len()).all(|i| rows.contains_key(&i.to_string())),
+                    "Invalid weapon enchant list"
+                );
+                for row in rows.values() {
+                    ensure!(
+                        matches!(
+                            row["enchant_type"].as_str(),
+                            Some("none" | "permanent" | "temporary" | "imbue")
+                        ),
+                        "Invalid weapon enchant type"
+                    );
+                    for field in ["enchant_id", "charges", "remaining_milliseconds"] {
+                        if let Some(v) = row.get(field) {
+                            ensure!(
+                                row["has_enchant"] == true
+                                    && v.as_u64().is_some_and(|n| n <= u32::MAX as u64
+                                        && (field != "enchant_id" || n > 0)),
+                                "Invalid weapon enchant detail"
+                            );
+                        }
+                    }
+                }
+            }
+        }
         "equipment_durability" => {
             object(
                 value,

@@ -1712,6 +1712,54 @@ AO.collectors.equipment_durability = function()
     return {coverage="readable_equipped_slots_only",entries=rows}
 end
 
+AO.collectors.weapon_enchants = function()
+    assert(AO.family=="forever" and C_Item and type(C_Item.GetWeaponEnchantInfo)=="function"
+        and Enum and Enum.WeaponSlot, "Weapon enchants unavailable")
+    local labels={[0]="none","permanent","temporary","imbue"}
+    local function read(slot)
+        local values=C_Item.GetWeaponEnchantInfo(slot)
+        assert(questRewardAccessible(values) and type(values)=="table" and #values<=32, "Weapon enchant list unavailable")
+        local rows,count={},0
+        for index,info in pairs(values) do
+            assert(questRewardInteger(index,1,#values) and questRewardAccessible(info) and type(info)=="table", "Invalid weapon enchant row")
+            local active,kind=info.hasEnchant,info.enchantType
+            assert(questRewardAccessible(active) and type(active)=="boolean" and questRewardInteger(kind,0,3), "Invalid weapon enchant observation")
+            local row={has_enchant=active,enchant_type=labels[kind]}
+            if active then
+                if questRewardInteger(info.enchantID,1,4294967295) then row.enchant_id=info.enchantID end
+                if questRewardInteger(info.charges,0,4294967295) then row.charges=info.charges end
+                local remaining=info.timeLeft
+                if questRewardAccessible(remaining) and type(remaining)=="number" and remaining>=0 and remaining<=4294967295 then
+                    row.remaining_milliseconds=math.ceil(remaining)
+                end
+            end
+            rows[tostring(index)]=row;count=count+1
+        end
+        assert(count==#values, "Incomplete weapon enchant list")
+        return rows,count
+    end
+    local hands={}
+    for _,definition in ipairs({{"main_hand","MainHand",0},{"off_hand","OffHand",1},{"ranged","Ranged",2}}) do
+        local slot=Enum.WeaponSlot[definition[2]]
+        if questRewardInteger(slot,definition[3],definition[3]) then
+            local ok,first,count=pcall(read,slot)
+            local nextOk,second,nextCount=pcall(read,slot)
+            if ok and nextOk and count==nextCount then
+                local stable=true
+                for index=1,count do
+                    local key=tostring(index);local a,b=first[key],second[key]
+                    if a.has_enchant~=b.has_enchant or a.enchant_type~=b.enchant_type or a.enchant_id~=b.enchant_id then stable=false;break end
+                    if a.charges~=b.charges then b.charges=nil end
+                    if a.remaining_milliseconds==nil or b.remaining_milliseconds==nil
+                        or b.remaining_milliseconds>a.remaining_milliseconds then b.remaining_milliseconds=nil end
+                end
+                if stable then hands[definition[1]]={entries=second} end
+            end
+        end
+    end
+    return {coverage="public_weapon_enchant_lists",hands=hands}
+end
+
 AO.collectors.flight_map = function()
     local frame=FlightMapFrame
     assert(frame and frame:IsVisible(), "Flight map is not open")

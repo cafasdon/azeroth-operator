@@ -58,6 +58,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="flight_map"
         sectionNames[#sectionNames+1]="durability_alerts"
         sectionNames[#sectionNames+1]="equipment_durability"
+        sectionNames[#sectionNames+1]="weapon_enchants"
         sectionNames[#sectionNames+1]="repair_quote"
         sectionNames[#sectionNames+1]="merchant_stock"
         sectionNames[#sectionNames+1]="trainer_services"

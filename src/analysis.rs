@@ -4592,6 +4592,18 @@ pub fn summary(s: &Snapshot) -> Value {
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
                 "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
     }).unwrap_or(Value::Null);
+    summary["weapon_enchant_observations"] = s.sections.get("weapon_enchants").map(|section| {
+        let hands=section["hands"].as_object().unwrap();
+        let rows:Vec<_>=hands.iter().map(|(hand,value)| {
+            let entries=value["entries"].as_object().unwrap();
+            let mut active:Vec<_>=entries.iter().filter(|(_,row)|row["has_enchant"]==true).collect();
+            active.sort_by_key(|(index,_)|index.parse::<u32>().unwrap());
+            (hand,json!({"observed_rows":entries.len(),"active_enchants":active.into_iter().map(|(index,row)|json!({"row":index.parse::<u32>().unwrap(),
+                "enchant_type":row["enchant_type"],"enchant_id":row["enchant_id"],"charges":row["charges"],"remaining_milliseconds":row["remaining_milliseconds"]})).collect::<Vec<_>>()}))
+        }).collect();
+        json!({"coverage":section["coverage"],"unobserved_hands":(["main_hand","off_hand","ranged"].into_iter().filter(|hand|!hands.contains_key(*hand)).collect::<Vec<_>>()),
+            "hands":rows.into_iter().collect::<std::collections::BTreeMap<_,_>>(),"effect_on_performance":"unverified"})
+    }).unwrap_or(Value::Null);
     summary["equipment_condition"] = s.sections.get("equipment_durability").map(|condition| {
         let rows=condition["entries"].as_object().unwrap();
         let mut slots:Vec<_>=rows.iter().map(|(slot,row)| {

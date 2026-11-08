@@ -17,6 +17,7 @@ SECTIONS = SECTIONS | {"profession_recipe_view"}
 SECTIONS = SECTIONS | {"mail_attachments"}
 SECTIONS = SECTIONS | {"pet_collection_view"}
 SECTIONS = SECTIONS | {"equipment_durability"}
+SECTIONS = SECTIONS | {"weapon_enchants"}
 
 
 def _validate_action_bar_observation(observation):
@@ -474,6 +475,24 @@ def validate_snapshot(value):
             if "family_mask" in bag and (total == 0 or type(bag["family_mask"]) is not int
                                          or not 0 <= bag["family_mask"] <= 4_294_967_295):
                 raise ValueError("Invalid bag family")
+    if "weapon_enchants" in sections:
+        enchants=sections["weapon_enchants"]
+        if (c["family"]!="forever" or not isinstance(enchants,dict) or set(enchants)!={"coverage","hands"}
+                or enchants["coverage"]!="public_weapon_enchant_lists" or not isinstance(enchants["hands"],dict)
+                or set(enchants["hands"])-{"main_hand","off_hand","ranged"}):
+            raise ValueError("Invalid weapon enchant coverage")
+        for hand in enchants["hands"].values():
+            if (not isinstance(hand,dict) or set(hand)!={"entries"} or not isinstance(hand["entries"],dict)
+                    or len(hand["entries"])>32 or set(hand["entries"])!={str(i) for i in range(1,len(hand["entries"])+1)}):
+                raise ValueError("Invalid weapon enchant list")
+            for row in hand["entries"].values():
+                if (not isinstance(row,dict) or not {"has_enchant","enchant_type"}<=row.keys()
+                        or set(row)-{"has_enchant","enchant_type","enchant_id","charges","remaining_milliseconds"}
+                        or type(row["has_enchant"]) is not bool or row["enchant_type"] not in ("none","permanent","temporary","imbue")
+                        or any(row["has_enchant"] is not True or type(row[field]) is not int
+                            or not (1 if field=="enchant_id" else 0)<=row[field]<=4_294_967_295
+                            for field in ("enchant_id","charges","remaining_milliseconds") if field in row)):
+                    raise ValueError("Invalid weapon enchant observation")
     if "equipment_durability" in sections:
         durability=sections["equipment_durability"]
         if (c["family"]!="forever" or not isinstance(durability,dict) or set(durability)!={"coverage","entries"}
