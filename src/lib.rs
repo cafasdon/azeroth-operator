@@ -336,6 +336,17 @@ pub struct SavedInstanceFilter {
     pub maximum_update_age_seconds: Option<u32>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SavedWorldBossFilter {
+    /// Exact case-insensitive captured boss name.
+    pub name: String,
+    /// Match only nonnegative reset timers at or below this captured value.
+    pub maximum_reset_seconds: Option<u32>,
+    /// Maximum instance-info cache age at capture, not age today.
+    pub maximum_update_age_seconds: Option<u32>,
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -363,6 +374,7 @@ pub struct CaptureFilters<'a> {
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub collected_mount: Option<CollectedMountFilter>,
     pub saved_instance: Option<SavedInstanceFilter>,
+    pub saved_world_boss: Option<SavedWorldBossFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -555,6 +567,7 @@ impl Store {
             tracked_achievement,
             collected_mount,
             saved_instance,
+            saved_world_boss,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -597,6 +610,17 @@ impl Store {
             "Saved instance filtering requires Forever and a bounded name"
         );
         let saved_instance_name = saved_instance
+            .as_ref()
+            .map(|filter| filter.name.to_lowercase());
+        ensure!(
+            saved_world_boss
+                .as_ref()
+                .is_none_or(|filter| family == Family::Forever
+                    && !filter.name.trim().is_empty()
+                    && filter.name.len() <= 256),
+            "Saved world boss filtering requires Forever and a bounded name"
+        );
+        let saved_world_boss_name = saved_world_boss
             .as_ref()
             .map(|filter| filter.name.to_lowercase());
         let parse_bound = |value: &str| -> Result<DateTime<Utc>> {
@@ -936,6 +960,25 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let saved_world_boss_match = saved_world_boss.as_ref().zip(saved_world_boss_name.as_ref()).and_then(|(filter, name)| {
+                        let saved = s.sections.get("saved_world_bosses")?;
+                        if !filter.maximum_update_age_seconds.is_none_or(|maximum|
+                            saved["update_age_seconds"].as_u64().is_some_and(|age| age <= u64::from(maximum))) {
+                            return None;
+                        }
+                        let mut matches: Vec<_> = saved["entries"].as_object()?.iter().filter(|(_, row)| {
+                            row["name"].as_str().is_some_and(|value| value.to_lowercase() == *name)
+                                && filter.maximum_reset_seconds.is_none_or(|maximum|
+                                    row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
+                        }).collect();
+                        matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
+                        (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
+                            "matched_count":matches.len(),"truncated":matches.len()>20,
+                            "entries":matches.iter().take(20).map(|(slot,row)| json!({"slot":slot.parse::<u32>().unwrap(),"data":row})).collect::<Vec<_>>() }))
+                    });
+                    if saved_world_boss.is_some() && saved_world_boss_match.is_none() {
+                        continue;
+                    }
                     let saved_instance_match = saved_instance.as_ref().zip(saved_instance_name.as_ref()).and_then(|(filter, name)| {
                         let saved = s.sections.get("saved_instances")?;
                         if !filter.maximum_update_age_seconds.is_none_or(|maximum|
@@ -1428,6 +1471,9 @@ impl Store {
                     }
                     if let Some(observation) = saved_instance_match {
                         summary["saved_instance_match"] = observation;
+                    }
+                    if let Some(observation) = saved_world_boss_match {
+                        summary["saved_world_boss_match"] = observation;
                     }
                     if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
                         summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,

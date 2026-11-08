@@ -32,6 +32,26 @@ Offline verification:
 
 The package was not installed. Native game testing remains deferred.
 
+## Saved-character search
+
+`list_snapshots.saved_world_boss` requires a bounded nonblank name and Forever
+family. Name matching is exact after lowercasing, without whitespace trimming.
+Optional reset and update-age ceilings are inclusive captured values. Negative
+reset sentinels are excluded when a reset ceiling is requested. Missing rows or
+cache sections never match. Output includes at most 20 matching rows in numeric
+slot order, plus complete matched count and a truncation flag.
+
+Existing owner-root reads, character/time bounds, newest-capture semantics and
+pagination are retained. A newest capture without the requested observations
+suppresses the older match. The time window is applied before newest selection.
+
+`cargo build --locked --offline` passed. With `PYTHONPATH=.;tests`,
+`python -m unittest test_saved_world_bosses test_saved_instances test_mcp test_snapshots`
+passed 12 tests. The real stdio test covers exact case-insensitive name matching,
+timer/age boundaries, negative timers, missing-newest suppression, time-window
+selection, numeric truncation, invalid arguments, family restriction and
+unchanged default listings.
+
 Jev 1.14.0 advisory scope assessment returned supported, separately from
 runtime verification (request
 `494788a3842f0eb7798a6ac47cb25e976eac16ecdfa38171177b777e289a8624`,
@@ -53,3 +73,16 @@ Independent review completed with no concrete findings:
   missing and unavailable sections give null summary counts while empty gives zero.
   The transient matrix is review evidence; the committed test above is the
   retained reproducible regression check.
+
+Jev 1.14.0 advisory scope assessment for search returned supported, separately
+from runtime evidence (request
+`3446d47db4c7f5f176ee1be813ca738b2eb8c0419ad7d5b70b6490c976c9ea10`,
+491 input / 46 output tokens, 0.323 seconds).
+
+Independent failure/caller review (gpt-6.1-sol, high effort) found no concrete
+flaw. `python -m unittest discover -s tests -p test_saved_world_bosses.py -v`
+passed one test in 0.344 seconds. Separate bounded real-MCP probes checked
+pagination/has-more, same-row name/reset matching, inclusive zero limits,
+newest-before-feature and date bounds, missing/empty exclusion, exact names,
+19 malformed payloads, invalid-slot rejection and external-store isolation.
+The probe reported all checks passing. No live or installation actions occurred.

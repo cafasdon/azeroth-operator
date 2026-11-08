@@ -72,6 +72,16 @@ the same passive instance-info update. Unique identifiers are omitted.
 list (zero) from an unavailable cache (null). These observations do not establish
 present loot eligibility; timers and update age describe the capture time.
 
+Use `list_snapshots.saved_world_boss` with a required exact case-insensitive
+`name` and optional `maximum_reset_seconds` and `maximum_update_age_seconds`.
+The timer ceiling matches only nonnegative timers. All limits describe captured
+values, not a countdown to today. Missing sections and names never match.
+Results include `saved_world_boss_match` with cache age, matched count and up to
+20 rows sorted by captured slot; `truncated` marks further matches. Combine
+with character/time filters and `latest_per_character` to search each character's
+newest valid capture within the requested time window. This does not identify
+the character currently in play or prove that any boss is available for loot.
+
 For saved-instance searches, use `list_snapshots.saved_instance`, for example
 `{"name":"Molten Core","locked":true,"maximum_reset_seconds":86400}` with
 `family: "forever"`. Names match exactly without case sensitivity. Optional
