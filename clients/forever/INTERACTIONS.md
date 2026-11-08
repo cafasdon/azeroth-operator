@@ -299,6 +299,9 @@ spell action ID and their observed hotkeys. It combines with the slot
 and hotkey selectors. Other action types and different spell IDs are excluded.
 Use `action_bar_item_id` instead to match an observed item action. Item
 and spell searches are mutually exclusive and keep their ID types separate.
+Set `action_bar_item_stock` with the item selector to include captured
+equipment and bag quantities when a shortcut matches. A missing storage
+section stays unknown. Counts do not establish that the shortcut can be used.
 `action_bar_slot_observed` is false for an unobserved slot and null for an
 unavailable section. An observed empty slot has `empty: true`. You can
 include its spellbook match, but the reverse list requires the full capture.

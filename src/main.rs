@@ -160,6 +160,9 @@ struct Inspect {
     action_bar_spell_id: Option<std::num::NonZeroU32>,
     /// Find captured action bar slots with this exact observed item action ID.
     action_bar_item_id: Option<std::num::NonZeroU32>,
+    /// Show equipment and bag quantities for the matched item shortcut in the same capture.
+    #[serde(default)]
+    action_bar_item_stock: bool,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -1185,6 +1188,11 @@ impl Operator {
                 "Choose either a spell ID or an item ID for an action bar search",
             )]);
         }
+        if args.action_bar_item_stock && args.action_bar_item_id.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar item stock requires an item ID",
+            )]);
+        }
         let action_id_filter = args
             .action_bar_spell_id
             .map(|id| ("spell", id))
@@ -2007,6 +2015,27 @@ impl Operator {
                     value[format!("action_bar_{kind}_match_count")] = serde_json::json!(
                         value["data"]["slots"].as_object().map(|slots| slots.len())
                     );
+                }
+                if args.action_bar_item_stock {
+                    let mut stock = serde_json::Value::Null;
+                    if let Some(id) = args.action_bar_item_id
+                        && value["action_bar_item_match_count"]
+                            .as_u64()
+                            .is_some_and(|count| count > 0)
+                    {
+                        let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                            azeroth_operator::analysis::find_item(&snapshot, id.get(), 0, 1)
+                        });
+                        let Ok(found) = result else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Could not read captured action bar item stock",
+                            )]);
+                        };
+                        let quantities = &found["quantity_by_storage"];
+                        stock = serde_json::json!({"equipment_quantity":quantities["equipment"],
+                            "bag_quantity":quantities["bags"]});
+                    }
+                    value["action_bar_item_stock"] = stock;
                 }
                 if args.action_bar_spellbook {
                     let snapshot = match self.store.read(&args.snapshot_id) {
