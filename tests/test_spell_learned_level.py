@@ -31,12 +31,16 @@ class SpellLearnedLevelTests(unittest.IsolatedAsyncioTestCase):
             for slot in ('3','8','4'):
                 base['sections']['spellbook']['entries'][slot]['usability']={
                     'usable':True,'insufficient_power':False}
+                base['sections']['spellbook']['entries'][slot]['reported_cast_count']=0
             before=store.ingest(base)
             changed=deepcopy(base);changed['sections']['spellbook']['entries']={
                 '30':spell(100,101,30),'31':spell(100,101),'4':spell(200,202,10),
                 '5':spell(300,301,0),'6':spell(400,401,10)}
             changed['sections']['spellbook']['entries']['30']['usability']={
                 'usable':False,'insufficient_power':True}
+            changed['sections']['spellbook']['entries']['30'].update(
+                charge_count={'current':0,'maximum':2},reported_cast_count=5,
+                cooldown_state={'enabled':False,'active':True})
             changed['sections']['action_bar_observation']={
                 'coverage':'loaded_builtin_buttons_only','observed_buttons':5,'missing_buttons':0,
                 'slots':{str(slot):{'empty':False,'kind':kind,'id':spell_id}
@@ -85,6 +89,14 @@ class SpellLearnedLevelTests(unittest.IsolatedAsyncioTestCase):
                         'before_readings':[{'usable':True,'insufficient_power':False}],
                         'after_readings':[None,{'usable':False,'insufficient_power':True}]}])
                     self.assertEqual((await compare(before,renamed_id))['observed_usability_changes'],[])
+                    self.assertEqual(changes['observed_resource_changes'],[{
+                        'spell_id':101,
+                        'before_readings':[{'charge_count':None,'reported_cast_count':0,'cooldown_state':None}],
+                        'after_readings':[
+                            {'charge_count':None,'reported_cast_count':None,'cooldown_state':None},
+                            {'charge_count':{'current':0,'maximum':2},'reported_cast_count':5,
+                             'cooldown_state':{'enabled':False,'active':True}}]}])
+                    self.assertEqual((await compare(before,renamed_id))['observed_resource_changes'],[])
                     self.assertEqual(changes['after_action_slots_with_lost_spellbook_match'],{'1':201})
                     self.assertEqual(changes['after_action_slots_with_gained_spellbook_match'],{'2':202,'3':400})
                     self.assertIsNone((await compare(after,before))['after_action_slots_with_gained_spellbook_match'])

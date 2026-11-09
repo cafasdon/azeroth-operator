@@ -1778,6 +1778,10 @@ reported spell IDs present in both spellbooks. It compares distinct pairs
 of usability and insufficient-power flags, with null for an unreadable
 row. Slot order and repeated identical readings do not affect the result.
 Differences describe saved observations under their capture conditions.
+`observed_resource_changes` uses the same exact-ID matching and keeps
+charge counts, reported cast counts and cooldown flags together as
+observed on each row. Missing values remain null. A change describes
+different readings across captures and leaves current castability unknown.
 
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.

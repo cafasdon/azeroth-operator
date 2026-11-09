@@ -4042,6 +4042,7 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
             "after_action_slots_with_gained_spellbook_match":changed_spellbook_action_matches(&after_ids, &before_ids, after),
             "observed_flag_changes":compare_spellbook_flags(before, after),
             "observed_usability_changes":compare_spellbook_usability(before, after),
+            "observed_resource_changes":compare_spellbook_resources(before, after),
             "observed_level_learned_changes":compare_spellbook_levels(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
@@ -4150,36 +4151,74 @@ fn compare_spellbook_flags(before: &Snapshot, after: &Snapshot) -> Option<Vec<Va
 }
 
 fn compare_spellbook_usability(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
-    type Readings = BTreeSet<Option<(bool, bool)>>;
-    fn by_reported_id(snapshot: &Snapshot) -> Option<BTreeMap<u64, Readings>> {
+    compare_reported_spell_readings(
+        before,
+        after,
+        |row| {
+            row["usability"]["usable"]
+                .as_bool()
+                .zip(row["usability"]["insufficient_power"].as_bool())
+        },
+        |reading| {
+            json!(
+                reading.map(|(usable, power)| json!({"usable":usable,"insufficient_power":power}))
+            )
+        },
+    )
+}
+
+fn compare_spellbook_resources(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
+    compare_reported_spell_readings(
+        before,
+        after,
+        |row| {
+            (
+                row["charge_count"]["current"]
+                    .as_u64()
+                    .zip(row["charge_count"]["maximum"].as_u64()),
+                row["reported_cast_count"].as_u64(),
+                row["cooldown_state"]["enabled"]
+                    .as_bool()
+                    .zip(row["cooldown_state"]["active"].as_bool()),
+            )
+        },
+        |(charges, casts, cooldown)| {
+            json!({
+                "charge_count":charges.map(|(current, maximum)| json!({"current":current,"maximum":maximum})),
+                "reported_cast_count":casts,
+                "cooldown_state":cooldown.map(|(enabled, active)| json!({"enabled":enabled,"active":active}))
+            })
+        },
+    )
+}
+
+fn compare_reported_spell_readings<T: Ord>(
+    before: &Snapshot,
+    after: &Snapshot,
+    read: impl Fn(&Value) -> T,
+    describe: impl Fn(&T) -> Value,
+) -> Option<Vec<Value>> {
+    let by_reported_id = |snapshot: &Snapshot| -> Option<BTreeMap<u64, BTreeSet<T>>> {
         let rows = snapshot.sections.get("spellbook")?["entries"].as_object()?;
-        let mut readings = BTreeMap::<_, Readings>::new();
+        let mut readings = BTreeMap::<_, BTreeSet<_>>::new();
         for row in rows.values() {
-            let usability = &row["usability"];
             readings
                 .entry(row["spell_id"].as_u64()?)
                 .or_default()
-                .insert(
-                    usability["usable"]
-                        .as_bool()
-                        .zip(usability["insufficient_power"].as_bool()),
-                );
+                .insert(read(row));
         }
         Some(readings)
-    }
+    };
     let after = by_reported_id(after)?;
     Some(
         by_reported_id(before)?
             .into_iter()
             .filter_map(|(id, old)| {
                 let new = after.get(&id)?;
-                let describe = |readings: &Readings| {
-                    readings.iter().map(|reading| {
-                        reading.map(|(usable, power)| json!({"usable":usable,"insufficient_power":power}))
-                    }).collect::<Vec<_>>()
-                };
                 (old != *new).then(|| {
-                    json!({"spell_id":id,"before_readings":describe(&old),"after_readings":describe(new)})
+                    json!({"spell_id":id,
+                        "before_readings":old.iter().map(&describe).collect::<Vec<_>>(),
+                        "after_readings":new.iter().map(&describe).collect::<Vec<_>>()})
                 })
             })
             .collect(),
