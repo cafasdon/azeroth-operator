@@ -1,5 +1,6 @@
 """Discover saved cooldown evidence without refreshing time, learning or stock."""
 from copy import deepcopy
+from datetime import datetime, timedelta
 from itertools import product
 import json
 import os
@@ -85,6 +86,13 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
                         material_filter={'scope':'bags','minimum_crafts':1})
                     self.assertEqual([row['recipe_id'] for row in refreshed['records']], [2,7,3,5,10,1,4,6])
                     self.assertEqual(refreshed['cooldown_captured_at'],base['captured_at'])
+                    capture_time = datetime.fromisoformat(base['captured_at'])
+                    for result in (ordered, refreshed, page):
+                        for row in result['records']:
+                            remaining = row.get('cooldown', {}).get('remaining_seconds')
+                            expected_end = (capture_time + timedelta(seconds=remaining)).isoformat().replace('+00:00', 'Z') if remaining else None
+                            self.assertEqual(row['estimated_cooldown_end_at'], expected_end)
+                    self.assertTrue(all('estimated_cooldown_end_at' not in row for row in baseline['records']))
                     for expected_state,minimum,maximum in product([None,'available','waiting','unknown'],
                         [None,0,1,2,4294967295],[None,0,30,4294967295]):
                         criteria={field:value for field,value in [('state',expected_state),('minimum_charges',minimum),

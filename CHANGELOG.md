@@ -1,5 +1,7 @@
 # Changelog
 
+- Show estimated cooldown end times in saved Forever recipe cooldown searches, based on the original recipe capture.
+
 - Sort saved Forever recipes by reported cooldown time remaining.
 
 - Sort saved Forever recipe searches by reported skill-ups before paging.

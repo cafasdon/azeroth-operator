@@ -33,6 +33,17 @@ pub enum RecipeCooldownState {
     Unknown,
 }
 
+fn estimated_recipe_cooldown_end(
+    recipe: &Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Option<chrono::DateTime<chrono::Utc>> {
+    recipe["cooldown"]["remaining_seconds"]
+        .as_i64()
+        .filter(|seconds| *seconds > 0)
+        .and_then(chrono::TimeDelta::try_seconds)
+        .and_then(|remaining| captured_at.checked_add_signed(remaining))
+}
+
 pub fn recipe_cooldown_state(recipe: &Value) -> RecipeCooldownState {
     if let Some(charges) = recipe["cooldown"]["charges"].as_u64() {
         return if charges > 0 {
@@ -542,6 +553,8 @@ pub fn search_recipe_materials_ordered(
             record["recipe_id"] = json!(id.parse::<u32>().unwrap());
             if cooldown_filter.is_some() || order == RecipeSearchOrder::ReportedCooldownRemainingAsc {
                 record["captured_cooldown_state"] = json!(recipe_cooldown_state(row));
+                record["estimated_cooldown_end_at"] =
+                    json!(estimated_recipe_cooldown_end(row, snapshot.captured_at));
             }
             if let Some(support) = support {
                 record["material_support"] = support.clone();
@@ -1180,11 +1193,7 @@ fn review_recipe_observation(
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?;
     let charges = recipe["cooldown"]["charges"].as_u64();
-    let estimated_cooldown_end = recipe["cooldown"]["remaining_seconds"]
-        .as_i64()
-        .filter(|seconds| *seconds > 0)
-        .and_then(chrono::TimeDelta::try_seconds)
-        .and_then(|remaining| snapshot.captured_at.checked_add_signed(remaining));
+    let estimated_cooldown_end = estimated_recipe_cooldown_end(recipe, snapshot.captured_at);
     let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
     let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
     let no_required_items = fixed && bag_limits.is_empty();

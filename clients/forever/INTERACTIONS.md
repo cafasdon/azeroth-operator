@@ -60,6 +60,9 @@ together with learned/skill-up and material predicates. Results retain original
 cooldown provenance while compatible newer inventory updates stock only. Explicit
 unknown state is searchable; missing numeric observations stay unevaluable. No
 elapsed recharge, live craftability or complete profession coverage is inferred.
+Cooldown-filtered or timer-ordered rows show an estimated end for positive
+reported timers, based on the original recipe capture. A timer can run while
+a charge was available. Zero and missing timers return no end estimate.
 [Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
 
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge
