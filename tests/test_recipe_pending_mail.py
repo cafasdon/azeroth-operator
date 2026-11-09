@@ -79,6 +79,34 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(result['craftability_verified'])
                     self.assertEqual((await review(empty_id))['pending_mail_material_observations']['unobserved_reagent_ids'],[2,10,720])
                     self.assertIsNone((await review(unsupported_id))['pending_mail_material_observations'])
+                    async def restock(key, include=True):
+                        response = await session.call_tool('inspect_snapshot', {
+                            'snapshot_id':key,'section':'bags',
+                            'bag_restock_requirements':[
+                                {'item_id':10,'quantity':4},{'item_id':720,'quantity':2},{'item_id':2,'quantity':1}],
+                            'bag_restock_merchant_snapshot_id':no_mail,
+                            'bag_restock_pending_mail':include})
+                        self.assertFalse(response.isError,response)
+                        return json.loads(response.content[0].text)
+
+                    annotated = await restock(with_mail)
+                    unannotated = await restock(with_mail, False)
+                    field = 'bag_restock_pending_mail_observations'
+                    self.assertNotIn(field,unannotated)
+                    for unchanged in ['bag_restock_review','bag_restock_merchant_quote']:
+                        self.assertEqual(annotated[unchanged],unannotated[unchanged])
+                    pending = annotated[field]
+                    self.assertEqual(pending['items'], [
+                        {'item_id':10,'shortfall_after_observed_bank_withdrawals':2,
+                         'known_pending_quantity':7,'known_attachment_slots':2},
+                        {'item_id':720,'shortfall_after_observed_bank_withdrawals':1,
+                         'known_pending_quantity':None,'known_attachment_slots':None}])
+                    self.assertEqual(pending['unloaded_messages'],4)
+                    self.assertIs(pending['counts_toward_restock_stock'],False)
+                    self.assertIsNone((await restock(no_mail))[field])
+                    self.assertIsNone((await restock(empty_id))[field]['items'][0]['known_pending_quantity'])
+                    self.assertTrue((await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':with_mail,'section':'bags','bag_restock_pending_mail':True})).isError)
                     batch={'additional_recipes':[{'snapshot_id':extra_id,'crafts':2}],
                            'suggest_dependency_order':True,'merchant_reagent_plan':True}
                     earlier=await review(no_mail,inventory_snapshot_id=inventory_no_mail,**batch)

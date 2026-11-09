@@ -4898,6 +4898,32 @@ pub fn profession_by_skill_line(
 
 type KnownMailTotals = BTreeMap<(&'static str, u64), (u64, u32)>;
 
+pub fn restock_pending_mail(snapshot: &Snapshot, residual: &Value) -> Option<Value> {
+    let mail = snapshot.sections.get("mail_attachments")?;
+    let (totals, unknown_slots) = mail_attachment_totals(mail);
+    let mut items = Vec::new();
+    for row in residual["items"].as_array()? {
+        let item_id = row["item_id"].as_u64()?;
+        let shortfall = row["shortfall_vs_observed"].as_u64()?;
+        if shortfall == 0 {
+            continue;
+        }
+        let known = totals.get(&("item", item_id));
+        items.push(json!({
+            "item_id":item_id,"shortfall_after_observed_bank_withdrawals":shortfall,
+            "known_pending_quantity":known.map(|(quantity, _)| quantity),
+            "known_attachment_slots":known.map(|(_, slots)| slots),
+        }));
+    }
+    Some(json!({
+        "coverage":"loaded_inbox_attachments","captured_at":snapshot.captured_at,
+        "loaded_messages":mail["loaded_messages"],"total_messages":mail["total_messages"],
+        "unloaded_messages":unloaded_mail_messages(mail),"unknown_attachment_slots":unknown_slots,
+        "items":items,"counts_toward_restock_stock":false,"retrieval_eligibility_verified":false,
+        "live":false,
+    }))
+}
+
 fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
     let mut totals = KnownMailTotals::new();
     let mut unknown = 0u32;

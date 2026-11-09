@@ -3001,3 +3001,8 @@ Set `bag_restock_catalogue_sources: true` to look up the same residual
 shortfalls in the verified local catalogue. The result has separate source
 provenance and distinguishes missing catalogue items from missing source
 metadata. The lookup works offline.
+
+Set `bag_restock_pending_mail: true` to show known pending item attachments
+for quantities still short after observed bank withdrawals. The inbox
+observation comes from the same capture and excludes currency attachments.
+Pending items stay separate from usable stock and purchase calculations.

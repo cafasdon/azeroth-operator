@@ -177,6 +177,9 @@ struct Inspect {
     /// Look up pinned local catalogue sources for the residual bag shortfall.
     #[serde(default)]
     bag_restock_catalogue_sources: bool,
+    /// Annotate residual bag shortfalls with pending item attachment observations.
+    #[serde(default)]
+    bag_restock_pending_mail: bool,
     /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
@@ -2829,7 +2832,8 @@ impl Operator {
         if ((args.bag_restock_location_offset.is_some()
             || args.bag_restock_merchant_snapshot_id.is_some()
             || args.bag_restock_source_snapshot_id.is_some()
-            || args.bag_restock_catalogue_sources)
+            || args.bag_restock_catalogue_sources
+            || args.bag_restock_pending_mail)
             && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
                 args.section.as_deref() != Some("bags")
@@ -3054,6 +3058,17 @@ impl Operator {
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
+                    if args.bag_restock_pending_mail {
+                        value["bag_restock_pending_mail_observations"] = serde_json::json!(
+                            bank_restock_residual(&value["bag_restock_review"]).and_then(
+                                |residual| {
+                                    azeroth_operator::analysis::restock_pending_mail(
+                                        &snapshot, &residual,
+                                    )
+                                }
+                            )
+                        );
+                    }
                     if args.bag_restock_catalogue_sources {
                         let result = self
                             .forever_catalogue

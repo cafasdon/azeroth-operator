@@ -1,5 +1,7 @@
 # Changelog
 
+- Show pending item attachments alongside residual Forever bag restocking shortfalls.
+
 - Show pinned local catalogue sources for residual Forever bag restocking shortfalls.
 
 - Show captured item source references for residual Forever bag restocking shortfalls.
