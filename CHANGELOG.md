@@ -1,5 +1,9 @@
 # Changelog
 
+- Add worst-encounter DPS-gain ranking to saved-journal and unified owned-gear
+  evaluation, retaining weighted average as default and reusing simulation
+  checkpoints when changing objectives. Expose per-loadout gain range and score.
+
 - Include exact saved equipment and physical-source selections in ranked
   journal/owned-gear results, with checked snapshot/report provenance and
   explicit historical-location/native-eligibility limits.

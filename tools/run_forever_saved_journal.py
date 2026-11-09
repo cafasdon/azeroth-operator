@@ -13,6 +13,14 @@ from tools.prepare_forever_gear_window import encoded
 from tools.prepare_forever_gear_window import selections_for_review, cleared_for_review
 from tools.merge_forever_gear_windows import retained_equipment
 
+RANKING_OBJECTIVES = ('weighted_gain', 'worst_encounter_gain')
+
+
+def ranking_objective(args):
+    objective = getattr(args, 'ranking_objective', 'weighted_gain')
+    require(isinstance(objective,str) and objective in RANKING_OBJECTIVES)
+    return objective
+
 
 def attach_saved_loadouts(path, leaders, source, deadline):
     """Join bounded ranking references to checked historical plans, never equip."""
@@ -51,6 +59,7 @@ def attach_saved_loadouts(path, leaders, source, deadline):
 
 
 async def execute(args, *, deadline=None):
+    objective = ranking_objective(args)
     integer(args.max_pages, 1, 1000000)
     integer(args.top, 1, 20)
     integer(args.page_limit, 1, 64)
@@ -137,12 +146,18 @@ async def execute(args, *, deadline=None):
                 'gain_pct_by_encounter': [100 * rows[review]['mean_dps_delta_from_baseline'] / rows[1]['mean_dps'] for rows in metrics],
                 'source_window_offset_decimal': selected['selected_window_offsets_decimal'][reference['window_index'] - 1],
                 'source_window_review': reference['review']}
+            require(all(type(gain) in (int,float) and isfinite(gain) for gain in row['gain_pct_by_encounter']))
+            row['minimum_dps_gain_pct'] = min(row['gain_pct_by_encounter'])
+            row['maximum_dps_gain_pct'] = max(row['gain_pct_by_encounter'])
+            row['ranking_score'] = score if objective == 'weighted_gain' else row['minimum_dps_gain_pct']
             if gear in leaders:
                 require(all(leaders[gear][field] == row[field] for field in
                     ['weighted_dps_gain_pct', 'mean_dps_by_encounter', 'gain_pct_by_encounter']))
             else:
                 leaders[gear] = row
-            leaders = dict(sorted(leaders.items(), key=lambda item: (-item[1]['weighted_dps_gain_pct'], item[0]))[:args.top])
+            leaders = dict(sorted(leaders.items(), key=lambda item:
+                (-item[1]['ranking_score'], item[0]) if objective == 'weighted_gain' else
+                (-item[1]['ranking_score'], -item[1]['weighted_dps_gain_pct'], item[0]))[:args.top])
         next_cursor = selected['resume_after_window_offset_decimal']
         if next_cursor is None:
             exhausted = True
@@ -158,7 +173,9 @@ async def execute(args, *, deadline=None):
     report = {'mode': 'saved_journal_simulation', 'journal_coverage': source,
         'all_saved_resolved_results_complete': complete, 'ranking_scope':
             'all_saved_resolved_requests' if complete else 'completed_pages_only',
-        'ranking_basis': 'weighted_dps_point_estimates_not_statistical_optimality',
+        'ranking_objective':objective,
+        'ranking_basis': ('weighted_dps_point_estimates_not_statistical_optimality' if objective == 'weighted_gain'
+            else 'minimum_encounter_dps_gain_point_estimates_not_statistical_optimality'),
         'encounter_weights': weights, 'baseline_simulator_gear_sha256': baseline_gear,
         'ranked_gear_sets': list(leaders.values()), 'top_limit': args.top,
         'visited_window_count': visited, 'completed_window_count': completed, 'visited_page_count': page_count,
@@ -181,6 +198,8 @@ def main(argv=None):
     cli.add_argument('--page-limit', type=int, default=8)
     cli.add_argument('--max-pages', type=int, default=64)
     cli.add_argument('--top', type=int, default=10)
+    cli.add_argument('--ranking-objective',choices=RANKING_OBJECTIVES,default='weighted_gain',
+        help='Rank by weighted average gain or the minimum gain across every supplied encounter')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)

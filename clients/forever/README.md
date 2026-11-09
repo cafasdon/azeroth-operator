@@ -36,6 +36,18 @@ Preparation also requires saved cleared slots to match the MCP's actual review;
 older prepared artifacts must be regenerated after this preparer change.
 [Offline evidence](../../docs/ranked-loadout-verification-2026-11-09.md).
 
+Both saved-journal and unified evaluation accept
+`--ranking-objective worst_encounter_gain`. It ranks by each gear set's lowest
+percentage DPS gain against the captured baseline across every supplied encounter,
+then weighted average gain and gear hash to break ties. The default
+`weighted_gain` keeps the existing weighted-average ordering. Results include
+`minimum_dps_gain_pct`, `maximum_dps_gain_pct`, and `ranking_score`; the report
+identifies the objective. Encounter weights affect only the tiebreak in worst-
+encounter mode: every supplied encounter participates, even with a tiny weight.
+Use checkpoint-only mode to rerank available results without new simulations.
+Partial pages retain their partial scope, and both objectives use point estimates.
+[Offline evidence](../../docs/robust-gear-ranking-verification-2026-11-09.md).
+
 Required arguments are `--mcp`, `--snapshot-id`, `--template`, `--journal`,
 `--engine`, `--engine-sha256`, `--simulation-journal` and one or more
 `--encounter-lookup` files. MCP/engine must be absolute trusted local executable

@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Saved-journal and unified gear evaluation can rank by weighted average DPS gain
+or `worst_encounter_gain`, which maximises the minimum observed gain across all
+supplied encounters. The selected objective drives bounded top retention across
+pages and reuses the same simulation checkpoints. Neither mode establishes
+statistical optimality or covers encounters that were not supplied.
+[Evidence](../../docs/robust-gear-ranking-verification-2026-11-09.md).
+
 Saved-journal and unified owned-gear rankings now return the retained loadout
 and saved physical source selections alongside each ranked gear hash. A checked
 journal reference binds the snapshot, search scope and numeric equipment.

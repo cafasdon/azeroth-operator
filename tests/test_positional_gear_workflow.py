@@ -144,6 +144,14 @@ class PositionalExecutionTests(unittest.TestCase):
                 cold=asyncio.run(workflow.execute(workflow.parser().parse_args(argv)))
                 plans=(base/'plans.sqlite').read_bytes()
                 warm=asyncio.run(workflow.execute(workflow.parser().parse_args([*argv,'--checkpoint-only'])))
+                robust=asyncio.run(workflow.execute(workflow.parser().parse_args([*argv,'--checkpoint-only',
+                    '--ranking-objective','worst_encounter_gain'])))
+                self.assertEqual(robust['ranking_objective'],'worst_encounter_gain')
+                self.assertEqual(robust['simulation']['ranking_objective'],'worst_encounter_gain')
+                self.assertEqual(robust['simulation']['new_runs'],0)
+                self.assertTrue(robust['reported_space_results_complete'])
+                self.assertEqual([row['ranking_score'] for row in robust['simulation']['ranked_gear_sets']],
+                    sorted((min(row['gain_pct_by_encounter']) for row in warm['simulation']['ranked_gear_sets']),reverse=True))
                 self.assertEqual(cold['status'],'reported_space_complete')
                 self.assertTrue(cold['reported_space_results_complete'])
                 self.assertEqual(cold['collection']['progress']['total_combinations_decimal'],'4')

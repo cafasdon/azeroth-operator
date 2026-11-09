@@ -213,6 +213,12 @@ equipment, selected source locations and cleared slots, tied to the snapshot
 and source report hash. Locations describe the saved plan; refresh observations
 before relying on them in game. [Evidence](docs/ranked-loadout-verification-2026-11-09.md).
 
+Use `--ranking-objective worst_encounter_gain` on saved-journal or unified
+evaluation to maximise the lowest DPS gain across the supplied encounters.
+The default remains weighted average gain. Switching objectives reuses existing
+numeric checkpoints; neither objective proves statistical or full owned BiS.
+[Evidence](docs/robust-gear-ranking-verification-2026-11-09.md).
+
 The positional engine extension now connects MCP review, retained plans and
 offline evaluation. Opt in with `positional_simulator_equipment: true` on
 `review_equipment_selection`, or `--positional-equipment` on collection/evaluation.

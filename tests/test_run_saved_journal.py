@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from shared.snapshots import SnapshotStore
 from test_snapshots import fixture
@@ -24,6 +25,13 @@ from tools import journal_forever_gear_windows as journal_tools
 
 
 class SavedJournalTests(unittest.TestCase):
+    def test_objective_validation_precedes_journal_access(self):
+        for value in [None,True,1,[],{},'unknown']:
+            with patch.object(runner.journal,'journal_status') as read:
+                with self.assertRaises(ValueError): asyncio.run(runner.execute(SimpleNamespace(ranking_objective=value)))
+                read.assert_not_called()
+        self.assertEqual(runner.ranking_objective(SimpleNamespace()),'weighted_gain')
+
     def test_real_module_empty_journal_and_invalid_options(self):
         root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as folder:
@@ -45,9 +53,10 @@ class SavedJournalTests(unittest.TestCase):
             self.assertEqual(result['ranked_gear_sets'],[])
             self.assertFalse((base/'must-not-create').exists())
             self.assertEqual(journal.read_bytes(),before)
-            for option,value in [('--top','0'),('--max-pages','0'),('--page-limit','65'),('--iteration-budget','0')]:
+            for option,value in [('--top','0'),('--max-pages','0'),('--page-limit','65'),('--iteration-budget','0'),
+                ('--ranking-objective','unknown')]:
                 invalid = subprocess.run([*args,option,value],cwd=root,capture_output=True,text=True,timeout=20)
-                self.assertEqual(invalid.returncode,1)
+                self.assertEqual(invalid.returncode,2 if option=='--ranking-objective' else 1)
                 self.assertEqual(invalid.stdout,'')
                 self.assertNotIn('PRIVATE',invalid.stderr)
 
@@ -112,6 +121,24 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertEqual((result['new_runs'],result['new_iterations']),(1,3))
                     self.assertEqual(result['all_saved_resolved_results_complete'],index == 5)
                 self.assertEqual(calls.call_count,6)
+                original_argv=argv[:]
+                weight_indices=[i+1 for i,value in enumerate(argv) if value=='--encounter-weight']
+                argv[weight_indices[0]]='9'; argv[weight_indices[1]]='1'
+                average=launch(['--checkpoint-only','--top','1'])
+                robust=launch(['--checkpoint-only','--top','1','--ranking-objective','worst_encounter_gain'])
+                self.assertEqual(average['ranking_objective'],'weighted_gain')
+                self.assertEqual(robust['ranking_objective'],'worst_encounter_gain')
+                self.assertEqual(average['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4550)
+                best=robust['ranked_gear_sets'][0]
+                self.assertEqual(best['saved_loadout']['selections'][0]['expected_item_id'],4549)
+                self.assertEqual((best['minimum_dps_gain_pct'],best['maximum_dps_gain_pct'],best['ranking_score']),(10,30,10))
+                self.assertAlmostEqual(best['weighted_dps_gain_pct'],12)
+                for ranked in [average,robust]:
+                    self.assertEqual(ranked['new_runs'],0)
+                    self.assertTrue(ranked['all_saved_resolved_results_complete'])
+                    self.assertFalse(ranked['best_in_slot_verified'])
+                self.assertEqual(calls.call_count,6)
+                argv[:]=original_argv
                 self.assertEqual(result['ranking_scope'],'all_saved_resolved_requests')
                 self.assertEqual(result['completed_window_count'],3)
                 self.assertEqual(len(result['ranked_gear_sets']),3)

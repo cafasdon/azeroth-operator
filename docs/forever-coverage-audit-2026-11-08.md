@@ -264,3 +264,10 @@ legality, model accuracy and statistical optimality remain unverified.
 exact retained equipment and saved physical-source selections to ranked journal
 results. This makes the recommendation inspectable beyond a hash/reference;
 current locations, native equip eligibility and full owned BiS remain open.
+
+[Worst-encounter ranking](robust-gear-ranking-verification-2026-11-09.md) adds
+an explicit objective that maximises minimum DPS gain across supplied encounters,
+alongside the existing weighted-average default. It uses the same completed
+numeric simulations, retaining partial-scope and point-estimate limitations.
+This improves encounter-sensitive recommendations without claiming full owned
+or statistical optimality.

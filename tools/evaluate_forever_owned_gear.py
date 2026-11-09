@@ -15,6 +15,7 @@ from tools.sync_exports import ordinary
 
 async def execute(args):
     args = copy(args)
+    objective = simulation.ranking_objective(args)
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.collection_seconds, 1, args.time_budget_seconds)
     for field, maximum in [('max_windows', 1024), ('max_pages', 1000000), ('page_limit', 64),
@@ -100,6 +101,7 @@ async def execute(args):
         'requested_slots': args.slot, 'candidate_storage_scope': 'all_observed_storage',
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
+        'ranking_objective':objective,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
         'reported_proposals_resolved': resolved, 'all_saved_resolved_results_complete': simulated,
@@ -120,6 +122,8 @@ def parser():
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')
+    cli.add_argument('--ranking-objective',choices=simulation.RANKING_OBJECTIVES,default='weighted_gain',
+        help='Rank by weighted average gain or the minimum gain across every supplied encounter')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')
