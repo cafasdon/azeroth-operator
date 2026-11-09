@@ -7,6 +7,10 @@ captured ratio. Missing readings and zero maximums cannot match percentage
 bounds. For primary power, `power_type` from 0 to 63 matches the exact
 captured type, with or without percentage bounds. Each match includes the
 saved counter and leaves current readiness unverified.
+Saved `player_resource_changes` also reports changes in missing units
+and percentage points alongside the current and maximum counter changes.
+Percentage-point differences require two positive maximums. Primary
+power comparisons still require matching type and units.
 
 Use `list_snapshots.maximum_pvp_points_to_next_threshold` to find saved
 Forever captures within an inclusive point limit of the reported next PvP

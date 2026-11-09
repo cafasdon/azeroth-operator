@@ -3045,9 +3045,24 @@ pub fn compare_observations(
         comparison["player_resource_changes"] = before.sections.get("player_resources")
             .zip(after.sections.get("player_resources"))
             .map(|(old,new)| {
-                let counters=|a:&Value,b:&Value| json!({"before":a,"after":b,
-                    "current_delta":b["current"].as_i64().unwrap()-a["current"].as_i64().unwrap(),
-                    "maximum_delta":b["maximum"].as_i64().unwrap()-a["maximum"].as_i64().unwrap()});
+                let counters = |a: &Value, b: &Value| {
+                    let old_current = a["current"].as_i64().unwrap();
+                    let old_maximum = a["maximum"].as_i64().unwrap();
+                    let new_current = b["current"].as_i64().unwrap();
+                    let new_maximum = b["maximum"].as_i64().unwrap();
+                    let percentage_point_delta = (old_maximum > 0 && new_maximum > 0).then(|| {
+                        let old_maximum = i128::from(old_maximum);
+                        let new_maximum = i128::from(new_maximum);
+                        let difference = i128::from(new_current) * old_maximum
+                            - i128::from(old_current) * new_maximum;
+                        difference as f64 * 100.0 / (old_maximum * new_maximum) as f64
+                    });
+                    let current_delta = new_current - old_current;
+                    let maximum_delta = new_maximum - old_maximum;
+                    json!({"before":a,"after":b,"current_delta":current_delta,
+                        "maximum_delta":maximum_delta,"missing_delta":maximum_delta-current_delta,
+                        "percentage_point_delta":percentage_point_delta})
+                };
                 let power=old.get("primary_power").zip(new.get("primary_power"));
                 json!({"health":old.get("health").zip(new.get("health")).map(|(a,b)|counters(a,b)),
                     "primary_power":power.filter(|(a,b)| a["power_type"]==b["power_type"] && a["units"]==b["units"]).map(|(a,b)|counters(a,b)),

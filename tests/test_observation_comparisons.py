@@ -88,8 +88,12 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
                     counters = result['player_resource_changes']
                     self.assertEqual(counters['health']['current_delta'], -4294967295)
                     self.assertEqual(counters['health']['maximum_delta'], -4294967295)
+                    self.assertEqual(counters['health']['missing_delta'], 0)
+                    self.assertIsNone(counters['health']['percentage_point_delta'])
                     self.assertEqual(counters['primary_power']['current_delta'], 20)
                     self.assertEqual(counters['primary_power']['maximum_delta'], 100)
+                    self.assertEqual(counters['primary_power']['missing_delta'], 80)
+                    self.assertEqual(counters['primary_power']['percentage_point_delta'], 5)
                     self.assertFalse(counters['primary_power_type_changed'])
                     self.assertFalse(counters['resource_events_verified'])
                     self.assertFalse(counters['readiness_verified'])
@@ -114,6 +118,7 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
                     data = await compare(b=store.ingest(partial), player_resource_changes=True)
                     self.assertIsNone(data['player_resource_changes']['primary_power'])
                     self.assertIsNone(data['player_resource_changes']['primary_power_type_changed'])
+                    self.assertEqual(data['player_resource_changes']['health']['percentage_point_delta'], 0)
                     many_before, many_after = deepcopy(base), deepcopy(later)
                     many_before['sections']['profession_spells']['entries'] = {str(i): {} for i in range(1, 52)}
                     many_after['sections']['profession_spells']['entries'] = {str(i): {} for i in range(100, 151)}

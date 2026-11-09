@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever health and power by missing units and percentage-point change.
+
 - Filter saved Forever resources by a percentage range and exact primary power type.
 
 - Find saved Forever captures by recorded health or primary power percentage.
