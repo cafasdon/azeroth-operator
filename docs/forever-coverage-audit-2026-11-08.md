@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: selected crafting-source acquisition projections now retain
+the review's item-capacity basis, combined saved charge limit and cooldown state.
+[Offline evidence](catalogue-recipe-capacity-verification-2026-11-09.md). This
+closes the projection gap recorded in the zero-item capacity review without
+merging selected/bulk observations or verifying current eligibility.
+
 9 November update: recipe preparation now distinguishes explicit no-item limits
 from unavailable material evidence and combines known charges for those recipes
 even without inventory. [Offline evidence](zero-item-recipe-capacity-verification-2026-11-09.md).

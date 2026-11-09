@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Crafting acquisition lookups now retain a matching selected recipe's item-capacity
+basis, combined item/charge limit and captured cooldown state. Bulk observations
+stay separate; these historical limits do not verify current crafting eligibility.
+[Evidence](docs/catalogue-recipe-capacity-verification-2026-11-09.md).
+
 Recipe review distinguishes explicit zero-item requirements from unavailable
 material evidence. Zero-item recipes can now retain their captured charge limit
 even when inventory was not observed; this does not verify current craftability.

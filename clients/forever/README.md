@@ -1,5 +1,19 @@
 # Forever
 
+With `acquisition_snapshot_id`, `lookup_forever_catalogue` crafted sources now
+project the matching selected review's `material_capacity_basis`,
+`material_and_charge_capacity` and `captured_cooldown_state`, alongside existing
+finite material capacity. They describe one requested craft at the acquisition
+capture time. No selected recipe, a different recipe ID or a known output mismatch
+gives null projection fields; an unrecorded output ID remains explicitly unknown
+under the existing recipe-ID match contract. No fallback to a bulk row occurs.
+
+`bulk_recipe_review` remains independent, including when it reports different
+charges for the same recipe. Learning conflicts remain in `recipe_learning`;
+selected projection fields are historical observations and do not resolve them
+or establish craftability. No recipe/character names are added by these fields.
+[Offline evidence](../../docs/catalogue-recipe-capacity-verification-2026-11-09.md).
+
 Recipe reviews expose `material_capacity_basis` separately for `bags` and
 `all_observed_storage`: `no_required_items`, `observed_required_items` or
 `unavailable`. The existing finite `material_capacity` remains null when there

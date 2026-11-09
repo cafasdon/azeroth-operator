@@ -1,5 +1,9 @@
 # Changelog
 
+- Carry selected-recipe capacity basis, combined saved item/charge capacity and
+  captured cooldown state into catalogue acquisition projections, preserving
+  recipe/output matching, unknowns and independent bulk-recipe evidence.
+
 - Distinguish explicit zero-item recipe capacity from unavailable material data,
   retaining original saved charge limits for free fixed requirements even without
   inventory; preserve legacy finite material-capacity fields and unknown charges.

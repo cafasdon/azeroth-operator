@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Cached crafted-item acquisition lookup now preserves selected-recipe item/charge
+capacity semantics, including explicit no-item requirements and unknown limits.
+Recipe-ID/known-output guards apply before projection; bulk and selected evidence
+stay distinct and learning conflicts stay visible. These are one-craft historical
+observations, with current eligibility still unverified.
+[Evidence](../../docs/catalogue-recipe-capacity-verification-2026-11-09.md).
+
 Single/bulk recipe preparation distinguishes no required items from unavailable
 material capacity. Explicit zero-item fixed recipes retain their saved charge
 limit without needing an inventory capture; unknown charges and unsupported
