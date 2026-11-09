@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `maximum_reported_member_count` in the `list_snapshots.group_context`
+filter to cap the captured member count. Combine it with
+`minimum_reported_member_count` for an inclusive range in the selected
+home or instance category. Zero matches an observed count of zero.
+
 The saved PvP progression comparison reports a signed rank difference when
 both captures report the same season ID. It also subtracts the reported
 rank-point readings when the rank is unchanged. Different or missing season

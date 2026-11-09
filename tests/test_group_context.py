@@ -90,6 +90,13 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn('group_context_match',plain_list['snapshots'][0])
                     solo = await search(category='instance',in_group=False,minimum_reported_member_count=0)
                     self.assertEqual([row['snapshot_id'] for row in solo], [valid[3][0]])
+                    self.assertEqual(await search(category='instance',maximum_reported_member_count=0),solo)
+                    self.assertEqual(await search(category='instance',minimum_reported_member_count=40,
+                        maximum_reported_member_count=40),leader)
+                    self.assertEqual(await search(category='instance',minimum_reported_member_count=1,
+                        maximum_reported_member_count=39),[])
+                    await call('list_snapshots',error=True,family='forever',group_context={
+                        'category':'instance','minimum_reported_member_count':40,'maximum_reported_member_count':39})
                     self.assertEqual(await search(category='instance',in_group=False,player_is_leader=False),[])
                     self.assertEqual(await search(category='home',in_group=True,in_raid=True),[])
                     latest = await call('list_snapshots',family='forever',latest_per_character=True,group_context={'category':'instance'})

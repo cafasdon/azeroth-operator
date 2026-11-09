@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever group context by an inclusive member-count range.
+
 - Compare saved Forever PvP rank readings when both captures report the same season ID.
 
 - Compare saved Forever spell charges, cast counts and cooldown flags for shared exact reported IDs.

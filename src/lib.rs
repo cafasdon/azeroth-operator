@@ -1434,6 +1434,7 @@ pub struct GroupContextFilter {
     in_raid: Option<bool>,
     player_is_leader: Option<bool>,
     minimum_reported_member_count: Option<u32>,
+    maximum_reported_member_count: Option<u32>,
 }
 
 impl GroupContextFilter {
@@ -1453,11 +1454,14 @@ impl GroupContextFilter {
                 return None;
             }
         }
-        if self.minimum_reported_member_count.is_some_and(|minimum| {
-            row["reported_member_count"]
-                .as_u64()
-                .is_none_or(|count| count < u64::from(minimum))
-        }) {
+        let count = row["reported_member_count"].as_u64()?;
+        if self
+            .minimum_reported_member_count
+            .is_some_and(|min| count < u64::from(min))
+            || self
+                .maximum_reported_member_count
+                .is_some_and(|max| count > u64::from(max))
+        {
             return None;
         }
         Some(
@@ -1855,6 +1859,17 @@ impl Store {
         ensure!(
             group_context.is_none() || family == Family::Forever,
             "Group context filtering requires Forever"
+        );
+        ensure!(
+            group_context
+                .as_ref()
+                .and_then(|filter| {
+                    filter
+                        .minimum_reported_member_count
+                        .zip(filter.maximum_reported_member_count)
+                })
+                .is_none_or(|(min, max)| min <= max),
+            "Invalid group member count range"
         );
         ensure!(
             profession_spell_id.is_none() || family == Family::Forever,
