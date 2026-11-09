@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever weapon enchants by type and inclusive charge range.
+
 - Compare saved Forever weapon enchant readings separately for each hand.
 
 - Find saved Forever weapon enchants by hand, exact ID, charges and reported timer.

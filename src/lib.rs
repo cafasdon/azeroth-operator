@@ -1472,8 +1472,18 @@ enum WeaponEnchantHand {
 pub struct WeaponEnchantFilter {
     hand: WeaponEnchantHand,
     enchant_id: Option<std::num::NonZeroU32>,
+    enchant_type: Option<WeaponEnchantType>,
     minimum_charges: Option<u32>,
+    maximum_charges: Option<u32>,
     maximum_remaining_milliseconds: Option<u32>,
+}
+
+#[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum WeaponEnchantType {
+    Permanent,
+    Temporary,
+    Imbue,
 }
 
 impl WeaponEnchantFilter {
@@ -1483,16 +1493,25 @@ impl WeaponEnchantFilter {
             WeaponEnchantHand::OffHand => "off_hand",
             WeaponEnchantHand::Ranged => "ranged",
         };
+        let enchant_type = self.enchant_type.map(|kind| match kind {
+            WeaponEnchantType::Permanent => "permanent",
+            WeaponEnchantType::Temporary => "temporary",
+            WeaponEnchantType::Imbue => "imbue",
+        });
         let mut matches: Vec<_> = section["hands"][hand]["entries"]
             .as_object()?
             .iter()
             .filter_map(|(slot, row)| {
                 (row["has_enchant"] == true
+                    && enchant_type.is_none_or(|kind| row["enchant_type"].as_str() == Some(kind))
                     && self
                         .enchant_id
                         .is_none_or(|id| row["enchant_id"].as_u64() == Some(u64::from(id.get())))
                     && self.minimum_charges.is_none_or(|min| {
                         row["charges"].as_u64().is_some_and(|n| n >= u64::from(min))
+                    })
+                    && self.maximum_charges.is_none_or(|max| {
+                        row["charges"].as_u64().is_some_and(|n| n <= u64::from(max))
                     })
                     && self.maximum_remaining_milliseconds.is_none_or(|max| {
                         row["remaining_milliseconds"]
@@ -2037,6 +2056,13 @@ impl Store {
         ensure!(
             weapon_enchant.is_none() || family == Family::Forever,
             "Weapon enchant search requires Forever"
+        );
+        ensure!(
+            weapon_enchant
+                .as_ref()
+                .and_then(|filter| filter.minimum_charges.zip(filter.maximum_charges))
+                .is_none_or(|(min, max)| min <= max),
+            "Invalid weapon enchant charge range"
         );
         if let Some(filter) = &player_resource {
             ensure!(

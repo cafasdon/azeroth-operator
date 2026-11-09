@@ -6,6 +6,9 @@ Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 must match the same row that reported an enchant. Missing readings cannot
 satisfy a bound, and zero remains a known value. Results give the numeric
 row indices. Timers describe the capture.
+Use `enchant_type` for `permanent`, `temporary` or `imbue`, and
+`maximum_charges` to find known low-charge readings. Combine it with
+`minimum_charges` for an inclusive range on one captured row.
 Use `compare_snapshots.weapon_enchant_changes` to compare saved readings
 per hand. The comparison ignores row order and preserves duplicate
 readings. Missing hand observations give null, while observed empty
