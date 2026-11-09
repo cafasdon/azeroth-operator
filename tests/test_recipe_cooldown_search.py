@@ -42,6 +42,8 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
         def truth(row,criteria):
             tests=[]; cooldown=row.get('cooldown',{})
             if 'state' in criteria: tests.append(state(row)==criteria['state'])
+            if 'daily' in criteria:
+                tests.append(None if 'daily' not in cooldown else cooldown['daily']==criteria['daily'])
             for criterion,key,compare in [('minimum_charges','charges',lambda x,y:x>=y),
                 ('maximum_remaining_seconds','remaining_seconds',lambda x,y:x<=y)]:
                 if criterion in criteria: tests.append(None if key not in cooldown else compare(cooldown[key],criteria[criterion]))
@@ -105,10 +107,10 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(combined_deadline['records'],[])
                     self.assertEqual(combined_deadline['cooldown_unknown_count'],2)
                     await search(error=True,cooldown_filter={'estimated_end_by':'2025-01-01'})
-                    for expected_state,minimum,maximum in product([None,'available','waiting','unknown'],
-                        [None,0,1,2,4294967295],[None,0,30,4294967295]):
+                    for expected_state,minimum,maximum,daily in product([None,'available','waiting','unknown'],
+                        [None,0,1,2,4294967295],[None,0,30,4294967295],[None,True,False]):
                         criteria={field:value for field,value in [('state',expected_state),('minimum_charges',minimum),
-                            ('maximum_remaining_seconds',maximum)] if value is not None}
+                            ('maximum_remaining_seconds',maximum),('daily',daily)] if value is not None}
                         if not criteria: continue
                         wanted=[int(i) for i,row in rows.items() if truth(row,criteria) is True]
                         unknown=sum(truth(row,criteria) is None for row in rows.values())

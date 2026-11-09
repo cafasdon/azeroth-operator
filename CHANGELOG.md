@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever recipes by an explicitly reported daily cooldown flag.
+
 - Filter saved Forever recipes by the low end of their reported base yield per craft.
 
 - Sort saved Forever recipes by reported minimum base output per craft.

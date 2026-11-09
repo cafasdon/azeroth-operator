@@ -138,6 +138,8 @@ pub struct RecipeViewFilter {
 #[serde(deny_unknown_fields)]
 pub struct RecipeCooldownFilter {
     pub state: Option<RecipeCooldownState>,
+    /// Match an explicitly reported daily flag. An absent flag is unknown.
+    pub daily: Option<bool>,
     pub minimum_charges: Option<u32>,
     pub maximum_remaining_seconds: Option<u32>,
     /// Inclusive RFC 3339 deadline for a positive reported timer's estimated end.
@@ -154,6 +156,11 @@ fn recipe_cooldown_matches(
         filter
             .state
             .map(|state| Some(recipe_cooldown_state(row) == state)),
+        filter.daily.map(|expected| {
+            row["cooldown"]["daily"]
+                .as_bool()
+                .map(|daily| daily == expected)
+        }),
         filter.minimum_charges.map(|minimum| {
             row["cooldown"]["charges"]
                 .as_u64()
@@ -435,6 +442,7 @@ pub fn search_recipe_materials_ordered(
     if let Some(filter) = cooldown_filter {
         ensure!(
             filter.state.is_some()
+                || filter.daily.is_some()
                 || filter.minimum_charges.is_some()
                 || filter.maximum_remaining_seconds.is_some()
                 || filter.estimated_end_by.is_some(),

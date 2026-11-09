@@ -66,6 +66,9 @@ a charge was available. Zero and missing timers return no end estimate.
 Use `cooldown_filter.estimated_end_by` with an RFC 3339 timestamp to shortlist
 estimated ends at or before a deadline. Rows without an estimate are
 unevaluable for this predicate, including rows with a reported zero timer.
+Use `cooldown_filter.daily` to match an explicit true or false daily flag.
+Missing flags remain unknown. The filter uses the captured flag and makes no
+projection about server reset times.
 
 Use `order: "reported_base_output_minimum_desc"` with an output item filter
 to compare per-craft base yields for that item. Missing quantities sort last,
