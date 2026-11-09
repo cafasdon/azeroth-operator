@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever timed quests within a projected expiry window.
+
 - Show projected expiry timestamps for saved Forever quests returned by a deadline search.
 
 - Filter saved Forever timed quests by projected expiry deadline.

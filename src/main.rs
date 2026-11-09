@@ -162,6 +162,8 @@ struct Inspect {
     quest_max_remaining_seconds: Option<u32>,
     /// Keep quests whose saved timer projects an expiry at or before this RFC 3339 timestamp.
     quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
+    /// Keep quests whose saved timer projects an expiry at or after this RFC 3339 timestamp.
+    quest_projected_expiry_from: Option<chrono::DateTime<chrono::Utc>>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
     quest_max_required_copper: Option<u64>,
     /// Keep saved Forever quests with at least this much recorded XP reward.
@@ -2047,8 +2049,18 @@ impl Operator {
         ];
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
         let filter_quest_map = args.quest_waypoint_map_id.is_some() || args.quest_on_captured_map;
-        let filter_quest_timer =
-            args.quest_max_remaining_seconds.is_some() || args.quest_projected_expiry_by.is_some();
+        let expiry_from = args.quest_projected_expiry_from;
+        let expiry_by = args.quest_projected_expiry_by;
+        let filter_quest_expiry = expiry_from.is_some() || expiry_by.is_some();
+        let filter_quest_timer = args.quest_max_remaining_seconds.is_some() || filter_quest_expiry;
+        if expiry_from
+            .zip(expiry_by)
+            .is_some_and(|(from, by)| from > by)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Projected quest expiry window is reversed",
+            )]);
+        }
         let filter_quest_objectives = args.quest_objective_kind.is_some()
             || args.quest_objective_finished.is_some()
             || args.quest_objective_max_remaining.is_some()
@@ -2974,6 +2986,9 @@ impl Operator {
                         value["quest_max_remaining_seconds"] = serde_json::json!(maximum);
                     }
                     let mut projected_expiries = serde_json::Map::new();
+                    if let Some(start) = expiry_from {
+                        value["quest_projected_expiry_from"] = serde_json::json!(start);
+                    }
                     if let Some(deadline) = args.quest_projected_expiry_by {
                         value["quest_projected_expiry_by"] = serde_json::json!(deadline);
                     }
@@ -2997,22 +3012,23 @@ impl Operator {
                                     {
                                         return false;
                                     }
-                                    args.quest_projected_expiry_by.is_none_or(|deadline| {
-                                        let expiry = i64::try_from(seconds)
-                                            .ok()
-                                            .and_then(chrono::TimeDelta::try_seconds)
-                                            .and_then(|delta| {
-                                                captured_at?.checked_add_signed(delta)
-                                            });
-                                        unknown += usize::from(expiry.is_none());
-                                        expiry.is_some_and(|expiry| {
-                                            if expiry > deadline {
-                                                return false;
-                                            }
-                                            projected_expiries
-                                                .insert(id.clone(), serde_json::json!(expiry));
-                                            true
-                                        })
+                                    if !filter_quest_expiry {
+                                        return true;
+                                    }
+                                    let expiry = i64::try_from(seconds)
+                                        .ok()
+                                        .and_then(chrono::TimeDelta::try_seconds)
+                                        .and_then(|delta| captured_at?.checked_add_signed(delta));
+                                    unknown += usize::from(expiry.is_none());
+                                    expiry.is_some_and(|expiry| {
+                                        if expiry_from.is_some_and(|start| expiry < start)
+                                            || expiry_by.is_some_and(|deadline| expiry > deadline)
+                                        {
+                                            return false;
+                                        }
+                                        projected_expiries
+                                            .insert(id.clone(), serde_json::json!(expiry));
+                                        true
                                     })
                                 });
                                 unknown
@@ -3156,7 +3172,7 @@ impl Operator {
                                 )
                             });
                     }
-                    if args.quest_projected_expiry_by.is_some() {
+                    if filter_quest_expiry {
                         value["quest_projected_expiry_by_quest_id"] =
                             serde_json::json!(data.as_object().map(|quests| {
                                 projected_expiries.retain(|id, _| quests.contains_key(id));
