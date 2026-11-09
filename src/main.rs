@@ -3104,6 +3104,7 @@ impl Operator {
                                 &snapshot,
                                 &value["bag_restock_review"],
                                 limits,
+                                None,
                             ));
                     }
                     if args.bag_restock_pending_mail {
@@ -3233,6 +3234,16 @@ impl Operator {
                                 "known_shortfall_copper":known_shortfall,
                                 "affordable":affordable,
                             });
+                        }
+                        if let Some(limits) = &stack_limits {
+                            value["bag_restock_quoted_bundle_stack_space"] = serde_json::json!(
+                                azeroth_operator::analysis::restock_new_stack_space(
+                                    &snapshot,
+                                    &value["bag_restock_review"],
+                                    limits,
+                                    Some(&quote),
+                                )
+                            );
                         }
                         value["bag_restock_merchant_quote"] = quote;
                     }

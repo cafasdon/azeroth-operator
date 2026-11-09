@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate bag slots for saved Forever restocking including quoted merchant bundle surplus.
+
 - Flag restocking stack assumptions contradicted by saved carried stacks.
 
 - Estimate general bag space for saved Forever restocking using supplied stack limits.

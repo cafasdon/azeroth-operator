@@ -3021,3 +3021,8 @@ limits or bag capacity leave the relevant totals or comparison unknown.
 For supplied limits, the estimate also reports the largest matching carried
 stack, when observed. A limit smaller than that stack leaves the slot
 estimate unknown. Observed quantities do not establish the native stack cap.
+
+With both stack limits and a saved merchant quote requested,
+`bag_restock_quoted_bundle_stack_space` includes extra units from whole
+copper-only bundles. A bank-covered shortfall needs no quote. Unquoted
+positive residuals leave their slot estimate and the total unknown.

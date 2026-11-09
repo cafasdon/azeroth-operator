@@ -2702,6 +2702,7 @@ pub fn restock_new_stack_space(
     snapshot: &Snapshot,
     review: &Value,
     stack_limits: &BTreeMap<u32, std::num::NonZeroU32>,
+    merchant_quote: Option<&Value>,
 ) -> Option<Value> {
     if review["storage_observed"] != true {
         return None;
@@ -2724,6 +2725,28 @@ pub fn restock_new_stack_space(
             }
         }
     }
+    let quoted_surplus: BTreeMap<_, _> = merchant_quote
+        .and_then(|quote| quote["reagents"].as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            Some((
+                row["item_id"].as_u64()?,
+                row["lowest_cost_copper_only_bundle_mix"]["extra_units"].as_u64()?,
+            ))
+        })
+        .collect();
+    let residual: BTreeMap<_, _> = review["bank_withdrawal_plan"]["rows"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            Some((
+                row["item_id"].as_u64()?,
+                row["remaining_after_observed_withdrawals"].as_u64()?,
+            ))
+        })
+        .collect();
     let mut total = Some(0u64);
     let mut items = Vec::new();
     for row in review["items"].as_array()? {
@@ -2737,20 +2760,34 @@ pub fn restock_new_stack_space(
         let contradicted = limit
             .zip(largest)
             .map(|(limit, largest)| largest > u64::from(limit.get()));
+        let incoming = if merchant_quote.is_some() && residual.get(&u64::from(item_id)) != Some(&0)
+        {
+            quoted_surplus
+                .get(&u64::from(item_id))
+                .and_then(|extra| shortfall.checked_add(*extra))
+        } else {
+            Some(shortfall)
+        };
         let slots = limit
             .filter(|_| contradicted != Some(true))
-            .map(|limit| shortfall.div_ceil(u64::from(limit.get())));
+            .zip(incoming)
+            .map(|(limit, quantity)| quantity.div_ceil(u64::from(limit.get())));
         total = total
             .zip(slots)
             .and_then(|(sum, slots)| sum.checked_add(slots));
-        items.push(json!({"item_id":item_id,"bag_shortfall":shortfall,
+        let mut item = json!({"item_id":item_id,"bag_shortfall":shortfall,
             "assumed_stack_limit":limit,"largest_observed_bag_stack":largest,
-            "assumption_below_observed_stack":contradicted,"new_stack_slots":slots}));
+            "assumption_below_observed_stack":contradicted,"new_stack_slots":slots});
+        if merchant_quote.is_some() {
+            item["incoming_quantity_with_quoted_bundles"] = json!(incoming);
+        }
+        items.push(item);
     }
     let general_free =
         carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
     Some(json!({
-        "basis":"requested_shortfall_in_new_stacks_using_supplied_limits",
+        "basis":if merchant_quote.is_some() {"bank_and_quoted_bundles_in_new_stacks_using_supplied_limits"}
+            else {"requested_shortfall_in_new_stacks_using_supplied_limits"},
         "items":items,"new_stack_slots":total,"observed_general_free_slots":general_free,
         "fits_observed_general_slots_under_assumptions":total.zip(general_free)
             .map(|(needed, free)| needed <= free),

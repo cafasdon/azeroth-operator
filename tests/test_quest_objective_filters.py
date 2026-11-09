@@ -60,6 +60,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                 '1':{'item_id':118,'bundle_size':3,'price_copper':7,'available':-1,'extended_cost':False},
                 '2':{'item_id':858,'bundle_size':1,'price_copper':2,'available':-1,'extended_cost':False}}
             merchant_key=store.ingest(merchant)
+            bundled_merchant = deepcopy(merchant)
+            bundled_merchant['sections']['merchant_stock']['2']['bundle_size'] = 3
+            bundled_merchant_key = store.ingest(bundled_merchant)
             retail = store.ingest(fixture())
             tied = deepcopy(changed)
             tied['character']['name'] = 'Tied'
@@ -209,6 +212,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(bag_quote['copper_only_bundle_mix_affordable'],True)
                     self.assertIs(bag_quote['purchase_eligibility_verified'],False)
                     self.assertEqual(bag_quote['reagents'],residual['reagents'])
+                    with_limits = {**restock,
+                        'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},
+                                                    {'item_id':858,'maximum_stack':2}]}
+                    bundled = await query(**{**with_limits,
+                        'bag_restock_merchant_snapshot_id':bundled_merchant_key})
+                    self.assertEqual(bundled['bag_restock_new_stack_space']['new_stack_slots'],2)
+                    estimated = bundled['bag_restock_quoted_bundle_stack_space']
+                    self.assertEqual(estimated['new_stack_slots'],3)
+                    self.assertEqual([row['incoming_quantity_with_quoted_bundles']
+                                      for row in estimated['items']],[2,3])
+                    unquoted = await query(**{**with_limits,'bag_restock_merchant_snapshot_id':key})
+                    self.assertIsNone(unquoted['bag_restock_quoted_bundle_stack_space']['new_stack_slots'])
+                    self.assertEqual(unquoted['bag_restock_new_stack_space']['new_stack_slots'],2)
                     reserve_field = 'copper_only_bundle_mix_after_reserve'
                     self.assertNotIn(reserve_field,bag_quote)
                     for reserve, spendable, gap, shortfall, affordable in [
