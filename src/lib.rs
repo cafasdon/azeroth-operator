@@ -471,7 +471,7 @@ impl MerchantStockState {
 #[serde(deny_unknown_fields)]
 pub struct SavedWorldBossFilter {
     /// Exact case-insensitive captured boss name.
-    pub name: String,
+    pub name: Option<String>,
     /// Match only nonnegative reset timers at or below this captured value.
     pub maximum_reset_seconds: Option<u32>,
     /// Inclusive historical reset deadline (RFC 3339). Unknown projections do not match.
@@ -2165,16 +2165,24 @@ impl Store {
             .and_then(|filter| filter.name.as_ref())
             .map(|name| name.to_lowercase());
         ensure!(
-            saved_world_boss
-                .as_ref()
-                .is_none_or(|filter| family == Family::Forever
-                    && !filter.name.trim().is_empty()
-                    && filter.name.len() <= 256),
-            "Saved world boss filtering requires Forever and a bounded name"
+            saved_world_boss.as_ref().is_none_or(|filter| {
+                family == Family::Forever
+                    && filter
+                        .name
+                        .as_ref()
+                        .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256)
+                    && (filter.name.is_some()
+                        || filter.maximum_reset_seconds.is_some()
+                        || filter.projected_reset_from.is_some()
+                        || filter.projected_reset_by.is_some()
+                        || filter.maximum_update_age_seconds.is_some())
+            }),
+            "Saved world boss filtering requires Forever and at least one valid criterion"
         );
         let saved_world_boss_name = saved_world_boss
             .as_ref()
-            .map(|filter| filter.name.to_lowercase());
+            .and_then(|filter| filter.name.as_ref())
+            .map(|name| name.to_lowercase());
         for (from, through) in saved_instance
             .iter()
             .map(|filter| (filter.projected_reset_from, filter.projected_reset_by))
@@ -3008,46 +3016,43 @@ impl Store {
                     if profession_recipe.is_some() && profession_recipe_match.is_none() {
                         continue;
                     }
-                    let saved_world_boss_match = saved_world_boss
-                        .as_ref()
-                        .zip(saved_world_boss_name.as_ref())
-                        .and_then(|(filter, name)| {
-                            let saved = s.sections.get("saved_world_bosses")?;
-                            if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
-                                saved["update_age_seconds"]
-                                    .as_u64()
-                                    .is_some_and(|age| age <= u64::from(maximum))
-                            }) {
-                                return None;
-                            }
-                            let matches = saved["entries"]
-                                .as_object()?
-                                .iter()
-                                .filter(|(_, row)| {
+                    let saved_world_boss_match = saved_world_boss.as_ref().and_then(|filter| {
+                        let saved = s.sections.get("saved_world_bosses")?;
+                        if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
+                            saved["update_age_seconds"]
+                                .as_u64()
+                                .is_some_and(|age| age <= u64::from(maximum))
+                        }) {
+                            return None;
+                        }
+                        let matches = saved["entries"]
+                            .as_object()?
+                            .iter()
+                            .filter(|(_, row)| {
+                                saved_world_boss_name.as_ref().is_none_or(|name| {
                                     row["name"]
                                         .as_str()
                                         .is_some_and(|value| value.to_lowercase() == *name)
-                                        && filter.maximum_reset_seconds.is_none_or(|maximum| {
-                                            row["reset_seconds"].as_u64().is_some_and(|seconds| {
-                                                seconds <= u64::from(maximum)
-                                            })
-                                        })
-                                        && saved_resets::matches_projected_window(
-                                            row["reset_seconds"].as_i64(),
-                                            s.captured_at,
-                                            filter.projected_reset_from,
-                                            filter.projected_reset_by,
-                                        )
-                                })
-                                .collect();
-                            saved_resets::discovery_report(
-                                matches,
-                                saved,
-                                s.captured_at,
-                                filter.projected_reset_from.is_some()
-                                    || filter.projected_reset_by.is_some(),
-                            )
-                        });
+                                }) && filter.maximum_reset_seconds.is_none_or(|maximum| {
+                                    row["reset_seconds"]
+                                        .as_u64()
+                                        .is_some_and(|seconds| seconds <= u64::from(maximum))
+                                }) && saved_resets::matches_projected_window(
+                                    row["reset_seconds"].as_i64(),
+                                    s.captured_at,
+                                    filter.projected_reset_from,
+                                    filter.projected_reset_by,
+                                )
+                            })
+                            .collect();
+                        saved_resets::discovery_report(
+                            matches,
+                            saved,
+                            s.captured_at,
+                            filter.projected_reset_from.is_some()
+                                || filter.projected_reset_by.is_some(),
+                        )
+                    });
                     if saved_world_boss.is_some() && saved_world_boss_match.is_none() {
                         continue;
                     }

@@ -2914,3 +2914,10 @@ Use `list_snapshots.saved_instance` with at least one criterion. The name is
 optional, so a search can find any recorded locked raid or any observed
 dungeon in a projected reset window. `max_players` matches the exact positive
 group-size cap reported on the same row. Results describe the saved cache.
+
+## Saved world-boss discovery without a name
+
+Use `list_snapshots.saved_world_boss` with at least one criterion. Omit the
+name to find recorded world bosses by reset duration, projected reset window
+or cache age at capture. Negative timers cannot satisfy a reset bound. A
+cache-age criterion alone can return rows whose reset duration is unknown.

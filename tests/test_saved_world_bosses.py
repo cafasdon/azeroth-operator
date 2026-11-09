@@ -96,7 +96,18 @@ class WorldBossTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(result['saved_world_boss_match']['matched_count'],25)
                     self.assertTrue(result['saved_world_boss_match']['truncated'])
                     self.assertEqual([row['slot'] for row in result['saved_world_boss_match']['entries']],list(range(1,21)))
-                    for bad in [{'name':''},{'name':'  '},{'name':'x'*257},
+                    duration = (await search(saved_world_boss={'maximum_reset_seconds':25}))['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in duration], [many_key])
+                    self.assertEqual(duration[0]['saved_world_boss_match']['matched_count'],25)
+                    by_age = (await search(saved_world_boss={'maximum_update_age_seconds':7}))['snapshots']
+                    self.assertEqual({row['snapshot_id'] for row in by_age},{key,many_key,negative_key})
+                    projected = (await search(saved_world_boss={
+                        'projected_reset_from':'2025-01-01T00:02:04Z',
+                        'projected_reset_by':'2025-01-01T00:02:04Z'}))['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in projected],[key])
+                    self.assertEqual(projected[0]['saved_world_boss_match']['entries'][0]['projected_reset_at'],
+                                     '2025-01-01T00:02:04Z')
+                    for bad in [{},{'name':None},{'name':''},{'name':'  '},{'name':'x'*257},
                                 {'name':'Boss','maximum_reset_seconds':-1},
                                 {'name':'Boss','maximum_update_age_seconds':True},
                                 {'name':'Boss','boss_id':1}]:

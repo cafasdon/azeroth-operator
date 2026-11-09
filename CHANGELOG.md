@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever world bosses by timer or cache age without a boss name.
+
 - Find saved Forever dungeon and raid observations by criteria without an instance name.
 
 - Compare saved Forever equipment slots crossing a durability threshold.
