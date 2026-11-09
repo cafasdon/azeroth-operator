@@ -455,11 +455,12 @@ fn main() -> anyhow::Result<()> {
     let mut report = serde_json::json!({"family":args[1],"variant":args[2],"interface":interface,
         "packaged_lua51_roundtrip":true,"forever_capture_fixture":args[1]=="forever","changed_interface_rejected":true,"equipment_set_review_fixture":args[1]=="retail","equipment_set_use_fixture":args[1]=="retail","equipment_set_association_fixture":args[1]=="retail","equipment_set_save_fixture":args[1]=="retail","talent_metadata_fixture":args[1]=="retail","talent_create_fixture":args[1]=="retail","selected_talent_delete_fixture":args[1]=="retail","talent_import_lifecycle_fixture":args[1]=="retail","action_copy_lifecycle_fixture":args[1]=="retail","bag_swap_lifecycle_fixture":args[1]=="retail","live_qualified":false});
     if args[1] == "forever" {
-        let export =
+        let [export, closed_bank_export] =
             addon_fixture::verify_forever_capture_fixture(Some(Path::new(&args[0])), interface)
                 .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         if args.len() == 5 {
             report["fixture_export"] = serde_json::json!(export);
+            report["fixture_closed_bank_export"] = serde_json::json!(closed_bank_export);
         }
     }
     println!("{report}");

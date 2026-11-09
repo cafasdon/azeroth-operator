@@ -382,7 +382,7 @@ fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
 pub fn verify_forever_capture_fixture(
     staged: Option<&std::path::Path>,
     interface: u32,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<[String; 2], Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.globals().set("expected_interface", interface)?;
     lua.load(r#"
@@ -1452,11 +1452,18 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["character_bank"].clone(),
     );
     assert!(overlap.validate().is_err());
-    for setup in [
-        "bankOpen=false",
-        "bankOpen=true;freeSlots=2",
-        "freeSlots=1;malformed=true",
-    ] {
+    lua.load("bankOpen=false;AO.Capture()").exec()?;
+    let closed_export: String = lua.globals().get("AzerothOperatorExport")?;
+    let closed = read()?;
+    for section in ["character_bank", "account_bank"] {
+        assert!(!closed.sections.contains_key(section));
+        assert!(closed.unavailable.contains_key(section));
+    }
+    assert!(
+        azeroth_operator::analysis::summary(&closed)["character_bank_item_slots_observed"]
+            .is_null()
+    );
+    for setup in ["bankOpen=true;freeSlots=2", "freeSlots=1;malformed=true"] {
         lua.load(format!("{setup};AO.Capture()")).exec()?;
         let snapshot = read()?;
         assert!(!snapshot.sections.contains_key("character_bank"));
@@ -1466,5 +1473,5 @@ pub fn verify_forever_capture_fixture(
                 .is_null()
         );
     }
-    Ok(format!("AzerothOperatorExport = \"{export}\""))
+    Ok([export, closed_export].map(|hex| format!("AzerothOperatorExport = \"{hex}\"")))
 }

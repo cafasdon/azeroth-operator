@@ -1,5 +1,7 @@
 # Changelog
 
+- Verify closed-bank coverage and unknown stock through the packaged Forever MCP fixture.
+
 - Verify recipe and quest planning through the packaged Forever fixture's MCP readback.
 
 - Verify packaged Forever synthetic exports through the CLI importer and local MCP readback.
