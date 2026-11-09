@@ -678,6 +678,8 @@ struct FlightRouteSearch {
     /// Maximum flight legs, including the first leg. Defaults to eight.
     #[schemars(range(min = 1, max = 8))]
     max_legs: Option<u8>,
+    /// Inclusive total fare ceiling across all legs, before any repair quote or wallet reserve.
+    maximum_total_fare_copper: Option<u64>,
     /// Rank by lowest fare (default) or fewest flight legs.
     objective: Option<azeroth_operator::analysis::FlightRouteObjective>,
     /// Check the route budget including the repair-all quote in the starting capture.
@@ -2981,6 +2983,7 @@ impl Operator {
                             search.objective.unwrap_or_default(),
                             search.include_repair_quote,
                             search.require_affordable,
+                            search.maximum_total_fare_copper,
                         )
                     })();
                     match result {

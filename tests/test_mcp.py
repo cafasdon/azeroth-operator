@@ -438,6 +438,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(fewest.isError)
                         self.assertEqual(json.loads(fewest.content[0].text)["flight_route_search"],
                                          direct_plan)
+                        for ceiling in (2, 3):
+                            capped = await session.call_tool("inspect_snapshot", {
+                                **fewest_request, "flight_route_search": {
+                                    **fewest_request["flight_route_search"], "maximum_total_fare_copper": ceiling,
+                                },
+                            })
+                            self.assertFalse(capped.isError,capped)
+                            capped_plan = json.loads(capped.content[0].text)["flight_route_search"]
+                            if ceiling == 3:
+                                self.assertEqual(capped_plan["total_fare_copper"],3)
+                                self.assertEqual(len(capped_plan["legs"]),2)
+                            else:
+                                self.assertEqual(capped_plan["status"],"no_route_within_fare_ceiling")
                         constrained_request = {
                             **fewest_request, "flight_wallet_reserve_copper": 4_999_999_996,
                             "flight_route_search": {

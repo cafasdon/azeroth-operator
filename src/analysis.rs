@@ -5345,6 +5345,7 @@ pub fn plan_saved_flights(
     objective: FlightRouteObjective,
     include_repair_quote: bool,
     require_affordable: bool,
+    maximum_total_fare_copper: Option<u64>,
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
     let (_, first) = captures
@@ -5406,9 +5407,9 @@ pub fn plan_saved_flights(
         else {
             return Ok(status("no_affordable_route"));
         };
-        Some(spendable)
+        Some(maximum_total_fare_copper.map_or(spendable, |maximum| maximum.min(spendable)))
     } else {
-        None
+        maximum_total_fare_copper
     };
     let mut frontier = BTreeMap::from([(start, (0u64, Vec::new()))]);
     let mut best = None;
@@ -5449,6 +5450,8 @@ pub fn plan_saved_flights(
     let Some((fare, _, path)) = best else {
         return Ok(status(if require_affordable {
             "no_affordable_route"
+        } else if maximum_total_fare_copper.is_some() {
+            "no_route_within_fare_ceiling"
         } else {
             "no_fully_priced_route"
         }));

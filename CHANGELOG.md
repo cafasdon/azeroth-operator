@@ -1,5 +1,7 @@
 # Changelog
 
+- Apply an explicit total fare ceiling to saved Forever flight route searches.
+
 - Shortlist saved Forever flight destinations by a recorded fare ceiling.
 
 - Show observed pet food item coverage in saved Forever pet-care comparisons.

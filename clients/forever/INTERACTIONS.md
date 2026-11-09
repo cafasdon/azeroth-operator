@@ -3,6 +3,9 @@
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes
 map transitions and can be combined with captured wallet affordability.
+Set `flight_route_search.maximum_total_fare_copper` to cap the sum of fares
+across all legs. The cap works independently of a saved wallet. If wallet
+affordability is also required, the route must satisfy both limits.
 
 Saved pet food location summaries group bag quantities and stack counts by
 accepted food item ID. Totals include matching stacks beyond the displayed

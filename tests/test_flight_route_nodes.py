@@ -72,6 +72,10 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(data['data']['entries']['2']['observed_route_node_ids'],path)
                     search=await call('inspect_snapshot',snapshot_id=key,section='flight_map',flight_route_search={'destination_node_id':20})
                     plan=search['flight_route_search']
+                    for limit,status in [(99,'no_route_within_fare_ceiling'),(100,'found')]:
+                        bounded=await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                            flight_route_search={'destination_node_id':20,'maximum_total_fare_copper':limit})
+                        self.assertEqual(bounded['flight_route_search']['status'],status)
                     self.assertEqual(len(plan['legs']),1)
                     self.assertEqual(plan['legs'][0]['observed_route_node_ids'],path)
                     self.assertEqual(plan['total_fare_copper'],100)
