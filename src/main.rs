@@ -427,6 +427,8 @@ struct List {
     pvp_season_id: Option<std::num::NonZeroU32>,
     /// Maximum saved points remaining to a known positive next PvP rank threshold.
     maximum_pvp_points_to_next_threshold: Option<u32>,
+    /// Match a saved Forever PvP cap and its maximum remaining points.
+    pvp_cap_distance: Option<azeroth_operator::PvpCapDistanceFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
@@ -2008,6 +2010,7 @@ impl Operator {
                 pvp_rank_range: (args.minimum_pvp_rank, args.maximum_pvp_rank),
                 pvp_season_id: args.pvp_season_id,
                 maximum_pvp_points_to_next_threshold: args.maximum_pvp_points_to_next_threshold,
+                pvp_cap_distance: args.pvp_cap_distance,
                 group_context: args.group_context,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,

@@ -1419,6 +1419,36 @@ mod inventory_requirements_filter_tests {
     }
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum PvpRankCap {
+    MaxRank,
+    CurrentWeekMaxRank,
+    PreviousWeekMaxRank,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PvpCapDistanceFilter {
+    cap: PvpRankCap,
+    maximum_remaining_points: u32,
+}
+
+impl PvpCapDistanceFilter {
+    fn observation_match(&self, progression: &Value) -> Option<Value> {
+        let cap = match self.cap {
+            PvpRankCap::MaxRank => "max_rank",
+            PvpRankCap::CurrentWeekMaxRank => "current_week_max_rank",
+            PvpRankCap::PreviousWeekMaxRank => "previous_week_max_rank",
+        };
+        let report = analysis::player_pvp_progression_observation(progression);
+        let remaining = report["remaining_points_to_reported_caps"][cap].as_u64()?;
+        (remaining <= u64::from(self.maximum_remaining_points)).then(
+            || json!({"cap":cap,"reported_cap_rank":progression[cap],"remaining_points":remaining}),
+        )
+    }
+}
+
 #[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupContextCategory {
@@ -1486,6 +1516,7 @@ pub struct CaptureFilters<'a> {
     pub pvp_rank_range: (Option<u32>, Option<u32>),
     pub pvp_season_id: Option<std::num::NonZeroU32>,
     pub maximum_pvp_points_to_next_threshold: Option<u32>,
+    pub pvp_cap_distance: Option<PvpCapDistanceFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1701,6 +1732,7 @@ impl Store {
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
             pvp_season_id,
             maximum_pvp_points_to_next_threshold,
+            pvp_cap_distance,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -1849,7 +1881,8 @@ impl Store {
         let filter_pvp = minimum_pvp_rank.is_some()
             || maximum_pvp_rank.is_some()
             || pvp_season_id.is_some()
-            || maximum_pvp_points_to_next_threshold.is_some();
+            || maximum_pvp_points_to_next_threshold.is_some()
+            || pvp_cap_distance.is_some();
         ensure!(
             !filter_pvp || family == Family::Forever,
             "PvP filtering requires Forever"
@@ -2374,6 +2407,12 @@ impl Store {
                             };
                             observation["remaining_points_to_reported_next_threshold"] =
                                 json!(remaining);
+                        }
+                        if let Some(filter) = &pvp_cap_distance {
+                            let Some(cap) = filter.observation_match(progression) else {
+                                continue;
+                            };
+                            observation["cap_distance"] = cap;
                         }
                         Some(observation)
                     } else {

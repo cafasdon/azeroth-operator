@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever PvP captures within a point limit of a reported rank cap.
+
 - Find saved Forever PvP captures within a point limit of their reported next rank threshold.
 
 - Filter saved Forever group context by an inclusive member-count range.

@@ -130,6 +130,23 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await call('list_snapshots',family='forever',pvp_season_id=7,
                         maximum_pvp_points_to_next_threshold=89))['snapshots'],[])
                     await call('list_snapshots',error=True,family='retail',maximum_pvp_points_to_next_threshold=0)
+                    for cap,rank,distance in [('max_rank',14,890),('current_week_max_rank',5,190),
+                                              ('previous_week_max_rank',4,90)]:
+                        results = await call('list_snapshots',family='forever',pvp_season_id=7,
+                            maximum_pvp_points_to_next_threshold=90,
+                            pvp_cap_distance={'cap':cap,'maximum_remaining_points':distance})
+                        self.assertEqual([row['snapshot_id'] for row in results['snapshots']],[valid[11][0]])
+                        self.assertEqual(results['snapshots'][0]['pvp_rank_match']['cap_distance'],
+                            {'cap':cap,'reported_cap_rank':rank,'remaining_points':distance})
+                        below = await call('list_snapshots',family='forever',pvp_season_id=7,
+                            maximum_pvp_points_to_next_threshold=90,
+                            pvp_cap_distance={'cap':cap,'maximum_remaining_points':distance-1})
+                        self.assertEqual(below['snapshots'],[])
+                    capped = await call('list_snapshots',family='forever',pvp_season_id=7,
+                        pvp_cap_distance={'cap':'current_week_max_rank','maximum_remaining_points':0})
+                    self.assertEqual([row['snapshot_id'] for row in capped['snapshots']],[valid[12][0]])
+                    await call('list_snapshots',error=True,family='forever',
+                        pvp_cap_distance={'cap':'unknown','maximum_remaining_points':0})
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:

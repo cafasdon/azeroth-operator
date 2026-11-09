@@ -5,6 +5,11 @@ Forever captures within an inclusive point limit of the reported next PvP
 rank threshold. Zero matches a reached positive threshold. Missing, zero
 or exceeded thresholds are excluded, and rank and season filters can be
 combined with the point limit. Matching rows show the saved distance.
+Use `list_snapshots.pvp_cap_distance` with `cap` set to `max_rank`,
+`current_week_max_rank` or `previous_week_max_rank` and an inclusive
+`maximum_remaining_points`. The filter uses the same captured threshold
+arithmetic as the progression summary. Unknown distances are excluded.
+Zero includes saved totals at or above the selected positive cap threshold.
 
 Use `maximum_reported_member_count` in the `list_snapshots.group_context`
 filter to cap the captured member count. Combine it with
