@@ -1,5 +1,24 @@
 # Forever
 
+Manual `/aoexport` can include `loot_window` when the native LootFrame is already
+shown. It records at most 64 slots with coverage `visible_loot_window_slots`.
+Each slot is either a stable public `item_id` and `quantity` under `status: item`,
+or status-only `unreadable_or_non_item`. Currency/money rows, unreadable or
+restricted values and changed item/quantity readings are not guessed. A shown
+empty window has zero slots; hidden/closed/oversized/changing context is unavailable.
+Both full reads and surrounding visibility/count checks must agree on the window
+size. They do not establish the loot's source or rights to take it.
+
+Use `inspect_snapshot` with `section: loot_window`, or the
+`character_summary.loot_window_observation` field for per-ID quantities, item-slot
+and unknown-slot counts. Missing data remains null, distinct from observed empty.
+No names, raw links, GUIDs or source identities are retained. Displayed loot never
+contributes to `find_snapshot_item`, recipe stock or owned-gear optimisation.
+Ownership and lootability remain unverified; exports do not open/close windows,
+loot, roll or confirm anything. Update importer/MCP readers before installing the
+new capture source. Native API availability and behaviour remain unqualified.
+[Offline evidence](../../docs/loot-window-verification-2026-11-09.md).
+
 With `acquisition_snapshot_id`, `lookup_forever_catalogue` crafted sources now
 project the matching selected review's `material_capacity_basis`,
 `material_and_charge_capacity` and `captured_cooldown_state`, alongside existing

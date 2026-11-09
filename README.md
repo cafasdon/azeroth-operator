@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Forever manual exports can now observe an already shown loot window. Stable
+public item IDs and quantities are inspectable separately from owned inventory;
+unreadable and non-item slots remain explicit. No looting or rolling is performed.
+[Offline evidence](docs/loot-window-verification-2026-11-09.md).
+
 Crafting acquisition lookups now retain a matching selected recipe's item-capacity
 basis, combined item/charge limit and captured cooldown state. Bulk observations
 stay separate; these historical limits do not verify current crafting eligibility.

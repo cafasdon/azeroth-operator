@@ -43,6 +43,7 @@ function AO.Capture(includeWallet)
     local unavailable = {}
     local sectionNames={"equipment", "bags", "stats", "talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"}
     if AO.family=="forever" then
+        sectionNames[#sectionNames+1]="loot_window"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"

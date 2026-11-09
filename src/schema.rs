@@ -1638,6 +1638,52 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "loot_window" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("slot_count", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "visible_loot_window_slots",
+                "Invalid loot window coverage"
+            );
+            let count = value["slot_count"]
+                .as_u64()
+                .filter(|n| *n <= 64)
+                .ok_or_else(|| anyhow::anyhow!("Invalid loot slot count"))?;
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(entries.len() as u64 == count, "Incomplete loot slots");
+            for (slot, row) in entries {
+                index(slot, 1, count as u32)?;
+                match row["status"].as_str() {
+                    Some("item") => {
+                        object(
+                            row,
+                            &[
+                                ("status", "text", true),
+                                ("item_id", "uint", true),
+                                ("quantity", "uint", true),
+                            ],
+                        )?;
+                        ensure!(
+                            row["item_id"]
+                                .as_u64()
+                                .is_some_and(|n| (1..=u64::from(u32::MAX)).contains(&n))
+                                && row["quantity"]
+                                    .as_u64()
+                                    .is_some_and(|n| n <= u64::from(u32::MAX)),
+                            "Invalid loot item"
+                        );
+                    }
+                    Some("unreadable_or_non_item") => object(row, &[("status", "text", true)])?,
+                    _ => anyhow::bail!("Invalid loot slot status"),
+                }
+            }
+        }
         "merchant_buyback" => {
             object(
                 value,

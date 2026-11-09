@@ -6030,6 +6030,25 @@ pub fn summary(s: &Snapshot) -> Value {
             "currency_slots":rows.iter().filter(|row| row["kind"]=="currency").count(),
             "unknown_slots":rows.iter().filter(|row| row["kind"]=="unknown").count()})
     }).unwrap_or(Value::Null);
+    summary["loot_window_observation"] = s
+        .sections
+        .get("loot_window")
+        .map(|section| {
+            let rows = section["entries"].as_object().unwrap();
+            let mut quantities = BTreeMap::<u32, u64>::new();
+            let mut item_slots = 0;
+            for row in rows.values().filter(|row| row["status"] == "item") {
+                item_slots += 1;
+                *quantities
+                    .entry(row["item_id"].as_u64().unwrap() as u32)
+                    .or_default() += row["quantity"].as_u64().unwrap();
+            }
+            json!({"coverage":section["coverage"],"slot_count":section["slot_count"],
+            "item_slots":item_slots,"unreadable_or_non_item_slots":rows.len()-item_slots,
+            "observed_item_quantities":quantities,"counts_toward_owned_inventory":false,
+            "ownership_verified":false,"lootability_verified":false,"game_execution":false})
+        })
+        .unwrap_or(Value::Null);
     summary["profession_recipe_view_counts"] = s.sections.get("profession_recipe_view").map(|view| {
         let rows = view["entries"].as_object().unwrap();
         json!({"observed":rows.len(),

@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: passive visible-loot-window item capture, strict local readers
+and item/unknown-slot summary add a previously uncovered system. Displayed loot
+stays outside ownership and stock calculations. [Offline evidence](loot-window-verification-2026-11-09.md).
+Native availability, source attribution, currency/money semantics, roll rights and
+actual loot eligibility remain unqualified; all loot actions stay with the player.
+
 9 November update: selected crafting-source acquisition projections now retain
 the review's item-capacity basis, combined saved charge limit and cooldown state.
 [Offline evidence](catalogue-recipe-capacity-verification-2026-11-09.md). This

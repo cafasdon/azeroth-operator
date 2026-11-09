@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Loot observation: manual export can inspect an already shown window and retain
+stable public item IDs/quantities, with explicit unreadable/non-item slots. Local
+inspection and summary keep displayed loot separate from owned inventory. No
+source/player identity, currency/money decoding, lootability inference, looting,
+rolling or panel action is added. Native qualification remains deferred.
+[Evidence](../../docs/loot-window-verification-2026-11-09.md).
+
 Cached crafted-item acquisition lookup now preserves selected-recipe item/charge
 capacity semantics, including explicit no-item requirements and unknown limits.
 Recipe-ID/known-output guards apply before projection; bulk and selected evidence
@@ -1772,8 +1779,10 @@ profession metadata. A tracking entry alone does not match.
 
 `material_and_charge_capacity` shows the smaller of the observed material
 limit and saved recipe charges, with the shortfall against the requested
-craft count. It reports bags and all observed storage separately. Either
-missing limit makes that estimate null. The result does not advance cooldowns
+craft count. It reports bags and all observed storage separately. With required
+items, either missing limit makes that estimate null. Explicit zero-item fixed
+requirements instead use known saved charges directly. Missing charges still
+leave the combined estimate unknown. The result does not advance cooldowns
 or establish that the character meets the recipe's other requirements.
 
 Each fixed reagent also lists `suggested_bank_withdrawals` to cover its bag

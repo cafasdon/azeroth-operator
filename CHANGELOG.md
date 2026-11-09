@@ -1,5 +1,12 @@
 # Changelog
 
+- Add passive Forever visible-loot-window capture, strict bounded Python/Rust
+  readers and an owner-local summary of stable item quantities. Preserve unknown
+  slots, omit names/links/source identities and exclude displayed loot from owned
+  inventory. Source/offline only; native testing and installation remain deferred.
+  Align Python unavailable-section metadata validation with Rust, rejecting
+  captured/unavailable conflicts and invalid section names or reason values.
+
 - Carry selected-recipe capacity basis, combined saved item/charge capacity and
   captured cooldown state into catalogue acquisition projections, preserving
   recipe/output matching, unknowns and independent bulk-recipe evidence.

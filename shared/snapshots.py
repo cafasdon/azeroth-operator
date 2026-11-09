@@ -26,6 +26,7 @@ SECTIONS = SECTIONS | {"recipe_item_sources"}
 SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
+SECTIONS = SECTIONS | {"loot_window"}
 
 
 def _validate_action_bar_observation(observation):
@@ -112,6 +113,16 @@ def validate_snapshot(value):
     sections = value.get("sections")
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
+    unavailable = value.get("unavailable", {})
+    if (not isinstance(unavailable, dict) or set(unavailable) - SECTIONS
+            or set(unavailable) & sections.keys()):
+        raise ValueError("Invalid unavailable section")
+    # Match Rust str::trim's Unicode White_Space set, rather than Python's
+    # additional U+001C..U+001F separators; the byte bound is UTF-8 in both readers.
+    whitespace = "\t\n\v\f\r \u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000"
+    if any(not isinstance(reason, str) or not reason.strip(whitespace)
+            or len(reason.encode()) > 256 for reason in unavailable.values()):
+        raise ValueError("Invalid unavailable reason")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
     for storage in ("equipment","bags","character_bank","account_bank"):
@@ -628,6 +639,24 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "loot_window" in sections:
+        loot=sections["loot_window"]
+        if (c["family"]!="forever" or not isinstance(loot,dict)
+                or set(loot)!={"coverage","slot_count","entries"}
+                or loot["coverage"]!="visible_loot_window_slots"
+                or type(loot["slot_count"]) is not int or not 0<=loot["slot_count"]<=64
+                or not isinstance(loot["entries"],dict)
+                or set(loot["entries"])!={str(i) for i in range(1,loot["slot_count"]+1)}):
+            raise ValueError("Invalid loot window coverage")
+        for row in loot["entries"].values():
+            if not isinstance(row,dict):raise ValueError("Invalid loot slot")
+            if row.get("status")=="item":
+                if (set(row)!={"status","item_id","quantity"}
+                        or type(row["item_id"]) is not int or not 1<=row["item_id"]<=4_294_967_295
+                        or type(row["quantity"]) is not int or not 0<=row["quantity"]<=4_294_967_295):
+                    raise ValueError("Invalid loot item")
+            elif row!={"status":"unreadable_or_non_item"}:
+                raise ValueError("Invalid loot slot status")
     if "merchant_buyback" in sections:
         buyback=sections["merchant_buyback"]
         if (c["family"]!="forever" or not isinstance(buyback,dict) or set(buyback)!={"coverage","entries"}

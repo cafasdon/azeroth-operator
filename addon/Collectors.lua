@@ -1,5 +1,55 @@
 local _, AO = ...
 AO.collectors = {}
+-- Observe only the already-open loot panel during a manual export.
+AO.collectors.loot_window = function()
+    assert(AO.family=="forever" and LootFrame and type(LootFrame.IsShown)=="function"
+        and type(GetNumLootItems)=="function" and type(GetLootSlotLink)=="function"
+        and type(GetLootSlotInfo)=="function", "Loot window unavailable")
+    local frame=LootFrame
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted loot observation")
+        return value
+    end
+    local function integer(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high,
+            "Invalid loot number")
+        return value
+    end
+    local function context()
+        local shown=public(frame:IsShown())
+        assert(LootFrame==frame and type(shown)=="boolean" and shown, "Loot window is not shown")
+        return integer(GetNumLootItems(),0,64)
+    end
+    local function read(slot)
+        local link=public(GetLootSlotLink(slot))
+        assert(type(link)=="string" and #link<=2048, "Unreadable loot link")
+        -- Accept only a complete public item hyperlink, with an optional colour wrapper.
+        local id=link:match("^|Hitem:([1-9]%d*):[^|]*|h[^|]*|h$")
+            or link:match("^|c%x%x%x%x%x%x%x%x|Hitem:([1-9]%d*):[^|]*|h[^|]*|h|r$")
+        assert(id and #id<=10, "Unreadable loot item")
+        id=integer(tonumber(id),1,4294967295)
+        local _,_,quantity=GetLootSlotInfo(slot)
+        return {status="item",item_id=id,quantity=integer(quantity,0,4294967295)}
+    end
+    local count=context()
+    local first={}
+    for slot=1,count do
+        local ok,row=pcall(read,slot)
+        if ok then first[slot]=row end
+    end
+    assert(context()==count, "Loot window changed")
+    assert(context()==count, "Loot window changed")
+    local entries={}
+    for slot=1,count do
+        local ok,row=pcall(read,slot)
+        local prior=first[slot]
+        entries[tostring(slot)]=ok and prior and prior.item_id==row.item_id
+            and prior.quantity==row.quantity and row or {status="unreadable_or_non_item"}
+    end
+    assert(context()==count, "Loot window changed")
+    return {coverage="visible_loot_window_slots",slot_count=count,entries=entries}
+end
 -- Optional separately installed reference provider; no provider code/data is bundled.
 AO.collectors.recipe_item_sources = function(materials)
     assert(AO.family=="forever" and type(materials)=="table", "Recipe materials unavailable")
