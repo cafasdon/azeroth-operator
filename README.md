@@ -316,6 +316,15 @@ Execution requires the qualified engine hash and exact capability response,
 including before cached results are reused. Legacy placement remains the default;
 bulk positional execution is refused. Native legality, ownership and full BiS
 proof remain open.
+
+Positional Forever equipment reviews also accept `clear_equipment_slots`, on
+the primary draft or each additional draft. Only distinct captured occupied
+simulator slots may be cleared, and they cannot also be selected targets.
+The review retains the previous items and projects exact empty slots; it does
+not move gear or assign bag destinations. Automatic search enumeration and
+saved-plan ingestion of these new explicit clears remain pending.
+[Contract](docs/ADR-046-explicit-empty-equipment-review.md) ·
+[Offline evidence](docs/explicit-empty-equipment-verification-2026-11-09.md).
 [Contract](docs/ADR-028-positional-equipment-engine.md) ·
 [Integration evidence](docs/positional-integration-verification-2026-11-09.md).
 

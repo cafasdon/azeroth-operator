@@ -637,6 +637,9 @@ struct EquipmentReview {
     /// Produce exact positional Forever simulator input; requires the qualified positional engine contract at execution.
     #[serde(default)]
     positional_simulator_equipment: bool,
+    /// Desired empty simulator slots, requiring positional Forever review and captured occupied slots. No game action.
+    #[serde(default)]
+    clear_equipment_slots: Vec<u32>,
     /// Review up to seven more Forever drafts against this same snapshot.
     additional_drafts: Option<Vec<EquipmentDraft>>,
 }
@@ -647,6 +650,8 @@ struct EquipmentDraft {
     selections: Vec<azeroth_operator::planning::EquipmentSelection>,
     #[serde(default)]
     allow_two_hand_off_hand_clear: bool,
+    #[serde(default)]
+    clear_equipment_slots: Vec<u32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1388,7 +1393,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Review player-selected equipment from exact exported locations. Forever reviews can batch up to eight drafts against the same snapshot. Does not equip, optimise, validate game legality or generate a game import.",
+        description = "Review player-selected equipment from exact exported locations. Forever reviews can batch up to eight drafts against the same snapshot. Explicit clear_equipment_slots requires captured occupied simulator slots, a Forever catalogue and positional_simulator_equipment. Does not equip, optimise, validate game legality or generate a game import.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1420,6 +1425,7 @@ impl Operator {
                 &args.selections,
                 args.allow_two_hand_off_hand_clear,
                 args.positional_simulator_equipment,
+                &args.clear_equipment_slots,
                 catalogue.as_ref(),
             )?;
             if !additional.is_empty() {
@@ -1432,6 +1438,7 @@ impl Operator {
                             &draft.selections,
                             draft.allow_two_hand_off_hand_clear,
                             args.positional_simulator_equipment,
+                            &draft.clear_equipment_slots,
                             catalogue.as_ref(),
                         )
                     })
@@ -3333,6 +3340,7 @@ impl Operator {
         selections: &[azeroth_operator::planning::EquipmentSelection],
         allow_two_hand_off_hand_clear: bool,
         positional_simulator_equipment: bool,
+        clear_equipment_slots: &[u32],
         catalogue: Option<&anyhow::Result<azeroth_operator::forever_catalogue::EquipmentCatalogue>>,
     ) -> anyhow::Result<serde_json::Value> {
         anyhow::ensure!(
@@ -3357,17 +3365,23 @@ impl Operator {
             "Positional equipment requires a Forever catalogue"
         );
         let mut review = azeroth_operator::planning::equipment_review(snapshot, selections)?;
+        anyhow::ensure!(
+            clear_equipment_slots.is_empty()
+                || (positional_simulator_equipment && catalogue.is_some()),
+            "Explicit clears require a positional Forever catalogue review"
+        );
         if let Some(catalogue) = catalogue {
             let checks = catalogue
                 .as_ref()
                 .map_err(|_| anyhow::anyhow!("Catalogue verification failed"))
                 .and_then(|catalogue| {
-                    azeroth_operator::forever_catalogue::review_equipment_catalogue_with_layout(
+                    azeroth_operator::forever_catalogue::review_equipment_catalogue_with_clears(
                         catalogue,
                         snapshot,
                         selections,
                         allow_two_hand_off_hand_clear,
                         positional_simulator_equipment,
+                        clear_equipment_slots,
                     )
                 })
                 .or_else(|error| {
@@ -3392,6 +3406,13 @@ impl Operator {
                 .as_object_mut()
                 .unwrap()
                 .extend(checks.as_object().unwrap().clone());
+        }
+        if !clear_equipment_slots.is_empty() {
+            let mut slots = clear_equipment_slots.to_vec();
+            slots.sort_unstable();
+            review["explicitly_cleared_equipment"] = serde_json::json!(slots.iter().map(|slot|
+                serde_json::json!({"slot":slot,"previous_item_observed":snapshot.sections["equipment"][slot.to_string()]}))
+                .collect::<Vec<_>>());
         }
         review["snapshot_id"] = serde_json::json!(snapshot_id);
         Ok(review)

@@ -1,5 +1,9 @@
 # Changelog
 
+- Add explicit desired empty slots to positional Forever equipment reviews,
+  including independent batch drafts, retained previous-item evidence and
+  occupied-slot/target guards. No gear movement or automatic search expansion.
+
 - Connect explicit name-and-realm selection to owned-gear evaluation through
   the owner's MCP store; pin the selected historical snapshot and retain
   unknown active identity, shared deadlines and existing resume bindings.

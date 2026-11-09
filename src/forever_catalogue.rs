@@ -2949,6 +2949,24 @@ pub fn review_equipment_catalogue_with_layout(
     allow_two_hand_off_hand_clear: bool,
     positional: bool,
 ) -> Result<Value> {
+    review_equipment_catalogue_with_clears(
+        catalogue,
+        snapshot,
+        selections,
+        allow_two_hand_off_hand_clear,
+        positional,
+        &[],
+    )
+}
+
+pub fn review_equipment_catalogue_with_clears(
+    catalogue: &EquipmentCatalogue,
+    snapshot: &Snapshot,
+    selections: &[crate::planning::EquipmentSelection],
+    allow_two_hand_off_hand_clear: bool,
+    positional: bool,
+    clear_slots: &[u32],
+) -> Result<Value> {
     use crate::planning::ItemLocation;
 
     let equipment = snapshot
@@ -2956,7 +2974,27 @@ pub fn review_equipment_catalogue_with_layout(
         .get("equipment")
         .and_then(Value::as_object)
         .ok_or_else(|| anyhow::anyhow!("Equipment observation unavailable"))?;
+    let clears: BTreeSet<_> = clear_slots.iter().copied().collect();
+    ensure!(
+        clear_slots.is_empty() || (snapshot.client.family == Family::Forever && positional),
+        "Explicit clears require positional Forever equipment"
+    );
+    ensure!(
+        clear_slots.len() <= 17
+            && clears.len() == clear_slots.len()
+            && clears
+                .iter()
+                .all(|slot| simulator_slot_for_equipment(*slot).is_some()
+                    && equipment.contains_key(&slot.to_string())
+                    && !selections
+                        .iter()
+                        .any(|selection| selection.target_slot == *slot)),
+        "Invalid, duplicate, unobserved or conflicting clear slot"
+    );
     let selected_observation = |slot| {
+        if clears.contains(&slot) {
+            return None;
+        }
         if let Some(selection) = selections
             .iter()
             .find(|selection| selection.target_slot == slot)
@@ -3146,7 +3184,7 @@ pub fn review_equipment_catalogue_with_layout(
         "catalogue_unique_item_duplicates":duplicates,
         "catalogue_shared_limit_categories":shared_categories,
         "simulator_equipment_spec":equipment_spec,
-        "simulator_cleared_equipment_slots": if clear_off_hand { vec![17] } else { vec![] },
+        "simulator_cleared_equipment_slots": clears.iter().copied().chain(clear_off_hand.then_some(17)).collect::<BTreeSet<_>>(),
         "simulator_equipment_unresolved_slots":blockers
     });
     if positional {

@@ -1861,3 +1861,11 @@ the evaluation pins that snapshot ID. No match fails before plan writes.
 Missing/mixed selectors are rejected; there is no newest-alt or active-player
 fallback. A resumed journal stays bound to its original capture and rejects a
 changed selection. Resolution consumes the shared budget, capped at 15 seconds.
+
+Positional Forever equipment reviews accept explicit desired empty occupied
+slots through `clear_equipment_slots`, independently for primary/additional
+drafts. Previous-item evidence stays attached, and the exact simulator layout
+preserves the holes. Invalid/duplicate/uncaptured slots, shirt/tabard and selected
+target overlaps are refused. No items move; bag destinations and native legality
+remain unknown. General empty-choice search enumeration and saved-plan ingestion
+are still pending. See ADR 046 and explicit-clear offline verification.
