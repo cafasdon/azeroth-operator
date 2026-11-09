@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever recipes by their reported relative difficulty.
+
 - Compare captured Forever recipe skill-up flags, counts and difficulty across saved profession views.
 
 - Compare bulk Forever recipe cooldown observations across saved captures of the same profession.

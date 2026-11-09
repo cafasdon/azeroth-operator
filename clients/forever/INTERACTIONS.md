@@ -4,6 +4,10 @@ Saved profession recipe-view comparisons report changes in the client-reported
 skill-up flag, count and relative difficulty for recipe IDs seen in both
 captures of the same profession. Missing observations remain null, and the
 comparison does not predict skill gains.
+Use `recipe_view_filter.relative_difficulty` to match `optimal`, `medium`,
+`easy` or `trivial` from the same profession's saved recipe view. Missing
+difficulty stays unknown. This filter can be combined with materials and
+skill-up observations.
 
 Use `compare_snapshots` with `recipe_cooldown_changes: true` to compare bulk
 cooldown observations for shared recipe IDs in the same profession. The

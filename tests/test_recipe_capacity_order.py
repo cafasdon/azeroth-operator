@@ -29,6 +29,8 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
             'entries':{str(i):{'learned':True,'can_skill_up':i!=6} for i in [1,2,3,4,5,6,10,11]}}
         for recipe, count in [(2,2),(10,2),(6,0)]:
             capture['sections']['profession_recipe_view']['entries'][str(recipe)]['skill_ups_reported']=count
+        for recipe, difficulty in [(1,'trivial'),(2,'optimal'),(6,'easy'),(10,'optimal'),(11,'medium')]:
+            capture['sections']['profession_recipe_view']['entries'][str(recipe)]['relative_difficulty']=difficulty
         capture['sections']['bags']={'0':{'1':{'item_id':10,'count':20},'2':{'item_id':20,'count':3}}}
         capture['sections']['character_bank']={'6':{'1':{'item_id':20,'count':100}}}
         with tempfile.TemporaryDirectory() as folder,tempfile.TemporaryDirectory() as foreign:
@@ -60,6 +62,16 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([r['recipe_id'] for r in raw['records']],[1,2,3,10,11])
                     self.assertEqual(await search(**args,order='recipe_id'),raw)
                     self.assertEqual(await search(**args,order=None),raw)
+                    for difficulty, expected in [('trivial',[1]),('optimal',[2,10]),('easy',[6]),('medium',[11])]:
+                        filtered=await search(recipe_view_filter={'relative_difficulty':difficulty})
+                        self.assertEqual([r['recipe_id'] for r in filtered['records']],expected)
+                    optimal=await search(material_filter=material,
+                        recipe_view_filter={'relative_difficulty':'optimal','minimum_skill_ups_reported':2},
+                        order='reported_skill_ups_desc',offset=1,limit=1)
+                    self.assertEqual([r['recipe_id'] for r in optimal['records']],[10])
+                    self.assertEqual((await search(snapshot_id=mismatched_key,
+                        recipe_view_filter={'relative_difficulty':'optimal'}))['records'],[])
+                    await search(error=True,recipe_view_filter={'relative_difficulty':'unknown'})
                     yield_args={'order':'reported_base_output_minimum_desc','output_item_id':100}
                     yields=await search(**yield_args)
                     self.assertEqual([r['recipe_id'] for r in yields['records']],[2,10,1,11])

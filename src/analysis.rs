@@ -132,6 +132,28 @@ pub struct RecipeViewFilter {
     pub learned: Option<bool>,
     pub can_skill_up: Option<bool>,
     pub minimum_skill_ups_reported: Option<u32>,
+    /// Exact client-reported difficulty. Missing observations are unevaluable.
+    pub relative_difficulty: Option<RecipeRelativeDifficulty>,
+}
+
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeRelativeDifficulty {
+    Optimal,
+    Medium,
+    Easy,
+    Trivial,
+}
+
+impl RecipeRelativeDifficulty {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Optimal => "optimal",
+            Self::Medium => "medium",
+            Self::Easy => "easy",
+            Self::Trivial => "trivial",
+        }
+    }
 }
 
 #[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
@@ -200,6 +222,10 @@ fn recipe_view_matches(row: Option<&Value>, filter: &RecipeViewFilter) -> Option
         filter.minimum_skill_ups_reported.map(|minimum| {
             row.and_then(|r| r["skill_ups_reported"].as_u64())
                 .map(|value| value >= u64::from(minimum))
+        }),
+        filter.relative_difficulty.map(|expected| {
+            row.and_then(|r| r["relative_difficulty"].as_str())
+                .map(|value| value == expected.as_str())
         }),
     ]
     .into_iter()
@@ -455,7 +481,8 @@ pub fn search_recipe_materials_ordered(
         ensure!(
             filter.learned.is_some()
                 || filter.can_skill_up.is_some()
-                || filter.minimum_skill_ups_reported.is_some(),
+                || filter.minimum_skill_ups_reported.is_some()
+                || filter.relative_difficulty.is_some(),
             "Recipe view filter requires at least one predicate"
         );
     }
