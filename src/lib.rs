@@ -1438,7 +1438,9 @@ enum PlayerResource {
 #[serde(deny_unknown_fields)]
 pub struct PlayerResourceFilter {
     resource: PlayerResource,
-    maximum_percent: u8,
+    minimum_percent: Option<u8>,
+    maximum_percent: Option<u8>,
+    power_type: Option<u8>,
 }
 
 impl PlayerResourceFilter {
@@ -1448,10 +1450,22 @@ impl PlayerResourceFilter {
             PlayerResource::PrimaryPower => "primary_power",
         };
         let row = section.get(resource)?;
+        if self
+            .power_type
+            .is_some_and(|kind| row["power_type"].as_u64() != Some(u64::from(kind)))
+        {
+            return None;
+        }
         let current = u128::from(row["current"].as_u64()?);
         let maximum = u128::from(row["maximum"].as_u64()?);
-        (maximum > 0 && current * 100 <= maximum * u128::from(self.maximum_percent))
-            .then(|| json!({"resource":resource,"observation":row,"readiness_verified":false}))
+        if self.minimum_percent.is_some() || self.maximum_percent.is_some() {
+            let min = u128::from(self.minimum_percent.unwrap_or(0));
+            let max = u128::from(self.maximum_percent.unwrap_or(100));
+            if maximum == 0 || current * 100 < maximum * min || current * 100 > maximum * max {
+                return None;
+            }
+        }
+        Some(json!({"resource":resource,"observation":row,"readiness_verified":false}))
     }
 }
 
@@ -1913,12 +1927,31 @@ impl Store {
             || pvp_season_id.is_some()
             || maximum_pvp_points_to_next_threshold.is_some()
             || pvp_cap_distance.is_some();
-        ensure!(
-            player_resource
-                .as_ref()
-                .is_none_or(|filter| family == Family::Forever && filter.maximum_percent <= 100),
-            "Player resource search requires Forever and a percentage from 0 to 100"
-        );
+        if let Some(filter) = &player_resource {
+            ensure!(
+                family == Family::Forever,
+                "Player resource search requires Forever"
+            );
+            ensure!(
+                filter.minimum_percent.is_some()
+                    || filter.maximum_percent.is_some()
+                    || filter.power_type.is_some(),
+                "Player resource search requires a percentage bound or power type"
+            );
+            let min = filter.minimum_percent.unwrap_or(0);
+            let max = filter.maximum_percent.unwrap_or(100);
+            ensure!(
+                min <= max && max <= 100,
+                "Invalid player resource percentage range"
+            );
+            ensure!(
+                filter.power_type.is_none_or(|kind| matches!(
+                    filter.resource,
+                    PlayerResource::PrimaryPower
+                ) && kind <= 63),
+                "Power type requires primary_power and a value from 0 to 63"
+            );
+        }
         ensure!(
             !filter_pvp || family == Family::Forever,
             "PvP filtering requires Forever"

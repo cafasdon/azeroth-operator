@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever resources by a percentage range and exact primary power type.
+
 - Find saved Forever captures by recorded health or primary power percentage.
 
 - Compare saved Forever PvP next-rank thresholds and remaining points for matching rank and reported season.

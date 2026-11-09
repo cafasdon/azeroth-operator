@@ -75,10 +75,10 @@ class PlayerResourcesTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
-                    async def search(resource, maximum_percent, family='forever', error=False):
+                    async def search(resource, maximum_percent=None, family='forever', error=False, **filters):
                         reply = await session.call_tool('list_snapshots', {
                             'family': family, 'player_resource': {
-                                'resource': resource, 'maximum_percent': maximum_percent}})
+                                'resource': resource, 'maximum_percent': maximum_percent, **filters}})
                         self.assertEqual(bool(reply.isError), error, reply)
                         return None if error else json.loads(reply.content[0].text)['snapshots']
                     health = await search('health', 25)
@@ -92,6 +92,17 @@ class PlayerResourcesTests(unittest.IsolatedAsyncioTestCase):
                                      {valid[1][0], valid[3][0]})
                     await search('health', 101, error=True)
                     await search('health', 25, family='retail', error=True)
+                    self.assertEqual(await search('health', 25, minimum_percent=25), health)
+                    self.assertEqual(await search('health', minimum_percent=26), [])
+                    self.assertEqual(await search('primary_power', 100, power_type=0), empty_power)
+                    self.assertEqual([row['snapshot_id'] for row in
+                                      await search('primary_power', minimum_percent=100, power_type=63)],
+                                     [valid[3][0]])
+                    self.assertEqual(await search('primary_power', power_type=0), empty_power)
+                    await search('health', 24, minimum_percent=25, error=True)
+                    await search('health', 100, power_type=0, error=True)
+                    await search('primary_power', power_type=64, error=True)
+                    await search('health', error=True)
                     for key, section in valid:
                         reply = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(reply.isError)

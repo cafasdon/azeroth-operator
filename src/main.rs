@@ -429,7 +429,7 @@ struct List {
     maximum_pvp_points_to_next_threshold: Option<u32>,
     /// Match a saved Forever PvP cap and its maximum remaining points.
     pvp_cap_distance: Option<azeroth_operator::PvpCapDistanceFilter>,
-    /// Match saved Forever health or primary power at or below a whole percentage.
+    /// Match saved Forever health or primary power by percentage range or primary power type.
     player_resource: Option<azeroth_operator::PlayerResourceFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,

@@ -1,10 +1,12 @@
 # Forever interaction map
 
 Use `list_snapshots.player_resource` with `resource` set to `health` or
-`primary_power` and a whole `maximum_percent` from 0 to 100. The inclusive
-comparison uses the exact captured ratio. Missing readings and zero
-maximums cannot match. Each match includes the saved counter and leaves
-current readiness unverified.
+`primary_power` and at least one predicate. Whole `minimum_percent` and
+`maximum_percent` bounds from 0 to 100 are inclusive and use the exact
+captured ratio. Missing readings and zero maximums cannot match percentage
+bounds. For primary power, `power_type` from 0 to 63 matches the exact
+captured type, with or without percentage bounds. Each match includes the
+saved counter and leaves current readiness unverified.
 
 Use `list_snapshots.maximum_pvp_points_to_next_threshold` to find saved
 Forever captures within an inclusive point limit of the reported next PvP
