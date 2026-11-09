@@ -172,6 +172,8 @@ struct Inspect {
     bag_restock_location_offset: Option<usize>,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
+    /// Look up captured item source references for the residual bag shortfall.
+    bag_restock_source_snapshot_id: Option<String>,
     /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
@@ -2822,7 +2824,8 @@ impl Operator {
             }
         });
         if ((args.bag_restock_location_offset.is_some()
-            || args.bag_restock_merchant_snapshot_id.is_some())
+            || args.bag_restock_merchant_snapshot_id.is_some()
+            || args.bag_restock_source_snapshot_id.is_some())
             && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
                 args.section.as_deref() != Some("bags")
@@ -3047,6 +3050,26 @@ impl Operator {
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
+                    if let Some(id) = args.bag_restock_source_snapshot_id.as_deref() {
+                        let result = self.store.read(id).and_then(|source| {
+                            azeroth_operator::analysis::inventory_shortfall_captured_sources(
+                                &bank_restock_residual(&value["bag_restock_review"])
+                                    .unwrap_or_default(),
+                                &snapshot,
+                                &source,
+                                "user_supplied_bag_shortfalls_after_observed_bank_withdrawals",
+                            )
+                        });
+                        let Ok(mut sources) = result else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Bag restocking requires a compatible saved source snapshot",
+                            )]);
+                        };
+                        if sources.is_object() {
+                            sources["snapshot_id"] = serde_json::json!(id);
+                        }
+                        value["bag_restock_captured_sources"] = sources;
+                    }
                     if let Some(id) = args.bag_restock_merchant_snapshot_id.as_deref() {
                         let Ok(merchant) = self.store.read(id).and_then(|merchant| {
                             azeroth_operator::analysis::ensure_same_character_and_client(

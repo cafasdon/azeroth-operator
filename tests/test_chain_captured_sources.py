@@ -104,6 +104,24 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
                     residual=bank_sources.pop('after_observed_bank_withdrawals')
                     self.assertEqual(bank_sources,report)
                     self.assertEqual(residual['records'],[{**rows[2840],'quantity':1}])
+                    restock={'snapshot_id':bank_key,'section':'bags',
+                        'bag_restock_requirements':[{'item_id':2840,'quantity':4}],
+                        'bag_restock_source_snapshot_id':older_key}
+                    reply=await session.call_tool('inspect_snapshot',restock)
+                    self.assertFalse(reply.isError,reply)
+                    bag_sources=json.loads(reply.content[0].text)['bag_restock_captured_sources']
+                    self.assertEqual(bag_sources['snapshot_id'],older_key)
+                    self.assertEqual(bag_sources['records'][0]['quantity'],1)
+                    self.assertEqual(bag_sources['records'][0]['references'],{'vendors':refs([91])})
+                    self.assertIs(bag_sources['current_availability_verified'],False)
+                    self.assertNotIn('quest_item_binding_verified',bag_sources)
+                    self.assertNotIn('PRIVATE',json.dumps(bag_sources))
+                    for selector in wrong+['0'*64]:
+                        self.assertTrue((await session.call_tool('inspect_snapshot',{
+                            **restock,'bag_restock_source_snapshot_id':selector})).isError)
+                    self.assertTrue((await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':bank_key,'section':'bags',
+                        'bag_restock_source_snapshot_id':older_key})).isError)
                     reply=await session.call_tool('inspect_snapshot',{**quest_request,
                         'quest_inventory_source_snapshot_id':older_key,'quest_inventory_snapshot_id':inventory_key})
                     self.assertFalse(reply.isError,reply)

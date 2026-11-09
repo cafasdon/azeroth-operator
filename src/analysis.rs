@@ -7192,11 +7192,29 @@ pub fn quest_inventory_captured_sources(
     quest: &Snapshot,
     source: &Snapshot,
 ) -> Result<Value> {
+    let mut report = inventory_shortfall_captured_sources(
+        review,
+        quest,
+        source,
+        "user_supplied_quest_item_shortfalls",
+    )?;
+    if report.is_object() {
+        report["quest_item_binding_verified"] = json!(false);
+    }
+    Ok(report)
+}
+
+pub fn inventory_shortfall_captured_sources(
+    review: &Value,
+    inventory: &Snapshot,
+    source: &Snapshot,
+    basis: &str,
+) -> Result<Value> {
     ensure!(
-        quest.client.family == crate::Family::Forever,
+        inventory.client.family == crate::Family::Forever,
         "Expected Forever"
     );
-    ensure_same_character_and_client(quest, source)?;
+    ensure_same_character_and_client(inventory, source)?;
     if review["storage_observed"] != true {
         return Ok(Value::Null);
     }
@@ -7209,10 +7227,7 @@ pub fn quest_inventory_captured_sources(
             Some((row["item_id"].as_u64()?, quantity))
         })
         .collect();
-    let mut report =
-        captured_material_sources(needs, source, "user_supplied_quest_item_shortfalls");
-    report["quest_item_binding_verified"] = json!(false);
-    Ok(report)
+    Ok(captured_material_sources(needs, source, basis))
 }
 
 fn captured_material_sources(needs: BTreeMap<u64, u64>, source: &Snapshot, basis: &str) -> Value {

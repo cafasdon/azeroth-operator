@@ -2990,3 +2990,9 @@ Add `bag_restock_wallet_reserve_copper` to the merchant quote to check its
 copper-only bundle cost against the inventory wallet after setting copper
 aside. The result can identify a known shortfall from partial prices. A
 positive affordability result requires a complete quote and observed wallet.
+
+Set `bag_restock_source_snapshot_id` to a compatible saved capture to see
+recorded drop, vendor and quest reward references for quantities still short
+after observed bank withdrawals. This is independent of merchant quoting.
+Missing source observations remain unknown, and references describe saved
+data without verifying current acquisition eligibility.

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show captured item source references for residual Forever bag restocking shortfalls.
+
 - Check saved Forever restocking quotes against an optional wallet reserve.
 
 - Quote residual bag restocking shortfalls from a saved Forever merchant visit.
