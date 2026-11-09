@@ -1,5 +1,9 @@
 # Changelog
 
+- Filter and page historical bag cooldown observations by item IDs, status,
+  enabled flag and inclusive timer bounds, with numeric ordering, separate
+  unknown/nonmatching counts and explicit missing-versus-empty results.
+
 - Align Python item stack-count validation with the Rust reader: carried/bank
   items require positive u32 integers; equipment accepts absent/null counts only.
   Reject malformed captures before ingestion writes, preserving valid history.

@@ -9,6 +9,12 @@ remains unqualified.
 [Contract](docs/ADR-048-passive-bag-item-cooldowns.md) ·
 [Offline evidence](docs/bag-item-cooldowns-verification-2026-11-09.md).
 
+Use `inspect_snapshot` with section `bag_item_cooldowns` and
+`bag_cooldown_filter` to select item IDs, reported/unavailable status, recorded
+enabled flags or inclusive timer bounds. Results sort by numeric bag/slot and
+page up to 50 rows; unknown predicates remain separate from nonmatches.
+[Filter verification](docs/bag-cooldown-filter-verification-2026-11-09.md).
+
 Item lookup includes captured cooldown evidence on matching bag locations when
 available. Counts cover all matching bag locations before pagination; separate
 snapshot results retain their own capture time and evidence. Equipment/bank

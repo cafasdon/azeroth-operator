@@ -47,6 +47,21 @@ Equipment and bank locations receive no join; multiple explicit snapshot
 results remain separate with their original capture time. If the section is
 absent, both new projections are omitted, preserving the legacy lookup shape.
 
+Filtered inspection uses optional `bag_cooldown_filter` only with the Forever
+`bag_item_cooldowns` section. Select 1..64 distinct positive item IDs, status
+reported/unavailable, enabled flag and inclusive unsigned timer bounds. Offset
+and a 1..50 limit (default 20) allow pagination-only requests. An empty filter,
+reversed bounds, duplicate IDs, invalid types or wrong context reject.
+
+Predicates apply to the same row. Any definite mismatch dominates an unknown
+timer/enabled predicate; otherwise missing requested values remain unknown.
+Unavailable status itself is known and can be selected without timer predicates.
+Counters partition the captured locations before paging. Output rows use numeric
+bag/slot order, and counts remain unchanged when paging past the end. Missing
+sections have null rows/counts/has_more; observed empty sections have empty rows,
+zero counts and false has_more. No filter preserves the original raw shape.
+Recorded enabled/zero-timer matches are not current-use eligibility.
+
 Matching new MCP readers and addon 0.46.0-dev are required to consume the new
 capture. Older captures remain accepted. The package is not installed or
 deployed. Native API response/completeness, current identity and in-game

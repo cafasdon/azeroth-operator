@@ -1638,6 +1638,337 @@ pub fn review_loot_requirements(
     )
 }
 
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum BagCooldownStatus {
+    Reported,
+    Unavailable,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct BagCooldownFilter {
+    pub item_ids: Option<Vec<std::num::NonZeroU32>>,
+    pub status: Option<BagCooldownStatus>,
+    pub enabled: Option<bool>,
+    pub minimum_remaining_seconds: Option<u32>,
+    pub maximum_remaining_seconds: Option<u32>,
+    pub offset: Option<usize>,
+    pub limit: Option<usize>,
+}
+
+impl BagCooldownFilter {
+    pub fn validate(&self) -> Result<()> {
+        ensure!(
+            self.item_ids.is_some()
+                || self.status.is_some()
+                || self.enabled.is_some()
+                || self.minimum_remaining_seconds.is_some()
+                || self.maximum_remaining_seconds.is_some()
+                || self.offset.is_some()
+                || self.limit.is_some(),
+            "Bag cooldown filter must contain at least one field"
+        );
+        if let Some(ids) = &self.item_ids {
+            ensure!(
+                (1..=64).contains(&ids.len())
+                    && ids.iter().copied().collect::<BTreeSet<_>>().len() == ids.len(),
+                "Bag cooldown item IDs must contain 1 to 64 unique IDs"
+            );
+        }
+        if let (Some(minimum), Some(maximum)) = (
+            self.minimum_remaining_seconds,
+            self.maximum_remaining_seconds,
+        ) {
+            ensure!(minimum <= maximum, "Bag cooldown timer bounds are reversed");
+        }
+        ensure!(
+            (1..=50).contains(&self.limit.unwrap_or(20)),
+            "Bag cooldown limit must be between 1 and 50"
+        );
+        Ok(())
+    }
+}
+
+fn bag_cooldown_matches(row: &Value, filter: &BagCooldownFilter) -> Option<bool> {
+    let checks: Vec<_> = [
+        filter.item_ids.as_ref().map(|ids| {
+            Some(
+                ids.iter()
+                    .any(|id| row["item_id"].as_u64() == Some(u64::from(id.get()))),
+            )
+        }),
+        filter.status.map(|status| {
+            Some(
+                row["status"]
+                    == match status {
+                        BagCooldownStatus::Reported => "reported",
+                        BagCooldownStatus::Unavailable => "unavailable",
+                    },
+            )
+        }),
+        filter
+            .enabled
+            .map(|expected| row["enabled"].as_bool().map(|actual| actual == expected)),
+        filter.minimum_remaining_seconds.map(|minimum| {
+            row["remaining_seconds"]
+                .as_u64()
+                .map(|seconds| seconds >= u64::from(minimum))
+        }),
+        filter.maximum_remaining_seconds.map(|maximum| {
+            row["remaining_seconds"]
+                .as_u64()
+                .map(|seconds| seconds <= u64::from(maximum))
+        }),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if checks.contains(&Some(false)) {
+        Some(false)
+    } else if checks.contains(&None) {
+        None
+    } else {
+        Some(true)
+    }
+}
+
+/// Filters validated, captured bag cooldown rows without inferring present usability.
+pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter) -> Result<Value> {
+    filter.validate()?;
+    let offset = filter.offset.unwrap_or(0);
+    let limit = filter.limit.unwrap_or(20);
+    let mut result = json!({
+        "basis":"captured_bag_item_cooldowns", "filter":filter,
+        "rows":null, "captured_item_locations":null, "matched_item_locations":null,
+        "unknown_filter_item_locations":null, "nonmatching_item_locations":null,
+        "offset":offset, "limit":limit, "has_more":null,
+        "current_usability_verified":false, "game_execution":false
+    });
+    let Some(section) = section else {
+        return Ok(result);
+    };
+    let entries = section["entries"]
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Bag cooldown entries unavailable"))?;
+    let mut matching = Vec::new();
+    let (mut captured, mut unknown, mut nonmatching) = (0usize, 0usize, 0usize);
+    for (bag, slots) in entries {
+        let bag = bag.parse::<u32>()?;
+        let slots = slots
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("Bag cooldown slots unavailable"))?;
+        for (slot, row) in slots {
+            captured += 1;
+            match bag_cooldown_matches(row, filter) {
+                Some(true) => matching.push((bag, slot.parse::<u32>()?, row)),
+                Some(false) => nonmatching += 1,
+                None => unknown += 1,
+            }
+        }
+    }
+    matching.sort_unstable_by_key(|(bag, slot, _)| (*bag, *slot));
+    let rows: Vec<_> = matching
+        .iter()
+        .skip(offset)
+        .take(limit)
+        .map(|(bag, slot, row)| {
+            let mut flattened = json!({"bag":bag, "slot":slot,
+            "item_id":row["item_id"], "status":row["status"]});
+            for key in ["enabled", "remaining_seconds"] {
+                if let Some(value) = row.get(key) {
+                    flattened[key] = value.clone();
+                }
+            }
+            flattened
+        })
+        .collect();
+    result["rows"] = json!(rows);
+    result["captured_item_locations"] = json!(captured);
+    result["matched_item_locations"] = json!(matching.len());
+    result["unknown_filter_item_locations"] = json!(unknown);
+    result["nonmatching_item_locations"] = json!(nonmatching);
+    result["has_more"] = json!(matching.len().saturating_sub(offset) > limit);
+    Ok(result)
+}
+
+#[cfg(test)]
+mod bag_cooldown_filter_tests {
+    use super::*;
+
+    fn filter(value: Value) -> BagCooldownFilter {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn source() -> Value {
+        json!({"coverage":"captured_carried_items_only", "captured_item_locations":4,
+        "entries":{
+            "10":{"1":{"item_id":100,"status":"reported","enabled":true,"remaining_seconds":0}},
+            "2":{
+                "10":{"item_id":100,"status":"reported","enabled":false,"remaining_seconds":10},
+                "2":{"item_id":200,"status":"unavailable"},
+                "1":{"item_id":100,"status":"unavailable"}
+            }
+        }})
+    }
+
+    fn assert_counts(result: &Value, matched: usize, unknown: usize, nonmatching: usize) {
+        assert_eq!(result["matched_item_locations"], matched);
+        assert_eq!(result["unknown_filter_item_locations"], unknown);
+        assert_eq!(result["nonmatching_item_locations"], nonmatching);
+        assert_eq!(
+            result["captured_item_locations"],
+            matched + unknown + nonmatching
+        );
+    }
+
+    #[test]
+    fn conjunctive_predicates_preserve_unknown_and_false_dominates() {
+        let source = source();
+        let query = filter(
+            json!({"item_ids":[100],"enabled":false,"minimum_remaining_seconds":10,"maximum_remaining_seconds":10}),
+        );
+        let result = filter_bag_cooldowns(Some(&source), &query).unwrap();
+        assert_counts(&result, 1, 1, 2);
+        assert_eq!(result["rows"][0]["slot"], 10);
+        let result = filter_bag_cooldowns(
+            Some(&source),
+            &filter(json!({"status":"reported","enabled":true})),
+        )
+        .unwrap();
+        assert_counts(&result, 1, 0, 3);
+        let result = filter_bag_cooldowns(
+            Some(&source),
+            &filter(json!({"minimum_remaining_seconds":0,"maximum_remaining_seconds":0})),
+        )
+        .unwrap();
+        assert_counts(&result, 1, 2, 1);
+    }
+
+    #[test]
+    fn unavailable_status_is_known_but_its_timer_and_enabled_are_unknown() {
+        let source = source();
+        let result =
+            filter_bag_cooldowns(Some(&source), &filter(json!({"status":"unavailable"}))).unwrap();
+        assert_counts(&result, 2, 0, 2);
+        assert!(result["rows"][0].get("enabled").is_none());
+        assert!(result["rows"][0].get("remaining_seconds").is_none());
+        for predicate in [
+            json!({"status":"unavailable","enabled":false}),
+            json!({"status":"unavailable","maximum_remaining_seconds":0}),
+        ] {
+            let result = filter_bag_cooldowns(Some(&source), &filter(predicate)).unwrap();
+            assert_counts(&result, 0, 2, 2);
+        }
+    }
+
+    #[test]
+    fn pagination_only_sorts_numerically_and_does_not_create_unknowns() {
+        let source = source();
+        let result = filter_bag_cooldowns(Some(&source), &filter(json!({"limit":2}))).unwrap();
+        assert_counts(&result, 4, 0, 0);
+        assert_eq!(result["rows"][0]["bag"], 2);
+        assert_eq!(result["rows"][0]["slot"], 1);
+        assert_eq!(result["rows"][1]["slot"], 2);
+        assert_eq!(result["has_more"], true);
+        let result =
+            filter_bag_cooldowns(Some(&source), &filter(json!({"offset":2,"limit":2}))).unwrap();
+        assert_eq!(result["rows"][0]["bag"], 2);
+        assert_eq!(result["rows"][0]["slot"], 10);
+        assert_eq!(result["rows"][1]["bag"], 10);
+        assert_eq!(result["has_more"], false);
+        let result =
+            filter_bag_cooldowns(Some(&source), &filter(json!({"offset":usize::MAX}))).unwrap();
+        assert_counts(&result, 4, 0, 0);
+        assert_eq!(result["rows"], json!([]));
+        assert_eq!(result["has_more"], false);
+        assert_eq!(result["limit"], 20);
+    }
+
+    #[test]
+    fn missing_section_is_distinct_from_known_empty_and_still_validates() {
+        let query = filter(json!({"offset":0}));
+        let missing = filter_bag_cooldowns(None, &query).unwrap();
+        for field in [
+            "rows",
+            "captured_item_locations",
+            "matched_item_locations",
+            "unknown_filter_item_locations",
+            "nonmatching_item_locations",
+            "has_more",
+        ] {
+            assert!(missing[field].is_null(), "{field}");
+        }
+        assert_eq!(missing["current_usability_verified"], false);
+        assert_eq!(missing["game_execution"], false);
+        let empty = json!({"coverage":"captured_carried_items_only","captured_item_locations":0,"entries":{}});
+        let result = filter_bag_cooldowns(Some(&empty), &query).unwrap();
+        assert_counts(&result, 0, 0, 0);
+        assert_eq!(result["rows"], json!([]));
+        assert_eq!(result["has_more"], false);
+        assert!(filter_bag_cooldowns(None, &filter(json!({}))).is_err());
+    }
+
+    #[test]
+    fn malformed_filters_and_limits_are_rejected() {
+        for value in [
+            json!({"bogus":1}),
+            json!({"status":"ready"}),
+            json!({"item_ids":[0]}),
+            json!({"item_ids":[4294967296_u64]}),
+            json!({"enabled":1}),
+            json!({"offset":-1}),
+            json!({"minimum_remaining_seconds":-1}),
+            json!({"maximum_remaining_seconds":1.5}),
+        ] {
+            assert!(serde_json::from_value::<BagCooldownFilter>(value).is_err());
+        }
+        for value in [
+            json!({}),
+            json!({"enabled":null}),
+            json!({"item_ids":[]}),
+            json!({"item_ids":[1,1]}),
+            json!({"item_ids":(1..=65).collect::<Vec<u32>>()}),
+            json!({"limit":0}),
+            json!({"limit":51}),
+            json!({"minimum_remaining_seconds":2,"maximum_remaining_seconds":1}),
+        ] {
+            assert!(filter(value).validate().is_err());
+        }
+        for value in [
+            json!({"item_ids":(1..=64).collect::<Vec<u32>>()}),
+            json!({"limit":50}),
+            json!({"enabled":false}),
+            json!({"minimum_remaining_seconds":u32::MAX,"maximum_remaining_seconds":u32::MAX}),
+        ] {
+            assert!(filter(value).validate().is_ok());
+        }
+    }
+
+    #[test]
+    fn maximum_capture_keeps_counts_before_bounded_pagination() {
+        let mut entries = serde_json::Map::new();
+        for bag in 0..4 {
+            let mut slots = serde_json::Map::new();
+            for slot in 1..=1024 {
+                slots.insert(
+                    slot.to_string(),
+                    json!({"item_id":1,"status":"unavailable"}),
+                );
+            }
+            entries.insert(bag.to_string(), Value::Object(slots));
+        }
+        let source = json!({"coverage":"captured_carried_items_only","captured_item_locations":4096,"entries":entries});
+        let result = filter_bag_cooldowns(Some(&source), &filter(json!({"limit":50}))).unwrap();
+        assert_counts(&result, 4096, 0, 0);
+        assert_eq!(result["rows"].as_array().unwrap().len(), 50);
+        assert_eq!(result["rows"][49]["slot"], 50);
+        assert_eq!(result["has_more"], true);
+    }
+}
+
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),

@@ -47,6 +47,8 @@ struct Inspect {
     section: Option<String>,
     /// Compare 1..64 distinct base-item requirements with readable saved loot; no acquisition or stock credit.
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
+    /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
+    bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
@@ -1656,6 +1658,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.bag_cooldown_filter.as_ref().is_some_and(|filter| {
+            args.section.as_deref() != Some("bag_item_cooldowns") || filter.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Bag cooldown filters require bag_item_cooldowns, a nonempty filter, distinct item IDs, ordered timer bounds and a limit from 1 to 50",
+            )]);
+        }
         if let Some(requirements) = args.loot_requirements.as_ref() {
             if args.section.as_deref() != Some("loot_window")
                 || azeroth_operator::analysis::validate_loot_requirements(requirements).is_err()
@@ -2153,6 +2162,25 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(filter) = args.bag_cooldown_filter.as_ref() {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Bag cooldown review requires Forever",
+                        )]);
+                    }
+                    let section = value["data"].take();
+                    match azeroth_operator::analysis::filter_bag_cooldowns(
+                        (!section.is_null()).then_some(&section),
+                        filter,
+                    ) {
+                        Ok(review) => value["data"] = review,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Invalid captured bag cooldown review",
+                            )]);
+                        }
+                    }
+                }
                 if let Some(requirements) = args.loot_requirements.as_ref() {
                     let reviewed = self.store.read(&args.snapshot_id).and_then(|snapshot| {
                         azeroth_operator::analysis::review_loot_requirements(

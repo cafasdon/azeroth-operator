@@ -1894,3 +1894,9 @@ Python ingestion and existing-capture reads now enforce the Rust item stack-coun
 contract: container rows require positive u32 integers; equipment permits absent
 or null counts only. Invalid ingestion fails before writes. Count parity is
 verified with 120 actual MCP cases; broader schema equivalence remains separate.
+
+Historical bag cooldown inspection supports item IDs, explicit status, enabled
+flags and inclusive timer bounds through bag_cooldown_filter. Numeric bag/slot
+ordering and bounded pages preserve full pre-pagination matched/unknown/nonmatch
+counts. Missing observations remain null; known empty captures remain empty.
+This does not establish current item usability. See [verification](../../docs/bag-cooldown-filter-verification-2026-11-09.md).
