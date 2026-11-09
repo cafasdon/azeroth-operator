@@ -79,13 +79,13 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(result['craftability_verified'])
                     self.assertEqual((await review(empty_id))['pending_mail_material_observations']['unobserved_reagent_ids'],[2,10,720])
                     self.assertIsNone((await review(unsupported_id))['pending_mail_material_observations'])
-                    async def restock(key, include=True):
+                    async def restock(key, include=True, **options):
                         response = await session.call_tool('inspect_snapshot', {
                             'snapshot_id':key,'section':'bags',
                             'bag_restock_requirements':[
                                 {'item_id':10,'quantity':4},{'item_id':720,'quantity':2},{'item_id':2,'quantity':1}],
                             'bag_restock_merchant_snapshot_id':no_mail,
-                            'bag_restock_pending_mail':include})
+                            'bag_restock_pending_mail':include,**options})
                         self.assertFalse(response.isError,response)
                         return json.loads(response.content[0].text)
 
@@ -107,6 +107,23 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone((await restock(empty_id))[field]['items'][0]['known_pending_quantity'])
                     self.assertTrue((await session.call_tool('inspect_snapshot',{
                         'snapshot_id':with_mail,'section':'bags','bag_restock_pending_mail':True})).isError)
+                    separate = await restock(no_mail,bag_restock_mail_snapshot_id=inventory_id)
+                    separate_pending = separate[field]
+                    self.assertEqual(separate_pending['snapshot_id'],inventory_id)
+                    self.assertEqual(separate_pending['captured_at'],inventory['captured_at'])
+                    self.assertEqual(separate_pending['items'][1]['known_pending_quantity'],11)
+                    plain = await restock(no_mail,False)
+                    for unchanged in ['bag_restock_review','bag_restock_merchant_quote']:
+                        self.assertEqual(separate[unchanged],plain[unchanged])
+                    self.assertIsNone((await restock(with_mail,bag_restock_mail_snapshot_id=no_mail))[field])
+                    for options in [
+                        {'bag_restock_pending_mail':False,'bag_restock_mail_snapshot_id':inventory_id},
+                        {'bag_restock_pending_mail':True,'bag_restock_mail_snapshot_id':'0'*64},
+                    ]:
+                        reply = await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':with_mail,'section':'bags',
+                            'bag_restock_requirements':[{'item_id':10,'quantity':4}],**options})
+                        self.assertTrue(reply.isError)
                     batch={'additional_recipes':[{'snapshot_id':extra_id,'crafts':2}],
                            'suggest_dependency_order':True,'merchant_reagent_plan':True}
                     earlier=await review(no_mail,inventory_snapshot_id=inventory_no_mail,**batch)

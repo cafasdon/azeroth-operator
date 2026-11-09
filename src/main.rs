@@ -180,6 +180,8 @@ struct Inspect {
     /// Annotate residual bag shortfalls with pending item attachment observations.
     #[serde(default)]
     bag_restock_pending_mail: bool,
+    /// Use an explicitly selected compatible inbox capture for bag_restock_pending_mail.
+    bag_restock_mail_snapshot_id: Option<String>,
     /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
@@ -2823,6 +2825,11 @@ impl Operator {
                 "A restocking wallet reserve requires a saved merchant quote and a valid copper amount",
             )]);
         }
+        if args.bag_restock_mail_snapshot_id.is_some() && !args.bag_restock_pending_mail {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A saved inbox selection requires bag_restock_pending_mail",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -3059,15 +3066,34 @@ impl Operator {
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
                     if args.bag_restock_pending_mail {
-                        value["bag_restock_pending_mail_observations"] = serde_json::json!(
-                            bank_restock_residual(&value["bag_restock_review"]).and_then(
-                                |residual| {
-                                    azeroth_operator::analysis::restock_pending_mail(
-                                        &snapshot, &residual,
-                                    )
-                                }
-                            )
-                        );
+                        let mail_id = args.bag_restock_mail_snapshot_id.as_deref();
+                        let mail_snapshot = if let Some(id) = mail_id {
+                            let Ok(mail) = self.store.read(id).and_then(|mail| {
+                                azeroth_operator::analysis::ensure_same_character_and_client(
+                                    &snapshot, &mail,
+                                )?;
+                                Ok(mail)
+                            }) else {
+                                return CallToolResult::error(vec![ContentBlock::text(
+                                    "Bag restocking requires a compatible saved inbox snapshot",
+                                )]);
+                            };
+                            Some(mail)
+                        } else {
+                            None
+                        };
+                        let mut observations = bank_restock_residual(&value["bag_restock_review"])
+                            .and_then(|residual| {
+                                azeroth_operator::analysis::restock_pending_mail(
+                                    mail_snapshot.as_ref().unwrap_or(&snapshot),
+                                    &residual,
+                                )
+                            });
+                        if let Some((report, id)) = observations.as_mut().zip(mail_id) {
+                            report["snapshot_id"] = serde_json::json!(id);
+                        }
+                        value["bag_restock_pending_mail_observations"] =
+                            serde_json::json!(observations);
                     }
                     if args.bag_restock_catalogue_sources {
                         let result = self

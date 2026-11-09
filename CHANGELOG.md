@@ -1,5 +1,7 @@
 # Changelog
 
+- Allow saved Forever bag restocking to reference a separate compatible inbox capture.
+
 - Show pending item attachments alongside residual Forever bag restocking shortfalls.
 
 - Show pinned local catalogue sources for residual Forever bag restocking shortfalls.

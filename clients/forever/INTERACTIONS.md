@@ -3006,3 +3006,8 @@ Set `bag_restock_pending_mail: true` to show known pending item attachments
 for quantities still short after observed bank withdrawals. The inbox
 observation comes from the same capture and excludes currency attachments.
 Pending items stay separate from usable stock and purchase calculations.
+
+With pending mail enabled, set `bag_restock_mail_snapshot_id` to use a
+separate saved inbox for the same character and exact client. The response
+identifies the inbox capture and timestamp. Inventory, bank quantities, and
+merchant affordability still use their original captures.
