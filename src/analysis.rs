@@ -717,7 +717,7 @@ pub fn search_recipe_materials_ordered(
     Ok(result)
 }
 
-/// Explicit IDs select only the bulk observation, never a fallback schematic.
+/// Explicit IDs use the bulk schematic, with compatible same-capture selected conditions.
 pub fn plan_recipe_by_id(
     snapshot: &Snapshot,
     recipe_id: Option<std::num::NonZeroU32>,
@@ -784,6 +784,9 @@ pub fn plan_recipe_by_id(
                 profession["profession_id"] == section["profession_id"],
                 "Conflicting captured recipe profession"
             );
+        }
+        if let Some(conditions) = selected.get("crafting_conditions") {
+            recipe["crafting_conditions"] = conditions.clone();
         }
     }
     if let Some(view) = snapshot.sections.get("profession_recipe_view") {

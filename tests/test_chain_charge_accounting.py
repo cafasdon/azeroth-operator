@@ -39,6 +39,14 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
             future['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
                 'charges':9,'max_charges':9,'remaining_seconds':0}
             inventory = store.ingest(future)
+            conditional = deepcopy(base)
+            conditional['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
+                'charges':1,'max_charges':1,'remaining_seconds':60}
+            conditional['sections']['selected_recipe'] = {
+                'recipe_id':102,'name':'Fixture recipe','learned':True,
+                'requirements':'fixed_items','reagents':{'10':1},
+                'crafting_conditions':{'1':{'name':'Fixture station','kind':'area','met':False}}}
+            conditional_key = store.ingest(conditional)
             before = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}
             env.pop('AZEROTH_FOREVER_CATALOGUE',None)
@@ -99,6 +107,14 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(later['inventory_captured_at'],future['captured_at'])
                     self.assertEqual(later['steps'][1]['captured_charge_accounting']['observed_charges'],1)
                     ordinary = await plan(keys[1],reagent_chain_stock_plan=False)
+                    conditioned = await plan(conditional_key)
+                    self.assertEqual([step['captured_nonmaterial_checks']['observed_conditions_met']
+                                      for step in conditioned['steps']], [False, False, None, None])
+                    nonmaterial = conditioned['stock_plan']['nonmaterial_requirements']
+                    self.assertEqual(nonmaterial['first_observed_shortfall']['recipe_number'],1)
+                    self.assertEqual(nonmaterial['first_observed_shortfall']['failed_checks'],
+                                     ['observed_conditions_met'])
+                    self.assertEqual(nonmaterial['first_observed_charge_shortfall']['recipe_number'],2)
                     self.assertNotIn('stock_plan',ordinary)
                     self.assertEqual(ordinary['steps'],one['steps'])
                     batch = await session.call_tool('review_forever_recipe',{

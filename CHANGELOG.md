@@ -1,5 +1,7 @@
 # Changelog
 
+- Carry compatible same-capture selected recipe conditions into Forever bulk recipe reviews and reagent chains.
+
 - Highlight the first known recipe charge shortfall in saved Forever reagent-chain stock plans.
 
 - Show the conditional base yield of charge-covered crafts at each saved Forever reagent-chain step.
