@@ -29,7 +29,7 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                                                '2': {'item_id': 4294967295, 'count': 1}}}
             partial = store.ingest(base)
             complete_sections = deepcopy(base)
-            complete_sections['sections'].update(character_bank={}, account_bank={})
+            complete_sections['sections'].update(character_bank={'6': {}}, account_bank={})
             all_sections = store.ingest(complete_sections)
             empty = deepcopy(complete_sections)
             empty['sections'].update(equipment={}, bags={})
@@ -51,6 +51,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
                     result = await review(partial)
+                    container_field = 'observed_container_occupied_slots'
+                    self.assertEqual(result['coverage']['bags'][container_field], {'0': 2})
+                    self.assertNotIn(container_field, result['coverage']['equipment'])
+                    self.assertNotIn(container_field, result['coverage']['character_bank'])
+                    observed = (await review(all_sections, storage='equipment', offset=99))['coverage']
+                    self.assertEqual(observed['bags'][container_field], {'0': 2})
+                    self.assertEqual(observed['character_bank'][container_field], {'6': 0})
+                    self.assertEqual(observed['account_bank'][container_field], {})
                     mixed_evidence = (await review(mixed_id))['inventory_evidence']
                     resolved = await review(mixed_id, simulator_input_resolved=True, limit=1)
                     self.assertEqual(resolved['filtered_item_locations'], 1)

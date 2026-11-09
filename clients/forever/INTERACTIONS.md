@@ -3159,3 +3159,10 @@ ignoring case and surrounding whitespace. The result includes up to 20
 matching species IDs with their observed owned and unowned row counts.
 Combining this with `pet_species` requires the name and row bounds to
 match the same species. Results describe the saved filtered view.
+
+`review_forever_owned_gear.coverage` reports
+`observed_container_occupied_slots` for captured bags, character bank and
+account bank. Counts describe the full saved section before filters and
+paging. A zero count means the capture recorded no item rows for that
+container ID. Unlisted container IDs have unknown coverage. These counts
+do not establish whether a bag was equipped, its capacity, or complete ownership.

@@ -3600,19 +3600,23 @@ pub fn review_owned(
             }
             included += 1;
         };
+        let mut observed_container_occupied_slots = BTreeMap::new();
         for (key, value) in section {
             if storage == "equipment" {
                 record(None, key, value);
             } else if let Some(slots) = value.as_object() {
+                observed_container_occupied_slots.insert(key, slots.len());
                 for (slot, item) in slots {
                     record(Some(key), slot, item);
                 }
             }
         }
-        coverage.insert(
-            storage.into(),
-            json!({"status":"observed","occupied_slots":count}),
-        );
+        let mut storage_coverage = json!({"status":"observed","occupied_slots":count});
+        if storage != "equipment" {
+            storage_coverage["observed_container_occupied_slots"] =
+                json!(observed_container_occupied_slots);
+        }
+        coverage.insert(storage.into(), storage_coverage);
     }
     let mut result = json!({"family":"forever","captured_at":snapshot.captured_at,"catalogue_source":provenance,
         "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,

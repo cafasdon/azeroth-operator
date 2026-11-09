@@ -1,5 +1,7 @@
 # Changelog
 
+- Report occupied slots by observed container in saved Forever owned-gear reviews.
+
 - Find saved Forever pet journal species by public species name.
 
 - Sort saved Forever local quest shortlists by highest recorded XP reward.
