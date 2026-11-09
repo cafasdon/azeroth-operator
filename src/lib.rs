@@ -12,6 +12,7 @@ pub mod loot_observation;
 pub mod macro_operation;
 pub mod planning;
 mod schema;
+pub mod skill_line_filter;
 pub mod sync;
 pub mod talent_operation;
 pub mod upload;
@@ -1251,6 +1252,7 @@ pub struct CaptureFilters<'a> {
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
+    pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1452,6 +1454,7 @@ impl Store {
             inventory_item,
             inventory_requirements,
             loot_observation,
+            skill_line,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1557,6 +1560,13 @@ impl Store {
             "Loot observation filtering requires Forever"
         );
         if let Some(filter) = &loot_observation {
+            filter.validate()?;
+        }
+        ensure!(
+            skill_line.is_none() || family == Family::Forever,
+            "Skill-line filtering requires Forever"
+        );
+        if let Some(filter) = &skill_line {
             filter.validate()?;
         }
         ensure!(
@@ -1950,6 +1960,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if loot_observation.is_some() && loot_observation_match.is_none() {
+                        continue;
+                    }
+                    let skill_line_match = skill_line
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if skill_line.is_some() && skill_line_match.is_none() {
                         continue;
                     }
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
@@ -2592,6 +2608,9 @@ impl Store {
                     }
                     if let Some(observation) = loot_observation_match {
                         summary["loot_observation_match"] = observation;
+                    }
+                    if let Some(observation) = skill_line_match {
+                        summary["skill_line_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;

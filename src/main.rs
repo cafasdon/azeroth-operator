@@ -49,6 +49,9 @@ struct Inspect {
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
     bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
+    /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
+    #[serde(default, deserialize_with = "skill_line_argument")]
+    skill_line_filter: Option<azeroth_operator::skill_line_filter::SkillLinePage>,
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
@@ -328,6 +331,9 @@ struct List {
     inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
     /// Find historical displayed loot; raw currency/money observations never imply ownership, rewards or balances.
     loot_observation: Option<azeroth_operator::loot_observation::LootObservationFilter>,
+    /// Find a matching recorded base skill row; no bonuses, training or full skill coverage inferred.
+    #[serde(default, deserialize_with = "skill_line_argument")]
+    skill_line: Option<azeroth_operator::skill_line_filter::SkillLineFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -501,6 +507,18 @@ fn talent_preparation_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result
     serde_json::Value::deserialize(input)?
         .as_bool()
         .ok_or_else(|| serde::de::Error::custom("Invalid simulator talent preparation flag"))
+}
+
+fn skill_line_argument<'de, D: serde::Deserializer<'de>, T: serde::de::DeserializeOwned>(
+    input: D,
+) -> Result<Option<T>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() {
+        return Ok(None);
+    }
+    serde_json::from_value(value)
+        .map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid skill-line filter"))
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1642,6 +1660,7 @@ impl Operator {
                 inventory_item: args.inventory_item,
                 inventory_requirements: args.inventory_requirements,
                 loot_observation: args.loot_observation,
+                skill_line: args.skill_line,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,
@@ -1704,6 +1723,13 @@ impl Operator {
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Bag cooldown filters require bag_item_cooldowns, a nonempty filter, distinct item IDs, ordered timer bounds and a limit from 1 to 50",
+            )]);
+        }
+        if args.skill_line_filter.as_ref().is_some_and(|filter| {
+            args.section.as_deref() != Some("skill_lines") || filter.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Skill-line inspection requires skill_lines, a nonempty ordered filter and limit from 1 to 50",
             )]);
         }
         if let Some(requirements) = args.loot_requirements.as_ref() {
@@ -2203,6 +2229,25 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(filter) = args.skill_line_filter.as_ref() {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Skill-line review requires Forever",
+                        )]);
+                    }
+                    let section = value["data"].take();
+                    match azeroth_operator::skill_line_filter::inspect(
+                        (!section.is_null()).then_some(&section),
+                        filter,
+                    ) {
+                        Ok(filtered) => value["data"] = filtered,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Invalid captured skill-line review",
+                            )]);
+                        }
+                    }
+                }
                 if let Some(filter) = args.bag_cooldown_filter.as_ref() {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

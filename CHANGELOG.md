@@ -1,5 +1,10 @@
 # Changelog
 
+- Add Forever saved skill-line discovery and paged inspection by ID, category,
+  base rank, cap and points to the observed cap. Preserve unknown categories,
+  latest-capture selection, owner isolation and raw bonuses; infer no learning
+  state or training eligibility. No addon or live changes.
+
 - Feed queried talent allocations into equipment reviews, MCP comparison and
   simulator preflight. Reject known inactive-zero mismatches before execution,
   validate standalone review groups, and report one coherent queried-definition

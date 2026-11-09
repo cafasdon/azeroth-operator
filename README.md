@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Saved skill-line queries now filter recorded base ranks, caps and points to the
+observed cap, with paged inspection and explicit unknown categories. Historical
+observations do not establish training eligibility or complete skill coverage.
+[Query contract](docs/ADR-057-saved-skill-line-filters.md).
+
 Simulation preflight now checks explicitly captured inactive talent ranks too.
 Known conflicts with matching pinned rank limits and explicitly false staging
 are rejected before the engine runs. Missing definitions remain unknown; older

@@ -473,3 +473,15 @@ Simulation preflight now consumes queried allocation observations, including
 explicit inactive zeros. Known committed conflicts reject before engine/cache use; missing
 or model-unmapped evidence remains explicit, with no complete native/model/BiS
 claim. [Contract](ADR-056-queried-allocation-simulation-checks.md).
+
+## Saved skill-line queries (2026-11-09)
+
+`list_snapshots.skill_line` filters one recorded skill row by optional ID,
+category, base rank, cap and points to its observed cap. `inspect_snapshot` with
+`section: "skill_lines"` accepts `skill_line_filter: {filter: {...}, offset: 0,
+limit: 20}` for paged results (maximum 50). At least one predicate is required.
+Missing categories remain unknown; bonuses are preserved without adding them
+to base rank. Missing sections and known empty sections stay distinct.
+Latest-per-character selection, when requested, precedes feature filtering.
+No complete coverage, learning state, training eligibility, simulator change or
+live action is inferred. Offline source only; installation/testing deferred.

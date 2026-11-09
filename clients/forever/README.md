@@ -2171,3 +2171,15 @@ missing definitions remain unknown and legacy active-only captures retain their
 old shape. No new addon package or gameplay action.
 [Contract](../../docs/ADR-056-queried-allocation-simulation-checks.md) ·
 [Evidence](../../docs/allocation-simulation-checks-verification-2026-11-09.md).
+
+## Saved skill-line queries (2026-11-09)
+
+`list_snapshots.skill_line` filters one recorded skill row by optional ID,
+category, base rank, cap and points to its observed cap. `inspect_snapshot` with
+`section: "skill_lines"` accepts `skill_line_filter: {filter: {...}, offset: 0,
+limit: 20}` for paged results (maximum 50). At least one predicate is required.
+Missing categories remain unknown; bonuses are preserved without adding them
+to base rank. Missing sections and known empty sections stay distinct.
+Latest-per-character selection, when requested, precedes feature filtering.
+No complete coverage, learning state, training eligibility, simulator change or
+live action is inferred. Offline source only; installation/testing deferred.
