@@ -7433,12 +7433,19 @@ pub fn timed_quest_checklist(
         })
         .collect();
     timed.sort_unstable_by_key(|(seconds, id, _)| (*seconds, *id));
-    let entries: Vec<_> = timed.iter().take(20).map(|(seconds, id, quest)| {
-            let expiry = crate::saved_resets::projected_reset_at(*seconds, captured_at);
+    let entry = |(seconds, id, quest): &(i64, u32, &Value)| {
+        let expiry = crate::saved_resets::projected_reset_at(*seconds, captured_at);
         json!({"quest_id":id,"remaining_seconds_at_capture":seconds,"projected_expiry_at":expiry,
             "readiness_at_capture":quest_readiness(quest)})
-    }).collect();
+    };
+    let entries: Vec<_> = timed.iter().take(20).map(entry).collect();
+    let mut ready = timed
+        .iter()
+        .filter(|(_, _, quest)| quest_readiness(quest) == QuestReadiness::Ready);
+    let first_ready = ready.next().map(entry);
+    let ready_count = usize::from(first_ready.is_some()) + ready.count();
     json!({"entries":entries,"recorded_timer_count":timed.len(),
+        "ready_for_turn_in_at_capture_count":ready_count,"first_ready_for_turn_in_at_capture":first_ready,
         "quest_count_without_recorded_timer":quests.len()-timed.len(),
         "truncated":timed.len()>entries.len(),"current_status_verified":false})
 }

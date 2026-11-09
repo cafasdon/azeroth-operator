@@ -1,5 +1,10 @@
 # Forever interaction map
 
+The timed quest checklist counts quests with recorded timers that were ready
+to turn in at capture and highlights the one with the shortest remaining
+timer, breaking ties by quest ID. It checks all retained timed quests,
+including those beyond the 20-entry display limit. Failed quests do not count.
+
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.
 A missing durability section leaves the comparison unknown. These readings

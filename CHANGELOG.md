@@ -1,5 +1,7 @@
 # Changelog
 
+- Highlight the earliest saved timed quest that was ready to turn in.
+
 - Show saved Forever repair affordability directly when inspecting a repair quote.
 
 - Find saved Forever repair visits that leave a requested amount of copper after repairs.
