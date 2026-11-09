@@ -129,6 +129,15 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     await timed(error=True, family='retail', quest_max_remaining_seconds=60)
                     await timed(error=True, quest_max_remaining_seconds=-1)
                     await timed(error=True, quest_projected_expiry_by='invalid')
+                    by_title = await timed(quest_title='  qUeST 3  ',quest_max_remaining_seconds=30)
+                    self.assertEqual({row['snapshot_id'] for row in by_title},{changed_key,tied_key})
+                    self.assertTrue(all(row['quest_match']['matching_quests'] ==
+                        [{'quest_id':3,'title':'Quest 3','readiness':'ready'}] for row in by_title))
+                    self.assertEqual(await timed(quest_title='Quest 3',quest_id=7),[])
+                    self.assertEqual(await timed(quest_title='Quest'),[])
+                    await timed(error=True,quest_title=' ')
+                    await timed(error=True,quest_title='x'*257)
+                    await timed(error=True,family='retail',quest_title='Quest 3')
                     local = await timed(quest_on_captured_map=True,player_map_name='market',
                                         quest_max_remaining_seconds=30)
                     self.assertEqual([row['snapshot_id'] for row in local],[tied_key])

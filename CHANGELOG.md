@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever quests by exact title and return matching quest IDs.
+
 - Sort saved Forever local quest shortlists by recorded timer when requested.
 
 - Page through saved Forever local quest matches within each capture.

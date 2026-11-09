@@ -3112,3 +3112,8 @@ for more rows after the page. Capture pagination and quest totals are independen
 Set `local_quest_soonest_first: true` to sort each local shortlist by known
 remaining time before paging. Ties use numeric quest ID. Quests without a
 recorded timer appear last. This order describes the saved readings.
+
+Use `list_snapshots.quest_title` to find quests by full saved title,
+ignoring case and surrounding whitespace. Results include up to 20 matching
+quest IDs and recorded readiness per capture. Title, ID, waypoint, readiness
+and timer criteria apply to the same quest.

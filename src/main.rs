@@ -549,6 +549,8 @@ struct List {
     xp_gain_enabled_only: bool,
     /// Match an exact quest ID in a saved Forever quest log.
     quest_id: Option<std::num::NonZeroU32>,
+    /// Match an exact case-insensitive title in the saved Forever quest log.
+    quest_title: Option<String>,
     /// Match the selected quest's readiness, or count matching quests when no ID is supplied.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Match the next waypoint map recorded for the same quest.
@@ -2297,6 +2299,7 @@ impl Operator {
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
+                quest_title: args.quest_title.as_deref(),
                 quest_readiness: args.quest_readiness,
                 quest_waypoint_map_id: args.quest_waypoint_map_id,
                 quest_on_captured_map: args.quest_on_captured_map,
