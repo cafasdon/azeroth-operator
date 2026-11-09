@@ -1,5 +1,9 @@
 # Changelog
 
+- Reuse owned-gear pages within one checked collection invocation using bounded
+  serialized copies. Preserve fresh baseline/source validation, ordinary page
+  checks and cache-full fallback; report numeric cache statistics only.
+
 - Add an explicit 1–4096 per-slot candidate scan budget to ranker, saved-window
   collection and full owned-gear evaluation. Default stays 256; preserve complete
   scans, exact modifier variants, physical copies and same-version resume scope.

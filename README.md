@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Multi-window owned-gear collection now reuses item pages within one run while
+retaining fresh snapshot and source checks. A bounded temporary cache reduces
+repeated MCP requests and writes no cache files.
+[Contract](docs/ADR-074-invocation-owned-page-reuse.md).
+
 Owned-gear tools now accept `--candidate-scan-limit` (1–4096, default 256) for
 larger complete item pools. Scans never truncate silently; modifier-aware copy
 collapse and the existing execution limits remain in force.

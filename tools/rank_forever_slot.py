@@ -42,6 +42,63 @@ class GearSearchLimit(ValueError):
     """A local search limit with a diagnostic safe to print."""
 
 
+class OwnedGearPageCache:
+    """Bounded invocation-local copies of pages from one checked collection binding."""
+
+    def __init__(self, binding, max_payload_bytes=32 * 1024 * 1024, max_entries=1024):
+        if (type(binding) is not str or len(binding) != 64
+                or any(char not in "0123456789abcdef" for char in binding)):
+            raise ValueError("Invalid owned gear cache binding")
+        if (type(max_payload_bytes) is not int or not 1 <= max_payload_bytes <= 32 * 1024 * 1024
+                or type(max_entries) is not int or not 1 <= max_entries <= 1024):
+            raise ValueError("Invalid owned gear cache bounds")
+        self._binding = binding
+        self._max_payload_bytes = max_payload_bytes
+        self._max_entries = max_entries
+        self._pages = {}
+        self._payload_bytes = 0
+        self._hits = self._misses = 0
+
+    @property
+    def binding(self):
+        return self._binding
+
+    def get(self, key):
+        if type(key) is not str:
+            raise ValueError("Invalid owned gear cache key")
+        payload = self._pages.get(key)
+        if payload is None:
+            self._misses += 1
+            return None
+        self._hits += 1
+        return json.loads(payload)
+
+    def put(self, key, reply):
+        if type(key) is not str:
+            raise ValueError("Invalid owned gear cache key")
+        if type(reply) is not dict:
+            return
+        try:
+            key_size = len(key.encode("utf-8"))
+            payload = json.dumps(reply, sort_keys=True, separators=(",", ":"),
+                                 allow_nan=False).encode("utf-8")
+        except (TypeError, ValueError, UnicodeError, RecursionError):
+            return
+        previous = self._pages.get(key)
+        previous_size = key_size + len(previous) if previous is not None else 0
+        new_size = self._payload_bytes - previous_size + key_size + len(payload)
+        if (new_size > self._max_payload_bytes
+                or (previous is None and len(self._pages) >= self._max_entries)):
+            return
+        self._pages[key] = payload
+        self._payload_bytes = new_size
+
+    def stats(self):
+        return {"hits": self._hits, "misses": self._misses, "entries": len(self._pages),
+                "payload_bytes": self._payload_bytes, "max_payload_bytes": self._max_payload_bytes,
+                "max_entries": self._max_entries}
+
+
 def validate_candidate_scan_limit(value):
     """Validate the operational location budget without coercing caller values."""
     if type(value) is not int or not 1 <= value <= 4096:
@@ -212,8 +269,13 @@ def combination_window(options, max_swaps, offset, limit):
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
                   max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None,
-                  positional_equipment=False, include_empty_slots=False, candidate_scan_limit=256):
+                  positional_equipment=False, include_empty_slots=False, candidate_scan_limit=256,
+                  candidate_page_cache=None):
     validate_candidate_scan_limit(candidate_scan_limit)
+    if candidate_page_cache is not None and (type(candidate_page_cache) is not OwnedGearPageCache
+            or type(snapshot_id) is not str or not snapshot_id or character is not None
+            or combination_limit is None):
+        raise ValueError("Owned gear page caching requires an explicit snapshot combination window")
     if type(positional_equipment) is not bool: raise ValueError('Invalid equipment layout')
     if type(include_empty_slots) is not bool or (include_empty_slots and not positional_equipment):
         raise ValueError('Empty choices require positional equipment')
@@ -246,12 +308,22 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         inventory_evidence = None
         inventory_evidence_seen = False
         catalogue_source = None
+        candidate_cache_ready = False
 
         async def call(tool, **args):
             nonlocal inventory_evidence, inventory_evidence_seen, catalogue_source
             if tool=='review_equipment_selection' and positional_equipment:
                 args['positional_simulator_equipment']=True
-            reply = await request(tool, snapshot_id=snapshot_id, **args)
+            cache_key = None
+            reply = None
+            if tool == "review_forever_owned_gear" and candidate_cache_ready and candidate_page_cache is not None:
+                cache_key = json.dumps({"backend_path": str(binary), "binding": candidate_page_cache.binding,
+                    "tool": tool, "arguments": {"snapshot_id": snapshot_id, **args}},
+                    sort_keys=True, separators=(",", ":"), allow_nan=False)
+                reply = candidate_page_cache.get(cache_key)
+            cache_miss = reply is None
+            if cache_miss:
+                reply = await request(tool, snapshot_id=snapshot_id, **args)
             if tool == "review_forever_owned_gear":
                 if combination_limit is not None:
                     source = reply.get("catalogue_source")
@@ -266,6 +338,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                     raise ValueError("Local MCP returned inconsistent inventory evidence")
                 inventory_evidence = evidence
                 inventory_evidence_seen = True
+            if cache_key is not None and cache_miss:
+                candidate_page_cache.put(cache_key, reply)
             return reply
 
         stats = await call("inspect_snapshot", section="stats")
@@ -274,6 +348,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             raise ConflictingNativeSlotCategory("Captured baseline has native slot-category conflicts; refresh its observations or catalogue")
         if not baseline["checks"]["simulator_equipment_spec"]:
             raise ValueError("Captured baseline has unresolved equipment")
+        candidate_cache_ready = True
         set_observation = None
         if set_id is not None:
             set_observation = (await call("review_forever_owned_gear", set_id=set_id, limit=1))["set_observation"]

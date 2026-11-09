@@ -105,6 +105,7 @@ async def collect_windows(args, *, deadline=None):
     require(isinstance(template, dict))
     ranker.check_consumable_groups(template)
     binding = request_binding(args, deadline, template_sha256)
+    candidate_page_cache = ranker.OwnedGearPageCache(binding)
     connection, _ = journal.connect(args.journal, write=True, deadline=deadline)
     connection.rollback()
     connection.close()
@@ -125,6 +126,7 @@ async def collect_windows(args, *, deadline=None):
                 stop = 'time_budget'
                 break
             require(request_binding(args, deadline, template_sha256) == binding)
+            require(candidate_page_cache.binding == binding)
             offset = int(status['next_uncovered_offset_decimal']) if status else 0
             limit = args.window_size
             if status and status['uncovered_ranges']:
@@ -139,7 +141,8 @@ async def collect_windows(args, *, deadline=None):
                 combination_offset=offset, combination_limit=limit,
                 positional_equipment=getattr(args,'positional_equipment',False),
                 include_empty_slots=getattr(args,'include_empty_slots',False),
-                candidate_scan_limit=args.candidate_scan_limit), timeout=min(45, remaining))
+                candidate_scan_limit=args.candidate_scan_limit,
+                candidate_page_cache=candidate_page_cache), timeout=min(45, remaining))
             drafts, skipped, coverage, stats, _, _, search = collected
             require(search['snapshot_id'] == args.snapshot_id and search['requested_slots'] == args.slot
                     and search['combination_window']['offset'] == offset
@@ -167,6 +170,7 @@ async def collect_windows(args, *, deadline=None):
             stop = 'reported_coverage_complete'
     return {'mode': 'gear_window_collection', 'collection_binding_sha256': binding,
             'candidate_scan_limit': args.candidate_scan_limit,
+            'candidate_page_cache': candidate_page_cache.stats(),
             'windows_attempted': attempted, 'windows_inserted': inserted, 'stop_reason': stop,
             'progress': status, 'best_in_slot_verified': False, 'feasible_set_coverage_verified': False,
             'simulation_performed': False, 'game_execution': False}

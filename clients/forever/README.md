@@ -2396,3 +2396,13 @@ candidate_scan_limit is operational, not a candidate filter. Within unchanged
 sources, changing only the budget preserves a successfully scanned pool's scope
 and collection binding. Existing source fingerprints still apply. This does not
 verify complete ownership, native legality or BiS. See docs/ADR-073-owned-candidate-scan-budget.md.
+
+## Repeated-window page reuse (2026-11-09)
+
+One collection invocation can reuse owned-item pages across windows in a temporary
+32 MiB/1,024-entry serialized cache. Fresh stats/baseline reads and source-binding
+checks remain; cached pages still pass normal evidence and pagination checks.
+Only numeric candidate_page_cache statistics are reported. Full caches fall back
+to fresh MCP requests, and a new invocation starts empty. No page cache files,
+new public cache input, lower simulation precision or broader BiS claim. See
+docs/ADR-074-invocation-owned-page-reuse.md.
