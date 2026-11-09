@@ -73,6 +73,22 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
                                 'coverage':'filtered_journal_species','displayed_rows':3,'species_id':species,
                                 **view['entries'][str(species)]})
                     args={'character':value['character'],'pet_species':{'species_id':7}}
+                    for flags,expected in [
+                        ({'pet_has_owned_rows':True},['7']),
+                        ({'pet_has_owned_rows':False,'pet_has_unowned_rows':True},['8']),
+                        ({'pet_has_owned_rows':True,'pet_has_unowned_rows':True},[]),
+                    ]:
+                        filtered=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
+                            'section':'pet_collection_view',**flags})
+                        self.assertFalse(filtered.isError,filtered)
+                        report=json.loads(filtered.content[0].text)
+                        self.assertEqual(list(report['data']['entries']),expected)
+                        self.assertEqual(report['data']['displayed_rows'],3)
+                        self.assertEqual(report['pet_species_matched_count'],len(expected))
+                    rejected=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
+                        'section':'pet_collection_view','pet_species':{'species_id':7},
+                        'pet_has_owned_rows':True})
+                    self.assertTrue(rejected.isError)
                     for filters,expected in [
                         ({'species_id':7,'maximum_owned_rows':1},0),
                         ({'species_id':7,'minimum_owned_rows':2,'maximum_owned_rows':2,'maximum_unowned_rows':0},1),

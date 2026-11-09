@@ -33,6 +33,10 @@ alongside the existing minimums. Zero matches an observed zero count for
 that species, while an absent species does not match.
 Use the same `pet_species` selector when inspecting `pet_collection_view`.
 The response adds `pet_species_match` while preserving the captured view.
+To shortlist without a species ID, inspect `pet_collection_view` with
+`pet_has_owned_rows`, `pet_has_unowned_rows`, or both. False requires an
+observed zero count for that flag. `pet_species_matched_count` counts the
+retained species while the displayed row count describes the original capture.
 
 Saved mail attachment comparisons show the unloaded message count on each
 side, separately from unreadable attachment slots in loaded messages.

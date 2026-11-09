@@ -45,6 +45,10 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Filter saved pet species by presence of an observed owned row.
+    pet_has_owned_rows: Option<bool>,
+    /// Filter saved pet species by presence of an observed unowned row.
+    pet_has_unowned_rows: Option<bool>,
     /// Look up an exact toy ID and recorded flags in the saved toy_collection_view section.
     toy_in_view: Option<azeroth_operator::ToyViewFilter>,
     /// Look up one mount and its recorded flags in the saved mount_collection section.
@@ -1848,6 +1852,16 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        let filter_pet_rows =
+            args.pet_has_owned_rows.is_some() || args.pet_has_unowned_rows.is_some();
+        if filter_pet_rows
+            && (args.section.as_deref() != Some("pet_collection_view")
+                || args.pet_species.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Pet row filtering requires the pet_collection_view section without an exact species selector",
+            )]);
+        }
         let filter_mounts = args.mount_usable.is_some() || args.mount_favorite.is_some();
         if filter_mounts
             && (args.section.as_deref() != Some("mount_collection")
@@ -2447,6 +2461,31 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if filter_pet_rows {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Pet row filtering requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let count = value["data"]
+                        .get_mut("entries")
+                        .and_then(|entries| entries.as_object_mut())
+                        .map(|entries| {
+                            entries.retain(|_, row| {
+                                args.pet_has_owned_rows.is_none_or(|flag| {
+                                    row["owned_rows"]
+                                        .as_u64()
+                                        .is_some_and(|count| (count > 0) == flag)
+                                }) && args.pet_has_unowned_rows.is_none_or(|flag| {
+                                    row["unowned_rows"]
+                                        .as_u64()
+                                        .is_some_and(|count| (count > 0) == flag)
+                                })
+                            });
+                            entries.len()
+                        });
+                    value["pet_species_matched_count"] = serde_json::json!(count);
+                }
                 if filter_mounts {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
