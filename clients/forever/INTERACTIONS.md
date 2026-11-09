@@ -3,6 +3,8 @@
 Merchant discovery accepts `merchant_stock_state` with an existing offer
 selector. Use `unlimited`, `limited_in_stock` or `sold_out` to match the
 stock reported for the same offer in the saved visit.
+The same filter works when inspecting `merchant_stock` with an item,
+currency or pet food selector. Quantity plans use only retained offers.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows

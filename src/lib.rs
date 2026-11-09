@@ -401,7 +401,7 @@ pub enum MerchantStockState {
 }
 
 impl MerchantStockState {
-    fn matches(self, available: Option<i64>) -> bool {
+    pub fn matches(self, available: Option<i64>) -> bool {
         match self {
             Self::Unlimited => available == Some(-1),
             Self::LimitedInStock => matches!(available, Some(1..)),

@@ -96,6 +96,8 @@ struct Inspect {
     /// Include the repair quote from the same saved merchant capture in the cart budget.
     #[serde(default)]
     merchant_cart_include_repair: bool,
+    /// Filter saved merchant search results by captured stock state.
+    merchant_stock_state: Option<azeroth_operator::MerchantStockState>,
     /// Review whole-entry buyback quotes for 1 to 12 distinct captured slots; requires merchant_buyback.
     buyback_slots: Option<Vec<std::num::NonZeroU32>>,
     /// Reserve this much of the same captured wallet before reviewing buyback quotes.
@@ -1922,6 +1924,14 @@ impl Operator {
             .merchant_item_id
             .map(|id| ("item_id", id))
             .or_else(|| args.merchant_currency_id.map(|id| ("currency_id", id)));
+        if args.merchant_stock_state.is_some()
+            && merchant_search.is_none()
+            && args.merchant_pet_food_snapshot_id.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant stock state requires an item, currency or pet food search",
+            )]);
+        }
         if args.merchant_target_quantity.is_some_and(|quantity| {
             (merchant_search.is_none() && args.merchant_pet_food_snapshot_id.is_none())
                 || quantity.get() > 1000
@@ -2587,6 +2597,13 @@ impl Operator {
                         None
                     };
                     value["merchant_pet_food_snapshot_id"] = serde_json::json!(food_id);
+                    value["merchant_match_count"] = serde_json::json!(count);
+                }
+                if let Some(state) = args.merchant_stock_state {
+                    let count = value["data"].as_object_mut().map(|offers| {
+                        offers.retain(|_, offer| state.matches(offer["available"].as_i64()));
+                        offers.len()
+                    });
                     value["merchant_match_count"] = serde_json::json!(count);
                 }
                 if let Some(quantity) = args.merchant_target_quantity {

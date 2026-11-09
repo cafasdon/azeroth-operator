@@ -1,5 +1,7 @@
 # Changelog
 
+- Apply the saved Forever merchant stock-state filter when inspecting matching offers.
+
 - Filter saved Forever merchant visits by reported unlimited, limited, or sold-out stock.
 
 - Compare projected expiry timestamps for saved Forever quest timers.

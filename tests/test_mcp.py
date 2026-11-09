@@ -1684,6 +1684,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["snapshot_id"] for row in in_stock_rows], [merchant_key])
                         self.assertEqual(in_stock_rows[0]["merchant_match"]["offer_count"], 1)
                         for state, count in [("unlimited", 1), ("limited_in_stock", 0), ("sold_out", 1)]:
+                            inspected = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": merchant_key, "section": "merchant_stock",
+                                "merchant_item_id": 744, "merchant_stock_state": state,
+                            })
+                            self.assertFalse(inspected.isError, inspected)
+                            stock_data = json.loads(inspected.content[0].text)
+                            self.assertEqual(stock_data["merchant_match_count"], count)
+                            self.assertEqual(len(stock_data["data"]), count)
                             stock = await session.call_tool("list_snapshots", {
                                 "family": "forever", "merchant_item_id": 744, "merchant_stock_state": state,
                             })
@@ -1695,6 +1703,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(stock_rows[0]["merchant_match"]["offer_count"], count)
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "forever", "merchant_stock_state": "sold_out",
+                        })).isError)
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": merchant_key, "section": "merchant_stock",
+                            "merchant_stock_state": "sold_out",
                         })).isError)
                         affordability = {"family": "forever", "merchant_item_id": 744,
                                          "merchant_affordable_only": True}
