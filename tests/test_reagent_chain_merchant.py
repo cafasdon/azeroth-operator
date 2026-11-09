@@ -103,9 +103,21 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                     combined=json.loads(reply.content[0].text)['reagent_chain']['merchant_reagent_plan']
                     self.assertEqual(combined['unlimited_copper_only_total'],10)
                     self.assertEqual(combined['copper_only_bundle_mix_total'],9)
+                    self.assertEqual(combined['copper_only_bundle_mix_quoted_subtotal'],9)
+                    self.assertEqual(combined['copper_only_bundle_mix_unquoted_item_ids'],[])
+                    self.assertEqual(combined['reagents'][0]['bundle_mix_quote_status'],'quoted')
                     self.assertTrue(combined['copper_only_bundle_mix_affordable'])
                     self.assertEqual(combined['reagents'][0]['lowest_cost_copper_only_bundle_mix']['bundles_by_slot'],
                         {'1':1,'4':1})
+                    limited=await session.call_tool('review_forever_recipe',{
+                        'snapshot_id':variants['limited'],'recipe_id':101,'crafts':1,
+                        'suggest_reagent_chain':True,'merchant_reagent_plan':True})
+                    self.assertFalse(limited.isError,limited)
+                    partial=json.loads(limited.content[0].text)['reagent_chain']['merchant_reagent_plan']
+                    self.assertEqual(partial['copper_only_bundle_mix_quoted_subtotal'],0)
+                    self.assertEqual(partial['copper_only_bundle_mix_unquoted_item_ids'],[10])
+                    self.assertEqual(partial['reagents'][0]['bundle_mix_quote_status'],'no_eligible_offer')
+                    self.assertIsNone(partial['copper_only_bundle_mix_affordable'])
                     external = await plan(merchant_snapshot_id=merchant_id)
                     self.assertFalse(external['reagent_chain']['merchant_reagent_plan']['unlimited_copper_only_affordable'])
                     later = await plan(inventory_snapshot_id=inventory_id,merchant_snapshot_id=merchant_id)

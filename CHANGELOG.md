@@ -1,5 +1,7 @@
 # Changelog
 
+- Show partial bundle quote subtotals and why saved Forever reagent shortages remain unpriced.
+
 - Quote whole-bundle combinations for saved Forever reagent shortages and restock plans.
 
 - Find saved Forever merchant visits by the cost of a whole-bundle combination.

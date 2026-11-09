@@ -6182,6 +6182,12 @@ fn merchant_reagent_budget(
             let bundle_mix = shortfall
                 .and_then(|quantity| u32::try_from(quantity).ok())
                 .and_then(|quantity| cheapest_merchant_bundle_mix(matching.clone(), quantity));
+            let mix_status = match shortfall {
+                None => "unknown_shortfall",
+                Some(0 | 1001..) => "outside_optimiser_range",
+                Some(_) if bundle_mix.is_some() => "quoted",
+                Some(_) => "no_eligible_offer",
+            };
             let options: BTreeMap<_, _> = matching
                 .map(|(slot, offer)| {
                     (
@@ -6207,7 +6213,8 @@ fn merchant_reagent_budget(
             json!({
                 "item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options,
                 "lowest_unlimited_copper_only_offer":lowest_copper,
-                "lowest_cost_copper_only_bundle_mix":bundle_mix
+                "lowest_cost_copper_only_bundle_mix":bundle_mix,
+                "bundle_mix_quote_status":mix_status
             })
         })
         .collect();
@@ -6216,16 +6223,26 @@ fn merchant_reagent_budget(
             .checked_add(reagent["lowest_unlimited_copper_only_offer"]["required_copper"].as_u64()?)
     });
     let budget = total.zip(wallet);
-    let mix_total = reagents.iter().try_fold(0u64, |total, reagent| {
-        total
-            .checked_add(reagent["lowest_cost_copper_only_bundle_mix"]["required_copper"].as_u64()?)
-    });
+    let unquoted: BTreeSet<_> = reagents
+        .iter()
+        .filter(|reagent| reagent["bundle_mix_quote_status"] != "quoted")
+        .filter_map(|reagent| reagent["item_id"].as_u64())
+        .collect();
+    let mix_subtotal = reagents
+        .iter()
+        .filter_map(|reagent| {
+            reagent["lowest_cost_copper_only_bundle_mix"]["required_copper"].as_u64()
+        })
+        .try_fold(0u64, u64::checked_add);
+    let mix_total = mix_subtotal.filter(|_| unquoted.is_empty());
     let mix_budget = mix_total.zip(wallet);
     json!({"reagents":reagents,
         "unlimited_copper_only_total":total,
         "unlimited_copper_only_affordable":budget.map(|(cost, balance)| cost <= balance),
         "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance)),
         "copper_only_bundle_mix_total":mix_total,
+        "copper_only_bundle_mix_quoted_subtotal":mix_subtotal,
+        "copper_only_bundle_mix_unquoted_item_ids":unquoted,
         "copper_only_bundle_mix_affordable":mix_budget.map(|(cost, balance)| cost <= balance),
         "copper_only_bundle_mix_shortfall":mix_budget.map(|(cost, balance)| cost.saturating_sub(balance))})
 }
