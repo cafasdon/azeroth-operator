@@ -7193,12 +7193,14 @@ pub fn summary(s: &Snapshot) -> Value {
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]});
-    summary["collected_mounts_observed"] = json!(
-        s.sections
-            .get("mount_collection")
-            .and_then(|collection| collection["entries"].as_object())
-            .map(|entries| entries.len())
-    );
+    let mounts = s
+        .sections
+        .get("mount_collection")
+        .and_then(|collection| collection["entries"].as_object());
+    summary["collected_mounts_observed"] = json!(mounts.map(|entries| entries.len()));
+    if is_forever {
+        summary["mount_observed_flag_counts"] = json!(mounts.map(mount_flag_counts));
+    }
     summary["active_pet_observation"] = s
         .sections
         .get("pet_care")

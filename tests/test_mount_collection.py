@@ -85,7 +85,11 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                     for snapshot_id, count in ((key, 1), (empty_key, 0), (missing_key, None)):
                         response = await session.call_tool("character_summary", {"snapshot_id": snapshot_id})
                         self.assertFalse(response.isError)
-                        self.assertEqual(json.loads(response.content[0].text)["collected_mounts_observed"], count)
+                        summary = json.loads(response.content[0].text)
+                        self.assertEqual(summary["collected_mounts_observed"], count)
+                        self.assertEqual(summary["mount_observed_flag_counts"],
+                                         None if count is None else {
+                                             "usable":count,"favorite":0,"usable_favorite":0})
                     for bad_key in invalid:
                         response = await session.call_tool("inspect_snapshot", {"snapshot_id": bad_key, "section": "mount_collection"})
                         self.assertTrue(response.isError)
