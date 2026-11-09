@@ -46,7 +46,7 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         {**planned,'reported_season_id':7},{**planned_past,'reported_season_id':7},
                         {**planned_past,'reported_season_id':8},
                         {**section,'rank':4,'rank_points':0,'reported_season_id':7},
-                        {**planned,'current_week_max_rank':14,'rank_points':0,'reported_season_id':7,
+                        {**planned,'current_week_max_rank':14,'rank_points':0,'next_rank_threshold':110,'reported_season_id':7,
                          'total_points_by_rank':{'3':100,'4':220,'14':1000}}]:
                 saved=deepcopy(base)
                 if row is not None:saved['sections']['player_pvp_progression']=row
@@ -176,6 +176,15 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                                                  'same_target_remaining_points_delta':None},
                         'previous_week_max_rank':{'reported_cap_rank_delta':0,'reported_cap_threshold_delta':20,
                                                   'same_target_remaining_points_delta':None}})
+                    threshold_key = 'observed_next_threshold_change_with_matching_season_id'
+                    for first, second, expected in [
+                            (15,11,{'reported_next_threshold_delta':-10,'same_threshold_remaining_points_delta':None}),
+                            (11,12,{'reported_next_threshold_delta':0,'same_threshold_remaining_points_delta':None}),
+                            (11,11,{'reported_next_threshold_delta':0,'same_threshold_remaining_points_delta':0}),
+                            (11,14,None),(11,13,None),(0,11,None)]:
+                        compared = (await call('compare_snapshots',before_id=valid[first][0],
+                            after_id=valid[second][0],**{selector:True}))[selector]
+                        self.assertEqual(compared[threshold_key],expected)
                     for first, second, delta, points in [(12,11,0,-290),(11,14,1,None),(14,11,-1,None),(11,11,0,0)]:
                         compared = (await call('compare_snapshots',before_id=valid[first][0],
                             after_id=valid[second][0],**{selector:True}))[selector]

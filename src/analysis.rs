@@ -2906,10 +2906,11 @@ pub fn compare_observations(
             .map(player_pvp_progression_observation);
         let season = |row: &Option<Value>| row.as_ref()?.get("reported_season_id")?.as_u64();
         let season_match = season(&before).zip(season(&after)).map(|(a, b)| a == b);
-        let observed_change = before.as_ref().zip(after.as_ref()).and_then(|(a, b)| {
-            if season_match != Some(true) {
-                return None;
-            }
+        let matching_observations = before
+            .as_ref()
+            .zip(after.as_ref())
+            .filter(|_| season_match == Some(true));
+        let observed_change = matching_observations.and_then(|(a, b)| {
             let rank_delta = b["rank"].as_i64()? - a["rank"].as_i64()?;
             let rank_points_delta = if rank_delta == 0 {
                 Some(b["rank_points"].as_i64()? - a["rank_points"].as_i64()?)
@@ -2918,39 +2919,54 @@ pub fn compare_observations(
             };
             Some(json!({"rank_delta":rank_delta,"same_rank_reported_points_delta":rank_points_delta}))
         });
-        let cap_changes = before
-            .as_ref()
-            .zip(after.as_ref())
-            .filter(|_| season_match == Some(true))
-            .map(|(a, b)| {
-                PVP_CAP_FIELDS
-                    .into_iter()
-                    .map(|cap| {
-                        let targets = a[cap].as_i64().zip(b[cap].as_i64());
-                        let threshold = |row: &Value, rank: i64| {
-                            row["total_points_by_rank"][rank.to_string()].as_i64()
-                        };
-                        let thresholds =
-                            targets.and_then(|(old, new)| threshold(a, old).zip(threshold(b, new)));
-                        let remaining_delta = targets
-                            .filter(|(old, new)| old == new)
-                            .and(thresholds.filter(|(old, new)| old == new))
-                            .and_then(|_| {
-                                let old = a["remaining_points_to_reported_caps"][cap].as_i64()?;
-                                let new = b["remaining_points_to_reported_caps"][cap].as_i64()?;
-                                Some(new - old)
-                            });
-                        (
-                            cap,
-                            json!({"reported_cap_rank_delta":targets.map(|(old,new)|new-old),
+        let next_threshold_change = matching_observations
+            .filter(|(a, b)| a["rank"] == b["rank"])
+            .and_then(|(a, b)| {
+                let old_threshold = a["next_rank_threshold"].as_i64()?;
+                let new_threshold = b["next_rank_threshold"].as_i64()?;
+                let remaining_delta =
+                    (old_threshold == new_threshold)
+                        .then_some(())
+                        .and_then(|_| {
+                            let old = a["remaining_points_to_reported_next_threshold"].as_i64()?;
+                            let new = b["remaining_points_to_reported_next_threshold"].as_i64()?;
+                            Some(new - old)
+                        });
+                Some(
+                    json!({"reported_next_threshold_delta":new_threshold-old_threshold,
+                    "same_threshold_remaining_points_delta":remaining_delta}),
+                )
+            });
+        let cap_changes = matching_observations.map(|(a, b)| {
+            PVP_CAP_FIELDS
+                .into_iter()
+                .map(|cap| {
+                    let targets = a[cap].as_i64().zip(b[cap].as_i64());
+                    let threshold = |row: &Value, rank: i64| {
+                        row["total_points_by_rank"][rank.to_string()].as_i64()
+                    };
+                    let thresholds =
+                        targets.and_then(|(old, new)| threshold(a, old).zip(threshold(b, new)));
+                    let remaining_delta = targets
+                        .filter(|(old, new)| old == new)
+                        .and(thresholds.filter(|(old, new)| old == new))
+                        .and_then(|_| {
+                            let old = a["remaining_points_to_reported_caps"][cap].as_i64()?;
+                            let new = b["remaining_points_to_reported_caps"][cap].as_i64()?;
+                            Some(new - old)
+                        });
+                    (
+                        cap,
+                        json!({"reported_cap_rank_delta":targets.map(|(old,new)|new-old),
                         "reported_cap_threshold_delta":thresholds.map(|(old,new)|new-old),
                         "same_target_remaining_points_delta":remaining_delta}),
-                        )
-                    })
-                    .collect::<BTreeMap<_, _>>()
-            });
+                    )
+                })
+                .collect::<BTreeMap<_, _>>()
+        });
         comparison["player_pvp_progression_changes"] = json!({"before":before,"after":after,
             "observed_change_with_matching_season_id":observed_change,
+            "observed_next_threshold_change_with_matching_season_id":next_threshold_change,
             "observed_cap_changes_with_matching_season_id":cap_changes,
             "reported_season_ids_match":season_match,"same_season_verified":false,"earned_points_delta":null,"live":false});
     }

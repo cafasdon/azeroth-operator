@@ -13,6 +13,9 @@ Zero includes saved totals at or above the selected positive cap threshold.
 Saved comparisons with matching reported season IDs show signed changes to
 each reported cap rank and point threshold. They compare remaining points
 only when the cap rank and threshold agree and both distances are known.
+For matching rank and reported season IDs, saved comparisons also show
+the signed change to the reported next-rank threshold. The remaining-point
+change requires the same positive threshold and known distances on both sides.
 
 Use `maximum_reported_member_count` in the `list_snapshots.group_context`
 filter to cap the captured member count. Combine it with
