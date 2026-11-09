@@ -42,6 +42,21 @@ native evidence, the saved capture and the MCP readback. At this checkpoint,
 these native cases remain untested. The existing offline evidence below
 qualifies its fixtures only.
 
+### Offline package baseline
+
+Source `503ed28` passed a fresh development package verification using
+the local packager and the Rust `verify_addon` example. The synthetic
+Forever `live` package used interface `16001` and version `0.0.0-dev`.
+The four-file ZIP had SHA-256
+`3b1ef1813cc426645994360babefcd70bbbe02956898742423c16d24d24af4a7`.
+The verifier passed the packaged Lua 5.1 round trip, the Forever
+capture fixture and changed-interface rejection.
+
+Three separate local MCP stdio tests passed for character resolution,
+weapon enchant and section coverage, and the offline tool catalogue.
+These tests used saved fixtures. The package was temporary and was
+neither installed nor published. Native qualification stays untested.
+
 ## Coverage and remaining proof
 
 9 November update: optional local provider NPC/object spawn references now reach
