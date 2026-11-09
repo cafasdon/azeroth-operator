@@ -358,6 +358,8 @@ struct List {
     latest_per_character: bool,
     /// Require every named snapshot section to be present in the same capture.
     required_sections: Option<Vec<String>>,
+    /// Find captures missing at least one named section and report the coverage status.
+    any_missing_sections: Option<Vec<String>>,
     /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
@@ -2064,6 +2066,7 @@ impl Operator {
                 inventory_item: args.inventory_item,
                 inventory_requirements: args.inventory_requirements,
                 required_sections: args.required_sections.as_deref(),
+                any_missing_sections: args.any_missing_sections.as_deref(),
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
                 gossip_option: args.gossip_option,

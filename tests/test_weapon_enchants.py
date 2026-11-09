@@ -73,11 +73,29 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     newest=deepcopy(absent)
                     newest['captured_at']='2025-01-02T00:00:00Z'
                     store.ingest(newest)
+                    unavailable=deepcopy(newest)
+                    unavailable['captured_at']='2025-01-03T00:00:00Z'
+                    unavailable['unavailable']={'weapon_enchants':'PRIVATE_REASON'}
+                    unavailable_id=store.ingest(unavailable)
+                    missing=await call('list_snapshots',family='forever',latest_per_character=True,
+                        any_missing_sections=['weapon_enchants','player_resources'])
+                    self.assertEqual([row['snapshot_id'] for row in missing['snapshots']],[unavailable_id])
+                    self.assertEqual(missing['snapshots'][0]['missing_section_matches'],
+                        {'weapon_enchants':'reported_unavailable','player_resources':'not_recorded'})
+                    self.assertNotIn('PRIVATE_REASON',json.dumps(missing))
+                    mixed=await call('list_snapshots',family='forever',required_sections=['weapon_enchants'],
+                        any_missing_sections=['weapon_enchants','player_resources'])
+                    self.assertEqual({row['snapshot_id'] for row in mixed['snapshots']},{keys[0],keys[2],keys[3]})
+                    self.assertTrue(all(row['missing_section_matches']=={'player_resources':'not_recorded'}
+                                        for row in mixed['snapshots']))
                     self.assertEqual((await call('list_snapshots',family='forever',latest_per_character=True,
                         required_sections=['weapon_enchants']))['snapshots'],[])
                     for required in [[],['weapon_enchants','weapon_enchants'],['unknown']]:
                         invalid=await session.call_tool('list_snapshots',{
                             'family':'forever','required_sections':required})
+                        self.assertTrue(invalid.isError)
+                        invalid=await session.call_tool('list_snapshots',{
+                            'family':'forever','any_missing_sections':required})
                         self.assertTrue(invalid.isError)
                     found = await search('main_hand',enchant_id=42,minimum_charges=0,
                                          maximum_remaining_milliseconds=0)

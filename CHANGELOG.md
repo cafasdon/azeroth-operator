@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved captures missing requested sections and distinguish recorded unavailability.
+
 - Find saved captures that contain every requested snapshot section.
 
 - Filter saved Forever weapon enchants by type and inclusive charge range.

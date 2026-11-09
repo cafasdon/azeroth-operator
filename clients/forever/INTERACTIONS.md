@@ -6,6 +6,10 @@ Missing sections, including those with a recorded unavailable reason,
 do not match. With `latest_per_character`, only the newest eligible
 capture is checked for section presence. Presence leaves completeness
 within each section unverified.
+Use `any_missing_sections` to find captures missing at least one named
+section. Each matching section is marked `reported_unavailable` or
+`not_recorded`. The list omits reason text. Use snapshot inspection to
+read a recorded reason for a specific section.
 
 Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 `off_hand` or `ranged` enchant list. Set an optional exact `enchant_id`,

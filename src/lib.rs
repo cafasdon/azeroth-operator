@@ -1661,6 +1661,7 @@ pub struct CaptureFilters<'a> {
     pub captured_through: Option<&'a str>,
     pub latest_per_character: bool,
     pub required_sections: Option<&'a [String]>,
+    pub any_missing_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
@@ -1881,6 +1882,7 @@ impl Store {
             captured_through,
             latest_per_character,
             required_sections,
+            any_missing_sections,
             inventory_item,
             inventory_requirements,
             loot_observation,
@@ -1955,7 +1957,10 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
-        if let Some(sections) = required_sections {
+        for sections in [required_sections, any_missing_sections]
+            .into_iter()
+            .flatten()
+        {
             ensure!(
                 !sections.is_empty()
                     && sections.len() <= SECTIONS.len()
@@ -1967,7 +1972,7 @@ impl Store {
                         .collect::<std::collections::BTreeSet<_>>()
                         .len()
                         == sections.len(),
-                "Required sections must be distinct known section names"
+                "Section filters require distinct known section names"
             );
         }
         ensure!(
@@ -2599,6 +2604,28 @@ impl Store {
                     if required_sections.is_some_and(|sections| {
                         sections.iter().any(|name| !s.sections.contains_key(name))
                     }) {
+                        continue;
+                    }
+                    let missing_section_matches = any_missing_sections.map(|sections| {
+                        sections
+                            .iter()
+                            .filter(|name| !s.sections.contains_key(*name))
+                            .map(|name| {
+                                (
+                                    name,
+                                    if s.unavailable.contains_key(name) {
+                                        "reported_unavailable"
+                                    } else {
+                                        "not_recorded"
+                                    },
+                                )
+                            })
+                            .collect::<BTreeMap<_, _>>()
+                    });
+                    if missing_section_matches
+                        .as_ref()
+                        .is_some_and(BTreeMap::is_empty)
+                    {
                         continue;
                     }
                     let group_context_match = group_context
@@ -3310,6 +3337,9 @@ impl Store {
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
+                    if let Some(matches) = missing_section_matches {
+                        summary["missing_section_matches"] = json!(matches);
+                    }
                     if let Some((filter, row)) = tracked_achievement.as_ref().zip(achievement_match)
                     {
                         summary["tracked_achievement_match"] = json!({
