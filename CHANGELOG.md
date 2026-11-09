@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved yield and charge evidence when a Forever reagent has multiple captured producers.
+
 - Page through saved Forever reagent-chain bank withdrawal locations.
 
 - Report the full number of suggested Forever withdrawal slots when location output is truncated.

@@ -57,6 +57,12 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                         return None if error else json.loads(reply.content[0].text)
                     default = (await plan())['reagent_chain']
                     self.assertEqual(default['blocked_reason']['reason'],'ambiguous_captured_producer')
+                    self.assertEqual(default['blocked_reason']['current_deficit'],3)
+                    self.assertEqual(default['blocked_reason']['candidate_estimates'], [
+                        {'recipe_id':id,'reported_minimum_output_per_craft':minimum,
+                         'crafts_for_current_deficit':crafts,'fits_step_craft_limit':True,
+                         'captured_charges':None,'captured_charges_cover_current_deficit':None}
+                        for id,minimum,crafts in [(102,2,2),(104,1,3)]])
                     self.assertEqual(default,(await plan(reagent_producer_choices=[]))['reagent_chain'])
                     self.assertEqual(default,(await plan(reagent_producer_choices=None))['reagent_chain'])
                     for chosen,external,crafts in [(102,2,2),(104,0,3)]:

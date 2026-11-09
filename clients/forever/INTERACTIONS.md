@@ -296,6 +296,12 @@ starting-material shortfalls after counting all observed storage. It can
 include items with no suggested withdrawal and uses the same starting
 requirements as the printed chain. An empty list means no positive shortfall
 was observed. Uncaptured storage may contain additional stock.
+When several saved recipes could produce the same reagent, the chain reports
+the uncovered quantity and estimates for up to 20 candidate recipes. It
+shows crafts needed at the captured minimum yield, whether that fits the
+step limit, and whether the raw saved charge count covers that request.
+These estimates do not deduct earlier charge usage or check materials and
+conditions. An explicit producer choice is still required.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

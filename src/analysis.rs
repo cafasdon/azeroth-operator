@@ -1241,8 +1241,29 @@ impl RecipeChainDraft<'_> {
                 let choices = self.producers.get(&item).map(Vec::as_slice).unwrap_or(&[]);
                 let explicit = self.choices.get(&item).copied();
                 if explicit.is_none() && choices.len() > 1 {
+                    let rows = &self.snapshot.sections["profession_recipe_materials"]["entries"];
+                    let estimates: Vec<_> = choices
+                        .iter()
+                        .take(20)
+                        .map(|id| {
+                            let row = &rows[id.to_string()];
+                            let minimum = row["base_output_quantity"]["minimum"]
+                                .as_u64()
+                                .filter(|n| *n > 0);
+                            let crafts =
+                                minimum.map(|yield_per_craft| deficit.div_ceil(yield_per_craft));
+                            let charges = row["cooldown"]["charges"].as_u64();
+                            json!({"recipe_id":id,"reported_minimum_output_per_craft":minimum,
+                            "crafts_for_current_deficit":crafts,
+                            "fits_step_craft_limit":crafts.map(|count| count <= 1000),
+                            "captured_charges":charges,
+                            "captured_charges_cover_current_deficit":crafts.zip(charges)
+                                .map(|(count, available)| count <= available)})
+                        })
+                        .collect();
                     return Err(
                         json!({"reason":"ambiguous_captured_producer","item_id":item,
+                    "current_deficit":deficit,"candidate_estimates":estimates,
                     "candidate_recipe_ids":choices.iter().take(20).collect::<Vec<_>>(),"candidate_count":choices.len(),
                     "candidates_truncated":choices.len()>20}),
                     );
