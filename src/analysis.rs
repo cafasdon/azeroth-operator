@@ -3159,6 +3159,37 @@ pub fn compare_observations(
         .sections
         .get("durability_alerts")
         .and_then(Value::as_object);
+    let old_condition = before.sections.get("equipment_durability");
+    let new_condition = after.sections.get("equipment_durability");
+    if old_condition.is_some() || new_condition.is_some() {
+        comparison["equipment_durability_changes"] = json!(
+            old_condition.zip(new_condition).map(|(old, new)| {
+                let old = old["entries"].as_object().unwrap();
+                let new = new["entries"].as_object().unwrap();
+                let slots: BTreeSet<_> = old.keys().chain(new.keys())
+                    .map(|slot| slot.parse::<u32>().unwrap()).collect();
+                let mut only_before = Vec::new();
+                let mut only_after = Vec::new();
+                let mut changes = Vec::new();
+                for slot in slots {
+                    let key = slot.to_string();
+                    match (old.get(&key), new.get(&key)) {
+                        (Some(a), Some(b)) if a != b => changes.push(json!({
+                            "slot":slot,"before":a,"after":b,
+                            "current_delta":b["current"].as_i64().unwrap() - a["current"].as_i64().unwrap(),
+                            "maximum_delta":b["maximum"].as_i64().unwrap() - a["maximum"].as_i64().unwrap(),
+                        })),
+                        (Some(_), None) => only_before.push(slot),
+                        (None, Some(_)) => only_after.push(slot),
+                        _ => {}
+                    }
+                }
+                json!({"basis":"captured_equipment_slots","changes":changes,
+                    "observed_only_before_slots":only_before,"observed_only_after_slots":only_after,
+                    "same_item_verified":false,"repair_event_verified":false,"live":false})
+            })
+        );
+    }
     if old_alerts.is_some() || new_alerts.is_some() {
         comparison["durability_alert_changes"] = json!(old_alerts.zip(new_alerts).map(|(old, new)| {
             old.keys().chain(new.keys()).collect::<BTreeSet<_>>().into_iter()

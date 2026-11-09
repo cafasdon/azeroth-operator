@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Saved equipment comparisons report current and maximum durability changes
+for slots observed in both captures, and list slots seen on only one side.
+A missing durability section leaves the comparison unknown. These readings
+are by slot and do not establish item continuity or a repair event.
+
 For an explicit saved character, `resolve_character` accepts inclusive
 `captured_from` and `captured_through` timestamps. It selects the newest
 matching capture within those bounds. Without an explicit character, active

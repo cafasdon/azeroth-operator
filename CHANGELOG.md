@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever equipment durability by observed slot.
+
 - Apply saved capture time bounds when evaluating a named Forever character's owned gear.
 
 - Select an exact saved Forever client build when evaluating a named character's owned gear.

@@ -24,6 +24,10 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
         absent=deepcopy(value);absent['sections'].pop('equipment_durability')
         maximum=deepcopy(value);maximum['sections']['equipment_durability']['entries']={str(i):{'current':2**32-1,'maximum':2**32-1} for i in range(1,20)}
         fractional=deepcopy(value);fractional['sections']['equipment_durability']['entries']={'16':{'current':1,'maximum':3}}
+        later=deepcopy(value);later['captured_at']='2025-01-02T00:00:00Z'
+        later['sections']['equipment_durability']['entries']={
+            '1':{'current':90,'maximum':120},'2':{'current':0,'maximum':5},
+            '16':{'current':1,'maximum':3}}
         malformed=[]
         for row in [None,{}, {'current':1}, {'current':0,'maximum':0}, {'current':2,'maximum':1},
                     {'current':0,'maximum':1,'guid':'PRIVATE'}, {'current':True,'maximum':1},
@@ -37,7 +41,7 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
         for field,invalid in [('coverage','all_equipment'),('entries',None)]:
             bad=deepcopy(value);bad['sections']['equipment_durability'][field]=invalid;malformed.append(bad)
         with tempfile.TemporaryDirectory() as folder:
-            store=SnapshotStore(Path(folder));keys=[store.ingest(v) for v in [value,empty,absent,maximum,fractional]]
+            store=SnapshotStore(Path(folder));keys=[store.ingest(v) for v in [value,empty,absent,maximum,fractional,later]]
             bad_keys=[]
             for bad in malformed:
                 with self.assertRaises(ValueError):validate_snapshot(bad)
@@ -52,6 +56,15 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
                     self.assertEqual(captured['data'],value['sections']['equipment_durability'])
+                    changes=(await call('compare_snapshots',before_id=keys[0],after_id=keys[5]))[
+                        'equipment_durability_changes']
+                    self.assertEqual(changes['changes'],[{'slot':1,'before':{'current':0,'maximum':100},
+                        'after':{'current':90,'maximum':120},'current_delta':90,'maximum_delta':20}])
+                    self.assertEqual(changes['observed_only_before_slots'],[5])
+                    self.assertEqual(changes['observed_only_after_slots'],[2])
+                    self.assertIs(changes['same_item_verified'],False)
+                    self.assertIsNone((await call('compare_snapshots',before_id=keys[2],after_id=keys[5]))[
+                        'equipment_durability_changes'])
                     condition=(await call('character_summary',snapshot_id=keys[0]))['equipment_condition']
                     self.assertEqual(condition['observed_slots'],3);self.assertEqual(condition['unobserved_slots'],16)
                     self.assertEqual(condition['damaged_slots'],[1,16]);self.assertEqual(condition['broken_slots'],[1])
