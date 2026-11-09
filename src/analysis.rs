@@ -19,6 +19,7 @@ pub enum RecipeSearchOrder {
     #[default]
     RecipeId,
     ObservedItemCapacityDesc,
+    ReportedSkillUpsDesc,
 }
 
 #[derive(
@@ -386,7 +387,7 @@ pub fn search_recipe_materials_ordered(
     order: RecipeSearchOrder,
 ) -> Result<Value> {
     ensure!(
-        order == RecipeSearchOrder::RecipeId || material_filter.is_some(),
+        order != RecipeSearchOrder::ObservedItemCapacityDesc || material_filter.is_some(),
         "Observed item capacity ordering requires material filtering"
     );
     ensure!(
@@ -510,6 +511,15 @@ pub fn search_recipe_materials_ordered(
                 id.parse::<u32>().unwrap(),
             )
         });
+    } else if order == RecipeSearchOrder::ReportedSkillUpsDesc {
+        matches.sort_unstable_by_key(|(id, _, _, observation)| {
+            let reported = observation.and_then(|row| row["skill_ups_reported"].as_u64());
+            (
+                reported.is_none(),
+                std::cmp::Reverse(reported.unwrap_or(0)),
+                id.parse::<u32>().unwrap(),
+            )
+        });
     } else {
         matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
     }
@@ -526,8 +536,7 @@ pub fn search_recipe_materials_ordered(
             if let Some(support) = support {
                 record["material_support"] = support.clone();
             }
-            if recipe_view_filter.is_some() {
-                let observation = observation.unwrap();
+            if let Some(observation) = observation.filter(|_| recipe_view_filter.is_some() || order == RecipeSearchOrder::ReportedSkillUpsDesc) {
                 record["recipe_view_observation"] = json!({"source":"profession_recipe_view",
                     "learned":observation.get("learned"),"can_skill_up":observation.get("can_skill_up"),
                     "skill_ups_reported":observation.get("skill_ups_reported"),
@@ -550,7 +559,11 @@ pub fn search_recipe_materials_ordered(
         "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false});
     if order != RecipeSearchOrder::RecipeId {
         result["order"] = json!(order);
-        result["ordering_basis"] = json!("independent_observed_required_item_capacity_only");
+        result["ordering_basis"] = json!(match order {
+            RecipeSearchOrder::ObservedItemCapacityDesc =>
+                "independent_observed_required_item_capacity_only",
+            _ => "captured_same_profession_skill_ups_only",
+        });
         result["shared_material_allocation_performed"] = json!(false);
         result["skill_gain_prediction_performed"] = json!(false);
     }

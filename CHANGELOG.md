@@ -1,5 +1,7 @@
 # Changelog
 
+- Sort saved Forever recipe searches by reported skill-ups before paging.
+
 - Find saved Forever captures by exact reported PvP season ID.
 
 - Capture a stable reported Forever PvP season ID and compare saved IDs.

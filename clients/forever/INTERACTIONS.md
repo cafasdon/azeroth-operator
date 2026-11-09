@@ -2076,6 +2076,12 @@ query changes no addon/schema/package or deployed installation.
 
 ## Recipe item-capacity shortlist (2026-11-09)
 
+Set `order: reported_skill_ups_desc` on `search_forever_recipes` to put higher
+reported skill-up counts first. The search uses the saved view for the same
+profession and recipe ID. Zero sorts ahead of unknown. Equal counts sort by
+numeric recipe ID. Filters apply before sorting and paging. The result describes
+captured counts, with actual skill gains and craftability unverified.
+
 `search_forever_recipes` accepts order observed_item_capacity_desc together with
 material_filter (explicit bags/all_observed_storage and minimum_crafts). Existing
 view filters such as learned/can_skill_up and original cooldown filters compose.

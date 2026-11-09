@@ -24,10 +24,15 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
         capture['sections']['profession_recipe_materials']={'coverage':'reported_known_spell_schematics','profession_id':164,'entries':rows}
         capture['sections']['profession_recipe_view']={'coverage':'filtered_local_recipe_list','profession_id':164,
             'entries':{str(i):{'learned':True,'can_skill_up':i!=6} for i in [1,2,3,4,5,6,10,11]}}
+        for recipe, count in [(2,2),(10,2),(6,0)]:
+            capture['sections']['profession_recipe_view']['entries'][str(recipe)]['skill_ups_reported']=count
         capture['sections']['bags']={'0':{'1':{'item_id':10,'count':20},'2':{'item_id':20,'count':3}}}
         capture['sections']['character_bank']={'6':{'1':{'item_id':20,'count':100}}}
         with tempfile.TemporaryDirectory() as folder,tempfile.TemporaryDirectory() as foreign:
             store=SnapshotStore(Path(folder));key=store.ingest(capture)
+            mismatched=deepcopy(capture)
+            mismatched['sections']['profession_recipe_view']['profession_id']=165
+            mismatched_key=store.ingest(mismatched)
             newer=deepcopy(capture);newer['captured_at']='2025-01-02T00:00:00Z'
             newer['sections']['bags']={'0':{'1':{'item_id':10,'count':4},'2':{'item_id':20,'count':30}}}
             newer_key=store.ingest(newer)
@@ -52,6 +57,16 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([r['recipe_id'] for r in raw['records']],[1,2,3,10,11])
                     self.assertEqual(await search(**args,order='recipe_id'),raw)
                     self.assertEqual(await search(**args,order=None),raw)
+                    skill_order = await search(order='reported_skill_ups_desc')
+                    self.assertEqual([r['recipe_id'] for r in skill_order['records']],[2,10,6,1,3,4,5,11])
+                    self.assertEqual(skill_order['ordering_basis'],'captured_same_profession_skill_ups_only')
+                    self.assertIs(skill_order['skill_gain_prediction_performed'],False)
+                    skill_page = await search(order='reported_skill_ups_desc',offset=1,limit=2,**args)
+                    self.assertEqual([r['recipe_id'] for r in skill_page['records']],[10,1])
+                    self.assertEqual(skill_page['records'][0]['recipe_view_observation']['skill_ups_reported'],2)
+                    mismatch = await search(snapshot_id=mismatched_key,order='reported_skill_ups_desc')
+                    self.assertEqual([r['recipe_id'] for r in mismatch['records']],[1,2,3,4,5,6,10,11])
+                    self.assertTrue(all('recipe_view_observation' not in row for row in mismatch['records']))
                     ordered=await search(**args,order='observed_item_capacity_desc')
                     self.assertEqual([r['recipe_id'] for r in ordered['records']],[10,1,2,11,3])
                     self.assertEqual([r['material_support']['supported_crafts'] for r in ordered['records']],[10,5,3,3,None])

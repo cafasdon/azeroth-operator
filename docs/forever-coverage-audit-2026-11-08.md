@@ -93,6 +93,13 @@ availability, present craftability and complete profession coverage remain open.
 
 ## Evidence boundaries
 
+Recipe search can now order matches by captured skill-up counts from the same
+profession and recipe. Offline MCP tests verified zero and unknown ordering,
+numeric ties, filters, paging and mismatched profession evidence. Jev 1.14.0
+advisory `2a6133f5c4a67b8b4b34606a4de16b29216139a5372847f686a979dd63a550e6`
+favoured integration at .33 confidence, with 397 input and 49 output tokens
+in .301 seconds.
+
 Owned-item review now accepts `simulator_input_resolved` to page through
 resolved inputs or investigate unresolved locations. Full-capture evidence stays
 separate from filtered totals. Offline build, caller tests and independent

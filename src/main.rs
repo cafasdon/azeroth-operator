@@ -709,7 +709,7 @@ struct RecipeSearch {
     recipe_view_filter: Option<azeroth_operator::analysis::RecipeViewFilter>,
     /// Filter original bulk-row cooldown state, observed charges or recorded timer; no elapsed recharge/current eligibility.
     cooldown_filter: Option<azeroth_operator::analysis::RecipeCooldownFilter>,
-    /// Optional observed_item_capacity_desc requires material_filter; item-only independent capacities, not skill gain or craftability.
+    /// Order by recipe ID, observed item capacity (requires material_filter), or reported skill-ups from the saved recipe view.
     #[serde(default, deserialize_with = "recipe_search_order")]
     order: Option<azeroth_operator::analysis::RecipeSearchOrder>,
     offset: Option<usize>,
