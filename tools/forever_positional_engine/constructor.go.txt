@@ -1,0 +1,35 @@
+func ProtoToEquipment(es *proto.EquipmentSpec) Equipment {
+	if !es.GetPreserveSlots() {
+		return NewEquipmentSet(ProtoToEquipmentSpec(es))
+	}
+	if len(es.Items) != int(proto.ItemSlot_ItemSlotRanged)+1 {
+		panic("positional equipment requires exactly 17 slots")
+	}
+	var equipment Equipment
+	for slot, spec := range es.Items {
+		if spec == nil {
+			panic("positional equipment requires explicit slot objects")
+		}
+		if spec.Id == 0 {
+			if spec.Enchant != 0 || spec.RandomSuffix != 0 {
+				panic("empty positional slot has modifiers")
+			}
+			continue
+		}
+		item := NewItem(ItemSpec{ID: spec.Id, Enchant: spec.Enchant, RandomSuffix: spec.RandomSuffix})
+		if item.ID != spec.Id || item.Enchant.EffectID != spec.Enchant || item.RandomSuffix.ID != spec.RandomSuffix {
+			panic("positional item modifiers were not preserved")
+		}
+		if spec.Enchant != 0 && !EnchantAppliesToItem(spec.Enchant, item) {
+			panic("enchant does not fit positional item")
+		}
+		if !slices.Contains(itemfit.ItemSlots(item.fit()), proto.ItemSlot(slot)) {
+			panic("item does not fit positional slot")
+		}
+		equipment[slot] = item
+	}
+	if equipment.MainHand().HandType == proto.HandType_HandTypeTwoHand && equipment.OffHand().ID != 0 {
+		panic("two-hand positional weapon conflicts with off-hand")
+	}
+	return equipment
+}

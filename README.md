@@ -208,6 +208,13 @@ completion flags. Missing ownership/model/native proof still prevents a BiS
 claim. See the [workflow](docs/ADR-027-owned-gear-evaluation-workflow.md) and
 [offline evidence](docs/owned-gear-evaluation-verification-2026-11-09.md).
 
+An isolated positional engine extension now preserves exact paired-slot gaps
+with an explicit wire flag and capability command. Its offline builder uses
+pinned local archives/tools and keeps legacy placement as the default. It is
+not yet wired into MCP/adapter evaluation; existing guards remain active.
+[Contract](docs/ADR-028-positional-equipment-engine.md) ·
+[Offline qualification](docs/positional-engine-verification-2026-11-09.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

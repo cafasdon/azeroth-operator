@@ -1,0 +1,23 @@
+package cmd
+
+import (
+	"encoding/json"
+
+	"github.com/spf13/cobra"
+)
+
+func init() {
+	rootCmd.AddCommand(&cobra.Command{
+		Use: "azeroth-equipment-contract",
+		Args: cobra.NoArgs,
+		RunE: func(command *cobra.Command, args []string) error {
+			return json.NewEncoder(command.OutOrStdout()).Encode(map[string]any{
+				"contract": "azeroth_equipment_preserve_slots_v1",
+				"equipment_field": "preserveSlots",
+				"required_item_count": 17,
+				"legacy_default": "auto_place",
+				"native_qualification_performed": false,
+			})
+		},
+	})
+}

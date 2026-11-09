@@ -244,3 +244,10 @@ unresolved plans and completed saved simulations are accounted separately. A
 real pinned-engine check preserves an unresolved paired-slot placement rather
 than treating the resolved winner as full owned BiS. Complete ownership, native
 legality, unsupported models and statistical optimality remain open.
+
+[Isolated positional engine qualification](positional-engine-verification-2026-11-09.md)
+then demonstrates exact paired-slot conversion and limited canonical/sparse
+simulation compatibility under an explicit contract. It does not yet connect
+that contract to MCP/adapter requests; existing unresolved guards remain active.
+Strict engine-capability wiring is the next step, with native/full model/owned
+coverage and BiS proof still open.

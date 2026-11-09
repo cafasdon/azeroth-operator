@@ -1,5 +1,9 @@
 # Changelog
 
+- Build and qualify an isolated opt-in positional equipment simulator from
+  pinned local inputs, preserving paired-slot gaps and rejecting lost/misfit
+  modifiers; add capability metadata without changing MCP/adapter guards.
+
 - Add a resumable all-slot owned-gear evaluation command combining bound plan
   collection and multi-encounter saved simulation under shared deadlines, with
   separate coverage/resolution evidence and no best-in-slot claim.

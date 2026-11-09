@@ -1,0 +1,37 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/wowsims/forever/sim/core"
+	"github.com/wowsims/forever/sim/core/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+)
+
+func main() {
+	defer func() {
+		if recover() != nil {
+			fmt.Fprintln(os.Stderr, "Invalid equipment input")
+			os.Exit(1)
+		}
+	}()
+	data, err := io.ReadAll(io.LimitReader(os.Stdin, 65537))
+	if err != nil || len(data) > 65536 {
+		panic("invalid input")
+	}
+	spec := &proto.EquipmentSpec{}
+	if protojson.Unmarshal(data, spec) != nil {
+		panic("invalid protobuf")
+	}
+	equipment := core.ProtoToEquipment(spec)
+	rows := make([]map[string]int32, len(equipment))
+	for index, item := range equipment {
+		rows[index] = map[string]int32{"id": item.ID, "enchant": item.Enchant.EffectID, "randomSuffix": item.RandomSuffix.ID}
+	}
+	if json.NewEncoder(os.Stdout).Encode(rows) != nil {
+		panic("output failed")
+	}
+}

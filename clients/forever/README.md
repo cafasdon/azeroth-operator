@@ -6,6 +6,11 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Evaluate observed owned gear across all slots
 
+The source repository also contains an isolated opt-in positional simulator
+builder and contract for the paired-slot model gap. It is not yet used by this
+workflow. Existing MCP/adapter guards stay enabled until strict engine hash/
+capability integration is qualified. See [ADR 028](../../docs/ADR-028-positional-equipment-engine.md).
+
 `python -m tools.evaluate_forever_owned_gear --help` documents a single offline
 workflow for all 17 simulator slots and all observed equipment/bags/banks. It
 collects bounded numeric gear-plan windows, resumes an exactly bound plan
