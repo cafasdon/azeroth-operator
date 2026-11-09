@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate saved stack consolidation using agreeing captured stack limits.
+
 - Capture reported Forever stack limits for saved item locations.
 
 - Scope saved stack consolidation estimates to a specific bag or bank tab.

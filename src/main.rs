@@ -1017,6 +1017,9 @@ struct FindItem {
     bag_stack_groups: bool,
     /// User-supplied stack capacity for a hypothetical consolidation estimate.
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
+    /// Estimate each group from unanimous captured stack limits instead of a supplied limit.
+    #[serde(default)]
+    use_reported_stack_limits: bool,
     /// Scope the stack review to bags, character_bank, or account_bank. Banks require Forever.
     stack_group_storage: Option<azeroth_operator::InventoryStorage>,
     /// Scope stack groups to one recorded container in the selected storage.
@@ -1469,11 +1472,16 @@ impl Operator {
             anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
             anyhow::ensure!(
                 (args.assumed_max_stack_size.is_none()
+                    && !args.use_reported_stack_limits
                     && args.stack_group_storage.is_none()
                     && args.stack_group_container_id.is_none()
                     && args.stack_group_offset.is_none())
                     || args.bag_stack_groups,
                 "Stack review options require bag stack groups"
+            );
+            anyhow::ensure!(
+                !args.use_reported_stack_limits || args.assumed_max_stack_size.is_none(),
+                "Choose reported stack limits or an assumed maximum"
             );
             anyhow::ensure!(
                 args.stack_group_container_id.is_none_or(|id| id <= 64),
@@ -1509,6 +1517,7 @@ impl Operator {
                             snapshot,
                             args.item_id.get(),
                             args.assumed_max_stack_size,
+                            args.use_reported_stack_limits,
                             args.stack_group_storage,
                             args.stack_group_container_id,
                             args.stack_group_offset

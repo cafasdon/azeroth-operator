@@ -2590,6 +2590,7 @@ pub fn observed_bag_stack_groups(
     snapshot: &Snapshot,
     item_id: u32,
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
+    use_reported_stack_limits: bool,
     storage: Option<crate::InventoryStorage>,
     container_id: Option<u8>,
     group_offset: Option<usize>,
@@ -2602,7 +2603,7 @@ pub fn observed_bag_stack_groups(
     if let Some(id) = &selected {
         bags.get(id)?;
     }
-    let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64)>>::new();
+    let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64, Option<u64>)>>::new();
     let mut locations_without_link = 0;
     for (bag, slots) in bags {
         if selected.as_ref().is_some_and(|id| bag != id) {
@@ -2618,6 +2619,7 @@ pub fn observed_bag_stack_groups(
                     bag,
                     slot.parse().ok()?,
                     item["count"].as_u64()?,
+                    item["reported_stack_limit"].as_u64(),
                 ));
             } else {
                 locations_without_link += 1;
@@ -2632,12 +2634,12 @@ pub fn observed_bag_stack_groups(
         rows.sort_unstable();
     }
     groups.sort_unstable_by_key(|rows| rows[0]);
-    let maximum = assumed_max_stack_size.map(|size| u64::from(size.get()));
+    let assumed_maximum = assumed_max_stack_size.map(|size| u64::from(size.get()));
     let mut shown = Vec::new();
     let mut estimated_groups = 0;
     let mut maximum_slots_freed = 0;
     let mut disjoint_pairs = 0;
-    let stack_location = |(container, slot, count)| {
+    let stack_location = |(container, slot, count, _)| {
         if section == "bags" {
             json!({"bag":container,"slot":slot,"count":count})
         } else {
@@ -2647,9 +2649,17 @@ pub fn observed_bag_stack_groups(
     let offset = group_offset.unwrap_or(0);
     for (index, rows) in groups.iter().enumerate() {
         let visible = index >= offset && index - offset < 20;
-        if !visible && maximum.is_none() {
+        if !visible && assumed_maximum.is_none() && !use_reported_stack_limits {
             continue;
         }
+        let reported_maximum = if use_reported_stack_limits {
+            rows[0]
+                .3
+                .filter(|limit| rows.iter().all(|row| row.3 == Some(*limit)))
+        } else {
+            None
+        };
+        let maximum = assumed_maximum.or(reported_maximum);
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
         let minimum = maximum
             .filter(|maximum| rows.iter().all(|row| row.2 <= *maximum))
@@ -2658,7 +2668,7 @@ pub fn observed_bag_stack_groups(
         let mut pair_examples = Vec::new();
         let pairs = maximum.filter(|_| minimum.is_some()).map(|maximum| {
             let mut by_count = rows.clone();
-            by_count.sort_unstable_by_key(|&(bag, slot, count)| (count, bag, slot));
+            by_count.sort_unstable_by_key(|&(bag, slot, count, _)| (count, bag, slot));
             let (mut low, mut high) = (0, by_count.len() - 1);
             let mut pairs = 0;
             while low < high {
@@ -2694,6 +2704,16 @@ pub fn observed_bag_stack_groups(
                 "whole_stack_pair_examples_truncated":pairs.map(|count| count>pair_examples.len()),
                 "whole_stack_pair_examples":pairs.map(|_| pair_examples)});
         }
+        if use_reported_stack_limits {
+            group["reported_stack_limit"] = json!(reported_maximum);
+            group["reported_stack_limit_status"] = json!(if reported_maximum.is_some() {
+                "agreed"
+            } else if rows.iter().any(|row| row.3.is_none()) {
+                "incomplete"
+            } else {
+                "conflicting"
+            });
+        }
         shown.push(group);
     }
     let mut report = json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
@@ -2709,11 +2729,19 @@ pub fn observed_bag_stack_groups(
         report["group_offset"] = json!(offset);
         report["has_more_groups"] = json!(groups.len().saturating_sub(offset) > shown.len());
     }
-    if let Some(maximum) = maximum {
+    if let Some(maximum) = assumed_maximum {
         report["assumed_max_stack_size"] = json!(maximum);
         report["capacity_projection_summary"] = json!({
             "estimated_group_count":estimated_groups,
             "inconsistent_group_count":groups.len()-estimated_groups,
+            "maximum_slots_freed_across_estimated_groups":maximum_slots_freed,
+            "maximum_disjoint_whole_stack_pairs_across_estimated_groups":disjoint_pairs
+        });
+    }
+    if use_reported_stack_limits {
+        report["reported_capacity_projection_summary"] = json!({
+            "estimated_group_count":estimated_groups,
+            "unestimated_group_count":groups.len()-estimated_groups,
             "maximum_slots_freed_across_estimated_groups":maximum_slots_freed,
             "maximum_disjoint_whole_stack_pairs_across_estimated_groups":disjoint_pairs
         });

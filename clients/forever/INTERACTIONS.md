@@ -3206,6 +3206,11 @@ New Forever captures may include `reported_stack_limit` on an item
 location. The addon records it when two readable item-info calls agree
 for the observed link and the value covers the recorded stack count.
 `find_snapshot_item` returns this evidence with the matching location.
-The stack consolidation projection still uses the caller's explicit limit.
+Enable `use_reported_stack_limits` with `bag_stack_groups` to estimate
+consolidation from captured limits. Every stack in an exact-link group must
+report the same limit. Incomplete or conflicting groups stay unestimated.
+The summary covers all matching groups before paging. This option is
+exclusive with `assumed_max_stack_size`; actual merge eligibility remains
+unverified.
 Update the importer and reader before syncing captures with this field.
 [Forever item API documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ItemDocumentation.lua)

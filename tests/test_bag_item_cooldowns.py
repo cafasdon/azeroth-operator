@@ -168,6 +168,39 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         reply=await session.call_tool('find_snapshot_item',{**scoped_query,**options})
                         self.assertTrue(reply.isError)
                     inspected = await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'bag_item_cooldowns'})
+                    reported = deepcopy(stacks)
+                    reported['sections']['bags']['0'] = {
+                        str(index): {'item_id':1,'count':count,'link':link,
+                            **({'reported_stack_limit':limit} if limit is not None else {})}
+                        for index,(count,link,limit) in enumerate([
+                            (2,'PRIVATE_A',10),(3,'PRIVATE_A',10),
+                            (2,'PRIVATE_B',20),(3,'PRIVATE_B',None),
+                            (2,'PRIVATE_C',20),(3,'PRIVATE_C',30)],1)
+                    }
+                    options={'snapshot_id':store.ingest(reported),'item_id':1,
+                             'bag_stack_groups':True,'use_reported_stack_limits':True}
+                    for offset in [0,1,99]:
+                        estimated=await session.call_tool('find_snapshot_item',{
+                            **options,'stack_group_offset':offset})
+                        self.assertFalse(estimated.isError,estimated)
+                        self.assertNotIn('PRIVATE',estimated.content[0].text)
+                        result=json.loads(estimated.content[0].text)['bag_stack_groups']
+                        self.assertEqual(result['reported_capacity_projection_summary'],{
+                            'estimated_group_count':1,'unestimated_group_count':2,
+                            'maximum_slots_freed_across_estimated_groups':1,
+                            'maximum_disjoint_whole_stack_pairs_across_estimated_groups':1})
+                        self.assertEqual([group['reported_stack_limit_status'] for group in result['groups']],
+                            ['agreed','incomplete','conflicting'][offset:])
+                        for group in result['groups']:
+                            if group['reported_stack_limit_status']=='agreed':
+                                self.assertEqual(group['reported_stack_limit'],10)
+                                self.assertEqual(group['capacity_projection']['maximum_slots_freed_under_assumption'],1)
+                            else:
+                                self.assertIsNone(group['reported_stack_limit'])
+                                self.assertNotIn('capacity_projection',group)
+                    for invalid in [{'assumed_max_stack_size':10},{'bag_stack_groups':False}]:
+                        rejected=await session.call_tool('find_snapshot_item',{**options,**invalid})
+                        self.assertTrue(rejected.isError)
                     self.assertFalse(inspected.isError,inspected)
                     self.assertEqual(json.loads(inspected.content[0].text)['data'],value['sections']['bag_item_cooldowns'])
                     reply = await session.call_tool('character_summary',{'snapshot_id':key})
