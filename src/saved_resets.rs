@@ -126,6 +126,50 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
     projection["relative_to_reference"] = json!(classification);
 }
 
+/// Merge historical reset timestamps from both validated sections of one capture.
+pub fn combined_schedule(snapshot: &crate::Snapshot, reference: DateTime<Utc>) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Saved reset schedules require Forever"
+    );
+    let mut by_time = BTreeMap::<DateTime<Utc>, Vec<Value>>::new();
+    let mut coverage = BTreeMap::new();
+    for section in ["saved_instances", "saved_world_bosses"] {
+        let projected = project(
+            section,
+            snapshot.sections.get(section),
+            snapshot.captured_at,
+        )?;
+        coverage.insert(
+            section,
+            json!({"recorded_count":projected["recorded_count"],
+            "unknown_count":projected["unknown_count"],
+            "cache_update_age_seconds":projected["cache_update_age_seconds"]}),
+        );
+        for row in projected["rows"].as_array().into_iter().flatten() {
+            let reset = row["projected_reset_at"]
+                .as_str()
+                .and_then(|value| value.parse::<DateTime<Utc>>().ok());
+            if let Some(reset) = reset.filter(|reset| *reset > reference) {
+                by_time
+                    .entry(reset)
+                    .or_default()
+                    .push(json!({"section":section,"slot":row["slot"],
+                    "name":row["observation"]["name"]}));
+            }
+        }
+    }
+    let schedule: Vec<_> = by_time
+        .into_iter()
+        .map(|(at, entries)| json!({"at":at,"entries":entries}))
+        .collect();
+    Ok(
+        json!({"captured_at":snapshot.captured_at,"reference_at":reference,"coverage":coverage,
+        "next_projected_reset":schedule.first(),"upcoming_projected_resets":schedule,
+        "current_lockout_verified":false,"current_availability_verified":false,"live":false}),
+    )
+}
+
 pub(crate) fn compare_world_bosses(before: &Value, after: &Value) -> Value {
     fn index(section: &Value) -> BTreeMap<String, Vec<&Value>> {
         let mut names: BTreeMap<String, Vec<&Value>> = BTreeMap::new();

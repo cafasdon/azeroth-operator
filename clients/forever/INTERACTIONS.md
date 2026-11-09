@@ -2352,6 +2352,10 @@ the reference and lists every slot with that timestamp. The next reset is
 null when no later projection exists.
 `upcoming_projected_resets` lists every later timestamp in chronological
 order, with slots sharing a timestamp grouped together.
+Use `saved_reset_reference_at` with `character_summary` to merge the
+instance and world boss schedules from the same Forever capture. Entries
+retain their section, saved slot and name. Coverage is separate for each
+section, including unknown timer counts and missing capture data.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the

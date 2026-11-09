@@ -99,6 +99,17 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(projected['rows'][2]['projected_reset_at'], capture['captured_at'])
                     self.assertEqual([projected[f] for f in ['recorded_count','projected_count','unknown_count']], [3,2,1])
                     self.assertEqual(projected['cache_update_age_seconds'], 999)
+                    combined = await session.call_tool('character_summary', {
+                        'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z'})
+                    self.assertFalse(combined.isError,combined)
+                    schedule = json.loads(combined.content[0].text)['saved_reset_schedule']
+                    self.assertEqual(schedule['upcoming_projected_resets'], [
+                        {'at':'2025-01-02T00:01:00Z','entries':[
+                            {'section':'saved_world_bosses','slot':1,'name':'Fixture'}]},
+                        {'at':'2025-01-02T00:59:00Z','entries':[
+                            {'section':'saved_instances','slot':1,'name':'Fixture raid'}]}])
+                    self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
+                    self.assertIs(schedule['current_lockout_verified'],False)
                     reference = {'saved_reset_reference_at':'2025-01-01T23:59:00Z'}
                     relative = (await inspect(**reference))['saved_reset_projection']
                     self.assertEqual(relative['relative_to_reference'], {

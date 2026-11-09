@@ -579,6 +579,8 @@ struct Compare {
 #[serde(deny_unknown_fields)]
 struct Summary {
     snapshot_id: String,
+    /// Merge saved Forever dungeon, raid and world boss reset projections after this timestamp.
+    saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1826,9 +1828,20 @@ impl Operator {
     )]
     fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
         match self.store.read(&args.snapshot_id) {
-            Ok(s) => CallToolResult::success(vec![ContentBlock::text(
-                azeroth_operator::analysis::summary(&s).to_string(),
-            )]),
+            Ok(s) => {
+                let mut summary = azeroth_operator::analysis::summary(&s);
+                if let Some(reference) = args.saved_reset_reference_at {
+                    let Ok(schedule) =
+                        azeroth_operator::saved_resets::combined_schedule(&s, reference)
+                    else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Saved reset schedules require a valid Forever snapshot",
+                        )]);
+                    };
+                    summary["saved_reset_schedule"] = schedule;
+                }
+                CallToolResult::success(vec![ContentBlock::text(summary.to_string())])
+            }
             Err(_) => {
                 CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
             }
