@@ -66,6 +66,19 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     for field in ['complete_ownership_verified','current_access_verified','shared_storage_scope_verified',
                             'cross_character_aggregation_performed','craftability_verified','transferability_verified','game_execution']:
                         self.assertFalse(match[field])
+                    shortages = await query(inventory_requirements_shortfall_only=True,
+                                            latest_per_character=True)
+                    by_character = {row['character']['name']:row['inventory_requirements_match']
+                                    for row in shortages['snapshots']}
+                    self.assertNotIn('C', by_character)
+                    self.assertNotIn('F', by_character)
+                    self.assertEqual(by_character['E']['short_item_count'], 1)
+                    self.assertEqual(by_character['E']['items'][0],
+                        {'item_id':200,'required_quantity':5,'observed_quantity':0,'shortfall_vs_observed':5})
+                    self.assertEqual(by_character['G']['short_item_count'], 2)
+                    self.assertIs(by_character['G']['all_requirements_covered_by_observed_quantities'], False)
+                    self.assertEqual((await query(inventory_requirements_shortfall_only=False)), history)
+                    await query(None,error=True,inventory_requirements_shortfall_only=True)
                     for storage in ['bags','character_bank']:
                         self.assertEqual((await query({**requirements,'storage':storage},character={'name':'D','realm':'Test'}))['snapshots'],[])
                     self.assertEqual([row['snapshot_id'] for row in (await query(profession_skill_line=164,profession_min_rank=300))['snapshots']],[c_key])

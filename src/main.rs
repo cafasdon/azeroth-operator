@@ -427,6 +427,9 @@ struct List {
     inventory_item: Option<azeroth_operator::InventoryItemFilter>,
     /// Find one capture whose explicit storage covers every item requirement; never pool characters or imply craftability.
     inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
+    /// Find observed shortfalls instead of fully covered requirements. Missing storage does not match.
+    #[serde(default)]
+    inventory_requirements_shortfall_only: bool,
     /// Find historical displayed loot; raw currency/money observations never imply ownership, rewards or balances.
     loot_observation: Option<azeroth_operator::loot_observation::LootObservationFilter>,
     /// Find a matching recorded base skill row; no bonuses, training or full skill coverage inferred.
@@ -2185,6 +2188,7 @@ impl Operator {
                 pet_food: args.pet_food,
                 inventory_item: args.inventory_item,
                 inventory_requirements: args.inventory_requirements,
+                inventory_requirements_shortfall_only: args.inventory_requirements_shortfall_only,
                 required_sections: args.required_sections.as_deref(),
                 any_missing_sections: args.any_missing_sections.as_deref(),
                 coverage_summary_sections: args.coverage_summary_sections.as_deref(),

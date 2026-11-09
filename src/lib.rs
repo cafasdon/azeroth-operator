@@ -1823,6 +1823,7 @@ pub struct CaptureFilters<'a> {
     pub coverage_summary_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
+    pub inventory_requirements_shortfall_only: bool,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
@@ -2052,6 +2053,7 @@ impl Store {
             coverage_summary_sections,
             inventory_item,
             inventory_requirements,
+            inventory_requirements_shortfall_only,
             loot_observation,
             skill_line,
             gossip_option,
@@ -2144,6 +2146,10 @@ impl Store {
         ensure!(
             inventory_item.is_none() || inventory_requirements.is_none(),
             "Inventory item and inventory requirements filters are mutually exclusive"
+        );
+        ensure!(
+            !inventory_requirements_shortfall_only || inventory_requirements.is_some(),
+            "Inventory shortfall discovery requires inventory_requirements"
         );
         if let Some(filter) = &inventory_requirements {
             filter.validate(&family)?;
@@ -2790,9 +2796,15 @@ impl Store {
                     if inventory_item.is_some() && inventory_item_match.is_none() {
                         continue;
                     }
-                    let inventory_requirements_match = inventory_requirements
-                        .as_ref()
-                        .and_then(|filter| filter.observation_match(&s));
+                    let inventory_requirements_match =
+                        inventory_requirements.as_ref().and_then(|filter| {
+                            if !inventory_requirements_shortfall_only {
+                                return filter.observation_match(&s);
+                            }
+                            let review = filter.review_observed_stock(&s, None);
+                            (review["all_requirements_covered_by_observed_quantities"] == false)
+                                .then_some(review)
+                        });
                     if inventory_requirements.is_some() && inventory_requirements_match.is_none() {
                         continue;
                     }

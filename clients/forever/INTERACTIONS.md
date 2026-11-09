@@ -2961,3 +2961,11 @@ Missing sections produce a null selection and per-section capture statuses.
 With `require_unique_latest` also enabled, timestamp ties are evaluated
 before coverage. Without latest coverage mode, required sections filter
 candidates before selection.
+
+## Saved inventory shortfall discovery
+
+Set `list_snapshots.inventory_requirements_shortfall_only` with
+`inventory_requirements` to find captures with at least one shortfall in the
+selected storage. Each match reports quantities and shortfalls per requested
+item. An observed empty section can match. A missing section has unknown
+quantities and is excluded. Results describe the saved observations.

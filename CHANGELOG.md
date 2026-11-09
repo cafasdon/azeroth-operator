@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved inventory requirements with observed shortfalls in one storage.
+
 - Break down Forever simulator resolution counts by observed storage.
 
 - Count matching Forever owned-item locations by simulator resolution before paging.
