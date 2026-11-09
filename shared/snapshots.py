@@ -29,6 +29,7 @@ SECTIONS = SECTIONS | {"gossip_options"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
 SECTIONS = SECTIONS | {"loot_window"}
 SECTIONS = SECTIONS | {"player_trade_offer"}
+SECTIONS = SECTIONS | {"player_pvp_progression"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -828,6 +829,16 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "player_pvp_progression" in sections:
+        pvp=sections["player_pvp_progression"]
+        required={'coverage','faction_id','rank','rank_points','next_rank_threshold'}
+        optional={'max_rank','current_week_max_rank','previous_week_max_rank'}
+        if (c['family']!='forever' or not isinstance(pvp,dict) or not required<=pvp.keys()
+                or set(pvp)-required-optional or pvp['coverage']!='reported_pvp_rank_faction'
+                or type(pvp['faction_id']) is not int or pvp['faction_id']!=2800
+                or any(type(pvp[key]) is not int or not 0<=pvp[key]<=4_294_967_295
+                       for key in (required|optional)-{'coverage','faction_id'} if key in pvp)):
+            raise ValueError('Invalid PvP progression')
     if "player_trade_offer" in sections:
         trade=sections["player_trade_offer"]
         if (c["family"]!="forever" or not isinstance(trade,dict)

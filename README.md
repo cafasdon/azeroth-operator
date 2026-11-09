@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Forever exports now support personal PvP rank progression: reported rank points,
+next-rank threshold and optional weekly caps. MCP summaries preserve unknowns and
+do not imply current rank-up or reward eligibility.
+[Contract](docs/ADR-070-player-pvp-progression.md).
+
 Forever exports now support passive inspection of the player's six normal outgoing
 trade item slots. Reports retain item quantities and explicit unknowns, with no
 counterparty details, trade actions or inventory credit.

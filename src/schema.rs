@@ -1992,6 +1992,40 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_pvp_progression" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("faction_id", "positive", true),
+                    ("rank", "uint", true),
+                    ("rank_points", "uint", true),
+                    ("next_rank_threshold", "uint", true),
+                    ("max_rank", "uint", false),
+                    ("current_week_max_rank", "uint", false),
+                    ("previous_week_max_rank", "uint", false),
+                ],
+            )?;
+            ensure!(
+                value["coverage"] == "reported_pvp_rank_faction" && value["faction_id"] == 2800,
+                "Invalid PvP progression source"
+            );
+            for key in [
+                "rank",
+                "rank_points",
+                "next_rank_threshold",
+                "max_rank",
+                "current_week_max_rank",
+                "previous_week_max_rank",
+            ] {
+                if let Some(number) = value.get(key) {
+                    ensure!(
+                        number.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),
+                        "Invalid PvP progression value"
+                    );
+                }
+            }
+        }
         "player_trade_offer" => {
             object(
                 value,

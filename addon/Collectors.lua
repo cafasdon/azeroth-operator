@@ -1,5 +1,66 @@
 local _, AO = ...
 AO.collectors = {}
+-- Passive rank-faction projection from pinned Camelot/PVPRankFrame.lua
+-- (9dc84f0d3bbae1768ac3405b3716000bd93eda06), rank fields and weekly caps.
+AO.collectors.player_pvp_progression = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "PvP restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted PvP observation")
+        return value
+    end
+    local function uint(value)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=0 and value<=4294967295,
+            "Invalid PvP number")
+        return value
+    end
+    assert(public(AO.family)=="forever", "PvP progression unavailable")
+    local major=public(C_MajorFactions)
+    assert(type(major)=="table", "PvP progression unavailable")
+    local info=public(major.GetMajorFactionProgressionInfo)
+    assert(type(info)=="function", "PvP progression unavailable")
+    local function fixedApis()
+        local family=public(AO.family)
+        local namespace=public(C_MajorFactions)
+        local getter=public(major.GetMajorFactionProgressionInfo)
+        local guard=public(issecretvalue)
+        assert(family=="forever" and rawequal(namespace,major) and getter==info and guard==secret,
+            "PvP API changed")
+        -- No callbacks follow these identity checks: a restriction callback may
+        -- itself have replaced a previously checked context value.
+        assert(rawequal(rawget(AO,"family"),family)
+            and rawequal(rawget(_G,"C_MajorFactions"),major)
+            and rawequal(rawget(major,"GetMajorFactionProgressionInfo"),info)
+            and rawequal(rawget(_G,"issecretvalue"),secret), "PvP API changed")
+    end
+    local optional={max_rank="maxLevel",current_week_max_rank="currentWeekProgressiveMaxLevel",
+        previous_week_max_rank="previousWeekProgressiveMaxLevel"}
+    local function read()
+        fixedApis()
+        local data=public(info(2800))
+        assert(type(data)=="table", "PvP progression unavailable")
+        local row={rank=uint(data.renownLevel),rank_points=uint(data.renownReputationEarned),
+            next_rank_threshold=uint(data.renownLevelThreshold)}
+        for field,key in pairs(optional) do
+            local ok,value=pcall(function() return uint(data[key]) end)
+            if ok then row[field]=value end
+        end
+        fixedApis()
+        return row
+    end
+    local first=read()
+    local second=read()
+    assert(first.rank==second.rank and first.rank_points==second.rank_points
+        and first.next_rank_threshold==second.next_rank_threshold, "PvP progression changed")
+    local result={coverage="reported_pvp_rank_faction",faction_id=2800,rank=first.rank,
+        rank_points=first.rank_points,next_rank_threshold=first.next_rank_threshold}
+    for field in pairs(optional) do
+        if first[field]~=nil and first[field]==second[field] then result[field]=first[field] end
+    end
+    fixedApis()
+    return result
+end
 -- Passive manual-export observation of the player's six normal trade slots.
 -- Pinned TradeFrame.lua (9dc84f0d3bbae1768ac3405b3716000bd93eda06):
 -- normal slots 1..6, enchant slot 7; item quantity and ID are returns 3 and 8.

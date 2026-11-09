@@ -2160,3 +2160,14 @@ Hidden/unavailable panels omit the section. No target offer/identity, money,
 acceptance, enchant slot or trade action is captured or invoked. Offers never
 increase owned stock or establish a completed/current trade. Offline source only;
 native testing stays deferred. See docs/ADR-069-player-trade-offer-observation.md.
+
+## Personal PvP progression (2026-11-09)
+
+Manual Forever exports can capture the numeric rank progression reported for
+faction 2800. Inspect player_pvp_progression or read
+player_pvp_progression_observation from character_summary. Rank, points and
+next-rank threshold are required; max rank and current/previous weekly caps are
+optional stable observations. Zero thresholds and points above a threshold leave
+remaining points unknown. No season binding, rank-up/reward eligibility,
+scoreboard/player identities or queue actions are inferred or added. Native
+qualification stays deferred. See docs/ADR-070-player-pvp-progression.md.

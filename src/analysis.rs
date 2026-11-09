@@ -6646,6 +6646,26 @@ pub fn summary(s: &Snapshot) -> Value {
             "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
             "current_usability_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
+    summary["player_pvp_progression_observation"] = s
+        .sections
+        .get("player_pvp_progression")
+        .map(|section| {
+            let points = section["rank_points"].as_u64().unwrap();
+            let threshold = section["next_rank_threshold"].as_u64().unwrap();
+            let remaining = if threshold > 0 && points <= threshold {
+                Some(threshold - points)
+            } else {
+                None
+            };
+            let mut report = section.clone();
+            report["remaining_points_to_reported_next_threshold"] = json!(remaining);
+            report["current_progression_verified"] = json!(false);
+            report["rank_eligibility_verified"] = json!(false);
+            report["reward_eligibility_verified"] = json!(false);
+            report["game_execution"] = json!(false);
+            report
+        })
+        .unwrap_or(Value::Null);
     summary["player_trade_offer_observation"] = s
         .sections
         .get("player_trade_offer")

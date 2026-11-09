@@ -47,6 +47,7 @@ const SECTIONS: &[&str] = &[
     "player_auras",
     "loot_window",
     "player_trade_offer",
+    "player_pvp_progression",
     "bag_item_cooldowns",
     "gossip_quests",
     "gossip_options",
@@ -227,6 +228,7 @@ impl Snapshot {
                         | "player_auras"
                         | "loot_window"
                         | "player_trade_offer"
+                        | "player_pvp_progression"
                         | "bag_item_cooldowns"
                         | "gossip_quests"
                         | "gossip_options"
