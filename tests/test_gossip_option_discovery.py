@@ -76,6 +76,48 @@ class GossipDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         await listing(bad,True)
                     for family in ['retail','classic']:
                         await listing({'option_id':42},True,family=family)
+                    self.assertEqual(before,{p:p.read_bytes() for p in before})
+                    echo = {'name':'Écho','option_id':42,'reported_status':0}
+                    other = {'name':'Other','option_id':42,'reported_order_index':-1}
+                    updated = {**echo, 'reported_status':1}
+                    compare_keys = [
+                        store.ingest(capture('Compare', day, rows))
+                        for day, rows in enumerate([
+                            {'1':echo,'2':other,'3':echo},
+                            {'1':other,'2':echo,'3':echo},
+                            {'1':other,'2':echo,'3':updated},
+                            {}, None,
+                        ], 1)
+                    ]
+                    async def compare(after, *, before_id=compare_keys[0], error=False, enabled=True):
+                        reply = await session.call_tool('compare_snapshots', {
+                            'before_id':before_id,'after_id':after,'gossip_option_changes':enabled})
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        return None if error else json.loads(reply.content[0].text)
+
+                    reordered = (await compare(compare_keys[1]))['gossip_option_changes']
+                    self.assertEqual(reordered['row_count_changes'], [])
+                    self.assertEqual(reordered['before_observed_rows'], 3)
+                    changed = (await compare(compare_keys[2]))['gossip_option_changes']
+                    self.assertCountEqual(changed['row_count_changes'], [
+                        {'observation':echo,'before_count':2,'after_count':1},
+                        {'observation':updated,'before_count':0,'after_count':1},
+                    ])
+                    for flag in ['same_npc_verified','same_dialogue_verified',
+                                 'complete_dialogue_coverage_verified','live']:
+                        self.assertIs(changed[flag], False)
+                    empty = (await compare(compare_keys[3]))['gossip_option_changes']
+                    self.assertEqual(empty['after_observed_rows'], 0)
+                    self.assertEqual(sum(row['before_count'] for row in empty['row_count_changes']), 3)
+                    missing = (await compare(compare_keys[4]))['gossip_option_changes']
+                    self.assertIsNone(missing['after_observed_rows'])
+                    self.assertIsNone(missing['row_count_changes'])
+                    self.assertNotIn('gossip_option_changes', await compare(compare_keys[2], enabled=False))
+                    await compare(keys['mixed'], error=True)
+                    await compare(foreign_key, error=True)
+                    retail = fixture()
+                    retail_key = store.ingest(retail)
+                    await compare(retail_key, before_id=retail_key, error=True)
             self.assertEqual(before,{p:p.read_bytes() for p in before})
 
 

@@ -625,6 +625,9 @@ struct Compare {
     /// Compare historical bulk cooldown observations for shared recipe IDs within one profession.
     #[serde(default)]
     recipe_cooldown_changes: bool,
+    /// Compare saved visible dialogue rows as a multiset, without assigning NPC identity.
+    #[serde(default)]
+    gossip_option_changes: bool,
     /// Compare displayed loot quantities and slot counts across two historical Forever captures.
     #[serde(default)]
     loot_window_changes: bool,
@@ -1923,6 +1926,7 @@ impl Operator {
                     profession_recipe_changes: args.profession_recipe_changes,
                     recipe_cooldown_changes: args.recipe_cooldown_changes,
                     loot_window_changes: args.loot_window_changes,
+                    gossip_option_changes: args.gossip_option_changes,
                     profession_spell_changes: args.profession_spell_changes,
                     player_resource_changes: args.player_resource_changes,
                     player_aura_changes: args.player_aura_changes,

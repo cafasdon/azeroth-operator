@@ -2844,6 +2844,7 @@ pub struct ComparisonSelectors {
     pub profession_recipe_changes: bool,
     pub recipe_cooldown_changes: bool,
     pub loot_window_changes: bool,
+    pub gossip_option_changes: bool,
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub achievement_id: Option<u32>,
@@ -3318,6 +3319,16 @@ pub fn compare_observations(
             .zip(after.sections.get("saved_instances"))
             .map(|(old, new)| compare_saved_instances(old, new))
             .unwrap_or(Value::Null);
+    }
+    if selectors.gossip_option_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Gossip option comparison requires Forever"
+        );
+        comparison["gossip_option_changes"] = crate::gossip_option_filter::compare_options(
+            before.sections.get("gossip_options"),
+            after.sections.get("gossip_options"),
+        );
     }
     if selectors.loot_window_changes {
         ensure!(

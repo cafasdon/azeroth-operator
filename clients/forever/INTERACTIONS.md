@@ -2689,6 +2689,12 @@ predicate. A newer empty/missing/nonmatching view suppresses an older match.
 No current availability, NPC attribution or dialogue action is inferred. This
 query changes no addon/schema/package or deployed installation.
 
+Pass `gossip_option_changes` to `compare_snapshots` to compare exact visible
+dialogue rows and their duplicate counts. Capture slot order is ignored, while
+an explicit reported order index remains part of the observed row. A missing
+panel leaves changes unknown. This compares captured descriptions without
+establishing the same NPC, dialogue, or current availability.
+
 ## Recipe item-capacity shortlist (2026-11-09)
 
 Set `order: reported_cooldown_remaining_asc` on `search_forever_recipes` to put

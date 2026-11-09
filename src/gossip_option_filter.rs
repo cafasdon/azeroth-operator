@@ -4,7 +4,7 @@ use anyhow::{Result, ensure};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::num::NonZeroU32;
+use std::{collections::BTreeMap, num::NonZeroU32};
 
 #[derive(Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -97,6 +97,36 @@ fn observe(section: &Value, filter: &GossipOptionFilter) -> Result<Option<Value>
         "npc_identity_verified":false,"selection_eligibility_verified":false,
         "complete_dialogue_coverage_verified":false,"current_availability_verified":false,
         "game_execution":false,"live":false})))
+}
+
+pub(crate) fn compare_options(before: Option<&Value>, after: Option<&Value>) -> Value {
+    let before = before.and_then(|section| section["entries"].as_object());
+    let after = after.and_then(|section| section["entries"].as_object());
+    let changes = before.zip(after).map(|(old, new)| {
+        let mut rows = BTreeMap::new();
+        for (index, entries) in [old, new].into_iter().enumerate() {
+            for row in entries.values() {
+                let (_, counts) = rows.entry(row.to_string()).or_insert((row, [0_usize; 2]));
+                counts[index] += 1;
+            }
+        }
+        rows.into_values()
+            .filter_map(|(row, [before_count, after_count])| {
+                (before_count != after_count).then(|| {
+                    json!({
+                        "observation":row,"before_count":before_count,"after_count":after_count,
+                    })
+                })
+            })
+            .collect::<Vec<_>>()
+    });
+    json!({
+        "before_observed_rows":before.map(|rows| rows.len()),
+        "after_observed_rows":after.map(|rows| rows.len()),
+        "row_count_changes":changes,
+        "same_npc_verified":false,"same_dialogue_verified":false,
+        "complete_dialogue_coverage_verified":false,"live":false,
+    })
 }
 
 #[cfg(test)]
