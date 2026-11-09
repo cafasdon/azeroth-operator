@@ -7361,11 +7361,17 @@ pub fn restock_travel_adjusted_plan(
             "quoted_units":plan["units"],"purchase_copper":cost}),
         );
     }
+    // The selected complete plan already bounded the sum of purchases and visit costs.
+    let mut cumulative_copper = 0;
     let checklist: Vec<_> = by_visit
         .into_iter()
         .map(|(index, (subtotal, items))| {
+            cumulative_copper += subtotal + visit_costs[index];
             json!({"merchant_snapshot_id":visit_ids[index],"purchase_copper":subtotal,
-            "assumed_visit_cost_copper":visit_costs[index],"items":items})
+                "assumed_visit_cost_copper":visit_costs[index],"items":items,
+                "cumulative_cost_copper":cumulative_copper,
+                "inventory_wallet_remaining_copper":wallet.and_then(|balance| balance.checked_sub(cumulative_copper)),
+                "inventory_wallet_shortfall_copper":wallet.map(|balance| cumulative_copper.saturating_sub(balance))})
         })
         .collect();
     Some(json!({

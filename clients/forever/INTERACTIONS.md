@@ -3082,3 +3082,7 @@ fit after reserving copper. If no visit costs are supplied, it assumes zero.
 A complete travel-adjusted plan includes `merchant_visit_checklist`, grouped
 by selected saved visit in request order. Each group lists historical offer
 slots, bundle quantities, purchase subtotal and assumed visit cost.
+
+The checklist also shows cumulative cost and the inventory wallet remainder
+or shortfall at each stop, using the displayed request order. This order is
+a budgeting assumption. A missing wallet leaves those balance fields unknown.

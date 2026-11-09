@@ -1,5 +1,7 @@
 # Changelog
 
+- Show cumulative wallet impact at each saved Forever merchant checklist stop.
+
 - Group saved travel-adjusted Forever shopping plans into per-visit checklists.
 
 - Check saved Forever split restocking plans against a wallet reserve.

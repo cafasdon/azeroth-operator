@@ -268,7 +268,13 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(len(checklist),count)
                         self.assertEqual(sum(visit['purchase_copper'] for visit in checklist),purchases)
                         self.assertEqual([visit['assumed_visit_cost_copper'] for visit in checklist],[visit_cost]*count)
+                        running_cost = 0
                         for visit in checklist:
+                            running_cost += visit['purchase_copper'] + visit['assumed_visit_cost_copper']
+                            self.assertEqual(visit['cumulative_cost_copper'],running_cost)
+                            self.assertEqual(visit['inventory_wallet_remaining_copper'],
+                                             7-running_cost if running_cost <= 7 else None)
+                            self.assertEqual(visit['inventory_wallet_shortfall_copper'],max(0,running_cost-7))
                             self.assertEqual(visit['items'],[
                                 {'item_id':row['item_id'],'bundles_by_slot':row['bundle_plan']['bundles_by_slot'],
                                  'quoted_units':row['bundle_plan']['units'],
