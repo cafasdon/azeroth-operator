@@ -1,5 +1,7 @@
 # Changelog
 
+- Scope saved stack consolidation estimates to a specific bag or bank tab.
+
 - Find saved crafting supplies or shortfalls within a specific bag or bank tab.
 
 - Find saved captures by item quantity in a specific bag or bank tab.

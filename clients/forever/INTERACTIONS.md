@@ -3195,3 +3195,9 @@ requested time window.
 list to one recorded bag or bank tab. Shortfall searches can use the same
 scope. Missing containers do not qualify for either search. Bank withdrawal
 plans require a storage-wide bag search.
+
+With `find_snapshot_item.bag_stack_groups` enabled, set
+`stack_group_container_id` to review stack consolidation in one recorded
+container. `stack_group_storage` selects bags or a bank. Only the stack
+review is scoped. Item locations and storage totals still cover the full
+capture. An uncaptured container returns a null review.

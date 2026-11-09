@@ -2588,15 +2588,23 @@ pub fn observed_bag_stack_groups(
     item_id: u32,
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
     storage: Option<crate::InventoryStorage>,
+    container_id: Option<u8>,
     group_offset: Option<usize>,
 ) -> Option<Value> {
     let section = storage
         .unwrap_or(crate::InventoryStorage::Bags)
         .section_name();
     let bags = snapshot.sections.get(section)?.as_object()?;
+    let selected = container_id.map(|id| id.to_string());
+    if let Some(id) = &selected {
+        bags.get(id)?;
+    }
     let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64)>>::new();
     let mut locations_without_link = 0;
     for (bag, slots) in bags {
+        if selected.as_ref().is_some_and(|id| bag != id) {
+            continue;
+        }
         let bag = bag.parse().ok()?;
         for (slot, item) in slots.as_object()? {
             if item["item_id"].as_u64() != Some(u64::from(item_id)) {
@@ -2688,8 +2696,11 @@ pub fn observed_bag_stack_groups(
     let mut report = json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
         "locations_without_link":locations_without_link,
         "stack_compatibility_verified":false,"game_execution":false});
-    if storage.is_some() {
+    if storage.is_some() || container_id.is_some() {
         report["storage"] = json!(section);
+    }
+    if let Some(id) = container_id {
+        report["container_id"] = json!(id);
     }
     if group_offset.is_some() {
         report["group_offset"] = json!(offset);

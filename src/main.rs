@@ -1019,6 +1019,9 @@ struct FindItem {
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
     /// Scope the stack review to bags, character_bank, or account_bank. Banks require Forever.
     stack_group_storage: Option<azeroth_operator::InventoryStorage>,
+    /// Scope stack groups to one recorded container in the selected storage.
+    #[schemars(range(min = 0, max = 64))]
+    stack_group_container_id: Option<u8>,
     /// Skip this many stack groups, independently of item location paging.
     stack_group_offset: Option<usize>,
 }
@@ -1467,9 +1470,14 @@ impl Operator {
             anyhow::ensure!(
                 (args.assumed_max_stack_size.is_none()
                     && args.stack_group_storage.is_none()
+                    && args.stack_group_container_id.is_none()
                     && args.stack_group_offset.is_none())
                     || args.bag_stack_groups,
                 "Stack review options require bag stack groups"
+            );
+            anyhow::ensure!(
+                args.stack_group_container_id.is_none_or(|id| id <= 64),
+                "Stack group container ID must be from 0 to 64"
             );
             let query = |id: &str, snapshot: &azeroth_operator::Snapshot| {
                 let mut found = azeroth_operator::analysis::find_item_with_container_quantities(
@@ -1502,6 +1510,7 @@ impl Operator {
                             args.item_id.get(),
                             args.assumed_max_stack_size,
                             args.stack_group_storage,
+                            args.stack_group_container_id,
                             args.stack_group_offset
                         ));
                 }
@@ -1525,7 +1534,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50. Stack review options require bag stack groups. Choose bags or a saved Forever bank.",
+                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50. Stack review options require bag stack groups. Choose bags or a saved Forever bank, with a container ID from 0 to 64 if specified.",
             )]),
         }
     }

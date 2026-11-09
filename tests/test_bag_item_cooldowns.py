@@ -131,6 +131,31 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         {'container':6,'slot':1,'count':2},{'container':6,'slot':2,'count':3}])
                     self.assertEqual((await bank_review(banks, 'account_bank'))['group_count'],0)
                     self.assertIsNone(await bank_review(stacks, 'account_bank'))
+                    banks['sections']['character_bank']['7']={
+                        '1':{'item_id':1,'count':2,'link':'PRIVATE_LINK'}}
+                    banks['sections']['character_bank']['8']={}
+                    scoped_query={'snapshot_id':store.ingest(banks),'item_id':1,
+                                  'bag_stack_groups':True,'stack_group_storage':'character_bank',
+                                  'assumed_max_stack_size':5}
+                    for container,expected in [(6,1),(7,0),(8,0),(9,None)]:
+                        reply=await session.call_tool('find_snapshot_item',{
+                            **scoped_query,'stack_group_container_id':container})
+                        self.assertFalse(reply.isError,reply)
+                        self.assertNotIn('PRIVATE',reply.content[0].text)
+                        scoped=json.loads(reply.content[0].text)
+                        self.assertEqual(scoped['quantity_by_storage']['character_bank'],7)
+                        groups=scoped['bag_stack_groups']
+                        if expected is None:
+                            self.assertIsNone(groups)
+                        else:
+                            self.assertEqual(groups['group_count'],expected)
+                            self.assertEqual(groups['container_id'],container)
+                            self.assertEqual(groups['capacity_projection_summary']
+                                ['maximum_slots_freed_across_estimated_groups'],expected)
+                    for options in [{'stack_group_container_id':65},
+                                    {'stack_group_container_id':6,'bag_stack_groups':False}]:
+                        reply=await session.call_tool('find_snapshot_item',{**scoped_query,**options})
+                        self.assertTrue(reply.isError)
                     inspected = await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'bag_item_cooldowns'})
                     self.assertFalse(inspected.isError,inspected)
                     self.assertEqual(json.loads(inspected.content[0].text)['data'],value['sections']['bag_item_cooldowns'])
