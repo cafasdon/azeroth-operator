@@ -91,6 +91,26 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     summary=(await call('character_summary',snapshot_id=keys[3]))['weapon_enchant_observations']
                     self.assertEqual(summary['unobserved_hands'],[])
                     self.assertEqual(sum(len(hand['active_enchants']) for hand in summary['hands'].values()),96)
+                    reordered=deepcopy(value)
+                    reordered['sections']['weapon_enchants']['hands']['main_hand']['entries']={
+                        str(i):row for i,row in enumerate(reversed(list(rows.values())),1)}
+                    changed=deepcopy(reordered)
+                    changed['sections']['weapon_enchants']['hands']['main_hand']['entries']['10']['charges']=1
+                    async def compare(after):
+                        return (await call('compare_snapshots',before_id=keys[0],after_id=after,
+                            weapon_enchant_changes=True))['weapon_enchant_changes']
+                    same=await compare(store.ingest(reordered))
+                    self.assertFalse(same['hands']['main_hand']['observed_rows_changed'])
+                    self.assertEqual(same['hands']['off_hand'],
+                        {'before_rows':[],'after_rows':[],'observed_rows_changed':False})
+                    self.assertEqual(same['hands']['ranged'],
+                        {'before_rows':None,'after_rows':None,'observed_rows_changed':None})
+                    difference=await compare(store.ingest(changed))
+                    self.assertTrue(difference['hands']['main_hand']['observed_rows_changed'])
+                    self.assertFalse(difference['enchant_events_verified'])
+                    partial=await compare(keys[1])
+                    self.assertEqual(len(partial['hands']['main_hand']['before_rows']),10)
+                    self.assertIsNone(partial['hands']['main_hand']['observed_rows_changed'])
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'weapon_enchants'})
                         self.assertTrue(response.isError);self.assertNotIn('PRIVATE',response.content[0].text)

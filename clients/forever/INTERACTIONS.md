@@ -6,6 +6,11 @@ Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 must match the same row that reported an enchant. Missing readings cannot
 satisfy a bound, and zero remains a known value. Results give the numeric
 row indices. Timers describe the capture.
+Use `compare_snapshots.weapon_enchant_changes` to compare saved readings
+per hand. The comparison ignores row order and preserves duplicate
+readings. Missing hand observations give null, while observed empty
+lists remain empty. Differences leave enchant application, expiration
+and weapon continuity unverified.
 
 Use `list_snapshots.player_aura` with a `group` of `helpful` or
 `harmful` and an exact `spell_id`. Matches count observed rows for that

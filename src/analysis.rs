@@ -2821,6 +2821,7 @@ pub struct ComparisonSelectors {
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
     pub player_aura_changes: bool,
+    pub weapon_enchant_changes: bool,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
@@ -3210,6 +3211,13 @@ pub fn compare_observations(
             after,
             selectors.player_aura_spell_id.map(|id| u64::from(id.get())),
         );
+    }
+    if selectors.weapon_enchant_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Weapon enchant comparison requires Forever"
+        );
+        comparison["weapon_enchant_changes"] = compare_weapon_enchants(before, after);
     }
     if selectors.selected_recipe_changes {
         ensure!(
@@ -4442,6 +4450,37 @@ fn compare_reported_spell_readings<T: Ord>(
             })
             .collect(),
     )
+}
+
+fn compare_weapon_enchants(before: &Snapshot, after: &Snapshot) -> Value {
+    fn rows<'a>(snapshot: &'a Snapshot, hand: &str) -> Option<Vec<&'a Value>> {
+        let entries =
+            snapshot.sections.get("weapon_enchants")?["hands"][hand]["entries"].as_object()?;
+        let mut rows: Vec<_> = entries.values().collect();
+        rows.sort_unstable_by_key(|&row| {
+            (
+                row["has_enchant"].as_bool(),
+                row["enchant_type"].as_str(),
+                row["enchant_id"].as_u64(),
+                row["charges"].as_u64(),
+                row["remaining_milliseconds"].as_u64(),
+            )
+        });
+        Some(rows)
+    }
+    let hands: BTreeMap<_, _> = ["main_hand", "off_hand", "ranged"]
+        .into_iter()
+        .map(|hand| {
+            let old = rows(before, hand);
+            let new = rows(after, hand);
+            let changed = old.as_ref().zip(new.as_ref()).map(|(a, b)| a != b);
+            (
+                hand,
+                json!({"before_rows":old,"after_rows":new,"observed_rows_changed":changed}),
+            )
+        })
+        .collect();
+    json!({"hands":hands,"enchant_events_verified":false,"live":false})
 }
 
 fn compare_player_auras(before: &Snapshot, after: &Snapshot, spell_id: Option<u64>) -> Value {
