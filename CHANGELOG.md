@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved cooldown state and timer estimates for Forever reagent-chain steps.
+
 - Show saved craft and recraft tracking membership for each Forever reagent-chain recipe.
 
 - Show saved craftable counts and per-step shortfalls in Forever reagent chains.

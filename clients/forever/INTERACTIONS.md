@@ -268,6 +268,10 @@ Each step includes `recipe_tracking` from the recipe capture, with craft and
 recraft membership reported separately. Missing tracking observations stay
 unknown. Membership alone does not change recipe selection. Conflicting
 saved learning flags still reject the recipe.
+Each step also shows the cooldown state at recipe capture and an estimated
+end timestamp when a positive timer was reported. A recipe can have a
+charge available while a timer is running. The timestamp neither replenishes
+the modeled charge pool nor establishes current readiness.
 Individual recipe reviews additionally report
 `base_output_for_charge_covered_crafts_if_completed`. This scales the base
 yield range by the smaller of requested crafts and captured charges. It is

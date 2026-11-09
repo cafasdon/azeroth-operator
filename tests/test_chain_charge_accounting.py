@@ -94,6 +94,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                                 'shortfall_vs_cumulative_crafts':None if captured is None else max(0,totals[rid]-captured),
                                 'covers_cumulative_crafts':None if captured is None else captured>=totals[rid]}
                             self.assertEqual(step['captured_charge_accounting'],expected)
+                            self.assertEqual(step['captured_cooldown_state'],
+                                'unknown' if captured is None else 'waiting' if captured == 0 else 'available')
+                            self.assertEqual(step['estimated_cooldown_end_at'],
+                                None if captured is None else '2025-01-01T00:01:00Z')
                             self.assertEqual(row,{'recipe_number':index,'recipe_id':rid,**expected})
                             self.assertIs(step['captured_nonmaterial_checks']['observed_charges_cover_cumulative_crafts'],expected['covers_cumulative_crafts'])
                         failure = chain['stock_plan']['nonmaterial_requirements']['first_observed_shortfall']
@@ -111,6 +115,7 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(later['recipe_captured_at'],base['captured_at'])
                     self.assertEqual(later['inventory_captured_at'],future['captured_at'])
                     self.assertEqual(later['steps'][1]['captured_charge_accounting']['observed_charges'],1)
+                    self.assertEqual(later['steps'][1]['estimated_cooldown_end_at'],'2025-01-01T00:01:00Z')
                     ordinary = await plan(keys[1],reagent_chain_stock_plan=False)
                     conditioned = await plan(conditional_key)
                     self.assertEqual([step['recipe_tracking']['tracked_as_craft']

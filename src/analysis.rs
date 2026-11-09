@@ -1178,6 +1178,8 @@ impl RecipeChainDraft<'_> {
             "unmet_crafting_conditions":review["unmet_crafting_conditions"],
             "reported_craftable_count_observation":review["reported_craftable_count_observation"],
             "recipe_tracking":review["recipe_tracking"],
+            "captured_cooldown_state":review["captured_cooldown_state"],
+            "estimated_cooldown_end_at":review["estimated_cooldown_end_at"],
             "captured_nonmaterial_checks":{"recipe_learned":review["captured_preparation"]["recipe_learned"],
                 "observed_conditions_met":review["captured_preparation"]["observed_conditions_met"],
                 "observed_charges_cover_cumulative_crafts":charges["covers_cumulative_crafts"],
