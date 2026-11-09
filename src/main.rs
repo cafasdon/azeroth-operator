@@ -781,6 +781,8 @@ struct OwnedGearReview {
     simulator_input_resolved: Option<bool>,
     /// Filter by base-item presence in the pinned catalogue before paging.
     catalogue_matched: Option<bool>,
+    /// Filter owned locations by the exact simulator-input resolution status before paging.
+    simulator_item_resolution: Option<azeroth_operator::forever_catalogue::SimulatorItemResolution>,
     /// Exclude known catalogue conflicts against the saved character. Unknown eligibility can still match.
     #[serde(default)]
     exclude_observed_requirement_conflicts: bool,
@@ -1333,6 +1335,7 @@ impl Operator {
                 args.observed_random_suffix_id,
                 args.simulator_input_resolved,
                 args.catalogue_matched,
+                args.simulator_item_resolution,
                 args.exclude_observed_requirement_conflicts,
                 args.storage,
             )?;

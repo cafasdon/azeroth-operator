@@ -3317,6 +3317,54 @@ impl GearStorage {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SimulatorItemResolution {
+    CatalogueItemUnavailable,
+    ItemLinkUnresolved,
+    ModifierValuesUnavailable,
+    Resolved,
+    SuffixReferenceUnresolved,
+    EnchantReferenceUnresolved,
+    SimulatorItemUnresolved,
+}
+
+fn item_resolution(
+    reference: Option<&&Value>,
+    modifiers: Option<&Value>,
+    candidates: Option<&Value>,
+) -> SimulatorItemResolution {
+    match (reference, modifiers, candidates) {
+        (None, _, _) => SimulatorItemResolution::CatalogueItemUnavailable,
+        (_, None, _) => SimulatorItemResolution::ItemLinkUnresolved,
+        (_, Some(fields), _)
+            if fields["enchant_id"].is_null() || fields["random_suffix_id"].is_null() =>
+        {
+            SimulatorItemResolution::ModifierValuesUnavailable
+        }
+        (_, _, Some(review)) if !review["simulator_item_spec"].is_null() => {
+            SimulatorItemResolution::Resolved
+        }
+        (_, Some(fields), Some(review))
+            if fields["random_suffix_id"]
+                .as_i64()
+                .is_some_and(|id| id != 0)
+                && review["default_scaling_suffix_allocation_delta"].is_null() =>
+        {
+            SimulatorItemResolution::SuffixReferenceUnresolved
+        }
+        (_, Some(fields), Some(review))
+            if fields["enchant_id"].as_u64().is_some_and(|id| id != 0)
+                && review["fitting_enchants"]
+                    .as_array()
+                    .is_some_and(|rows| rows.len() != 1) =>
+        {
+            SimulatorItemResolution::EnchantReferenceUnresolved
+        }
+        _ => SimulatorItemResolution::SimulatorItemUnresolved,
+    }
+}
+
 pub fn review_owned(
     path: &Path,
     snapshot: &Snapshot,
@@ -3331,6 +3379,7 @@ pub fn review_owned(
     observed_random_suffix_id: Option<i32>,
     simulator_input_resolved: Option<bool>,
     catalogue_matched: Option<bool>,
+    resolution_filter: Option<SimulatorItemResolution>,
     exclude_observed_requirement_conflicts: bool,
     storage_filter: Option<GearStorage>,
 ) -> Result<Value> {
@@ -3439,6 +3488,7 @@ pub fn review_owned(
             }
             let modifiers = (on_page
                 || simulator_input_resolved.is_some()
+                || resolution_filter.is_some()
                 || observed_enchant_effect_id.is_some()
                 || observed_random_suffix_id.is_some())
             .then(|| link_modifiers(item))
@@ -3458,7 +3508,9 @@ pub fn review_owned(
             }
             let candidates = modifiers
                 .as_ref()
-                .filter(|_| on_page || simulator_input_resolved.is_some())
+                .filter(|_| {
+                    on_page || simulator_input_resolved.is_some() || resolution_filter.is_some()
+                })
                 .map(|fields| modifier_candidates(db, fields, reference.copied()));
             if simulator_input_resolved.is_some_and(|expected| {
                 candidates
@@ -3466,6 +3518,12 @@ pub fn review_owned(
                     .is_some_and(|review| !review["simulator_item_spec"].is_null())
                     != expected
             }) {
+                return;
+            }
+            let simulator_item_resolution = (on_page || resolution_filter.is_some())
+                .then(|| item_resolution(reference, modifiers.as_ref(), candidates.as_ref()));
+            if resolution_filter.is_some_and(|expected| simulator_item_resolution != Some(expected))
+            {
                 return;
             }
             if on_page {
@@ -3482,37 +3540,6 @@ pub fn review_owned(
                 let native_slot_conflict = draft_selection.as_ref().and_then(|selection| {
                     native_slot_category_conflict(item, selection.target_slot)
                 });
-                let simulator_item_resolution =
-                    match (reference, modifiers.as_ref(), candidates.as_ref()) {
-                        (None, _, _) => "catalogue_item_unavailable",
-                        (_, None, _) => "item_link_unresolved",
-                        (_, Some(fields), _)
-                            if fields["enchant_id"].is_null()
-                                || fields["random_suffix_id"].is_null() =>
-                        {
-                            "modifier_values_unavailable"
-                        }
-                        (_, _, Some(review)) if !review["simulator_item_spec"].is_null() => {
-                            "resolved"
-                        }
-                        (_, Some(fields), Some(review))
-                            if fields["random_suffix_id"]
-                                .as_i64()
-                                .is_some_and(|id| id != 0)
-                                && review["default_scaling_suffix_allocation_delta"].is_null() =>
-                        {
-                            "suffix_reference_unresolved"
-                        }
-                        (_, Some(fields), Some(review))
-                            if fields["enchant_id"].as_u64().is_some_and(|id| id != 0)
-                                && review["fitting_enchants"]
-                                    .as_array()
-                                    .is_some_and(|rows| rows.len() != 1) =>
-                        {
-                            "enchant_reference_unresolved"
-                        }
-                        _ => "simulator_item_unresolved",
-                    };
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
                     "catalogue_item_requirement_conflict":item_conflict,

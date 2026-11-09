@@ -493,6 +493,9 @@ checks base-item matches independently of storage and modifier coverage.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.
+Use `simulator_item_resolution` on the same tool to page by a specific
+status such as `item_link_unresolved` or `enchant_reference_unresolved`.
+These statuses describe local simulator input resolution.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained

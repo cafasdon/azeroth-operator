@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever owned items by their exact simulator resolution status.
+
 - Page observed owned-item locations by whether their base ID matches the pinned Forever catalogue.
 
 - Let owned-gear evaluation withhold simulation when observed items lack a catalogue match.

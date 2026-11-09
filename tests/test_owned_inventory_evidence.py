@@ -84,6 +84,26 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(conflict['items'], [])
                     for page in [unmatched, tail, matched, conflict]:
                         self.assertEqual(page['inventory_evidence'], mixed_evidence)
+                    by_status = {
+                        'catalogue_item_unavailable':2, 'item_link_unresolved':1, 'resolved':1,
+                        'modifier_values_unavailable':0, 'suffix_reference_unresolved':0,
+                        'enchant_reference_unresolved':0, 'simulator_item_unresolved':0,
+                    }
+                    for status, count in by_status.items():
+                        page = await review(mixed_id, simulator_item_resolution=status)
+                        self.assertEqual(page['filtered_item_locations'], count)
+                        self.assertEqual([row['simulator_item_resolution'] for row in page['items']],
+                                         [status]*count)
+                        self.assertEqual(page['inventory_evidence'], mixed_evidence)
+                    last = await review(mixed_id, simulator_item_resolution='catalogue_item_unavailable',
+                                        catalogue_matched=False, storage='bags', offset=1, limit=1)
+                    self.assertEqual(last['items'],tail['items'])
+                    self.assertFalse(last['has_more'])
+                    incompatible = await review(mixed_id, simulator_item_resolution='resolved',
+                                                simulator_input_resolved=False)
+                    self.assertEqual(incompatible['filtered_item_locations'],0)
+                    self.assertTrue((await session.call_tool('review_forever_owned_gear', {
+                        'snapshot_id':mixed_id,'simulator_item_resolution':'unknown'})).isError)
                     evidence = result['inventory_evidence']
                     self.assertEqual(evidence['observed_storage_sections'], ['equipment', 'bags'])
                     self.assertEqual(evidence['unavailable_storage_sections'], ['character_bank', 'account_bank'])
