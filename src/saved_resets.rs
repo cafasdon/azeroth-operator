@@ -97,18 +97,30 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
         let mut elapsed = Vec::new();
         let mut upcoming = Vec::new();
         let mut unknown = Vec::new();
+        let mut next_at = None;
+        let mut next_slots = Vec::new();
         for row in rows {
             let bucket = match row["projected_reset_at"]
                 .as_str()
                 .and_then(|value| value.parse::<DateTime<Utc>>().ok())
             {
                 Some(reset) if reset <= reference => &mut elapsed,
-                Some(_) => &mut upcoming,
+                Some(reset) => {
+                    if next_at.is_none_or(|next| reset < next) {
+                        next_at = Some(reset);
+                        next_slots.clear();
+                    }
+                    if next_at == Some(reset) {
+                        next_slots.push(row["slot"].clone());
+                    }
+                    &mut upcoming
+                }
                 None => &mut unknown,
             };
             bucket.push(row["slot"].clone());
         }
-        json!({"at_or_before_slots":elapsed,"after_slots":upcoming,"unknown_slots":unknown})
+        json!({"at_or_before_slots":elapsed,"after_slots":upcoming,"unknown_slots":unknown,
+            "next_projected_reset":next_at.map(|at| json!({"at":at,"slots":next_slots}))})
     });
     projection["reference_at"] = json!(reference);
     projection["relative_to_reference"] = json!(classification);

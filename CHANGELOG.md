@@ -1,5 +1,7 @@
 # Changelog
 
+- Highlight the next saved Forever reset and all slots sharing its projected time.
+
 - Compare saved Forever dungeon, raid and world boss reset projections with an explicit reference time.
 
 - Show local catalogue acquisition references in Forever producer previews.

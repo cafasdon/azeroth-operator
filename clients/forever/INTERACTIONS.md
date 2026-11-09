@@ -2347,6 +2347,9 @@ With `saved_reset_projection` enabled, supply `saved_reset_reference_at` to
 classify saved instance or world boss reset slots at or before that time,
 after it, or unknown. This compares historical timestamps only. Missing
 sections return a null classification.
+The classification highlights the earliest projected reset strictly after
+the reference and lists every slot with that timestamp. The next reset is
+null when no later projection exists.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the
