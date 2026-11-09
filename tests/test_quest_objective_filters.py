@@ -172,6 +172,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(ordered['quest_match']['quest_count'],43)
                     await timed(error=True,local_quest_soonest_first=True)
                     await timed(error=True,local_quest_offset=0)
+                    objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
+                        quest_objective_finished=False,quest_objective_min_remaining=1,
+                        quest_objective_max_remaining=1)
+                    self.assertEqual({row['snapshot_id'] for row in objective_search},
+                                     {key,bank_stock_key,changed_key,tied_key})
+                    self.assertTrue(all(row['quest_match']['matching_quests'][0]['quest_id']==3
+                                        for row in objective_search))
+                    self.assertEqual(await timed(quest_id=5,quest_objective_kind='item',
+                                                 quest_objective_finished=True),[])
+                    self.assertEqual(await timed(quest_id=6,quest_objective_max_remaining=100),[])
+                    await timed(error=True,quest_objective_min_remaining=2,quest_objective_max_remaining=1)
+                    await timed(error=True,quest_objective_kind='')
+                    await timed(error=True,family='retail',quest_objective_finished=False)
                     async def query(error=False, **options):
                         reply = await session.call_tool('inspect_snapshot', {'snapshot_id': key,
                             'section': 'quests', **options})

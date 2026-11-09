@@ -3117,3 +3117,10 @@ Use `list_snapshots.quest_title` to find quests by full saved title,
 ignoring case and surrounding whitespace. Results include up to 20 matching
 quest IDs and recorded readiness per capture. Title, ID, waypoint, readiness
 and timer criteria apply to the same quest.
+
+Saved quest searches accept `quest_objective_kind`,
+`quest_objective_finished`, and inclusive
+`quest_objective_min_remaining` / `quest_objective_max_remaining`.
+All objective predicates apply to one objective on the matching quest.
+Quantity bounds require known objective counts. Results include a bounded
+shortlist of matching quests.

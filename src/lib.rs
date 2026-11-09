@@ -1893,6 +1893,9 @@ pub struct CaptureFilters<'a> {
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
+    pub quest_objective_kind: Option<&'a str>,
+    pub quest_objective_finished: Option<bool>,
+    pub quest_objective_remaining: (Option<u32>, Option<u32>),
     pub quest_readiness: Option<analysis::QuestReadiness>,
     pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     pub quest_on_captured_map: bool,
@@ -2129,6 +2132,9 @@ impl Store {
             xp_gain_enabled_only,
             quest_id,
             quest_title,
+            quest_objective_kind,
+            quest_objective_finished,
+            quest_objective_remaining,
             quest_readiness,
             quest_waypoint_map_id,
             quest_on_captured_map,
@@ -2688,6 +2694,18 @@ impl Store {
             "Invalid saved quest title"
         );
         let quest_title = quest_title.map(str::to_lowercase);
+        let (objective_min, objective_max) = quest_objective_remaining;
+        let filter_quest_objectives = quest_objective_kind.is_some()
+            || quest_objective_finished.is_some()
+            || objective_min.is_some()
+            || objective_max.is_some();
+        ensure!(
+            quest_objective_kind.is_none_or(|kind| !kind.is_empty() && kind.len() <= 64)
+                && objective_min
+                    .zip(objective_max)
+                    .is_none_or(|(min, max)| min <= max),
+            "Invalid saved quest objective filter"
+        );
         let filter_quest_timer =
             quest_max_remaining_seconds.is_some() || quest_projected_expiry_by.is_some();
         ensure!(
@@ -2696,7 +2714,8 @@ impl Store {
                 && quest_readiness.is_none()
                 && quest_waypoint_map_id.is_none()
                 && !quest_on_captured_map
-                && !filter_quest_timer)
+                && !filter_quest_timer
+                && !filter_quest_objectives)
                 || family == Family::Forever,
             "Quest filtering requires Forever"
         );
@@ -3345,6 +3364,14 @@ impl Store {
                                     .as_u64()
                                     .is_some_and(|seconds| seconds <= u64::from(maximum))
                             })
+                            && (!filter_quest_objectives
+                                || analysis::quest_objective_matches(
+                                    quest,
+                                    quest_objective_kind,
+                                    quest_objective_finished,
+                                    objective_min,
+                                    objective_max,
+                                ) == Some(true))
                             && saved_resets::matches_projected_window(
                                 quest["timer"]["remaining_seconds"].as_i64(),
                                 s.captured_at,
@@ -3363,7 +3390,8 @@ impl Store {
                         && (quest_title.is_some()
                             || quest_readiness.is_some()
                             || waypoint_map.is_some()
-                            || filter_quest_timer))
+                            || filter_quest_timer
+                            || filter_quest_objectives))
                         .then(|| {
                             s.sections.get("quests").and_then(Value::as_object).map_or(
                                 0,
@@ -3767,7 +3795,7 @@ impl Store {
                     if let Some(map) = waypoint_map {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
                     }
-                    if quest_on_captured_map || quest_title.is_some() {
+                    if quest_on_captured_map || quest_title.is_some() || filter_quest_objectives {
                         let mut local: Vec<_> = s
                             .sections
                             .get("quests")

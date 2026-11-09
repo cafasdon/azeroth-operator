@@ -551,6 +551,14 @@ struct List {
     quest_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive title in the saved Forever quest log.
     quest_title: Option<String>,
+    /// Match an exact recorded objective kind on the same quest.
+    quest_objective_kind: Option<String>,
+    /// Match the reported finished state on the same objective.
+    quest_objective_finished: Option<bool>,
+    /// Inclusive minimum known remaining objective quantity.
+    quest_objective_min_remaining: Option<u32>,
+    /// Inclusive maximum known remaining objective quantity.
+    quest_objective_max_remaining: Option<u32>,
     /// Match the selected quest's readiness, or count matching quests when no ID is supplied.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Match the next waypoint map recorded for the same quest.
@@ -2300,6 +2308,12 @@ impl Operator {
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),
+                quest_objective_kind: args.quest_objective_kind.as_deref(),
+                quest_objective_finished: args.quest_objective_finished,
+                quest_objective_remaining: (
+                    args.quest_objective_min_remaining,
+                    args.quest_objective_max_remaining,
+                ),
                 quest_readiness: args.quest_readiness,
                 quest_waypoint_map_id: args.quest_waypoint_map_id,
                 quest_on_captured_map: args.quest_on_captured_map,
