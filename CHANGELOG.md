@@ -1,5 +1,9 @@
 # Changelog
 
+- Qualify the saved empty-ring search with actual pinned engine simulations,
+  paired numeric evidence, warm checkpoint reuse and uncached direct-run
+  comparisons; no game or general BiS qualification.
+
 - Enumerate optional occupied-slot removal choices through positional collection,
   saved-plan validation/replay, owned evaluation and retained winner loadouts.
   Bind the opt-in to resume identity and validate declared choices against

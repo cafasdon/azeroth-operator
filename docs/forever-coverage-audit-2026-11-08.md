@@ -376,3 +376,9 @@ preserves the holes. Invalid/duplicate/uncaptured slots, shirt/tabard and select
 target overlaps are refused. No items move; bag destinations and native legality
 remain unknown. Opt-in empty-choice search and saved-plan replay are now
 implemented; see ADR 047 and empty-equipment search verification.
+
+The saved empty-ring workflow has also been checked with real pinned-engine
+paired simulations and uncached direct references: nine coordinates, seven gear
+states, zero warm simulations. This is one Hunter/encounter caller-path check;
+native legality, broader model accuracy and full owned BiS remain unqualified.
+See real-empty-equipment-verification-2026-11-09.md.

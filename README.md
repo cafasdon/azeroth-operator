@@ -329,6 +329,12 @@ revalidates explicit clears against the original capture; checkpoint reuse
 preserves the choice and changing the opt-in rejects a mixed journal resume.
 [Search contract](docs/ADR-047-empty-equipment-search.md) ·
 [Search verification](docs/empty-equipment-search-verification-2026-11-09.md).
+
+The saved empty-ring path also passed an opt-in real-engine offline check:
+seven gear states, paired iterations, zero warm simulation runs and agreement
+with uncached direct runs. This qualifies the tested workflow, not native
+legality, general model accuracy or full owned BiS.
+[Real-engine evidence](docs/real-empty-equipment-verification-2026-11-09.md).
 [Contract](docs/ADR-046-explicit-empty-equipment-review.md) ·
 [Offline evidence](docs/explicit-empty-equipment-verification-2026-11-09.md).
 [Contract](docs/ADR-028-positional-equipment-engine.md) ·
