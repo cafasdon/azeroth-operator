@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare expected outgoing trade items with a saved Forever trade offer.
+
 - Show saved Forever PvP threshold and cap distances directly in PvP snapshot inspection.
 
 - Distinguish filtered Forever trainer lesson slots from slots missing in the saved capture.

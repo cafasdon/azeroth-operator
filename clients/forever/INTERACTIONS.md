@@ -2394,6 +2394,15 @@ acceptance, enchant slot or trade action is captured or invoked. Offers never
 increase owned stock or establish a completed/current trade. Offline source only;
 native testing stays deferred. See docs/ADR-069-player-trade-offer-observation.md.
 
+Pass `trade_offer_requirements` to `inspect_snapshot` on
+`player_trade_offer` to check an expected outgoing offer. Supply one to 64
+distinct positive `{item_id, quantity}` rows. The review totals the readable
+slots by base item ID and reports observed shortfalls, excess and unexpected
+items. Excess or unexpected items prove a mismatch even with unreadable slots.
+Otherwise exact match requires all six slots to be readable item rows. A
+partial capture can leave the match unknown. A missing offer gives a null
+review. These checks describe the saved outgoing quantities only.
+
 ## Personal PvP progression (2026-11-09)
 
 Manual Forever exports can capture the numeric rank progression reported for

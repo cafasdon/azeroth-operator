@@ -69,6 +69,30 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(result.isError),error,result)
                         self.assertNotIn('PRIVATE',str(result))
                         return None if error else json.loads(result.content[0].text)
+                    for index, quantity, match, unreadable in [
+                        (1, 1, None, 6), (2, 10, None, 4), (2, 9, None, 4),
+                        (2, 8, False, 4), (4, 6, True, 0), (4, 7, False, 0),
+                    ]:
+                        review=(await call('inspect_snapshot',snapshot_id=valid[index][0],
+                            section='player_trade_offer',trade_offer_requirements=[
+                                {'item_id':10,'quantity':quantity}]))['trade_offer_requirement_review']
+                        self.assertIs(review['captured_offer_matches_expected'],match)
+                        self.assertEqual(review['unreadable_or_empty_slots'],unreadable)
+                        observed={1:0,2:9,4:6}[index]
+                        self.assertEqual(review['items'],[{'item_id':10,'expected_quantity':quantity,
+                            'observed_quantity':observed,'observed_shortfall':max(0,quantity-observed),
+                            'observed_excess':max(0,observed-quantity)}])
+                    expected=[{'item_id':11,'quantity':1}]
+                    review=(await call('inspect_snapshot',snapshot_id=valid[2][0],
+                        section='player_trade_offer',trade_offer_requirements=expected))['trade_offer_requirement_review']
+                    self.assertIs(review['captured_offer_matches_expected'],False)
+                    self.assertEqual(review['unexpected_observed_quantities'],{'10':9})
+                    self.assertIsNone((await call('inspect_snapshot',snapshot_id=valid[0][0],
+                        section='player_trade_offer',trade_offer_requirements=expected))['trade_offer_requirement_review'])
+                    await call('inspect_snapshot',error=True,snapshot_id=valid[2][0],
+                        section='player_trade_offer',trade_offer_requirements=expected*2)
+                    await call('inspect_snapshot',error=True,snapshot_id=valid[2][0],
+                        section='bags',trade_offer_requirements=expected)
                     for key,section in valid:
                         result=await call('inspect_snapshot',snapshot_id=key,section='player_trade_offer')
                         summary=(await call('character_summary',snapshot_id=key))['player_trade_offer_observation']
