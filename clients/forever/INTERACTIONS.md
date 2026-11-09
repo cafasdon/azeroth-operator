@@ -2954,3 +2954,10 @@ require a single newest matching capture. If the two most recent matching
 captures share a timestamp, the result is `ambiguous_latest_snapshot` with
 a null selection. Time, exact client and required sections narrow the matches
 before the tie check. Active character identity remains unavailable.
+
+Set `resolve_character.require_latest_coverage` with `required_sections` to
+check the newest capture within the requested client and time scope.
+Missing sections produce a null selection and per-section capture statuses.
+With `require_unique_latest` also enabled, timestamp ties are evaluated
+before coverage. Without latest coverage mode, required sections filter
+candidates before selection.

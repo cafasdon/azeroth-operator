@@ -113,6 +113,21 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                         reply = await session.call_tool('resolve_character', args)
                         self.assertTrue(reply.isError)
                         self.assertNotIn(other, str(reply))
+                    strict_coverage = {**target, 'required_sections':['weapon_enchants','equipment'],
+                                       'require_latest_coverage':True}
+                    uncovered = await resolve(strict_coverage)
+                    self.assertEqual(uncovered['status'], 'latest_snapshot_missing_required_sections')
+                    self.assertIsNone(uncovered['selection'])
+                    self.assertEqual(uncovered['latest_section_coverage'],
+                                     {'weapon_enchants':'not_recorded','equipment':'observed'})
+                    covered_latest = await resolve({**strict_coverage,'captured_through':base['captured_at']})
+                    self.assertEqual(covered_latest['selection']['snapshot_id'], first)
+                    self.assertEqual(covered_latest['latest_section_coverage'],
+                                     {'weapon_enchants':'observed','equipment':'observed'})
+                    for invalid in [{**target,'require_latest_coverage':True},
+                                    {**strict_coverage,'required_sections':[]},
+                                    {**strict_coverage,'required_sections':['invalid']}]:
+                        self.assertTrue((await session.call_tool('resolve_character',invalid)).isError)
                     tied_capture = deepcopy(changed_build)
                     tied_capture['client']['build'] = '70864'
                     tied_capture['sections']['weapon_enchants'] = base['sections']['weapon_enchants']
@@ -128,6 +143,9 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                     ]:
                         self.assertEqual((await resolve({**strict, **filters}))['selection']['snapshot_id'],
                                          selected)
+                    tied_coverage = await resolve({**strict_coverage,'require_unique_latest':True})
+                    self.assertEqual(tied_coverage['status'],'ambiguous_latest_snapshot')
+                    self.assertNotIn('latest_section_coverage',tied_coverage)
                     self.assertEqual((await resolve(target))['selection']['snapshot_id'],
                                      min(tied_key,changed_build_key))
                     self.assertTrue((await session.call_tool('resolve_character', {

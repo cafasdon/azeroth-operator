@@ -4020,7 +4020,7 @@ impl Store {
     }
 }
 
-fn validate_section_names(sections: &[String]) -> Result<()> {
+pub fn validate_section_names(sections: &[String]) -> Result<()> {
     ensure!(
         !sections.is_empty()
             && sections.len() <= SNAPSHOT_SECTIONS.len()

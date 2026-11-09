@@ -49,6 +49,9 @@ struct ResolveCharacter {
     /// Return ambiguity if multiple matching captures share the latest timestamp.
     #[serde(default)]
     require_unique_latest: bool,
+    /// Require the selected newest capture itself to contain all required sections.
+    #[serde(default)]
+    require_latest_coverage: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2038,9 +2041,10 @@ impl Operator {
                 || args.exact_client.is_some()
                 || args.required_sections.is_some()
                 || args.require_unique_latest
+                || args.require_latest_coverage
             {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Capture time, exact client, section and uniqueness options require an explicit character",
+                    "Capture time, exact client, section and latest-capture options require an explicit character",
                 )]);
             }
             return CallToolResult::success(vec![ContentBlock::text(
@@ -2049,6 +2053,20 @@ impl Operator {
                 .to_string(),
             )]);
         };
+        let latest_coverage_sections = if args.require_latest_coverage {
+            match args.required_sections.as_deref() {
+                Some(sections) if azeroth_operator::validate_section_names(sections).is_ok() => {
+                    Some(sections)
+                }
+                _ => {
+                    return CallToolResult::error(vec![ContentBlock::text(
+                        "Latest coverage requires valid required_sections",
+                    )]);
+                }
+            }
+        } else {
+            None
+        };
         match self.store.list_filtered(
             args.family,
             Some(&character),
@@ -2056,7 +2074,11 @@ impl Operator {
                 exact_client: args.exact_client.as_ref(),
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
-                required_sections: args.required_sections.as_deref(),
+                required_sections: if args.require_latest_coverage {
+                    None
+                } else {
+                    args.required_sections.as_deref()
+                },
                 ..Default::default()
             },
             0,
@@ -2073,13 +2095,28 @@ impl Operator {
                     (false, Some(row)) => ("explicit_saved_character", Some(row)),
                     (false, None) => ("no_matching_snapshot", None),
                 };
-                CallToolResult::success(vec![ContentBlock::text(
-                    serde_json::json!({
-                        "status":status,
-                        "selection":selection,"live":false,"active_character_verified":false
-                    })
-                    .to_string(),
-                )])
+                let mut result = serde_json::json!({
+                    "status":status,"selection":selection,"live":false,"active_character_verified":false,
+                });
+                if let Some((row, sections)) = selection.zip(latest_coverage_sections) {
+                    let Some(coverage) = row["snapshot_id"].as_str().and_then(|id| {
+                        self.store
+                            .inspect_with_coverage(id, None, Some(sections))
+                            .ok()
+                    }) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Latest capture coverage unavailable",
+                        )]);
+                    };
+                    let statuses = &coverage["section_coverage"];
+                    if sections.iter().any(|name| statuses[name] != "observed") {
+                        result["status"] =
+                            serde_json::json!("latest_snapshot_missing_required_sections");
+                        result["selection"] = serde_json::Value::Null;
+                    }
+                    result["latest_section_coverage"] = statuses.clone();
+                }
+                CallToolResult::success(vec![ContentBlock::text(result.to_string())])
             }
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
                 "Character selection unavailable or invalid",

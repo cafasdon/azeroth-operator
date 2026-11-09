@@ -1,5 +1,7 @@
 # Changelog
 
+- Allow explicit character resolution to require section coverage on the newest capture.
+
 - Allow explicit character resolution to report tied latest saved captures.
 
 - Find saved Forever trainer visits with lessons affordable after a balance reserve.
