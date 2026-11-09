@@ -1161,30 +1161,35 @@ fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value 
         let Some(containers) = stock.sections.get(storage).and_then(Value::as_object) else {
             continue;
         };
+        let mut candidates = Vec::new();
         for (container, slots) in containers {
             for (slot, item) in slots.as_object().into_iter().flatten() {
-                let Some(quantity) = item["item_id"]
-                    .as_u64()
-                    .and_then(|id| remaining.get_mut(&id))
-                else {
-                    continue;
-                };
-                let count = item["count"].as_u64().unwrap();
-                let take = count.min(*quantity);
-                if take == 0 {
-                    continue;
+                if let Some(id) = item["item_id"].as_u64()
+                    && remaining.contains_key(&id)
+                {
+                    candidates.push((
+                        std::cmp::Reverse(item["count"].as_u64().unwrap()),
+                        container.parse::<u32>().unwrap(),
+                        slot.parse::<u32>().unwrap(),
+                        id,
+                    ));
                 }
-                if locations.len() == 50 {
-                    truncated = true;
-                    break;
-                }
-                *quantity -= take;
-                locations.push(json!({"storage":storage,"container":container,"slot":slot,
-                    "item_id":item["item_id"],"observed_quantity":count,"suggested_quantity":take}));
             }
-            if truncated {
+        }
+        candidates.sort_unstable();
+        for (std::cmp::Reverse(count), container, slot, id) in candidates {
+            let quantity = remaining.get_mut(&id).unwrap();
+            let take = count.min(*quantity);
+            if take == 0 {
+                continue;
+            }
+            if locations.len() == 50 {
+                truncated = true;
                 break;
             }
+            *quantity -= take;
+            locations.push(json!({"storage":storage,"container":container.to_string(),
+                "slot":slot.to_string(),"item_id":id,"observed_quantity":count,"suggested_quantity":take}));
         }
         if truncated {
             break;

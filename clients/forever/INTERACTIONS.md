@@ -283,6 +283,8 @@ The accompanying location report allocates those suggestions to saved bank
 containers and slots, showing the observed stack quantity and suggested
 quantity per slot. It lists up to 50 locations and marks omitted allocations
 as truncated. The full per-item withdrawal totals remain available.
+Within each bank, larger stacks are used first to minimise slots per item.
+Equal quantities are ordered by numeric container and slot.
 The separate `acquisition_shortfalls_vs_observed_storage` list shows positive
 starting-material shortfalls after counting all observed storage. It can
 include items with no suggested withdrawal and uses the same starting

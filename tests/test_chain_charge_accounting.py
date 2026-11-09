@@ -44,6 +44,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
             bank_stock['sections']['character_bank'] = {'6':{'1':{'item_id':10,'count':1}}}
             bank_stock['sections']['account_bank'] = {'7':{'1':{'item_id':10,'count':1}}}
             bank_inventory = store.ingest(bank_stock)
+            large_stack = deepcopy(bank_stock)
+            large_stack['sections']['character_bank']['6']['2'] = {'item_id':10,'count':3}
+            large_stack_inventory = store.ingest(large_stack)
             partial_bank = deepcopy(bank_stock)
             partial_bank['sections']['account_bank'] = {}
             partial_bank_inventory = store.ingest(partial_bank)
@@ -88,6 +91,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                                       'observed_quantity':1,'suggested_quantity':1}
                                      for storage,container in [('character_bank','6'),('account_bank','7')]],
                         'truncated':False})
+                    compact = await plan(keys[1],inventory_snapshot_id=large_stack_inventory)
+                    self.assertEqual(compact['stock_plan']['suggested_bank_withdrawal_locations'], {
+                        'locations':[{'storage':'character_bank','container':'6','slot':'2','item_id':10,
+                                      'observed_quantity':3,'suggested_quantity':2}], 'truncated':False})
                     self.assertEqual(one['stock_plan']['suggested_bank_withdrawal_list'], [])
                     self.assertEqual(banked['stock_plan']['acquisition_shortfalls_vs_observed_storage'], [])
                     partial = await plan(keys[1],inventory_snapshot_id=partial_bank_inventory)

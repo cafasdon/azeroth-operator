@@ -1,5 +1,7 @@
 # Changelog
 
+- Prefer larger captured stacks to minimise bank slots in Forever chain withdrawal guides.
+
 - Locate suggested Forever reagent-chain withdrawals in captured bank slots.
 
 - List starting materials still short against observed storage in Forever reagent-chain stock plans.
