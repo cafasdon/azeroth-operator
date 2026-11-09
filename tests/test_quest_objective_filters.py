@@ -103,6 +103,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             for quest_id, seconds in [(41,62),(42,61),(43,61)]:
                 many_local['sections']['quests'][str(quest_id)]['timer'] = {
                     'remaining_seconds':seconds,'total_seconds':120}
+            for quest_id, xp in [(41,0),(42,400),(43,400)]:
+                many_local['sections']['quests'][str(quest_id)]['reward_amounts'] = {'xp':xp}
             many_local_key = store.ingest(many_local)
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
@@ -179,6 +181,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(matches[0]['remaining_seconds'],61)
                         self.assertIsNone(matches[-1]['remaining_seconds'])
                         self.assertEqual(ordered['quest_match']['quest_count'],43)
+                    xp = (await timed(quest_on_captured_map=True,local_quest_highest_xp_first=True,
+                                      local_quest_offset=1,character=many_local['character']))[0]['quest_match']
+                    self.assertEqual([row['quest_id'] for row in xp['matching_quests']],
+                                     [43,41,*range(1,19)])
+                    self.assertEqual([row['reward_xp'] for row in xp['matching_quests'][:3]],
+                                     [400,0,None])
+                    self.assertEqual(xp['quest_count'],43)
+                    await timed(error=True,local_quest_highest_xp_first=True)
+                    await timed(error=True,quest_on_captured_map=True,local_quest_highest_xp_first=True,
+                                local_quest_soonest_first=True)
                     await timed(error=True,local_quest_soonest_first=True)
                     await timed(error=True,local_quest_offset=0)
                     rewards = await timed(quest_reward_item_id=118,character=tied['character'])

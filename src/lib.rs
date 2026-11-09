@@ -1909,6 +1909,7 @@ pub struct CaptureFilters<'a> {
     pub quest_on_captured_map: bool,
     pub local_quest_offset: Option<usize>,
     pub local_quest_soonest_first: bool,
+    pub local_quest_highest_xp_first: bool,
     pub quest_max_remaining_seconds: Option<u32>,
     pub quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
@@ -2156,6 +2157,7 @@ impl Store {
             quest_on_captured_map,
             local_quest_offset,
             local_quest_soonest_first,
+            local_quest_highest_xp_first,
             quest_max_remaining_seconds,
             quest_projected_expiry_by,
             merchant_item_id,
@@ -2750,8 +2752,15 @@ impl Store {
             "Choose either a waypoint map ID or the captured player map"
         );
         ensure!(
-            (local_quest_offset.is_none() && !local_quest_soonest_first) || quest_on_captured_map,
+            (local_quest_offset.is_none()
+                && !local_quest_soonest_first
+                && !local_quest_highest_xp_first)
+                || quest_on_captured_map,
             "Local quest paging and ordering require the captured player map filter"
+        );
+        ensure!(
+            !local_quest_soonest_first || !local_quest_highest_xp_first,
+            "Choose either timer or XP ordering for local quests"
         );
         let quest_key = quest_id.map(|id| id.to_string());
         ensure!(
@@ -3899,7 +3908,10 @@ impl Store {
                             let timer = local_quest_soonest_first
                                 .then(|| quest["timer"]["remaining_seconds"].as_u64())
                                 .flatten();
-                            (timer.is_none(), timer, *id)
+                            let xp = local_quest_highest_xp_first
+                                .then(|| quest["reward_amounts"]["xp"].as_u64())
+                                .flatten();
+                            (timer.is_none(), timer, std::cmp::Reverse(xp), *id)
                         });
                         summary["quest_match"]["matching_quests_truncated"] =
                             json!(local.len() > 20);
@@ -3936,8 +3948,10 @@ impl Store {
                                     row["elite"] = json!(quest["elite"].as_bool());
                                     row["suggested_group_size"] = json!(quest["suggested_group_size"].as_u64());
                                 }
-                                if filter_quest_budget {
+                                if filter_quest_budget || local_quest_highest_xp_first {
                                     row["reward_xp"] = json!(quest["reward_amounts"]["xp"].as_u64());
+                                }
+                                if filter_quest_budget {
                                     row["required_copper"] = json!(quest["required_copper"].as_u64());
                                 }
                                 if local_quest_soonest_first {

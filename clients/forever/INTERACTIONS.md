@@ -3149,3 +3149,7 @@ Saved quest searches also accept `quest_min_reward_xp`,
 `quest_max_required_copper` and `quest_within_captured_wallet`. Each
 active predicate requires a known value. Affordability checks each quest
 against the same capture's wallet and does not budget multiple quests.
+
+Set `local_quest_highest_xp_first: true` to order each local shortlist by
+recorded XP before paging. Unknown rewards appear last and ties use numeric
+quest ID. This option is mutually exclusive with timer ordering.

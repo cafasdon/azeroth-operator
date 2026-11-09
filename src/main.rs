@@ -572,6 +572,9 @@ struct List {
     /// Put known shortest timers first within each saved local-map shortlist.
     #[serde(default)]
     local_quest_soonest_first: bool,
+    /// Put known highest XP rewards first within each saved local-map shortlist.
+    #[serde(default)]
+    local_quest_highest_xp_first: bool,
     /// Match quests with a recorded remaining duration at or below this many seconds.
     quest_max_remaining_seconds: Option<u32>,
     /// Match quests whose historical expiry projects at or before this timestamp.
@@ -2328,6 +2331,7 @@ impl Operator {
                 quest_on_captured_map: args.quest_on_captured_map,
                 local_quest_offset: args.local_quest_offset,
                 local_quest_soonest_first: args.local_quest_soonest_first,
+                local_quest_highest_xp_first: args.local_quest_highest_xp_first,
                 quest_max_remaining_seconds: args.quest_max_remaining_seconds,
                 quest_projected_expiry_by: args.quest_projected_expiry_by,
                 merchant_item_id: args.merchant_item_id,
