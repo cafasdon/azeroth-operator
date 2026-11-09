@@ -180,6 +180,16 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
+    pub(crate) fn section_capture_status(&self, name: &str) -> &'static str {
+        if self.sections.contains_key(name) {
+            "observed"
+        } else if self.unavailable.contains_key(name) {
+            "reported_unavailable"
+        } else {
+            "not_recorded"
+        }
+    }
+
     pub fn validate(&self) -> Result<()> {
         ensure!(self.schema_version == 1, "Unsupported schema version");
         ensure!(self.client.interface > 0, "Missing interface version");
@@ -2615,16 +2625,7 @@ impl Store {
                         sections
                             .iter()
                             .filter(|name| !s.sections.contains_key(*name))
-                            .map(|name| {
-                                (
-                                    name,
-                                    if s.unavailable.contains_key(name) {
-                                        "reported_unavailable"
-                                    } else {
-                                        "not_recorded"
-                                    },
-                                )
-                            })
+                            .map(|name| (name, s.section_capture_status(name)))
                             .collect::<BTreeMap<_, _>>()
                     });
                     if missing_section_matches

@@ -10,6 +10,9 @@ Use `any_missing_sections` to find captures missing at least one named
 section. Each matching section is marked `reported_unavailable` or
 `not_recorded`. The list omits reason text. Use snapshot inspection to
 read a recorded reason for a specific section.
+When a section cannot be compared, `compare_snapshots` reports its
+capture status on each side as `observed`, `reported_unavailable`
+or `not_recorded`. The comparison omits reason text.
 The Rust MCP `capabilities.snapshot_section_schema` lists recognised
 section names and the names whose captured payloads require Forever.
 These are reader rules. Capture availability still depends on the saved

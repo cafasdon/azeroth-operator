@@ -1,5 +1,7 @@
 # Changelog
 
+- Distinguish unavailable and unrecorded sections in saved snapshot comparisons.
+
 - Discover recognised snapshot section names and Forever-only section restrictions through MCP capabilities.
 
 - Find saved captures missing requested sections and distinguish recorded unavailability.

@@ -2968,7 +2968,11 @@ pub fn compare_observations(
                 json!({"status":if count==0 {"unchanged"} else {"changed"},"changed_paths":paths,"change_count":count,"truncated":count>paths.len()})
             }
             _ => {
-                json!({"status":"not_comparable","before_available":before.sections.contains_key(name),"after_available":after.sections.contains_key(name)})
+                json!({"status":"not_comparable",
+                    "before_available":before.sections.contains_key(name),
+                    "after_available":after.sections.contains_key(name),
+                    "before_capture_status":before.section_capture_status(name),
+                    "after_capture_status":after.section_capture_status(name)})
             }
         };
         sections.insert(name.clone(), result);

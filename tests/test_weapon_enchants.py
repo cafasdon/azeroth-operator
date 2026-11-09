@@ -83,6 +83,13 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(missing['snapshots'][0]['missing_section_matches'],
                         {'weapon_enchants':'reported_unavailable','player_resources':'not_recorded'})
                     self.assertNotIn('PRIVATE_REASON',json.dumps(missing))
+                    for before_id,status,available in [(keys[0],'observed',True),
+                                                       (keys[1],'not_recorded',False)]:
+                        comparison=await call('compare_snapshots',before_id=before_id,after_id=unavailable_id)
+                        self.assertEqual(comparison['sections']['weapon_enchants'],{
+                            'status':'not_comparable','before_available':available,'after_available':False,
+                            'before_capture_status':status,'after_capture_status':'reported_unavailable'})
+                        self.assertNotIn('PRIVATE_REASON',json.dumps(comparison))
                     mixed=await call('list_snapshots',family='forever',required_sections=['weapon_enchants'],
                         any_missing_sections=['weapon_enchants','player_resources'])
                     self.assertEqual({row['snapshot_id'] for row in mixed['snapshots']},{keys[0],keys[2],keys[3]})
