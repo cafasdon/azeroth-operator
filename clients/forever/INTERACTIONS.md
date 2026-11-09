@@ -20,6 +20,10 @@ Set `merchant_combine_bundles: true` on `list_snapshots` with an exact item
 or currency and a target quantity. The total copper ceiling, affordability
 filter and cheapest-first order then use the combination cost. Offer counts
 describe eligible slots, and each plan uses one visit.
+Recipe and restock quotes also report per-reagent bundle combinations and a
+combined copper budget when every shortage can be quoted. The optimiser
+covers up to 1,000 units per reagent. Larger or unknown shortages leave the
+combination budget unknown. Single-offer quotes remain available.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows

@@ -35,7 +35,7 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
             key = store.ingest(base)
             variants = {}
             for name in ['missing_offers','missing_wallet','limited','extended','unquoted','blocked','overflow','alternative',
-                'mixed_alternatives','overflow_with_valid_alternative']:
+                'mixed_alternatives','overflow_with_valid_alternative','bundle_mix']:
                 saved = deepcopy(base)
                 if name=='missing_offers': saved['sections'].pop('merchant_stock')
                 if name=='missing_wallet': saved['sections'].pop('wallet')
@@ -52,6 +52,11 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                 if name=='mixed_alternatives':
                     saved['sections']['merchant_stock']['4'] = {**offer(10,1,1),'available':100}
                     saved['sections']['merchant_stock']['5'] = {**offer(10,1,1),'extended_cost':True}
+                if name=='bundle_mix':
+                    saved['sections']['profession_recipe_materials']['entries']['103']['reagents']['10']=9
+                    saved['sections']['merchant_stock']['1']=offer(10,5,5)
+                    saved['sections']['merchant_stock']['4']=offer(10,3,4)
+                    saved['sections']['wallet']['copper']=9
                 variants[name] = store.ingest(saved)
             merchant = deepcopy(base)
             merchant['captured_at'] = '2025-01-03T00:00:00Z'
@@ -91,6 +96,16 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quote['unlimited_copper_only_total'],7)
                     self.assertEqual(quote['unlimited_copper_only_shortfall'],1)
                     self.assertFalse(quote['unlimited_copper_only_affordable'])
+                    reply=await session.call_tool('review_forever_recipe',{
+                        'snapshot_id':variants['bundle_mix'],'recipe_id':101,'crafts':1,
+                        'suggest_reagent_chain':True,'merchant_reagent_plan':True})
+                    self.assertFalse(reply.isError,reply)
+                    combined=json.loads(reply.content[0].text)['reagent_chain']['merchant_reagent_plan']
+                    self.assertEqual(combined['unlimited_copper_only_total'],10)
+                    self.assertEqual(combined['copper_only_bundle_mix_total'],9)
+                    self.assertTrue(combined['copper_only_bundle_mix_affordable'])
+                    self.assertEqual(combined['reagents'][0]['lowest_cost_copper_only_bundle_mix']['bundles_by_slot'],
+                        {'1':1,'4':1})
                     external = await plan(merchant_snapshot_id=merchant_id)
                     self.assertFalse(external['reagent_chain']['merchant_reagent_plan']['unlimited_copper_only_affordable'])
                     later = await plan(inventory_snapshot_id=inventory_id,merchant_snapshot_id=merchant_id)

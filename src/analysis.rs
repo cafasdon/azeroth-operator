@@ -5865,6 +5865,9 @@ pub(crate) fn cheapest_merchant_bundle_mix<'a>(
         })
         .collect();
     bundles.sort_unstable_by_key(|(slot, _, _)| *slot);
+    if bundles.is_empty() {
+        return None;
+    }
 
     // Each bundle strictly reduces remaining demand. Reusing a slot is valid for unlimited stock.
     let mut best = vec![None; quantity as usize + 1];
@@ -6173,9 +6176,13 @@ fn merchant_reagent_budget(
 ) -> Value {
     let reagents: Vec<_> = demands
         .map(|(item, shortfall)| {
-            let options: BTreeMap<_, _> = offers
+            let matching = offers
                 .iter()
-                .filter(|(_, offer)| offer["item_id"].as_u64() == Some(item))
+                .filter(|(_, offer)| offer["item_id"].as_u64() == Some(item));
+            let bundle_mix = shortfall
+                .and_then(|quantity| u32::try_from(quantity).ok())
+                .and_then(|quantity| cheapest_merchant_bundle_mix(matching.clone(), quantity));
+            let options: BTreeMap<_, _> = matching
                 .map(|(slot, offer)| {
                     (
                         slot,
@@ -6199,7 +6206,8 @@ fn merchant_reagent_budget(
                 .map(|(copper, slot)| json!({"slot":slot,"required_copper":copper}));
             json!({
                 "item_id":item,"shortfall_vs_observed":shortfall,"offers_by_slot":options,
-                "lowest_unlimited_copper_only_offer":lowest_copper
+                "lowest_unlimited_copper_only_offer":lowest_copper,
+                "lowest_cost_copper_only_bundle_mix":bundle_mix
             })
         })
         .collect();
@@ -6208,10 +6216,18 @@ fn merchant_reagent_budget(
             .checked_add(reagent["lowest_unlimited_copper_only_offer"]["required_copper"].as_u64()?)
     });
     let budget = total.zip(wallet);
+    let mix_total = reagents.iter().try_fold(0u64, |total, reagent| {
+        total
+            .checked_add(reagent["lowest_cost_copper_only_bundle_mix"]["required_copper"].as_u64()?)
+    });
+    let mix_budget = mix_total.zip(wallet);
     json!({"reagents":reagents,
         "unlimited_copper_only_total":total,
         "unlimited_copper_only_affordable":budget.map(|(cost, balance)| cost <= balance),
-        "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance))})
+        "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance)),
+        "copper_only_bundle_mix_total":mix_total,
+        "copper_only_bundle_mix_affordable":mix_budget.map(|(cost, balance)| cost <= balance),
+        "copper_only_bundle_mix_shortfall":mix_budget.map(|(cost, balance)| cost.saturating_sub(balance))})
 }
 
 pub fn buyback_cost_review(snapshot: &Snapshot, slots: &[u32], reserve: u64) -> Result<Value> {
