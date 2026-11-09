@@ -53,6 +53,8 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Return only capture statuses for these distinct section names instead of section data.
+    coverage_sections: Option<Vec<String>>,
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
@@ -2658,6 +2660,11 @@ impl Operator {
             )]);
         }
         if let Some(budget) = args.spending_budget {
+            if args.coverage_sections.is_some() {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Spending budgets cannot be combined with section coverage inspection",
+                )]);
+            }
             if args.section.is_some()
                 || args.quest_id.is_some()
                 || filter_quest_map
@@ -2844,10 +2851,11 @@ impl Operator {
                 "Tracked recipe learning filter requires tracked_recipes without a recipe ID",
             )]);
         }
-        match self
-            .store
-            .inspect(&args.snapshot_id, args.section.as_deref())
-        {
+        match self.store.inspect_with_coverage(
+            &args.snapshot_id,
+            args.section.as_deref(),
+            args.coverage_sections.as_deref(),
+        ) {
             Ok(mut value) => {
                 if let Some(maximum) = args.equipment_durability_max_percent {
                     if value["client"]["family"] != "forever" {

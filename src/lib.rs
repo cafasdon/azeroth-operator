@@ -1976,19 +1976,7 @@ impl Store {
             .into_iter()
             .flatten()
         {
-            ensure!(
-                !sections.is_empty()
-                    && sections.len() <= SNAPSHOT_SECTIONS.len()
-                    && sections
-                        .iter()
-                        .all(|name| SNAPSHOT_SECTIONS.contains(&name.as_str()))
-                    && sections
-                        .iter()
-                        .collect::<std::collections::BTreeSet<_>>()
-                        .len()
-                        == sections.len(),
-                "Section filters require distinct known section names"
-            );
+            validate_section_names(sections)?;
         }
         ensure!(
             inventory_item.is_none() || inventory_requirements.is_none(),
@@ -3643,6 +3631,22 @@ impl Store {
     }
 
     pub fn inspect(&self, id: &str, section: Option<&str>) -> Result<Value> {
+        self.inspect_with_coverage(id, section, None)
+    }
+
+    pub fn inspect_with_coverage(
+        &self,
+        id: &str,
+        section: Option<&str>,
+        coverage_sections: Option<&[String]>,
+    ) -> Result<Value> {
+        if let Some(names) = coverage_sections {
+            ensure!(
+                section.is_none(),
+                "Coverage inspection excludes section data"
+            );
+            validate_section_names(names)?;
+        }
         let s = self.read(id)?;
         let mut result = json!({"snapshot_id": id, "client": s.client, "character": s.character,
             "source": s.source, "captured_at": s.captured_at, "age_seconds": (Utc::now()-s.captured_at).num_seconds(), "live": false});
@@ -3664,12 +3668,35 @@ impl Store {
                         .map(analysis::player_pvp_progression_observation)
                 );
             }
+        } else if let Some(names) = coverage_sections {
+            let statuses: BTreeMap<_, _> = names
+                .iter()
+                .map(|name| (name, s.section_capture_status(name)))
+                .collect();
+            result["section_coverage"] = json!(statuses);
         } else {
             result["available_sections"] = json!(s.sections.keys().collect::<Vec<_>>());
             result["unavailable"] = json!(s.unavailable);
         }
         Ok(result)
     }
+}
+
+fn validate_section_names(sections: &[String]) -> Result<()> {
+    ensure!(
+        !sections.is_empty()
+            && sections.len() <= SNAPSHOT_SECTIONS.len()
+            && sections
+                .iter()
+                .all(|name| SNAPSHOT_SECTIONS.contains(&name.as_str()))
+            && sections
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                == sections.len(),
+        "Section filters require distinct known section names"
+    );
+    Ok(())
 }
 
 #[cfg(test)]

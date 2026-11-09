@@ -1,5 +1,7 @@
 # Changelog
 
+- Inspect selected snapshot section coverage without returning payloads or unavailability reason text.
+
 - Resolve an explicit saved character to the newest capture containing required sections.
 
 - Distinguish unavailable and unrecorded sections in saved snapshot comparisons.

@@ -13,6 +13,10 @@ read a recorded reason for a specific section.
 When a section cannot be compared, `compare_snapshots` reports its
 capture status on each side as `observed`, `reported_unavailable`
 or `not_recorded`. The comparison omits reason text.
+Use `inspect_snapshot.coverage_sections` with distinct recognised names
+to check those statuses in one saved capture. This view returns snapshot
+metadata and the requested statuses. It omits section payloads and
+reason text and cannot be combined with a section data request.
 The Rust MCP `capabilities.snapshot_section_schema` lists recognised
 section names and the names whose captured payloads require Forever.
 These are reader rules. Capture availability still depends on the saved
