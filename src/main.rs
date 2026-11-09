@@ -730,6 +730,8 @@ struct RecipeReview {
     /// Preview up to four alternatives at the first unresolved chain producer choice.
     #[serde(default)]
     preview_reagent_producer_choices: bool,
+    /// Zero-based offset into the alternatives for the first unresolved reagent.
+    reagent_producer_preview_offset: Option<usize>,
     /// Estimate initial carried material needs and bank withdrawals for the printed reagent-chain order.
     #[serde(default)]
     reagent_chain_stock_plan: bool,
@@ -1349,6 +1351,11 @@ impl Operator {
                 "Producer choices require reagent-chain mode"
             );
             anyhow::ensure!(
+                args.reagent_producer_preview_offset.is_none()
+                    || args.preview_reagent_producer_choices,
+                "Producer preview paging requires producer previews"
+            );
+            anyhow::ensure!(
                 !args.preview_reagent_producer_choices
                     || (args.suggest_reagent_chain
                         && args
@@ -1406,6 +1413,7 @@ impl Operator {
                         inventory.as_ref(),
                         args.reagent_producer_choices.as_deref().unwrap_or(&[]),
                         args.reagent_chain_stock_plan,
+                        args.reagent_producer_preview_offset.unwrap_or_default(),
                     )?;
                     review["reagent_chain"]["producer_previews"] = previews;
                 }

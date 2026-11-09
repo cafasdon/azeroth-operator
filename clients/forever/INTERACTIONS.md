@@ -318,6 +318,10 @@ Each preview adds one explicit choice to those supplied and shows the
 resulting steps, external material requirements or next blocker. It returns
 null if the original plan does not stop on ambiguity. Further ambiguous
 choices remain unresolved. The original draft and player choice stay separate.
+With previews enabled, `reagent_producer_preview_offset` pages through
+all candidates in numeric recipe ID order, four per request. The preview
+reports `total_candidates` and `has_more` independently of the diagnostic
+list of up to 20 candidate IDs.
 When `reagent_chain_stock_plan` is also enabled, each completed preview
 summarises its saved material and preparation checks, acquisition shortfalls
 and suggested bank withdrawals. A blocked preview has a null stock summary.

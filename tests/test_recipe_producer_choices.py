@@ -142,6 +142,14 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                         reagent_producer_choices=[{'item_id':20,'recipe_id':231}]))['reagent_chain']
                     self.assertTrue(many['draft_complete'])
                     self.assertEqual(many['steps'][0]['recipe_id'],231)
+                    page = (await plan(snapshot_id=variants['many_producers'],
+                                       preview_reagent_producer_choices=True,
+                                       reagent_producer_preview_offset=30))['reagent_chain']['producer_previews']
+                    self.assertEqual([row['recipe_id'] for row in page['candidate_previews']],
+                                     [228,229,230,231])
+                    self.assertEqual((page['offset'],page['total_candidates'],page['has_more']),
+                                     (30,34,False))
+                    await plan(reagent_producer_preview_offset=0,error=True)
                     eight = [{'item_id':20,'recipe_id':104},{'item_id':30,'recipe_id':103},
                         {'item_id':100,'recipe_id':101},*[{'item_id':500+i,'recipe_id':300+i} for i in range(5)]]
                     chain = (await plan(reagent_producer_choices=list(reversed(eight))))['reagent_chain']

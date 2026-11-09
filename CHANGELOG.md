@@ -1,5 +1,7 @@
 # Changelog
 
+- Page through all saved Forever producer alternatives in groups of four previews.
+
 - Compare acquisition and bank withdrawal needs across saved Forever producer previews.
 
 - Preview full saved Forever reagent-chain outcomes for up to four alternative producers.

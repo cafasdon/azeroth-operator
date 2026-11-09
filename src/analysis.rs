@@ -890,9 +890,7 @@ pub fn recipe_reagent_chain_with_choices(
         .as_object()
         .ok_or_else(|| anyhow::anyhow!("Bulk recipes unavailable"))?
     {
-        if row["status"] == "fixed_items"
-            && let Some(output) = row["output_item_id"].as_u64()
-        {
+        if let Some(output) = fixed_recipe_output(row) {
             producers.entry(output).or_default().push(
                 std::num::NonZeroU32::new(id.parse()?)
                     .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?,
@@ -972,6 +970,12 @@ pub fn recipe_reagent_chain_with_choices(
     Ok(result)
 }
 
+fn fixed_recipe_output(row: &Value) -> Option<u64> {
+    (row["status"] == "fixed_items")
+        .then(|| row["output_item_id"].as_u64())
+        .flatten()
+}
+
 /// Replan the first unresolved producer choice with a bounded set of explicit alternatives.
 pub fn preview_reagent_producers(
     chain: &Value,
@@ -981,16 +985,25 @@ pub fn preview_reagent_producers(
     inventory: Option<&Snapshot>,
     choices: &[RecipeProducerChoice],
     include_stock_plan: bool,
+    offset: usize,
 ) -> Result<Value> {
     let blocked = &chain["blocked_reason"];
     if blocked["reason"] != "ambiguous_captured_producer" {
         return Ok(Value::Null);
     }
-    let item_id = serde_json::from_value(blocked["item_id"].clone())?;
-    let ids: Vec<std::num::NonZeroU32> =
-        serde_json::from_value(blocked["candidate_recipe_ids"].clone())?;
+    let item_id: std::num::NonZeroU32 = serde_json::from_value(blocked["item_id"].clone())?;
+    let mut ids: Vec<std::num::NonZeroU32> =
+        snapshot.sections["profession_recipe_materials"]["entries"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter(|(_, row)| fixed_recipe_output(row) == Some(u64::from(item_id.get())))
+            .map(|(id, _)| id.parse())
+            .collect::<std::result::Result<_, _>>()?;
+    ids.sort_unstable();
+    let total = ids.len();
     let mut previews = Vec::new();
-    for candidate in ids.into_iter().take(4) {
+    for candidate in ids.into_iter().skip(offset).take(4) {
         let mut selections = choices.to_vec();
         selections.push(RecipeProducerChoice {
             item_id,
@@ -1024,10 +1037,9 @@ pub fn preview_reagent_producers(
         }
         previews.push(result);
     }
-    Ok(
-        json!({"item_id":item_id,"truncated":blocked["candidate_count"].as_u64().unwrap() > previews.len() as u64,
-        "candidate_previews":previews,"craftability_verified":false}),
-    )
+    Ok(json!({"item_id":item_id,"truncated":total > previews.len(),
+        "offset":offset,"total_candidates":total,"has_more":total.saturating_sub(offset) > previews.len(),
+        "candidate_previews":previews,"craftability_verified":false}))
 }
 
 struct RecipeChainDraft<'a> {
