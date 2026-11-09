@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter combined saved Forever reset schedules by dungeon, raid or world boss.
+
 - Show captured dungeon and raid lockout details in the combined Forever reset schedule.
 
 - Limit combined saved Forever reset schedules to a requested play window.

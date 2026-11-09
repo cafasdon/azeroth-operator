@@ -2362,6 +2362,9 @@ saved row and do not establish current entry eligibility.
 Add `saved_reset_through` to limit that schedule to an inclusive end time.
 The reference is still exclusive. Coverage counts describe the whole capture,
 even when the requested window contains no projected resets.
+With a reference time, `saved_reset_kind` limits the schedule to `dungeon`,
+`raid` or `world_boss`. Instance types use the captured raid flag, and
+coverage still describes both captured sections.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the

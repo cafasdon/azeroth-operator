@@ -111,6 +111,17 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                              'saved_instance_details':{'difficulty_id':1,'locked':True,
                                 'extended':True,'is_raid':True,'max_players':40}}]}])
                     self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
+                    for kind, expected in [('world_boss',schedule['upcoming_projected_resets'][:1]),
+                                           ('raid',schedule['upcoming_projected_resets'][1:]),('dungeon',[])]:
+                        reply = await session.call_tool('character_summary', {
+                            'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                            'saved_reset_kind':kind})
+                        self.assertFalse(reply.isError,reply)
+                        filtered = json.loads(reply.content[0].text)['saved_reset_schedule']
+                        self.assertEqual(filtered['upcoming_projected_resets'],expected)
+                        self.assertEqual(filtered['next_projected_reset'],expected[0] if expected else None)
+                        self.assertEqual(filtered['coverage'],schedule['coverage'])
+                        self.assertEqual(filtered['kind'],kind)
                     self.assertIs(schedule['current_lockout_verified'],False)
                     window = await session.call_tool('character_summary', {
                         'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',

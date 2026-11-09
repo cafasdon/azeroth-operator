@@ -583,6 +583,8 @@ struct Summary {
     saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Inclusive end of the saved reset schedule window. Requires saved_reset_reference_at.
     saved_reset_through: Option<chrono::DateTime<chrono::Utc>>,
+    /// Limit the saved reset schedule to one activity kind. Requires saved_reset_reference_at.
+    saved_reset_kind: Option<azeroth_operator::saved_resets::SavedResetKind>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1829,6 +1831,11 @@ impl Operator {
         )
     )]
     fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        if args.saved_reset_kind.is_some() && args.saved_reset_reference_at.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A saved reset kind requires a reference time",
+            )]);
+        }
         if let Some(end) = args.saved_reset_through
             && args
                 .saved_reset_reference_at
@@ -1846,6 +1853,7 @@ impl Operator {
                         &s,
                         reference,
                         args.saved_reset_through,
+                        args.saved_reset_kind,
                     ) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Saved reset schedules require a valid Forever snapshot",

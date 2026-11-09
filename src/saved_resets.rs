@@ -126,11 +126,20 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
     projection["relative_to_reference"] = json!(classification);
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SavedResetKind {
+    Dungeon,
+    Raid,
+    WorldBoss,
+}
+
 /// Merge historical reset timestamps from both validated sections of one capture.
 pub fn combined_schedule(
     snapshot: &crate::Snapshot,
     reference: DateTime<Utc>,
     through: Option<DateTime<Utc>>,
+    kind: Option<SavedResetKind>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
@@ -151,16 +160,24 @@ pub fn combined_schedule(
             "cache_update_age_seconds":projected["cache_update_age_seconds"]}),
         );
         for row in projected["rows"].as_array().into_iter().flatten() {
+            let observation = &row["observation"];
+            let is_instance = section == "saved_instances";
+            if !kind.is_none_or(|kind| match kind {
+                SavedResetKind::Dungeon => is_instance && observation["is_raid"] == false,
+                SavedResetKind::Raid => is_instance && observation["is_raid"] == true,
+                SavedResetKind::WorldBoss => !is_instance,
+            }) {
+                continue;
+            }
             let reset = row["projected_reset_at"]
                 .as_str()
                 .and_then(|value| value.parse::<DateTime<Utc>>().ok());
             if let Some(reset) =
                 reset.filter(|reset| *reset > reference && through.is_none_or(|end| *reset <= end))
             {
-                let observation = &row["observation"];
                 let mut entry =
                     json!({"section":section,"slot":row["slot"],"name":observation["name"]});
-                if section == "saved_instances" {
+                if is_instance {
                     entry["saved_instance_details"] = json!({
                         "difficulty_id":observation["difficulty_id"],
                         "locked":observation["locked"],"extended":observation["extended"],
@@ -180,6 +197,9 @@ pub fn combined_schedule(
         "current_lockout_verified":false,"current_availability_verified":false,"live":false});
     if let Some(end) = through {
         result["through_at"] = json!(end);
+    }
+    if let Some(kind) = kind {
+        result["kind"] = json!(kind);
     }
     Ok(result)
 }
