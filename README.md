@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Recipe review distinguishes explicit zero-item requirements from unavailable
+material evidence. Zero-item recipes can now retain their captured charge limit
+even when inventory was not observed; this does not verify current craftability.
+[Evidence](docs/zero-item-recipe-capacity-verification-2026-11-09.md).
+
 Reagent-chain preparation now accounts for repeated producer uses against one
 saved charge pool per recipe. Per-step requests stay visible beside cumulative
 shortfalls; newer stock never refreshes those charges. This remains a conditional

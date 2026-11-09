@@ -1,5 +1,20 @@
 # Forever
 
+Recipe reviews expose `material_capacity_basis` separately for `bags` and
+`all_observed_storage`: `no_required_items`, `observed_required_items` or
+`unavailable`. The existing finite `material_capacity` remains null when there
+is no fixed-item limit or material observations are unavailable; the new basis
+distinguishes these cases without inventing an infinite numeric count.
+
+For explicitly empty fixed requirements, `material_and_charge_capacity` uses
+the original saved charge count directly, even with no inventory observation.
+With required items it still needs both observed item capacity and charges.
+Unsupported material requirements never become free recipes, and absent charges
+remain unknown. These limits cover only fixed items and saved recipe charges,
+not learning, tools, conditions, recharge or current craftability. Newer inventory
+does not replace recipe cooldown evidence.
+[Offline evidence](../../docs/zero-item-recipe-capacity-verification-2026-11-09.md).
+
 Reagent-chain steps now expose `captured_charge_accounting`: cumulative requested
 crafts for that recipe, saved charges, modeled charges before/after the step,
 cumulative shortfall and coverage. `captured_nonmaterial_checks` retains the

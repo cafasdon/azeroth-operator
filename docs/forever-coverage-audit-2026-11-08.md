@@ -7,6 +7,11 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: recipe preparation now distinguishes explicit no-item limits
+from unavailable material evidence and combines known charges for those recipes
+even without inventory. [Offline evidence](zero-item-recipe-capacity-verification-2026-11-09.md).
+Other requirements and native/current craftability remain unqualified.
+
 9 November update: repeated producer steps now share a per-recipe captured charge
 ledger in chain and stock preparation, closing independent full-charge reuse.
 [Offline evidence](chain-charge-accounting-verification-2026-11-09.md). Shared

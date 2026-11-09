@@ -1097,8 +1097,18 @@ fn review_recipe_observation(
         .and_then(|remaining| snapshot.captured_at.checked_add_signed(remaining));
     let bags_capacity = capacity(&bag_limits, !missing_storage.contains(&"bags"));
     let observed_capacity = capacity(&observed_limits, missing_storage.len() < storage.len());
+    let no_required_items = fixed && bag_limits.is_empty();
+    let capacity_basis = |materials: &Value| {
+        if no_required_items {
+            "no_required_items"
+        } else if materials["supported_crafts"].as_u64().is_some() {
+            "observed_required_items"
+        } else {
+            "unavailable"
+        }
+    };
     let material_coverage = |materials: &Value| {
-        if fixed && bag_limits.is_empty() {
+        if no_required_items {
             return Some(true);
         }
         materials["supported_crafts"]
@@ -1127,14 +1137,18 @@ fn review_recipe_observation(
         ),
     ];
     let combined_capacity = |materials: &Value| {
-        materials["supported_crafts"]
-            .as_u64()
-            .zip(charges)
-            .map(|(material_limit, charges)| {
-                let supported = material_limit.min(charges);
-                json!({"supported_crafts":supported,
-                "shortfall_vs_requested":u64::from(crafts).saturating_sub(supported)})
-            })
+        let supported = if no_required_items {
+            charges
+        } else {
+            materials["supported_crafts"]
+                .as_u64()
+                .zip(charges)
+                .map(|(items, charges)| items.min(charges))
+        };
+        supported.map(|supported| {
+            json!({"supported_crafts":supported,
+            "shortfall_vs_requested":u64::from(crafts).saturating_sub(supported)})
+        })
     };
     let mut review = json!({"captured_at":snapshot.captured_at,"recipe":recipe,"requested_crafts":crafts,
         "captured_cooldown_state":recipe_cooldown_state(recipe),
@@ -1153,6 +1167,10 @@ fn review_recipe_observation(
         "material_capacity":{
             "bags":bags_capacity,
             "all_observed_storage":observed_capacity
+        },
+        "material_capacity_basis":{
+            "bags":capacity_basis(&bags_capacity),
+            "all_observed_storage":capacity_basis(&observed_capacity)
         },
         "material_and_charge_capacity":{
             "bags":combined_capacity(&bags_capacity),

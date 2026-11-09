@@ -1,5 +1,9 @@
 # Changelog
 
+- Distinguish explicit zero-item recipe capacity from unavailable material data,
+  retaining original saved charge limits for free fixed requirements even without
+  inventory; preserve legacy finite material-capacity fields and unknown charges.
+
 - Account cumulatively for repeated producer recipes in reagent-chain charge
   checks and stock preparation, preserving per-request evidence, unknown charge
   counts, original capture provenance and ordinary unique-recipe batch outputs.

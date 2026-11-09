@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Single/bulk recipe preparation distinguishes no required items from unavailable
+material capacity. Explicit zero-item fixed recipes retain their saved charge
+limit without needing an inventory capture; unknown charges and unsupported
+requirements stay unknown. Current readiness and crafting remain with the player.
+[Evidence](../../docs/zero-item-recipe-capacity-verification-2026-11-09.md).
+
 Repeated producers in captured reagent chains now consume one modeled saved
 charge pool per recipe across their printed steps. Step and stock-plan checks
 expose cumulative shortages independently of material feasibility. Unknown counts
