@@ -683,6 +683,9 @@ struct Compare {
     player_trade_offer_changes: bool,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
+    /// Compare recorded bag and bank container quantities for item_id.
+    #[serde(default)]
+    item_container_changes: bool,
     /// Optionally compare one captured Forever currency balance by ID.
     currency_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever reputation faction by ID.
@@ -2040,6 +2043,7 @@ impl Operator {
                 &b,
                 azeroth_operator::analysis::ComparisonSelectors {
                     item_id: args.item_id.map(|id| id.get()),
+                    item_container_changes: args.item_container_changes,
                     currency_id: args.currency_id.map(|id| id.get()),
                     faction_id: args.faction_id.map(|id| id.get()),
                     quest_id: args.quest_id.map(|id| id.get()),

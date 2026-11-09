@@ -2707,9 +2707,14 @@ pub fn observed_bag_stack_groups(
     Some(report)
 }
 
-fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Value> {
-    let before = find_item(before, item_id, 0, 1)?;
-    let after = find_item(after, item_id, 0, 1)?;
+fn compare_item(
+    before: &Snapshot,
+    after: &Snapshot,
+    item_id: u32,
+    by_container: bool,
+) -> Result<Value> {
+    let before = find_item_with_container_quantities(before, item_id, 0, 1, by_container)?;
+    let after = find_item_with_container_quantities(after, item_id, 0, 1, by_container)?;
     let quantities = after["quantity_by_storage"].as_object().unwrap();
     let mut net_delta = Some(0i64);
     let mut by_storage = BTreeMap::new();
@@ -2722,7 +2727,38 @@ fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Val
             json!({"before":previous,"after":current,"delta":delta}),
         );
     }
-    Ok(json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta}))
+    let mut result = json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta});
+    if by_container {
+        let mut changes = serde_json::Map::new();
+        for storage in quantities
+            .keys()
+            .filter(|name| name.as_str() != "equipment")
+        {
+            let previous = before["quantity_by_container"][storage].as_object();
+            let current = after["quantity_by_container"][storage].as_object();
+            let ids: BTreeSet<_> = previous
+                .into_iter()
+                .chain(current)
+                .flat_map(|map| map.keys())
+                .collect();
+            let entries: BTreeMap<_, _> = ids
+                .into_iter()
+                .map(|id| {
+                    let a = previous.and_then(|map| map.get(id)).and_then(Value::as_i64);
+                    let b = current.and_then(|map| map.get(id)).and_then(Value::as_i64);
+                    (
+                        id,
+                        json!({"before":a,"after":b,"delta":a.zip(b).map(|(a,b)| b-a)}),
+                    )
+                })
+                .collect();
+            changes.insert(storage.clone(), json!({
+                "before_observed":previous.is_some(),"after_observed":current.is_some(),"containers":entries,
+            }));
+        }
+        result["by_container"] = json!(changes);
+    }
+    Ok(result)
 }
 
 pub fn restock_new_stack_space(
@@ -2965,6 +3001,7 @@ pub fn compare_with_item(
 
 #[derive(Default)]
 pub struct ComparisonSelectors {
+    pub item_container_changes: bool,
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
     pub player_aura_changes: bool,
@@ -3105,6 +3142,10 @@ pub fn compare_observations(
     selectors: ComparisonSelectors,
 ) -> Result<Value> {
     ensure_comparable(before, after)?;
+    ensure!(
+        !selectors.item_container_changes || selectors.item_id.is_some(),
+        "Item container changes require an item ID"
+    );
     let names: BTreeSet<_> = before
         .sections
         .keys()
@@ -3775,7 +3816,8 @@ pub fn compare_observations(
             })).unwrap_or(Value::Null);
     }
     if let Some(item_id) = selectors.item_id {
-        comparison["item_quantity_change"] = compare_item(before, after, item_id)?;
+        comparison["item_quantity_change"] =
+            compare_item(before, after, item_id, selectors.item_container_changes)?;
     }
     if let Some(currency_id) = selectors.currency_id {
         ensure!(

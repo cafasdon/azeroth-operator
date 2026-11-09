@@ -3177,3 +3177,10 @@ item's recorded quantities by bag and bank container before paging, without
 a catalogue. Each snapshot reports its own totals. A missing storage section
 returns null, a recorded section with no container rows returns an empty
 map, and a recorded container with no copies returns zero.
+
+Set `compare_snapshots.item_container_changes` with `item_id` to compare
+each recorded container across two compatible captures of the same character.
+Containers need recorded quantities on both sides for a signed delta.
+The report distinguishes missing storage from a captured section with no
+container rows. Quantity changes describe observations and do not establish
+that an item was moved between containers.

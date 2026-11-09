@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare recorded item quantities by bag and bank container across saved captures.
+
 - Show saved bag and bank quantities by container in catalogue-free item searches.
 
 - Filter saved Forever owned gear by a specific bag or bank container.

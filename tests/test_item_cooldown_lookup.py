@@ -37,6 +37,14 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             alt['sections']['bag_item_cooldowns']['entries']['0']['1']['remaining_seconds']=7
             alt['sections']['account_bank']={}
             alt_key=store.ingest(alt)
+            changed=deepcopy(legacy)
+            changed['captured_at']='2025-01-02T00:00:00Z'
+            changed['sections']['bags']['0']['1']['count']=4
+            del changed['sections']['bags']['2']
+            changed['sections']['bags']['3']={}
+            del changed['sections']['character_bank']
+            changed['sections']['account_bank']={}
+            changed_key=store.ingest(changed)
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -87,6 +95,25 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(next(row for row in other['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],7)
                     self.assertEqual(next(row for row in combined['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],0)
                     self.assertNotIn('bag_cooldown_observation',old)
+                    comparison={'before_id':key,'after_id':changed_key,'item_id':100}
+                    for options in [{}, {'item_container_changes':True}]:
+                        reply=await session.call_tool('compare_snapshots',{**comparison,**options})
+                        self.assertFalse(reply.isError,reply)
+                        item=json.loads(reply.content[0].text)['item_quantity_change']
+                        self.assertEqual('by_container' in item,bool(options))
+                    self.assertEqual(item['by_container'],{
+                        'bags':{'before_observed':True,'after_observed':True,'containers':{
+                            '0':{'before':6,'after':9,'delta':3},
+                            '1':{'before':0,'after':0,'delta':0},
+                            '2':{'before':0,'after':None,'delta':None},
+                            '3':{'before':None,'after':0,'delta':None}}},
+                        'character_bank':{'before_observed':True,'after_observed':False,'containers':{
+                            '6':{'before':20,'after':None,'delta':None}}},
+                        'account_bank':{'before_observed':False,'after_observed':True,'containers':{}},
+                    })
+                    del comparison['item_id']
+                    reply=await session.call_tool('compare_snapshots',{**comparison,'item_container_changes':True})
+                    self.assertTrue(reply.isError)
             for path,data in protected.items(): self.assertEqual(path.read_bytes(),data)
 
 
