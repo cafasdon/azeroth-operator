@@ -30,6 +30,7 @@ SECTIONS = SECTIONS | {"merchant_buyback"}
 SECTIONS = SECTIONS | {"loot_window"}
 SECTIONS = SECTIONS | {"player_trade_offer"}
 SECTIONS = SECTIONS | {"player_pvp_progression"}
+SECTIONS = SECTIONS | {"group_context"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -829,6 +830,19 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "group_context" in sections:
+        group=sections['group_context']
+        if (c['family']!='forever' or not isinstance(group,dict) or set(group)!={'coverage','categories'}
+                or group['coverage']!='reported_player_group_context' or not isinstance(group['categories'],dict)
+                or not 1<=len(group['categories'])<=2 or set(group['categories'])-{'home','instance'}):
+            raise ValueError('Invalid group context')
+        for row in group['categories'].values():
+            if (not isinstance(row,dict) or not {'in_group','in_raid','reported_member_count'}<=row.keys()
+                    or set(row)-{'in_group','in_raid','reported_member_count','player_is_leader'}
+                    or type(row['in_group']) is not bool or type(row['in_raid']) is not bool
+                    or type(row['reported_member_count']) is not int or not 0<=row['reported_member_count']<=4_294_967_295
+                    or 'player_is_leader' in row and type(row['player_is_leader']) is not bool):
+                raise ValueError('Invalid group category')
     if "player_pvp_progression" in sections:
         pvp=sections["player_pvp_progression"]
         required={'coverage','faction_id','rank','rank_points','next_rank_threshold'}

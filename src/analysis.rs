@@ -6646,6 +6646,11 @@ pub fn summary(s: &Snapshot) -> Value {
             "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
             "current_usability_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
+    summary["group_context_observation"] = s.sections.get("group_context").map(|section| {
+        json!({"coverage":section["coverage"],"categories":section["categories"],
+            "current_group_verified":false,"group_identity_verified":false,
+            "complete_roster_verified":false,"social_action_eligibility_verified":false,"game_execution":false})
+    }).unwrap_or(Value::Null);
     summary["player_pvp_progression_observation"] = s
         .sections
         .get("player_pvp_progression")

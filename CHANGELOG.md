@@ -1,5 +1,9 @@
 # Changelog
 
+- Add passive personal group context for explicit home/instance categories,
+  strict local readers and MCP summaries. Keep category unknowns separate from
+  solo state; omit roster identities and all social actions.
+
 - Capture bounded optional PvP total-rank thresholds and calculate historical
   points remaining to reported caps. Preserve per-rank unknowns, legacy output
   and false eligibility claims; do not infer season binding or earned-point gains.

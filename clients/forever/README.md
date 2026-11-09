@@ -2374,3 +2374,14 @@ current/target thresholds or zero cap totals remain unknown. No rank interpolati
 season binding, earned-point delta, reward eligibility or present cap guarantee.
 Two projections use at most eight deduplicated lookup calls. Legacy captures and
 passive action boundaries are preserved. See docs/ADR-071-pvp-cap-distance.md.
+
+## Personal group context (2026-11-09)
+
+Manual Forever exports can retain separate explicit home/instance group flags,
+raw reported member counts and optional own-player leadership. Inspect
+group_context or read group_context_observation in character_summary. Missing
+categories remain unavailable, never solo; raw counts are not a full roster.
+Two stable projections do not establish the same group identity or current
+membership. No member names/GUIDs, roster, chat, invites, role changes, votes or
+social actions are captured or invoked. Native testing stays deferred.
+See docs/ADR-072-personal-group-context.md.

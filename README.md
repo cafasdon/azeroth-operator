@@ -1,5 +1,9 @@
 # Azeroth Operator
 
+Forever exports now support separate home/instance group context: reported member
+counts, group flags and your own leader flag when readable. No roster identities
+or social actions are added. [Contract](docs/ADR-072-personal-group-context.md).
+
 PvP summaries can now calculate points remaining to reported weekly and maximum
 rank caps from captured total-point thresholds. Missing or zero caps stay unknown.
 [Contract](docs/ADR-071-pvp-cap-distance.md).

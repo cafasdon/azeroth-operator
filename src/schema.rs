@@ -1992,6 +1992,47 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "group_context" => {
+            object(
+                value,
+                &[("coverage", "text", true), ("categories", "map", true)],
+            )?;
+            ensure!(
+                value["coverage"] == "reported_player_group_context",
+                "Invalid group coverage"
+            );
+            let categories = value["categories"]
+                .as_object()
+                .ok_or_else(|| anyhow::anyhow!("Invalid group categories"))?;
+            ensure!(
+                (1..=2).contains(&categories.len()),
+                "Invalid group category count"
+            );
+            for (category, row) in categories {
+                ensure!(
+                    matches!(category.as_str(), "home" | "instance"),
+                    "Invalid group category"
+                );
+                object(
+                    row,
+                    &[
+                        ("in_group", "bool", true),
+                        ("in_raid", "bool", true),
+                        ("reported_member_count", "uint", true),
+                        ("player_is_leader", "bool", false),
+                    ],
+                )?;
+                ensure!(
+                    row["reported_member_count"]
+                        .as_u64()
+                        .is_some_and(|n| n <= u64::from(u32::MAX)),
+                    "Invalid group member count"
+                );
+                if let Some(leader) = row.get("player_is_leader") {
+                    ensure!(leader.is_boolean(), "Invalid group leader flag");
+                }
+            }
+        }
         "player_pvp_progression" => {
             object(
                 value,

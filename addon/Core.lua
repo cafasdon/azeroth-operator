@@ -47,6 +47,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="loot_window"
         sectionNames[#sectionNames+1]="player_trade_offer"
         sectionNames[#sectionNames+1]="player_pvp_progression"
+        sectionNames[#sectionNames+1]="group_context"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"

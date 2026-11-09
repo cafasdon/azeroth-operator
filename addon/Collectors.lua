@@ -1,5 +1,108 @@
 local _, AO = ...
 AO.collectors = {}
+-- Passive category-specific player group state; never enumerate group members.
+AO.collectors.group_context = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Group restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted group observation")
+        return value
+    end
+    local function uint(value,minimum)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=minimum and value<=4294967295,
+            "Invalid group number")
+        return value
+    end
+    local function boolean(value)
+        value=public(value)
+        assert(type(value)=="boolean", "Invalid group flag")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Group context unavailable")
+    local grouped=public(IsInGroup)
+    local raided=public(IsInRaid)
+    local count=public(GetNumGroupMembers)
+    assert(type(grouped)=="function" and type(raided)=="function" and type(count)=="function",
+        "Group API unavailable")
+    local function fixedApis()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and public(IsInGroup)==grouped and public(IsInRaid)==raided
+            and public(GetNumGroupMembers)==count, "Group API changed")
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret)
+            and rawequal(rawget(_G,"IsInGroup"),grouped) and rawequal(rawget(_G,"IsInRaid"),raided)
+            and rawequal(rawget(_G,"GetNumGroupMembers"),count), "Group API changed")
+    end
+    local names={"home","instance"}
+    local constants={home="LE_PARTY_CATEGORY_HOME",instance="LE_PARTY_CATEGORY_INSTANCE"}
+    local function category(name)
+        local ok,value=pcall(function() return uint(_G[constants[name]],1) end)
+        if ok then return value end
+    end
+    local ids={home=category("home"),instance=category("instance")}
+    assert(not(ids.home and ids.instance and ids.home==ids.instance), "Ambiguous group categories")
+    local leaderOk,leader=pcall(function()
+        local getter=public(UnitIsGroupLeader)
+        assert(type(getter)=="function", "Group leader API unavailable")
+        return getter
+    end)
+    local function stableLeader()
+        if not leaderOk then return false end
+        leaderOk=pcall(function()
+            assert(public(UnitIsGroupLeader)==leader and rawequal(rawget(_G,"UnitIsGroupLeader"),leader),
+                "Group leader API changed")
+        end)
+        return leaderOk
+    end
+    local function read(name)
+        assert(category(name)==ids[name], "Group category changed")
+        local inGroup=grouped(ids[name])
+        local inRaid=raided(ids[name])
+        local members=count(ids[name])
+        local row={in_group=boolean(inGroup),in_raid=boolean(inRaid),reported_member_count=uint(members,0)}
+        if stableLeader() then
+            local ok,value=pcall(function() return boolean(leader("player",ids[name])) end)
+            if stableLeader() and ok then row.player_is_leader=value end
+        end
+        assert(category(name)==ids[name], "Group category changed")
+        return row
+    end
+    local passes={}
+    for pass=1,2 do
+        passes[pass]={}
+        for _,name in ipairs(names) do
+            fixedApis()
+            if ids[name] then
+                local ok,row=pcall(read,name)
+                if ok then passes[pass][name]=row end
+            end
+            fixedApis()
+        end
+    end
+    local finalIds={home=category("home"),instance=category("instance")}
+    local leaderStable=stableLeader()
+    fixedApis()
+    -- No callbacks after this point: catch mutations made by final restrictions.
+    local rawHome=rawget(_G,constants.home)
+    local rawInstance=rawget(_G,constants.instance)
+    assert(not(finalIds.home and finalIds.instance and finalIds.home==finalIds.instance)
+        and not rawequal(rawHome,rawInstance), "Ambiguous group categories")
+    leaderStable=leaderStable and rawequal(rawget(_G,"UnitIsGroupLeader"),leader)
+    local categories={}
+    for _,name in ipairs(names) do
+        local first,second=passes[1][name],passes[2][name]
+        if ids[name] and finalIds[name]==ids[name] and rawequal(rawget(_G,constants[name]),ids[name])
+            and first and second and first.in_group==second.in_group and first.in_raid==second.in_raid
+            and first.reported_member_count==second.reported_member_count then
+            if not leaderStable or first.player_is_leader~=second.player_is_leader then
+                first.player_is_leader=nil
+            end
+            categories[name]=first
+        end
+    end
+    assert(next(categories), "Group categories unavailable")
+    return {coverage="reported_player_group_context",categories=categories}
+end
 -- Passive rank-faction projection from pinned Camelot/PVPRankFrame.lua
 -- (9dc84f0d3bbae1768ac3405b3716000bd93eda06), rank fields and weekly caps.
 AO.collectors.player_pvp_progression = function()
