@@ -1,5 +1,7 @@
 # Changelog
 
+- Review a saved Forever bag restocking plan and page its bank source locations.
+
 - Show observed bank restocking quantities in saved Forever bag shortfall searches.
 
 - Find saved inventory requirements with observed shortfalls in one storage.

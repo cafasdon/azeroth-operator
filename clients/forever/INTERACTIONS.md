@@ -2974,3 +2974,9 @@ Set `inventory_requirements_bank_plan: true` on a Forever bag shortfall
 search to show suggested quantities from the character and account banks
 recorded in the same capture. The plan reports remaining shortfalls and
 whether each bank was observed. Withdrawal eligibility remains unverified.
+
+Use `inspect_snapshot` on `bags` with `bag_restock_requirements` to review
+one to 64 distinct positive item quantities on a selected Forever capture.
+The review includes suggested bank source locations and supports
+`bag_restock_location_offset`. Missing bags leave the plan unknown. Source
+locations are historical and withdrawal eligibility remains unverified.

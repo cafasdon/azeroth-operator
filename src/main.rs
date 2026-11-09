@@ -166,6 +166,10 @@ struct Inspect {
     quest_item_catalogue: bool,
     /// Compare user-supplied quest item requirements with one saved storage section.
     quest_inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
+    /// Review required bag quantities and observed bank restocking for one saved Forever capture.
+    bag_restock_requirements: Option<Vec<azeroth_operator::InventoryRequirement>>,
+    /// Page observed bank source locations for bag_restock_requirements.
+    bag_restock_location_offset: Option<usize>,
     /// Use this compatible same-time or newer capture for quest inventory and wallet observations.
     quest_inventory_snapshot_id: Option<String>,
     /// Quote quest inventory shortfalls using this saved same-character merchant visit.
@@ -2782,6 +2786,23 @@ impl Operator {
                 "Currency reward comparison requires a currency ID",
             )]);
         }
+        let bag_restock = args.bag_restock_requirements.map(|items| {
+            azeroth_operator::InventoryRequirementsFilter {
+                storage: azeroth_operator::InventoryStorage::Bags,
+                items,
+            }
+        });
+        if (args.bag_restock_location_offset.is_some() && bag_restock.is_none())
+            || bag_restock.as_ref().is_some_and(|requirements| {
+                args.section.as_deref() != Some("bags")
+                    || args.spending_budget.is_some()
+                    || requirements.validate(&Family::Forever).is_err()
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Bag restocking requires the bags section and one to 64 distinct positive item requirements",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -2980,6 +3001,22 @@ impl Operator {
             args.coverage_sections.as_deref(),
         ) {
             Ok(mut value) => {
+                if let Some(requirements) = bag_restock {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Saved capture unavailable",
+                        )]);
+                    };
+                    if snapshot.client.family != Family::Forever {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Bag restocking requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["bag_restock_review"] = requirements.review_observed_stock(
+                        &snapshot,
+                        Some(args.bag_restock_location_offset.unwrap_or_default()),
+                    );
+                }
                 if let Some(maximum) = args.equipment_durability_max_percent {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

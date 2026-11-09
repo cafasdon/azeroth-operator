@@ -32,9 +32,9 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             c['sections']['professions']={'1':{'name':'Synthetic','rank':300,'max_rank':300,'skill_line':164}}
             shared={'7':{'1':{'item_id':100,'count':10},'2':{'item_id':200,'count':5}}}
             c['sections']['account_bank']=deepcopy(shared); c_key=store.ingest(c)
-            d=sample('D',4,[(100,10)]); d['sections']['character_bank']={'6':{'1':{'item_id':200,'count':5}}}; store.ingest(d)
+            d=sample('D',4,[(100,10)]); d['sections']['character_bank']={'6':{'1':{'item_id':200,'count':5}}}; d_key=store.ingest(d)
             e_old=store.ingest(sample('E',1,complete)); store.ingest(sample('E',5,[(100,10)]))
-            f_old=store.ingest(sample('F',2,complete)); store.ingest(sample('F',6))
+            f_old=store.ingest(sample('F',2,complete)); f_missing=store.ingest(sample('F',6))
             g=sample('G',7,[]); g['sections']['equipment']={'11':{'item_id':100},'12':{'item_id':200}}; g_key=store.ingest(g)
             h=sample('H',7,[]); h['sections']['account_bank']=deepcopy(shared); h_key=store.ingest(h)
             boundary_key=store.ingest(sample('Boundary',8,[(item,1) for item in range(1,65)]))
@@ -98,6 +98,28 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                                 inventory_requirements_shortfall_only=True,inventory_requirements_bank_plan=True)
                     await query(error=True,family='retail',inventory_requirements_shortfall_only=True,
                                 inventory_requirements_bank_plan=True)
+                    async def inspect_restock(snapshot, **extra):
+                        reply = await session.call_tool('inspect_snapshot', {
+                            'snapshot_id':snapshot,'section':'bags',
+                            'bag_restock_requirements':requirements['items'],**extra})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)['bag_restock_review']
+
+                    plan = (await inspect_restock(d_key))['bank_withdrawal_plan']
+                    self.assertEqual(plan['rows'],plans['D']['rows'])
+                    self.assertEqual([row['storage'] for row in plan['suggested_locations']['locations']],
+                                     ['character_bank'])
+                    page = (await inspect_restock(d_key,bag_restock_location_offset=1))['bank_withdrawal_plan']
+                    self.assertEqual(page['rows'],plan['rows'])
+                    self.assertEqual(page['suggested_locations']['locations'],[])
+                    self.assertIsNone((await inspect_restock(f_missing))['bank_withdrawal_plan'])
+                    for args in [
+                        {'snapshot_id':d_key,'section':'bags','bag_restock_location_offset':0},
+                        {'snapshot_id':d_key,'section':'equipment','bag_restock_requirements':requirements['items']},
+                        {'snapshot_id':d_key,'section':'bags','bag_restock_requirements':[]},
+                        {'snapshot_id':retail_key,'section':'bags','bag_restock_requirements':requirements['items']},
+                    ]:
+                        self.assertTrue((await session.call_tool('inspect_snapshot',args)).isError)
                     for storage in ['bags','character_bank']:
                         self.assertEqual((await query({**requirements,'storage':storage},character={'name':'D','realm':'Test'}))['snapshots'],[])
                     self.assertEqual([row['snapshot_id'] for row in (await query(profession_skill_line=164,profession_min_rank=300))['snapshots']],[c_key])
