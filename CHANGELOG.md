@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever toy journal rows by recorded collection and favourite flags.
+
 - Count favourites and collected favourites in saved Forever toy journal summaries.
 
 - Look up exact toy IDs and recorded flags when inspecting a saved Forever toy journal.

@@ -8,6 +8,10 @@ It adds a match alongside the saved view. Use one selector per inspection
 when choosing between `toy_in_view` and `toy_item_id`.
 Character summaries count favourites and collected favourites in the
 saved filtered view. Empty views report zero and unavailable views report null.
+Inspect `toy_collection_view` with `toy_collected`, `toy_favorite`, or both
+to shortlist matching rows without specifying an item ID. The displayed
+count still describes the original capture. `toy_matched_count` counts
+the retained rows or reports null when the view is unavailable.
 
 Saved mount comparisons count reported usable mounts, favourites, and
 mounts with both flags in each capture. These counts describe the saved

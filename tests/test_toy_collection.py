@@ -90,6 +90,28 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "toy_collection_view"})
                     self.assertFalse(result.isError)
                     self.assertEqual(json.loads(result.content[0].text)["data"], captured["sections"]["toy_collection_view"])
+                    for source, flags, expected in [
+                        (key, {"toy_collected":True}, ["1"]),
+                        (after_key, {"toy_collected":False,"toy_favorite":True}, ["1"]),
+                        (after_key, {"toy_collected":True,"toy_favorite":True}, []),
+                        (missing_key, {"toy_favorite":False}, None),
+                    ]:
+                        reply=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
+                            "section":"toy_collection_view",**flags})
+                        self.assertFalse(reply.isError,reply)
+                        filtered=json.loads(reply.content[0].text)
+                        self.assertEqual(filtered["toy_matched_count"],None if expected is None else len(expected))
+                        if expected is not None:
+                            self.assertEqual(list(filtered["data"]["entries"]),expected)
+                            self.assertEqual(filtered["data"]["displayed_count"],2 if source == key else 3)
+                    for source,section,extra in [
+                        (retail_key,"toy_collection_view",{}),(key,"equipment",{}),
+                        (key,"toy_collection_view",{"toy_item_id":1}),
+                        (key,"toy_collection_view",{"toy_in_view":{"item_id":1}}),
+                    ]:
+                        reply=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
+                            "section":section,"toy_favorite":True,**extra})
+                        self.assertTrue(reply.isError)
                     selector = {"item_id":1,"collected":True,"favorite":False}
                     for source, matched in [(key,True),(after_key,False),(missing_key,False),(empty_key,False)]:
                         response = await session.call_tool("inspect_snapshot", {"snapshot_id":source,
