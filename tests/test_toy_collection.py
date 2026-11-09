@@ -112,6 +112,13 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                         data = json.loads(result.content[0].text)
                         self.assertEqual(data["toy_rows_observed"], rows)
                         self.assertEqual(data["collected_toys_in_view"], collected)
+                        self.assertEqual(data["favorite_toys_in_view"], None if rows is None else 0)
+                        self.assertEqual(data["collected_favorite_toys_in_view"], None if rows is None else 0)
+                    favorite = await session.call_tool("character_summary", {"snapshot_id":after_key})
+                    self.assertFalse(favorite.isError,favorite)
+                    favorite_counts = json.loads(favorite.content[0].text)
+                    self.assertEqual(favorite_counts["favorite_toys_in_view"],1)
+                    self.assertEqual(favorite_counts["collected_favorite_toys_in_view"],0)
                     for source in invalid:
                         self.assertTrue((await session.call_tool("inspect_snapshot", {"snapshot_id": source, "section": "toy_collection_view"})).isError)
                     for source, item_id, observed, collected in (

@@ -7535,6 +7535,20 @@ pub fn summary(s: &Snapshot) -> Value {
             .filter(|row| row["collected"] == true)
             .count()
     }));
+    if is_forever {
+        summary["favorite_toys_in_view"] = json!(toys.map(|entries| {
+            entries
+                .values()
+                .filter(|row| row["favorite"] == true)
+                .count()
+        }));
+        summary["collected_favorite_toys_in_view"] = json!(toys.map(|entries| {
+            entries
+                .values()
+                .filter(|row| row["collected"] == true && row["favorite"] == true)
+                .count()
+        }));
+    }
     summary["tracked_achievement_workload"] = json!(
         s.sections
             .get("tracked_achievements")

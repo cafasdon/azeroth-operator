@@ -1,5 +1,7 @@
 # Changelog
 
+- Count favourites and collected favourites in saved Forever toy journal summaries.
+
 - Look up exact toy IDs and recorded flags when inspecting a saved Forever toy journal.
 
 - Find saved Forever toy journal captures by exact item ID and recorded collected or favourite flags.

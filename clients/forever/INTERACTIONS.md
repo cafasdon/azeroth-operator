@@ -6,6 +6,8 @@ match that row. An absent toy does not establish ownership status.
 The same selector works with `inspect_snapshot` on `toy_collection_view`.
 It adds a match alongside the saved view. Use one selector per inspection
 when choosing between `toy_in_view` and `toy_item_id`.
+Character summaries count favourites and collected favourites in the
+saved filtered view. Empty views report zero and unavailable views report null.
 
 Saved mount comparisons count reported usable mounts, favourites, and
 mounts with both flags in each capture. These counts describe the saved
