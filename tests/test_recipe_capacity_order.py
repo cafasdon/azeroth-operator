@@ -21,6 +21,9 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                                  (6,{'10':1}),(10,{'10':2}),(11,{'20':1})]}
         rows['1']['cooldown']={'charges':1,'max_charges':1,'remaining_seconds':100}
         rows['4']={'status':'unavailable'}
+        for recipe, minimum, maximum in [(1,1,9),(2,3,3),(10,3,8)]:
+            rows[str(recipe)].update(output_item_id=100,base_output_quantity={'minimum':minimum,'maximum':maximum})
+        rows['11']['output_item_id']=100
         capture['sections']['profession_recipe_materials']={'coverage':'reported_known_spell_schematics','profession_id':164,'entries':rows}
         capture['sections']['profession_recipe_view']={'coverage':'filtered_local_recipe_list','profession_id':164,
             'entries':{str(i):{'learned':True,'can_skill_up':i!=6} for i in [1,2,3,4,5,6,10,11]}}
@@ -57,6 +60,14 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([r['recipe_id'] for r in raw['records']],[1,2,3,10,11])
                     self.assertEqual(await search(**args,order='recipe_id'),raw)
                     self.assertEqual(await search(**args,order=None),raw)
+                    yield_args={'order':'reported_base_output_minimum_desc','output_item_id':100}
+                    yields=await search(**yield_args)
+                    self.assertEqual([r['recipe_id'] for r in yields['records']],[2,10,1,11])
+                    self.assertEqual(yields['ordering_basis'],'captured_base_output_minimum_per_craft_only')
+                    self.assertIs(yields['craftability_verified'],False)
+                    yield_page=await search(**yield_args,**args,offset=1,limit=2)
+                    self.assertEqual([r['recipe_id'] for r in yield_page['records']],[10,1])
+                    self.assertEqual(yield_page['next_offset'],3)
                     skill_order = await search(order='reported_skill_ups_desc')
                     self.assertEqual([r['recipe_id'] for r in skill_order['records']],[2,10,6,1,3,4,5,11])
                     self.assertEqual(skill_order['ordering_basis'],'captured_same_profession_skill_ups_only')

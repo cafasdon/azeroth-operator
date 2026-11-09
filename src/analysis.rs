@@ -21,6 +21,7 @@ pub enum RecipeSearchOrder {
     ObservedItemCapacityDesc,
     ReportedSkillUpsDesc,
     ReportedCooldownRemainingAsc,
+    ReportedBaseOutputMinimumDesc,
 }
 
 #[derive(
@@ -552,6 +553,11 @@ pub fn search_recipe_materials_ordered(
                 id.parse::<u32>().unwrap(),
             )
         });
+    } else if order == RecipeSearchOrder::ReportedBaseOutputMinimumDesc {
+        matches.sort_unstable_by_key(|(id, row, _, _)| {
+            let minimum = row["base_output_quantity"]["minimum"].as_u64();
+            (std::cmp::Reverse(minimum), id.parse::<u32>().unwrap())
+        });
     } else {
         matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
     }
@@ -598,7 +604,10 @@ pub fn search_recipe_materials_ordered(
                 "independent_observed_required_item_capacity_only",
             RecipeSearchOrder::ReportedCooldownRemainingAsc =>
                 "captured_cooldown_remaining_seconds_only",
-            _ => "captured_same_profession_skill_ups_only",
+            RecipeSearchOrder::ReportedSkillUpsDesc => "captured_same_profession_skill_ups_only",
+            RecipeSearchOrder::ReportedBaseOutputMinimumDesc =>
+                "captured_base_output_minimum_per_craft_only",
+            RecipeSearchOrder::RecipeId => "recipe_id",
         });
         result["shared_material_allocation_performed"] = json!(false);
         result["skill_gain_prediction_performed"] = json!(false);

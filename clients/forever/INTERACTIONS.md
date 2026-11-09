@@ -66,6 +66,12 @@ a charge was available. Zero and missing timers return no end estimate.
 Use `cooldown_filter.estimated_end_by` with an RFC 3339 timestamp to shortlist
 estimated ends at or before a deadline. Rows without an estimate are
 unevaluable for this predicate, including rows with a reported zero timer.
+
+Use `order: "reported_base_output_minimum_desc"` with an output item filter
+to compare per-craft base yields for that item. Missing quantities sort last,
+and recipe IDs break ties. Material and cooldown filters still apply before
+paging. The ordering uses the saved schematic's base range and excludes
+bonus output and total craftable quantity.
 [Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
 
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge
