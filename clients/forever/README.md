@@ -1104,6 +1104,8 @@ Caller and failure review checked package contents, installed-file drift, comman
 | Gameplay actions and transactions | Outside the current automation boundary | Offer read-only planning where supported |
 
 The first native milestone is a persisted read-only snapshot and a coverage report through MCP. Record what the actual client returns before adapting any Retail operation.
+The [native acceptance checklist](../../docs/forever-coverage-audit-2026-11-08.md#deferred-native-acceptance-checklist)
+records the evidence required for each deferred Forever client test.
 
 ## External data and gear
 

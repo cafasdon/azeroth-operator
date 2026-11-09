@@ -5,6 +5,43 @@ coverage, the active character by default, private owner-bound data, and complet
 owned-gear optimisation. It is not a live qualification or a claim of completeness.
 Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
+## Deferred native acceptance checklist
+
+The next native milestone is one owner-local capture that survives export,
+persistence, import and MCP readback on the same exact Forever build. Record
+the client variant, build and interface, addon version and package hash,
+reader revision and snapshot ID for each case. Retain raw evidence in the
+owner's store. Project evidence can use redacted results and identifiers
+needed to reproduce the check.
+
+The owner opens the relevant panel and runs the addon export manually.
+After persistence and import, `inspect_snapshot` identifies recorded sections
+and unavailable reasons. `list_snapshots.required_sections` can confirm
+that the required sections coexist in one capture. Use
+`any_missing_sections` and the comparison capture statuses to distinguish a
+recorded refusal from an absent section. The `capabilities` section schema
+defines accepted names. Presence alone leaves panel completeness unknown.
+
+| Interaction | Native case and expected MCP readback |
+| --- | --- |
+| Identity and capture | Capture two explicitly chosen characters. Verify exact client metadata and owner-store isolation, and resolve each named character with time and section constraints. Fresh active identity requires separate evidence covering login, switch, logout and stale observations before it can become the default. |
+| Equipment, bags and banks | Capture ordinary carried bags, then character and account banks while the respective storage is available. Check known item IDs, counts and numeric locations, an observed empty container, and a separate unavailable capture. Check exact item variants against the local catalogue before treating gear as resolved. |
+| Owned gear and encounter planning | Review an owned pool with known modifiers, one unresolved item and an unavailable storage case. Compare search coverage against the saved pool and check the modelled class, level and encounter separately. A ranked result can only claim coverage of the pool and model actually evaluated. |
+| Professions and quests | Capture a visible selected recipe, an available profession list and a quest with known objectives. Check fixed reagents, quantities and one known shortfall against the saved inventory. Repeat with the panel closed or a required reading absent to check the unknown result. |
+| Services, dialogue and travel | Capture player-opened merchant, trainer, gossip and flight panels separately. Check a known row against the saved inspection, including reported currency or price where available, then repeat without the panel. Availability and prices describe the capture. |
+| Spellbook, action bars and equipment state | Check one exact spell shortcut against its saved spellbook ID, and verify charges or usability only where the client supplied them. Check a recorded weapon enchant and durability reading against the client panel. Unobserved slots and hands remain separate from observed empty ones. |
+| Resources, auras, groups and PvP | Compare readable player-only rows with visible state and check an unavailable or restricted case. Verify helpful and harmful lists separately, group categories independently and reported PvP season IDs only when captured. |
+| Loot, trade and mail | Use already visible windows. Verify readable loot, the player's own offer and loaded attachment rows in separate captures. Check that the corresponding MCP reports exclude private details and give no ownership credit before a separate inventory observation. |
+| Collections and progression | Compare one known row for reputation, currencies, tracked achievements, mounts, pets or toys against the visible panel. Record journal filters or tracked scope and verify that omitted rows do not imply non-ownership or non-completion. |
+| Saved instances and world bosses | Compare previously populated saved-cache entries with the client display, including a reset time and unavailable cache case. Record the cache age and check that an omitted row gives no eligibility claim. |
+
+For each case, record **verified**, **partial**, **unavailable** or **untested**
+for the exact build and interaction. A partial result records which rows or
+fields were verified and which were unknown. A qualification entry links the
+native evidence, the saved capture and the MCP readback. At this checkpoint,
+these native cases remain untested. The existing offline evidence below
+qualifies its fixtures only.
+
 ## Coverage and remaining proof
 
 9 November update: optional local provider NPC/object spawn references now reach
