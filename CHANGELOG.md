@@ -1,5 +1,9 @@
 # Changelog
 
+- Add optional per-encounter improvement floors to owned-gear evaluation and
+  saved-journal ranking. Filter before top selection, including partial pages;
+  retain explicit threshold, units and candidate-instance exclusion accounting.
+
 - Validate pinned Hunter pet attack-speed enums before requests and prepared
   merging. Share type/uptime validation and retain template pet assumptions in
   final reports. Preserve captured level-60 enforcement and false native proof.

@@ -22,6 +22,12 @@ from tools import role_metrics as roles
 
 
 class RoleGearWorkflowTests(unittest.TestCase):
+    def test_bad_floor_rejects_before_other_owned_inputs(self):
+        for execute in [owned.execute,journal.execute,encounters.execute]:
+            for bad in [True,False,'PRIVATE',[],{},float('nan'),float('inf'),10**400]:
+                with self.subTest(execute=execute.__module__),self.assertRaises(ValueError):
+                    asyncio.run(execute(SimpleNamespace(minimum_encounter_improvement=bad)))
+
     def test_bad_metric_rejects_at_every_entry_before_other_inputs(self):
         for execute in [owned.execute,journal.execute,page.execute,encounters.execute]:
             for bad in [None,True,1,[],{},'PRIVATE_UNKNOWN']:
@@ -93,6 +99,13 @@ class RoleGearWorkflowTests(unittest.TestCase):
                         self.assertEqual(warm['simulation']['new_runs'],0)
                         self.assertEqual(ranked['ranked_gear_sets'],warm['simulation']['ranked_gear_sets'])
                         robust=launch(metric,['--checkpoint-only','--ranking-objective','worst_encounter_gain'])
+                        constrained=launch(metric,['--checkpoint-only','--minimum-encounter-improvement','0'])
+                        self.assertEqual(constrained['minimum_encounter_improvement'],0)
+                        self.assertEqual(constrained['simulation']['new_runs'],0)
+                        self.assertTrue(all(row['minimum_improvement']>=0 for row in constrained['simulation']['ranked_gear_sets']))
+                        impossible=launch(metric,['--checkpoint-only','--minimum-encounter-improvement','10000'])
+                        self.assertEqual(impossible['simulation']['ranked_gear_sets'],[])
+                        self.assertTrue(impossible['reported_space_results_complete'])
                         self.assertEqual(robust['simulation']['new_runs'],0)
                         self.assertEqual(bool(robust['simulation']['ranked_gear_sets'][0]['saved_loadout']['selections']),
                             metric in ['tps','hps'])

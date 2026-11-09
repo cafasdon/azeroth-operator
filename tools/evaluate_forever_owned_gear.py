@@ -42,6 +42,7 @@ async def selected_snapshot(args, deadline):
 async def execute(args):
     args = copy(args)
     objective = simulation.ranking_objective(args)
+    floor = simulation.encounter_improvement_floor(args)
     metric = roles.rank_by(args)
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.collection_seconds, 1, args.time_budget_seconds)
@@ -136,6 +137,7 @@ async def execute(args):
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
         'ranking_objective':objective,
+        'minimum_encounter_improvement':floor,
         'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'inventory_evidence':inventory_evidence,'inventory_evidence_status':inventory_status,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
@@ -166,6 +168,8 @@ def parser():
     cli.add_argument('--ranking-objective',choices=simulation.RANKING_OBJECTIVES,default='weighted_gain',
         help='Rank by weighted average improvement or the minimum improvement across every supplied encounter')
     cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
+    cli.add_argument('--minimum-encounter-improvement',type=float,
+        help='Require this improvement in every encounter before ranking; uses ranking_score_unit, including the baseline')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment')

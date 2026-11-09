@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Owned gear evaluation now supports `--minimum-encounter-improvement 0` to keep
+only sets whose simulated point estimate does not worsen any requested encounter.
+The threshold uses the selected role metric's units and reuses completed results.
+[Contract](docs/ADR-068-encounter-improvement-floor.md).
+
 Hunter pet template options now reject unsupported attack-speed selections,
 including during prepared merging. Reports expose template pet assumptions;
 captured identity, training and native effects remain unverified.

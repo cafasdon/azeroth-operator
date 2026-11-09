@@ -25,6 +25,13 @@ from tools import journal_forever_gear_windows as journal_tools
 
 
 class SavedJournalTests(unittest.TestCase):
+    def test_encounter_floor_validation_precedes_journal_access(self):
+        for value in [True,False,'0',[],{},float('nan'),float('inf'),-float('inf'),10**400]:
+            with patch.object(runner.journal,'journal_status') as read:
+                with self.assertRaises(ValueError):
+                    asyncio.run(runner.execute(SimpleNamespace(minimum_encounter_improvement=value)))
+                read.assert_not_called()
+
     def test_evidence_preserves_native_fields_without_samples_or_metadata(self):
         for metric in runner.roles.FIELDS:
             row = {'iterations': 200, 'seed': '42', 'request_sha256': 'a'*64,
@@ -85,7 +92,8 @@ class SavedJournalTests(unittest.TestCase):
             self.assertFalse((base/'must-not-create').exists())
             self.assertEqual(journal.read_bytes(),before)
             for option,value in [('--top','0'),('--max-pages','0'),('--page-limit','65'),('--iteration-budget','0'),
-                ('--ranking-objective','unknown')]:
+                ('--ranking-objective','unknown'),('--minimum-encounter-improvement','nan'),
+                ('--minimum-encounter-improvement','inf')]:
                 invalid = subprocess.run([*args,option,value],cwd=root,capture_output=True,text=True,timeout=20)
                 self.assertEqual(invalid.returncode,2 if option=='--ranking-objective' else 1)
                 self.assertEqual(invalid.stdout,'')
@@ -159,6 +167,18 @@ class SavedJournalTests(unittest.TestCase):
                 argv[weight_indices[0]]='9'; argv[weight_indices[1]]='1'
                 average=launch(['--checkpoint-only','--top','1'])
                 robust=launch(['--checkpoint-only','--top','1','--ranking-objective','worst_encounter_gain'])
+                protected=launch(['--checkpoint-only','--top','1','--minimum-encounter-improvement','0'])
+                boundary=launch(['--checkpoint-only','--minimum-encounter-improvement','10'])
+                none=launch(['--checkpoint-only','--minimum-encounter-improvement','31'])
+                self.assertEqual(protected['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4549)
+                self.assertEqual(len(boundary['ranked_gear_sets']),1)
+                self.assertEqual(boundary['minimum_encounter_improvement'],10)
+                self.assertEqual(none['ranked_gear_sets'],[])
+                for constrained in [protected,boundary,none]:
+                    self.assertEqual(constrained['new_runs'],0)
+                    self.assertTrue(constrained['all_saved_resolved_results_complete'])
+                    self.assertFalse(constrained['best_in_slot_verified'])
+                    self.assertGreater(constrained['encounter_floor_excluded_candidate_instances'],0)
                 self.assertEqual(average['ranking_objective'],'weighted_gain')
                 self.assertEqual(robust['ranking_objective'],'worst_encounter_gain')
                 self.assertEqual(average['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4550)

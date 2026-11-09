@@ -2330,3 +2330,14 @@ identity, speed, training, happiness and native-effect verification false.
 Active simulated pets still require an explicitly captured level of 60. No
 actual pet speed, family/training match or native model qualification is implied.
 See docs/ADR-067-hunter-pet-template-options.md. Offline only; live testing deferred.
+
+## Encounter improvement floor (2026-11-09)
+
+Owned evaluation and saved-journal ranking accept --minimum-encounter-improvement.
+Use 0 to reject simulated point-estimate losses in any requested encounter before
+top selection. Units follow ranking_score_unit; baseline also faces the floor.
+Positive floors may return no eligible sets even when all simulations completed.
+Partial pages require observations against baseline in every requested encounter.
+Excluded counts are candidate instances, including duplicates across pages, not
+unique gear or incomplete candidates. Default is unconstrained. This adds no
+simulation runs or native/BiS proof. See docs/ADR-068-encounter-improvement-floor.md.

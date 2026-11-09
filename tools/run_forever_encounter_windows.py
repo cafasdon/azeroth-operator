@@ -25,10 +25,24 @@ def normalise_weights(weights, count):
     return result
 
 
+def validate_improvement_floor(floor):
+    """Optional finite floor in the selected metric's improvement units."""
+    try:
+        require(floor is None or (type(floor) in (int,float) and isfinite(floor)))
+    except OverflowError as exc:
+        raise ValueError('Invalid encounter improvement floor') from exc
+    return floor
+
+
+def encounter_improvement_floor(args):
+    return validate_improvement_floor(getattr(args, 'minimum_encounter_improvement', None))
+
+
 def completed_candidate_ranking(results, weights, metric, requested_count, gear,
-                                objective='weighted_gain', top=20):
+                                objective='weighted_gain', top=20, minimum_improvement=None):
     """Rank only the intersection observed against a baseline in every encounter."""
     require(objective in ('weighted_gain', 'worst_encounter_gain'))
+    minimum_improvement = validate_improvement_floor(minimum_improvement)
     integer(top, 1, 20)
     integer(requested_count, 1)
     if len(results) != len(weights) or not results:
@@ -52,6 +66,7 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
     gain_field = 'gain_pct_by_encounter' if metric == 'dps' else 'improvement_by_encounter'
     value_field = 'mean_dps_by_encounter' if metric == 'dps' else 'metric_values_by_encounter'
     rows = []
+    excluded = 0
     for ranked in ranking['results']:
         review = ranked['review']
         gains = ([100 * profile[review]['mean_dps_delta_from_baseline'] / profile[1]['mean_dps']
@@ -59,6 +74,9 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
         values = [roles.value(profile[review], metric) for profile in profiles]
         score = ranked[score_field]
         require(all(type(value) in (int,float) and isfinite(value) for value in [score,*gains,*values]))
+        if minimum_improvement is not None and min(gains) < minimum_improvement:
+            excluded += 1
+            continue
         rows.append({'review':review, 'simulator_gear_sha256':digest(gear[review]),
             score_field:score, gain_field:gains, value_field:values,
             'ranking_score':score if objective == 'weighted_gain' else min(gains)})
@@ -66,6 +84,8 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
     return {'basis':'completed_candidates_across_all_requested_encounters',
         'rank_by':metric, 'ranking_objective':objective, 'score_unit':roles.UNITS[metric],
         'requested_candidate_count':requested_count, 'completed_candidate_count':len(common),
+        'minimum_encounter_improvement':minimum_improvement,
+        'encounter_floor_excluded_candidate_instances':excluded,
         'omitted_candidate_count':requested_count-len(common), 'top_limit':top,
         'results_truncated':len(rows)>top, 'results':rows[:top],
         'requested_results_complete':False, 'global_ranking_verified':False,
@@ -75,6 +95,7 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
 
 async def execute(args, *, deadline=None):
     metric = roles.rank_by(args)
+    floor = encounter_improvement_floor(args)
     objective = getattr(args, 'ranking_objective', 'weighted_gain')
     require(objective in ('weighted_gain', 'worst_encounter_gain'))
     top = integer(getattr(args, 'top', 20), 1, 20)
@@ -145,7 +166,7 @@ async def execute(args, *, deadline=None):
             status = 'complete_for_selected_resolved_requests'
         else:
             status = 'nonpositive_baseline'
-    partial = (completed_candidate_ranking(results, weights, metric, identities['count'], gear, objective, top)
+    partial = (completed_candidate_ranking(results, weights, metric, identities['count'], gear, objective, top, floor)
                if not complete and identities is not None else None)
     report = {'mode': 'saved_window_encounter_comparison', 'encounter_weights': weights,
         'completed_candidate_ranking':partial,

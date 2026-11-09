@@ -82,8 +82,14 @@ def attach_saved_loadouts(path, leaders, source, deadline):
         connection.close()
 
 
+def encounter_improvement_floor(args):
+    """Read an optional finite bound in the selected role's improvement units."""
+    return pages.encounters.encounter_improvement_floor(args)
+
+
 async def execute(args, *, deadline=None):
     objective = ranking_objective(args)
+    floor = encounter_improvement_floor(args)
     metric = roles.rank_by(args)
     weighted_field = 'weighted_dps_gain_pct' if metric=='dps' else 'weighted_improvement'
     gain_field = 'gain_pct_by_encounter' if metric=='dps' else 'improvement_by_encounter'
@@ -114,6 +120,7 @@ async def execute(args, *, deadline=None):
     stop = 'no_saved_work' if source['window_count'] == 0 else 'page_budget'
     exhausted = False
     incomplete_page_candidates = None
+    floor_excluded = 0
     for _ in range(args.max_pages if source['window_count'] else 0):
         if monotonic() >= deadline:
             stop = 'time_budget'
@@ -167,6 +174,8 @@ async def execute(args, *, deadline=None):
                 break
             require(ranking['ranking_objective'] == objective and ranking['rank_by'] == metric)
             incomplete_page_candidates = ranking['completed_candidate_count']
+            require(ranking.get('minimum_encounter_improvement') == floor)
+            floor_excluded += ranking.get('encounter_floor_excluded_candidate_instances',0)
         else:
             completed += count
             if comparison['weighted_status'] != 'complete_for_selected_resolved_requests':
@@ -194,6 +203,9 @@ async def execute(args, *, deadline=None):
             require(all(type(gain) in (int,float) and isfinite(gain) for gain in row[gain_field]))
             row[minimum_field] = min(row[gain_field])
             row[maximum_field] = max(row[gain_field])
+            if floor is not None and row[minimum_field] < floor:
+                floor_excluded += 1
+                continue
             row['ranking_score'] = score if objective == 'weighted_gain' else row[minimum_field]
             if gear in leaders:
                 require(all(leaders[gear][field] == row[field] for field in
@@ -230,6 +242,9 @@ async def execute(args, *, deadline=None):
             else 'completed_pages_only',
         'incomplete_page_completed_candidate_count':incomplete_page_candidates,
         'ranking_objective':objective,
+        'minimum_encounter_improvement':floor,
+        'encounter_floor_excluded_candidate_instances':floor_excluded,
+        'encounter_floor_basis':'all_requested_encounter_point_estimates_not_confidence_bounds',
         'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'ranking_basis': ('role_metric_point_estimates_not_statistical_optimality' if metric!='dps' else
             'weighted_dps_point_estimates_not_statistical_optimality' if objective == 'weighted_gain'
@@ -259,6 +274,8 @@ def main(argv=None):
     cli.add_argument('--ranking-objective',choices=RANKING_OBJECTIVES,default='weighted_gain',
         help='Rank by weighted average improvement or the minimum improvement across every supplied encounter')
     cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
+    cli.add_argument('--minimum-encounter-improvement',type=float,
+        help='Require at least this improvement in every requested encounter before top selection; uses ranking_score_unit, including the baseline')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
