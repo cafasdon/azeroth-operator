@@ -54,6 +54,9 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
             future['sections']['bags']['0']['1']['count']=6
             future['sections']['profession_recipe_materials']['entries']['1']['cooldown']={'remaining_seconds':0}
             inventory=store.ingest(future)
+            other_profession=deepcopy(future)
+            other_profession['sections']['profession_recipe_materials']['profession_id']=165
+            other_profession_key=store.ingest(other_profession)
             variants={}
             for name in ['missing','empty']:
                 sample=deepcopy(base)
@@ -74,6 +77,16 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply); self.assertNotIn('PRIVATE',str(reply))
                         return None if error else json.loads(reply.content[0].text)
                     baseline=await search()
+                    for after_id, expected_count in [(inventory,1),(other_profession_key,None),
+                                                     (variants['empty'],0)]:
+                        reply=await session.call_tool('compare_snapshots',{'before_id':key,
+                            'after_id':after_id,'recipe_cooldown_changes':True})
+                        self.assertFalse(reply.isError,reply)
+                        compared=json.loads(reply.content[0].text)['recipe_cooldown_changes']
+                        self.assertEqual(compared['changed_recipe_count'],expected_count)
+                        if expected_count==1:
+                            self.assertEqual(compared['changes'],[{'recipe_id':1,'before':None,
+                                'after':{'remaining_seconds':0},'before_state':'unknown','after_state':'available'}])
                     self.assertEqual(baseline,await search(cooldown_filter=None))
                     self.assertNotIn('cooldown_unknown_count',baseline)
                     order = 'reported_cooldown_remaining_asc'

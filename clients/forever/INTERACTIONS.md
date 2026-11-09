@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `compare_snapshots` with `recipe_cooldown_changes: true` to compare bulk
+cooldown observations for shared recipe IDs in the same profession. The
+report counts all changes and shows up to 50 in numeric recipe ID order.
+An absent observation stays null, and a recipe present in only one capture
+does not establish a cooldown transition.
+
 Saved skill-line discovery and inspection accept exact signed `modifier` and
 `temporary_points` predicates. They match on the same skill row as base rank
 and category predicates. Missing values remain unknown, explicit zero is

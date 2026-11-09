@@ -2338,6 +2338,7 @@ pub struct ComparisonSelectors {
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
     pub profession_recipe_changes: bool,
+    pub recipe_cooldown_changes: bool,
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub achievement_id: Option<u32>,
@@ -2608,6 +2609,18 @@ pub fn compare_observations(
             .get("saved_instances")
             .zip(after.sections.get("saved_instances"))
             .map(|(old, new)| compare_saved_instances(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.recipe_cooldown_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Recipe cooldown comparison requires Forever"
+        );
+        comparison["recipe_cooldown_changes"] = before
+            .sections
+            .get("profession_recipe_materials")
+            .zip(after.sections.get("profession_recipe_materials"))
+            .map(|(old, new)| compare_recipe_cooldowns(old, new))
             .unwrap_or(Value::Null);
     }
     if selectors.profession_recipe_changes {
@@ -3779,6 +3792,39 @@ fn compare_pet_views(before: &Value, after: &Value) -> Value {
         "before_displayed_rows":before["displayed_rows"],"after_displayed_rows":after["displayed_rows"],
         "observed_only_before":only_before,"observed_only_after":only_after,
         "observed_count_changes":changes})
+}
+
+fn compare_recipe_cooldowns(before: &Value, after: &Value) -> Value {
+    let same_profession = before["profession_id"] == after["profession_id"];
+    let mut result = json!({
+        "same_profession":same_profession,"before_profession_id":before["profession_id"],
+        "after_profession_id":after["profession_id"],"matched_recipe_count":null,
+        "changed_recipe_count":null,"changes":null,"changes_truncated":null,
+        "live":false,"craftability_verified":false
+    });
+    if !same_profession {
+        return result;
+    }
+    let old = before["entries"].as_object().unwrap();
+    let new = after["entries"].as_object().unwrap();
+    let mut matched = 0;
+    let mut changes = BTreeMap::new();
+    for (id, previous) in old {
+        let Some(current) = new.get(id) else { continue };
+        matched += 1;
+        if previous["cooldown"] != current["cooldown"] {
+            changes.insert(id.parse::<u32>().unwrap(), (previous, current));
+        }
+    }
+    result["matched_recipe_count"] = json!(matched);
+    result["changed_recipe_count"] = json!(changes.len());
+    result["changes_truncated"] = json!(changes.len() > 50);
+    result["changes"] =
+        json!(changes.into_iter().take(50).map(|(id, (old, new))| json!({
+        "recipe_id":id,"before":old["cooldown"],"after":new["cooldown"],
+        "before_state":recipe_cooldown_state(old),"after_state":recipe_cooldown_state(new)
+    })).collect::<Vec<_>>());
+    result
 }
 
 fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
