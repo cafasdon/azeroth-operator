@@ -1,5 +1,7 @@
 # Changelog
 
+- Search and inspect saved Forever skill lines by exact reported modifiers and temporary points.
+
 - Filter saved Forever recipes by an explicitly reported daily cooldown flag.
 
 - Filter saved Forever recipes by the low end of their reported base yield per craft.

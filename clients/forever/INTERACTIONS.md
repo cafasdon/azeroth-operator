@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Saved skill-line discovery and inspection accept exact signed `modifier` and
+`temporary_points` predicates. They match on the same skill row as base rank
+and category predicates. Missing values remain unknown, explicit zero is
+searchable, and the two fields stay separate from base rank.
+
 Local world references: optional NPC/object spawn records can accompany captured
 reagent sources and flow into chain acquisition reviews without repeated external
 lookups. Provider area percentages, phase IDs and instance-presence sentinels stay

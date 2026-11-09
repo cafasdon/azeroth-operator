@@ -31,7 +31,8 @@ class SkillFilterTests(unittest.IsolatedAsyncioTestCase):
             cases={'old_empty':capture('Alpha',1,{'43':row(200,300,9)}),'new_empty':capture('Alpha',2,{}),
                 'old_short':capture('Bravo',1,{'43':row(200,300,9)}),'new_short':capture('Bravo',2,{'43':row(100,300,9)}),
                 'mixed':capture('Gamma',1,{'2':row(0,0,2),'10':row(200,300),
-                    '43':row(250,300,9,modifier=100,temporary_points=50),'100':row(300,300,9),'42':row(10,100,9)}),
+                    '43':row(250,300,9,modifier=100,temporary_points=50),'100':row(300,300,9),
+                    '42':row(10,100,9,modifier=-5,temporary_points=0)}),
                 'missing':capture('Delta',1),
                 'maximum':capture('High',1,{str(i):row(0,4294967295,9) for i in range(1,513)})}
             cases['mixed']['sections']['professions']={'1':{'name':'Synthetic','rank':300,'max_rank':300,'skill_line':202}}
@@ -67,6 +68,13 @@ class SkillFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([mixed['data'][f] for f in ['captured_count','matching_count','unknown_count','nonmatching_count']],[5,2,1,2])
                     self.assertEqual(mixed['data']['rows'][0]['points_to_observed_cap'],50)
                     self.assertEqual(mixed['data']['rows'][0]['observation']['modifier'],100)
+                    modifiers={'modifier':-5,'temporary_points':0}
+                    matching=(await inspect(keys['mixed'],modifiers))['data']
+                    self.assertEqual([r['skill_line_id'] for r in matching['rows']],[42])
+                    self.assertEqual([matching[f] for f in ['matching_count','unknown_count','nonmatching_count']],[1,3,1])
+                    contradicted=(await inspect(keys['mixed'],{'category_id':2,**modifiers}))['data']
+                    self.assertEqual([contradicted[f] for f in ['matching_count','unknown_count','nonmatching_count']],[0,2,3])
+                    self.assertEqual([r['snapshot_id'] for r in (await listing(modifiers))['snapshots']],[keys['mixed']])
                     under=await inspect(keys['mixed'],{'minimum_points_to_cap':1})
                     self.assertEqual([r['skill_line_id'] for r in under['data']['rows']],[10,42,43])
                     capped=await inspect(keys['mixed'],{'minimum_rank':300})

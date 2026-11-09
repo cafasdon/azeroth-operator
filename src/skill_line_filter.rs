@@ -25,6 +25,12 @@ pub struct SkillLineFilter {
     pub minimum_points_to_cap: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maximum_points_to_cap: Option<u32>,
+    /// Exact reported modifier, separate from base rank.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modifier: Option<i32>,
+    /// Exact reported temporary points, separate from base rank and modifier.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temporary_points: Option<i32>,
 }
 
 fn twenty() -> usize {
@@ -50,7 +56,9 @@ impl SkillLineFilter {
                 || self.minimum_cap.is_some()
                 || self.maximum_cap.is_some()
                 || self.minimum_points_to_cap.is_some()
-                || self.maximum_points_to_cap.is_some(),
+                || self.maximum_points_to_cap.is_some()
+                || self.modifier.is_some()
+                || self.temporary_points.is_some(),
             "Nonempty skill-line filter required"
         );
         for (minimum, maximum) in [
@@ -93,12 +101,24 @@ impl SkillLineFilter {
         {
             return Some(false);
         }
-        if let Some(category) = self.category_id {
-            return row["category_id"]
-                .as_u64()
-                .map(|value| value == u64::from(category.get()));
+        let mut unknown = false;
+        for (field, expected) in [
+            (
+                "category_id",
+                self.category_id.map(|id| i64::from(id.get())),
+            ),
+            ("modifier", self.modifier.map(i64::from)),
+            ("temporary_points", self.temporary_points.map(i64::from)),
+        ] {
+            if let Some(expected) = expected {
+                match row[field].as_i64() {
+                    Some(actual) if actual != expected => return Some(false),
+                    Some(_) => {}
+                    None => unknown = true,
+                }
+            }
         }
-        Some(true)
+        (!unknown).then_some(true)
     }
     pub(crate) fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
         if snapshot.client.family != Family::Forever {
