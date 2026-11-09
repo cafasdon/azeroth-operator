@@ -21,6 +21,10 @@ Set `list_snapshots.coverage_summary_sections` to count those statuses
 across all matching saves. The summary applies the same filters and
 newest-per-character selection as the list, then counts before paging.
 It omits section contents and unavailability reasons.
+Set `list_snapshots.exact_client` to restrict the search to an exact
+family, variant, build and interface. The family must match the list
+request. Newest-per-character selection and coverage totals use only
+captures within that client scope.
 The Rust MCP `capabilities.snapshot_section_schema` lists recognised
 section names and the names whose captured payloads require Forever.
 These are reader rules. Capture availability still depends on the saved

@@ -67,7 +67,7 @@ async def readback_forever_fixture(binary, store, snapshot_id, closed_bank_id, r
                         "after_capture_status": "reported_unavailable"}
             if any(comparison["sections"][bank] != expected for bank in banks):
                 raise ValueError("Unexpected fixture bank comparison")
-            services = await call("list_snapshots", family="forever",
+            services = await call("list_snapshots", family="forever", exact_client=coverage["client"],
                                   merchant_item_id=744, merchant_target_quantity=6,
                                   trainer_service_name="Fixture lesson", trainer_service_status="available",
                                   trainer_max_price_copper=500, flight_origin_node_id=12,

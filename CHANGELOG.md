@@ -1,5 +1,7 @@
 # Changelog
 
+- Scope saved snapshot search and coverage totals to an exact client build and variant.
+
 - Verify merchant, trainer, flight and dialogue search through the packaged Forever fixture.
 
 - Verify closed-bank coverage and unknown stock through the packaged Forever MCP fixture.

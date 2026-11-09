@@ -353,6 +353,8 @@ struct ItemCost {
 struct List {
     family: String,
     character: Option<azeroth_operator::Character>,
+    /// Require this exact client family, variant, build and interface.
+    exact_client: Option<azeroth_operator::ClientIdentity>,
     /// Inclusive earliest capture timestamp in RFC 3339 format.
     captured_from: Option<String>,
     /// Inclusive latest capture timestamp in RFC 3339 format.
@@ -2047,7 +2049,7 @@ impl Operator {
             family,
             args.character.as_ref(),
             azeroth_operator::CaptureFilters {
-                exact_client: None,
+                exact_client: args.exact_client.as_ref(),
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
                 latest_per_character: args.latest_per_character,

@@ -67,6 +67,22 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIsNone(no_coverage['selection'])
                     exact = await resolve({**target,'exact_client':base['client']})
                     self.assertEqual(exact['selection']['snapshot_id'],expected)
+                    async def list_exact(client, **filters):
+                        response = await session.call_tool('list_snapshots', {
+                            **target, 'exact_client':client, **filters})
+                        self.assertFalse(response.isError,response)
+                        return json.loads(response.content[0].text)
+                    listed = await list_exact(base['client'], coverage_summary_sections=['weapon_enchants'])
+                    self.assertEqual([row['snapshot_id'] for row in listed['snapshots']],[expected,first])
+                    self.assertEqual(listed['section_coverage_summary']['sections']['weapon_enchants'],
+                        {'observed':1,'reported_unavailable':0,'not_recorded':1})
+                    latest = await list_exact(base['client'],latest_per_character=True)
+                    self.assertEqual([row['snapshot_id'] for row in latest['snapshots']],[expected])
+                    self.assertEqual((await list_exact(base['client'],required_sections=['weapon_enchants']))
+                        ['snapshots'][0]['snapshot_id'],first)
+                    for client in [{**base['client'],'family':'retail'},{**base['client'],'interface':0}]:
+                        self.assertTrue((await session.call_tool('list_snapshots',{
+                            **target,'exact_client':client})).isError)
                     absent_client = {**base['client'],'variant':'different'}
                     self.assertIsNone((await resolve({**target,'exact_client':absent_client}))['selection'])
                     bounded = await resolve({**target,'captured_through':'2025-01-01T00:00:00Z'})
