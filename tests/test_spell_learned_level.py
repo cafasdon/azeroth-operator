@@ -28,10 +28,15 @@ class SpellLearnedLevelTests(unittest.IsolatedAsyncioTestCase):
             base=fixture();base['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             base['sections']['spellbook']={'coverage':'visible_player_spell_slots','entries':{
                 '3':spell(100,101,20),'8':spell(100,101,20),'4':spell(200,201,0),'5':spell(300,301)}}
+            for slot in ('3','8','4'):
+                base['sections']['spellbook']['entries'][slot]['usability']={
+                    'usable':True,'insufficient_power':False}
             before=store.ingest(base)
             changed=deepcopy(base);changed['sections']['spellbook']['entries']={
                 '30':spell(100,101,30),'31':spell(100,101),'4':spell(200,202,10),
                 '5':spell(300,301,0),'6':spell(400,401,10)}
+            changed['sections']['spellbook']['entries']['30']['usability']={
+                'usable':False,'insufficient_power':True}
             changed['sections']['action_bar_observation']={
                 'coverage':'loaded_builtin_buttons_only','observed_buttons':5,'missing_buttons':0,
                 'slots':{str(slot):{'empty':False,'kind':kind,'id':spell_id}
@@ -75,6 +80,11 @@ class SpellLearnedLevelTests(unittest.IsolatedAsyncioTestCase):
                         {'base_spell_id':300,'spell_id':301,'before_levels':[None],'after_levels':[0]}])
                     self.assertEqual(changes['reported_spell_id_changes'],[
                         {'base_spell_id':200,'before_reported_spell_ids':[201],'after_reported_spell_ids':[202]}])
+                    self.assertEqual(changes['observed_usability_changes'],[{
+                        'spell_id':101,
+                        'before_readings':[{'usable':True,'insufficient_power':False}],
+                        'after_readings':[None,{'usable':False,'insufficient_power':True}]}])
+                    self.assertEqual((await compare(before,renamed_id))['observed_usability_changes'],[])
                     self.assertEqual(changes['after_action_slots_with_lost_spellbook_match'],{'1':201})
                     self.assertEqual(changes['after_action_slots_with_gained_spellbook_match'],{'2':202,'3':400})
                     self.assertIsNone((await compare(after,before))['after_action_slots_with_gained_spellbook_match'])

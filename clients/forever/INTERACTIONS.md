@@ -1773,6 +1773,11 @@ spellbook. This is a shortcut review cue based on the observed slots.
 `after_action_slots_with_gained_spellbook_match` lists later shortcuts
 whose IDs appeared only in the later spellbook, whether as base or reported
 IDs. The comparison does not establish when a shortcut was placed.
+The same comparison reports `observed_usability_changes` for exact
+reported spell IDs present in both spellbooks. It compares distinct pairs
+of usability and insufficient-power flags, with null for an unreadable
+row. Slot order and repeated identical readings do not affect the result.
+Differences describe saved observations under their capture conditions.
 
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.

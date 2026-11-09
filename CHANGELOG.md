@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever spell usability readings for shared exact reported IDs.
+
 - Show saved Forever action slots that gained a spellbook match between captures.
 
 - Flag conflicting saved usability or insufficient-power readings for exact Forever action spell IDs.

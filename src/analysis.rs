@@ -4041,6 +4041,7 @@ fn compare_spellbook(before: &Snapshot, after: &Snapshot) -> Value {
             "after_action_slots_with_lost_spellbook_match":changed_spellbook_action_matches(&before_ids, &after_ids, after),
             "after_action_slots_with_gained_spellbook_match":changed_spellbook_action_matches(&after_ids, &before_ids, after),
             "observed_flag_changes":compare_spellbook_flags(before, after),
+            "observed_usability_changes":compare_spellbook_usability(before, after),
             "observed_level_learned_changes":compare_spellbook_levels(before, after)})
     });
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
@@ -4142,6 +4143,43 @@ fn compare_spellbook_flags(before: &Snapshot, after: &Snapshot) -> Option<Vec<Va
                         "base_spell_id":id.0,"spell_id":id.1,
                         "before_flags":describe(&old),"after_flags":describe(new)
                     })
+                })
+            })
+            .collect(),
+    )
+}
+
+fn compare_spellbook_usability(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
+    type Readings = BTreeSet<Option<(bool, bool)>>;
+    fn by_reported_id(snapshot: &Snapshot) -> Option<BTreeMap<u64, Readings>> {
+        let rows = snapshot.sections.get("spellbook")?["entries"].as_object()?;
+        let mut readings = BTreeMap::<_, Readings>::new();
+        for row in rows.values() {
+            let usability = &row["usability"];
+            readings
+                .entry(row["spell_id"].as_u64()?)
+                .or_default()
+                .insert(
+                    usability["usable"]
+                        .as_bool()
+                        .zip(usability["insufficient_power"].as_bool()),
+                );
+        }
+        Some(readings)
+    }
+    let after = by_reported_id(after)?;
+    Some(
+        by_reported_id(before)?
+            .into_iter()
+            .filter_map(|(id, old)| {
+                let new = after.get(&id)?;
+                let describe = |readings: &Readings| {
+                    readings.iter().map(|reading| {
+                        reading.map(|(usable, power)| json!({"usable":usable,"insufficient_power":power}))
+                    }).collect::<Vec<_>>()
+                };
+                (old != *new).then(|| {
+                    json!({"spell_id":id,"before_readings":describe(&old),"after_readings":describe(new)})
                 })
             })
             .collect(),
