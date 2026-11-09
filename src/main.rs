@@ -1434,6 +1434,27 @@ impl Operator {
                         azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path)?;
                     let sources = catalogue.reagent_chain_sources(&review["reagent_chain"])?;
                     review["reagent_chain"]["catalogue_sources"] = sources;
+                    if let Some(previews) = review["reagent_chain"]
+                        .pointer_mut("/producer_previews/candidate_previews")
+                        .and_then(serde_json::Value::as_array_mut)
+                    {
+                        for preview in previews {
+                            let sources = catalogue.reagent_chain_sources(preview)?;
+                            preview["catalogue_source_summary"] = if sources.is_null() {
+                                serde_json::Value::Null
+                            } else {
+                                let records = sources["records"].as_array().unwrap();
+                                serde_json::json!({
+                                    "catalogue_source":sources["catalogue_source"],
+                                    "external_item_count":sources["external_item_count"],
+                                    "items_with_recorded_sources":sources["items_with_recorded_sources"],
+                                    "records":records.iter().take(20).collect::<Vec<_>>(),
+                                    "records_truncated":records.len() > 20,
+                                    "current_availability_verified":false,
+                                })
+                            };
+                        }
+                    }
                 }
                 if args.reagent_chain_captured_sources {
                     let source_capture = args

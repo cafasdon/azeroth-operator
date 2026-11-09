@@ -334,6 +334,10 @@ With `reagent_chain_captured_sources` enabled, each completed preview also
 shows up to 20 saved source records for its external requirements, with
 the source snapshot ID and truncation status. It uses the same owner and
 client checks as the explicit plan. Blocked previews return a null summary.
+With `reagent_chain_catalogue_sources` enabled, completed previews also
+show up to 20 acquisition records from the verified local catalogue, with
+catalogue provenance and truncation status. Catalogue and captured source
+summaries are reported separately.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

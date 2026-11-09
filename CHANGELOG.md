@@ -1,5 +1,7 @@
 # Changelog
 
+- Show local catalogue acquisition references in Forever producer previews.
+
 - Compare saved ingredient acquisition sources across Forever producer previews.
 
 - Compare saved merchant prices across Forever producer previews.

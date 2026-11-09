@@ -38,6 +38,9 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
             blocked = deepcopy(value)
             blocked['sections']['profession_recipe_materials']['entries']['102'] = fixed(2505,{'2505':1})
             blocked_key = store.ingest(blocked)
+            ambiguous = deepcopy(blocked)
+            ambiguous['sections']['profession_recipe_materials']['entries']['103'] = fixed(2505,{'2840':1})
+            ambiguous_key = store.ingest(ambiguous)
             later = deepcopy(value)
             later['captured_at'] = '2025-01-02T00:00:00Z'
             later['sections']['bags']['0']['1']['count'] = 3
@@ -83,6 +86,15 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(rows[720]['status'],'source_metadata_missing')
                     self.assertIsNone(rows[720]['sources'])
                     self.assertEqual(rows[2840]['status'],'item_not_in_catalogue')
+                    alternatives = (await call(ambiguous_key,reagent_chain_catalogue_sources=True,
+                        preview_reagent_producer_choices=True))['reagent_chain']['producer_previews']['candidate_previews']
+                    self.assertIsNone(alternatives[0]['catalogue_source_summary'])
+                    explicit = (await call(ambiguous_key,reagent_chain_catalogue_sources=True,
+                        reagent_producer_choices=[{'item_id':2505,'recipe_id':103}]))['reagent_chain']['catalogue_sources']
+                    summary = alternatives[1]['catalogue_source_summary']
+                    self.assertEqual(summary['records'],explicit['records'])
+                    self.assertEqual(summary['catalogue_source'],explicit['catalogue_source'])
+                    self.assertIs(summary['records_truncated'],False)
                     for flag in ['complete_world_sources_verified','current_availability_verified',
                         'acquisition_eligibility_verified','ownership_verified','live','game_execution']:
                         self.assertFalse(sources[flag])
