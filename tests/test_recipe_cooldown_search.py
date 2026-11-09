@@ -73,6 +73,18 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
                     baseline=await search()
                     self.assertEqual(baseline,await search(cooldown_filter=None))
                     self.assertNotIn('cooldown_unknown_count',baseline)
+                    order = 'reported_cooldown_remaining_asc'
+                    ordered = await search(order=order)
+                    self.assertEqual([row['recipe_id'] for row in ordered['records']], [2,7,3,5,10,1,4,6,8,9])
+                    self.assertEqual(ordered['cooldown_captured_at'],base['captured_at'])
+                    self.assertEqual(ordered['records'][3]['captured_cooldown_state'],'available')
+                    self.assertIs(ordered['craftability_verified'],False)
+                    page = await search(order=order,offset=1,limit=2,cooldown_filter={'state':'available'})
+                    self.assertEqual([row['recipe_id'] for row in page['records']], [5,10])
+                    refreshed = await search(order=order,inventory_snapshot_id=inventory,
+                        material_filter={'scope':'bags','minimum_crafts':1})
+                    self.assertEqual([row['recipe_id'] for row in refreshed['records']], [2,7,3,5,10,1,4,6])
+                    self.assertEqual(refreshed['cooldown_captured_at'],base['captured_at'])
                     for expected_state,minimum,maximum in product([None,'available','waiting','unknown'],
                         [None,0,1,2,4294967295],[None,0,30,4294967295]):
                         criteria={field:value for field,value in [('state',expected_state),('minimum_charges',minimum),

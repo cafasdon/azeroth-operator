@@ -93,6 +93,13 @@ availability, present craftability and complete profession coverage remain open.
 
 ## Evidence boundaries
 
+Recipe search can order saved recipes by captured cooldown time remaining.
+Three offline MCP tests passed, including unknown timers, charge-aware state,
+filter paging and original timer provenance with newer material counts.
+Jev 1.14.0 advisory `5a0b95f72034b7488f82a1fdc01946a4277334181d71069aaae65d398e5ddc24`
+favoured integration at .48 confidence, with 396 input and 49 output tokens
+in .312 seconds.
+
 Recipe search can now order matches by captured skill-up counts from the same
 profession and recipe. Offline MCP tests verified zero and unknown ordering,
 numeric ties, filters, paging and mismatched profession evidence. Jev 1.14.0

@@ -20,6 +20,7 @@ pub enum RecipeSearchOrder {
     RecipeId,
     ObservedItemCapacityDesc,
     ReportedSkillUpsDesc,
+    ReportedCooldownRemainingAsc,
 }
 
 #[derive(
@@ -520,6 +521,15 @@ pub fn search_recipe_materials_ordered(
                 id.parse::<u32>().unwrap(),
             )
         });
+    } else if order == RecipeSearchOrder::ReportedCooldownRemainingAsc {
+        matches.sort_unstable_by_key(|(id, row, _, _)| {
+            let remaining = row["cooldown"]["remaining_seconds"].as_u64();
+            (
+                remaining.is_none(),
+                remaining.unwrap_or(0),
+                id.parse::<u32>().unwrap(),
+            )
+        });
     } else {
         matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
     }
@@ -530,7 +540,7 @@ pub fn search_recipe_materials_ordered(
         .map(|(id, row, support, observation)| {
             let mut record = (*row).clone();
             record["recipe_id"] = json!(id.parse::<u32>().unwrap());
-            if cooldown_filter.is_some() {
+            if cooldown_filter.is_some() || order == RecipeSearchOrder::ReportedCooldownRemainingAsc {
                 record["captured_cooldown_state"] = json!(recipe_cooldown_state(row));
             }
             if let Some(support) = support {
@@ -562,6 +572,8 @@ pub fn search_recipe_materials_ordered(
         result["ordering_basis"] = json!(match order {
             RecipeSearchOrder::ObservedItemCapacityDesc =>
                 "independent_observed_required_item_capacity_only",
+            RecipeSearchOrder::ReportedCooldownRemainingAsc =>
+                "captured_cooldown_remaining_seconds_only",
             _ => "captured_same_profession_skill_ups_only",
         });
         result["shared_material_allocation_performed"] = json!(false);
@@ -575,6 +587,8 @@ pub fn search_recipe_materials_ordered(
         result["filters"]["cooldown_filter"] = json!(filter);
         result["cooldown_unknown_count"] = json!(rows.map(|_| cooldown_unknown));
         result["cooldown_nonmatching_count"] = json!(rows.map(|_| cooldown_nonmatching));
+    }
+    if cooldown_filter.is_some() || order == RecipeSearchOrder::ReportedCooldownRemainingAsc {
         result["cooldown_captured_at"] = json!(snapshot.captured_at);
     }
     if let Some(filter) = material_filter {

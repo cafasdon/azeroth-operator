@@ -2076,6 +2076,12 @@ query changes no addon/schema/package or deployed installation.
 
 ## Recipe item-capacity shortlist (2026-11-09)
 
+Set `order: reported_cooldown_remaining_asc` on `search_forever_recipes` to put
+shorter reported timers first. Zero sorts first and unknown timers sort last.
+Equal timers sort by numeric recipe ID. This uses the original recipe capture's
+timer, even when newer inventory supplies materials. Use `cooldown_filter` to
+select an observed availability state separately, including reported charges.
+
 Set `order: reported_skill_ups_desc` on `search_forever_recipes` to put higher
 reported skill-up counts first. The search uses the saved view for the same
 profession and recipe ID. Zero sorts ahead of unknown. Equal counts sort by
