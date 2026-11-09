@@ -1898,6 +1898,9 @@ pub struct CaptureFilters<'a> {
     pub quest_reward_renown_faction_id: Option<std::num::NonZeroU32>,
     pub quest_difficulty: Option<analysis::QuestDifficulty>,
     pub quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
+    pub quest_min_reward_xp: Option<u64>,
+    pub quest_max_required_copper: Option<u64>,
+    pub quest_within_captured_wallet: bool,
     pub quest_objective_kind: Option<&'a str>,
     pub quest_objective_finished: Option<bool>,
     pub quest_objective_remaining: (Option<u32>, Option<u32>),
@@ -2142,6 +2145,9 @@ impl Store {
             quest_reward_renown_faction_id,
             quest_difficulty,
             quest_max_suggested_group_size,
+            quest_min_reward_xp,
+            quest_max_required_copper,
+            quest_within_captured_wallet,
             quest_objective_kind,
             quest_objective_finished,
             quest_objective_remaining,
@@ -2718,6 +2724,9 @@ impl Store {
         );
         let filter_quest_group =
             quest_difficulty.is_some() || quest_max_suggested_group_size.is_some();
+        let filter_quest_budget = quest_min_reward_xp.is_some()
+            || quest_max_required_copper.is_some()
+            || quest_within_captured_wallet;
         let filter_quest_timer =
             quest_max_remaining_seconds.is_some() || quest_projected_expiry_by.is_some();
         ensure!(
@@ -2731,7 +2740,8 @@ impl Store {
                 && !quest_on_captured_map
                 && !filter_quest_timer
                 && !filter_quest_objectives
-                && !filter_quest_group)
+                && !filter_quest_group
+                && !filter_quest_budget)
                 || family == Family::Forever,
             "Quest filtering requires Forever"
         );
@@ -3371,6 +3381,10 @@ impl Store {
                                 .any(|row| row[key].as_u64() == Some(u64::from(id)))
                         })
                     };
+                    let quest_wallet = s
+                        .sections
+                        .get("wallet")
+                        .and_then(|wallet| wallet["copper"].as_u64());
                     let matches_quest = |quest: &Value| {
                         quest_title.as_ref().is_none_or(|title| {
                             quest["title"]
@@ -3409,6 +3423,21 @@ impl Store {
                                     .as_u64()
                                     .is_some_and(|size| size <= u64::from(maximum.get()))
                             })
+                            && quest_min_reward_xp.is_none_or(|minimum| {
+                                quest["reward_amounts"]["xp"]
+                                    .as_u64()
+                                    .is_some_and(|xp| xp >= minimum)
+                            })
+                            && quest_max_required_copper.is_none_or(|maximum| {
+                                quest["required_copper"]
+                                    .as_u64()
+                                    .is_some_and(|cost| cost <= maximum)
+                            })
+                            && (!quest_within_captured_wallet
+                                || quest["required_copper"]
+                                    .as_u64()
+                                    .zip(quest_wallet)
+                                    .is_some_and(|(cost, balance)| cost <= balance))
                             && (!filter_quest_objectives
                                 || analysis::quest_objective_matches(
                                     quest,
@@ -3440,7 +3469,8 @@ impl Store {
                             || waypoint_map.is_some()
                             || filter_quest_timer
                             || filter_quest_objectives
-                            || filter_quest_group))
+                            || filter_quest_group
+                            || filter_quest_budget))
                         .then(|| {
                             s.sections.get("quests").and_then(Value::as_object).map_or(
                                 0,
@@ -3851,6 +3881,7 @@ impl Store {
                         || quest_reward_currency_id.is_some()
                         || quest_reward_renown_faction_id.is_some()
                         || filter_quest_group
+                        || filter_quest_budget
                     {
                         let mut local: Vec<_> = s
                             .sections
@@ -3904,6 +3935,10 @@ impl Store {
                                 if filter_quest_group {
                                     row["elite"] = json!(quest["elite"].as_bool());
                                     row["suggested_group_size"] = json!(quest["suggested_group_size"].as_u64());
+                                }
+                                if filter_quest_budget {
+                                    row["reward_xp"] = json!(quest["reward_amounts"]["xp"].as_u64());
+                                    row["required_copper"] = json!(quest["required_copper"].as_u64());
                                 }
                                 if local_quest_soonest_first {
                                     row["remaining_seconds"] = json!(quest["timer"]["remaining_seconds"].as_u64());

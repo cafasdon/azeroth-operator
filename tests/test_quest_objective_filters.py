@@ -93,6 +93,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied['sections']['quests']['3']['renown_rewards'] = {'1':{'faction_id':60,'quantity':1}}
             tied['sections']['quests']['3'].update(elite=True,suggested_group_size=3)
             tied['sections']['quests']['10'].update(elite=False,suggested_group_size=2)
+            tied['sections']['quests']['3'].update(required_copper=2,reward_amounts={'xp':100})
+            tied['sections']['quests']['10'].update(required_copper=3,reward_amounts={'xp':200})
             tied_key = store.ingest(tied)
             many_local = deepcopy(tied)
             many_local['character']['name'] = 'ManyLocal'
@@ -221,6 +223,15 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await timed(quest_id=7,quest_max_suggested_group_size=5),[])
                     await timed(error=True,family='retail',quest_difficulty='elite')
                     await timed(error=True,quest_max_suggested_group_size=0)
+                    economical = await timed(quest_min_reward_xp=100,quest_max_required_copper=2,
+                                             quest_within_captured_wallet=True)
+                    self.assertEqual([row['snapshot_id'] for row in economical],[tied_key])
+                    match = economical[0]['quest_match']['matching_quests'][0]
+                    self.assertEqual((match['quest_id'],match['reward_xp'],match['required_copper']),(3,100,2))
+                    self.assertEqual(await timed(quest_min_reward_xp=200,quest_within_captured_wallet=True),[])
+                    self.assertEqual(await timed(quest_max_required_copper=0),[])
+                    self.assertEqual(await timed(quest_id=7,quest_min_reward_xp=0),[])
+                    await timed(error=True,family='retail',quest_within_captured_wallet=True)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
                         quest_objective_finished=False,quest_objective_min_remaining=1,
                         quest_objective_max_remaining=1)

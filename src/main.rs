@@ -545,6 +545,13 @@ struct List {
     quest_difficulty: Option<azeroth_operator::analysis::QuestDifficulty>,
     /// Match a recorded suggested group size at or below this value.
     quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
+    /// Match a known quest XP reward at or above this value.
+    quest_min_reward_xp: Option<u64>,
+    /// Match a known quest copper requirement at or below this value.
+    quest_max_required_copper: Option<u64>,
+    /// Match a known quest copper requirement covered by the same captured wallet.
+    #[serde(default)]
+    quest_within_captured_wallet: bool,
     /// Match an exact recorded objective kind on the same quest.
     quest_objective_kind: Option<String>,
     /// Match the reported finished state on the same objective.
@@ -2307,6 +2314,9 @@ impl Operator {
                 quest_reward_renown_faction_id: args.quest_reward_renown_faction_id,
                 quest_difficulty: args.quest_difficulty,
                 quest_max_suggested_group_size: args.quest_max_suggested_group_size,
+                quest_min_reward_xp: args.quest_min_reward_xp,
+                quest_max_required_copper: args.quest_max_required_copper,
+                quest_within_captured_wallet: args.quest_within_captured_wallet,
                 quest_objective_kind: args.quest_objective_kind.as_deref(),
                 quest_objective_finished: args.quest_objective_finished,
                 quest_objective_remaining: (

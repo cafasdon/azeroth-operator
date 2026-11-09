@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever quests by recorded XP reward, copper cost and wallet affordability.
+
 - Find saved Forever elite and group quests by recorded difficulty and suggested group size.
 
 - Find saved Forever quests by recorded renown reward faction.

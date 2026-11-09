@@ -3144,3 +3144,8 @@ Use `list_snapshots.quest_difficulty` with `elite` or `suggested_group`,
 and optionally `quest_max_suggested_group_size`, to shortlist group
 content. Suggested group requires a recorded size above one. The size cap
 requires a recorded size and matches inclusively. These are saved game hints.
+
+Saved quest searches also accept `quest_min_reward_xp`,
+`quest_max_required_copper` and `quest_within_captured_wallet`. Each
+active predicate requires a known value. Affordability checks each quest
+against the same capture's wallet and does not budget multiple quests.
