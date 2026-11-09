@@ -3156,6 +3156,9 @@ impl Store {
             result["available"] = json!(s.sections.contains_key(name));
             result["data"] = s.sections.get(name).cloned().unwrap_or(Value::Null);
             result["unavailable_reason"] = json!(s.unavailable.get(name));
+            if name == "pet_care" && s.client.family == Family::Forever {
+                result["pet_food_locations"] = json!(analysis::pet_food_locations(&s));
+            }
         } else {
             result["available_sections"] = json!(s.sections.keys().collect::<Vec<_>>());
             result["unavailable"] = json!(s.unavailable);

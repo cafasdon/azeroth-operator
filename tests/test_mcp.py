@@ -899,6 +899,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(food_summary.content[0].text)["pet_food_locations"]["quantity_by_item_id"], {
                             "117":{"observed_bag_quantity":3,"matching_stacks":1},
                         })
+                        pet_inspection = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id":travel_before,"section":"pet_care",
+                        })
+                        self.assertFalse(pet_inspection.isError,pet_inspection)
+                        pet_data = json.loads(pet_inspection.content[0].text)
+                        self.assertEqual(pet_data["data"],travel["sections"]["pet_care"])
+                        self.assertEqual(pet_data["pet_food_locations"],
+                                         json.loads(food_summary.content[0].text)["pet_food_locations"])
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
                         travel["sections"]["experience"].update({
                             "current_xp": 150, "rested_xp": 0, "resting": False,

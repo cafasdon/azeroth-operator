@@ -3,6 +3,8 @@
 Saved pet food location summaries group bag quantities and stack counts by
 accepted food item ID. Totals include matching stacks beyond the displayed
 location limit and describe the saved bags.
+Inspecting the saved `pet_care` section includes the same
+`pet_food_locations` report. Missing food observations remain null.
 
 Use `list_snapshots` with `toy_in_view` to find an exact toy item ID in a
 saved filtered journal. Optional `collected` and `favorite` flags must

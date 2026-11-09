@@ -2294,7 +2294,7 @@ pub(crate) fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
         "free_slots_by_family_mask":by_family,"unknown_family_free_slots":unknown}))
 }
 
-fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {
+pub(crate) fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {
     let foods = snapshot.sections.get("pet_care")?["carried_food"].as_object()?;
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut locations = Vec::new();
