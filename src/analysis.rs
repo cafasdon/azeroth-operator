@@ -2274,7 +2274,7 @@ pub struct ComparisonSelectors {
     pub action_bar_slots: bool,
 }
 
-fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeMap<u32, u64>) {
+pub(crate) fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeMap<u32, u64>) {
     let rows = section["entries"].as_object().unwrap();
     let mut quantities = BTreeMap::new();
     let mut items = 0;

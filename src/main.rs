@@ -340,6 +340,8 @@ struct List {
     /// Find an exact recorded dialogue label or raw ID/status/flags on the same saved option; no selection eligibility.
     #[serde(default, deserialize_with = "gossip_option_argument")]
     gossip_option: Option<azeroth_operator::gossip_option_filter::GossipOptionFilter>,
+    /// Find saved Forever captures whose outgoing trade offer visibly contained this base item ID.
+    outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1727,6 +1729,7 @@ impl Operator {
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
                 gossip_option: args.gossip_option,
+                outgoing_trade_item_id: args.outgoing_trade_item_id,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

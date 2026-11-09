@@ -38,3 +38,19 @@ missing data and false verification flags. Jev 1.14.0 advisory
 `a3a965dfce24b8171309eba778b9445d731fa64c8fc056b1f2ef34e192d70d38`
 was inconclusive at .34 confidence before the independent probes. It used 414
 input and 53 output tokens in .292 seconds.
+
+Use `outgoing_trade_item_id` with `list_snapshots` and `family: forever` to
+find captures with a readable offer of that base item ID. The result gives
+the observed quantity summed across matching normal slots and the number of
+unreadable or empty slots. With `latest_per_character`, only the newest capture
+per character and client variant is eligible for the item filter. A result
+records an observed offer. Trade completion and owned-stock credit remain false.
+
+The offline MCP fixture verified matching and absent items, quantity aggregation
+through 25,769,803,770, result limits, latest-capture semantics and rejection of
+zero IDs and other client families. Jev 1.14.0 advisory
+`3947d6d020022545e0f745e13a487b529b65d775f0db8aa06afa56bfc4c26ddf`
+returned integrate .84 at confidence .76 with 413 input and 49 output tokens in
+.306 seconds.
+Independent review passed offset pagination, strict ID rejection, omitted and
+null selector parity and date-bounded latest selection.

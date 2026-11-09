@@ -1264,6 +1264,7 @@ pub struct CaptureFilters<'a> {
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
+    pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1467,6 +1468,7 @@ impl Store {
             loot_observation,
             skill_line,
             gossip_option,
+            outgoing_trade_item_id,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1584,6 +1586,10 @@ impl Store {
         ensure!(
             gossip_option.is_none() || family == Family::Forever,
             "Gossip option filtering requires Forever"
+        );
+        ensure!(
+            outgoing_trade_item_id.is_none() || family == Family::Forever,
+            "Outgoing trade filtering requires Forever"
         );
         if let Some(filter) = &gossip_option {
             filter.validate()?;
@@ -1991,6 +1997,17 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if gossip_option.is_some() && gossip_option_match.is_none() {
+                        continue;
+                    }
+                    let outgoing_trade_item_match = outgoing_trade_item_id.and_then(|id| {
+                        let section = s.sections.get("player_trade_offer")?;
+                        let (slots, quantities) = analysis::observed_trade_offer_quantities(section);
+                        let quantity = quantities.get(&id.get())?;
+                        Some(json!({"item_id":id,"observed_offered_quantity":quantity,
+                            "readable_item_slots":slots,"unreadable_or_empty_slots":6-slots,
+                            "trade_completion_verified":false,"counts_toward_owned_inventory":false}))
+                    });
+                    if outgoing_trade_item_id.is_some() && outgoing_trade_item_match.is_none() {
                         continue;
                     }
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
@@ -2639,6 +2656,9 @@ impl Store {
                     }
                     if let Some(observation) = gossip_option_match {
                         summary["gossip_option_match"] = observation;
+                    }
+                    if let Some(observation) = outgoing_trade_item_match {
+                        summary["outgoing_trade_item_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;

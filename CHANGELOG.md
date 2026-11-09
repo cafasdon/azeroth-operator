@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by base item ID in the outgoing trade offer.
+
 - Compare saved outgoing trade offers by base item ID in Forever.
 
 - Compare saved Forever personal PvP observations and cap distances side by side.

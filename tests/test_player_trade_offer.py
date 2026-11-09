@@ -43,8 +43,9 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                 section=deepcopy(mixed);section['entries']['1'][key]=value;invalid.append(section)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));valid=[];bad=[]
-            for section in [None,unknown,mixed,maximum,full]:
+            for day, section in enumerate([None,unknown,mixed,maximum,full], 1):
                 saved=deepcopy(base)
+                saved['captured_at'] = f'2025-01-{day:02d}T00:00:00Z'
                 if section is not None:saved['sections']['player_trade_offer']=section
                 valid.append((store.ingest(saved),section))
             bad_snapshots=[]
@@ -90,6 +91,24 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(recipe['materials'][0]['quantity_observed'],2)
                         self.assertEqual(recipe['material_capacity']['bags']['supported_crafts'],0)
                     missing_id, unknown_id, mixed_id, maximum_id, full_id = [key for key,_ in valid]
+                    def search_args(item_id, **options):
+                        return {'family':'forever','outgoing_trade_item_id':item_id,**options}
+                    first = await call('list_snapshots', **search_args(10, limit=1))
+                    self.assertEqual([row['snapshot_id'] for row in first['snapshots']], [full_id])
+                    history = await call('list_snapshots', **search_args(10))
+                    self.assertEqual([row['snapshot_id'] for row in history['snapshots']], [full_id,mixed_id])
+                    self.assertEqual([row['outgoing_trade_item_match']['observed_offered_quantity']
+                                      for row in history['snapshots']], [6,9])
+                    self.assertIs(history['snapshots'][1]['outgoing_trade_item_match']['counts_toward_owned_inventory'],False)
+                    maximum_match = (await call('list_snapshots', **search_args(4294967295)))['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in maximum_match], [maximum_id])
+                    self.assertEqual(maximum_match[0]['outgoing_trade_item_match']['observed_offered_quantity'], 25769803770)
+                    unfiltered = await call('list_snapshots',family='forever',limit=1)
+                    self.assertNotIn('outgoing_trade_item_match', unfiltered['snapshots'][0])
+                    self.assertEqual((await call('list_snapshots', **search_args(4294967295,latest_per_character=True)))['snapshots'], [])
+                    self.assertEqual((await call('list_snapshots', **search_args(99)))['snapshots'], [])
+                    await call('list_snapshots',error=True,family='retail',outgoing_trade_item_id=10)
+                    await call('list_snapshots',error=True,**search_args(0))
                     selector = 'player_trade_offer_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=mixed_id,after_id=maximum_id))
                     async def compare(a,b):
