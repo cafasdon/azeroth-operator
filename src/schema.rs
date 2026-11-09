@@ -2004,6 +2004,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("max_rank", "uint", false),
                     ("current_week_max_rank", "uint", false),
                     ("previous_week_max_rank", "uint", false),
+                    ("total_points_by_rank", "map", false),
                 ],
             )?;
             ensure!(
@@ -2022,6 +2023,34 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ensure!(
                         number.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),
                         "Invalid PvP progression value"
+                    );
+                }
+            }
+            if let Some(totals) = value.get("total_points_by_rank") {
+                let totals = totals
+                    .as_object()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid PvP total points"))?;
+                ensure!(
+                    (1..=4).contains(&totals.len()),
+                    "Invalid PvP threshold count"
+                );
+                for (rank, total) in totals {
+                    let number = rank.parse::<u32>()?;
+                    ensure!(
+                        number.to_string() == *rank
+                            && [
+                                "rank",
+                                "max_rank",
+                                "current_week_max_rank",
+                                "previous_week_max_rank"
+                            ]
+                            .iter()
+                            .any(|key| value[*key].as_u64() == Some(u64::from(number))),
+                        "Unreferenced PvP threshold rank"
+                    );
+                    ensure!(
+                        total.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),
+                        "Invalid PvP total points"
                     );
                 }
             }

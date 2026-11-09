@@ -36,6 +36,36 @@ AO.collectors.player_pvp_progression = function()
     end
     local optional={max_rank="maxLevel",current_week_max_rank="currentWeekProgressiveMaxLevel",
         previous_week_max_rank="previousWeekProgressiveMaxLevel"}
+    local totalsKey="GetTotalReputationForRenownLevel"
+    local totalsOk,totals=pcall(function()
+        local getter=public(major[totalsKey])
+        assert(type(getter)=="function", "PvP total API unavailable")
+        return getter
+    end)
+    local function stableTotals()
+        if not totalsOk then return false end
+        local ok=pcall(function()
+            assert(public(major[totalsKey])==totals
+                and rawequal(rawget(major,totalsKey),totals), "PvP total API changed")
+        end)
+        totalsOk=ok
+        return ok
+    end
+    local function readTotals(row)
+        local ranks={[row.rank]=true}
+        for field in pairs(optional) do
+            if row[field]~=nil then ranks[row[field]]=true end
+        end
+        local values={}
+        -- Only the four captured ranks are candidates, deduplicated per pass.
+        for rank in pairs(ranks) do
+            if stableTotals() then
+                local ok,value=pcall(function() return uint(totals(2800,rank)) end)
+                if stableTotals() and ok then values[rank]=value end
+            end
+        end
+        return values
+    end
     local function read()
         fixedApis()
         local data=public(info(2800))
@@ -47,6 +77,9 @@ AO.collectors.player_pvp_progression = function()
             if ok then row[field]=value end
         end
         fixedApis()
+        row.totals=readTotals(row)
+        fixedApis()
+        if totalsOk and not rawequal(rawget(major,totalsKey),totals) then totalsOk=false end
         return row
     end
     local first=read()
@@ -58,7 +91,23 @@ AO.collectors.player_pvp_progression = function()
     for field in pairs(optional) do
         if first[field]~=nil and first[field]==second[field] then result[field]=first[field] end
     end
+    local totalsStable=stableTotals()
     fixedApis()
+    -- fixedApis invokes restriction callbacks too, so finish with a raw identity
+    -- check before retaining any optional totals.
+    if totalsStable and rawequal(rawget(major,totalsKey),totals) then
+        local ranks={[result.rank]=true}
+        for field in pairs(optional) do
+            if result[field]~=nil then ranks[result[field]]=true end
+        end
+        local values={}
+        for rank in pairs(ranks) do
+            if first.totals[rank]~=nil and first.totals[rank]==second.totals[rank] then
+                values[tostring(rank)]=first.totals[rank]
+            end
+        end
+        if next(values) then result.total_points_by_rank=values end
+    end
     return result
 end
 -- Passive manual-export observation of the player's six normal trade slots.

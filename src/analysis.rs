@@ -6659,6 +6659,30 @@ pub fn summary(s: &Snapshot) -> Value {
             };
             let mut report = section.clone();
             report["remaining_points_to_reported_next_threshold"] = json!(remaining);
+            if let Some(totals) = section.get("total_points_by_rank") {
+                let lookup = |field: &str| {
+                    section[field]
+                        .as_u64()
+                        .and_then(|rank| totals[rank.to_string()].as_u64())
+                };
+                let current = lookup("rank").map(|base| base + points);
+                report["reported_total_rank_points"] = json!(current);
+                let mut caps = serde_json::Map::new();
+                for field in [
+                    "max_rank",
+                    "current_week_max_rank",
+                    "previous_week_max_rank",
+                ] {
+                    let remaining = current
+                        .zip(lookup(field))
+                        .filter(|(_, cap)| *cap > 0)
+                        .map(|(current, cap)| cap.saturating_sub(current));
+                    caps.insert(field.to_string(), json!(remaining));
+                }
+                report["remaining_points_to_reported_caps"] = Value::Object(caps);
+                report["cap_distance_basis"] =
+                    json!("captured_total_thresholds_and_within_rank_points_only");
+            }
             report["current_progression_verified"] = json!(false);
             report["rank_eligibility_verified"] = json!(false);
             report["reward_eligibility_verified"] = json!(false);

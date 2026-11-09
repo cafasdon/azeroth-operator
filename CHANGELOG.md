@@ -1,5 +1,9 @@
 # Changelog
 
+- Capture bounded optional PvP total-rank thresholds and calculate historical
+  points remaining to reported caps. Preserve per-rank unknowns, legacy output
+  and false eligibility claims; do not infer season binding or earned-point gains.
+
 - Add passive personal Forever PvP rank progression capture, strict owner-local
   readers and numeric MCP summaries. Retain reported weekly caps and explicit
   unknowns without scoreboard data, queue actions or eligibility claims.

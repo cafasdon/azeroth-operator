@@ -6,7 +6,7 @@ fn fixture() -> mlua::Result<Lua> {
     let lua = Lua::new();
     lua.load(r#"
         AO={family='forever',variant='live'}; SlashCmdList={}; mode='normal'
-        calls=0; actions=0; finalChecks=0; trace={}
+        calls=0; actions=0; finalChecks=0; trace={}; totalCalls=0; totalTrace={}; totalCounts={}
         function InCombatLockdown() return mode=='combat' end
         function GetBuildInfo() return '1.60.1','70862','',16001 end
         function UnitName(unit) assert(unit=='player'); return 'Fixture' end
@@ -23,6 +23,7 @@ fn fixture() -> mlua::Result<Lua> {
             if mutation=='getter' then C_MajorFactions.GetMajorFactionProgressionInfo=function() return nil end end
             if mutation=='family' then AO.family='retail' end
             if mutation=='guard' then issecretvalue=function(v) return rawequal(v,SECRET) end end
+            if mutation=='totals' then C_MajorFactions.GetTotalReputationForRenownLevel=function() return 99 end end
         end
         function issecretvalue(value)
             if mode=='mutate_final_guard' and calls==2 and rawequal(value,issecretvalue) then
@@ -30,6 +31,11 @@ fn fixture() -> mlua::Result<Lua> {
                 if finalChecks==2 then mutate() end
             end
             if mode=='mutate_optional_guard' and calls==2 and value==777 then mutate() end
+            if mode=='mutate_final_totals_guard' and calls==2 and rawequal(value,issecretvalue) then
+                finalChecks=finalChecks+1
+                if finalChecks==3 then mutate() end
+            end
+            if mode=='secret_totals_getter' and rawequal(value,totalGetter) then return true end
             return rawequal(value,SECRET) or value=='PRIVATE'
         end
         C_MajorFactions={GetMajorFactionProgressionInfo=function(id)
@@ -58,6 +64,23 @@ fn fixture() -> mlua::Result<Lua> {
                 forbidden()
             end})
         end}
+        function installTotals()
+            totalGetter=function(id,rank)
+                assert(id==2800 and type(rank)=='number' and rank>=0 and rank<=4294967295)
+                totalCalls=totalCalls+1; totalTrace[#totalTrace+1]=rank
+                totalCounts[rank]=(totalCounts[rank] or 0)+1
+                assert(totalCalls<=8, 'unbounded total lookups')
+                if mode=='mutate_total' and totalCalls==8 then mutate() end
+                if rank==8 then
+                    if mode=='bad_total' then return badValue end
+                    if mode=='total_error' then error('PRIVATE') end
+                    if mode=='changed_total' and totalCounts[rank]==2 then return 999 end
+                end
+                if rank==4294967295 then return 4294967295 end
+                return rank*100
+            end
+            C_MajorFactions.GetTotalReputationForRenownLevel=totalGetter
+        end
         C_PvP={GetPVPSeasonInfo=forbidden,GetScoreInfo=forbidden,RequestCrowdControlSpell=forbidden}
         C_MajorFactions.GetMajorFactionData=forbidden
         C_MajorFactions.RequestCatchUpState=forbidden
@@ -65,7 +88,9 @@ fn fixture() -> mlua::Result<Lua> {
         RequestBattlefieldScoreData=forbidden; RequestRatedInfo=forbidden
         JoinBattlefield=forbidden; JoinRatedBattlefield=forbidden; AcceptBattlefieldPort=forbidden
         GetBattlefieldScore=forbidden; GetPVPLifetimeStats=forbidden; hooksecurefunc=forbidden
-        function capture() calls=0;trace={};finalChecks=0;AO.Capture() end
+        function capture()
+            calls=0;trace={};finalChecks=0;totalCalls=0;totalTrace={};totalCounts={};AO.Capture()
+        end
     "#).exec()?;
     let namespace: mlua::Table = lua.globals().get("AO")?;
     lua.load(include_str!("../addon/Collectors.lua"))
@@ -302,6 +327,148 @@ fn getter_and_final_restriction_callbacks_cannot_change_context()
                 snapshot.unavailable["player_pvp_progression"],
                 "api_unavailable_or_failed"
             );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn totals_are_bounded_deduplicated_and_bound_to_stable_referenced_ranks()
+-> Result<(), Box<dyn std::error::Error>> {
+    let lua = fixture()?;
+    assert!(
+        capture(&lua, "normal")?.sections["player_pvp_progression"]
+            .get("total_points_by_rank")
+            .is_none()
+    );
+    lua.load("installTotals()").exec()?;
+    let snapshot = capture(&lua, "normal")?;
+    assert_eq!(
+        snapshot.sections["player_pvp_progression"]["total_points_by_rank"],
+        json!({"4":400,"7":700,"8":800,"14":1400})
+    );
+    lua.load("assert(totalCalls==8 and calls==2); for rank,count in pairs(totalCounts) do assert(count==2) end").exec()?;
+    for (mode, key, value) in [("zero", "0", 0_u32), ("boundary", "4294967295", u32::MAX)] {
+        let snapshot = capture(&lua, mode)?;
+        let totals = &snapshot.sections["player_pvp_progression"]["total_points_by_rank"];
+        assert_eq!(totals.as_object().unwrap().len(), 1);
+        assert_eq!(totals[key], value);
+        assert_eq!(lua.globals().get::<u32>("totalCalls")?, 2);
+    }
+    lua.globals().set("field", "maxLevel")?;
+    for mode in ["changed_field", "missing_second"] {
+        let snapshot = capture(&lua, mode)?;
+        let section = &snapshot.sections["player_pvp_progression"];
+        assert!(section.get("max_rank").is_none());
+        assert_eq!(
+            section["total_points_by_rank"],
+            json!({"4":400,"7":700,"8":800})
+        );
+        lua.load("assert(totalCalls<=8)").exec()?;
+    }
+    lua.globals().set("field", "renownLevel")?;
+    assert!(
+        !capture(&lua, "changed_field")?
+            .sections
+            .contains_key("player_pvp_progression")
+    );
+    Ok(())
+}
+
+#[test]
+fn total_lookup_failures_omit_only_the_affected_rank() -> Result<(), Box<dyn std::error::Error>> {
+    let lua = fixture()?;
+    lua.load("installTotals()").exec()?;
+    for value in [
+        "nil",
+        "SECRET",
+        "'PRIVATE'",
+        "'800'",
+        "false",
+        "{}",
+        "-1",
+        "1.5",
+        "0/0",
+        "math.huge",
+        "-math.huge",
+        "4294967296",
+    ] {
+        lua.load(format!("badValue={value}")).exec()?;
+        let snapshot = capture(&lua, "bad_total")?;
+        assert_eq!(
+            snapshot.sections["player_pvp_progression"]["total_points_by_rank"],
+            json!({"4":400,"7":700,"14":1400}),
+            "{value}"
+        );
+        assert_eq!(
+            snapshot.sections["player_pvp_progression"]["current_week_max_rank"],
+            8
+        );
+    }
+    for mode in ["total_error", "changed_total"] {
+        assert_eq!(
+            capture(&lua, mode)?.sections["player_pvp_progression"]["total_points_by_rank"],
+            json!({"4":400,"7":700,"14":1400})
+        );
+    }
+    lua.load("C_MajorFactions.GetTotalReputationForRenownLevel=function() error('PRIVATE') end")
+        .exec()?;
+    let snapshot = capture(&lua, "normal")?;
+    assert!(
+        snapshot.sections["player_pvp_progression"]
+            .get("total_points_by_rank")
+            .is_none()
+    );
+    assert_eq!(snapshot.sections["player_pvp_progression"]["rank"], 4);
+    Ok(())
+}
+
+#[test]
+fn optional_total_api_changes_omit_totals_but_required_context_changes_fail_section()
+-> Result<(), Box<dyn std::error::Error>> {
+    for value in ["nil", "SECRET", "true", "123"] {
+        let lua = fixture()?;
+        lua.load(format!(
+            "C_MajorFactions.GetTotalReputationForRenownLevel={value}"
+        ))
+        .exec()?;
+        let snapshot = capture(&lua, "normal")?;
+        assert!(
+            snapshot.sections["player_pvp_progression"]
+                .get("total_points_by_rank")
+                .is_none()
+        );
+        assert_eq!(snapshot.sections["player_pvp_progression"]["rank"], 4);
+    }
+    let lua = fixture()?;
+    lua.load("installTotals()").exec()?;
+    let snapshot = capture(&lua, "secret_totals_getter")?;
+    assert!(
+        snapshot.sections["player_pvp_progression"]
+            .get("total_points_by_rank")
+            .is_none()
+    );
+    assert_eq!(lua.globals().get::<u32>("totalCalls")?, 0);
+    for mode in ["mutate_total", "mutate_final_totals_guard"] {
+        for mutation in ["totals", "namespace", "getter", "family", "guard"] {
+            let lua = fixture()?;
+            lua.load("installTotals()").exec()?;
+            lua.globals().set("mutation", mutation)?;
+            let snapshot = capture(&lua, mode)?;
+            if mutation == "totals" {
+                let section = &snapshot.sections["player_pvp_progression"];
+                assert_eq!(section["rank"], 4, "{mode}");
+                assert!(section.get("total_points_by_rank").is_none(), "{mode}");
+            } else {
+                assert!(
+                    !snapshot.sections.contains_key("player_pvp_progression"),
+                    "{mode}: {mutation}"
+                );
+                assert_eq!(
+                    snapshot.unavailable["player_pvp_progression"],
+                    "api_unavailable_or_failed"
+                );
+            }
         }
     }
     Ok(())

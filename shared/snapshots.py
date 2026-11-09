@@ -834,11 +834,17 @@ def validate_snapshot(value):
         required={'coverage','faction_id','rank','rank_points','next_rank_threshold'}
         optional={'max_rank','current_week_max_rank','previous_week_max_rank'}
         if (c['family']!='forever' or not isinstance(pvp,dict) or not required<=pvp.keys()
-                or set(pvp)-required-optional or pvp['coverage']!='reported_pvp_rank_faction'
+                or set(pvp)-required-optional-{'total_points_by_rank'} or pvp['coverage']!='reported_pvp_rank_faction'
                 or type(pvp['faction_id']) is not int or pvp['faction_id']!=2800
                 or any(type(pvp[key]) is not int or not 0<=pvp[key]<=4_294_967_295
                        for key in (required|optional)-{'coverage','faction_id'} if key in pvp)):
             raise ValueError('Invalid PvP progression')
+        if 'total_points_by_rank' in pvp:
+            totals=pvp['total_points_by_rank']
+            ranks={str(pvp[key]) for key in {'rank'}|optional if key in pvp}
+            if (not isinstance(totals,dict) or not 1<=len(totals)<=4 or not set(totals)<=ranks
+                    or any(type(value) is not int or not 0<=value<=4_294_967_295 for value in totals.values())):
+                raise ValueError('Invalid PvP total points')
     if "player_trade_offer" in sections:
         trade=sections["player_trade_offer"]
         if (c["family"]!="forever" or not isinstance(trade,dict)

@@ -675,3 +675,14 @@ optional stable observations. Zero thresholds and points above a threshold leave
 remaining points unknown. No season binding, rank-up/reward eligibility,
 scoreboard/player identities or queue actions are inferred or added. Native
 qualification stays deferred. See docs/ADR-070-player-pvp-progression.md.
+
+## PvP cap-distance planning (2026-11-09)
+
+Optional captured total_points_by_rank contains at most four referenced current/
+cap rank thresholds. MCP summary adds reported_total_rank_points and
+remaining_points_to_reported_caps only when totals are available. Distances use
+captured total thresholds plus within-rank points, floored at zero. Missing
+current/target thresholds or zero cap totals remain unknown. No rank interpolation,
+season binding, earned-point delta, reward eligibility or present cap guarantee.
+Two projections use at most eight deduplicated lookup calls. Legacy captures and
+passive action boundaries are preserved. See docs/ADR-071-pvp-cap-distance.md.

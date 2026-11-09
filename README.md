@@ -1,5 +1,9 @@
 # Azeroth Operator
 
+PvP summaries can now calculate points remaining to reported weekly and maximum
+rank caps from captured total-point thresholds. Missing or zero caps stay unknown.
+[Contract](docs/ADR-071-pvp-cap-distance.md).
+
 Forever exports now support personal PvP rank progression: reported rank points,
 next-rank threshold and optional weekly caps. MCP summaries preserve unknowns and
 do not imply current rank-up or reward eligibility.
