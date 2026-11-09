@@ -1,5 +1,7 @@
 # Changelog
 
+- Suggest saved bank withdrawals for Forever quest item bag shortfalls.
+
 - Look up saved provider acquisition references for Forever quest item shortfalls.
 
 - Look up local catalogue acquisition sources for saved Forever quest item shortfalls.

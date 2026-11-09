@@ -165,6 +165,9 @@ struct Inspect {
     quest_inventory_catalogue_sources: bool,
     /// Use this same-character saved source capture for known quest inventory shortfalls.
     quest_inventory_source_snapshot_id: Option<String>,
+    /// Suggest saved bank withdrawals for quest item shortfalls in bags.
+    #[serde(default)]
+    quest_inventory_bank_withdrawals: bool,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2532,6 +2535,7 @@ impl Operator {
             )]);
         }
         if (args.quest_inventory_catalogue_sources
+            || args.quest_inventory_bank_withdrawals
             || args.quest_inventory_source_snapshot_id.is_some()
             || args.quest_inventory_merchant_snapshot_id.is_some()
             || args.quest_inventory_snapshot_id.is_some())
@@ -2544,7 +2548,12 @@ impl Operator {
         if let Some(requirements) = &args.quest_inventory_requirements
             && (args.quest_id.is_none()
                 || args.section.as_deref() != Some("quests")
-                || requirements.validate(&Family::Forever).is_err())
+                || requirements.validate(&Family::Forever).is_err()
+                || (args.quest_inventory_bank_withdrawals
+                    && !matches!(
+                        requirements.storage,
+                        azeroth_operator::InventoryStorage::Bags
+                    )))
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest inventory review requires a quest ID, the quests section and valid item requirements",
@@ -3467,11 +3476,13 @@ impl Operator {
                     };
                     let quest_stock = inventory_override.as_ref().or(review_snapshot.as_ref());
                     if let Some(requirements) = &args.quest_inventory_requirements {
-                        value["quest_inventory_review"] = serde_json::json!(
-                            quest
-                                .zip(quest_stock)
-                                .map(|(_, snapshot)| requirements.review_observed_stock(snapshot))
-                        );
+                        value["quest_inventory_review"] =
+                            serde_json::json!(quest.zip(quest_stock).map(|(_, snapshot)| {
+                                requirements.review_observed_stock(
+                                    snapshot,
+                                    args.quest_inventory_bank_withdrawals,
+                                )
+                            }));
                         if let Some(id) = &args.quest_inventory_snapshot_id
                             && let Some(report) = value["quest_inventory_review"].as_object_mut()
                         {

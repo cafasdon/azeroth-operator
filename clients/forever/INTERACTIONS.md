@@ -15,6 +15,10 @@ binding and quest readiness unverified.
 The review also counts how many item IDs are short and reports whether
 the selected storage covers the entire supplied checklist. Both values
 remain unknown when that storage was unavailable.
+With bags selected, enable `quest_inventory_bank_withdrawals` to see which
+shortfalls could be covered by saved character-bank stock first and
+account-bank stock second. The guide shows remaining shortages and missing
+bank observations. Merchant quotes and source lookups still use bag shortfalls.
 Add `quest_inventory_merchant_snapshot_id` to price the shortfalls from a
 saved merchant visit for the same character and client. Quotes use the
 inventory capture's wallet and preserve unknown stock or incomplete prices.

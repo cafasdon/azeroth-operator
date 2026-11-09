@@ -834,7 +834,11 @@ pub struct InventoryRequirementsFilter {
 }
 
 impl InventoryRequirementsFilter {
-    pub fn review_observed_stock(&self, snapshot: &Snapshot) -> Value {
+    pub fn review_observed_stock(
+        &self,
+        snapshot: &Snapshot,
+        include_bank_withdrawals: bool,
+    ) -> Value {
         let quantities = self.observed_quantities(snapshot);
         let items: Vec<_> = self.items.iter().map(|row| {
             let required = row.quantity.get();
@@ -848,10 +852,37 @@ impl InventoryRequirementsFilter {
                 .filter(|row| row["shortfall_vs_observed"].as_u64().is_some_and(|n| n > 0))
                 .count()
         });
-        json!({"storage":self.storage,"items":items,"storage_observed":quantities.is_some(),
+        let mut report = json!({"storage":self.storage,"items":items,"storage_observed":quantities.is_some(),
             "short_item_count":short_item_count,
             "all_requirements_covered_by_observed_quantities":short_item_count.map(|count| count == 0),
-            "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false})
+            "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false});
+        if include_bank_withdrawals {
+            report["bank_withdrawal_plan"] = json!(quantities.as_ref().map(|bags| {
+                let bank_stock = |storage| Self { storage, items:self.items.clone() }
+                    .observed_quantities(snapshot);
+                let character = bank_stock(InventoryStorage::CharacterBank);
+                let account = bank_stock(InventoryStorage::AccountBank);
+                let rows: Vec<_> = self.items.iter().filter_map(|requirement| {
+                    let id = u64::from(requirement.item_id.get());
+                    let required = requirement.quantity.get();
+                    if bags[&id] >= required {
+                        return None;
+                    }
+                    let stock = json!({"bags":bags[&id],
+                        "character_bank":character.as_ref().map(|items| items[&id]),
+                        "account_bank":account.as_ref().map(|items| items[&id])});
+                    let (shortfall, withdrawals) = analysis::bag_restock(&stock, required);
+                    let withdrawals = withdrawals.unwrap();
+                    let remaining = shortfall.unwrap() - withdrawals["character_bank"].as_u64().unwrap_or(0)
+                        - withdrawals["account_bank"].as_u64().unwrap_or(0);
+                    Some(json!({"item_id":id,"bag_shortfall":shortfall,
+                        "suggested_withdrawals":withdrawals,"remaining_after_observed_withdrawals":remaining}))
+                }).collect();
+                json!({"rows":rows,"character_bank_observed":character.is_some(),
+                    "account_bank_observed":account.is_some(),"withdrawal_eligibility_verified":false})
+            }));
+        }
+        report
     }
 
     pub fn validate(&self, family: &Family) -> Result<()> {

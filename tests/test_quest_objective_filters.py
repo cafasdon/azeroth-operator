@@ -44,6 +44,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             saved['sections']['bags']={'0':{'1':{'item_id':118,'count':2},'2':{'item_id':118,'count':1}}}
             saved['sections']['wallet']={'copper':7}
             key = store.ingest(saved)
+            bank_stock=deepcopy(saved)
+            bank_stock['sections']['character_bank']={'6':{'1':{'item_id':118,'count':1}}}
+            bank_stock['sections']['account_bank']={'7':{'1':{'item_id':118,'count':1}}}
+            bank_stock_key=store.ingest(bank_stock)
             changed=deepcopy(saved)
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
             changed['captured_at']='2025-01-01T00:00:30Z'
@@ -127,6 +131,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(reviewed['quest_item_binding_verified'],False)
                     self.assertEqual(reviewed['short_item_count'],2)
                     self.assertIs(reviewed['all_requirements_covered_by_observed_quantities'],False)
+                    bank_plan=(await query(quest_id=3,quest_inventory_requirements=requirements,
+                        quest_inventory_snapshot_id=bank_stock_key,
+                        quest_inventory_bank_withdrawals=True))['quest_inventory_review']['bank_withdrawal_plan']
+                    self.assertEqual(bank_plan['rows'],[
+                        {'item_id':118,'bag_shortfall':2,'suggested_withdrawals':{'character_bank':1,'account_bank':1},
+                         'remaining_after_observed_withdrawals':0},
+                        {'item_id':858,'bag_shortfall':1,'suggested_withdrawals':{'character_bank':0,'account_bank':0},
+                         'remaining_after_observed_withdrawals':1}])
+                    await query(error=True,quest_id=3,quest_inventory_bank_withdrawals=True,
+                                quest_inventory_requirements={**requirements,'storage':'character_bank'})
                     covered=(await query(quest_id=3,quest_inventory_requirements={
                         'storage':'bags','items':[{'item_id':118,'quantity':3}]}))['quest_inventory_review']
                     self.assertEqual(covered['short_item_count'],0)
