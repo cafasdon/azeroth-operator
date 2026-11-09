@@ -48,6 +48,20 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
+                    for selector,name,reset in [
+                        ('saved_world_boss','Fixture','2025-01-02T00:01:00Z'),
+                        ('saved_instance','Fixture raid','2025-01-02T00:59:00Z'),
+                    ]:
+                        for start,end,expected in [
+                            (reset,None,[key]),(reset,reset,[key]),
+                            ('2025-01-02T01:00:00Z',None,[]),
+                            ('2025-01-02T01:00:00Z',reset,None),
+                        ]:
+                            reply=await session.call_tool('list_snapshots',{'family':'forever',
+                                selector:{'name':name,'projected_reset_from':start,'projected_reset_by':end}})
+                            self.assertEqual(bool(reply.isError),expected is None,reply)
+                            if expected is not None:
+                                self.assertEqual([r['snapshot_id'] for r in json.loads(reply.content[0].text)['snapshots']],expected)
                     for selector,name,deadline in [
                         ('saved_world_boss','Fixture','2025-01-02T00:01:00Z'),
                         ('saved_world_boss','Unknown','2025-01-03T00:00:00Z'),

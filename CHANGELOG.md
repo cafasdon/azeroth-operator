@@ -1,5 +1,7 @@
 # Changelog
 
+- Search saved Forever instance and world boss resets within a historical time window.
+
 - Find saved Forever instance and world boss resets projected at or before a deadline.
 
 - Find saved Forever loot captures with unreadable or unclassified slots.

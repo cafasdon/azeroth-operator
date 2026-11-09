@@ -12,6 +12,21 @@ pub(crate) fn projected_reset_at(
         .and_then(|delta| captured_at.checked_add_signed(delta))
 }
 
+pub(crate) fn matches_projected_window(
+    seconds: Option<i64>,
+    captured_at: DateTime<Utc>,
+    from: Option<DateTime<Utc>>,
+    through: Option<DateTime<Utc>>,
+) -> bool {
+    (from.is_none() && through.is_none())
+        || seconds
+            .and_then(|seconds| projected_reset_at(seconds, captured_at))
+            .is_some_and(|reset| {
+                from.is_none_or(|bound| reset >= bound)
+                    && through.is_none_or(|bound| reset <= bound)
+            })
+}
+
 pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) -> Result<Value> {
     ensure!(
         matches!(section, "saved_instances" | "saved_world_bosses"),

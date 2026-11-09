@@ -386,6 +386,8 @@ pub struct SavedInstanceFilter {
     pub maximum_reset_seconds: Option<u32>,
     /// Inclusive historical reset deadline (RFC 3339). Unknown projections do not match.
     pub projected_reset_by: Option<chrono::DateTime<chrono::Utc>>,
+    /// Inclusive start of a historical reset window (RFC 3339).
+    pub projected_reset_from: Option<chrono::DateTime<chrono::Utc>>,
     /// Maximum age of the last instance-info update at capture, not age today.
     pub maximum_update_age_seconds: Option<u32>,
 }
@@ -399,6 +401,8 @@ pub struct SavedWorldBossFilter {
     pub maximum_reset_seconds: Option<u32>,
     /// Inclusive historical reset deadline (RFC 3339). Unknown projections do not match.
     pub projected_reset_by: Option<chrono::DateTime<chrono::Utc>>,
+    /// Inclusive start of a historical reset window (RFC 3339).
+    pub projected_reset_from: Option<chrono::DateTime<chrono::Utc>>,
     /// Maximum instance-info cache age at capture, not age today.
     pub maximum_update_age_seconds: Option<u32>,
 }
@@ -1620,6 +1624,21 @@ impl Store {
         let saved_world_boss_name = saved_world_boss
             .as_ref()
             .map(|filter| filter.name.to_lowercase());
+        for (from, through) in saved_instance
+            .iter()
+            .map(|filter| (filter.projected_reset_from, filter.projected_reset_by))
+            .chain(
+                saved_world_boss
+                    .iter()
+                    .map(|filter| (filter.projected_reset_from, filter.projected_reset_by)),
+            )
+        {
+            ensure!(
+                from.zip(through)
+                    .is_none_or(|(from, through)| from <= through),
+                "Projected reset window is reversed"
+            );
+        }
         ensure!(
             profession_recipe.is_none() || family == Family::Forever,
             "Profession recipe view filtering requires Forever"
@@ -2231,10 +2250,8 @@ impl Store {
                             row["name"].as_str().is_some_and(|value| value.to_lowercase() == *name)
                                 && filter.maximum_reset_seconds.is_none_or(|maximum|
                                     row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
-                                && filter.projected_reset_by.is_none_or(|deadline|
-                                    row["reset_seconds"].as_i64()
-                                        .and_then(|seconds| saved_resets::projected_reset_at(seconds, s.captured_at))
-                                        .is_some_and(|reset| reset <= deadline))
+                                && saved_resets::matches_projected_window(row["reset_seconds"].as_i64(),
+                                    s.captured_at, filter.projected_reset_from, filter.projected_reset_by)
                         }).collect();
                         matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
                         (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
@@ -2258,10 +2275,8 @@ impl Store {
                                 && filter.is_raid.is_none_or(|flag| row["is_raid"].as_bool() == Some(flag))
                                 && filter.maximum_reset_seconds.is_none_or(|maximum|
                                     row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
-                                && filter.projected_reset_by.is_none_or(|deadline|
-                                    row["reset_seconds"].as_i64()
-                                        .and_then(|seconds| saved_resets::projected_reset_at(seconds, s.captured_at))
-                                        .is_some_and(|reset| reset <= deadline))
+                                && saved_resets::matches_projected_window(row["reset_seconds"].as_i64(),
+                                    s.captured_at, filter.projected_reset_from, filter.projected_reset_by)
                         }).collect();
                         matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
                         (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
