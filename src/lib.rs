@@ -834,6 +834,18 @@ pub struct InventoryRequirementsFilter {
 }
 
 impl InventoryRequirementsFilter {
+    pub fn review_observed_stock(&self, snapshot: &Snapshot) -> Value {
+        let quantities = self.observed_quantities(snapshot);
+        let items: Vec<_> = self.items.iter().map(|row| {
+            let required = row.quantity.get();
+            let observed = quantities.as_ref().map(|stock| stock[&u64::from(row.item_id.get())]);
+            json!({"item_id":row.item_id,"required_quantity":required,"observed_quantity":observed,
+                "shortfall_vs_observed":observed.map(|count| required.saturating_sub(count))})
+        }).collect();
+        json!({"storage":self.storage,"items":items,"storage_observed":quantities.is_some(),
+            "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false})
+    }
+
     pub fn validate(&self, family: &Family) -> Result<()> {
         ensure!(
             !matches!(

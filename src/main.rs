@@ -154,6 +154,8 @@ struct Inspect {
     /// Resolve captured quest reward items and recipe spell references in the pinned local Forever catalogue.
     #[serde(default)]
     quest_item_catalogue: bool,
+    /// Compare user-supplied quest item requirements with one saved storage section.
+    quest_inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2520,6 +2522,15 @@ impl Operator {
                 "Quest item catalogue requires a quest ID and the quests section",
             )]);
         }
+        if let Some(requirements) = &args.quest_inventory_requirements
+            && (args.quest_id.is_none()
+                || args.section.as_deref() != Some("quests")
+                || requirements.validate(&Family::Forever).is_err())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest inventory review requires a quest ID, the quests section and valid item requirements",
+            )]);
+        }
         if args.currency_reward_quantity.is_some() && args.currency_id.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Currency reward comparison requires a currency ID",
@@ -3396,6 +3407,7 @@ impl Operator {
                         );
                     }
                     let review_snapshot = if args.quest_item_catalogue
+                        || args.quest_inventory_requirements.is_some()
                         || args.quest_currency_projection
                         || args.quest_wallet_projection
                         || args.quest_renown_projection
@@ -3403,7 +3415,7 @@ impl Operator {
                     {
                         if value["client"]["family"] != "forever" {
                             return CallToolResult::error(vec![ContentBlock::text(
-                                "Quest reward review requires a saved Forever snapshot",
+                                "Quest review requires a saved Forever snapshot",
                             )]);
                         }
                         match self.store.read(&args.snapshot_id) {
@@ -3417,6 +3429,13 @@ impl Operator {
                     } else {
                         None
                     };
+                    if let Some(requirements) = &args.quest_inventory_requirements {
+                        value["quest_inventory_review"] = serde_json::json!(
+                            quest
+                                .zip(review_snapshot.as_ref())
+                                .map(|(_, snapshot)| requirements.review_observed_stock(snapshot))
+                        );
+                    }
                     if args.quest_item_catalogue {
                         let catalogue = self.forever_catalogue.as_deref().and_then(|path| {
                             azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path).ok()

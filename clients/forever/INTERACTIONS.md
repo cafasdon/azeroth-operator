@@ -7,6 +7,11 @@ including those beyond the 20-entry display limit. Failed quests do not count.
 Inspecting a saved Forever quest by ID also reports captured fulfilled,
 required and remaining quantities by objective type, with separate counts
 for objectives whose quantities were unavailable.
+For a saved Forever quest ID, `quest_inventory_requirements` accepts one
+explicit storage and 1–64 distinct user-supplied item IDs with quantities.
+It checks observed stock and reports shortfalls against those quantities.
+Missing storage gives unknown quantities. The check leaves objective item
+binding and quest readiness unverified.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.

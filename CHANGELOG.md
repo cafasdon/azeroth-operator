@@ -1,5 +1,7 @@
 # Changelog
 
+- Check user-supplied Forever quest item requirements against saved inventory.
+
 - Show saved objective progress totals by type when inspecting a Forever quest.
 
 - Highlight the earliest saved timed quest that was ready to turn in.

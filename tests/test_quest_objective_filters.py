@@ -41,6 +41,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             saved['sections']['quests']['3']['item_rewards'] = {'1': {'item_id': 118, 'quantity': 2}}
             saved['sections']['quests']['7']['item_rewards'] = {'1': {'item_id': 858, 'quantity': 3}}
             saved['sections']['quests']['3']['timer'] = {'remaining_seconds':60,'total_seconds':120}
+            saved['sections']['bags']={'0':{'1':{'item_id':118,'count':2},'2':{'item_id':118,'count':1}}}
             key = store.ingest(saved)
             changed=deepcopy(saved)
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
@@ -108,6 +109,23 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         quest_list_timed_checklist=True))['timed_quest_checklist'])
                     self.assertNotIn('timed_quest_checklist',default)
                     exact = await query(quest_id=3)
+                    requirements={'storage':'bags','items':[{'item_id':118,'quantity':5},
+                                                             {'item_id':858,'quantity':1}]}
+                    reviewed=(await query(quest_id=3,quest_inventory_requirements=requirements))[
+                        'quest_inventory_review']
+                    self.assertEqual(reviewed['items'],[
+                        {'item_id':118,'required_quantity':5,'observed_quantity':3,'shortfall_vs_observed':2},
+                        {'item_id':858,'required_quantity':1,'observed_quantity':0,'shortfall_vs_observed':1}])
+                    self.assertIs(reviewed['quest_item_binding_verified'],False)
+                    bank=(await query(quest_id=3,quest_inventory_requirements={
+                        **requirements,'storage':'character_bank'}))['quest_inventory_review']
+                    self.assertIs(bank['storage_observed'],False)
+                    self.assertIsNone(bank['items'][0]['shortfall_vs_observed'])
+                    self.assertIsNone((await query(quest_id=999,quest_inventory_requirements=requirements))[
+                        'quest_inventory_review'])
+                    await query(error=True,quest_inventory_requirements=requirements)
+                    await query(error=True,quest_id=3,quest_inventory_requirements={
+                        **requirements,'items':[requirements['items'][0]]*2})
                     self.assertEqual(list(exact['objective_quantities_by_kind'].values()), [
                         {'fulfilled':4,'required':5,'remaining':1,
                          'counted_objectives':1,'unknown_objectives':0}])
