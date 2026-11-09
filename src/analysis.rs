@@ -5830,10 +5830,16 @@ pub(crate) fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Valu
     let bundles = quantity.div_ceil(size);
     let units = bundles.checked_mul(size)?;
     let copper = offer["price_copper"].as_u64()?.checked_mul(bundles);
+    let captured_stock_covers_quantity = match offer["available"].as_i64() {
+        Some(-1) => Some(true),
+        Some(0) => Some(false),
+        _ => None,
+    };
     Some(json!({
         "bundles":bundles,"units":units,"extra_units":units - quantity,
         "required_copper":copper,"extended_cost":offer["extended_cost"],
-        "captured_available":offer["available"]
+        "captured_available":offer["available"],
+        "captured_stock_covers_quantity":captured_stock_covers_quantity
     }))
 }
 

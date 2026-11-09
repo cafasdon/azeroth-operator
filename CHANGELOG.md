@@ -1,5 +1,7 @@
 # Changelog
 
+- Report whether captured merchant stock establishes quantity coverage for saved quotes.
+
 - Apply the saved Forever merchant stock-state filter when inspecting matching offers.
 
 - Filter saved Forever merchant visits by reported unlimited, limited, or sold-out stock.

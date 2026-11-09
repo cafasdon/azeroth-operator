@@ -1687,11 +1687,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             inspected = await session.call_tool("inspect_snapshot", {
                                 "snapshot_id": merchant_key, "section": "merchant_stock",
                                 "merchant_item_id": 744, "merchant_stock_state": state,
+                                "merchant_target_quantity": 1,
                             })
                             self.assertFalse(inspected.isError, inspected)
                             stock_data = json.loads(inspected.content[0].text)
                             self.assertEqual(stock_data["merchant_match_count"], count)
                             self.assertEqual(len(stock_data["data"]), count)
+                            for plan in stock_data["merchant_quantity_plan"]["offers_by_slot"].values():
+                                self.assertIs(plan["captured_stock_covers_quantity"], state == "unlimited")
                             stock = await session.call_tool("list_snapshots", {
                                 "family": "forever", "merchant_item_id": 744, "merchant_stock_state": state,
                             })
