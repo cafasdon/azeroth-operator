@@ -42,6 +42,13 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
             bad=deepcopy(value);bad['sections']['equipment_durability'][field]=invalid;malformed.append(bad)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));keys=[store.ingest(v) for v in [value,empty,absent,maximum,fractional,later]]
+            budgets=[]
+            for copper in [None,0,10,13]:
+                saved=deepcopy(value)
+                saved['sections'].pop('equipment_durability')
+                saved['sections']['repair_quote']={'copper':10}
+                if copper is not None:saved['sections']['wallet']={'copper':copper}
+                budgets.append(store.ingest(saved))
             bad_keys=[]
             for bad in malformed:
                 with self.assertRaises(ValueError):validate_snapshot(bad)
@@ -59,6 +66,12 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
+                    for key, covers, remaining, shortfall in zip(
+                        budgets,[None,False,True,True],[None,None,0,3],[None,10,0,0],strict=True):
+                        status=(await call('character_summary',snapshot_id=key))['repair_status']
+                        self.assertIs(status['wallet_covers_saved_repair_quote'],covers)
+                        self.assertEqual(status['wallet_remaining_after_saved_repair_quote_copper'],remaining)
+                        self.assertEqual(status['wallet_shortfall_copper'],shortfall)
                     self.assertEqual(captured['data'],value['sections']['equipment_durability'])
                     for key, maximum, expected in [
                         (keys[0],0,[1]),(keys[0],33,[1]),(keys[0],34,[1,16]),

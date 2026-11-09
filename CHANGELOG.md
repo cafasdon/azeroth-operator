@@ -1,5 +1,7 @@
 # Changelog
 
+- Show affordability and remaining copper after the saved Forever repair-all quote.
+
 - Find saved Forever captures with equipped slots at or below a durability threshold.
 
 - Shortlist saved Forever equipment slots by an exact durability threshold.

@@ -11,6 +11,9 @@ durability data gives null, and the raw capture stays available.
 The same threshold on `list_snapshots` finds saved Forever captures with at
 least one matching slot and returns the matching slot numbers. Missing or
 empty observations do not match.
+The character summary's `repair_status` shows whether the saved wallet
+covers the repair-all quote and how much copper would remain if paid. The
+remainder is null when the wallet is short or either input is missing.
 
 For an explicit saved character, `resolve_character` accepts inclusive
 `captured_from` and `captured_through` timestamps. It selects the newest
