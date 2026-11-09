@@ -4,6 +4,10 @@ Inspect `trainer_services` with either `trainer_max_price_copper` or
 `trainer_max_price_points` to apply an inclusive ceiling to known lesson
 prices. Combine with the recorded `available` status to shortlist lessons
 that were available at capture. Budget projections use the retained rows.
+Use `trainer_affordable_only` to compare each known lesson price with the
+saved copper or pet training-point balance. A missing balance leaves the
+shortlist unknown. Apply the availability filter separately to select
+lessons reported available at capture.
 
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes

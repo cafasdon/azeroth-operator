@@ -292,9 +292,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "snapshot_id":forever_key,"section":"trainer_services",
                                 "trainer_service_name":"potion","trainer_service_status":"available",
                                 "trainer_max_price_copper":maximum,
+                                "trainer_affordable_only":True,
                             })
                             self.assertFalse(lesson_quote.isError,lesson_quote)
-                            self.assertEqual(json.loads(lesson_quote.content[0].text)["trainer_match_count"],expected)
+                            quote = json.loads(lesson_quote.content[0].text)
+                            self.assertTrue(quote["trainer_balance_observed"])
+                            self.assertEqual(quote["trainer_match_count"],expected)
                         conflicting_price=await session.call_tool("inspect_snapshot",{
                             "snapshot_id":forever_key,"section":"trainer_services",
                             "trainer_max_price_copper":10,"trainer_max_price_points":10,

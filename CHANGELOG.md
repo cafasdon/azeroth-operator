@@ -1,5 +1,7 @@
 # Changelog
 
+- Shortlist individually affordable saved Forever trainer lessons using the recorded wallet or pet points.
+
 - Shortlist saved Forever trainer lessons by recorded copper or pet training-point prices.
 
 - Apply an explicit total fare ceiling to saved Forever flight route searches.

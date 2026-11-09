@@ -99,6 +99,9 @@ struct Inspect {
     trainer_service_status: Option<String>,
     /// Select up to 32 distinct slots from the captured trainer list.
     trainer_service_slots: Option<Vec<std::num::NonZeroU32>>,
+    /// Keep lessons whose individual recorded price fits the captured wallet or pet points.
+    #[serde(default)]
+    trainer_affordable_only: bool,
     /// Keep lessons with a recorded copper price at or below this amount.
     trainer_max_price_copper: Option<u64>,
     /// Keep lessons with a recorded pet training-point price at or below this amount.
@@ -1997,7 +2000,8 @@ impl Operator {
                 args.trainer_max_price_points
                     .map(|amount| ("price_training_points", u64::from(amount)))
             });
-        let filter_trainer = trainer_name.is_some()
+        let filter_trainer = args.trainer_affordable_only
+            || trainer_name.is_some()
             || trainer_status.is_some()
             || trainer_slots.is_some()
             || trainer_price.is_some();
@@ -2670,6 +2674,39 @@ impl Operator {
                         "Trainer review requires a saved Forever snapshot",
                     )]);
                 }
+                let trainer_wallet_context = if args.trainer_wallet_projection
+                    || (args.trainer_affordable_only
+                        && value["data"]["kind"]
+                            .as_str()
+                            .is_some_and(|kind| kind != "pet"))
+                {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured trainer wallet context",
+                        )]);
+                    };
+                    Some(snapshot)
+                } else {
+                    None
+                };
+                let trainer_wallet = trainer_wallet_context
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.sections.get("wallet"));
+                let (trainer_balance_field, trainer_balance) = if value["data"]["kind"] == "pet" {
+                    (
+                        "price_training_points",
+                        value["data"]["pet_training_points_available"].as_u64(),
+                    )
+                } else {
+                    (
+                        "price_copper",
+                        trainer_wallet.and_then(|wallet| wallet["copper"].as_u64()),
+                    )
+                };
+                if args.trainer_affordable_only {
+                    value["trainer_balance_observed"] =
+                        serde_json::json!(trainer_balance.is_some());
+                }
                 if filter_trainer {
                     if let Some(slots) = &args.trainer_service_slots {
                         value["trainer_missing_requested_slots"] = serde_json::json!(
@@ -2680,6 +2717,9 @@ impl Operator {
                                     .collect::<Vec<_>>()
                             })
                         );
+                    }
+                    if args.trainer_affordable_only && trainer_balance.is_none() {
+                        value["data"] = serde_json::Value::Null;
                     }
                     let count = value["data"]
                         .get_mut("entries")
@@ -2700,21 +2740,21 @@ impl Operator {
                                     && trainer_price.is_none_or(|(field, max)| {
                                         lesson[field].as_u64().is_some_and(|price| price <= max)
                                     })
+                                    && (!args.trainer_affordable_only
+                                        || lesson[trainer_balance_field]
+                                            .as_u64()
+                                            .zip(trainer_balance)
+                                            .is_some_and(|(price, balance)| price <= balance))
                             });
                             entries.len()
                         });
                     value["trainer_match_count"] = serde_json::json!(count);
                 }
                 if args.trainer_wallet_projection {
-                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
-                        return CallToolResult::error(vec![ContentBlock::text(
-                            "Could not read the captured trainer wallet context",
-                        )]);
-                    };
                     value["trainer_wallet_projection"] =
                         azeroth_operator::analysis::trainer_wallet_projection(
                             &value["data"],
-                            snapshot.sections.get("wallet"),
+                            trainer_wallet,
                             args.trainer_service_slots.as_deref(),
                         );
                 }
