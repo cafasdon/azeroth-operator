@@ -1493,6 +1493,8 @@ pub struct WeaponEnchantFilter {
     minimum_charges: Option<u32>,
     maximum_charges: Option<u32>,
     maximum_remaining_milliseconds: Option<u32>,
+    /// Match temporary enchants with a recorded timer projecting at or before this timestamp.
+    projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -1632,7 +1634,8 @@ enum WeaponEnchantType {
 }
 
 impl WeaponEnchantFilter {
-    fn observation_match(&self, section: &Value) -> Option<Value> {
+    fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
+        let section = snapshot.sections.get("weapon_enchants")?;
         let hand = match self.hand {
             WeaponEnchantHand::MainHand => "main_hand",
             WeaponEnchantHand::OffHand => "off_hand",
@@ -1662,6 +1665,16 @@ impl WeaponEnchantFilter {
                         row["remaining_milliseconds"]
                             .as_u64()
                             .is_some_and(|n| n <= u64::from(max))
+                    })
+                    && self.projected_expiry_by.is_none_or(|deadline| {
+                        row["enchant_type"] == "temporary"
+                            && row["remaining_milliseconds"]
+                                .as_i64()
+                                .and_then(chrono::TimeDelta::try_milliseconds)
+                                .and_then(|duration| {
+                                    snapshot.captured_at.checked_add_signed(duration)
+                                })
+                                .is_some_and(|expiry| expiry <= deadline)
                     }))
                 .then(|| slot.parse::<u32>().unwrap())
             })
@@ -2856,9 +2869,9 @@ impl Store {
                     if player_aura.is_some() && player_aura_match.is_none() {
                         continue;
                     }
-                    let weapon_enchant_match = weapon_enchant.as_ref().and_then(|filter| {
-                        filter.observation_match(s.sections.get("weapon_enchants")?)
-                    });
+                    let weapon_enchant_match = weapon_enchant
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
                     if weapon_enchant.is_some() && weapon_enchant_match.is_none() {
                         continue;
                     }

@@ -2930,3 +2930,10 @@ Other quest filters must match the same quest. Expiry is projected from the
 capture timestamp and recorded duration. Unknown timers cannot match.
 Each matching capture includes its shortest matching timer, with ties broken
 by numeric quest ID, and the corresponding projected expiry when available.
+
+## Saved temporary weapon enchant expiry
+
+Set `list_snapshots.weapon_enchant.projected_expiry_by` to an RFC 3339
+deadline. A match requires a temporary enchant and a timer reported on the
+same hand and row. The inclusive deadline uses the capture timestamp and
+recorded milliseconds. The result describes historical observations.

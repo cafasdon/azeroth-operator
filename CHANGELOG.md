@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever temporary weapon enchants by projected expiry.
+
 - Show the shortest matching saved quest timer in Forever timed-quest searches.
 
 - Find saved Forever quests by recorded timer or projected historical expiry.

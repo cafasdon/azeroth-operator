@@ -184,6 +184,21 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     partial=await compare(keys[1])
                     self.assertEqual(len(partial['hands']['main_hand']['before_rows']),10)
                     self.assertIsNone(partial['hands']['main_hand']['observed_rows_changed'])
+                    timed = deepcopy(value)
+                    timed['character']['name'] = 'Timed'
+                    timed['sections']['weapon_enchants']['hands']['main_hand']['entries']['10'][
+                        'remaining_milliseconds'] = 1
+                    timed_key = store.ingest(timed)
+                    deadline = '2025-01-01T00:00:00.001Z'
+                    expiring = await search('main_hand',projected_expiry_by=deadline)
+                    self.assertEqual([row['snapshot_id'] for row in expiring], [timed_key])
+                    self.assertEqual(expiring[0]['weapon_enchant_match']['matching_observed_rows'], [10])
+                    self.assertEqual(await search('main_hand',projected_expiry_by='2025-01-01T00:00:00Z'), [])
+                    self.assertEqual(await search('main_hand',projected_expiry_by=deadline,enchant_id=42), [])
+                    self.assertEqual(await search('off_hand',projected_expiry_by=deadline), [])
+                    invalid_deadline = await session.call_tool('list_snapshots', {'family':'forever',
+                        'weapon_enchant':{'hand':'main_hand','projected_expiry_by':'invalid'}})
+                    self.assertTrue(invalid_deadline.isError)
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'weapon_enchants'})
                         self.assertTrue(response.isError);self.assertNotIn('PRIVATE',response.content[0].text)
