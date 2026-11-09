@@ -6,10 +6,16 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Evaluate observed owned gear across all slots
 
-The source repository also contains an isolated opt-in positional simulator
-builder and contract for the paired-slot model gap. It is not yet used by this
-workflow. Existing MCP/adapter guards stay enabled until strict engine hash/
-capability integration is qualified. See [ADR 028](../../docs/ADR-028-positional-equipment-engine.md).
+Add `--positional-equipment` to collect and simulate exact paired-slot layouts
+with the qualified positional engine. MCP reviews expose the same opt-in as
+`positional_simulator_equipment: true`. Execution verifies the qualified hash
+and exact capability before collection and before result reuse. Omission keeps
+legacy placement. Plan journals bind the mode and reject mixed resumes; bulk
+positional execution remains disabled. See [ADR 029](../../docs/ADR-029-positional-equipment-integration.md)
+and [offline evidence](../../docs/positional-integration-verification-2026-11-09.md).
+Existing prepared JSON must be regenerated because the software fingerprints
+now include the layout helper. Changed collection bindings require a new plan
+journal; rejected existing journals remain intact.
 
 `python -m tools.evaluate_forever_owned_gear --help` documents a single offline
 workflow for all 17 simulator slots and all observed equipment/bags/banks. It

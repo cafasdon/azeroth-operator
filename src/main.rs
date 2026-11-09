@@ -626,6 +626,9 @@ struct EquipmentReview {
     /// Allow a selected two-handed main-hand item to clear the captured off-hand in the simulator draft.
     #[serde(default)]
     allow_two_hand_off_hand_clear: bool,
+    /// Produce exact positional Forever simulator input; requires the qualified positional engine contract at execution.
+    #[serde(default)]
+    positional_simulator_equipment: bool,
     /// Review up to seven more Forever drafts against this same snapshot.
     additional_drafts: Option<Vec<EquipmentDraft>>,
 }
@@ -1394,6 +1397,7 @@ impl Operator {
                 &args.snapshot_id,
                 &args.selections,
                 args.allow_two_hand_off_hand_clear,
+                args.positional_simulator_equipment,
                 catalogue.as_ref(),
             )?;
             if !additional.is_empty() {
@@ -1405,6 +1409,7 @@ impl Operator {
                             &args.snapshot_id,
                             &draft.selections,
                             draft.allow_two_hand_off_hand_clear,
+                            args.positional_simulator_equipment,
                             catalogue.as_ref(),
                         )
                     })
@@ -3244,6 +3249,7 @@ impl Operator {
         snapshot_id: &str,
         selections: &[azeroth_operator::planning::EquipmentSelection],
         allow_two_hand_off_hand_clear: bool,
+        positional_simulator_equipment: bool,
         catalogue: Option<&anyhow::Result<azeroth_operator::forever_catalogue::EquipmentCatalogue>>,
     ) -> anyhow::Result<serde_json::Value> {
         anyhow::ensure!(
@@ -3262,21 +3268,30 @@ impl Operator {
                         .all(|selection| selection.target_slot != 17)),
             "Clearing the off-hand requires a Forever catalogue and a main-hand selection without an off-hand selection"
         );
+        anyhow::ensure!(
+            !positional_simulator_equipment
+                || (snapshot.client.family == Family::Forever && catalogue.is_some()),
+            "Positional equipment requires a Forever catalogue"
+        );
         let mut review = azeroth_operator::planning::equipment_review(snapshot, selections)?;
         if let Some(catalogue) = catalogue {
             let checks = catalogue
                 .as_ref()
                 .map_err(|_| anyhow::anyhow!("Catalogue verification failed"))
                 .and_then(|catalogue| {
-                    azeroth_operator::forever_catalogue::review_equipment_catalogue(
+                    azeroth_operator::forever_catalogue::review_equipment_catalogue_with_layout(
                         catalogue,
                         snapshot,
                         selections,
                         allow_two_hand_off_hand_clear,
+                        positional_simulator_equipment,
                     )
                 })
                 .or_else(|error| {
-                    if selections.is_empty() || allow_two_hand_off_hand_clear {
+                    if selections.is_empty()
+                        || allow_two_hand_off_hand_clear
+                        || positional_simulator_equipment
+                    {
                         return Err(error);
                     }
                     Ok(serde_json::json!({

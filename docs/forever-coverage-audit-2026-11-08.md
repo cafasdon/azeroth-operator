@@ -251,3 +251,11 @@ simulation compatibility under an explicit contract. It does not yet connect
 that contract to MCP/adapter requests; existing unresolved guards remain active.
 Strict engine-capability wiring is the next step, with native/full model/owned
 coverage and BiS proof still open.
+
+[Positional MCP integration](positional-integration-verification-2026-11-09.md)
+subsequently connects explicit exact-slot reviews, retained collection and
+saved multi-encounter evaluation. Qualified hash/capability checks precede
+execution and checkpoint reuse; legacy placement remains the default. The
+synthetic second-ring case resolves all four reported coordinates and ranks
+three resolved gear inputs across two encounters. Complete ownership, native
+legality, model accuracy and statistical optimality remain unverified.

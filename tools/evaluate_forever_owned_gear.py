@@ -24,6 +24,7 @@ async def execute(args):
     require(type(args.paired) is bool and type(args.checkpoint_only) is bool)
     digest(args.snapshot_id)
     expected_engine = digest(args.engine_sha256.lower())
+    require(type(getattr(args,'positional_equipment',False)) is bool)
     require(args.engine.is_absolute() and args.mcp.is_absolute())
     args.engine = args.engine.resolve(strict=True)
     args.mcp = args.mcp.resolve(strict=True)
@@ -52,6 +53,8 @@ async def execute(args):
         )
     deadline = monotonic() + args.time_budget_seconds
     require(collection.file_digest(args.engine, deadline) == expected_engine)
+    if getattr(args,'positional_equipment',False):
+        simulation.pages.encounters.saved.adapter.verify_positional_engine(args.engine,expected_engine,deadline)
     for path in [args.template, *args.encounter_lookup]:
         with path.open('rb') as handle:
             require(isinstance(parse_report(handle.read(MAX_REPORT_BYTES + 1)), dict))
@@ -96,6 +99,7 @@ async def execute(args):
         'selection': 'explicit_saved_snapshot', 'snapshot_id': args.snapshot_id,
         'requested_slots': args.slot, 'candidate_storage_scope': 'all_observed_storage',
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
+        'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
         'reported_proposals_resolved': resolved, 'all_saved_resolved_results_complete': simulated,
@@ -117,6 +121,7 @@ def parser():
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')
     for name, default in [('window-size', 64), ('max-windows', 4), ('max-pages', 64),
         ('page-limit', 8), ('top', 10), ('max-new-runs', 16), ('iteration-budget', 100000),

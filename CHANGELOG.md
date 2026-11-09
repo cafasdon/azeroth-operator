@@ -1,5 +1,10 @@
 # Changelog
 
+- Connect opt-in exact positional equipment through MCP review, retained plans
+  and owned-gear evaluation, gating execution and cached results on the qualified
+  engine hash/capability. Preserve legacy defaults and other legality guards;
+  refuse positional bulk execution. Verify the two-encounter workflow offline.
+
 - Build and qualify an isolated opt-in positional equipment simulator from
   pinned local inputs, preserving paired-slot gaps and rejecting lost/misfit
   modifiers; add capability metadata without changing MCP/adapter guards.

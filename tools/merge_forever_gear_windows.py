@@ -6,6 +6,7 @@ from math import isfinite
 from pathlib import Path
 
 from tools.rank_forever_slot import SIMULATOR_SLOTS
+from tools import positional_equipment as layout
 
 MAX_REPORT_BYTES = 4 * 1024 * 1024
 MAX_TOTAL_BYTES = 16 * 1024 * 1024
@@ -39,7 +40,8 @@ def retained_equipment(row):
     if 'simulator_equipment_spec' not in row:
         return None
     spec = row['simulator_equipment_spec']
-    require(isinstance(spec, dict) and set(spec) == {'items'})
+    require(isinstance(spec, dict) and set(spec) in ({'items'},{'items','preserveSlots'}))
+    layout.positional(spec)
     require(isinstance(spec['items'], list) and len(spec['items']) == 17)
     for item in spec['items']:
         require(isinstance(item, dict))
@@ -143,8 +145,12 @@ def merge_reports(reports):
         require(all(isinstance(row, dict) for row in drafts))
         retains_equipment = 'simulator_equipment_spec' in drafts[0]
         require(all(('simulator_equipment_spec' in row) == retains_equipment for row in drafts))
+        mode=search.get('equipment_layout','auto_place')
+        require(mode in ('auto_place',layout.CONTRACT))
+        if retains_equipment:
+            require(all(layout.positional(retained_equipment(row)) == (mode==layout.CONTRACT) for row in drafts))
         current_signature = json.dumps([current_snapshot, current_scope, current_binding, retains_equipment, slots, counts, swaps,
-            search['candidate_filters'], search.get('inventory_evidence')],
+            search['candidate_filters'], search.get('inventory_evidence'),mode],
             sort_keys=True, separators=(',', ':'), allow_nan=False)
         if signature is None:
             signature, scope, snapshot = current_signature, current_scope, current_snapshot

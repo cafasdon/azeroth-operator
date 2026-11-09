@@ -3,6 +3,10 @@
 Date: 9 November 2026. Status: isolated source/offline engine extension;
 MCP/adapter integration pending.
 
+Historical status above records the isolated engine decision. Subsequent
+integration is specified in [ADR 029](ADR-029-positional-equipment-integration.md)
+and its [offline evidence](positional-integration-verification-2026-11-09.md).
+
 The pinned engine's `ProtoToEquipment` uses automatic placement, so an item in
 the second ring/trinket slot with the first empty is relocated. Existing MCP
 guards correctly withhold those simulator drafts. Removing the guard or silently

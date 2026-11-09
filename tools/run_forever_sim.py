@@ -17,11 +17,13 @@ import tempfile
 import time
 
 if __package__:
+    from . import positional_equipment as layout
     from .simulation_cache import SimulationCache
     from .simulation_journal import SimulationJournal
     from .sync_exports import ordinary
     from .sync_forever_catalogue import MAX_BYTES, verify
 else:
+    import positional_equipment as layout
     from simulation_cache import SimulationCache
     from simulation_journal import SimulationJournal
     from sync_exports import ordinary
@@ -393,6 +395,10 @@ def request_from(template, equipment_review, encounter_lookup):
     if player.get("enableItemSwap") or player.get("enable_item_swap"):
         raise ValueError("Disable template item swapping")
     equipment = equipment_review["checks"]["simulator_equipment_spec"]
+    contract = equipment_review['checks'].get('simulator_equipment_contract')
+    exact = equipment is not None and layout.positional(equipment)
+    if (exact and contract != layout.CONTRACT) or (contract is not None and (not exact or contract != layout.CONTRACT)):
+        raise ValueError('Positional equipment flag and review contract must agree')
     if equipment_review["checks"].get("native_slot_category_conflicts"):
         check_native_slot_categories(equipment_review,equipment)
     if equipment_review["client"]["family"] != "forever" or not equipment or len(equipment["items"]) != 17:
@@ -451,6 +457,35 @@ def verify_engine(engine, expected_hash):
             raise ValueError("Engine SHA-256 mismatch")
 
 
+def verify_positional_engine(engine, expected_hash, deadline=None):
+    if expected_hash.lower() != layout.ENGINE_SHA256:
+        raise ValueError('Positional equipment requires the qualified engine hash')
+    verify_engine(engine, expected_hash)
+    remaining = 10 if deadline is None else min(10, deadline-time.monotonic())
+    if remaining <= 0: raise ValueError('Comparison deadline exceeded')
+    with tempfile.TemporaryFile() as output:
+        subprocess.run([str(engine),'azeroth-equipment-contract'],stdin=subprocess.DEVNULL,
+            stdout=output,stderr=subprocess.DEVNULL,check=True,timeout=remaining)
+        output.seek(0); data=output.read(4097)
+    if len(data)>4096: raise ValueError('Invalid positional engine capability')
+    def unique_fields(pairs):
+        result=dict(pairs)
+        if len(result)!=len(pairs): raise ValueError('Duplicate positional capability field')
+        return result
+    capability=json.loads(data,object_pairs_hook=unique_fields)
+    canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
+    if canonical(capability)!=canonical(layout.CAPABILITY):
+        raise ValueError('Invalid positional engine capability')
+    verify_engine(engine, expected_hash)
+    if deadline is not None and time.monotonic() >= deadline:
+        raise ValueError('Comparison deadline exceeded')
+
+
+def verify_request_engine(engine, expected_hash, request, deadline=None):
+    if layout.request_requires_positional(request):
+        verify_positional_engine(engine, expected_hash, deadline)
+
+
 def wilson_interval_95(count, iterations):
     fraction = count / iterations
     z = 1.959963984540054
@@ -478,6 +513,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
     verify_engine(engine, expected_hash)
     if deadline is not None and time.monotonic() >= deadline:
         raise ValueError("Comparison deadline exceeded")
+    verify_request_engine(engine, expected_hash, request, deadline)
     cache_key = cache.key(expected_hash, request, paired, tank_metrics, healing_metrics) if cache else None
     if cache:
         cached = cache.get(cache_key)
@@ -678,6 +714,8 @@ def cacheable_stage_metrics(stages):
 
 
 def compare_bulk(engine, expected_hash, requests, top_results, cache=None):
+    if any(layout.request_requires_positional(request) for request in requests):
+        raise ValueError('Positional equipment is not qualified for bulk execution')
     verify_engine(engine, expected_hash)
     baseline = requests[0]
     baseline_context = None

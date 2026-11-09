@@ -56,6 +56,7 @@ async def prepare(args):
         raw = os.environ.get(key)
         require(raw is not None and Path(raw).is_absolute())
         paths.append(Path(raw).resolve(strict=True))
+    paths.append(Path(adapter.layout.__file__).resolve())
     fingerprints = [file_digest(path, deadline) for path in paths]
     def unchanged():
         require([file_digest(path, deadline) for path in paths] == fingerprints)
@@ -85,6 +86,8 @@ async def prepare(args):
                     selected = draft['selections']
                     targets = {row['target_slot'] for row in selected}
                     arguments = {'snapshot_id': summary['snapshot_id'], 'selections': selected}
+                    if report['gear_search'].get('equipment_layout') == adapter.layout.CONTRACT:
+                        arguments['positional_simulator_equipment']=True
                     if 16 in targets and 17 not in targets:
                         arguments['allow_two_hand_off_hand_clear'] = True
                     reply = await session.call_tool('review_equipment_selection', arguments)
@@ -110,6 +113,7 @@ async def prepare(args):
         'window_offset_decimal': str(args.window_offset), 'resolution_accounting': summary['resolution_accounting'],
         'mcp_sha256': fingerprints[0], 'template_sha256': fingerprints[1], 'encounter_sha256': fingerprints[2],
         'preparer_sha256': fingerprints[3], 'adapter_sha256': fingerprints[4], 'catalogue_sha256': fingerprints[5],
+        'layout_sha256':fingerprints[6],
         'requests': requests, 'simulation_performed': False, 'game_execution': False,
         'best_in_slot_verified': False, 'feasible_set_coverage_verified': False}
     require(len(encoded(result)) <= MAX_REPORT_BYTES)

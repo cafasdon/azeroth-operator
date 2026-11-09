@@ -87,8 +87,8 @@ class RealPositionalEngineTests(unittest.TestCase):
         exact=adapter.run(engine,manifest['engine_sha256'],positional)
         self.assertEqual(metrics(old),metrics(exact))
         # The incumbent discards unknown protobuf fields: the wire flag alone cannot gate this feature.
-        old_flagged=adapter.run(incumbent,incumbent_sha,positional)
-        self.assertEqual(old_flagged,old)
+        with self.assertRaises(ValueError):
+            adapter.run(incumbent,incumbent_sha,positional)
         denied=subprocess.run([str(incumbent),'azeroth-equipment-contract'],capture_output=True,text=True,timeout=10)
         self.assertNotEqual(denied.returncode,0)
         items=[{} for _ in range(17)]; items[11]={'id':4549}; items[14]={'id':2042}; items[16]={'id':22347}
@@ -96,7 +96,7 @@ class RealPositionalEngineTests(unittest.TestCase):
         measured=adapter.run(engine,manifest['engine_sha256'],sparse)
         self.assertGreater(measured['mean_dps'],0)
         print(json.dumps({'qualification':'isolated_positional_engine','engine_sha256':manifest['engine_sha256'],
-            'canonical_legacy_equal':True,'canonical_positional_equal':True,'old_flag_ignored':True,
+            'canonical_legacy_equal':True,'canonical_positional_equal':True,'incumbent_positional_rejected':True,
             'sparse_mean_dps':measured['mean_dps'],'game_execution':False}))
 
 

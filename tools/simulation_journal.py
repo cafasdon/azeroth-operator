@@ -68,7 +68,8 @@ class SimulationJournal:
                 and 1 <= int(seed) <= 2**32 - 1)
         fixed_key = SimulationCache(None).key(engine_hash, request, paired, tank_metrics, healing_metrics)
         sources = {}
-        for path in [Path(__file__), Path(__file__).with_name('run_forever_sim.py')]:
+        for path in [Path(__file__), Path(__file__).with_name('run_forever_sim.py'),
+                     Path(__file__).with_name('positional_equipment.py')]:
             with path.open('rb') as handle: sources[path.name] = hashlib.file_digest(handle, 'sha256').hexdigest()
         key = hashlib.sha256(encoded({'journal_version': 1, 'fixed_run_key': fixed_key, 'sources': sources})).hexdigest()
         require(key in self.bindings or len(self.bindings) < 1000000)

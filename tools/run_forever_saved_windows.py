@@ -55,6 +55,7 @@ async def execute(args, *, deadline=None):
         if monotonic() >= deadline:
             stop = 'time_budget'
             break
+        adapter.verify_request_engine(args.engine,expected_hash,job['request'],deadline)
         summary = checkpoints.get(key)
         status = 'hit'
         if summary is None:

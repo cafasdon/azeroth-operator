@@ -199,7 +199,9 @@ def combination_window(options, max_swaps, offset, limit):
 
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
-                  max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None):
+                  max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None,
+                  positional_equipment=False):
+    if type(positional_equipment) is not bool: raise ValueError('Invalid equipment layout')
     if (type(combination_offset) is not int or combination_offset < 0
             or (combination_limit is None and combination_offset != 0)
             or (combination_limit is not None and (type(combination_limit) is not int
@@ -232,6 +234,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
 
         async def call(tool, **args):
             nonlocal inventory_evidence, inventory_evidence_seen, catalogue_source
+            if tool=='review_equipment_selection' and positional_equipment:
+                args['positional_simulator_equipment']=True
             reply = await request(tool, snapshot_id=snapshot_id, **args)
             if tool == "review_forever_owned_gear":
                 if combination_limit is not None:
@@ -402,6 +406,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 for _, draft in drafts
             }),
         }
+        if positional_equipment:
+            search['equipment_layout']='azeroth_equipment_preserve_slots_v1'
         if combination_limit is not None:
             scope = {"snapshot_id": snapshot_id, "slots": list(slots), "options": options,
                      "filters": search["candidate_filters"], "max_swaps": max_swaps,

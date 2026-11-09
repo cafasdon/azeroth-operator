@@ -1,12 +1,12 @@
 # Forever interaction map
 
-An isolated source/offline simulator extension supports explicit positional
-equipment input and a capability command. It has conversion and limited actual
-simulation evidence, but is not yet integrated into MCP/adapter paths. Existing
-paired-slot guards remain, and native/model/ownership/BiS proof is unchanged.
-Future integration must verify engine hash/capability because the incumbent
-silently ignores unknown wire fields.
-[Offline evidence](../../docs/positional-engine-verification-2026-11-09.md).
+MCP equipment review and offline owned-gear evaluation support explicit
+positional equipment input. The opt-in preserves paired-slot gaps while keeping
+other catalogue/native-category/level/legality guards. Execution requires the
+qualified hash and exact engine capability, including cached/checkpoint paths.
+Legacy placement remains the default and positional bulk execution is refused.
+Native/model/ownership/BiS proof remains open.
+[Offline evidence](../../docs/positional-integration-verification-2026-11-09.md).
 
 The offline `tools.evaluate_forever_owned_gear` module connects existing local
 MCP all-slot collection to multi-encounter saved-journal ranking. It requires an

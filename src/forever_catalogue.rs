@@ -2930,6 +2930,22 @@ pub fn review_equipment_catalogue(
     selections: &[crate::planning::EquipmentSelection],
     allow_two_hand_off_hand_clear: bool,
 ) -> Result<Value> {
+    review_equipment_catalogue_with_layout(
+        catalogue,
+        snapshot,
+        selections,
+        allow_two_hand_off_hand_clear,
+        false,
+    )
+}
+
+pub fn review_equipment_catalogue_with_layout(
+    catalogue: &EquipmentCatalogue,
+    snapshot: &Snapshot,
+    selections: &[crate::planning::EquipmentSelection],
+    allow_two_hand_off_hand_clear: bool,
+    positional: bool,
+) -> Result<Value> {
     use crate::planning::ItemLocation;
 
     let equipment = snapshot
@@ -3074,10 +3090,15 @@ pub fn review_equipment_catalogue(
             // The engine fills the first free paired slot and ignores empty
             // placeholders during equip. Withhold inputs it would relocate.
             match target {
-                SimulatorSlot::Finger2 if projected_item(11).is_none() => return None,
-                SimulatorSlot::Trinket2 if projected_item(13).is_none() => return None,
+                SimulatorSlot::Finger2 if !positional && projected_item(11).is_none() => {
+                    return None;
+                }
+                SimulatorSlot::Trinket2 if !positional && projected_item(13).is_none() => {
+                    return None;
+                }
                 SimulatorSlot::OffHand
-                    if item["handType"] == 2
+                    if !positional
+                        && item["handType"] == 2
                         && item["weaponType"] != 7
                         && projected_item(16).is_none() =>
                 {
@@ -3105,8 +3126,14 @@ pub fn review_equipment_catalogue(
         && pairing != "two_hand_conflict"
         && duplicates.is_empty()
         && shared_categories.is_empty())
-    .then(|| json!({"items":specs}));
-    Ok(json!({
+    .then(|| {
+        let mut spec = json!({"items":specs});
+        if positional {
+            spec["preserveSlots"] = json!(true);
+        }
+        spec
+    });
+    let mut result = json!({
         "catalogue_two_hand_pairing":pairing,
         "catalogue_slot_fit":fit,
         "catalogue_projected_weapon_skills":projected_weapon_skills,
@@ -3118,7 +3145,11 @@ pub fn review_equipment_catalogue(
         "simulator_equipment_spec":equipment_spec,
         "simulator_cleared_equipment_slots": if clear_off_hand { vec![17] } else { vec![] },
         "simulator_equipment_unresolved_slots":blockers
-    }))
+    });
+    if positional {
+        result["simulator_equipment_contract"] = json!("azeroth_equipment_preserve_slots_v1");
+    }
+    Ok(result)
 }
 
 fn simulator_slot_for_equipment(slot: u32) -> Option<SimulatorSlot> {
