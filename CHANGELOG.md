@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up exact toy IDs and recorded flags when inspecting a saved Forever toy journal.
+
 - Find saved Forever toy journal captures by exact item ID and recorded collected or favourite flags.
 
 - Look up a mount and its recorded flags when inspecting a saved Forever mount journal.

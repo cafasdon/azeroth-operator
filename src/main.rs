@@ -45,6 +45,8 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Look up an exact toy ID and recorded flags in the saved toy_collection_view section.
+    toy_in_view: Option<azeroth_operator::ToyViewFilter>,
     /// Look up one mount and its recorded flags in the saved mount_collection section.
     collected_mount: Option<azeroth_operator::CollectedMountFilter>,
     /// Look up one species and observed row bounds in the saved pet_collection_view section.
@@ -1838,6 +1840,14 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.toy_in_view.is_some()
+            && (args.section.as_deref() != Some("toy_collection_view")
+                || args.toy_item_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Toy lookup requires the toy_collection_view section without a separate toy ID",
+            )]);
+        }
         if args.collected_mount.is_some() && args.section.as_deref() != Some("mount_collection") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Collected mount lookup requires the mount_collection section",
@@ -2409,6 +2419,15 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(filter) = &args.toy_in_view {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Toy lookup requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["toy_in_view_match"] =
+                        serde_json::json!(filter.match_view(&value["data"]));
+                }
                 if let Some(filter) = &args.collected_mount {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

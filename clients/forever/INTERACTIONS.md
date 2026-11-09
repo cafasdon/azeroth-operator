@@ -3,6 +3,9 @@
 Use `list_snapshots` with `toy_in_view` to find an exact toy item ID in a
 saved filtered journal. Optional `collected` and `favorite` flags must
 match that row. An absent toy does not establish ownership status.
+The same selector works with `inspect_snapshot` on `toy_collection_view`.
+It adds a match alongside the saved view. Use one selector per inspection
+when choosing between `toy_in_view` and `toy_item_id`.
 
 Saved mount comparisons count reported usable mounts, favourites, and
 mounts with both flags in each capture. These counts describe the saved

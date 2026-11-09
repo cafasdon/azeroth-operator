@@ -381,6 +381,22 @@ pub struct ToyViewFilter {
     pub favorite: Option<bool>,
 }
 
+impl ToyViewFilter {
+    pub fn match_view(&self, view: &Value) -> Option<Value> {
+        let row = view["entries"].get(self.item_id.to_string())?;
+        (self
+            .collected
+            .is_none_or(|flag| row["collected"].as_bool() == Some(flag))
+            && self
+                .favorite
+                .is_none_or(|flag| row["favorite"].as_bool() == Some(flag)))
+        .then(|| {
+            json!({"item_id":self.item_id,"collected":row["collected"],
+                "favorite":row["favorite"],"coverage":view["coverage"]})
+        })
+    }
+}
+
 impl CollectedMountFilter {
     pub fn match_view(&self, view: &Value) -> Option<Value> {
         let row = view["entries"].get(self.mount_id.to_string())?;
@@ -2442,18 +2458,7 @@ impl Store {
                         continue;
                     }
                     let toy_match = toy_in_view.as_ref().and_then(|filter| {
-                        let view = s.sections.get("toy_collection_view")?;
-                        let row = view["entries"].get(filter.item_id.to_string())?;
-                        (filter
-                            .collected
-                            .is_none_or(|flag| row["collected"].as_bool() == Some(flag))
-                            && filter
-                                .favorite
-                                .is_none_or(|flag| row["favorite"].as_bool() == Some(flag)))
-                        .then(|| {
-                            json!({"item_id":filter.item_id,"collected":row["collected"],
-                                "favorite":row["favorite"],"coverage":view["coverage"]})
-                        })
+                        filter.match_view(s.sections.get("toy_collection_view")?)
                     });
                     if toy_in_view.is_some() && toy_match.is_none() {
                         continue;

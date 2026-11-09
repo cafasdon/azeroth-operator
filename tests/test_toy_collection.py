@@ -90,6 +90,23 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "toy_collection_view"})
                     self.assertFalse(result.isError)
                     self.assertEqual(json.loads(result.content[0].text)["data"], captured["sections"]["toy_collection_view"])
+                    selector = {"item_id":1,"collected":True,"favorite":False}
+                    for source, matched in [(key,True),(after_key,False),(missing_key,False),(empty_key,False)]:
+                        response = await session.call_tool("inspect_snapshot", {"snapshot_id":source,
+                            "section":"toy_collection_view","toy_in_view":selector})
+                        self.assertFalse(response.isError,response)
+                        inspected = json.loads(response.content[0].text)
+                        self.assertEqual(inspected["toy_in_view_match"],
+                                         {"coverage":"filtered_journal",**selector} if matched else None)
+                        if source == key:
+                            self.assertEqual(inspected["data"],captured["sections"]["toy_collection_view"])
+                    for source, section, extra in [
+                        (retail_key,"toy_collection_view",{}),(key,"equipment",{}),
+                        (key,"toy_collection_view",{"toy_item_id":1}),
+                    ]:
+                        response = await session.call_tool("inspect_snapshot", {"snapshot_id":source,
+                            "section":section,"toy_in_view":selector,**extra})
+                        self.assertTrue(response.isError)
                     for source, rows, collected in ((key, 2, 1), (empty_key, 0, 0), (missing_key, None, None)):
                         result = await session.call_tool("character_summary", {"snapshot_id": source})
                         data = json.loads(result.content[0].text)
