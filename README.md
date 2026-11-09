@@ -9,6 +9,12 @@ remains unqualified.
 [Contract](docs/ADR-048-passive-bag-item-cooldowns.md) ·
 [Offline evidence](docs/bag-item-cooldowns-verification-2026-11-09.md).
 
+Item lookup includes captured cooldown evidence on matching bag locations when
+available. Counts cover all matching bag locations before pagination; separate
+snapshot results retain their own capture time and evidence. Equipment/bank
+matches receive no borrowed cooldown data, and legacy captures keep their prior
+lookup shape. [Verification](docs/item-cooldown-lookup-verification-2026-11-09.md).
+
 Optional local reagent references can now retain bounded NPC/object spawn
 locations. Reagent chains return only the referenced location records, preserving
 provider area/phase namespaces, unknown data and truncation. No route or movement

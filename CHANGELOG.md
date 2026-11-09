@@ -1,5 +1,9 @@
 # Changelog
 
+- Join historical cooldown observations into exact matching bag locations in
+  item lookup, with matching-location counters before pagination and independent
+  per-capture evidence. Preserve old capture output and inventory quantities.
+
 - Capture optional passive Forever carried-item cooldown observations in a
   separate source-linked section, preserving unreadable/changed rows as unknown.
   Add strict cross-reader validation and historical summary counters; qualify

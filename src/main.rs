@@ -1033,7 +1033,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Find a base item ID in captured equipment, bags and supported banks. Optionally search several explicitly selected snapshots separately, without a simulator catalogue.",
+        description = "Find a base item ID in captured equipment, bags and supported banks. Matching bag locations retain available cooldown observations from that exact capture, without current usability claims. Optionally search several explicitly selected snapshots separately, without a simulator catalogue.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,

@@ -390,3 +390,9 @@ rows. Summary counters distinguish readable, unavailable, disabled and positive
 timers. No item is used; zero timers do not establish current usability. The
 package remains uninstalled and native qualification pending. See ADR 048 and
 bag-item-cooldowns-verification-2026-11-09.md.
+
+Item lookup projects available cooldown rows only onto exact matching carried
+bag locations from the same capture. Matching-location counters precede paging;
+equipment/bank quantities and separately requested snapshot evidence stay
+independent. Missing-section legacy lookup shape is preserved. Timers remain
+historical and do not prove current item usability. See [verification](item-cooldown-lookup-verification-2026-11-09.md).

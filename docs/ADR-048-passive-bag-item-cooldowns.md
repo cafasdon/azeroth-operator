@@ -40,6 +40,13 @@ remain bound to capture time, not a live countdown or shared/global-cooldown
 classification. Existing observed bag quantities remain the sole inventory
 input; this section does not add stock or simulator effects.
 
+Item lookup projects `captured_cooldown` only onto matching counted bag locations
+from that same section/snapshot, using exact container, slot and item ID.
+`bag_cooldown_observation` counts matching bag locations before pagination.
+Equipment and bank locations receive no join; multiple explicit snapshot
+results remain separate with their original capture time. If the section is
+absent, both new projections are omitted, preserving the legacy lookup shape.
+
 Matching new MCP readers and addon 0.46.0-dev are required to consume the new
 capture. Older captures remain accepted. The package is not installed or
 deployed. Native API response/completeness, current identity and in-game

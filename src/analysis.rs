@@ -1646,6 +1646,9 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
     let mut locations = Vec::new();
     let mut matched_locations = 0usize;
     let mut quantities = BTreeMap::new();
+    let cooldowns = snapshot.sections.get("bag_item_cooldowns");
+    let (mut reported, mut unavailable, mut disabled, mut positive_timer) =
+        (0usize, 0usize, 0usize, 0usize);
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         if storage.ends_with("_bank") && snapshot.client.family != crate::Family::Forever {
             continue;
@@ -1658,10 +1661,35 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
         let mut record = |container: Option<&str>, slot: &str, item: &Value, count: u64| {
             if item["item_id"].as_u64() == Some(u64::from(item_id)) {
                 quantity += count;
+                let cooldown = if storage == "bags" {
+                    cooldowns
+                        .and_then(|section| {
+                            section["entries"]
+                                .get(container?)
+                                .and_then(|bag| bag.get(slot))
+                        })
+                        .filter(|row| row["item_id"].as_u64() == Some(u64::from(item_id)))
+                } else {
+                    None
+                };
+                if let Some(row) = cooldown {
+                    if row["status"] == "reported" {
+                        reported += 1;
+                        disabled += usize::from(row["enabled"] == false);
+                        positive_timer +=
+                            usize::from(row["remaining_seconds"].as_u64().is_some_and(|n| n > 0));
+                    } else {
+                        unavailable += 1;
+                    }
+                }
                 if matched_locations >= offset && locations.len() < limit {
-                    locations.push(json!({
+                    let mut location = json!({
                         "storage":storage,"container":container,"slot":slot,"count":count
-                    }));
+                    });
+                    if let Some(row) = cooldown {
+                        location["captured_cooldown"] = row.clone();
+                    }
+                    locations.push(location);
                 }
                 matched_locations += 1;
             }
@@ -1679,11 +1707,19 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
         }
         quantities.insert(storage, Some(quantity));
     }
-    Ok(json!({
+    let mut result = json!({
         "captured_at":snapshot.captured_at,"item_id":item_id,"live":false,
         "locations":locations,"matched_locations":matched_locations,
         "quantity_by_storage":quantities,"has_more":matched_locations.saturating_sub(offset)>limit
-    }))
+    });
+    if cooldowns.is_some() {
+        result["bag_cooldown_observation"] = json!({"basis":"same_snapshot_exact_bag_slot_item",
+            "scope":"matching_bag_locations_before_pagination","reported_item_locations":reported,
+            "unavailable_item_locations":unavailable,"disabled_item_locations":disabled,
+            "positive_timer_item_locations":positive_timer,"current_usability_verified":false,
+            "game_execution":false});
+    }
+    Ok(result)
 }
 
 fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Value> {
