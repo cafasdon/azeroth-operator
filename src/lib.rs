@@ -1862,6 +1862,8 @@ pub struct CaptureFilters<'a> {
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_readiness: Option<analysis::QuestReadiness>,
     pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
+    pub quest_max_remaining_seconds: Option<u32>,
+    pub quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
@@ -2088,6 +2090,8 @@ impl Store {
             quest_id,
             quest_readiness,
             quest_waypoint_map_id,
+            quest_max_remaining_seconds,
+            quest_projected_expiry_by,
             merchant_item_id,
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
@@ -2609,8 +2613,13 @@ impl Store {
         let achievement_key = tracked_achievement
             .as_ref()
             .map(|filter| filter.achievement_id.to_string());
+        let filter_quest_timer =
+            quest_max_remaining_seconds.is_some() || quest_projected_expiry_by.is_some();
         ensure!(
-            (quest_id.is_none() && quest_readiness.is_none() && quest_waypoint_map_id.is_none())
+            (quest_id.is_none()
+                && quest_readiness.is_none()
+                && quest_waypoint_map_id.is_none()
+                && !filter_quest_timer)
                 || family == Family::Forever,
             "Quest filtering requires Forever"
         );
@@ -3223,6 +3232,17 @@ impl Store {
                             && quest_waypoint_map_id.is_none_or(|map| {
                                 quest["next_waypoint_map_id"].as_u64() == Some(u64::from(map.get()))
                             })
+                            && quest_max_remaining_seconds.is_none_or(|maximum| {
+                                quest["timer"]["remaining_seconds"]
+                                    .as_u64()
+                                    .is_some_and(|seconds| seconds <= u64::from(maximum))
+                            })
+                            && saved_resets::matches_projected_window(
+                                quest["timer"]["remaining_seconds"].as_i64(),
+                                s.captured_at,
+                                None,
+                                quest_projected_expiry_by,
+                            )
                     };
                     let quest_match = quest_key.as_ref().and_then(|key| {
                         let quest = s.sections.get("quests")?.get(key)?;
@@ -3232,15 +3252,17 @@ impl Store {
                         continue;
                     }
                     let quest_count = (quest_key.is_none()
-                        && (quest_readiness.is_some() || quest_waypoint_map_id.is_some()))
-                    .then(|| {
-                        s.sections
-                            .get("quests")
-                            .and_then(Value::as_object)
-                            .map_or(0, |quests| {
-                                quests.values().filter(|quest| matches_quest(quest)).count()
-                            })
-                    });
+                        && (quest_readiness.is_some()
+                            || quest_waypoint_map_id.is_some()
+                            || filter_quest_timer))
+                        .then(|| {
+                            s.sections.get("quests").and_then(Value::as_object).map_or(
+                                0,
+                                |quests| {
+                                    quests.values().filter(|quest| matches_quest(quest)).count()
+                                },
+                            )
+                        });
                     if quest_count == Some(0) {
                         continue;
                     }
@@ -3618,6 +3640,13 @@ impl Store {
                     }
                     if let Some(map) = quest_waypoint_map_id {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
+                    }
+                    if filter_quest_timer {
+                        summary["quest_match"]["timer_filter"] = json!({
+                            "maximum_remaining_seconds":quest_max_remaining_seconds,
+                            "projected_expiry_by":quest_projected_expiry_by,
+                            "current_expiry_verified":false,
+                        });
                     }
                     if let Some(observation) = saved_instance_match {
                         summary["saved_instance_match"] = observation;

@@ -67,6 +67,25 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    async def timed(error=False, **options):
+                        reply = await session.call_tool('list_snapshots', {'family':'forever', **options})
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['snapshots']
+
+                    result = await timed(quest_max_remaining_seconds=30)
+                    self.assertEqual([row['snapshot_id'] for row in result], [changed_key])
+                    self.assertEqual(result[0]['quest_match']['quest_count'], 1)
+                    self.assertIs(result[0]['quest_match']['timer_filter']['current_expiry_verified'], False)
+                    self.assertEqual(await timed(quest_max_remaining_seconds=29), [])
+                    self.assertEqual(await timed(quest_max_remaining_seconds=60, quest_id=7), [])
+                    self.assertEqual(await timed(quest_max_remaining_seconds=60, quest_readiness='not_ready'), [])
+                    projected = await timed(quest_projected_expiry_by='2025-01-01T00:01:00Z', quest_id=3)
+                    self.assertEqual({row['snapshot_id'] for row in projected}, {key, bank_stock_key, changed_key})
+                    self.assertEqual(await timed(quest_projected_expiry_by='2025-01-01T00:00:59Z'), [])
+                    await timed(error=True, family='retail', quest_max_remaining_seconds=60)
+                    await timed(error=True, quest_max_remaining_seconds=-1)
+                    await timed(error=True, quest_projected_expiry_by='invalid')
                     async def query(error=False, **options):
                         reply = await session.call_tool('inspect_snapshot', {'snapshot_id': key,
                             'section': 'quests', **options})

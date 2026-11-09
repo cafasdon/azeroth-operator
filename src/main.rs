@@ -496,6 +496,10 @@ struct List {
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Match the next waypoint map recorded for the same quest.
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
+    /// Match quests with a recorded remaining duration at or below this many seconds.
+    quest_max_remaining_seconds: Option<u32>,
+    /// Match quests whose historical expiry projects at or before this timestamp.
+    quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     /// Find Forever snapshots whose captured merchant sold this exact item ID.
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
@@ -2154,6 +2158,8 @@ impl Operator {
                 quest_id: args.quest_id,
                 quest_readiness: args.quest_readiness,
                 quest_waypoint_map_id: args.quest_waypoint_map_id,
+                quest_max_remaining_seconds: args.quest_max_remaining_seconds,
+                quest_projected_expiry_by: args.quest_projected_expiry_by,
                 merchant_item_id: args.merchant_item_id,
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),

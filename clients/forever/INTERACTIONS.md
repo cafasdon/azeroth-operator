@@ -2921,3 +2921,10 @@ Use `list_snapshots.saved_world_boss` with at least one criterion. Omit the
 name to find recorded world bosses by reset duration, projected reset window
 or cache age at capture. Negative timers cannot satisfy a reset bound. A
 cache-age criterion alone can return rows whose reset duration is unknown.
+
+## Saved timed-quest discovery
+
+Use `list_snapshots.quest_max_remaining_seconds` or
+`quest_projected_expiry_by` to find captures with matching timed quests.
+Other quest filters must match the same quest. Expiry is projected from the
+capture timestamp and recorded duration. Unknown timers cannot match.
