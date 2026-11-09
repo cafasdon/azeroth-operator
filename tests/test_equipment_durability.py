@@ -120,6 +120,26 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         'equipment_durability_changes']
                     self.assertEqual(changes['changes'],[{'slot':1,'before':{'current':0,'maximum':100},
                         'after':{'current':90,'maximum':120},'current_delta':90,'maximum_delta':20}])
+                    async def threshold(after, percent):
+                        result = await call('compare_snapshots',before_id=keys[0],after_id=after,
+                            equipment_durability_max_percent=percent)
+                        return result['equipment_durability_threshold']
+
+                    crossing = await threshold(keys[5], 33)
+                    self.assertEqual(crossing['before_matching_slots'], [1])
+                    self.assertEqual(crossing['after_matching_slots'], [2])
+                    self.assertEqual(crossing['crossings'], {'entered_slots':[],'exited_slots':[1]})
+                    self.assertIs(crossing['same_item_verified'], False)
+                    self.assertIs(crossing['repair_event_verified'], False)
+                    self.assertEqual((await threshold(keys[5], 34))['after_matching_slots'], [2,16])
+                    self.assertEqual((await threshold(keys[5], 75))['crossings'],
+                                     {'entered_slots':[],'exited_slots':[]})
+                    self.assertEqual((await threshold(keys[1], 100))['crossings'],
+                                     {'entered_slots':[],'exited_slots':[]})
+                    self.assertIsNone((await threshold(keys[2], 0))['crossings'])
+                    rejected = await session.call_tool('compare_snapshots', {
+                        'before_id':keys[0],'after_id':keys[5],'equipment_durability_max_percent':101})
+                    self.assertTrue(rejected.isError)
                     self.assertEqual(changes['observed_only_before_slots'],[5])
                     self.assertEqual(changes['observed_only_after_slots'],[2])
                     self.assertIs(changes['same_item_verified'],False)

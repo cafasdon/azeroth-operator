@@ -2899,3 +2899,11 @@ and shows the minimum enabled timer, including explicit zero readings. Missing
 cooldown coverage gives a null side. An observed section with no match gives
 zero matching locations. This does not establish physical item continuity or
 current item usability.
+
+## Saved durability threshold crossings
+
+Set `compare_snapshots.equipment_durability_max_percent` to a whole
+percentage from 0 to 100. The comparison lists matching slots on each side
+and reports threshold crossings only for slots readable in both captures.
+A missing section gives unknown crossings. Changes describe saved slot
+readings and leave item continuity and repair events unverified.

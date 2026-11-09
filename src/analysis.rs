@@ -2826,6 +2826,7 @@ pub struct ComparisonSelectors {
     pub bag_cooldown_item_id: Option<std::num::NonZeroU32>,
     pub merchant_buyback_changes: bool,
     pub repair_quote_changes: bool,
+    pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
@@ -3477,6 +3478,32 @@ pub fn compare_observations(
         .and_then(Value::as_object);
     let old_condition = before.sections.get("equipment_durability");
     let new_condition = after.sections.get("equipment_durability");
+    if let Some(maximum) = selectors.equipment_durability_max_percent {
+        ensure!(
+            before.client.family == crate::Family::Forever && maximum <= 100,
+            "Durability threshold comparison requires Forever and a percentage from 0 to 100"
+        );
+        let old_low =
+            old_condition.and_then(|section| equipment_durability_matching_slots(section, maximum));
+        let new_low =
+            new_condition.and_then(|section| equipment_durability_matching_slots(section, maximum));
+        let crossings = old_low.as_ref().zip(new_low.as_ref()).map(|(old, new)| {
+            let shared = |low: &BTreeSet<u32>, other: &BTreeSet<u32>, section: &Value| {
+                low.difference(other)
+                    .copied()
+                    .filter(|slot| section["entries"].get(slot.to_string()).is_some())
+                    .collect::<Vec<_>>()
+            };
+            json!({
+                "entered_slots":shared(new, old, old_condition.unwrap()),
+                "exited_slots":shared(old, new, new_condition.unwrap()),
+            })
+        });
+        comparison["equipment_durability_threshold"] = json!({
+            "maximum_percent":maximum,"before_matching_slots":old_low,"after_matching_slots":new_low,
+            "crossings":crossings,"same_item_verified":false,"repair_event_verified":false,"live":false,
+        });
+    }
     if old_condition.is_some() || new_condition.is_some() {
         comparison["equipment_durability_changes"] = json!(
             old_condition.zip(new_condition).map(|(old, new)| {

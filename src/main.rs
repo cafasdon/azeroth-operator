@@ -580,6 +580,9 @@ struct Compare {
     /// Compare saved Forever repair quotes and captured affordability.
     #[serde(default)]
     repair_quote_changes: bool,
+    /// Compare saved equipped slots crossing this inclusive durability percentage (0 to 100).
+    #[schemars(range(min = 0, max = 100))]
+    equipment_durability_max_percent: Option<u8>,
     /// Restrict the saved aura comparison to this exact spell ID.
     player_aura_spell_id: Option<std::num::NonZeroU32>,
     /// Compare reported group categories across two saved Forever captures.
@@ -1942,6 +1945,7 @@ impl Operator {
                     bag_cooldown_item_id: args.bag_cooldown_item_id,
                     merchant_buyback_changes: args.merchant_buyback_changes,
                     repair_quote_changes: args.repair_quote_changes,
+                    equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,

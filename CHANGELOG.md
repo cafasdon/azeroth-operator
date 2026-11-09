@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever equipment slots crossing a durability threshold.
+
 - Compare saved carried-item cooldown observations for an exact Forever item ID.
 
 - Compare saved Forever crafting preparation for a requested selected-recipe batch.
