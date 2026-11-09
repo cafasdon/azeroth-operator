@@ -246,6 +246,8 @@ Repeated producers in captured reagent chains now consume one modeled saved
 charge pool per recipe across their printed steps. Step and stock-plan checks
 expose cumulative shortages independently of material feasibility. Unknown counts
 stay unknown, newer stock does not replenish them and no craft is executed.
+Each step also reports how many of its requested crafts fit within the
+captured charges left after earlier steps for the same recipe.
 Shared cooldown groups and actual recharge/readiness remain unqualified.
 [Evidence](../../docs/chain-charge-accounting-verification-2026-11-09.md).
 

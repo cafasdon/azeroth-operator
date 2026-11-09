@@ -74,6 +74,7 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                                 'observed_charges':captured,
                                 'observed_charges_before_step':None if captured is None else max(0,captured-prior),
                                 'observed_charges_remaining_if_completed':None if captured is None else max(0,captured-totals[rid]),
+                                'step_crafts_covered_by_observed_charges':None if captured is None else min(count,max(0,captured-prior)),
                                 'shortfall_vs_cumulative_crafts':None if captured is None else max(0,totals[rid]-captured),
                                 'covers_cumulative_crafts':None if captured is None else captured>=totals[rid]}
                             self.assertEqual(step['captured_charge_accounting'],expected)

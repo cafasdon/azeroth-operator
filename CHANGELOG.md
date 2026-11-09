@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how many crafts at each Forever reagent-chain step fit the saved recipe charges.
+
 - Find saved Forever snapshots that report an exact profession spell ID.
 
 - Look up an exact spell ID in a saved Forever profession observation.

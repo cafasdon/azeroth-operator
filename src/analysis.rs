@@ -998,11 +998,14 @@ impl RecipeChargeLedger {
         let id = recipe["recipe_id"].as_u64().unwrap();
         let requested = self.requested.entry(id).or_default();
         let before = *requested;
-        *requested += review["requested_crafts"].as_u64().unwrap();
+        let step_crafts = review["requested_crafts"].as_u64().unwrap();
+        *requested += step_crafts;
         let charges = recipe["cooldown"]["charges"].as_u64();
+        let before_step = charges.map(|n| n.saturating_sub(before));
         json!({"requested_crafts_through_step":*requested,
             "observed_charges":charges,
-            "observed_charges_before_step":charges.map(|n| n.saturating_sub(before)),
+            "observed_charges_before_step":before_step,
+            "step_crafts_covered_by_observed_charges":before_step.map(|n| n.min(step_crafts)),
             "observed_charges_remaining_if_completed":charges.map(|n| n.saturating_sub(*requested)),
             "shortfall_vs_cumulative_crafts":charges.map(|n| requested.saturating_sub(n)),
             "covers_cumulative_crafts":charges.map(|n| n >= *requested)})
