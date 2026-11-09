@@ -1452,13 +1452,34 @@ pub fn verify_forever_capture_fixture(
         snapshot.sections["character_bank"].clone(),
     );
     assert!(overlap.validate().is_err());
-    lua.load("bankOpen=false;AO.Capture()").exec()?;
+    lua.load(
+        r#"
+        bankOpen=false; closedMerchant=false; MerchantFrame.selectedTab=2; walletCopper=15
+        function GetNumBuybackItems() return 2 end
+        C_MerchantFrame.GetBuybackItemID=function(slot) return slot==1 and 4549 or 118 end
+        function GetBuybackItemInfo(slot)
+            return 'PRIVATE_BUYBACK',nil,slot==1 and 10 or nil,slot==1 and 3 or 1
+        end
+        function BuybackItem() error('Buyback action is outside this fixture') end
+        SlashCmdList.AZEROTHOPERATOR('wallet')
+    "#,
+    )
+    .exec()?;
     let closed_export: String = lua.globals().get("AzerothOperatorExport")?;
     let closed = read()?;
     for section in ["character_bank", "account_bank"] {
         assert!(!closed.sections.contains_key(section));
         assert!(closed.unavailable.contains_key(section));
     }
+    assert_eq!(closed.sections["wallet"]["copper"], 15);
+    assert_eq!(
+        closed.sections["merchant_buyback"]["entries"],
+        serde_json::json!({
+            "1":{"item_id":4549,"count":3,"buyback_price_copper":10},
+            "2":{"item_id":118,"count":1}
+        })
+    );
+    assert!(!serde_json::to_string(&closed)?.contains("PRIVATE_BUYBACK"));
     assert!(
         azeroth_operator::analysis::summary(&closed)["character_bank_item_slots_observed"]
             .is_null()

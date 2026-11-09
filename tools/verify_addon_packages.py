@@ -67,6 +67,25 @@ async def readback_forever_fixture(binary, store, snapshot_id, closed_bank_id, r
                         "after_capture_status": "reported_unavailable"}
             if any(comparison["sections"][bank] != expected for bank in banks):
                 raise ValueError("Unexpected fixture bank comparison")
+            buyback = await call("list_snapshots", family="forever", exact_client=coverage["client"],
+                                 merchant_buyback={"item_id": 4549, "minimum_quantity": 3,
+                                                   "minimum_remaining_wallet_copper": 5})
+            if [row["snapshot_id"] for row in buyback["snapshots"]] != [closed_bank_id]:
+                raise ValueError("Unexpected fixture buyback search result")
+            matched = buyback["snapshots"][0]["merchant_buyback_match"]
+            if (matched["matches"] != [{"slot": 1, "observation": {
+                    "item_id": 4549, "count": 3, "buyback_price_copper": 10}}]
+                    or matched["included_in_owned_inventory"] is not False):
+                raise ValueError("Unexpected fixture buyback match")
+            buyback_review = await call("inspect_snapshot", snapshot_id=closed_bank_id,
+                                        section="merchant_buyback", buyback_slots=[1, 2],
+                                        buyback_wallet_reserve_copper=5)
+            review = buyback_review["buyback_cost_review"]
+            if (review["known_price_subtotal_copper"] != 10 or review["slots_with_unknown_price"] != [2]
+                    or review["total_selected_quote_copper"] is not None
+                    or review["affordable_from_captured_wallet"] is not None
+                    or review["game_action_performed"] is not False):
+                raise ValueError("Unexpected fixture buyback quote review")
             services = await call("list_snapshots", family="forever", exact_client=coverage["client"],
                                   merchant_item_id=744, merchant_target_quantity=6,
                                   trainer_service_name="Fixture lesson", trainer_service_status="available",

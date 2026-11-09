@@ -1,5 +1,7 @@
 # Changelog
 
+- Verify saved buyback search and partial quotes through the packaged Forever fixture.
+
 - Explain saved Forever bag space changes by numeric bag slot.
 
 - Compare saved Forever repair quotes and wallet shortfalls across captures.
