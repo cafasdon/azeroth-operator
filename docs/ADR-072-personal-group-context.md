@@ -32,3 +32,18 @@ Do not enumerate members, inspect other units or collect chat/invites. Do not
 invite, kick, leave, convert, set roles, ready-check, vote or queue. Player-only
 leadership is a saved observation, not authority to perform any social action.
 Live testing, installation and deployment remain deferred.
+
+Set `group_context_changes` to `true` on `compare_snapshots` to see both saved
+observations and a signed member-count delta for each category. The delta is
+available when both captures report that category. Missing observations remain
+null. The same-character, same-client and chronological checks apply. Group
+identity and membership events remain unverified.
+
+Offline MCP tests exercised missing categories, the full signed difference of
+two u32 member counts, reversed timestamps, different characters, mixed clients
+and non-Forever requests. The default comparison retains its existing shape.
+Jev 1.14.0 advisory `43f478ae404239e9a15f5e10ff421cfe39654032bec77adc22cee4d03067a25b`
+favoured revision at .25 confidence before the additional boundary cases ran.
+It used 418 input and 48 output tokens in .343 seconds.
+Independent review also verified both signed delta extremes, absent sections,
+and rejection on name, realm, build and variant mismatches.

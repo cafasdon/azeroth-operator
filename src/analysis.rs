@@ -2249,6 +2249,7 @@ pub fn compare_with_item(
 pub struct ComparisonSelectors {
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
+    pub group_context_changes: bool,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
@@ -2302,6 +2303,38 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if selectors.group_context_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Group comparison requires Forever"
+        );
+        let categories = ["home", "instance"]
+            .into_iter()
+            .map(|category| {
+                let observed = |snapshot: &Snapshot| {
+                    snapshot
+                        .sections
+                        .get("group_context")
+                        .and_then(|section| section["categories"].get(category))
+                        .cloned()
+                };
+                let old = observed(before);
+                let new = observed(after);
+                let delta = old.as_ref().zip(new.as_ref()).and_then(|(a, b)| {
+                    Some(
+                        b["reported_member_count"].as_i64()?
+                            - a["reported_member_count"].as_i64()?,
+                    )
+                });
+                (
+                    category.to_string(),
+                    json!({"before":old,"after":new,"reported_member_count_delta":delta}),
+                )
+            })
+            .collect::<serde_json::Map<_, _>>();
+        comparison["group_context_changes"] = json!({"categories":categories,
+            "group_identity_verified":false,"membership_events_verified":false,"live":false});
+    }
     if selectors.profession_spell_changes || selectors.player_resource_changes {
         ensure!(
             before.client.family == crate::Family::Forever,

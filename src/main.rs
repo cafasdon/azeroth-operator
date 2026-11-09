@@ -437,6 +437,9 @@ struct Compare {
     /// Compare historical player resource counters; power deltas require the same type and units.
     #[serde(default)]
     player_resource_changes: bool,
+    /// Compare reported group categories across two saved Forever captures.
+    #[serde(default)]
+    group_context_changes: bool,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever currency balance by ID.
@@ -1595,6 +1598,7 @@ impl Operator {
                     profession_recipe_changes: args.profession_recipe_changes,
                     profession_spell_changes: args.profession_spell_changes,
                     player_resource_changes: args.player_resource_changes,
+                    group_context_changes: args.group_context_changes,
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),

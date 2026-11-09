@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reported home and instance group context across saved Forever captures.
+
 - Filter Forever owned-gear review by simulator input availability before paging.
 
 - Explain unresolved Forever gear candidates in owned-item reviews and plan

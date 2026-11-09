@@ -40,8 +40,15 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
             store=SnapshotStore(Path(folder));valid=[];bad=[]
             for value in [None,section,both,zero,maximum,inconsistent]:
                 saved=deepcopy(base)
+                if value is inconsistent:saved['captured_at']='2025-01-02T00:00:00Z'
                 if value is not None:saved['sections']['group_context']=value
                 valid.append((store.ingest(saved),value))
+            other = deepcopy(base)
+            other['character']['name'] = 'Other'
+            other_id = store.ingest(other)
+            retail = deepcopy(base)
+            retail['client'] = {'family':'retail','variant':'live','build':'1','interface':120000}
+            retail_id = store.ingest(retail)
             snapshots=[]
             for value in invalid:
                 saved=deepcopy(base);saved['sections']['group_context']=value;snapshots.append(saved)
@@ -69,6 +76,21 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(inspection['data'],value);self.assertEqual(summary['categories'],value['categories'])
                             for flag in ['current_group_verified','group_identity_verified','complete_roster_verified','social_action_eligibility_verified','game_execution']:
                                 self.assertIs(summary[flag],False)
+                    earlier, later = valid[4][0], valid[5][0]
+                    plain = await call('compare_snapshots',before_id=earlier,after_id=later)
+                    self.assertNotIn('group_context_changes',plain)
+                    comparison = await call('compare_snapshots',before_id=earlier,after_id=later,group_context_changes=True)
+                    group = comparison['group_context_changes']
+                    self.assertEqual(group['categories']['home'], {
+                        'before':maximum['categories']['home'], 'after':inconsistent['categories']['home'],
+                        'reported_member_count_delta':-4294967295,
+                    })
+                    self.assertIsNone(group['categories']['instance']['after'])
+                    self.assertIsNone(group['categories']['instance']['reported_member_count_delta'])
+                    for flag in ['group_identity_verified','membership_events_verified','live']:
+                        self.assertIs(group[flag],False)
+                    for a,b in [(later,earlier), (other_id,later), (retail_id,retail_id), (retail_id,later)]:
+                        await call('compare_snapshots',error=True,before_id=a,after_id=b,group_context_changes=True)
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='group_context')
             self.assertEqual(before,{path.name:path.read_bytes() for path in Path(folder).glob('*.json')})
 
