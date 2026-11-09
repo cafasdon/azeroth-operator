@@ -1,5 +1,9 @@
 # Changelog
 
+- Include in-scope equipped-item moves with empty source slots in positional
+  gear searches, preserving selected-replacement budgets, physical-source and
+  legality guards, retained exact layouts and legacy defaults.
+
 - Carry bounded inventory scope/gap evidence through merged gear windows,
   restart status and final owned-gear evaluation, with strict metadata validation
   and explicit unknown legacy evidence; keep ownership/BiS proof separate.

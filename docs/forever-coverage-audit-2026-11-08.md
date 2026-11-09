@@ -283,3 +283,9 @@ closes a reporting gap between saved gear plans and final optimisation results.
 Observed/unavailable storage and unmatched catalogue IDs now remain visible
 through aggregation and restart, even when all reported simulations finish.
 Legacy evidence stays unknown and full owned-pool/native/model proof stays open.
+
+[Equipped-source vacancy search](equipped-vacancy-verification-2026-11-09.md)
+then closes an enumeration omission for explicit positional searches: equipped
+items can move between requested slots without refilling their old slot. Exact
+saved layouts survive preparation and offline simulation. Other feasible-set,
+native/model/ownership and full owned BiS requirements remain open.

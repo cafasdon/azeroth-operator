@@ -24,6 +24,7 @@ from tools.run_forever_sim import (
     check_character_identity, ConflictingCharacterIdentity,
     check_hunter_pet_level, UnsupportedSimulationPetLevel,
     ConflictingNativeSlotCategory,
+    PROJECTED_SLOT_INDEX,
 )
 
 
@@ -301,6 +302,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 "The search exceeds 1,024 combinations. Use fewer slots, --max-swaps or a narrower candidate filter."
             )
         proposed = []
+        requested_equipment_slots={slot for slot,index in PROJECTED_SLOT_INDEX.items() if SIMULATOR_SLOTS[index] in slots}
         outcomes, proposed_outcomes = [], []
         for coordinate, combination in enumerate(drafts_to_scan, combination_offset):
             outcome = {'coordinate_decimal': str(coordinate), 'status': 'unresolved'}
@@ -310,8 +312,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 outcome.update(status='baseline', review=1)
                 continue
             targets = {selection["target_slot"] for selection in selections}
-            if any(selection["source"]["kind"] == "equipment" and selection["source"]["slot"] not in targets
-                   for selection in selections):
+            vacated={selection['source']['slot'] for selection in selections
+                if selection['source']['kind']=='equipment' and selection['source']['slot'] not in targets}
+            if vacated and (not positional_equipment or not vacated.issubset(requested_equipment_slots)):
                 skipped.append({"selections": selections, "reason": "would_vacate_another_slot"})
                 outcome.update(status='excluded', reason='would_vacate_another_slot')
                 continue

@@ -1,5 +1,16 @@
 # Forever
 
+With positional collection/evaluation enabled, gear search can move an equipped
+item to another requested slot and leave its original slot empty. The source
+slot must also be in the requested slot set. Legacy searches retain their prior
+exclusion. `max_swaps` still counts selected replacements: one such move is one
+selection, although its source becomes empty. Physical sources cannot be reused;
+all existing catalogue/native category/level/modifier/weapon checks remain.
+Retained specs and saved-loadout selections show the exact layout. New collection
+software fingerprints require a fresh bound journal for recollection; no native
+move order or execution is added.
+[Evidence](../../docs/equipped-vacancy-verification-2026-11-09.md).
+
 Merged gear windows, journal status and unified evaluation retain
 `inventory_evidence`: the original all-observed-storage scope before candidate
 filters, unavailable sections and bounded unmatched catalogue item IDs/counts.

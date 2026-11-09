@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Exact positional gear collection includes equipped-source vacancies within the
+requested slot scope, extending the feasible layouts beyond only moves whose
+source is refilled. Selected-replacement budgets, physical-copy constraints and
+resolution guards remain. Legacy mode retains its old exclusions. This is an
+offline desired layout; players apply gear themselves.
+[Evidence](../../docs/equipped-vacancy-verification-2026-11-09.md).
+
 Inventory scope evidence now survives gear-window aggregation, journal restart
 and unified evaluation. Missing banks and unmatched catalogue items remain
 visible alongside a computationally complete ranking. Strict metadata checks

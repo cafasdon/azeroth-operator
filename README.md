@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Positional gear searches now include equipped-item moves that leave an empty
+source slot, when both slots are in the requested search scope. Legacy placement
+keeps its existing exclusions. These are saved offline layouts, not game moves.
+[Evidence](docs/equipped-vacancy-verification-2026-11-09.md).
+
 Owned-gear evaluation now keeps inventory evidence visible through plan merging,
 journal restart and final rankings: observed/missing storage and bounded unmatched
 catalogue IDs. Computational completion remains separate from ownership proof.
