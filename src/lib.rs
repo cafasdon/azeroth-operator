@@ -373,6 +373,22 @@ pub struct CollectedMountFilter {
     pub favorite: Option<bool>,
 }
 
+impl CollectedMountFilter {
+    pub fn match_view(&self, view: &Value) -> Option<Value> {
+        let row = view["entries"].get(self.mount_id.to_string())?;
+        (self
+            .usable
+            .is_none_or(|expected| row["usable"].as_bool() == Some(expected))
+            && self
+                .favorite
+                .is_none_or(|expected| row["favorite"].as_bool() == Some(expected)))
+        .then(|| {
+            json!({"mount_id":self.mount_id,"spell_id":row["spell_id"],
+                "usable":row["usable"],"favorite":row["favorite"]})
+        })
+    }
+}
+
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SavedInstanceFilter {
@@ -1663,9 +1679,6 @@ impl Store {
             collected_mount.is_none() || family == Family::Forever,
             "Mount filtering requires Forever"
         );
-        let mount_key = collected_mount
-            .as_ref()
-            .map(|filter| filter.mount_id.to_string());
         ensure!(
             saved_instance
                 .as_ref()
@@ -2408,18 +2421,9 @@ impl Store {
                     if saved_instance.is_some() && saved_instance_match.is_none() {
                         continue;
                     }
-                    let mount_match = collected_mount.as_ref().zip(mount_key.as_ref()).and_then(
-                        |(filter, key)| {
-                            let row = s.sections.get("mount_collection")?["entries"].get(key)?;
-                            (filter
-                                .usable
-                                .is_none_or(|expected| row["usable"].as_bool() == Some(expected))
-                                && filter.favorite.is_none_or(|expected| {
-                                    row["favorite"].as_bool() == Some(expected)
-                                }))
-                            .then_some(row)
-                        },
-                    );
+                    let mount_match = collected_mount
+                        .as_ref()
+                        .and_then(|filter| filter.match_view(s.sections.get("mount_collection")?));
                     if collected_mount.is_some() && mount_match.is_none() {
                         continue;
                     }
@@ -2933,9 +2937,8 @@ impl Store {
                     if let Some(observation) = spellbook_match {
                         summary["spellbook_spell_match"] = observation;
                     }
-                    if let Some((filter, row)) = collected_mount.as_ref().zip(mount_match) {
-                        summary["collected_mount_match"] = json!({"mount_id":filter.mount_id,
-                            "spell_id":row["spell_id"],"usable":row["usable"],"favorite":row["favorite"]});
+                    if let Some(observation) = mount_match {
+                        summary["collected_mount_match"] = observation;
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

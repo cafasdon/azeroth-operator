@@ -109,6 +109,19 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                         "before_id": before_key, "after_id": after_key, "mount_collection_changes": True})
                     self.assertFalse(compared.isError)
                     changes = json.loads(compared.content[0].text)["mount_collection_changes"]
+                    selector = {"mount_id":2,"usable":False,"favorite":True}
+                    for source, expected in [(after_key, {"spell_id":40002, **selector}),
+                                             (before_key,None),(missing_key,None)]:
+                        inspected = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id":source,"section":"mount_collection","collected_mount":selector,
+                        })
+                        self.assertFalse(inspected.isError,inspected)
+                        self.assertEqual(json.loads(inspected.content[0].text)["collected_mount_match"],expected)
+                    for source, section in [(retail_key,"mount_collection"),(after_key,"equipment")]:
+                        rejected = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id":source,"section":section,"collected_mount":selector,
+                        })
+                        self.assertTrue(rejected.isError)
                     self.assertEqual(changes["observed_only_before"], [20])
                     self.assertEqual(changes["observed_only_after"], [3, 10])
                     self.assertEqual(changes["collected_count_delta"], 1)

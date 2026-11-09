@@ -5,6 +5,9 @@ mounts with both flags in each capture. These counts describe the saved
 journal and do not establish current summoning eligibility.
 Character summaries expose the same counts under `mount_observed_flag_counts`.
 An unavailable journal returns null and an observed empty journal returns zero counts.
+Use `collected_mount` with a mount ID and optional usability or favourite
+flags when inspecting `mount_collection`. The lookup reports a match
+separately from the original captured view.
 
 Saved pet journal comparisons report how many species were visible in both
 captures and how many of those kept the same observed owned and unowned row

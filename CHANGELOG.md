@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up a mount and its recorded flags when inspecting a saved Forever mount journal.
+
 - Count reported usable and favourite mounts in saved Forever character summaries.
 
 - Count reported usable and favourite mounts on each side of a saved Forever comparison.
