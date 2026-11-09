@@ -264,6 +264,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(adjusted['purchase_copper'],purchases)
                         self.assertEqual(adjusted['complete_quote_copper'],total)
                         self.assertEqual(adjusted['assumed_visit_cost_copper'],visit_cost*count)
+                        self.assertEqual(adjusted['inventory_wallet_copper'],7)
+                        self.assertIsNone(adjusted['remaining_inventory_wallet_copper'])
+                        self.assertEqual(adjusted['inventory_wallet_shortfall_copper'],total-7)
                         self.assertIs(adjusted['travel_cost_verified'],False)
                         self.assertEqual(travel['bag_restock_split_merchant_plan'],plan)
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=[merchant_key],
@@ -303,6 +306,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'bag_restock_requirements':[{'item_id':118,'quantity':1}]},
                         bag_restock_compare_merchant_snapshot_ids=visit_ids,bag_restock_max_merchant_visits=0)
                     self.assertEqual(covered_plan['bag_restock_travel_adjusted_merchant_plan']['visit_count'],0)
+                    covered_budget = covered_plan['bag_restock_travel_adjusted_merchant_plan']
+                    self.assertEqual(covered_budget['remaining_inventory_wallet_copper'],7)
+                    self.assertEqual(covered_budget['inventory_wallet_shortfall_copper'],0)
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
                                 bag_restock_max_merchant_visits=5)
                     await query(error=True,**split_args)

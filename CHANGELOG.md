@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the saved wallet remainder or shortfall for travel-adjusted Forever restocking.
+
 - Cap the number of visits in a saved Forever merchant restocking plan.
 
 - Compare saved Forever restocking plans with a different assumed cost for each visit.

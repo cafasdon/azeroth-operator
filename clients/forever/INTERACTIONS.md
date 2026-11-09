@@ -3070,3 +3070,7 @@ Set `bag_restock_max_merchant_visits` from zero to four with split planning
 to limit the travel-adjusted plan. If no visit costs are supplied, the
 planner assumes zero travel cost. A cap of zero can cover an already
 satisfied request. The unrestricted split plan remains available separately.
+
+Complete travel-adjusted plans report the captured inventory wallet and the
+copper remaining or short after purchases and assumed visit costs. Missing
+wallet data leaves both amounts unknown.

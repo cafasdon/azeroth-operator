@@ -7359,6 +7359,9 @@ pub fn restock_travel_adjusted_plan(
         "visit_count":count,
         "purchase_copper":purchases,"assumed_visit_cost_copper":total-purchases,
         "complete_quote_copper":total,"affordable_from_inventory_wallet":wallet.map(|balance| total <= balance),
+        "inventory_wallet_copper":wallet,
+        "remaining_inventory_wallet_copper":wallet.and_then(|balance| balance.checked_sub(total)),
+        "inventory_wallet_shortfall_copper":wallet.map(|balance| total.saturating_sub(balance)),
         "travel_cost_verified":false,"purchase_eligibility_verified":false,"live":false,
     }))
 }
