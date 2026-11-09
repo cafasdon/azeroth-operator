@@ -1,5 +1,7 @@
 # Changelog
 
+- Identify the cheapest qualifying single copper-only offer in saved Forever merchant quantity plans.
+
 - Report whether captured merchant stock establishes quantity coverage for saved quotes.
 
 - Apply the saved Forever merchant stock-state filter when inspecting matching offers.

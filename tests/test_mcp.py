@@ -1693,6 +1693,12 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             stock_data = json.loads(inspected.content[0].text)
                             self.assertEqual(stock_data["merchant_match_count"], count)
                             self.assertEqual(len(stock_data["data"]), count)
+                            best = stock_data["merchant_quantity_plan"]["lowest_cost_copper_only_offer"]
+                            if state == "unlimited":
+                                self.assertEqual(best["slot"], 1)
+                                self.assertEqual(best["plan"], stock_data["merchant_quantity_plan"]["offers_by_slot"]["1"])
+                            else:
+                                self.assertIsNone(best)
                             for plan in stock_data["merchant_quantity_plan"]["offers_by_slot"].values():
                                 self.assertIs(plan["captured_stock_covers_quantity"], state == "unlimited")
                             stock = await session.call_tool("list_snapshots", {

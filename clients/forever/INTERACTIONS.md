@@ -8,6 +8,9 @@ currency or pet food selector. Quantity plans use only retained offers.
 Quantity quotes report `captured_stock_covers_quantity` as true for
 unlimited stock, false for sold-out stock, and null for positive limited
 stock because the count's unit semantics remain unverified.
+The inspection quantity plan identifies the cheapest retained single offer
+with unlimited captured stock and a copper-only price. It compares the total
+cost after rounding to whole bundles, with numeric slot order breaking ties.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows

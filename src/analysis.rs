@@ -5822,7 +5822,22 @@ pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
         .iter()
         .map(|(slot, offer)| (slot, merchant_quantity_row(offer, u64::from(quantity))))
         .collect();
-    json!({"target_quantity":quantity,"offers_by_slot":rows})
+    let lowest_cost = rows
+        .iter()
+        .filter_map(|(slot, plan)| {
+            let plan = plan.as_ref()?;
+            if plan["captured_stock_covers_quantity"] != true || plan["extended_cost"] != false {
+                return None;
+            }
+            Some((
+                plan["required_copper"].as_u64()?,
+                slot.parse::<u32>().ok()?,
+                plan,
+            ))
+        })
+        .min_by_key(|(cost, slot, _)| (*cost, *slot));
+    json!({"target_quantity":quantity,"offers_by_slot":rows,
+        "lowest_cost_copper_only_offer":lowest_cost.map(|(_, slot, plan)| json!({"slot":slot,"plan":plan}))})
 }
 
 pub(crate) fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {
