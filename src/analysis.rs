@@ -980,6 +980,7 @@ pub fn preview_reagent_producers(
     crafts: u32,
     inventory: Option<&Snapshot>,
     choices: &[RecipeProducerChoice],
+    include_stock_plan: bool,
 ) -> Result<Value> {
     let blocked = &chain["blocked_reason"];
     if blocked["reason"] != "ambiguous_captured_producer" {
@@ -1004,12 +1005,24 @@ pub fn preview_reagent_producers(
             .iter()
             .map(|step| json!({"recipe_id":step["recipe_id"],"crafts":step["crafts"]}))
             .collect();
-        previews.push(
-            json!({"recipe_id":candidate,"draft_complete":preview["draft_complete"],
+        let mut result = json!({"recipe_id":candidate,"draft_complete":preview["draft_complete"],
             "blocked_reason":reason["reason"],"blocked_item_id":reason["item_id"],
             "blocked_recipe_id":reason["recipe_id"],"steps":steps,
-            "external_material_requirements":preview["external_material_requirements"]}),
-        );
+            "external_material_requirements":preview["external_material_requirements"]});
+        if include_stock_plan {
+            let stock = reagent_chain_stock_plan(&preview, snapshot, inventory, 0)?;
+            result["stock_plan_summary"] = if stock.is_null() {
+                Value::Null
+            } else {
+                json!({
+                    "material_coverage":stock["material_coverage"],
+                    "captured_chain_checks_pass":stock["captured_chain_checks_pass"],
+                    "acquisition_shortfalls_vs_observed_storage":stock["acquisition_shortfalls_vs_observed_storage"],
+                    "suggested_bank_withdrawal_list":stock["suggested_bank_withdrawal_list"],
+                })
+            };
+        }
+        previews.push(result);
     }
     Ok(
         json!({"item_id":item_id,"truncated":blocked["candidate_count"].as_u64().unwrap() > previews.len() as u64,

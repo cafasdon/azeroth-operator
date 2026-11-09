@@ -1405,6 +1405,7 @@ impl Operator {
                         review["requested_crafts"].as_u64().unwrap() as u32,
                         inventory.as_ref(),
                         args.reagent_producer_choices.as_deref().unwrap_or(&[]),
+                        args.reagent_chain_stock_plan,
                     )?;
                     review["reagent_chain"]["producer_previews"] = previews;
                 }

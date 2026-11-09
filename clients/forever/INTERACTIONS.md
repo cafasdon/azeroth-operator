@@ -318,6 +318,10 @@ Each preview adds one explicit choice to those supplied and shows the
 resulting steps, external material requirements or next blocker. It returns
 null if the original plan does not stop on ambiguity. Further ambiguous
 choices remain unresolved. The original draft and player choice stay separate.
+When `reagent_chain_stock_plan` is also enabled, each completed preview
+summarises its saved material and preparation checks, acquisition shortfalls
+and suggested bank withdrawals. A blocked preview has a null stock summary.
+Slot paging still applies to the original plan only.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

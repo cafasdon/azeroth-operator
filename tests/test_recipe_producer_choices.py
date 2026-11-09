@@ -91,6 +91,16 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([(row['recipe_id'], row['draft_complete'],
                                        sum(item['quantity'] for item in row['external_material_requirements']))
                                       for row in report['candidate_previews']], [(102,True,2),(104,True,0)])
+                    with_stock = (await plan(preview_reagent_producer_choices=True,
+                                             reagent_chain_stock_plan=True))['reagent_chain']
+                    for row in with_stock['producer_previews']['candidate_previews']:
+                        explicit = (await plan(reagent_chain_stock_plan=True,
+                                               reagent_producer_choices=[
+                                                   {'item_id':20,'recipe_id':row['recipe_id']}]))['reagent_chain']
+                        summary = row['stock_plan_summary']
+                        self.assertEqual(summary, {field:explicit['stock_plan'][field] for field in [
+                            'material_coverage','captured_chain_checks_pass',
+                            'acquisition_shortfalls_vs_observed_storage','suggested_bank_withdrawal_list']})
                     cyclic_preview = (await plan(snapshot_id=variants['active_producer'],
                                                 preview_reagent_producer_choices=True))['reagent_chain']
                     self.assertEqual(cyclic_preview['producer_previews']['candidate_previews'][0]['blocked_reason'],
