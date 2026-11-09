@@ -41,6 +41,9 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
             empty_key=store.ingest(empty)
             blocked=deepcopy(base); blocked['sections']['profession_recipe_materials']['entries']['102']['reagents']={'100':1}
             blocked_key=store.ingest(blocked)
+            ambiguous=deepcopy(base)
+            ambiguous['sections']['profession_recipe_materials']['entries']['103']=fixed(20,{'60':1},2)
+            ambiguous_key=store.ingest(ambiguous)
             inventory=deepcopy(base); inventory['captured_at']='2025-01-02T00:00:00Z'
             inventory['sections']['bags']['0']['1']['count']=2
             inventory['sections']['recipe_item_sources']['entries']['2840']={'status':'reported','vendors':refs([999])}
@@ -90,6 +93,16 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(rows[30]['status'],'not_in_provider'); self.assertIsNone(rows[30]['references'])
                     self.assertEqual(rows[40]['status'],'unavailable')
                     self.assertEqual(rows[50]['references'],{}); self.assertEqual(len(rows[50]['unknown_reference_categories']),5)
+                    preview=(await call(ambiguous_key,reagent_chain_captured_sources=True,
+                                        preview_reagent_producer_choices=True))['reagent_chain']
+                    for candidate in preview['producer_previews']['candidate_previews']:
+                        explicit=(await call(ambiguous_key,reagent_chain_captured_sources=True,
+                            reagent_producer_choices=[{'item_id':20,'recipe_id':candidate['recipe_id']}]))[
+                                'reagent_chain']['captured_sources']
+                        summary=candidate['captured_source_summary']
+                        self.assertEqual(summary['snapshot_id'],ambiguous_key)
+                        self.assertEqual(summary['records'],explicit['records'])
+                        self.assertIs(summary['records_truncated'],False)
                     self.assertEqual(rows[60]['status'],'item_not_captured')
                     for flag in ['dataset_revision_verified','complete_world_sources_verified','current_availability_verified',
                         'acquisition_eligibility_verified','ownership_verified','live','game_execution']:

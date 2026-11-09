@@ -1441,19 +1441,45 @@ impl Operator {
                         .as_deref()
                         .map(|id| self.store.read(id))
                         .transpose()?;
+                    let source = source_capture.as_ref().unwrap_or(&snapshot);
+                    let source_id = args
+                        .reagent_source_snapshot_id
+                        .as_ref()
+                        .unwrap_or(&args.snapshot_id);
                     let mut sources = azeroth_operator::analysis::reagent_chain_captured_sources(
                         &review["reagent_chain"],
                         &snapshot,
-                        source_capture.as_ref().unwrap_or(&snapshot),
+                        source,
                     )?;
                     if sources.is_object() {
-                        sources["snapshot_id"] = serde_json::json!(
-                            args.reagent_source_snapshot_id
-                                .as_ref()
-                                .unwrap_or(&args.snapshot_id)
-                        );
+                        sources["snapshot_id"] = serde_json::json!(source_id);
                     }
                     review["reagent_chain"]["captured_sources"] = sources;
+                    if let Some(previews) = review["reagent_chain"]
+                        .pointer_mut("/producer_previews/candidate_previews")
+                        .and_then(serde_json::Value::as_array_mut)
+                    {
+                        for preview in previews {
+                            let sources =
+                                azeroth_operator::analysis::reagent_chain_captured_sources(
+                                    preview, &snapshot, source,
+                                )?;
+                            preview["captured_source_summary"] = if sources.is_null() {
+                                serde_json::Value::Null
+                            } else {
+                                let records = sources["records"].as_array().unwrap();
+                                serde_json::json!({
+                                    "snapshot_id":source_id,"captured_at":sources["captured_at"],
+                                    "section_available":sources["section_available"],
+                                    "external_item_count":sources["external_item_count"],
+                                    "items_with_retained_sources":sources["items_with_retained_sources"],
+                                    "records":records.iter().take(20).collect::<Vec<_>>(),
+                                    "records_truncated":records.len() > 20,
+                                    "current_availability_verified":false,
+                                })
+                            };
+                        }
+                    }
                 }
             }
             if let Some(id) = args.inventory_snapshot_id {
@@ -1534,9 +1560,9 @@ impl Operator {
                         stock,
                     );
                     review["reagent_chain"]["merchant_reagent_plan"] = quote;
-                    if let Some(previews) =
-                        review["reagent_chain"]["producer_previews"]["candidate_previews"]
-                            .as_array_mut()
+                    if let Some(previews) = review["reagent_chain"]
+                        .pointer_mut("/producer_previews/candidate_previews")
+                        .and_then(serde_json::Value::as_array_mut)
                     {
                         for preview in previews {
                             let quote = azeroth_operator::analysis::reagent_chain_merchant_plan(

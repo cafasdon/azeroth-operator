@@ -100,6 +100,8 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([(row['recipe_id'], row['merchant_quote_summary']['copper_only_bundle_mix_total'],
                                        row['merchant_quote_summary']['copper_only_bundle_mix_affordable'])
                                       for row in quotes], [(102,7,False),(104,0,True)])
+                    plain_quote = (await plan(merchant_reagent_plan=True))['reagent_chain']
+                    self.assertNotIn('producer_previews', plain_quote)
                     with_stock = (await plan(preview_reagent_producer_choices=True,
                                              reagent_chain_stock_plan=True))['reagent_chain']
                     for row in with_stock['producer_previews']['candidate_previews']:

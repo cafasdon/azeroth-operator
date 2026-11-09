@@ -330,6 +330,10 @@ With `merchant_reagent_plan` enabled, alternative previews also summarise
 saved merchant bundle quotes for their external shortages. The summary
 distinguishes a complete quote from a partial subtotal and reports
 affordability against the saved inventory wallet when available.
+With `reagent_chain_captured_sources` enabled, each completed preview also
+shows up to 20 saved source records for its external requirements, with
+the source snapshot ID and truncation status. It uses the same owner and
+client checks as the explicit plan. Blocked previews return a null summary.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

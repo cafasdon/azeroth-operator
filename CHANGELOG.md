@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved ingredient acquisition sources across Forever producer previews.
+
 - Compare saved merchant prices across Forever producer previews.
 
 - Page through all saved Forever producer alternatives in groups of four previews.
