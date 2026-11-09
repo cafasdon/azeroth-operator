@@ -445,6 +445,8 @@ struct List {
     instance_map_id: Option<std::num::NonZeroU32>,
     /// Match the player's exact map ID recorded in a saved Forever capture.
     player_map_id: Option<std::num::NonZeroU32>,
+    /// Match an exact case-insensitive captured player map name.
+    player_map_name: Option<String>,
     /// Match the recorded immediate parent of the player's map in a saved Forever capture.
     player_parent_map_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever visits with a repair-all quote at or below this amount.
@@ -2237,6 +2239,7 @@ impl Operator {
                     map_id: args.instance_map_id,
                 },
                 player_map_id: args.player_map_id,
+                player_map_name: args.player_map_name.as_deref(),
                 player_parent_map_id: args.player_parent_map_id,
                 repair_max_quote_copper: args.repair_max_quote_copper,
                 repair_min_remaining_copper: args.repair_min_remaining_copper,

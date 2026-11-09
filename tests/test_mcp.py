@@ -1094,6 +1094,15 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "retail", "player_map_id": 1414,
                         })).isError)
+                        named_map = await session.call_tool("list_snapshots", {
+                            **map_query, "player_map_name": "  fIRst MAP  ",
+                        })
+                        self.assertFalse(named_map.isError)
+                        self.assertEqual(json.loads(named_map.content[0].text)["snapshots"],exact_maps)
+                        for bad_map in [" ", "x"*257]:
+                            self.assertTrue((await session.call_tool("list_snapshots", {
+                                **map_query,"player_map_name":bad_map,
+                            })).isError)
                         changed_travel = await session.call_tool("compare_snapshots", {
                             "before_id": travel_before, "after_id": travel_after, "experience": True,
                         })

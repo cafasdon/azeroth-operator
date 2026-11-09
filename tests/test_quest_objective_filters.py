@@ -60,7 +60,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                 '1':{'item_id':118,'bundle_size':3,'price_copper':7,'available':-1,'extended_cost':False},
                 '2':{'item_id':858,'bundle_size':1,'price_copper':2,'available':-1,'extended_cost':False}}
             merchant['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,
-                                             'client_version':'fixture','map_id':1414}
+                                             'client_version':'fixture','map_id':1414,'map_name':'Market'}
             merchant_key=store.ingest(merchant)
             bundled_merchant = deepcopy(merchant)
             bundled_merchant['sections']['merchant_stock']['2']['bundle_size'] = 3
@@ -205,6 +205,11 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'storage':'bags','items':[{'item_id':118,'quantity':3}]}))['quest_inventory_review']
                     self.assertEqual(covered['short_item_count'],0)
                     self.assertIs(covered['all_requirements_covered_by_observed_quantities'],True)
+                    for name, expected in [('market',True),('elsewhere',False)]:
+                        market = await session.call_tool('list_snapshots',{
+                            'family':'forever','merchant_item_id':858,'player_map_name':name})
+                        self.assertFalse(market.isError,market)
+                        self.assertEqual(bool(json.loads(market.content[0].text)['snapshots']),expected)
                     quote=(await query(quest_id=3,quest_inventory_requirements=requirements,
                         quest_inventory_merchant_snapshot_id=merchant_key))['quest_inventory_merchant_quote']
                     self.assertEqual(quote['merchant_snapshot_id'],merchant_key)

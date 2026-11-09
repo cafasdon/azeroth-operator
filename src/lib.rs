@@ -1865,6 +1865,7 @@ pub struct CaptureFilters<'a> {
     pub profession_min_rank: Option<u32>,
     pub instance: InstanceCaptureFilters<'a>,
     pub player_map_id: Option<std::num::NonZeroU32>,
+    pub player_map_name: Option<&'a str>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub repair_max_quote_copper: Option<u64>,
     pub repair_min_remaining_copper: Option<u64>,
@@ -2096,6 +2097,7 @@ impl Store {
             profession_min_rank,
             instance,
             player_map_id,
+            player_map_name,
             player_parent_map_id,
             repair_max_quote_copper,
             repair_min_remaining_copper,
@@ -2602,7 +2604,14 @@ impl Store {
             "Invalid instance filters"
         );
         let instance_name = instance.name.map(str::to_lowercase);
-        let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
+        let player_map_name = player_map_name.map(str::trim);
+        ensure!(
+            player_map_name.is_none_or(|name| !name.is_empty() && name.len() <= 256),
+            "Invalid captured player map name"
+        );
+        let player_map_name = player_map_name.map(str::to_lowercase);
+        let filter_player_map =
+            player_map_id.is_some() || player_parent_map_id.is_some() || player_map_name.is_some();
         let filter_repair = repair_max_quote_copper.is_some()
             || repair_affordable_only
             || repair_min_remaining_copper.is_some();
@@ -3434,6 +3443,11 @@ impl Store {
                             .is_none_or(|id| stats["map_id"].as_u64() == Some(u64::from(id.get())))
                             && player_parent_map_id.is_none_or(|id| {
                                 stats["map_parent_id"].as_u64() == Some(u64::from(id.get()))
+                            })
+                            && player_map_name.as_ref().is_none_or(|name| {
+                                stats["map_name"]
+                                    .as_str()
+                                    .is_some_and(|observed| observed.to_lowercase() == *name)
                             })
                     });
                     if filter_player_map && player_map.is_none() {

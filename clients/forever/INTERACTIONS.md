@@ -3090,3 +3090,7 @@ a budgeting assumption. A missing wallet leaves those balance fields unknown.
 Compared merchant visits and checklist stops include the captured player map
 ID when available. Stops also identify the merchant capture time. The map
 describes the player's saved location during the visit.
+
+Use `list_snapshots.player_map_name` to match the saved player map label
+case-insensitively. This can be combined with merchant item searches or
+other saved capture filters. Missing map labels cannot match.

@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by the recorded player map name.
+
 - Show the captured player map for saved Forever merchant visits and shopping stops.
 
 - Show cumulative wallet impact at each saved Forever merchant checklist stop.
