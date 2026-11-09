@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever dungeon and raid observations by criteria without an instance name.
+
 - Compare saved Forever equipment slots crossing a durability threshold.
 
 - Compare saved carried-item cooldown observations for an exact Forever item ID.

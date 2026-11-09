@@ -432,11 +432,13 @@ impl CollectedMountFilter {
 #[serde(deny_unknown_fields)]
 pub struct SavedInstanceFilter {
     /// Exact case-insensitive captured instance name.
-    pub name: String,
+    pub name: Option<String>,
     pub difficulty_id: Option<u32>,
     pub locked: Option<bool>,
     pub extended: Option<bool>,
     pub is_raid: Option<bool>,
+    /// Match the reported instance group-size cap.
+    pub max_players: Option<std::num::NonZeroU32>,
     /// Only nonnegative reset timers at or below this value, as recorded at capture.
     pub maximum_reset_seconds: Option<u32>,
     /// Inclusive historical reset deadline (RFC 3339). Unknown projections do not match.
@@ -2139,16 +2141,29 @@ impl Store {
             "Toy view filtering requires Forever"
         );
         ensure!(
-            saved_instance
-                .as_ref()
-                .is_none_or(|filter| family == Family::Forever
-                    && !filter.name.trim().is_empty()
-                    && filter.name.len() <= 256),
-            "Saved instance filtering requires Forever and a bounded name"
+            saved_instance.as_ref().is_none_or(|filter| {
+                family == Family::Forever
+                    && filter
+                        .name
+                        .as_ref()
+                        .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256)
+                    && (filter.name.is_some()
+                        || filter.difficulty_id.is_some()
+                        || filter.locked.is_some()
+                        || filter.extended.is_some()
+                        || filter.is_raid.is_some()
+                        || filter.max_players.is_some()
+                        || filter.maximum_reset_seconds.is_some()
+                        || filter.projected_reset_from.is_some()
+                        || filter.projected_reset_by.is_some()
+                        || filter.maximum_update_age_seconds.is_some())
+            }),
+            "Saved instance filtering requires Forever and at least one valid criterion"
         );
         let saved_instance_name = saved_instance
             .as_ref()
-            .map(|filter| filter.name.to_lowercase());
+            .and_then(|filter| filter.name.as_ref())
+            .map(|name| name.to_lowercase());
         ensure!(
             saved_world_boss
                 .as_ref()
@@ -3036,10 +3051,8 @@ impl Store {
                     if saved_world_boss.is_some() && saved_world_boss_match.is_none() {
                         continue;
                     }
-                    let saved_instance_match = saved_instance
-                        .as_ref()
-                        .zip(saved_instance_name.as_ref())
-                        .and_then(|(filter, name)| {
+                    let saved_instance_match =
+                        saved_instance.as_ref().and_then(|filter| {
                             let saved = s.sections.get("saved_instances")?;
                             if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
                                 saved["update_age_seconds"]
@@ -3048,38 +3061,38 @@ impl Store {
                             }) {
                                 return None;
                             }
-                            let matches = saved["entries"]
-                                .as_object()?
-                                .iter()
-                                .filter(|(_, row)| {
-                                    row["name"]
-                                        .as_str()
-                                        .is_some_and(|value| value.to_lowercase() == *name)
-                                        && filter.difficulty_id.is_none_or(|id| {
+                            let matches =
+                                saved["entries"]
+                                    .as_object()?
+                                    .iter()
+                                    .filter(|(_, row)| {
+                                        saved_instance_name.as_ref().is_none_or(|name| {
+                                            row["name"]
+                                                .as_str()
+                                                .is_some_and(|value| value.to_lowercase() == *name)
+                                        }) && filter.max_players.is_none_or(|size| {
+                                            row["max_players"].as_u64()
+                                                == Some(u64::from(size.get()))
+                                        }) && filter.difficulty_id.is_none_or(|id| {
                                             row["difficulty_id"].as_u64() == Some(u64::from(id))
-                                        })
-                                        && filter.locked.is_none_or(|flag| {
+                                        }) && filter.locked.is_none_or(|flag| {
                                             row["locked"].as_bool() == Some(flag)
-                                        })
-                                        && filter.extended.is_none_or(|flag| {
+                                        }) && filter.extended.is_none_or(|flag| {
                                             row["extended"].as_bool() == Some(flag)
-                                        })
-                                        && filter.is_raid.is_none_or(|flag| {
+                                        }) && filter.is_raid.is_none_or(|flag| {
                                             row["is_raid"].as_bool() == Some(flag)
-                                        })
-                                        && filter.maximum_reset_seconds.is_none_or(|maximum| {
+                                        }) && filter.maximum_reset_seconds.is_none_or(|maximum| {
                                             row["reset_seconds"].as_u64().is_some_and(|seconds| {
                                                 seconds <= u64::from(maximum)
                                             })
-                                        })
-                                        && saved_resets::matches_projected_window(
+                                        }) && saved_resets::matches_projected_window(
                                             row["reset_seconds"].as_i64(),
                                             s.captured_at,
                                             filter.projected_reset_from,
                                             filter.projected_reset_by,
                                         )
-                                })
-                                .collect();
+                                    })
+                                    .collect();
                             saved_resets::discovery_report(
                                 matches,
                                 saved,

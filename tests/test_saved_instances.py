@@ -128,13 +128,21 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await search(latest_per_character=True), [])
                     unlocked = await search({"name": "Raid", "locked": False})
                     self.assertEqual([row["snapshot_id"] for row in unlocked], [later_key])
+                    nameless = await search({"locked": True, "is_raid": True, "max_players": 40})
+                    self.assertEqual([row["snapshot_id"] for row in nameless], [key])
+                    self.assertEqual(await search({"locked": True, "max_players": 5}), [])
+                    by_size = await search({"max_players": 5})
+                    self.assertEqual({row["snapshot_id"] for row in by_size}, {key, later_key})
+                    self.assertTrue(all(row["saved_instance_match"]["entries"][0]["slot"] == 2 for row in by_size))
+                    reset = await search({"projected_reset_by": "2025-01-01T00:02:04Z"})
+                    self.assertEqual([row["snapshot_id"] for row in reset], [key])
                     many_rows = await search(character=many["character"])
                     self.assertEqual(many_rows[0]["snapshot_id"], many_key)
                     large = many_rows[0]["saved_instance_match"]
                     self.assertTrue(large["truncated"])
                     self.assertEqual(large["matched_count"], 25)
                     self.assertEqual([row["slot"] for row in large["entries"]], list(range(1, 21)))
-                    for bad in ({"name": ""}, {"name": " "}, {"name": "x"*257}):
+                    for bad in ({}, {"name": None}, {"max_players": 0}, {"name": ""}, {"name": " "}, {"name": "x"*257}):
                         self.assertTrue((await session.call_tool("list_snapshots", {**query, "saved_instance": bad})).isError)
                     for family in ("retail", "classic"):
                         self.assertTrue((await session.call_tool("list_snapshots", {**query, "family": family})).isError)

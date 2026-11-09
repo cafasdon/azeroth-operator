@@ -2907,3 +2907,10 @@ percentage from 0 to 100. The comparison lists matching slots on each side
 and reports threshold crossings only for slots readable in both captures.
 A missing section gives unknown crossings. Changes describe saved slot
 readings and leave item continuity and repair events unverified.
+
+## Saved dungeon and raid discovery without a name
+
+Use `list_snapshots.saved_instance` with at least one criterion. The name is
+optional, so a search can find any recorded locked raid or any observed
+dungeon in a projected reset window. `max_players` matches the exact positive
+group-size cap reported on the same row. Results describe the saved cache.
