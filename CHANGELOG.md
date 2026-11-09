@@ -1,5 +1,7 @@
 # Changelog
 
+- Flag conflicting saved usability or insufficient-power readings for exact Forever action spell IDs.
+
 - Show captured spellbook usability and power flags for exact Forever action spell IDs.
 
 - Flag conflicting saved spellbook resource readings for exact Forever action spell IDs.

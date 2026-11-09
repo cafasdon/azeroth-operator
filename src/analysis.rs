@@ -3801,6 +3801,31 @@ pub fn shared_action_bar_hotkeys(actions: &Value) -> Option<BTreeMap<String, BTr
     Some(slots_by_key)
 }
 
+fn spellbook_observation_conflicts<'a>(
+    observations: Option<&BTreeMap<u64, Vec<Value>>>,
+    fields: &[&'a str],
+) -> Option<BTreeMap<u64, Vec<&'a str>>> {
+    observations.map(|by_id| {
+        by_id
+            .iter()
+            .filter_map(|(&id, rows)| {
+                let conflicts: Vec<_> = fields
+                    .iter()
+                    .copied()
+                    .filter(|field| {
+                        let mut known =
+                            rows.iter().map(|row| &row[*field]).filter(|v| !v.is_null());
+                        known
+                            .next()
+                            .is_some_and(|first| known.any(|value| value != first))
+                    })
+                    .collect();
+                (!conflicts.is_empty()).then_some((id, conflicts))
+            })
+            .collect()
+    })
+}
+
 pub fn action_bar_spellbook(
     actions: &Value,
     spellbook: Option<&Value>,
@@ -3907,6 +3932,10 @@ pub fn action_bar_spellbook(
         }
         by_id
     });
+    review["spellbook_usability_conflicts_by_action_id"] = json!(spellbook_observation_conflicts(
+        usability.as_ref(),
+        &["usable", "insufficient_power"],
+    ));
     review["matched_spellbook_usability_by_action_id"] = json!(usability);
     if book.is_some_and(|book| {
         book.values().any(|row| {
@@ -3935,24 +3964,10 @@ pub fn action_bar_spellbook(
             }
             by_id
         });
-        let conflicts = resources.as_ref().map(|by_id| {
-            by_id
-                .iter()
-                .filter_map(|(id, rows)| {
-                    let fields: Vec<_> = ["charge_count", "reported_cast_count", "cooldown_state"]
-                        .into_iter()
-                        .filter(|field| {
-                            let mut known =
-                                rows.iter().map(|row| &row[*field]).filter(|v| !v.is_null());
-                            known
-                                .next()
-                                .is_some_and(|first| known.any(|value| value != first))
-                        })
-                        .collect();
-                    (!fields.is_empty()).then_some((id, fields))
-                })
-                .collect::<BTreeMap<_, _>>()
-        });
+        let conflicts = spellbook_observation_conflicts(
+            resources.as_ref(),
+            &["charge_count", "reported_cast_count", "cooldown_state"],
+        );
         review["spellbook_resource_conflicts_by_action_id"] = json!(conflicts);
         review["matched_spellbook_resources_by_action_id"] = json!(resources);
     }

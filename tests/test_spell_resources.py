@@ -87,6 +87,9 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                                 {'spellbook_slot':2,'usable':True,'insufficient_power':False},
                                 {'spellbook_slot':10,'usable':False,'insufficient_power':True}]}
                         self.assertEqual(review['matched_spellbook_usability_by_action_id'], usability)
+                        self.assertEqual(review['spellbook_usability_conflicts_by_action_id'],
+                                         None if usability is None else
+                                         {'101':['usable','insufficient_power']} if usability else {})
                         self.assertEqual(review['ambiguous_base_aliases_by_action_id'],
                                          None if book is None else {'100':[101,102]} if mode=='ambiguous' else {})
                         if mode in ('full','legacy'):
