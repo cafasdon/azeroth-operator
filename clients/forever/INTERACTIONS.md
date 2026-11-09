@@ -248,6 +248,11 @@ expose cumulative shortages independently of material feasibility. Unknown count
 stay unknown, newer stock does not replenish them and no craft is executed.
 Each step also reports how many of its requested crafts fit within the
 captured charges left after earlier steps for the same recipe.
+Individual recipe reviews additionally report
+`base_output_for_charge_covered_crafts_if_completed`. This scales the base
+yield range by the smaller of requested crafts and captured charges. It is
+null if either input is unavailable, and it checks charges independently
+of materials, other crafting conditions and shared cooldowns.
 Shared cooldown groups and actual recharge/readiness remain unqualified.
 [Evidence](../../docs/chain-charge-accounting-verification-2026-11-09.md).
 

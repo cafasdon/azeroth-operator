@@ -1279,13 +1279,15 @@ fn review_recipe_observation(
         }
         Value::Null
     };
-    let base_output_if_completed = recipe["base_output_quantity"]["minimum"]
-        .as_u64()
-        .zip(recipe["base_output_quantity"]["maximum"].as_u64())
-        .map(|(minimum, maximum)| {
-            json!({"item_id":recipe["output_item_id"],"minimum":minimum * u64::from(crafts),
-                "maximum":maximum * u64::from(crafts)})
-        });
+    let output_for = |count| {
+        recipe["base_output_quantity"]["minimum"]
+            .as_u64()
+            .zip(recipe["base_output_quantity"]["maximum"].as_u64())
+            .map(|(minimum, maximum)| {
+                json!({"item_id":recipe["output_item_id"],"minimum":minimum * count,
+                "maximum":maximum * count})
+            })
+    };
     let recipe_id = recipe["recipe_id"]
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?;
@@ -1352,7 +1354,9 @@ fn review_recipe_observation(
         "captured_preparation":preparation_checks.into_iter().collect::<BTreeMap<_, _>>(),
         "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)
             .zip(recipe["profession"]["rank"].as_u64()).and_then(|(cap, rank)| cap.checked_sub(rank)),
-        "base_output_if_completed":base_output_if_completed,
+        "base_output_if_completed":output_for(u64::from(crafts)),
+        "base_output_for_charge_covered_crafts_if_completed":charges
+            .and_then(|available| output_for(available.min(u64::from(crafts)))),
         "estimated_cooldown_end_at":estimated_cooldown_end,
         "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),

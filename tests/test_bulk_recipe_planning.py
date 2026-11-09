@@ -92,6 +92,12 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
             capture['sections']['profession_spells'] = {'coverage': 'reported_known_profession_spells',
                 'profession_id': 165, 'entries': {'103': {}}}
             compatible.append(store.ingest(capture))
+            charge_cases = {}
+            for charges in (0, 2, 5):
+                saved = deepcopy(base)
+                saved['sections']['profession_recipe_materials']['entries']['103']['cooldown'] = {
+                    'charges': charges, 'max_charges': 5, 'remaining_seconds': 60}
+                charge_cases[charges] = store.ingest(saved)
             original = {path.name: path.read_bytes() for path in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
             env.pop('AZEROTH_FOREVER_CATALOGUE', None)
@@ -125,6 +131,13 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
                     target = await call(crafts=None, target_output_quantity=3)
                     self.assertEqual(target['requested_crafts'], 3)
                     self.assertEqual(target['base_output_if_completed'], {'item_id': 10, 'minimum': 3, 'maximum': 6})
+                    self.assertIsNone(target['base_output_for_charge_covered_crafts_if_completed'])
+                    for charges, saved_id in charge_cases.items():
+                        limited = await call(snapshot_id=saved_id, crafts=3)
+                        supported = min(charges, 3)
+                        self.assertEqual(limited['base_output_for_charge_covered_crafts_if_completed'],
+                                         {'item_id': 10, 'minimum': supported, 'maximum': 2 * supported})
+                        self.assertEqual(limited['base_output_if_completed'], target['base_output_if_completed'])
                     self.assertEqual((await call(recipe_id=None))['recipe']['recipe_id'], 999)
                     self.assertNotIn('recipe_observation_source', await call(recipe_id=None))
                     newer = await call(inventory_snapshot_id=later_id)

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the conditional base yield of requested Forever crafts covered by saved recipe charges.
+
 - Show how many crafts at each Forever reagent-chain step fit the saved recipe charges.
 
 - Find saved Forever snapshots that report an exact profession spell ID.
