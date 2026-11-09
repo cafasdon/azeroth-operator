@@ -2775,23 +2775,23 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
         "current_offer_verified":false,"trade_completion_verified":false,"game_execution":false})
 }
 
+pub(crate) fn remaining_pvp_points_to_next_threshold(section: &Value) -> Option<u64> {
+    let points = section["rank_points"].as_u64()?;
+    let threshold = section["next_rank_threshold"].as_u64()?;
+    (threshold > 0).then_some(threshold)?.checked_sub(points)
+}
+
 pub(crate) fn player_pvp_progression_observation(section: &Value) -> Value {
-    let points = section["rank_points"].as_u64().unwrap();
-    let threshold = section["next_rank_threshold"].as_u64().unwrap();
-    let remaining = if threshold > 0 && points <= threshold {
-        Some(threshold - points)
-    } else {
-        None
-    };
     let mut report = section.clone();
-    report["remaining_points_to_reported_next_threshold"] = json!(remaining);
+    report["remaining_points_to_reported_next_threshold"] =
+        json!(remaining_pvp_points_to_next_threshold(section));
     if let Some(totals) = section.get("total_points_by_rank") {
         let lookup = |field: &str| {
             section[field]
                 .as_u64()
                 .and_then(|rank| totals[rank.to_string()].as_u64())
         };
-        let current = lookup("rank").map(|base| base + points);
+        let current = lookup("rank").map(|base| base + section["rank_points"].as_u64().unwrap());
         report["reported_total_rank_points"] = json!(current);
         let mut caps = serde_json::Map::new();
         for field in [

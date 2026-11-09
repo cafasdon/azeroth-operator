@@ -425,6 +425,8 @@ struct List {
     maximum_pvp_rank: Option<u32>,
     /// Match the exact reported PvP season ID in a saved Forever capture.
     pvp_season_id: Option<std::num::NonZeroU32>,
+    /// Maximum saved points remaining to a known positive next PvP rank threshold.
+    maximum_pvp_points_to_next_threshold: Option<u32>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
@@ -2005,6 +2007,7 @@ impl Operator {
                 outgoing_trade_item_id: args.outgoing_trade_item_id,
                 pvp_rank_range: (args.minimum_pvp_rank, args.maximum_pvp_rank),
                 pvp_season_id: args.pvp_season_id,
+                maximum_pvp_points_to_next_threshold: args.maximum_pvp_points_to_next_threshold,
                 group_context: args.group_context,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,

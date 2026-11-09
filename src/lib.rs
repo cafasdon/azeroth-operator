@@ -1485,6 +1485,7 @@ pub struct CaptureFilters<'a> {
     pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     pub pvp_rank_range: (Option<u32>, Option<u32>),
     pub pvp_season_id: Option<std::num::NonZeroU32>,
+    pub maximum_pvp_points_to_next_threshold: Option<u32>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1699,6 +1700,7 @@ impl Store {
             outgoing_trade_item_id,
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
             pvp_season_id,
+            maximum_pvp_points_to_next_threshold,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -1844,8 +1846,10 @@ impl Store {
             outgoing_trade_item_id.is_none() || family == Family::Forever,
             "Outgoing trade filtering requires Forever"
         );
-        let filter_pvp =
-            minimum_pvp_rank.is_some() || maximum_pvp_rank.is_some() || pvp_season_id.is_some();
+        let filter_pvp = minimum_pvp_rank.is_some()
+            || maximum_pvp_rank.is_some()
+            || pvp_season_id.is_some()
+            || maximum_pvp_points_to_next_threshold.is_some();
         ensure!(
             !filter_pvp || family == Family::Forever,
             "PvP filtering requires Forever"
@@ -2360,6 +2364,16 @@ impl Store {
                             "coverage":progression["coverage"],"current_progression_verified":false});
                         if let Some(season) = progression.get("reported_season_id") {
                             observation["reported_season_id"] = season.clone();
+                        }
+                        if let Some(maximum) = maximum_pvp_points_to_next_threshold {
+                            let Some(remaining) =
+                                analysis::remaining_pvp_points_to_next_threshold(progression)
+                                    .filter(|points| *points <= u64::from(maximum))
+                            else {
+                                continue;
+                            };
+                            observation["remaining_points_to_reported_next_threshold"] =
+                                json!(remaining);
                         }
                         Some(observation)
                     } else {

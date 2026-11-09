@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever PvP captures within a point limit of their reported next rank threshold.
+
 - Filter saved Forever group context by an inclusive member-count range.
 
 - Compare saved Forever PvP rank readings when both captures report the same season ID.

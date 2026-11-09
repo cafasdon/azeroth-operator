@@ -119,6 +119,17 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     for bad_season in [0,True,-1,1.5,'7',4294967296]:
                         await call('list_snapshots',error=True,family='forever',pvp_season_id=bad_season)
                     await call('list_snapshots',error=True,family='retail',pvp_season_id=7)
+                    reached = await call('list_snapshots',family='forever',maximum_pvp_points_to_next_threshold=0)
+                    self.assertEqual({row['snapshot_id'] for row in reached['snapshots']},
+                        {valid[3][0],valid[8][0]})
+                    close = await call('list_snapshots',family='forever',pvp_season_id=7,
+                        maximum_pvp_points_to_next_threshold=90)
+                    self.assertEqual([row['snapshot_id'] for row in close['snapshots']], [valid[11][0]])
+                    self.assertEqual(close['snapshots'][0]['pvp_rank_match'][
+                        'remaining_points_to_reported_next_threshold'],90)
+                    self.assertEqual((await call('list_snapshots',family='forever',pvp_season_id=7,
+                        maximum_pvp_points_to_next_threshold=89))['snapshots'],[])
+                    await call('list_snapshots',error=True,family='retail',maximum_pvp_points_to_next_threshold=0)
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:

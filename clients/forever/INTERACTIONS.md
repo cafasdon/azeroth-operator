@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `list_snapshots.maximum_pvp_points_to_next_threshold` to find saved
+Forever captures within an inclusive point limit of the reported next PvP
+rank threshold. Zero matches a reached positive threshold. Missing, zero
+or exceeded thresholds are excluded, and rank and season filters can be
+combined with the point limit. Matching rows show the saved distance.
+
 Use `maximum_reported_member_count` in the `list_snapshots.group_context`
 filter to cap the captured member count. Combine it with
 `minimum_reported_member_count` for an inclusive range in the selected
