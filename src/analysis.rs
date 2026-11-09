@@ -5159,16 +5159,57 @@ pub fn reagent_chain_captured_sources(
         "provider_mode":section["provider_mode"],"provider_contract_version":section["provider_contract_version"],
         "profession_id":section["profession_id"],"reported_item_count":section["reported_item_count"],
         "retained_item_count":section["entries"].as_object().map(|rows| rows.len())}));
-    Ok(
-        json!({"basis":"chain_external_material_shortfalls","captured_at":source.captured_at,
+    let locations = section
+        .and_then(|section| section.get("entity_locations"))
+        .map(|cache| {
+            let mut projected = json!({"coordinate_system":cache["coordinate_system"],
+            "coordinate_frame_verified":false,"phase_visibility_verified":false,
+            "native_spawn_verified":false,"routing_verified":false});
+            for (kind, count_field, categories) in [
+                ("npcs", "reported_npc_count", &["npc_drops", "vendors"][..]),
+                ("objects", "reported_object_count", &["object_drops"][..]),
+            ] {
+                let mut ids = BTreeSet::<u32>::new();
+                for record in &records {
+                    for category in categories {
+                        if let Some(entries) =
+                            record["references"][*category]["entries"].as_object()
+                        {
+                            ids.extend(entries.keys().map(|id| id.parse::<u32>().unwrap()));
+                        }
+                    }
+                }
+                projected[count_field] = cache[count_field].clone();
+                projected[format!("retained_{kind}_count")] =
+                    json!(cache[kind].as_object().unwrap().len());
+                projected[format!("referenced_{kind}_count")] = json!(ids.len());
+                projected[kind] = json!(
+                    ids.into_iter()
+                        .map(|id| {
+                            let key = id.to_string();
+                            let row = cache[kind]
+                                .get(&key)
+                                .cloned()
+                                .unwrap_or_else(|| json!({"status":"not_captured"}));
+                            (key, row)
+                        })
+                        .collect::<BTreeMap<_, _>>()
+                );
+            }
+            projected
+        });
+    let mut result = json!({"basis":"chain_external_material_shortfalls","captured_at":source.captured_at,
         "section_available":section.is_some(),"source_capture_coverage":coverage,
         "external_item_count":records.len(),"captured_item_count":captured,
         "uncaptured_item_count":records.len()-captured,"items_reported_by_provider":reported,
         "items_with_retained_sources":with_sources,"records":records,
         "dataset_revision_verified":false,"complete_world_sources_verified":false,
         "current_availability_verified":false,"acquisition_eligibility_verified":false,
-        "ownership_verified":false,"live":false,"game_execution":false}),
-    )
+        "ownership_verified":false,"live":false,"game_execution":false});
+    if let Some(locations) = locations {
+        result["entity_locations"] = locations;
+    }
+    Ok(result)
 }
 
 /// Chain leaves are already net shortages: do not subtract the observed stock again.

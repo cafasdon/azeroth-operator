@@ -130,11 +130,115 @@ AO.collectors.recipe_item_sources = function(materials)
         local ok,first=pcall(read,ids[i]); local again,second=pcall(read,ids[i])
         entries[tostring(ids[i])]=ok and again and equal(first,second) and first or {status="unavailable"}
     end
+    -- These are provider area percentages, never native map coordinates or visibility.
+    local function entityApi(name)
+        local namespace=public(provider[name])
+        assert(type(namespace)=="table", "Reference entity namespace unavailable")
+        local exists=public(namespace.Exists); local get=public(namespace.Get)
+        assert(type(exists)=="function" and type(get)=="function", "Reference entity API unavailable")
+        return exists,get
+    end
+    local function spawns(get,id)
+        local areas=public(get(id,"spawns"))
+        if areas==nil then return end
+        assert(type(areas)=="table", "Invalid reference spawns")
+        local points,areaCount={},0
+        for area,positions in pairs(areas) do
+            areaCount=areaCount+1
+            assert(areaCount<=4096, "Reference area budget exceeded")
+            area=uint(area,1,4294967295); positions=public(positions)
+            assert(type(positions)=="table", "Invalid reference spawn positions")
+            local count,maximum=0,0
+            for position,tuple in pairs(positions) do
+                position=uint(position,1,4096); tuple=public(tuple)
+                count=count+1; maximum=math.max(maximum,position)
+                assert(type(tuple)=="table" and #points<4096, "Reference spawn budget exceeded")
+                local values,fields={},0
+                for index,value in pairs(tuple) do
+                    index=uint(index,1,3); value=public(value)
+                    assert(type(value)=="number", "Invalid reference spawn value")
+                    values[index]=value; fields=fields+1
+                end
+                assert((fields==2 or fields==3) and values[1]~=nil and values[2]~=nil
+                    and (fields==2 or values[3]~=nil), "Invalid reference spawn tuple")
+                local x,y,phase=values[1],values[2],values[3]
+                local point={area_id=area}
+                if x==-1 and y==-1 then
+                    assert(phase==nil, "Invalid reference instance presence")
+                    point.kind="instance_presence"
+                else
+                    assert(x>=0 and x<=100 and y>=0 and y<=100, "Invalid reference coordinates")
+                    point.kind="coordinate"; point.x_percent=x; point.y_percent=y
+                    if phase~=nil then
+                        phase=uint(phase,0,4294967295)
+                        if phase>0 then point.provider_phase_id=phase end
+                    end
+                end
+                points[#points+1]=point
+            end
+            assert(count==maximum, "Sparse reference spawn positions")
+        end
+        table.sort(points,function(a,b)
+            if a.area_id~=b.area_id then return a.area_id<b.area_id end
+            if a.kind~=b.kind then return a.kind<b.kind end
+            if a.x_percent~=b.x_percent then return a.x_percent<b.x_percent end
+            if a.y_percent~=b.y_percent then return a.y_percent<b.y_percent end
+            return (a.provider_phase_id or 0)<(b.provider_phase_id or 0)
+        end)
+        local captured={}
+        for i=1,math.min(16,#points) do captured[tostring(i)]=points[i] end
+        return {reported_point_count=#points,truncated=#points>16,entries=captured}
+    end
+    local function entityRead(name,id)
+        local exists,get=entityApi(name)
+        local found=public(exists(id))
+        assert(type(found)=="boolean", "Invalid reference entity existence")
+        if not found then return {status="not_in_provider"} end
+        local row={status="reported"}
+        local ok,value=pcall(spawns,get,id)
+        if ok then row.spawns=value end
+        return row
+    end
+    local entityLocations
+    local npcAvailable=pcall(entityApi,"Npc")
+    local objectAvailable=pcall(entityApi,"Object")
+    if npcAvailable or objectAvailable then
+        local npcSet,objectSet={},{}
+        for _,row in pairs(entries) do
+            if row.status=="reported" then
+                for _,field in ipairs({"npc_drops","vendors","object_drops"}) do
+                    if row[field] then
+                        for id in pairs(row[field].entries) do
+                            local target=field=="object_drops" and objectSet or npcSet
+                            target[tonumber(id)]=true
+                        end
+                    end
+                end
+            end
+        end
+        local function captureEntities(name,set,budget)
+            local ordered={}; for id in pairs(set) do ordered[#ordered+1]=id end
+            assert(#ordered<=budget, "Reference entity budget exceeded")
+            table.sort(ordered)
+            local captured={}
+            for i=1,math.min(32,#ordered) do
+                local ok,first=pcall(entityRead,name,ordered[i])
+                local again,second=pcall(entityRead,name,ordered[i])
+                captured[tostring(ordered[i])]=ok and again and equal(first,second)
+                    and first or {status="unavailable"}
+            end
+            return captured,#ordered
+        end
+        local npcs,npcCount=captureEntities("Npc",npcSet,1024)
+        local objects,objectCount=captureEntities("Object",objectSet,512)
+        entityLocations={coordinate_system="questiedb_area_percent",reported_npc_count=npcCount,
+            reported_object_count=objectCount,npcs=npcs,objects=objects}
+    end
     local afterMode,afterContract=context()
     assert(LibQuestieDB==provider and afterMode==mode and afterContract==contract, "Reference context changed")
     return {coverage="first_reported_fixed_recipe_reagents",provider="questiedb",provider_mode=mode,
         provider_contract_version=contract,profession_id=materials.profession_id,
-        reported_item_count=#ids,entries=entries}
+        reported_item_count=#ids,entries=entries,entity_locations=entityLocations}
 end
 local savedInstanceUpdate
 if AO.family=="forever" and CreateFrame then

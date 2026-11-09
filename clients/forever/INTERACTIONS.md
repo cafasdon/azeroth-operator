@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Local world references: optional NPC/object spawn records can accompany captured
+reagent sources and flow into chain acquisition reviews without repeated external
+lookups. Provider area percentages, phase IDs and instance-presence sentinels stay
+distinct from native maps/visibility. Only relevant cached entities are returned;
+missing/truncated coverage remains explicit. No routing, movement or data-provider
+installation is performed. [Evidence](../../docs/reference-locations-verification-2026-11-09.md).
+
 Loot requirement review compares captured readable base-item quantities with an
 explicit shopping/reagent list. Unknown slots stay explicit; coverage and remaining
 needs are conditional on acquiring known displayed items, without pickup rights

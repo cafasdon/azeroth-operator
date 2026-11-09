@@ -1,5 +1,40 @@
 # Forever
 
+When a separately installed compatible QuestieDB provider exposes NPC/object
+read APIs, `recipe_item_sources.entity_locations` can cache their spawn records.
+It queries only IDs already retained in reported item references: NPC drops and
+vendors share the NPC set; object drops use the object set. Counts cover those
+unique retained reference IDs, with the numerically first 32 of each kind queried.
+They are not counts of all sources or world entities. Missing both APIs omits
+the optional cache; partial failures preserve existing item references.
+
+Each entity reports `reported`, `not_in_provider` or `unavailable`. Reported
+entities can have `spawns` with `reported_point_count`, `truncated` and at most
+16 point positions. Reads examine at most 4,096 areas/points per entity, preserving
+duplicate positions and distinguishing absent spawn data from explicit empty.
+Two protected projections must agree; restricted/invalid/changing data is not
+recovered through alternate fields. Existing provider mode/contract/context
+checks cover the added reads. No provider code or dataset is bundled.
+
+`coordinate_system: questiedb_area_percent` keeps area IDs and 0–100 percentages
+in the provider's namespace. A coordinate can retain `provider_phase_id`, which
+may be provider-defined and never proves native visibility. `instance_presence`
+has an area ID without coordinates; it represents the provider sentinel, not a
+route destination. No conversion to UiMap IDs, coordinate transformation, names,
+GUIDs, source-health estimates or movement paths is added. Recorded precision
+follows the existing exporter; native coordinates/availability remain unverified.
+
+Existing `reagent_chain_captured_sources` output attaches one shared
+`entity_locations` projection, scoped to retained source IDs referenced by the
+chain's external needs. Unrelated cached entities are excluded. Referenced IDs
+outside the capture budget receive `status: not_captured`; missing spawns stay
+unknown and truncation remains visible. Capture time/provider provenance stays
+with the explicitly selected owner source snapshot, separate from stock. Coordinate
+frame, phase visibility, native spawn and routing verification flags stay false.
+Update readers before installing the new exporter. Native performance and complete
+world/acquisition coverage remain unqualified.
+[Offline evidence](../../docs/reference-locations-verification-2026-11-09.md).
+
 `inspect_snapshot` with `section: loot_window` accepts optional `loot_requirements`,
 a list of one to 64 distinct `{item_id, quantity}` objects. IDs are positive u32;
 quantities are positive u64 so large reagent demands remain representable.

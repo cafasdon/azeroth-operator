@@ -1,5 +1,11 @@
 # Changelog
 
+- Cache optional public provider NPC/object spawn references for retained recipe
+  reagents, with bounded entity/area/point reads and strict reader validation.
+  Join only relevant records into chain acquisition output, preserving provider
+  area percentages/phase IDs and explicit unknowns without routing or native
+  visibility claims. Qualify uninstalled capture-only 0.45.0-dev offline.
+
 - Compare saved readable loot with up to 64 distinct base-item requirements,
   preserving unknown slots and conditional coverage without inventory credit,
   current lootability or acquisition actions.

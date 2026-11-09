@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: optional local provider NPC/object spawn references now reach
+strict snapshots and scoped reagent-chain acquisition output. [Offline evidence](reference-locations-verification-2026-11-09.md).
+Provider area/phase namespaces remain separate from native maps. Native acceptance,
+dataset revision/accuracy, coordinate-frame mapping, visibility and actual routing
+remain unqualified; this is bounded reference coverage, not a full world database.
+
 9 November update: saved loot observations now support conditional comparison
 with explicit item requirements, beyond inspection/summary. [Offline evidence](loot-requirements-verification-2026-11-09.md).
 Unreadable quantities, actual pickup rights/availability and native qualification

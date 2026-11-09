@@ -140,6 +140,9 @@ fn object(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
             "unit_interval" => v
                 .as_f64()
                 .is_some_and(|n| n.is_finite() && (0.0..=1.0).contains(&n)),
+            "percent" => v
+                .as_f64()
+                .is_some_and(|n| n.is_finite() && (0.0..=100.0).contains(&n)),
             "wallet_copper" => v.as_u64().is_some_and(|n| n <= 9_999_999_999_999),
             "faction_tag" => matches!(v.as_str(), Some("Alliance" | "Horde")),
             "positive" => v.as_u64().is_some_and(|n| n > 0 && n <= u32::MAX as u64),
@@ -166,6 +169,117 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
     Ok(())
 }
 
+fn reference_locations(source: &Value, cache: &Value) -> Result<()> {
+    object(
+        cache,
+        &[
+            ("coordinate_system", "text", true),
+            ("reported_npc_count", "uint", true),
+            ("reported_object_count", "uint", true),
+            ("npcs", "map", true),
+            ("objects", "map", true),
+        ],
+    )?;
+    ensure!(
+        cache["coordinate_system"] == "questiedb_area_percent",
+        "Invalid reference coordinate system"
+    );
+    for (kind, count_field, fields) in [
+        ("npcs", "reported_npc_count", &["npc_drops", "vendors"][..]),
+        ("objects", "reported_object_count", &["object_drops"][..]),
+    ] {
+        let mut ids = std::collections::BTreeSet::<u32>::new();
+        for row in source["entries"]
+            .as_object()
+            .unwrap()
+            .values()
+            .filter(|row| row["status"] == "reported")
+        {
+            for field in fields {
+                if let Some(refs) = row[*field]["entries"].as_object() {
+                    for id in refs.keys() {
+                        ids.insert(id.parse()?);
+                    }
+                }
+            }
+        }
+        let rows = cache[kind].as_object().unwrap();
+        let expected: std::collections::BTreeSet<_> =
+            ids.iter().take(32).map(u32::to_string).collect();
+        ensure!(
+            cache[count_field].as_u64() == Some(ids.len() as u64)
+                && rows
+                    .keys()
+                    .cloned()
+                    .collect::<std::collections::BTreeSet<_>>()
+                    == expected,
+            "Invalid retained reference entity coverage"
+        );
+        for row in rows.values() {
+            if row["status"] != "reported" {
+                object(row, &[("status", "text", true)])?;
+                ensure!(
+                    matches!(
+                        row["status"].as_str(),
+                        Some("not_in_provider" | "unavailable")
+                    ),
+                    "Invalid entity reference status"
+                );
+                continue;
+            }
+            object(row, &[("status", "text", true), ("spawns", "map", false)])?;
+            let Some(spawns) = row.get("spawns") else {
+                continue;
+            };
+            object(
+                spawns,
+                &[
+                    ("reported_point_count", "uint", true),
+                    ("truncated", "bool", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let count = spawns["reported_point_count"].as_u64().unwrap();
+            let points = spawns["entries"].as_object().unwrap();
+            ensure!(
+                count <= 4096
+                    && points.len() == count.min(16) as usize
+                    && spawns["truncated"].as_bool() == Some(count > 16),
+                "Invalid reference point coverage"
+            );
+            for (slot, point) in points {
+                index(slot, 1, points.len() as u32)?;
+                match point["kind"].as_str() {
+                    Some("coordinate") => {
+                        object(
+                            point,
+                            &[
+                                ("kind", "text", true),
+                                ("area_id", "positive", true),
+                                ("x_percent", "percent", true),
+                                ("y_percent", "percent", true),
+                                ("provider_phase_id", "positive", false),
+                            ],
+                        )?;
+                        ensure!(
+                            point.get("provider_phase_id").is_none_or(|n| n
+                                .as_u64()
+                                .is_some_and(|n| (1..=u64::from(u32::MAX)).contains(&n))),
+                            "Invalid reference phase ID"
+                        );
+                    }
+                    Some("instance_presence") => object(
+                        point,
+                        &[("kind", "text", true), ("area_id", "positive", true)],
+                    )?,
+                    _ => anyhow::bail!("Invalid reference point kind"),
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
         "recipe_item_sources" => {
@@ -179,6 +293,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("profession_id", "positive", true),
                     ("reported_item_count", "uint", true),
                     ("entries", "map", true),
+                    ("entity_locations", "map", false),
                 ],
             )?;
             let count = value["reported_item_count"].as_u64().unwrap();
@@ -246,6 +361,9 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ensure!(*flag == true, "Invalid reference entry");
                     }
                 }
+            }
+            if let Some(cache) = value.get("entity_locations") {
+                reference_locations(value, cache)?;
             }
         }
         "pet_collection_view" => {

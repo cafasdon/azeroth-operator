@@ -207,7 +207,8 @@ def validate_snapshot(value):
             return isinstance(k, str) and k.isascii() and k.isdecimal() and str(int(k)) == k and reference_uint(int(k), 1)
         fields = {"npc_drops", "object_drops", "container_drops", "quest_rewards", "vendors"}
         if (c["family"] != "forever" or not isinstance(source, dict)
-                or set(source) != {"coverage", "provider", "provider_mode", "provider_contract_version", "profession_id", "reported_item_count", "entries"}
+                or not {"coverage", "provider", "provider_mode", "provider_contract_version", "profession_id", "reported_item_count", "entries"}<=set(source)
+                or set(source)-{"coverage", "provider", "provider_mode", "provider_contract_version", "profession_id", "reported_item_count", "entries", "entity_locations"}
                 or source["coverage"] != "first_reported_fixed_recipe_reagents" or source["provider"] != "questiedb"
                 or source["provider_mode"] not in ("source", "baked")
                 or not reference_uint(source["provider_contract_version"], 1) or not reference_uint(source["profession_id"], 1)
@@ -229,6 +230,45 @@ def validate_snapshot(value):
                         or len(ref["entries"]) != min(8, ref["distinct_id_count"])
                         or any(not reference_id(k) or v is not True for k, v in ref["entries"].items())):
                     raise ValueError("Invalid reference list")
+        if "entity_locations" in source:
+            cache=source["entity_locations"]
+            if (not isinstance(cache,dict) or set(cache)!={"coordinate_system","reported_npc_count","reported_object_count","npcs","objects"}
+                    or cache["coordinate_system"]!="questiedb_area_percent"):
+                raise ValueError("Invalid reference location coverage")
+            for kind,count_field,categories in [("npcs","reported_npc_count",["npc_drops","vendors"]),
+                    ("objects","reported_object_count",["object_drops"])]:
+                ids={int(id) for row in source["entries"].values() if row["status"]=="reported"
+                    for category in categories for id in row.get(category,{}).get("entries",{})}
+                rows=cache[kind]
+                if (not reference_uint(cache[count_field]) or cache[count_field]!=len(ids)
+                        or not isinstance(rows,dict) or set(rows)!={str(id) for id in sorted(ids)[:32]}):
+                    raise ValueError("Invalid retained reference entity coverage")
+                for row in rows.values():
+                    if not isinstance(row,dict):raise ValueError("Invalid entity reference")
+                    if row.get("status")!="reported":
+                        if row not in ({"status":"not_in_provider"},{"status":"unavailable"}):raise ValueError("Invalid entity status")
+                        continue
+                    if set(row)-{"status","spawns"}:raise ValueError("Invalid entity fields")
+                    if "spawns" not in row:continue
+                    spawns=row["spawns"]
+                    if (not isinstance(spawns,dict) or set(spawns)!={"reported_point_count","truncated","entries"}
+                            or not reference_uint(spawns["reported_point_count"],0,4096)
+                            or type(spawns["truncated"]) is not bool or spawns["truncated"]!=(spawns["reported_point_count"]>16)
+                            or not isinstance(spawns["entries"],dict)
+                            or set(spawns["entries"])!={str(i) for i in range(1,min(16,spawns["reported_point_count"])+1)}):
+                        raise ValueError("Invalid reference point coverage")
+                    for point in spawns["entries"].values():
+                        if not isinstance(point,dict) or not reference_uint(point.get("area_id"),1):raise ValueError("Invalid reference area")
+                        if point.get("kind")=="instance_presence":
+                            if set(point)!={"kind","area_id"}:raise ValueError("Invalid instance presence")
+                        elif point.get("kind")=="coordinate":
+                            if (not {"kind","area_id","x_percent","y_percent"}<=set(point)
+                                    or set(point)-{"kind","area_id","x_percent","y_percent","provider_phase_id"}
+                                    or any(type(point[key]) not in (int,float) or not math.isfinite(point[key]) or not 0<=point[key]<=100
+                                        for key in ("x_percent","y_percent"))
+                                    or "provider_phase_id" in point and not reference_uint(point["provider_phase_id"],1)):
+                                raise ValueError("Invalid reference coordinate")
+                        else:raise ValueError("Invalid reference point kind")
     if "profession_recipe_view" in sections:
         view = sections["profession_recipe_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)

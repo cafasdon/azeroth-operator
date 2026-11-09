@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Optional local reagent references can now retain bounded NPC/object spawn
+locations. Reagent chains return only the referenced location records, preserving
+provider area/phase namespaces, unknown data and truncation. No route or movement
+is executed. [Offline evidence](docs/reference-locations-verification-2026-11-09.md).
+
 Loot inspection can compare readable displayed items against an explicit reagent
 or shopping list. It reports coverage and hypothetical remaining needs if those
 items are acquired, without granting owned stock or assuming loot rights.
