@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Offline saved gear evaluation can optimise DPS, DTPS, threat, death fraction,
+healing or time out of mana across supplied encounters. It preserves native
+improvement units, correct increase/decrease direction, shared budgets, selected-
+metric top retention and historical loadout provenance. DPS remains the default.
+Explicit role templates and encounter configuration are still required; full
+healing/tank/class model accuracy and native eligibility remain unqualified.
+[Evidence](../../docs/role-gear-ranking-verification-2026-11-09.md).
+
 Exact positional gear collection includes equipped-source vacancies within the
 requested slot scope, extending the feasible layouts beyond only moves whose
 source is refilled. Selected-replacement budgets, physical-copy constraints and

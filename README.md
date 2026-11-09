@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Multi-encounter and owned-gear evaluation now accept `--rank-by` for DPS,
+damage taken, threat, death fraction, healing and time out of mana. Role scores
+use explicit units and retain weighted/worst-encounter objectives and private
+checkpoints. DPS remains the default. [Evidence](docs/role-gear-ranking-verification-2026-11-09.md).
+
 Positional gear searches now include equipped-item moves that leave an empty
 source slot, when both slots are in the requested search scope. Legacy placement
 keeps its existing exclusions. These are saved offline layouts, not game moves.

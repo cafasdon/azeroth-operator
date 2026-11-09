@@ -1,5 +1,24 @@
 # Forever
 
+The encounter-window, journal-page, saved-journal and unified owned-gear CLIs
+accept `--rank-by dps|dtps|tps|death|hps|oom`. DPS retains percentage gain and
+existing output fields. Other metrics expose `weighted_improvement`,
+`improvement_by_encounter`, `metric_values_by_encounter`, min/max improvement
+and `ranking_score`, with `ranking_score_unit` on the final report. Positive
+scores always mean improvement: TPS/HPS increase, DTPS/OOM decrease, death
+fraction decreases in percentage points. DTPS/TPS/HPS use their rate units;
+OOM uses seconds. Zero baselines are valid for these role scores.
+
+Both weighted and worst-encounter objectives use the selected metric during
+top retention. All supplied encounters must complete before a page contributes.
+Tank objectives require an explicit first-player tank configuration. Tank and
+healing result families use separate checkpoint identities; switching within a
+family can reuse existing results. DPS defaults and guards remain unchanged.
+Templates still require an explicit supported APL and matching captured identity,
+level and professions. Some upstream healer presets are stats-only; this feature
+does not supply or qualify a healing rotation or prove class/model accuracy.
+[Offline evidence](../../docs/role-gear-ranking-verification-2026-11-09.md).
+
 With positional collection/evaluation enabled, gear search can move an equipped
 item to another requested slot and leave its original slot empty. The source
 slot must also be in the requested slot set. Legacy searches retain their prior

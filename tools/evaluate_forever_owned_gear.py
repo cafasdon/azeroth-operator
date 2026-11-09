@@ -11,11 +11,13 @@ from tools import run_forever_saved_journal as simulation
 from tools.merge_forever_gear_windows import MAX_REPORT_BYTES, MAX_TOTAL_BYTES, digest, integer, parse_report, require
 from tools.prepare_forever_gear_window import encoded
 from tools.sync_exports import ordinary
+from tools import role_metrics as roles
 
 
 async def execute(args):
     args = copy(args)
     objective = simulation.ranking_objective(args)
+    metric = roles.rank_by(args)
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.collection_seconds, 1, args.time_budget_seconds)
     for field, maximum in [('max_windows', 1024), ('max_pages', 1000000), ('page_limit', 64),
@@ -106,6 +108,7 @@ async def execute(args):
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
         'ranking_objective':objective,
+        'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'inventory_evidence':inventory_evidence,'inventory_evidence_status':inventory_status,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
@@ -128,7 +131,8 @@ def parser():
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')
     cli.add_argument('--ranking-objective',choices=simulation.RANKING_OBJECTIVES,default='weighted_gain',
-        help='Rank by weighted average gain or the minimum gain across every supplied encounter')
+        help='Rank by weighted average improvement or the minimum improvement across every supplied encounter')
+    cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')

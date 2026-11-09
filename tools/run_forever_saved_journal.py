@@ -12,6 +12,7 @@ from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, r
 from tools.prepare_forever_gear_window import encoded
 from tools.prepare_forever_gear_window import selections_for_review, cleared_for_review
 from tools.merge_forever_gear_windows import retained_equipment
+from tools import role_metrics as roles
 
 RANKING_OBJECTIVES = ('weighted_gain', 'worst_encounter_gain')
 
@@ -60,6 +61,12 @@ def attach_saved_loadouts(path, leaders, source, deadline):
 
 async def execute(args, *, deadline=None):
     objective = ranking_objective(args)
+    metric = roles.rank_by(args)
+    weighted_field = 'weighted_dps_gain_pct' if metric=='dps' else 'weighted_improvement'
+    gain_field = 'gain_pct_by_encounter' if metric=='dps' else 'improvement_by_encounter'
+    value_field = 'mean_dps_by_encounter' if metric=='dps' else 'metric_values_by_encounter'
+    minimum_field = 'minimum_dps_gain_pct' if metric=='dps' else 'minimum_improvement'
+    maximum_field = 'maximum_dps_gain_pct' if metric=='dps' else 'maximum_improvement'
     integer(args.max_pages, 1, 1000000)
     integer(args.top, 1, 20)
     integer(args.page_limit, 1, 64)
@@ -118,6 +125,7 @@ async def execute(args, *, deadline=None):
             if baseline is not None:
                 identity = {key: baseline[key] for key in ['simulator_gear_sha256', 'request_sha256',
                     'iterations', 'seed', 'mean_dps', 'dps_standard_deviation']}
+                if metric != 'dps': identity[roles.FIELDS[metric]] = roles.value(baseline,metric)
                 require(index not in baselines or baselines[index] == identity)
                 baselines[index] = identity
                 require(baseline_gear is None or baseline_gear == baseline['simulator_gear_sha256'])
@@ -135,29 +143,32 @@ async def execute(args, *, deadline=None):
             break
         first = {row['review']: row for row in profiles[0]['result']['results']}
         metrics = [{row['review']: row for row in profile['result']['results']} for profile in profiles]
-        for weighted in comparison['weighted_ranking']['results']:
+        ranking = comparison['weighted_ranking'] if metric=='dps' else comparison['metric_ranking']
+        for weighted in ranking['results']:
             review = weighted['review']
             gear = digest(weighted['simulator_gear_sha256'])
-            score = weighted['weighted_dps_gain_pct']
+            score = weighted[weighted_field]
             require(type(score) in (int, float) and isfinite(score))
             reference = first[review]['references'][0]
-            row = {'simulator_gear_sha256': gear, 'weighted_dps_gain_pct': score,
-                'mean_dps_by_encounter': [rows[review]['mean_dps'] for rows in metrics],
-                'gain_pct_by_encounter': [100 * rows[review]['mean_dps_delta_from_baseline'] / rows[1]['mean_dps'] for rows in metrics],
+            row = {'simulator_gear_sha256': gear, weighted_field: score,
+                value_field: ([rows[review]['mean_dps'] for rows in metrics] if metric=='dps'
+                    else weighted[value_field]),
+                gain_field: ([100 * rows[review]['mean_dps_delta_from_baseline'] / rows[1]['mean_dps'] for rows in metrics]
+                    if metric=='dps' else weighted[gain_field]),
                 'source_window_offset_decimal': selected['selected_window_offsets_decimal'][reference['window_index'] - 1],
                 'source_window_review': reference['review']}
-            require(all(type(gain) in (int,float) and isfinite(gain) for gain in row['gain_pct_by_encounter']))
-            row['minimum_dps_gain_pct'] = min(row['gain_pct_by_encounter'])
-            row['maximum_dps_gain_pct'] = max(row['gain_pct_by_encounter'])
-            row['ranking_score'] = score if objective == 'weighted_gain' else row['minimum_dps_gain_pct']
+            require(all(type(gain) in (int,float) and isfinite(gain) for gain in row[gain_field]))
+            row[minimum_field] = min(row[gain_field])
+            row[maximum_field] = max(row[gain_field])
+            row['ranking_score'] = score if objective == 'weighted_gain' else row[minimum_field]
             if gear in leaders:
                 require(all(leaders[gear][field] == row[field] for field in
-                    ['weighted_dps_gain_pct', 'mean_dps_by_encounter', 'gain_pct_by_encounter']))
+                    [weighted_field,value_field,gain_field]))
             else:
                 leaders[gear] = row
             leaders = dict(sorted(leaders.items(), key=lambda item:
                 (-item[1]['ranking_score'], item[0]) if objective == 'weighted_gain' else
-                (-item[1]['ranking_score'], -item[1]['weighted_dps_gain_pct'], item[0]))[:args.top])
+                (-item[1]['ranking_score'], -item[1][weighted_field], item[0]))[:args.top])
         next_cursor = selected['resume_after_window_offset_decimal']
         if next_cursor is None:
             exhausted = True
@@ -174,7 +185,9 @@ async def execute(args, *, deadline=None):
         'all_saved_resolved_results_complete': complete, 'ranking_scope':
             'all_saved_resolved_requests' if complete else 'completed_pages_only',
         'ranking_objective':objective,
-        'ranking_basis': ('weighted_dps_point_estimates_not_statistical_optimality' if objective == 'weighted_gain'
+        'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
+        'ranking_basis': ('role_metric_point_estimates_not_statistical_optimality' if metric!='dps' else
+            'weighted_dps_point_estimates_not_statistical_optimality' if objective == 'weighted_gain'
             else 'minimum_encounter_dps_gain_point_estimates_not_statistical_optimality'),
         'encounter_weights': weights, 'baseline_simulator_gear_sha256': baseline_gear,
         'ranked_gear_sets': list(leaders.values()), 'top_limit': args.top,
@@ -199,7 +212,8 @@ def main(argv=None):
     cli.add_argument('--max-pages', type=int, default=64)
     cli.add_argument('--top', type=int, default=10)
     cli.add_argument('--ranking-objective',choices=RANKING_OBJECTIVES,default='weighted_gain',
-        help='Rank by weighted average gain or the minimum gain across every supplied encounter')
+        help='Rank by weighted average improvement or the minimum improvement across every supplied encounter')
+    cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)

@@ -1,5 +1,9 @@
 # Changelog
 
+- Propagate all six simulator ranking metrics through encounter, page, journal
+  and unified owned-gear workflows, with role-specific improvement units, zero-
+  baseline handling, weighted/worst objectives and isolated role checkpoints.
+
 - Include in-scope equipped-item moves with empty source slots in positional
   gear searches, preserving selected-replacement budgets, physical-source and
   legality guards, retained exact layouts and legacy defaults.

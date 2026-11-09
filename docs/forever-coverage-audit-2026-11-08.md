@@ -289,3 +289,11 @@ then closes an enumeration omission for explicit positional searches: equipped
 items can move between requested slots without refilling their old slot. Exact
 saved layouts survive preparation and offline simulation. Other feasible-set,
 native/model/ownership and full owned BiS requirements remain open.
+
+[Role-aware gear evaluation](role-gear-ranking-verification-2026-11-09.md)
+removes the upper workflow's forced-DPS restriction, carrying all six existing
+simulator metrics through multi-encounter journal ranking and unified evaluation.
+Native-unit role improvements handle zero baselines and preserve objective/
+checkpoint boundaries. A limited actual offline Warrior baseline qualifies
+metric plumbing; broader healer/tank/class/encounter accuracy and full BiS remain
+open, including upstream healer presets that provide stats without a rotation.

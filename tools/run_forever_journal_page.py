@@ -11,6 +11,7 @@ from tools import journal_forever_gear_windows as journal
 from tools import run_forever_encounter_windows as encounters
 from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, merge_reports, require
 from tools.prepare_forever_gear_window import encoded
+from tools import role_metrics as roles
 
 
 def select_page(path, after, limit, deadline):
@@ -53,6 +54,7 @@ def select_page(path, after, limit, deadline):
 
 
 async def execute(args, *, deadline=None):
+    metric = roles.rank_by(args)
     integer(args.time_budget_seconds, 1, 3600)
     integer(args.max_new_runs, 1, 128)
     integer(args.iteration_budget, 1, 100000)
@@ -83,6 +85,7 @@ async def execute(args, *, deadline=None):
     selected['resume_same_page'] = bool(offsets) and not complete
     selected['prior_pages_verified'] = False
     report = {'mode': 'saved_journal_page_execution', 'journal_page': selected,
+        'rank_by':metric,
         'page_status': 'no_saved_windows_after_cursor' if not offsets else 'complete' if complete else 'incomplete',
         'encounter_comparison': result, 'simulation_performed': result['simulation_performed'] if result else False,
         'global_ranking_verified': False, 'feasible_set_coverage_verified': False,
@@ -101,6 +104,7 @@ def main(argv=None):
     cli.add_argument('--after-window-offset', type=int)
     cli.add_argument('--page-limit', type=int, default=8)
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)

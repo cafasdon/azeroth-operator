@@ -11,6 +11,7 @@ from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, r
 from tools.merge_forever_prepared_windows import FINGERPRINTS
 from tools.prepare_forever_gear_window import encoded
 from tools.rank_forever_slot import weighted_ranking, encounter_sensitivity
+from tools import role_metrics as roles
 
 
 def normalise_weights(weights, count):
@@ -25,6 +26,7 @@ def normalise_weights(weights, count):
 
 
 async def execute(args, *, deadline=None):
+    metric = roles.rank_by(args)
     count = len(args.encounter_lookup)
     require(1 <= count <= 8)
     weights = normalise_weights(args.encounter_weight, count)
@@ -41,13 +43,14 @@ async def execute(args, *, deadline=None):
         if remaining <= 0: break
         options = copy(args)
         options.encounter_lookup = path
-        options.rank_by = 'dps'
+        options.rank_by = metric
         options.time_budget_seconds = args.time_budget_seconds
         options.max_new_runs = max(1, args.max_new_runs - new_runs)
         options.iteration_budget = max(1, args.iteration_budget - new_iterations)
         options.checkpoint_only = (getattr(args, 'checkpoint_only', False)
             or new_runs >= args.max_new_runs or new_iterations >= args.iteration_budget)
         result = await saved.execute(options, deadline=deadline)
+        if metric != 'dps': require(result['ranked_by'] == ('simulated_deaths' if metric=='death' else roles.FIELDS[metric]))
         require(set(result['fingerprints']) == set(FINGERPRINTS))
         current = {'engine': digest(result['engine_sha256']), 'profile': digest(result['simulation_profile_sha256']),
             'fingerprints': {key: digest(value) for key, value in result['fingerprints'].items() if key != 'encounter_sha256'},
@@ -73,13 +76,17 @@ async def execute(args, *, deadline=None):
         results.append(result)
     require(monotonic() <= deadline + 5)
     complete = len(profiles) == count and all(result['requested_results_complete'] is True for result in results)
-    weighted = sensitivity = None
+    weighted = sensitivity = metric_ranking = None
     status = 'incomplete'
     if complete:
         expected = set(range(1, identities['count'] + 1))
         require(all({row['review'] for row in result['results']} == expected for result in results))
-        sensitivity = encounter_sensitivity(results, identities['count'])
-        if all(next(row['mean_dps'] for row in result['results'] if row['review'] == 1) > 0 for result in results):
+        if metric == 'dps': sensitivity = encounter_sensitivity(results, identities['count'])
+        if metric != 'dps':
+            metric_ranking = roles.weighted_ranking(results, weights, metric)
+            for row in metric_ranking['results']: row['simulator_gear_sha256'] = gear[row['review']]
+            status = 'complete_for_selected_resolved_requests'
+        elif all(next(row['mean_dps'] for row in result['results'] if row['review'] == 1) > 0 for result in results):
             weighted = weighted_ranking(results, weights)
             require(all(isfinite(row['weighted_dps_gain_pct']) for row in weighted['results']))
             for row in weighted['results']: row['simulator_gear_sha256'] = gear[row['review']]
@@ -87,6 +94,7 @@ async def execute(args, *, deadline=None):
         else:
             status = 'nonpositive_baseline'
     report = {'mode': 'saved_window_encounter_comparison', 'encounter_weights': weights,
+        'rank_by':metric,'metric_ranking':metric_ranking,
         'requested_encounter_count': count, 'visited_encounter_count': len(profiles),
         'unvisited_encounters': list(range(len(profiles) + 1, count + 1)),
         'completed_encounter_count': sum(result['requested_results_complete'] is True for result in results),
@@ -108,6 +116,7 @@ def main(argv=None):
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--window-offset', type=int, action='append', required=True)
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)
