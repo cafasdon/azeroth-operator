@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+Recipe discovery can use a newer same-character inventory capture with
+`search_forever_recipes.inventory_snapshot_id` and `material_filter`. Recipes and
+skill-up flags stay tied to the original recipe capture; stock and missing bank
+coverage come only from the explicit inventory capture.
+[Offline evidence](docs/recipe-search-inventory-verification-2026-11-09.md).
+
 Local character analysis and player-operated configuration tools for World of Warcraft.
 
 ## Client subdivisions

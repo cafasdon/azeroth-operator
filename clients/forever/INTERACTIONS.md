@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Recipe material discovery can combine original saved schematics/recipe-view
+flags with a no-older same-character exact-client/build inventory capture.
+`inventory_snapshot_id` requires `material_filter`; stock coverage comes solely
+from that inventory snapshot, with explicit timestamps and no old-bank fallback.
+This extends discovery without refreshing or inventing recipe knowledge.
+[Evidence](../../docs/recipe-search-inventory-verification-2026-11-09.md).
+
 Saved-journal and unified gear evaluation can rank by weighted average DPS gain
 or `worst_encounter_gain`, which maximises the minimum observed gain across all
 supplied encounters. The selected objective drives bounded top retention across

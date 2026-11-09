@@ -255,6 +255,32 @@ pub fn search_recipe_materials_with_observations(
     material_filter: Option<&RecipeMaterialFilter>,
     recipe_view_filter: Option<&RecipeViewFilter>,
 ) -> Result<Value> {
+    search_recipe_materials_with_inventory(
+        snapshot,
+        recipe_id,
+        output_item_id,
+        reagent_item_id,
+        status,
+        offset,
+        limit,
+        material_filter,
+        recipe_view_filter,
+        None,
+    )
+}
+
+pub fn search_recipe_materials_with_inventory(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+    material_filter: Option<&RecipeMaterialFilter>,
+    recipe_view_filter: Option<&RecipeViewFilter>,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
@@ -263,6 +289,13 @@ pub fn search_recipe_materials_with_observations(
         (1..=50).contains(&limit),
         "Recipe search page size out of range"
     );
+    if let Some(inventory) = inventory {
+        ensure!(
+            material_filter.is_some(),
+            "Inventory capture requires material filtering"
+        );
+        ensure_comparable(snapshot, inventory)?;
+    }
     let section = snapshot.sections.get("profession_recipe_materials");
     let rows = section.and_then(|value| value["entries"].as_object());
     if let Some(filter) = recipe_view_filter {
@@ -281,7 +314,9 @@ pub fn search_recipe_materials_with_observations(
     let mut view_unknown = 0;
     let mut view_nonmatching = 0;
     let stock = material_filter
-        .map(|filter| RecipeMaterialStock::from_snapshot(snapshot, filter.scope))
+        .map(|filter| {
+            RecipeMaterialStock::from_snapshot(inventory.unwrap_or(snapshot), filter.scope)
+        })
         .transpose()?;
     let mut unknown = 0;
     let mut insufficient = 0;
@@ -366,6 +401,10 @@ pub fn search_recipe_materials_with_observations(
         "records":records,"next_offset":next,
         "filters":{"recipe_id":recipe_id,"output_item_id":output_item_id,"reagent_item_id":reagent_item_id,"status":status},
         "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false});
+    if let Some(inventory) = inventory {
+        result["recipe_captured_at"] = json!(snapshot.captured_at);
+        result["inventory_captured_at"] = json!(inventory.captured_at);
+    }
     if let Some(filter) = material_filter {
         let stock = stock.as_ref().unwrap();
         result["filters"]["material_filter"] = json!(filter);

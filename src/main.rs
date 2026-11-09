@@ -593,6 +593,8 @@ struct RecipeBatchEntry {
 #[serde(deny_unknown_fields)]
 struct RecipeSearch {
     snapshot_id: String,
+    /// Optional same-character exact-client/build capture, no older than the recipe; requires material_filter.
+    inventory_snapshot_id: Option<String>,
     recipe_id: Option<std::num::NonZeroU32>,
     output_item_id: Option<std::num::NonZeroU32>,
     reagent_item_id: Option<std::num::NonZeroU32>,
@@ -1064,7 +1066,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Search owner-local captured Forever recipes by exact IDs/status, fixed material support, and/or matching captured profession recipe-view learned/skill-up flags. Observations do not verify learning, skill gains or craftability. Numeric paging up to 50 rows; unknowns stay unknown. No external lookup or game action.",
+        description = "Search owner-local captured Forever recipes by exact IDs/status, fixed material support, and/or matching captured profession recipe-view learned/skill-up flags. Material filtering can use an explicit no-older same-character exact-client/build inventory snapshot; recipe flags stay with the recipe capture. Observations do not verify learning, skill gains or craftability. Numeric paging up to 50 rows; unknowns stay unknown. No external lookup or game action.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1073,8 +1075,17 @@ impl Operator {
     )]
     fn search_forever_recipes(&self, Parameters(args): Parameters<RecipeSearch>) -> CallToolResult {
         let result = (|| {
+            anyhow::ensure!(
+                args.inventory_snapshot_id.is_none() || args.material_filter.is_some(),
+                "Inventory capture requires material filtering"
+            );
             let snapshot = self.store.read(&args.snapshot_id)?;
-            let mut found = azeroth_operator::analysis::search_recipe_materials_with_observations(
+            let inventory = args
+                .inventory_snapshot_id
+                .as_deref()
+                .map(|id| self.store.read(id))
+                .transpose()?;
+            let mut found = azeroth_operator::analysis::search_recipe_materials_with_inventory(
                 &snapshot,
                 args.recipe_id,
                 args.output_item_id,
@@ -1084,14 +1095,18 @@ impl Operator {
                 args.limit.unwrap_or(20),
                 args.material_filter.as_ref(),
                 args.recipe_view_filter.as_ref(),
+                inventory.as_ref(),
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            if let Some(id) = args.inventory_snapshot_id {
+                found["inventory_snapshot_id"] = serde_json::json!(id);
+            }
             Ok::<_, anyhow::Error>(found)
         })();
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe search requires an owned valid Forever snapshot, exact positive IDs and a page size from 1 to 50.",
+                "Recipe search requires owned valid Forever snapshots, exact positive IDs and a page size from 1 to 50. An inventory snapshot requires material filtering and the same character/client/build with no older capture time.",
             )]),
         }
     }

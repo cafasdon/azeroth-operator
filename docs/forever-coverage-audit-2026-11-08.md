@@ -271,3 +271,9 @@ alongside the existing weighted-average default. It uses the same completed
 numeric simulations, retaining partial-scope and point-estimate limitations.
 This improves encounter-sensitive recommendations without claiming full owned
 or statistical optimality.
+
+[Recipe inventory refresh](recipe-search-inventory-verification-2026-11-09.md)
+then extends fixed-material discovery to an explicit newer compatible inventory
+capture. Recipe/view evidence retains its original provenance and missing bank
+data is never backfilled from the older recipe capture. Actual current learning,
+craftability, full profession coverage and native qualification remain open.

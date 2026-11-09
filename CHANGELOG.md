@@ -1,5 +1,9 @@
 # Changelog
 
+- Allow recipe material searches to use an explicit no-older same-character
+  inventory capture, preserving original recipe/skill-up evidence and exposing
+  separate provenance without merging missing banks from old observations.
+
 - Add worst-encounter DPS-gain ranking to saved-journal and unified owned-gear
   evaluation, retaining weighted average as default and reusing simulation
   checkpoints when changing objectives. Expose per-loadout gain range and score.

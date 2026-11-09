@@ -1,5 +1,15 @@
 # Forever
 
+`search_forever_recipes` accepts `inventory_snapshot_id` when a `material_filter`
+is supplied. It checks fixed-reagent support against that explicit capture,
+requiring the same character name/realm, exact client/build and a timestamp no
+older than the recipe snapshot. Recipe rows, learning/skill-up flags and their
+coverage still come from `snapshot_id`. Missing storage in the inventory capture
+stays unavailable; old bank quantities are never filled in. Opt-in results include
+both capture timestamps and the inventory ID. Omission/null retains prior search
+behaviour. This does not verify current craftability or learning.
+[Offline evidence](../../docs/recipe-search-inventory-verification-2026-11-09.md).
+
 Owns Forever addon code, API adaptation, capability inventory and runtime qualification.
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
