@@ -44,7 +44,8 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                     stacks = sample()
                     stacks['sections'].pop('bag_item_cooldowns')
                     stacks['sections']['bags'] = {'0': {
-                        '10': {'item_id':1,'count':3,'link':'PRIVATE_LINK','guid':'Item-Private'},
+                        '10': {'item_id':1,'count':3,'link':'PRIVATE_LINK','guid':'Item-Private',
+                               'reported_stack_limit':20},
                         '2': {'item_id':1,'count':7,'link':'PRIVATE_LINK'},
                         '1': {'item_id':1,'count':1,'link':'OTHER_LINK'},
                         '3': {'item_id':1,'count':1},
@@ -55,6 +56,16 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn('PRIVATE',reply.content[0].text)
                     report = json.loads(reply.content[0].text)
                     self.assertEqual(report['locations'],[])
+                    lookup=await session.call_tool('find_snapshot_item',{
+                        'snapshot_id':store.ingest(stacks),'item_id':1})
+                    self.assertFalse(lookup.isError,lookup)
+                    self.assertNotIn('PRIVATE',lookup.content[0].text)
+                    self.assertEqual([row['reported_stack_limit'] for row in
+                        json.loads(lookup.content[0].text)['locations'] if 'reported_stack_limit' in row],[20])
+                    for invalid in [None,True,0,2,2**32]:
+                        malformed=deepcopy(stacks)
+                        malformed['sections']['bags']['0']['10']['reported_stack_limit']=invalid
+                        with self.assertRaises(ValueError): store.ingest(malformed)
                     self.assertEqual(report['bag_stack_groups'], {
                         'group_count':1,'groups_truncated':False,'locations_without_link':1,
                         'stack_compatibility_verified':False,'game_execution':False,

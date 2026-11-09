@@ -140,7 +140,7 @@ def _inventory_index(key, minimum, maximum):
 
 
 def _validate_inventory_item_identity(item):
-    allowed={'item_id','link','count','guid','required_level','sell_price_copper','equip_location','native_stats'}
+    allowed={'item_id','link','count','guid','required_level','sell_price_copper','reported_stack_limit','equip_location','native_stats'}
     if (not isinstance(item,dict) or set(item)-allowed or type(item.get('item_id')) is not int
             or not 1 <= item['item_id'] <= 4_294_967_295):
         raise ValueError('Invalid inventory item fields or identity')
@@ -278,6 +278,11 @@ def validate_snapshot(value):
                     if (type(item["sell_price_copper"]) is not int or not 0<=item["sell_price_copper"]<=9_999_999_999_999
                             or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):
                         raise ValueError("Invalid linked item sell price")
+                if "reported_stack_limit" in item:
+                    limit=item["reported_stack_limit"]
+                    if (storage=='equipment' or type(limit) is not int or not count<=limit<=4_294_967_295
+                            or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):
+                        raise ValueError("Invalid linked item stack limit")
                 if isinstance(item,dict) and "equip_location" in item:
                     location=item["equip_location"]
                     if (not isinstance(location,str) or len(location)>64

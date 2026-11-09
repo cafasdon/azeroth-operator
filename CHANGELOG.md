@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture reported Forever stack limits for saved item locations.
+
 - Scope saved stack consolidation estimates to a specific bag or bank tab.
 
 - Find saved crafting supplies or shortfalls within a specific bag or bank tab.

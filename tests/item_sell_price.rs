@@ -36,7 +36,11 @@ fn native_sell_prices_are_optional_stable_and_link_bound() -> Result<(), Box<dyn
                 if mode=='changed' and reads%3==2 then price=101 end
                 if mode=='second_secret' and reads%3==2 then price='PRIVATE' end
                 if mode=='second_error' and reads%3==2 then error('PRIVATE') end
-                return 'PRIVATE','PRIVATE','PRIVATE','PRIVATE',nil,'PRIVATE','PRIVATE','PRIVATE','PRIVATE','PRIVATE',price
+                local limit=20
+                if mode=='small_stack_limit' then limit=2 end
+                if mode=='changing_stack_limit' and reads%3==2 then limit=21 end
+                if mode=='secret_stack_limit' then limit='PRIVATE' end
+                return 'PRIVATE','PRIVATE','PRIVATE','PRIVATE',nil,'PRIVATE','PRIVATE',limit,'PRIVATE','PRIVATE',price
             end,RequestLoadItemDataByID=function() error('load forbidden') end,
             SellItem=function() error('sale forbidden') end}
     "#).exec()?;
@@ -64,11 +68,31 @@ fn native_sell_prices_are_optional_stable_and_link_bound() -> Result<(), Box<dyn
             price
         );
         assert_eq!(saved.sections["bags"]["0"]["1"]["sell_price_copper"], price);
+        assert_eq!(saved.sections["bags"]["0"]["1"]["reported_stack_limit"], 20);
+        assert!(
+            saved.sections["equipment"]["16"]
+                .get("reported_stack_limit")
+                .is_none()
+        );
         assert_eq!(
             azeroth_operator::analysis::summary(&saved)["captured_vendor_price_values"]["bags"]["observed_total_copper"],
             price * 3
         );
         assert!(!serde_json::to_string(&saved)?.contains("PRIVATE"));
+    }
+    for mode in [
+        "small_stack_limit",
+        "changing_stack_limit",
+        "secret_stack_limit",
+    ] {
+        let saved = capture(mode)?;
+        assert!(
+            saved.sections["bags"]["0"]["1"]
+                .get("reported_stack_limit")
+                .is_none(),
+            "{mode}"
+        );
+        assert_eq!(saved.sections["bags"]["0"]["1"]["sell_price_copper"], 100);
     }
     for mode in [
         "no_link",

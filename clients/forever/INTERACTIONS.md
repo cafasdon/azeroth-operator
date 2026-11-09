@@ -3201,3 +3201,11 @@ With `find_snapshot_item.bag_stack_groups` enabled, set
 container. `stack_group_storage` selects bags or a bank. Only the stack
 review is scoped. Item locations and storage totals still cover the full
 capture. An uncaptured container returns a null review.
+
+New Forever captures may include `reported_stack_limit` on an item
+location. The addon records it when two readable item-info calls agree
+for the observed link and the value covers the recorded stack count.
+`find_snapshot_item` returns this evidence with the matching location.
+The stack consolidation projection still uses the caller's explicit limit.
+Update the importer and reader before syncing captures with this field.
+[Forever item API documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ItemDocumentation.lua)

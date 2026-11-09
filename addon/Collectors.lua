@@ -836,7 +836,7 @@ local function itemEquipLocation(item)
     return item
 end
 
-local function itemSellPrice(item)
+local function itemPriceAndStackLimit(item)
     if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
     local function readable(value) return not issecretvalue or not issecretvalue(value) end
     local link=item.link
@@ -844,13 +844,22 @@ local function itemSellPrice(item)
     local function read()
         local id=C_Item.GetItemInfoInstant(link)
         if not readable(id) or id~=item.item_id then return end
-        local _,_,_,_,_,_,_,_,_,_,price=C_Item.GetItemInfo(link)
-        if readable(price) and type(price)=="number" and price%1==0 and price>=0 and price<=9999999999999 then return price end
+        local _,_,_,_,_,_,_,limit,_,_,price=C_Item.GetItemInfo(link)
+        if not (readable(price) and type(price)=="number" and price%1==0
+            and price>=0 and price<=9999999999999) then price=nil end
+        local count=item.count
+        if not (readable(count) and type(count)=="number" and count%1==0 and count>=1
+            and readable(limit) and type(limit)=="number" and limit%1==0
+            and limit>=count and limit<=4294967295) then limit=nil end
+        return price,limit
     end
-    local ok,first=pcall(read)
-    if ok and first~=nil then
-        local nextOk,second=pcall(read)
-        if nextOk and first==second then item.sell_price_copper=first end
+    local ok,price,limit=pcall(read)
+    if ok and (price~=nil or limit~=nil) then
+        local nextOk,nextPrice,nextLimit=pcall(read)
+        if nextOk then
+            if price==nextPrice then item.sell_price_copper=price end
+            if limit==nextLimit then item.reported_stack_limit=limit end
+        end
     end
     return item
 end
@@ -858,7 +867,7 @@ end
 local function itemRequiredLevel(item)
     item=itemEquipLocation(item)
     item=itemNativeStats(item)
-    item=itemSellPrice(item)
+    item=itemPriceAndStackLimit(item)
     if AO.family~="forever" or not (C_Item and C_Item.GetItemInfo and C_Item.GetItemInfoInstant) then return item end
     local function readable(value) return not issecretvalue or not issecretvalue(value) end
     local link=item.link

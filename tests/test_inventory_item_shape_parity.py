@@ -68,6 +68,16 @@ class InventoryItemShapeParityTests(unittest.IsolatedAsyncioTestCase):
                 value=deepcopy(base)
                 target=value['sections'][storage] if storage=='equipment' else next(iter(value['sections'][storage].values()))
                 target[native_slot].update(fields); cases.append((value,True))
+            for link,limit,valid in [
+                    ('item:100:0',1,storage!='equipment'),
+                    ('item:100:0',4294967295,storage!='equipment'),
+                    ('item:100:0',None,False), ('item:100:0',True,False),
+                    ('item:100:0',0,False), ('item:100:0',4294967296,False),
+                    (None,20,False), ('',20,False)]:
+                value=deepcopy(base)
+                target=value['sections'][storage] if storage=='equipment' else next(iter(value['sections'][storage].values()))
+                target[native_slot].update(link=link,reported_stack_limit=limit)
+                cases.append((value,valid))
             if storage!='equipment':
                 container=next(iter(base['sections'][storage]))
                 for bad in ['-1','00','+1','65','١']:

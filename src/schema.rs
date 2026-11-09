@@ -13,6 +13,7 @@ struct Item<'a> {
     guid: Option<&'a str>,
     required_level: Option<u32>,
     sell_price_copper: Option<u64>,
+    reported_stack_limit: Option<u32>,
     equip_location: Option<&'a str>,
     native_stats: Option<std::collections::BTreeMap<String, f64>>,
 }
@@ -33,6 +34,17 @@ fn items(value: &Value, equipment: bool) -> Result<()> {
     for (slot, value) in slots {
         index(slot, 1, if equipment { 19 } else { 1024 })?;
         let item = Item::deserialize(value)?;
+        if value.get("reported_stack_limit").is_some() {
+            ensure!(
+                !equipment
+                    && item.link.is_some_and(|link| !link.is_empty())
+                    && item
+                        .reported_stack_limit
+                        .zip(item.count)
+                        .is_some_and(|(limit, count)| count > 0 && limit >= count),
+                "Invalid linked item stack limit"
+            );
+        }
         if value.get("sell_price_copper").is_some() {
             ensure!(
                 item.link.is_some_and(|link| !link.is_empty())

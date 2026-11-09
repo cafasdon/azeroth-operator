@@ -2535,6 +2535,9 @@ pub fn find_item_with_container_quantities(
                     let mut location = json!({
                         "storage":storage,"container":container,"slot":slot,"count":count
                     });
+                    if let Some(limit) = item.get("reported_stack_limit") {
+                        location["reported_stack_limit"] = limit.clone();
+                    }
                     if let Some(row) = cooldown {
                         location["captured_cooldown"] = row.clone();
                     }
