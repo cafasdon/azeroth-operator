@@ -1006,6 +1006,9 @@ struct FindItem {
     limit: Option<usize>,
     /// Up to seven additional snapshot IDs with the exact same client/build.
     additional_snapshot_ids: Option<Vec<String>>,
+    /// Include exact item quantities by recorded bag or bank container, before paging.
+    #[serde(default)]
+    include_container_quantities: bool,
     /// Review carried stacks with identical saved item links, without generating operations.
     #[serde(default)]
     bag_stack_groups: bool,
@@ -1466,11 +1469,12 @@ impl Operator {
                 "Stack review options require bag stack groups"
             );
             let query = |id: &str, snapshot: &azeroth_operator::Snapshot| {
-                let mut found = azeroth_operator::analysis::find_item(
+                let mut found = azeroth_operator::analysis::find_item_with_container_quantities(
                     snapshot,
                     args.item_id.get(),
                     args.offset.unwrap_or(0),
                     args.limit.unwrap_or(20),
+                    args.include_container_quantities,
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
                 if args.bag_stack_groups {

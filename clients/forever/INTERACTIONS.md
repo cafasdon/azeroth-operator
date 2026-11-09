@@ -3171,3 +3171,9 @@ Use `review_forever_owned_gear.container_id` to limit results to a recorded bag
 or bank container before paging. It can be combined with `storage` and item
 filters. The coverage counts still describe the full capture, so a missing
 container can be distinguished from a recorded container with no item rows.
+
+Set `find_snapshot_item.include_container_quantities` to sum the requested
+item's recorded quantities by bag and bank container before paging, without
+a catalogue. Each snapshot reports its own totals. A missing storage section
+returns null, a recorded section with no container rows returns an empty
+map, and a recorded container with no copies returns zero.

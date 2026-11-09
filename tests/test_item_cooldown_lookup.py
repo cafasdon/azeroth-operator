@@ -22,18 +22,20 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             value['sections']['equipment']={'11':{'item_id':100}}
             value['sections']['bags']={'0':{str(slot):{'item_id':100,'count':slot} for slot in [1,2,3]},
-                '1':{'1':{'item_id':101,'count':99}}}
+                '1':{'1':{'item_id':101,'count':99}}, '2':{}}
             value['sections']['character_bank']={'6':{'1':{'item_id':100,'count':20}}}
             value['sections']['bag_item_cooldowns']={'coverage':'captured_carried_items_only','captured_item_locations':4,
                 'entries':{'0':{
                     '1':{'item_id':100,'status':'reported','enabled':True,'remaining_seconds':0},
                     '2':{'item_id':100,'status':'reported','enabled':False,'remaining_seconds':50},
                     '3':{'item_id':100,'status':'unavailable'}},
-                    '1':{'1':{'item_id':101,'status':'reported','enabled':False,'remaining_seconds':100}}}}
+                    '1':{'1':{'item_id':101,'status':'reported','enabled':False,'remaining_seconds':100}},
+                    '2':{}}}
             key=store.ingest(value)
             legacy=deepcopy(value); del legacy['sections']['bag_item_cooldowns']; legacy_key=store.ingest(legacy)
             alt=deepcopy(value); alt['character']['name']='Another'; alt['captured_at']='2025-01-02T00:00:00Z'
             alt['sections']['bag_item_cooldowns']['entries']['0']['1']['remaining_seconds']=7
+            alt['sections']['account_bank']={}
             alt_key=store.ingest(alt)
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -46,6 +48,7 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         return json.loads(reply.content[0].text)
                     result=await find()
                     self.assertEqual(result['matched_locations'],5)
+                    self.assertNotIn('quantity_by_container',result)
                     self.assertEqual(result['quantity_by_storage'],{'equipment':1,'bags':6,'character_bank':20,'account_bank':None})
                     counts=result['bag_cooldown_observation']
                     self.assertEqual(counts,{'basis':'same_snapshot_exact_bag_slot_item',
@@ -71,8 +74,15 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     del expected['bag_cooldown_observation']
                     for row in expected['locations']: row.pop('captured_cooldown',None)
                     self.assertEqual(legacy_result,expected)
-                    combined=await find(additional_snapshot_ids=[alt_key,legacy_key])
+                    container_quantities={'bags':{'0':6,'1':0,'2':0},'character_bank':{'6':20},'account_bank':None}
+                    beyond=await find(include_container_quantities=True,offset=99,limit=1)
+                    self.assertEqual(beyond['locations'],[])
+                    self.assertEqual(beyond['quantity_by_container'],container_quantities)
+                    combined=await find(additional_snapshot_ids=[alt_key,legacy_key],include_container_quantities=True)
                     other,old=combined['additional_snapshot_results']
+                    self.assertEqual(combined['quantity_by_container'],container_quantities)
+                    self.assertEqual(old['quantity_by_container'],container_quantities)
+                    self.assertEqual(other['quantity_by_container'],{**container_quantities,'account_bank':{}})
                     self.assertEqual(other['captured_at'],alt['captured_at'])
                     self.assertEqual(next(row for row in other['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],7)
                     self.assertEqual(next(row for row in combined['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],0)

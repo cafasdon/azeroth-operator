@@ -2473,6 +2473,16 @@ mod bag_cooldown_filter_tests {
 }
 
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
+    find_item_with_container_quantities(snapshot, item_id, offset, limit, false)
+}
+
+pub fn find_item_with_container_quantities(
+    snapshot: &Snapshot,
+    item_id: u32,
+    offset: usize,
+    limit: usize,
+    include_container_quantities: bool,
+) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),
         "Invalid item query"
@@ -2480,6 +2490,7 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
     let mut locations = Vec::new();
     let mut matched_locations = 0usize;
     let mut quantities = BTreeMap::new();
+    let mut container_quantities = BTreeMap::new();
     let cooldowns = snapshot.sections.get("bag_item_cooldowns");
     let (mut reported, mut unavailable, mut disabled, mut positive_timer) =
         (0usize, 0usize, 0usize, 0usize);
@@ -2489,9 +2500,13 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
         }
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             quantities.insert(storage, None);
+            if include_container_quantities && storage != "equipment" {
+                container_quantities.insert(storage, None);
+            }
             continue;
         };
         let mut quantity = 0;
+        let mut container_totals = BTreeMap::new();
         let mut record = |container: Option<&str>, slot: &str, item: &Value, count: u64| {
             if item["item_id"].as_u64() == Some(u64::from(item_id)) {
                 quantity += count;
@@ -2526,18 +2541,27 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
                     locations.push(location);
                 }
                 matched_locations += 1;
+                return count;
             }
+            0
         };
         for (key, item) in section {
             if storage == "equipment" {
                 record(None, key, item, 1);
             } else if let Some(slots) = item.as_object() {
+                let mut container_total = 0;
                 for (slot, observed) in slots {
                     if let Some(count) = observed["count"].as_u64() {
-                        record(Some(key), slot, observed, count);
+                        container_total += record(Some(key), slot, observed, count);
                     }
                 }
+                if include_container_quantities {
+                    container_totals.insert(key, container_total);
+                }
             }
+        }
+        if include_container_quantities && storage != "equipment" {
+            container_quantities.insert(storage, Some(container_totals));
         }
         quantities.insert(storage, Some(quantity));
     }
@@ -2546,6 +2570,9 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
         "locations":locations,"matched_locations":matched_locations,
         "quantity_by_storage":quantities,"has_more":matched_locations.saturating_sub(offset)>limit
     });
+    if include_container_quantities {
+        result["quantity_by_container"] = json!(container_quantities);
+    }
     if cooldowns.is_some() {
         result["bag_cooldown_observation"] = json!({"basis":"same_snapshot_exact_bag_slot_item",
             "scope":"matching_bag_locations_before_pagination","reported_item_locations":reported,

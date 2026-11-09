@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved bag and bank quantities by container in catalogue-free item searches.
+
 - Filter saved Forever owned gear by a specific bag or bank container.
 
 - Report occupied slots by observed container in saved Forever owned-gear reviews.
