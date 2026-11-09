@@ -209,6 +209,21 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(bag_quote['copper_only_bundle_mix_affordable'],True)
                     self.assertIs(bag_quote['purchase_eligibility_verified'],False)
                     self.assertEqual(bag_quote['reagents'],residual['reagents'])
+                    reserve_field = 'copper_only_bundle_mix_after_reserve'
+                    self.assertNotIn(reserve_field,bag_quote)
+                    for reserve, spendable, gap, shortfall, affordable in [
+                        (0,7,0,0,True),(5,2,0,0,True),(6,1,0,1,False),(8,0,1,2,False),
+                    ]:
+                        reserved = (await query(**restock,bag_restock_wallet_reserve_copper=reserve))[
+                            'bag_restock_merchant_quote']
+                        self.assertEqual(reserved.pop(reserve_field), {
+                            'wallet_reserve_copper':reserve,'spendable_copper':spendable,
+                            'reserve_shortfall_copper':gap,'known_shortfall_copper':shortfall,
+                            'affordable':affordable})
+                        self.assertEqual(reserved,bag_quote)
+                    await query(error=True,**restock,bag_restock_wallet_reserve_copper=10**13)
+                    await query(error=True,section='bags',bag_restock_requirements=requirements['items'],
+                                bag_restock_wallet_reserve_copper=0)
                     self.assertIsNone((await query(**{**restock,'snapshot_id':missing}))[
                         'bag_restock_merchant_quote'])
                     self.assertIsNone((await query(**{**restock,'bag_restock_merchant_snapshot_id':key}))[

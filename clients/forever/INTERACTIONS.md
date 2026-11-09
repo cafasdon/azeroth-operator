@@ -2985,3 +2985,8 @@ Set `bag_restock_merchant_snapshot_id` to a saved visit for the same
 character and exact client to quote quantities still short after observed
 bank withdrawals. Affordability uses the inventory capture's wallet. Missing
 bags or merchant stock leave the quote unknown. Purchases remain with the player.
+
+Add `bag_restock_wallet_reserve_copper` to the merchant quote to check its
+copper-only bundle cost against the inventory wallet after setting copper
+aside. The result can identify a known shortfall from partial prices. A
+positive affordability result requires a complete quote and observed wallet.

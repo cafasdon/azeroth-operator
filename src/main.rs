@@ -172,6 +172,9 @@ struct Inspect {
     bag_restock_location_offset: Option<usize>,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
+    /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
+    #[schemars(range(max = 9999999999999_u64))]
+    bag_restock_wallet_reserve_copper: Option<u64>,
     /// Use this compatible same-time or newer capture for quest inventory and wallet observations.
     quest_inventory_snapshot_id: Option<String>,
     /// Quote quest inventory shortfalls using this saved same-character merchant visit.
@@ -2802,6 +2805,16 @@ impl Operator {
                 "Currency reward comparison requires a currency ID",
             )]);
         }
+        if args
+            .bag_restock_wallet_reserve_copper
+            .is_some_and(|reserve| {
+                reserve > 9_999_999_999_999 || args.bag_restock_merchant_snapshot_id.is_none()
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A restocking wallet reserve requires a saved merchant quote and a valid copper amount",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -3059,6 +3072,38 @@ impl Operator {
                             quote["inventory_captured_at"] =
                                 serde_json::json!(snapshot.captured_at);
                             quote["purchase_eligibility_verified"] = serde_json::json!(false);
+                        }
+                        if let Some(reserve) = args.bag_restock_wallet_reserve_copper
+                            && quote.is_object()
+                        {
+                            let wallet = snapshot
+                                .sections
+                                .get("wallet")
+                                .and_then(|row| row["copper"].as_u64());
+                            let spendable = wallet.map(|balance| balance.saturating_sub(reserve));
+                            let reserve_shortfall =
+                                wallet.map(|balance| reserve.saturating_sub(balance));
+                            let known_shortfall = quote["copper_only_bundle_mix_quoted_subtotal"]
+                                .as_u64()
+                                .zip(spendable)
+                                .map(|(cost, balance)| cost.saturating_sub(balance));
+                            let affordable = if reserve_shortfall.is_some_and(|gap| gap > 0)
+                                || known_shortfall.is_some_and(|gap| gap > 0)
+                            {
+                                Some(false)
+                            } else {
+                                quote["copper_only_bundle_mix_total"]
+                                    .as_u64()
+                                    .zip(spendable)
+                                    .map(|(cost, balance)| cost <= balance)
+                            };
+                            quote["copper_only_bundle_mix_after_reserve"] = serde_json::json!({
+                                "wallet_reserve_copper":reserve,
+                                "spendable_copper":spendable,
+                                "reserve_shortfall_copper":reserve_shortfall,
+                                "known_shortfall_copper":known_shortfall,
+                                "affordable":affordable,
+                            });
                         }
                         value["bag_restock_merchant_quote"] = quote;
                     }
