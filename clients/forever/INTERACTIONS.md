@@ -11,7 +11,9 @@ lessons reported available at capture.
 Set `trainer_balance_reserve` with the affordability filter to reserve
 copper for general trainers or training points for pet trainers. The reserve
 affects shortlist selection. Budget projections still report against the
-original recorded balance.
+original recorded balance and add an `after_reserve` breakdown when a
+reserve is supplied. This checks whether all retained available lessons
+fit together after the reserve.
 
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes

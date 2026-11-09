@@ -1,5 +1,7 @@
 # Changelog
 
+- Show a separate after-reserve budget in saved Forever trainer projections.
+
 - Reserve copper or pet training points when shortlisting affordable saved Forever trainer lessons.
 
 - Shortlist individually affordable saved Forever trainer lessons using the recorded wallet or pet points.

@@ -309,11 +309,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "snapshot_id":forever_key,"section":"trainer_services",
                                 "trainer_service_name":"potion","trainer_service_status":"available",
                                 "trainer_affordable_only":True,"trainer_balance_reserve":reserve,
+                                "trainer_wallet_projection":True,
                             })
                             self.assertFalse(reserved.isError,reserved)
                             budget=json.loads(reserved.content[0].text)
                             self.assertEqual(budget["trainer_match_count"],expected)
                             self.assertEqual(budget["trainer_balance_reserve"],reserve)
+                            after_reserve=budget["trainer_wallet_projection"]["after_reserve"]
+                            self.assertEqual(after_reserve["reserve_covered"],spendable >= 0)
+                            self.assertEqual(after_reserve["spendable_balance"],spendable if spendable >= 0 else None)
+                            self.assertEqual(after_reserve["retained_lessons_affordable"],spendable >= 0)
                         ordered_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 2], "trainer_wallet_projection": True,

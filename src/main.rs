@@ -2778,6 +2778,31 @@ impl Operator {
                             args.trainer_service_slots.as_deref(),
                         );
                 }
+                if let Some(reserve) = args.trainer_balance_reserve {
+                    let (projection_key, total_key) =
+                        if trainer_balance_field == "price_training_points" {
+                            ("trainer_points_projection", "total_price_points")
+                        } else {
+                            ("trainer_wallet_projection", "total_price_copper")
+                        };
+                    if let Some(projection) = value
+                        .get_mut(projection_key)
+                        .and_then(|report| report.as_object_mut())
+                    {
+                        let total = projection
+                            .get(total_key)
+                            .and_then(serde_json::Value::as_u64);
+                        let budget = total.zip(trainer_spendable);
+                        let reserve_covered = trainer_balance.map(|balance| reserve <= balance);
+                        projection.insert("after_reserve".into(), serde_json::json!({
+                            "reserve_covered":reserve_covered,
+                            "spendable_balance":trainer_spendable,
+                            "retained_lessons_affordable":if reserve_covered == Some(false) { Some(false) }
+                                else { budget.map(|(cost, balance)| cost <= balance) },
+                            "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance))
+                        }));
+                    }
+                }
                 if args.trainer_requirements_review {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
