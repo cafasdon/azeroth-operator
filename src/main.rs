@@ -1119,7 +1119,14 @@ impl Operator {
             .map(|tool| tool.name)
             .collect();
         implemented.sort_unstable();
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-09",
+        let mut section_names = azeroth_operator::SNAPSHOT_SECTIONS.to_vec();
+        section_names.sort_unstable();
+        let mut forever_only = azeroth_operator::FOREVER_ONLY_OBSERVATIONS.to_vec();
+        forever_only.extend(["character_bank", "account_bank"]);
+        forever_only.sort_unstable();
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],
+            "snapshot_section_schema":{"known_names":section_names,"forever_only_names":forever_only},
+            "policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-09",
             "review_scope":"published_source_checks_and_project_controls_only",
             "blizzard_authorization_verified":false,"complete_applicable_terms_review_verified":false,
             "absolute_compliance_guaranteed":false,

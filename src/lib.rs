@@ -31,7 +31,7 @@ use std::{
 };
 
 pub const MAX_BYTES: u64 = 4 * 1024 * 1024;
-const SECTIONS: &[&str] = &[
+pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "equipment",
     "equipment_sets",
     "bags",
@@ -89,6 +89,49 @@ const SECTIONS: &[&str] = &[
     "operation_receipts",
     "binding_state",
     "action_bar_observation",
+];
+
+pub const FOREVER_ONLY_OBSERVATIONS: &[&str] = &[
+    "selected_recipe",
+    "tracked_recipes",
+    "reputation",
+    "currency_balances",
+    "tracked_achievements",
+    "wallet",
+    "experience",
+    "player_resources",
+    "player_auras",
+    "loot_window",
+    "player_trade_offer",
+    "player_pvp_progression",
+    "group_context",
+    "bag_item_cooldowns",
+    "gossip_quests",
+    "gossip_options",
+    "spellbook",
+    "flight_map",
+    "durability_alerts",
+    "equipment_durability",
+    "weapon_enchants",
+    "repair_quote",
+    "merchant_stock",
+    "merchant_buyback",
+    "trainer_services",
+    "pet_care",
+    "pet_action_bar",
+    "mount_collection",
+    "toy_collection_view",
+    "saved_instances",
+    "saved_world_bosses",
+    "profession_recipe_view",
+    "profession_spells",
+    "profession_recipe_materials",
+    "recipe_item_sources",
+    "mail_attachments",
+    "pet_collection_view",
+    "skill_lines",
+    "bag_capacity",
+    "instance_context",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, PartialEq, Eq)]
@@ -216,49 +259,8 @@ impl Snapshot {
                 );
             }
             ensure!(
-                !matches!(
-                    name.as_str(),
-                    "selected_recipe"
-                        | "tracked_recipes"
-                        | "reputation"
-                        | "currency_balances"
-                        | "tracked_achievements"
-                        | "wallet"
-                        | "experience"
-                        | "player_resources"
-                        | "player_auras"
-                        | "loot_window"
-                        | "player_trade_offer"
-                        | "player_pvp_progression"
-                        | "group_context"
-                        | "bag_item_cooldowns"
-                        | "gossip_quests"
-                        | "gossip_options"
-                        | "spellbook"
-                        | "flight_map"
-                        | "durability_alerts"
-                        | "equipment_durability"
-                        | "weapon_enchants"
-                        | "repair_quote"
-                        | "merchant_stock"
-                        | "merchant_buyback"
-                        | "trainer_services"
-                        | "pet_care"
-                        | "pet_action_bar"
-                        | "mount_collection"
-                        | "toy_collection_view"
-                        | "saved_instances"
-                        | "saved_world_bosses"
-                        | "profession_recipe_view"
-                        | "profession_spells"
-                        | "profession_recipe_materials"
-                        | "recipe_item_sources"
-                        | "mail_attachments"
-                        | "pet_collection_view"
-                        | "skill_lines"
-                        | "bag_capacity"
-                        | "instance_context"
-                ) || self.client.family == Family::Forever,
+                !FOREVER_ONLY_OBSERVATIONS.contains(&name.as_str())
+                    || self.client.family == Family::Forever,
                 "Observation requires Forever"
             );
             schema::validate(name, value)?;
@@ -268,7 +270,10 @@ impl Snapshot {
                     "Talent definition observations require Forever"
                 );
             }
-            ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");
+            ensure!(
+                SNAPSHOT_SECTIONS.contains(&name.as_str()),
+                "Unknown section"
+            );
             ensure!(
                 value.is_array() || value.is_object(),
                 "Section must be an array or object"
@@ -298,7 +303,7 @@ impl Snapshot {
         }
         for (name, reason) in &self.unavailable {
             ensure!(
-                SECTIONS.contains(&name.as_str()) && !self.sections.contains_key(name),
+                SNAPSHOT_SECTIONS.contains(&name.as_str()) && !self.sections.contains_key(name),
                 "Invalid unavailable section"
             );
             ensure!(
@@ -1963,10 +1968,10 @@ impl Store {
         {
             ensure!(
                 !sections.is_empty()
-                    && sections.len() <= SECTIONS.len()
+                    && sections.len() <= SNAPSHOT_SECTIONS.len()
                     && sections
                         .iter()
-                        .all(|name| SECTIONS.contains(&name.as_str()))
+                        .all(|name| SNAPSHOT_SECTIONS.contains(&name.as_str()))
                     && sections
                         .iter()
                         .collect::<std::collections::BTreeSet<_>>()
@@ -3641,7 +3646,7 @@ impl Store {
         let mut result = json!({"snapshot_id": id, "client": s.client, "character": s.character,
             "source": s.source, "captured_at": s.captured_at, "age_seconds": (Utc::now()-s.captured_at).num_seconds(), "live": false});
         if let Some(name) = section {
-            ensure!(SECTIONS.contains(&name), "Unknown section");
+            ensure!(SNAPSHOT_SECTIONS.contains(&name), "Unknown section");
             result["available"] = json!(s.sections.contains_key(name));
             result["data"] = s.sections.get(name).cloned().unwrap_or(Value::Null);
             result["unavailable_reason"] = json!(s.unavailable.get(name));

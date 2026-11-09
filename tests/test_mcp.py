@@ -132,6 +132,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(contract["policy"]["generated_game_imports"])
                         self.assertEqual(set(contract["implemented"]), expected)
                         self.assertEqual(contract["live_client_qualified"], [])
+                        sections = contract["snapshot_section_schema"]
+                        self.assertEqual(sections["known_names"], sorted(set(sections["known_names"])))
+                        self.assertTrue(set(sections["forever_only_names"]) <= set(sections["known_names"]))
+                        self.assertTrue({"weapon_enchants", "character_bank", "account_bank"}
+                                        <= set(sections["forever_only_names"]))
+                        self.assertNotIn("equipment", sections["forever_only_names"])
+                        coverage = await session.call_tool("list_snapshots", {
+                            "family": "retail", "required_sections": sections["known_names"]})
+                        self.assertFalse(coverage.isError)
+                        self.assertEqual(json.loads(coverage.content[0].text)["snapshots"], [])
                         before_files={p.name:p.read_bytes() for p in Path(folder).glob("*.json")}
                         for blocked in ("prepare_macro_operation", "prepare_binding_operation",
                                         "prepare_equipment_operation", "prepare_bag_operation",

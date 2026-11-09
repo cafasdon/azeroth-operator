@@ -1,5 +1,7 @@
 # Changelog
 
+- Discover recognised snapshot section names and Forever-only section restrictions through MCP capabilities.
+
 - Find saved captures missing requested sections and distinguish recorded unavailability.
 
 - Find saved captures that contain every requested snapshot section.

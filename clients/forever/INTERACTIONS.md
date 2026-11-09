@@ -10,6 +10,10 @@ Use `any_missing_sections` to find captures missing at least one named
 section. Each matching section is marked `reported_unavailable` or
 `not_recorded`. The list omits reason text. Use snapshot inspection to
 read a recorded reason for a specific section.
+The Rust MCP `capabilities.snapshot_section_schema` lists recognised
+section names and the names whose captured payloads require Forever.
+These are reader rules. Capture availability still depends on the saved
+observation and native verification remains separate.
 
 Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 `off_hand` or `ranged` enchant list. Set an optional exact `enchant_id`,
