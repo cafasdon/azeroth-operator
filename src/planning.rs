@@ -155,6 +155,15 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     Ok(
         json!({"format":"azeroth_operator.equipment_review.v1","captured_character_level":captured_level,
         "captured_professions":snapshot.sections.get("professions"),
+        "captured_talent_observation":snapshot.sections.get("talents")
+            .filter(|talents| snapshot.client.family==crate::Family::Forever && talents.get("observed_tree_ids").is_some())
+            .map(|talents| {
+                let mut fields=serde_json::Map::new();
+                for key in ["config_id","nodes","observed_tree_ids","observed_node_count","staged_changes_observed"] {
+                    if let Some(value)=talents.get(key) {fields.insert(key.into(),value.clone());}
+                }
+                Value::Object(fields)
+            }),
         "captured_active_pet":snapshot.sections.get("pet_care").map(|pet| json!({
             "present":pet["present"],"family_id":pet["family_id"],"level":pet["level"]})),
         "captured_character_identity":{

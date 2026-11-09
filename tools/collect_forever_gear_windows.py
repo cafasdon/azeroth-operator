@@ -36,7 +36,8 @@ def request_binding(args, deadline, template_sha256):
     root = Path(__file__).resolve().parent
     sources = {name: file_digest(root / name, deadline) for name in [
         'collect_forever_gear_windows.py', 'rank_forever_slot.py', 'run_forever_sim.py',
-        'merge_forever_gear_windows.py', 'journal_forever_gear_windows.py', 'positional_equipment.py']}
+        'merge_forever_gear_windows.py', 'journal_forever_gear_windows.py', 'positional_equipment.py',
+        'forever_talent_identity.py']}
     config = {}
     for key in ['AZEROTH_DATA_DIR', 'AZEROTH_FOREVER_CATALOGUE']:
         raw = os.environ.get(key)
@@ -146,6 +147,9 @@ async def collect_windows(args, *, deadline=None):
                 drafts[0][1].get('captured_active_pet'), require_level=False)
             identity['professions'] = ranker.check_profession_identity(ranker.single_player(template['raid']),
                 drafts[0][1].get('captured_professions'), require_match=False)
+            identity['talents'] = ranker.check_talent_identity(ranker.single_player(template['raid']),
+                drafts[0][1].get('captured_talent_observation'),
+                ranker.SPEC_CLASSES[ranker.player_spec(ranker.single_player(template['raid']))], require_match=False)
             require(request_binding(args, deadline, template_sha256) == binding)
             artifact = ranker.plan_report(drafts, include_gear_hashes=True,
                                           include_equipment_specs=args.retain_equipment_specs)

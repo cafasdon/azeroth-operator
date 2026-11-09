@@ -13,7 +13,8 @@ from tools.prepare_forever_gear_window import encoded
 from tools.run_forever_sim import single_player
 
 FINGERPRINTS = ('mcp_sha256', 'template_sha256', 'encounter_sha256',
-                'preparer_sha256', 'adapter_sha256', 'catalogue_sha256', 'layout_sha256')
+                'preparer_sha256', 'adapter_sha256', 'catalogue_sha256', 'layout_sha256',
+                'talent_identity_sha256', 'talent_map_sha256')
 
 
 def merge_prepared(path, artifacts):

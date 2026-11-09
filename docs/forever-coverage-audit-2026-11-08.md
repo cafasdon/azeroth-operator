@@ -430,3 +430,9 @@ ranks, native rank limits and an observed staged-change flag. Boosted active
 ranks remain separate and uncertain metadata stays unknown. No simulator talent
 conversion or allocation match is verified. Addon 0.47.0-dev remains uninstalled;
 see [verification](forever-talent-definitions-verification-2026-11-09.md).
+
+Simulator/native talent bridge: pinned local nine-class definition positions now
+check known purchased ranks in equipment reviews before simulation. Staged or
+known conflicting observations require correction; partial/unknown and full
+allocation/model coverage stay unverified. No automatic talent actions or live
+qualification. See [ADR-051](ADR-051-forever-simulator-talent-observations.md).

@@ -1,5 +1,11 @@
 # Changelog
 
+- Bundle a reproducible nine-class talent-definition map from pinned simulator
+  source. Carry non-personal purchased-rank observations into equipment reviews,
+  reject known template conflicts and staged changes before simulation, and
+  retain unverified partial observations in plan-only reports. No automatic
+  talent selection, game action or full allocation/model accuracy claim.
+
 - Add bounded stable Forever trait-definition observations, keeping purchased
   ranks separate from active/boosted ranks and omitting uncertain metadata.
   Validate tree/count/rank linkage in both readers and expose unverified-mapping

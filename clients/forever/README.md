@@ -2112,3 +2112,10 @@ ranks, native rank limits and an observed staged-change flag. Boosted active
 ranks remain separate and uncertain metadata stays unknown. No simulator talent
 conversion or allocation match is verified. Addon 0.47.0-dev remains uninstalled;
 see [verification](../../docs/forever-talent-definitions-verification-2026-11-09.md).
+
+Simulator talent observations now use a bundled pinned nine-class definition
+map to compare known purchased ranks with explicit template strings offline.
+Known conflicts and staged changes stop simulation; plan-only reports can retain
+the diagnostics. Unknown data and full allocation/model coverage remain
+unverified. See [ADR-051](../../docs/ADR-051-forever-simulator-talent-observations.md)
+and [verification](../../docs/forever-talent-mapping-verification-2026-11-09.md).

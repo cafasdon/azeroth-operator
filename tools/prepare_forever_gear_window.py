@@ -12,6 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from tools import journal_forever_gear_windows as journal
 from tools import run_forever_sim as adapter
+from tools import forever_talent_identity as talents
 from tools.collect_forever_gear_windows import file_digest
 from tools.merge_forever_gear_windows import (MAX_REPORT_BYTES, cleared_for_review, integer,
     parse_report, require, retained_equipment, selections_for_review)
@@ -41,6 +42,7 @@ async def prepare(args):
         require(raw is not None and Path(raw).is_absolute())
         paths.append(Path(raw).resolve(strict=True))
     paths.append(Path(adapter.layout.__file__).resolve())
+    paths.extend([Path(talents.__file__).resolve(), talents.MAP_PATH.resolve(strict=True)])
     fingerprints = [file_digest(path, deadline) for path in paths]
     def unchanged():
         require([file_digest(path, deadline) for path in paths] == fingerprints)
@@ -103,6 +105,7 @@ async def prepare(args):
         'mcp_sha256': fingerprints[0], 'template_sha256': fingerprints[1], 'encounter_sha256': fingerprints[2],
         'preparer_sha256': fingerprints[3], 'adapter_sha256': fingerprints[4], 'catalogue_sha256': fingerprints[5],
         'layout_sha256':fingerprints[6],
+        'talent_identity_sha256':fingerprints[7], 'talent_map_sha256':fingerprints[8],
         'requests': requests, 'simulation_performed': False, 'game_execution': False,
         'best_in_slot_verified': False, 'feasible_set_coverage_verified': False}
     require(len(encoded(result)) <= MAX_REPORT_BYTES)

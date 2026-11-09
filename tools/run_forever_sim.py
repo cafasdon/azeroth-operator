@@ -17,12 +17,14 @@ import tempfile
 import time
 
 if __package__:
+    from .forever_talent_identity import check_talent_identity, ConflictingTalentObservation
     from . import positional_equipment as layout
     from .simulation_cache import SimulationCache
     from .simulation_journal import SimulationJournal
     from .sync_exports import ordinary
     from .sync_forever_catalogue import MAX_BYTES, verify
 else:
+    from forever_talent_identity import check_talent_identity, ConflictingTalentObservation
     import positional_equipment as layout
     from simulation_cache import SimulationCache
     from simulation_journal import SimulationJournal
@@ -388,6 +390,7 @@ def request_from(template, equipment_review, encounter_lookup):
             or not player.get("race") or player["race"] == "RaceUnknown"):
         raise ValueError("Provide an explicit class, race, spec and talent string")
     spec_class = SPEC_CLASSES[spec]
+    check_talent_identity(player, equipment_review.get("captured_talent_observation"), spec_class)
     declared_class = player["class"]
     if not (declared_class == f"Class{spec_class.capitalize()}"
             or type(declared_class) is int and declared_class == CLASS_IDS[spec_class]):
@@ -831,6 +834,9 @@ def main():
         result.update(encounter_summary(requests[0]))
         result["profession_identities"] = [check_profession_identity(
             single_player(template["raid"]), review.get("captured_professions")) for review in reviews]
+        result["talent_observations"] = [check_talent_identity(
+            single_player(template["raid"]), review.get("captured_talent_observation"),
+            SPEC_CLASSES[player_spec(single_player(template["raid"]))]) for review in reviews]
         result["character_identities"] = [check_character_identity(
             single_player(template["raid"]), review.get("captured_character_identity")) for review in reviews]
         result["hunter_pet_assumptions"] = [check_hunter_pet_level(
@@ -840,6 +846,8 @@ def main():
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")
     except UnsupportedSimulationLevel:
         parser.exit(1, "Simulation requires a current equipment review with captured_character_level=60. Re-export the saved capture with an updated MCP reader; other or unknown levels remain plan-only.\n")
+    except ConflictingTalentObservation as error:
+        parser.exit(1, f"{error}\n")
     except ConflictingProfessions:
         parser.exit(1, "Simulator template professions disagree with the saved character observation. Match the template to that capture before simulation.\n")
     except ConflictingCharacterIdentity:

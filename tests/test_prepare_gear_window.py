@@ -67,6 +67,9 @@ class PrepareGearWindowTests(unittest.TestCase):
                 self.assertEqual(journal.read_bytes(), before)
                 return json.loads(process.stdout) if code == 0 else None
             result = launch()
+            self.assertEqual(result['talent_identity_sha256'],
+                hashlib.sha256(Path(preparer.talents.__file__).read_bytes()).hexdigest())
+            self.assertEqual(result['talent_map_sha256'],preparer.talents.MAP_SHA256)
             self.assertEqual(len(result['requests']), len(drafts))
             self.assertEqual(result['snapshot_id'], key)
             for row, (_, draft) in zip(result['requests'], drafts, strict=True):

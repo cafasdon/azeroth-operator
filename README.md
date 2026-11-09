@@ -2,11 +2,15 @@
 
 Forever talent captures can retain stable trait definition IDs, purchased ranks
 and native rank limits alongside active ranks, plus an observed staged-change
-flag when readable. Unknown metadata remains omitted. These observations do not
-yet convert or verify simulator talent strings. Matching MCP support and addon
+flag when readable. A bundled nine-class simulator definition map now checks
+known purchased ranks against explicit template talent strings before simulation.
+Known conflicts or staged changes require a committed matching capture; plan-only
+reports remain available. Unknown metadata and full allocation coverage stay
+unverified. Matching MCP support and addon
 0.47.0-dev are required; the package remains uninstalled.
 [Contract](docs/ADR-050-forever-talent-definitions.md) ·
 [Offline evidence](docs/forever-talent-definitions-verification-2026-11-09.md).
+See the [local mapping contract](docs/ADR-051-forever-simulator-talent-observations.md).
 
 Saved-character inventory discovery can filter `list_snapshots` with
 `inventory_item`: an item ID, explicit storage and observed quantity bounds.

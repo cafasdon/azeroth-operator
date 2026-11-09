@@ -26,6 +26,8 @@ from tools.run_forever_sim import request_from
 
 class MergePreparedWindowTests(unittest.TestCase):
     def test_context_hash_source_row_and_count_rejections(self):
+        self.assertIn('talent_identity_sha256', FINGERPRINTS)
+        self.assertIn('talent_map_sha256', FINGERPRINTS)
         template, review, encounter = inputs()
         specs = [deepcopy(review['checks']['simulator_equipment_spec']) for _ in range(2)]
         specs[1]['items'][10] = {'id': 4549, 'enchant': 0, 'randomSuffix': 0}
@@ -52,6 +54,9 @@ class MergePreparedWindowTests(unittest.TestCase):
                     **{field: False for field in ['simulation_performed', 'game_execution',
                         'best_in_slot_verified', 'feasible_set_coverage_verified']}})
             before = journal.read_bytes()
+            for field in ['talent_identity_sha256', 'talent_map_sha256']:
+                bad=deepcopy(artifacts);bad[1][field]='b'*64
+                with self.assertRaises(ValueError):merge_prepared(journal,bad)
             merged = merge_prepared(journal, artifacts)
             self.assertEqual((merged['request_instances'], merged['distinct_requests'], merged['reused_request_instances']), (5, 2, 3))
             self.assertTrue(merged['search_coverage']['reported_coordinate_coverage_complete'])

@@ -25,6 +25,7 @@ from tools.run_forever_sim import (
     check_hunter_pet_level, UnsupportedSimulationPetLevel,
     ConflictingNativeSlotCategory,
     PROJECTED_SLOT_INDEX,
+    check_talent_identity, ConflictingTalentObservation, SPEC_CLASSES,
 )
 
 
@@ -823,6 +824,9 @@ def main():
         identity["professions"] = check_profession_identity(
             single_player(template["raid"]), drafts[0][1].get("captured_professions"),
             require_match=not args.plan_only)
+        identity["talents"] = check_talent_identity(
+            single_player(template["raid"]), drafts[0][1].get("captured_talent_observation"),
+            SPEC_CLASSES[player_spec(single_player(template["raid"]))], require_match=not args.plan_only)
         set_piece_ids = ({piece["item_id"] for piece in set_observation["catalogue_pieces"]}
                          if set_observation is not None else None)
         if args.confirm_leading_seed is not None:
@@ -891,7 +895,8 @@ def main():
         while isinstance(error, ExceptionGroup) and len(error.exceptions) == 1:
             error = error.exceptions[0]
         if isinstance(error, (GearSearchLimit, UnsupportedSimulationLevel, ConflictingProfessions,
-                              ConflictingCharacterIdentity, UnsupportedSimulationPetLevel, ConflictingNativeSlotCategory)):
+                              ConflictingCharacterIdentity, UnsupportedSimulationPetLevel, ConflictingNativeSlotCategory,
+                              ConflictingTalentObservation)):
             parser.exit(1, f"{error}\n")
         # MCP and simulator failures may embed paths or private response text.
         parser.exit(1, f"Forever slot ranking failed ({type(error).__name__}). Check inputs and budgets.\n")
