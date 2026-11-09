@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by reported home or instance group context.
+
 - Find saved Forever captures by an inclusive range of reported PvP ranks.
 
 - Find saved Forever captures by base item ID in the outgoing trade offer.

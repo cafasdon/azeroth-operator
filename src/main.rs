@@ -346,6 +346,8 @@ struct List {
     minimum_pvp_rank: Option<u32>,
     /// Inclusive maximum reported personal PvP rank in a saved Forever capture.
     maximum_pvp_rank: Option<u32>,
+    /// Find saved Forever captures with matching observations in one explicit group category.
+    group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1735,6 +1737,7 @@ impl Operator {
                 gossip_option: args.gossip_option,
                 outgoing_trade_item_id: args.outgoing_trade_item_id,
                 pvp_rank_range: (args.minimum_pvp_rank, args.maximum_pvp_rank),
+                group_context: args.group_context,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

@@ -47,3 +47,18 @@ favoured revision at .25 confidence before the additional boundary cases ran.
 It used 418 input and 48 output tokens in .343 seconds.
 Independent review also verified both signed delta extremes, absent sections,
 and rejection on name, realm, build and variant mismatches.
+
+Use `group_context` on `list_snapshots` with `family: forever`. Select `home`
+or `instance` in `category`, and optionally specify `in_group`, `in_raid`,
+`player_is_leader` or `minimum_reported_member_count`. All predicates must match
+the selected category in the same capture. An unknown leadership flag never
+matches a requested boolean. With `latest_per_character`, the newest capture
+in the requested date range must match. Results report the saved observation
+and leave group identity and current group verification false.
+
+Three offline MCP tests passed. The group fixture covered category isolation,
+unknown leadership, malformed requests, newest-capture selection and paging.
+Jev 1.14.0 advisory `5618b5ec2e8f47e1ff7840bf64ac56fb50ff4dceb4d3516c29855b25d796eb1d`
+was inconclusive at .19 confidence, with 402 input and 53 output tokens in .299 seconds.
+Independent MCP probes passed date-bounded latest selection, the maximum u32
+count and rejection of 21 malformed requests. The capture store stayed unchanged.

@@ -77,6 +77,26 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                             for flag in ['current_group_verified','group_identity_verified','complete_roster_verified','social_action_eligibility_verified','game_execution']:
                                 self.assertIs(summary[flag],False)
                     earlier, later = valid[4][0], valid[5][0]
+                    async def search(**fields):
+                        return (await call('list_snapshots',family='forever',group_context=fields))['snapshots']
+                    leader = await search(category='instance',in_raid=True,player_is_leader=True,minimum_reported_member_count=40)
+                    self.assertEqual({row['snapshot_id'] for row in leader}, {valid[2][0],earlier})
+                    self.assertEqual(leader[0]['group_context_match']['observation'], both['categories']['instance'])
+                    self.assertIs(leader[0]['group_context_match']['current_group_verified'],False)
+                    page = await call('list_snapshots',family='forever',limit=1,offset=1,
+                        group_context={'category':'instance','in_raid':True})
+                    self.assertEqual([row['snapshot_id'] for row in page['snapshots']], [leader[1]['snapshot_id']])
+                    plain_list = await call('list_snapshots',family='forever',limit=1)
+                    self.assertNotIn('group_context_match',plain_list['snapshots'][0])
+                    solo = await search(category='instance',in_group=False,minimum_reported_member_count=0)
+                    self.assertEqual([row['snapshot_id'] for row in solo], [valid[3][0]])
+                    self.assertEqual(await search(category='instance',in_group=False,player_is_leader=False),[])
+                    self.assertEqual(await search(category='home',in_group=True,in_raid=True),[])
+                    latest = await call('list_snapshots',family='forever',latest_per_character=True,group_context={'category':'instance'})
+                    self.assertEqual(latest['snapshots'],[])
+                    for query in [{}, {'category':'default'}, {'category':'home','player_is_leader':0}, {'category':'home','roster':True}]:
+                        await call('list_snapshots',error=True,family='forever',group_context=query)
+                    await call('list_snapshots',error=True,family='retail',group_context={'category':'home'})
                     plain = await call('compare_snapshots',before_id=earlier,after_id=later)
                     self.assertNotIn('group_context_changes',plain)
                     comparison = await call('compare_snapshots',before_id=earlier,after_id=later,group_context_changes=True)

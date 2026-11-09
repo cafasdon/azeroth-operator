@@ -1254,6 +1254,54 @@ mod inventory_requirements_filter_tests {
     }
 }
 
+#[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GroupContextCategory {
+    Home,
+    Instance,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupContextFilter {
+    category: GroupContextCategory,
+    in_group: Option<bool>,
+    in_raid: Option<bool>,
+    player_is_leader: Option<bool>,
+    minimum_reported_member_count: Option<u32>,
+}
+
+impl GroupContextFilter {
+    fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
+        let category = match self.category {
+            GroupContextCategory::Home => "home",
+            GroupContextCategory::Instance => "instance",
+        };
+        let section = snapshot.sections.get("group_context")?;
+        let row = section["categories"].get(category)?;
+        for (key, expected) in [
+            ("in_group", self.in_group),
+            ("in_raid", self.in_raid),
+            ("player_is_leader", self.player_is_leader),
+        ] {
+            if expected.is_some_and(|flag| row[key].as_bool() != Some(flag)) {
+                return None;
+            }
+        }
+        if self.minimum_reported_member_count.is_some_and(|minimum| {
+            row["reported_member_count"]
+                .as_u64()
+                .is_none_or(|count| count < u64::from(minimum))
+        }) {
+            return None;
+        }
+        Some(
+            json!({"category":category,"observation":row,"coverage":section["coverage"],
+            "current_group_verified":false,"group_identity_verified":false}),
+        )
+    }
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
@@ -1266,6 +1314,7 @@ pub struct CaptureFilters<'a> {
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
     pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     pub pvp_rank_range: (Option<u32>, Option<u32>),
+    pub group_context: Option<GroupContextFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1471,6 +1520,7 @@ impl Store {
             gossip_option,
             outgoing_trade_item_id,
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
+            group_context,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1603,6 +1653,10 @@ impl Store {
                 .zip(maximum_pvp_rank)
                 .is_none_or(|(min, max)| min <= max),
             "Reversed PvP rank bounds"
+        );
+        ensure!(
+            group_context.is_none() || family == Family::Forever,
+            "Group context filtering requires Forever"
         );
         if let Some(filter) = &gossip_option {
             filter.validate()?;
@@ -2021,6 +2075,12 @@ impl Store {
                             "trade_completion_verified":false,"counts_toward_owned_inventory":false}))
                     });
                     if outgoing_trade_item_id.is_some() && outgoing_trade_item_match.is_none() {
+                        continue;
+                    }
+                    let group_context_match = group_context
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if group_context.is_some() && group_context_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp_rank {
@@ -2690,6 +2750,9 @@ impl Store {
                     }
                     if let Some(observation) = pvp_rank_match {
                         summary["pvp_rank_match"] = observation;
+                    }
+                    if let Some(observation) = group_context_match {
+                        summary["group_context_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;
