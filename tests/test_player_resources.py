@@ -75,6 +75,23 @@ class PlayerResourcesTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    async def search(resource, maximum_percent, family='forever', error=False):
+                        reply = await session.call_tool('list_snapshots', {
+                            'family': family, 'player_resource': {
+                                'resource': resource, 'maximum_percent': maximum_percent}})
+                        self.assertEqual(bool(reply.isError), error, reply)
+                        return None if error else json.loads(reply.content[0].text)['snapshots']
+                    health = await search('health', 25)
+                    self.assertEqual([row['snapshot_id'] for row in health], [valid[1][0]])
+                    self.assertEqual(health[0]['player_resource_match'], {
+                        'resource': 'health', 'observation': resources['health'], 'readiness_verified': False})
+                    self.assertEqual(await search('health', 24), [])
+                    empty_power = await search('primary_power', 0)
+                    self.assertEqual([row['snapshot_id'] for row in empty_power], [valid[1][0]])
+                    self.assertEqual({row['snapshot_id'] for row in await search('primary_power', 100)},
+                                     {valid[1][0], valid[3][0]})
+                    await search('health', 101, error=True)
+                    await search('health', 25, family='retail', error=True)
                     for key, section in valid:
                         reply = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(reply.isError)

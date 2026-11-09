@@ -429,6 +429,8 @@ struct List {
     maximum_pvp_points_to_next_threshold: Option<u32>,
     /// Match a saved Forever PvP cap and its maximum remaining points.
     pvp_cap_distance: Option<azeroth_operator::PvpCapDistanceFilter>,
+    /// Match saved Forever health or primary power at or below a whole percentage.
+    player_resource: Option<azeroth_operator::PlayerResourceFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
@@ -2011,6 +2013,7 @@ impl Operator {
                 pvp_season_id: args.pvp_season_id,
                 maximum_pvp_points_to_next_threshold: args.maximum_pvp_points_to_next_threshold,
                 pvp_cap_distance: args.pvp_cap_distance,
+                player_resource: args.player_resource,
                 group_context: args.group_context,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,

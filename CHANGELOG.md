@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by recorded health or primary power percentage.
+
 - Compare saved Forever PvP next-rank thresholds and remaining points for matching rank and reported season.
 
 - Compare saved Forever PvP cap ranks, thresholds and distances across matching reported season IDs.

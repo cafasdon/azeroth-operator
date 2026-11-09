@@ -1428,6 +1428,34 @@ enum PvpRankCap {
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum PlayerResource {
+    Health,
+    PrimaryPower,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PlayerResourceFilter {
+    resource: PlayerResource,
+    maximum_percent: u8,
+}
+
+impl PlayerResourceFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        let resource = match self.resource {
+            PlayerResource::Health => "health",
+            PlayerResource::PrimaryPower => "primary_power",
+        };
+        let row = section.get(resource)?;
+        let current = u128::from(row["current"].as_u64()?);
+        let maximum = u128::from(row["maximum"].as_u64()?);
+        (maximum > 0 && current * 100 <= maximum * u128::from(self.maximum_percent))
+            .then(|| json!({"resource":resource,"observation":row,"readiness_verified":false}))
+    }
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PvpCapDistanceFilter {
     cap: PvpRankCap,
@@ -1517,6 +1545,7 @@ pub struct CaptureFilters<'a> {
     pub pvp_season_id: Option<std::num::NonZeroU32>,
     pub maximum_pvp_points_to_next_threshold: Option<u32>,
     pub pvp_cap_distance: Option<PvpCapDistanceFilter>,
+    pub player_resource: Option<PlayerResourceFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1733,6 +1762,7 @@ impl Store {
             pvp_season_id,
             maximum_pvp_points_to_next_threshold,
             pvp_cap_distance,
+            player_resource,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -1883,6 +1913,12 @@ impl Store {
             || pvp_season_id.is_some()
             || maximum_pvp_points_to_next_threshold.is_some()
             || pvp_cap_distance.is_some();
+        ensure!(
+            player_resource
+                .as_ref()
+                .is_none_or(|filter| family == Family::Forever && filter.maximum_percent <= 100),
+            "Player resource search requires Forever and a percentage from 0 to 100"
+        );
         ensure!(
             !filter_pvp || family == Family::Forever,
             "PvP filtering requires Forever"
@@ -2377,6 +2413,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if group_context.is_some() && group_context_match.is_none() {
+                        continue;
+                    }
+                    let player_resource_match = player_resource.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("player_resources")?)
+                    });
+                    if player_resource.is_some() && player_resource_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3157,6 +3199,9 @@ impl Store {
                     }
                     if let Some(observation) = pvp_rank_match {
                         summary["pvp_rank_match"] = observation;
+                    }
+                    if let Some(observation) = player_resource_match {
+                        summary["player_resource_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;
