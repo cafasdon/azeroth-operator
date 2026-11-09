@@ -1002,14 +1002,27 @@ impl RecipeChargeLedger {
         *requested += step_crafts;
         let charges = recipe["cooldown"]["charges"].as_u64();
         let before_step = charges.map(|n| n.saturating_sub(before));
+        let covered_crafts = before_step.map(|n| n.min(step_crafts));
         json!({"requested_crafts_through_step":*requested,
             "observed_charges":charges,
             "observed_charges_before_step":before_step,
-            "step_crafts_covered_by_observed_charges":before_step.map(|n| n.min(step_crafts)),
+            "step_crafts_covered_by_observed_charges":covered_crafts,
+            "base_output_for_charge_covered_crafts_if_completed":covered_crafts
+                .and_then(|count| recipe_base_output(recipe, count)),
             "observed_charges_remaining_if_completed":charges.map(|n| n.saturating_sub(*requested)),
             "shortfall_vs_cumulative_crafts":charges.map(|n| requested.saturating_sub(n)),
             "covers_cumulative_crafts":charges.map(|n| n >= *requested)})
     }
+}
+
+fn recipe_base_output(recipe: &Value, count: u64) -> Option<Value> {
+    recipe["base_output_quantity"]["minimum"]
+        .as_u64()
+        .zip(recipe["base_output_quantity"]["maximum"].as_u64())
+        .map(|(minimum, maximum)| {
+            json!({"item_id":recipe["output_item_id"],"minimum":minimum * count,
+                "maximum":maximum * count})
+        })
 }
 
 /// Reuse ordered-batch accounting for the exact printed chain steps, without external acquisitions.
@@ -1279,15 +1292,6 @@ fn review_recipe_observation(
         }
         Value::Null
     };
-    let output_for = |count| {
-        recipe["base_output_quantity"]["minimum"]
-            .as_u64()
-            .zip(recipe["base_output_quantity"]["maximum"].as_u64())
-            .map(|(minimum, maximum)| {
-                json!({"item_id":recipe["output_item_id"],"minimum":minimum * count,
-                "maximum":maximum * count})
-            })
-    };
     let recipe_id = recipe["recipe_id"]
         .as_u64()
         .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?;
@@ -1354,9 +1358,9 @@ fn review_recipe_observation(
         "captured_preparation":preparation_checks.into_iter().collect::<BTreeMap<_, _>>(),
         "profession_points_to_observed_cap":recipe["profession"]["max_rank"].as_u64().filter(|cap| *cap > 0)
             .zip(recipe["profession"]["rank"].as_u64()).and_then(|(cap, rank)| cap.checked_sub(rank)),
-        "base_output_if_completed":output_for(u64::from(crafts)),
+        "base_output_if_completed":recipe_base_output(recipe, u64::from(crafts)),
         "base_output_for_charge_covered_crafts_if_completed":charges
-            .and_then(|available| output_for(available.min(u64::from(crafts)))),
+            .and_then(|available| recipe_base_output(recipe, available.min(u64::from(crafts)))),
         "estimated_cooldown_end_at":estimated_cooldown_end,
         "shortfall_vs_observed_recipe_charges":charges
             .map(|charges| u64::from(crafts).saturating_sub(charges)),

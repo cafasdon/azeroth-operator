@@ -248,6 +248,8 @@ expose cumulative shortages independently of material feasibility. Unknown count
 stay unknown, newer stock does not replenish them and no craft is executed.
 Each step also reports how many of its requested crafts fit within the
 captured charges left after earlier steps for the same recipe.
+The step and stock-plan charge reports also show the conditional base yield
+for those crafts. This estimate does not change the chain's material plan.
 Individual recipe reviews additionally report
 `base_output_for_charge_covered_crafts_if_completed`. This scales the base
 yield range by the smaller of requested crafts and captured charges. It is

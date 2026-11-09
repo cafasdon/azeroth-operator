@@ -70,11 +70,14 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                             rid = step['recipe_id']; count = step['crafts']
                             prior = totals.get(rid,0); totals[rid] = prior+count
                             captured = charges if rid==102 else None
+                            covered = None if captured is None else min(count,max(0,captured-prior))
                             expected = {'requested_crafts_through_step':totals[rid],
                                 'observed_charges':captured,
                                 'observed_charges_before_step':None if captured is None else max(0,captured-prior),
                                 'observed_charges_remaining_if_completed':None if captured is None else max(0,captured-totals[rid]),
-                                'step_crafts_covered_by_observed_charges':None if captured is None else min(count,max(0,captured-prior)),
+                                'step_crafts_covered_by_observed_charges':covered,
+                                'base_output_for_charge_covered_crafts_if_completed':None if covered is None else {
+                                    'item_id':20,'minimum':covered,'maximum':2*covered},
                                 'shortfall_vs_cumulative_crafts':None if captured is None else max(0,totals[rid]-captured),
                                 'covers_cumulative_crafts':None if captured is None else captured>=totals[rid]}
                             self.assertEqual(step['captured_charge_accounting'],expected)

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the conditional base yield of charge-covered crafts at each saved Forever reagent-chain step.
+
 - Show the conditional base yield of requested Forever crafts covered by saved recipe charges.
 
 - Show how many crafts at each Forever reagent-chain step fit the saved recipe charges.
