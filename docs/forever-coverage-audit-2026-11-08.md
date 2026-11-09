@@ -236,3 +236,11 @@ with independent source timestamps, partial/truncated categories and missing
 data statuses. This closes the preceding capture-to-chain join gap, without
 filling source entities/coordinates, world coverage, optimal routing, current
 availability or native qualification. Full acquisition planning remains open.
+
+[Unified observed-owned gear evaluation](owned-gear-evaluation-verification-2026-11-09.md)
+then connects all-slot collection and saved multi-encounter ranking through one
+resumable offline command with inherited deadlines. Reported coordinates,
+unresolved plans and completed saved simulations are accounted separately. A
+real pinned-engine check preserves an unresolved paired-slot placement rather
+than treating the resolved winner as full owned BiS. Complete ownership, native
+legality, unsupported models and statistical optimality remain open.

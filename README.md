@@ -200,6 +200,14 @@ client/build; otherwise references come from the recipe capture. Inventory never
 silently replaces their provenance. Missing and truncated evidence stays explicit.
 [Offline evidence](docs/chain-captured-sources-verification-2026-11-09.md).
 
+`python -m tools.evaluate_forever_owned_gear` combines all-17-slot observed gear
+collection and saved multi-encounter simulation in one resumable offline command.
+It uses an explicit owner snapshot and separate plan/result journals, with
+shared time/work budgets and independent coordinate, resolution and simulation
+completion flags. Missing ownership/model/native proof still prevents a BiS
+claim. See the [workflow](docs/ADR-027-owned-gear-evaluation-workflow.md) and
+[offline evidence](docs/owned-gear-evaluation-verification-2026-11-09.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

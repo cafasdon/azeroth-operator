@@ -12,7 +12,7 @@ from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, r
 from tools.prepare_forever_gear_window import encoded
 
 
-async def execute(args):
+async def execute(args, *, deadline=None):
     integer(args.max_pages, 1, 1000000)
     integer(args.top, 1, 20)
     integer(args.page_limit, 1, 64)
@@ -23,7 +23,9 @@ async def execute(args):
     require(1 <= len(args.encounter_lookup) <= 8)
     weights = pages.encounters.normalise_weights(args.encounter_weight, len(args.encounter_lookup))
     digest(args.engine_sha256.lower())
-    deadline = monotonic() + args.time_budget_seconds
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+    deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     source = journal.journal_status(args.journal, deadline=deadline)
     require(not source['window_count'] or source['equipment_specs_retained'] is True)
     cursor = None

@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 from importlib.metadata import version
 import json
+from math import isfinite
 import os
 from pathlib import Path
 import sys
@@ -83,9 +84,11 @@ def validate(args):
         integer(args.observed_random_suffix_id, -(2**31), 2**31 - 1)
 
 
-async def collect_windows(args):
+async def collect_windows(args, *, deadline=None):
     validate(args)
-    deadline = monotonic() + args.time_budget_seconds
+    if deadline is not None:
+        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+    deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     with args.template.open('rb') as handle:
         template_data = handle.read(4 * 1024 * 1024 + 1)
         template = parse_report(template_data)

@@ -1,5 +1,16 @@
 # Forever interaction map
 
+The offline `tools.evaluate_forever_owned_gear` module connects existing local
+MCP all-slot collection to multi-encounter saved-journal ranking. It requires an
+explicit saved snapshot, trusted pinned local engine/template, encounter files
+and two separate journal destinations. All 17 slots and observed storage are
+included with no item/set/swap filters. Re-running resumes bound collection and
+reuses result checkpoints. Coordinate coverage, unresolved proposals and saved
+simulation completion remain separate; partial/model-unsupported plans never
+become verified full owned BiS. It does not infer the active character or perform
+game actions. Live testing, installation and deployment remain deferred.
+[Offline evidence](../../docs/owned-gear-evaluation-verification-2026-11-09.md).
+
 Optional source-only `recipe_item_sources` capture reads a separately installed
 compatible QuestieDB during manual export. It uses already captured fixed
 recipe reagent IDs, queries the numerically first 64 and records all-ID count.

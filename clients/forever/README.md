@@ -4,6 +4,57 @@ Owns Forever addon code, API adaptation, capability inventory and runtime qualif
 
 See the [interaction map](INTERACTIONS.md) for implemented coverage, planned analysis and actions that stay with the player.
 
+## Evaluate observed owned gear across all slots
+
+`python -m tools.evaluate_forever_owned_gear --help` documents a single offline
+workflow for all 17 simulator slots and all observed equipment/bags/banks. It
+collects bounded numeric gear-plan windows, resumes an exactly bound plan
+journal, then ranks its saved resolved requests across up to eight encounter
+profiles with existing numeric checkpoints. No item/set/storage/swap restriction
+is silently added; identical inputs can still collapse under existing rules.
+An explicit `--snapshot-id` is required. This does not detect who is in play.
+
+Required arguments are `--mcp`, `--snapshot-id`, `--template`, `--journal`,
+`--engine`, `--engine-sha256`, `--simulation-journal` and one or more
+`--encounter-lookup` files. MCP/engine must be absolute trusted local executable
+paths. The template must match saved identity/profession/pet/model requirements.
+The engine must match its SHA-256. Plan journal and simulation-journal directory
+are separate destinations under existing private parent directories. Inputs
+must not occupy either output namespace, including the plan database's SQLite
+sidecars. The existing owner-store/catalogue environment configuration applies.
+
+Default limits are 180 seconds total, 45 seconds for collection, four new plan
+windows of 64 coordinates, 64 simulation pages of eight windows, 16 new engine
+runs, 100,000 iterations and ten returned leaders. Use `--collection-seconds`
+no larger than `--time-budget-seconds`. The same total deadline reaches both
+stages; simulation finalisation retains its existing five-second grace. On
+collection-stage expiry with total time remaining, revalidate committed bound
+progress and simulate that prefix. Interrupted attempt/insertion counts are
+null because the completed prefix does not prove those per-call counts. Early
+input/MCP errors and explicit cancellation do not become successful recovery.
+
+Run the same command again to collect the next uncovered coordinates and reuse
+fixed simulation results. `--checkpoint-only` prohibits new engine runs but can
+still collect plan windows. Source software/MCP/template/config changes can
+invalidate the existing collection binding; mismatched journals are rejected,
+not overwritten or silently migrated. Existing individual collection and saved
+simulation commands remain available. Unsupported levels/models can leave plan
+progress available while simulation rejects.
+
+The report separates `reported_coordinate_coverage_complete`,
+`reported_proposals_resolved` and `all_saved_resolved_results_complete`.
+`reported_space_results_complete` requires all three. `collection_incomplete`,
+`unresolved_plans` and `simulation_incomplete` preserve the missing work;
+`reported_space_complete` describes only the reported computational model.
+Rankings remain encounter-weighted point estimates over completed pages.
+Complete ownership, feasible native equip sets, statistical optimality and
+best-in-slot remain unverified, even when that computation completes. One known
+example is an empty first ring/trinket slot with only the second filled: the
+adapter withholds a request the engine would relocate, leaving it unresolved.
+No game action is performed. Native testing, installation and deployment stay
+deferred. See [ADR 027](../../docs/ADR-027-owned-gear-evaluation-workflow.md) and
+[offline evidence](../../docs/owned-gear-evaluation-verification-2026-11-09.md).
+
 ## Find recipes supported by observed materials
 
 The source addon can also capture optional `recipe_item_sources` during manual
