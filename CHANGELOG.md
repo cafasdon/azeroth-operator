@@ -1,5 +1,8 @@
 # Changelog
 
+- Repair the addon talent roundtrip fixture to return the requested native node
+  ID during its Forever family-switch case. Keep strict production identity checks.
+
 - Add passive Forever player trade-offer capture, strict local readers and MCP
   numeric summary. Limit observation to six normal outgoing item slots, preserve
   unknowns and keep offers separate from owned stock. No trade actions or partner data.

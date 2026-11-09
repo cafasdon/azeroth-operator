@@ -77,7 +77,7 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
         C_ClassTalents={GetActiveConfigID=function() return 7 end,HasUnspentTalentPoints=function() return true,1,2 end}
         C_Traits={GetConfigInfo=function() return {name="Build",treeIDs={5},usesSharedActionBars=true} end,
           GetTreeNodes=function() return {10} end,
-          GetNodeInfo=function() return {activeEntry={entryID=11,rank=2}} end}
+          GetNodeInfo=function(_,nodeID) assert(nodeID==10); return {ID=nodeID,activeEntry={entryID=11,rank=2}} end}
         function GetProfessions() return 1,nil,3 end
         function GetProfessionInfo(i) return "Profession"..i,0,10,100,0,0,200+i end
         C_QuestLog={GetNumQuestLogEntries=function() return 1 end,GetInfo=function() return {questID=42,title="Test quest",level=80} end}

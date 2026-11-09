@@ -76,3 +76,7 @@ Final advisory jev-1.14.0 request
 integrate .92, revise .04, insufficient .04, confidence .88; 591 input / 50 output,
 .320s. Author accepts source integration on direct evidence and both independent
 clean trade reviews, retaining the separate talent-test failure for follow-up.
+
+Follow-up: the separate fixture failure is resolved by the test-only correction
+documented in talent-fixture-verification-2026-11-09.md. Historical failure output
+above remains as observed; no production talent guard was changed.
