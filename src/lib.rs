@@ -413,11 +413,79 @@ pub struct PetSpeciesFilter {
     pub minimum_unowned_rows: Option<u32>,
 }
 
+#[derive(Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SpellResourceFilter {
+    pub minimum_charges: Option<u32>,
+    pub maximum_charges: Option<u32>,
+    pub minimum_reported_cast_count: Option<u32>,
+    pub maximum_reported_cast_count: Option<u32>,
+    pub cooldown_enabled: Option<bool>,
+    pub cooldown_active: Option<bool>,
+}
+
+impl SpellResourceFilter {
+    pub fn validate(&self) -> Result<()> {
+        ensure!(
+            self.minimum_charges.is_some()
+                || self.maximum_charges.is_some()
+                || self.minimum_reported_cast_count.is_some()
+                || self.maximum_reported_cast_count.is_some()
+                || self.cooldown_enabled.is_some()
+                || self.cooldown_active.is_some(),
+            "Empty spell resource filter"
+        );
+        ensure!(
+            self.minimum_charges
+                .zip(self.maximum_charges)
+                .is_none_or(|(a, b)| a <= b)
+                && self
+                    .minimum_reported_cast_count
+                    .zip(self.maximum_reported_cast_count)
+                    .is_none_or(|(a, b)| a <= b),
+            "Reversed spell resource bounds"
+        );
+        Ok(())
+    }
+
+    /// Conjunction of captured predicates: false dominates unknown; never castability.
+    pub fn matches(&self, row: &Value) -> Option<bool> {
+        let charges = row["charge_count"]["current"].as_u64();
+        let casts = row["reported_cast_count"].as_u64();
+        let checks: Vec<_> = [
+            self.minimum_charges
+                .map(|n| charges.map(|v| v >= u64::from(n))),
+            self.maximum_charges
+                .map(|n| charges.map(|v| v <= u64::from(n))),
+            self.minimum_reported_cast_count
+                .map(|n| casts.map(|v| v >= u64::from(n))),
+            self.maximum_reported_cast_count
+                .map(|n| casts.map(|v| v <= u64::from(n))),
+            self.cooldown_enabled
+                .map(|v| row["cooldown_state"]["enabled"].as_bool().map(|n| n == v)),
+            self.cooldown_active
+                .map(|v| row["cooldown_state"]["active"].as_bool().map(|n| n == v)),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        if checks.contains(&Some(false)) {
+            Some(false)
+        } else if checks.contains(&None) {
+            None
+        } else {
+            Some(true)
+        }
+    }
+}
+
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SpellbookSpellFilter {
     /// Match either the base or reported spell ID in one saved player spellbook row.
-    pub spell_id: std::num::NonZeroU32,
+    pub spell_id: Option<std::num::NonZeroU32>,
+    /// Captured resource predicates on the same row; allows resource-only discovery.
+    pub resources: Option<SpellResourceFilter>,
     pub passive: Option<bool>,
     pub off_spec: Option<bool>,
     /// Recorded API usability, not current cooldown/target eligibility.
@@ -833,6 +901,13 @@ impl Store {
         );
         if let Some(filter) = &spellbook_spell {
             ensure!(
+                filter.spell_id.is_some() || filter.resources.is_some(),
+                "Spell ID or resource filter required"
+            );
+            if let Some(resources) = &filter.resources {
+                resources.validate()?;
+            }
+            ensure!(
                 filter
                     .minimum_level_learned
                     .zip(filter.maximum_level_learned)
@@ -1197,26 +1272,44 @@ impl Store {
                     }
                     let spellbook_match=spellbook_spell.as_ref().and_then(|filter| {
                         let book=s.sections.get("spellbook")?;
-                        let requested=Some(u64::from(filter.spell_id.get()));
+                        let requested=filter.spell_id.map(|id|u64::from(id.get()));
+                        let mut resource_unknown=0;
+                        let mut resource_nonmatching=0;
                         let mut matches=book["entries"].as_object()?.iter().filter(|(_,row)| {
-                            (row["base_spell_id"].as_u64()==requested || row["spell_id"].as_u64()==requested)
+                            (requested.is_none() || row["base_spell_id"].as_u64()==requested || row["spell_id"].as_u64()==requested)
                                 && filter.passive.is_none_or(|flag|row["passive"].as_bool()==Some(flag))
                                 && filter.off_spec.is_none_or(|flag|row["off_spec"].as_bool()==Some(flag))
                                 && filter.usable.is_none_or(|flag|row["usability"]["usable"].as_bool()==Some(flag))
                                 && filter.insufficient_power.is_none_or(|flag|row["usability"]["insufficient_power"].as_bool()==Some(flag))
                                 && filter.minimum_level_learned.is_none_or(|minimum|row["level_learned"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
                                 && filter.maximum_level_learned.is_none_or(|maximum|row["level_learned"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
+                        }).filter(|(_,row)| {
+                            match filter.resources.as_ref().map(|resources|resources.matches(row)) {
+                                Some(Some(false)) => {resource_nonmatching+=1;false},
+                                Some(None) => {resource_unknown+=1;false},
+                                _ => true,
+                            }
                         }).map(|(slot,row)|(slot.parse::<u32>().unwrap(),row)).collect::<Vec<_>>();
                         if matches.is_empty() {return None;}
                         matches.sort_by_key(|(slot,_)|*slot);
-                        Some(json!({"coverage":book["coverage"],"spell_id":filter.spell_id,
+                        let mut matched=json!({"coverage":book["coverage"],"spell_id":filter.spell_id,
                             "matched_slots":matches.len(),"truncated":matches.len()>20,
                             "entries":matches.iter().take(20).map(|(slot,row)| {
                                 let mut observed=json!({"slot":slot,"base_spell_id":row["base_spell_id"],"spell_id":row["spell_id"],
                                     "passive":row["passive"],"off_spec":row["off_spec"],"level_learned":row["level_learned"]});
                                 if let Some(usability)=row.get("usability") {observed["usability"]=usability.clone();}
+                                if filter.resources.is_some() {
+                                    for field in ["charge_count","reported_cast_count","cooldown_state"] {observed[field]=row[field].clone();}
+                                }
                                 observed
-                            }).collect::<Vec<_>>()}))
+                            }).collect::<Vec<_>>()});
+                        if let Some(resources)=&filter.resources {
+                            matched["resources"]=json!(resources);
+                            matched["resource_unknown_slots"]=json!(resource_unknown);
+                            matched["resource_nonmatching_slots"]=json!(resource_nonmatching);
+                            matched["cast_eligibility_verified"]=json!(false);
+                        }
+                        Some(matched)
                     });
                     if spellbook_spell.is_some() && spellbook_match.is_none() {
                         continue;

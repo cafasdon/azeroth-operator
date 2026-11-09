@@ -194,6 +194,8 @@ struct Inspect {
     spellbook_off_spec: Option<bool>,
     /// Match a case-insensitive substring of the captured spell name.
     spellbook_name: Option<String>,
+    /// Same-row captured charges/cast counts/cooldown flags; never current castability.
+    spellbook_resource_filter: Option<azeroth_operator::SpellResourceFilter>,
     /// Match observed built-in action bar spells to the same saved Forever spellbook.
     #[serde(default)]
     action_bar_spellbook: bool,
@@ -1864,7 +1866,8 @@ impl Operator {
         let filter_spellbook = args.spellbook_spell_id.is_some()
             || args.spellbook_passive.is_some()
             || args.spellbook_off_spec.is_some()
-            || args.spellbook_name.is_some();
+            || args.spellbook_name.is_some()
+            || args.spellbook_resource_filter.is_some();
         let action_bar_hotkey = args.action_bar_hotkey.as_deref().map(str::trim);
         if action_bar_hotkey.is_some_and(|key| key.is_empty() || key.len() > 128) {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -2103,6 +2106,15 @@ impl Operator {
         if filter_spellbook && args.section.as_deref() != Some("spellbook") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Spellbook selection requires the spellbook section",
+            )]);
+        }
+        if args
+            .spellbook_resource_filter
+            .as_ref()
+            .is_some_and(|filter| filter.validate().is_err())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Spell resource filtering requires nonempty predicates and ordered count bounds",
             )]);
         }
         if args.tracked_recipe_id.is_some() && args.section.as_deref() != Some("tracked_recipes") {
@@ -3004,12 +3016,14 @@ impl Operator {
                             "Spellbook selection requires a saved Forever snapshot",
                         )]);
                     }
+                    let mut resource_unknown = 0;
+                    let mut resource_nonmatching = 0;
                     let observed = value["data"]
                         .get_mut("entries")
                         .and_then(serde_json::Value::as_object_mut)
                         .map(|rows| {
                             rows.retain(|_, row| {
-                                args.spellbook_spell_id.is_none_or(|id| {
+                                let selected = args.spellbook_spell_id.is_none_or(|id| {
                                     let requested = Some(u64::from(id.get()));
                                     row["base_spell_id"].as_u64() == requested
                                         || row["spell_id"].as_u64() == requested
@@ -3023,7 +3037,23 @@ impl Operator {
                                         row["name"].as_str().is_some_and(|name| {
                                             name.to_lowercase().contains(search)
                                         })
-                                    })
+                                    });
+                                selected
+                                    && match args
+                                        .spellbook_resource_filter
+                                        .as_ref()
+                                        .map(|filter| filter.matches(row))
+                                    {
+                                        Some(Some(false)) => {
+                                            resource_nonmatching += 1;
+                                            false
+                                        }
+                                        Some(None) => {
+                                            resource_unknown += 1;
+                                            false
+                                        }
+                                        _ => true,
+                                    }
                             });
                             !rows.is_empty()
                         });
@@ -3036,6 +3066,14 @@ impl Operator {
                     }
                     if let Some(off_spec) = args.spellbook_off_spec {
                         value["spellbook_off_spec"] = serde_json::json!(off_spec);
+                    }
+                    if let Some(resources) = args.spellbook_resource_filter.as_ref() {
+                        value["spellbook_resource_filter"] = serde_json::json!(resources);
+                        value["spellbook_resource_unknown_slots"] =
+                            serde_json::json!(observed.map(|_| resource_unknown));
+                        value["spellbook_resource_nonmatching_slots"] =
+                            serde_json::json!(observed.map(|_| resource_nonmatching));
+                        value["cast_eligibility_verified"] = serde_json::json!(false);
                     }
                 }
                 if args.section.as_deref() == Some("currency_balances") {

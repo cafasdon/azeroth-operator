@@ -7,6 +7,11 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: spell resources now support saved-capture discovery and
+same-row inspection filtering, closing the preceding capture-to-search gap.
+[Offline evidence](spell-resource-search-verification-2026-11-09.md). Current
+casting eligibility, fresh active identity and native qualification remain open.
+
 9 November update: readable spell charge/cast-count/cooldown-flag observations
 now reach strict local readers, row summaries and exact reported-ID action-bar
 references. [Offline evidence](spell-resources-verification-2026-11-09.md). Native

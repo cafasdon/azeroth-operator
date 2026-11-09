@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Spell-resource discovery now filters captured current-charge/cast-count ranges
+and cooldown enabled/active flags on the same row as spell identity/metadata.
+Inspection shares the predicates; unknown versus zero/false remains explicit.
+Resource-only saved-capture searches are supported without inferring current
+casting eligibility or activity. [Evidence](../../docs/spell-resource-search-verification-2026-11-09.md).
+
 Spell resources: manual capture can retain stable readable charge counts, reported
 cast counts and enabled/active cooldown flags. Saved summaries distinguish missing
 observations and action-bar references use exact reported spell IDs, preserving

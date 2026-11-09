@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Saved spellbook searches can now combine charge/cast-count ranges and cooldown
+flags, or discover matching resource observations without a spell ID. Inspection
+uses the same predicates and keeps unknown values separate from zero/false.
+[Offline evidence](docs/spell-resource-search-verification-2026-11-09.md).
+
 Spellbook exports can retain readable, stable charge counts, reported cast counts
 and cooldown flags. Local summaries and exact reported-ID action-bar references
 keep these historical observations separate from current casting eligibility.

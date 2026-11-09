@@ -1,5 +1,34 @@
 # Forever
 
+`list_snapshots.spellbook_spell.resources` and
+`inspect_snapshot.spellbook_resource_filter` share six predicates:
+`minimum_charges`, `maximum_charges`, `minimum_reported_cast_count`,
+`maximum_reported_cast_count`, `cooldown_enabled` and `cooldown_active`.
+Charge bounds apply to the captured **current** count, not maximum charge capacity.
+Numeric bounds are inclusive u32, including zero. Supply at least one predicate;
+empty/all-null objects, reversed ranges and malformed values reject.
+
+Every predicate matches the same spellbook row. Missing values are unknown and
+cannot satisfy a predicate; a known false predicate dominates unknown ones.
+No absent value becomes zero/false. Listing permits an omitted `spell_id` only
+with a resource filter; existing base-or-reported ID, passive/off-spec, usability
+and learned-level predicates still compose on that same row. Matched entries
+retain both IDs: resource data belongs to the reported spell ID, not a separately
+verified base alias or action's casting capacity. Legacy ID-only projection shape
+is unchanged. With resources, matches include the three saved resource fields,
+stage unknown/nonmatching counts and false casting-eligibility verification.
+
+Inspection requires `section: spellbook` and composes resources after existing
+ID/name/passive/off-spec selectors. `spellbook_resource_unknown_slots` and
+`spellbook_resource_nonmatching_slots` count rows at that stage; missing books
+give null counters and observed empty books give zero. Listing stage counters
+likewise follow other row predicates, before the 20-entry numeric projection cap.
+Capture paging and newest-per-character selection keep their existing order:
+a newer capture with unknown resources cannot fall back to older matching data.
+Name-free capture projections do not add spell names. Historical matches never
+verify current cooldown, recharge, power, range, target or castability.
+[Offline evidence](../../docs/spell-resource-search-verification-2026-11-09.md).
+
 Manual spellbook capture optionally records `charge_count: {current, maximum}`,
 `reported_cast_count` and `cooldown_state: {enabled, active}` for each exported
 reported spell ID. Counts are public u32 observations; maximum charges is positive

@@ -1,5 +1,9 @@
 # Changelog
 
+- Search and inspect saved spellbook resources with shared same-row charge/cast-
+  count ranges and cooldown flags, including resource-only capture discovery,
+  explicit unknown counters and unchanged legacy ID-query projections.
+
 - Capture optional stable public spell charges, reported cast counts and cooldown
   flags, preserving restricted/unknown values as absent. Add bounded row summaries
   and exact reported-spell-ID action-bar resource references; no timer/GCD reads,
