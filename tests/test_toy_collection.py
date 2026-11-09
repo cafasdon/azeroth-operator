@@ -157,6 +157,14 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                         "before_id": key, "after_id": after_key, "toy_view_changes": True})
                     self.assertFalse(compared.isError)
                     change = json.loads(compared.content[0].text)["toy_view_changes"]
+                    self.assertEqual(change["shared_toy_count"],1)
+                    self.assertEqual(change["shared_toys_with_unchanged_flags"],0)
+                    same=await session.call_tool("compare_snapshots",{
+                        "before_id":key,"after_id":key,"toy_view_changes":True})
+                    self.assertFalse(same.isError,same)
+                    same_view=json.loads(same.content[0].text)["toy_view_changes"]
+                    self.assertEqual(same_view["shared_toy_count"],2)
+                    self.assertEqual(same_view["shared_toys_with_unchanged_flags"],2)
                     self.assertEqual(change["coverage"], "filtered_journal")
                     self.assertEqual(change["observed_only_before"], [2])
                     self.assertEqual(change["observed_only_after"], [3, 10])

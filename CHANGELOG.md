@@ -1,5 +1,7 @@
 # Changelog
 
+- Show shared toy coverage in saved Forever journal comparisons.
+
 - Break down saved Forever pet journal species by observed owned and unowned row presence.
 
 - Filter saved Forever pet journal species by observed owned and unowned row presence.

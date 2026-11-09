@@ -12,6 +12,8 @@ Inspect `toy_collection_view` with `toy_collected`, `toy_favorite`, or both
 to shortlist matching rows without specifying an item ID. The displayed
 count still describes the original capture. `toy_matched_count` counts
 the retained rows or reports null when the view is unavailable.
+Toy comparisons count IDs visible in both saved views and how many of those
+had unchanged collected and favourite flags.
 
 Saved mount comparisons count reported usable mounts, favourites, and
 mounts with both flags in each capture. These counts describe the saved

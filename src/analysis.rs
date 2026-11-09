@@ -4081,6 +4081,8 @@ fn compare_toy_views(before: &Value, after: &Value) -> Value {
     }
     json!({"coverage":"filtered_journal","observed_only_before":only_before,
         "observed_only_after":only_after,"changes":changes,
+        "shared_toy_count":old.len()-only_before.len(),
+        "shared_toys_with_unchanged_flags":old.len()-only_before.len()-changes.len(),
         "before_displayed_count":before["displayed_count"],"after_displayed_count":after["displayed_count"]})
 }
 
