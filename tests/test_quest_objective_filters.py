@@ -91,6 +91,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied['sections']['quests']['7']['currency_rewards'] = {'1':{'currency_id':55,'quantity':1}}
             tied['sections']['quests']['10']['renown_rewards'] = {'1':{'faction_id':55,'quantity':2}}
             tied['sections']['quests']['3']['renown_rewards'] = {'1':{'faction_id':60,'quantity':1}}
+            tied['sections']['quests']['3'].update(elite=True,suggested_group_size=3)
+            tied['sections']['quests']['10'].update(elite=False,suggested_group_size=2)
             tied_key = store.ingest(tied)
             many_local = deepcopy(tied)
             many_local['character']['name'] = 'ManyLocal'
@@ -209,6 +211,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await timed(quest_reward_renown_faction_id=118),[])
                     await timed(error=True,family='retail',quest_reward_renown_faction_id=55)
                     await timed(error=True,quest_reward_renown_faction_id=0)
+                    group = await timed(quest_difficulty='suggested_group',quest_max_suggested_group_size=2)
+                    match = group[0]['quest_match']['matching_quests']
+                    self.assertEqual([(row['quest_id'],row['elite'],row['suggested_group_size']) for row in match],
+                                     [(10,False,2)])
+                    elite = await timed(quest_difficulty='elite',quest_on_captured_map=True)
+                    self.assertEqual([row['quest_id'] for row in elite[0]['quest_match']['matching_quests']],[3])
+                    self.assertEqual(await timed(quest_difficulty='elite',quest_max_suggested_group_size=2),[])
+                    self.assertEqual(await timed(quest_id=7,quest_max_suggested_group_size=5),[])
+                    await timed(error=True,family='retail',quest_difficulty='elite')
+                    await timed(error=True,quest_max_suggested_group_size=0)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
                         quest_objective_finished=False,quest_objective_min_remaining=1,
                         quest_objective_max_remaining=1)

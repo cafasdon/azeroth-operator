@@ -3139,3 +3139,8 @@ Use `list_snapshots.quest_reward_renown_faction_id` to find quests with a
 recorded renown reward for that faction. This can be combined with item or
 currency reward filters on the same quest. Faction standing and paragon
 progress do not count as quest rewards.
+
+Use `list_snapshots.quest_difficulty` with `elite` or `suggested_group`,
+and optionally `quest_max_suggested_group_size`, to shortlist group
+content. Suggested group requires a recorded size above one. The size cap
+requires a recorded size and matches inclusively. These are saved game hints.

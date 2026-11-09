@@ -8426,6 +8426,22 @@ pub fn quest_readiness(quest: &Value) -> QuestReadiness {
     }
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QuestDifficulty {
+    Elite,
+    SuggestedGroup,
+}
+
+impl QuestDifficulty {
+    pub fn matches(self, quest: &serde_json::Value) -> Option<bool> {
+        match self {
+            Self::Elite => quest["elite"].as_bool(),
+            Self::SuggestedGroup => quest["suggested_group_size"].as_u64().map(|size| size > 1),
+        }
+    }
+}
+
 pub fn quest_objective_matches(
     quest: &Value,
     kind: Option<&str>,

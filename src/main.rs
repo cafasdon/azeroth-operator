@@ -256,7 +256,7 @@ struct Inspect {
     #[serde(default)]
     quest_on_captured_map: bool,
     /// Filter saved Forever quests to observed elite or suggested-group quests.
-    quest_difficulty: Option<QuestDifficulty>,
+    quest_difficulty: Option<azeroth_operator::analysis::QuestDifficulty>,
     /// Filter saved Forever quests by captured turn-in readiness.
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Keep quests with an objective of this exact captured kind (1 to 64 bytes).
@@ -354,22 +354,6 @@ struct Inspect {
     tracked_recipe_learning: Option<azeroth_operator::RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
     spending_budget: Option<SpendingBudget>,
-}
-
-#[derive(Clone, Copy, Deserialize, serde::Serialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-enum QuestDifficulty {
-    Elite,
-    SuggestedGroup,
-}
-
-impl QuestDifficulty {
-    fn matches(self, quest: &serde_json::Value) -> Option<bool> {
-        match self {
-            Self::Elite => quest["elite"].as_bool(),
-            Self::SuggestedGroup => quest["suggested_group_size"].as_u64().map(|size| size > 1),
-        }
-    }
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -557,6 +541,10 @@ struct List {
     quest_reward_currency_id: Option<std::num::NonZeroU32>,
     /// Match a faction ID in the same quest's recorded renown rewards.
     quest_reward_renown_faction_id: Option<std::num::NonZeroU32>,
+    /// Match recorded elite or suggested-group quests.
+    quest_difficulty: Option<azeroth_operator::analysis::QuestDifficulty>,
+    /// Match a recorded suggested group size at or below this value.
+    quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
     /// Match an exact recorded objective kind on the same quest.
     quest_objective_kind: Option<String>,
     /// Match the reported finished state on the same objective.
@@ -2317,6 +2305,8 @@ impl Operator {
                 quest_reward_item_id: args.quest_reward_item_id,
                 quest_reward_currency_id: args.quest_reward_currency_id,
                 quest_reward_renown_faction_id: args.quest_reward_renown_faction_id,
+                quest_difficulty: args.quest_difficulty,
+                quest_max_suggested_group_size: args.quest_max_suggested_group_size,
                 quest_objective_kind: args.quest_objective_kind.as_deref(),
                 quest_objective_finished: args.quest_objective_finished,
                 quest_objective_remaining: (

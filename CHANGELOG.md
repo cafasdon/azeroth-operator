@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever elite and group quests by recorded difficulty and suggested group size.
+
 - Find saved Forever quests by recorded renown reward faction.
 
 - Find saved Forever quests offering a recorded fixed or choice currency reward.

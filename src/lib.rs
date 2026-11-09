@@ -1896,6 +1896,8 @@ pub struct CaptureFilters<'a> {
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
     pub quest_reward_currency_id: Option<std::num::NonZeroU32>,
     pub quest_reward_renown_faction_id: Option<std::num::NonZeroU32>,
+    pub quest_difficulty: Option<analysis::QuestDifficulty>,
+    pub quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
     pub quest_objective_kind: Option<&'a str>,
     pub quest_objective_finished: Option<bool>,
     pub quest_objective_remaining: (Option<u32>, Option<u32>),
@@ -2138,6 +2140,8 @@ impl Store {
             quest_reward_item_id,
             quest_reward_currency_id,
             quest_reward_renown_faction_id,
+            quest_difficulty,
+            quest_max_suggested_group_size,
             quest_objective_kind,
             quest_objective_finished,
             quest_objective_remaining,
@@ -2712,6 +2716,8 @@ impl Store {
                     .is_none_or(|(min, max)| min <= max),
             "Invalid saved quest objective filter"
         );
+        let filter_quest_group =
+            quest_difficulty.is_some() || quest_max_suggested_group_size.is_some();
         let filter_quest_timer =
             quest_max_remaining_seconds.is_some() || quest_projected_expiry_by.is_some();
         ensure!(
@@ -2724,7 +2730,8 @@ impl Store {
                 && quest_waypoint_map_id.is_none()
                 && !quest_on_captured_map
                 && !filter_quest_timer
-                && !filter_quest_objectives)
+                && !filter_quest_objectives
+                && !filter_quest_group)
                 || family == Family::Forever,
             "Quest filtering requires Forever"
         );
@@ -3395,6 +3402,13 @@ impl Store {
                             && quest_reward_renown_faction_id.is_none_or(|id| {
                                 has_reward(quest, "renown_rewards", "faction_id", id.get())
                             })
+                            && quest_difficulty
+                                .is_none_or(|difficulty| difficulty.matches(quest) == Some(true))
+                            && quest_max_suggested_group_size.is_none_or(|maximum| {
+                                quest["suggested_group_size"]
+                                    .as_u64()
+                                    .is_some_and(|size| size <= u64::from(maximum.get()))
+                            })
                             && (!filter_quest_objectives
                                 || analysis::quest_objective_matches(
                                     quest,
@@ -3425,7 +3439,8 @@ impl Store {
                             || quest_readiness.is_some()
                             || waypoint_map.is_some()
                             || filter_quest_timer
-                            || filter_quest_objectives))
+                            || filter_quest_objectives
+                            || filter_quest_group))
                         .then(|| {
                             s.sections.get("quests").and_then(Value::as_object).map_or(
                                 0,
@@ -3835,6 +3850,7 @@ impl Store {
                         || quest_reward_item_id.is_some()
                         || quest_reward_currency_id.is_some()
                         || quest_reward_renown_faction_id.is_some()
+                        || filter_quest_group
                     {
                         let mut local: Vec<_> = s
                             .sections
@@ -3884,6 +3900,10 @@ impl Store {
                                     row["recorded_renown_reward_match"] = json!({
                                         "faction_id":faction,"reward_eligibility_verified":false,
                                     });
+                                }
+                                if filter_quest_group {
+                                    row["elite"] = json!(quest["elite"].as_bool());
+                                    row["suggested_group_size"] = json!(quest["suggested_group_size"].as_u64());
                                 }
                                 if local_quest_soonest_first {
                                     row["remaining_seconds"] = json!(quest["timer"]["remaining_seconds"].as_u64());
