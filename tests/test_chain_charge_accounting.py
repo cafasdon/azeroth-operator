@@ -74,6 +74,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     covered_chain = await plan(covered_key)
                     self.assertIs(covered_chain['stock_plan']['nonmaterial_requirements'][
                         'observed_charges_cover_chain'], True)
+                    self.assertEqual(covered_chain['stock_plan']['captured_chain_checks_pass'],
+                                     {'bags':None,'all_observed_storage':None})
+                    self.assertEqual(one['stock_plan']['captured_chain_checks_pass'],
+                                     {'bags':False,'all_observed_storage':False})
                     repeated = [row for row in one['steps'] if row['recipe_id']==102]
                     self.assertEqual(len(repeated),2)
                     self.assertTrue(repeated[0]['captured_nonmaterial_checks']['observed_charges_cover_request'])

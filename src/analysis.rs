@@ -1072,11 +1072,27 @@ pub fn reagent_chain_stock_plan(
     let combined = combine_recipe_materials(reviews.iter())?;
     ensure!(combined.is_array(), "Unsupported chain materials");
     let (materials, checkpoint) = ordered_recipe_materials(reviews.iter(), &combined)?;
+    let material_coverage = ordered_recipe_material_coverage(&materials);
+    let nonmaterial = ordered_recipe_requirements_with_charges(reviews.iter(), true);
+    let captured_checks_pass = |storage: &str| {
+        let checks = [
+            material_coverage[storage].as_bool(),
+            nonmaterial["observed_charges_cover_chain"].as_bool(),
+            nonmaterial["observed_chain_conditions"]["all_met"].as_bool(),
+        ];
+        if checks.contains(&Some(false)) {
+            Some(false)
+        } else {
+            checks.iter().all(Option::is_some).then_some(true)
+        }
+    };
     Ok(
         json!({"basis":"minimum_starting_items_for_printed_chain_order_and_reported_minimum_yields",
-        "material_coverage":ordered_recipe_material_coverage(&materials),
+        "material_coverage":material_coverage,
+        "captured_chain_checks_pass":{"bags":captured_checks_pass("bags"),
+            "all_observed_storage":captured_checks_pass("all_observed_storage")},
         "starting_materials":materials,"material_checkpoint":checkpoint,
-        "nonmaterial_requirements":ordered_recipe_requirements_with_charges(reviews.iter(), true),
+        "nonmaterial_requirements":nonmaterial,
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
         "withdrawal_eligibility_verified":false,"current_stock_verified":false,"minimum_yields_verified":false,
         "craftability_verified":false,"live":false,"game_execution":false}),

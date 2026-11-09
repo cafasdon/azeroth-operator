@@ -267,6 +267,10 @@ The stock plan counts steps with met, unmet and unknown conditions. Its
 `observed_chain_conditions.all_met` is false when any step has an observed
 unmet condition, true when every step's saved condition check passes, and
 null otherwise. Repeated recipe steps are counted separately.
+The stock plan's `captured_chain_checks_pass` combines starting materials,
+charges and crafting conditions for bags alone and for all observed storage.
+A known failure makes that result false, all three passes make it true, and
+other cases remain null. These checks describe the saved plan only.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks
