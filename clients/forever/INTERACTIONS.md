@@ -2356,6 +2356,9 @@ Use `saved_reset_reference_at` with `character_summary` to merge the
 instance and world boss schedules from the same Forever capture. Entries
 retain their section, saved slot and name. Coverage is separate for each
 section, including unknown timer counts and missing capture data.
+Add `saved_reset_through` to limit that schedule to an inclusive end time.
+The reference is still exclusive. Coverage counts describe the whole capture,
+even when the requested window contains no projected resets.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the

@@ -127,7 +127,11 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
 }
 
 /// Merge historical reset timestamps from both validated sections of one capture.
-pub fn combined_schedule(snapshot: &crate::Snapshot, reference: DateTime<Utc>) -> Result<Value> {
+pub fn combined_schedule(
+    snapshot: &crate::Snapshot,
+    reference: DateTime<Utc>,
+    through: Option<DateTime<Utc>>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Saved reset schedules require Forever"
@@ -150,7 +154,9 @@ pub fn combined_schedule(snapshot: &crate::Snapshot, reference: DateTime<Utc>) -
             let reset = row["projected_reset_at"]
                 .as_str()
                 .and_then(|value| value.parse::<DateTime<Utc>>().ok());
-            if let Some(reset) = reset.filter(|reset| *reset > reference) {
+            if let Some(reset) =
+                reset.filter(|reset| *reset > reference && through.is_none_or(|end| *reset <= end))
+            {
                 by_time
                     .entry(reset)
                     .or_default()
@@ -163,11 +169,13 @@ pub fn combined_schedule(snapshot: &crate::Snapshot, reference: DateTime<Utc>) -
         .into_iter()
         .map(|(at, entries)| json!({"at":at,"entries":entries}))
         .collect();
-    Ok(
-        json!({"captured_at":snapshot.captured_at,"reference_at":reference,"coverage":coverage,
+    let mut result = json!({"captured_at":snapshot.captured_at,"reference_at":reference,"coverage":coverage,
         "next_projected_reset":schedule.first(),"upcoming_projected_resets":schedule,
-        "current_lockout_verified":false,"current_availability_verified":false,"live":false}),
-    )
+        "current_lockout_verified":false,"current_availability_verified":false,"live":false});
+    if let Some(end) = through {
+        result["through_at"] = json!(end);
+    }
+    Ok(result)
 }
 
 pub(crate) fn compare_world_bosses(before: &Value, after: &Value) -> Value {

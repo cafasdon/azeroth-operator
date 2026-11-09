@@ -110,6 +110,18 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                             {'section':'saved_instances','slot':1,'name':'Fixture raid'}]}])
                     self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
                     self.assertIs(schedule['current_lockout_verified'],False)
+                    window = await session.call_tool('character_summary', {
+                        'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                        'saved_reset_through':'2025-01-02T00:01:00Z'})
+                    self.assertFalse(window.isError,window)
+                    bounded = json.loads(window.content[0].text)['saved_reset_schedule']
+                    self.assertEqual(bounded['upcoming_projected_resets'],schedule['upcoming_projected_resets'][:1])
+                    self.assertEqual(bounded['coverage'],schedule['coverage'])
+                    self.assertEqual(bounded['through_at'],'2025-01-02T00:01:00Z')
+                    reversed_window = await session.call_tool('character_summary', {
+                        'snapshot_id':key,'saved_reset_reference_at':'2025-01-02T00:01:00Z',
+                        'saved_reset_through':'2025-01-01T23:59:00Z'})
+                    self.assertTrue(reversed_window.isError)
                     reference = {'saved_reset_reference_at':'2025-01-01T23:59:00Z'}
                     relative = (await inspect(**reference))['saved_reset_projection']
                     self.assertEqual(relative['relative_to_reference'], {

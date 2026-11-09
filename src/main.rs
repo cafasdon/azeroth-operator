@@ -581,6 +581,8 @@ struct Summary {
     snapshot_id: String,
     /// Merge saved Forever dungeon, raid and world boss reset projections after this timestamp.
     saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Inclusive end of the saved reset schedule window. Requires saved_reset_reference_at.
+    saved_reset_through: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1827,13 +1829,24 @@ impl Operator {
         )
     )]
     fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        if let Some(end) = args.saved_reset_through
+            && args
+                .saved_reset_reference_at
+                .is_none_or(|start| end < start)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A saved reset schedule end requires a reference time at or before it",
+            )]);
+        }
         match self.store.read(&args.snapshot_id) {
             Ok(s) => {
                 let mut summary = azeroth_operator::analysis::summary(&s);
                 if let Some(reference) = args.saved_reset_reference_at {
-                    let Ok(schedule) =
-                        azeroth_operator::saved_resets::combined_schedule(&s, reference)
-                    else {
+                    let Ok(schedule) = azeroth_operator::saved_resets::combined_schedule(
+                        &s,
+                        reference,
+                        args.saved_reset_through,
+                    ) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Saved reset schedules require a valid Forever snapshot",
                         )]);

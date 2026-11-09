@@ -1,5 +1,7 @@
 # Changelog
 
+- Limit combined saved Forever reset schedules to a requested play window.
+
 - Merge saved Forever instance and world boss reset schedules in character summary.
 
 - Show a chronological schedule of saved Forever resets after the reference time.
