@@ -1770,6 +1770,9 @@ When the later capture contains action-bar observations,
 `after_action_slots_with_lost_spellbook_match` lists its spell shortcuts
 whose exact IDs appeared as base or reported IDs only in the earlier
 spellbook. This is a shortcut review cue based on the observed slots.
+`after_action_slots_with_gained_spellbook_match` lists later shortcuts
+whose IDs appeared only in the later spellbook, whether as base or reported
+IDs. The comparison does not establish when a shortcut was placed.
 
 `inspect_snapshot` with `section: "experience"` shows the saved character's
 XP, level threshold and any observed rested XP or XP-disabled flag.
