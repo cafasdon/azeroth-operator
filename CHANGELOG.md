@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever pet action-bar context and observed slot changes.
+
 - Find saved Forever pet action spells by exact ID and captured flags.
 
 - Verify saved buyback search and partial quotes through the packaged Forever fixture.

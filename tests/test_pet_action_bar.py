@@ -77,6 +77,23 @@ class PetActionBarTests(unittest.IsolatedAsyncioTestCase):
                     maximum_matches=await search(2**32-1,autocast_enabled=False)
                     self.assertEqual([row['slot'] for row in maximum_matches[0]['pet_action_spell_match']['matches']],
                                      list(range(1,11)))
+                    changed=deepcopy(value)
+                    changed['sections']['pet_action_bar']['entries']['2']['autocast_enabled']=False
+                    changed['sections']['pet_action_bar']['entries'].pop('10')
+                    changed['sections']['pet_action_bar']['entries']['3']={'kind':'spell','spell_id':103}
+                    async def compare(after):
+                        return (await call('compare_snapshots',before_id=keys[0],after_id=after,
+                            pet_action_bar_changes=True))['pet_action_bar_changes']
+                    difference=await compare(store.ingest(changed))
+                    self.assertEqual([row['slot'] for row in difference['slot_changes']],[2,3,10])
+                    self.assertFalse(difference['slot_changes'][0]['after']['autocast_enabled'])
+                    self.assertIsNone(difference['slot_changes'][1]['before'])
+                    self.assertIsNone(difference['slot_changes'][2]['after'])
+                    self.assertFalse(difference['same_pet_verified'])
+                    self.assertEqual((await compare(keys[0]))['slot_changes'],[])
+                    self.assertIsNone((await compare(keys[1]))['after_context'])
+                    self.assertIsNone((await compare(keys[3]))['slot_changes'])
+                    self.assertEqual(len((await compare(keys[4]))['slot_changes']),3)
                     self.assertEqual((await call('inspect_snapshot',snapshot_id=keys[0],section='pet_action_bar'))['data'],value['sections']['pet_action_bar'])
                     summary=(await call('character_summary',snapshot_id=keys[0]))['pet_action_bar_observations']
                     self.assertEqual(summary['observed_slots'],3);self.assertEqual(summary['unobserved_slots'],7)

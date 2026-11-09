@@ -2822,6 +2822,7 @@ pub struct ComparisonSelectors {
     pub player_resource_changes: bool,
     pub player_aura_changes: bool,
     pub weapon_enchant_changes: bool,
+    pub pet_action_bar_changes: bool,
     pub merchant_buyback_changes: bool,
     pub repair_quote_changes: bool,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3217,6 +3218,13 @@ pub fn compare_observations(
             after,
             selectors.player_aura_spell_id.map(|id| u64::from(id.get())),
         );
+    }
+    if selectors.pet_action_bar_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Pet action bar comparison requires Forever"
+        );
+        comparison["pet_action_bar_changes"] = compare_pet_action_bars(before, after);
     }
     if selectors.weapon_enchant_changes {
         ensure!(
@@ -4511,6 +4519,32 @@ fn compare_bag_capacity_slots(before: &Snapshot, after: &Snapshot) -> Option<Vec
             })
             .collect(),
     )
+}
+
+fn compare_pet_action_bars(before: &Snapshot, after: &Snapshot) -> Value {
+    let old = before.sections.get("pet_action_bar");
+    let new = after.sections.get("pet_action_bar");
+    let context = |bar: &Value| {
+        json!({
+            "pet_present":bar["pet_present"],"has_action_bar":bar["has_action_bar"],
+            "observed_slots":bar["entries"].as_object().map(|rows| rows.len())
+        })
+    };
+    let changes = old
+        .zip(new)
+        .filter(|(a, b)| a["has_action_bar"] == true && b["has_action_bar"] == true)
+        .map(|(a, b)| {
+            (1..=10)
+                .filter_map(|slot| {
+                    let key = slot.to_string();
+                    let old = a["entries"].get(&key);
+                    let new = b["entries"].get(&key);
+                    (old != new).then(|| json!({"slot":slot,"before":old,"after":new}))
+                })
+                .collect::<Vec<_>>()
+        });
+    json!({"before_context":old.map(context),"after_context":new.map(context),
+        "slot_changes":changes,"same_pet_verified":false,"cast_eligibility_verified":false,"live":false})
 }
 
 fn compare_merchant_buyback(before: &Snapshot, after: &Snapshot) -> Value {

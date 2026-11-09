@@ -5,6 +5,10 @@ saved pet bar slots. Optional `is_active`, `autocast_allowed`,
 `autocast_enabled` and `in_range` flags must match on the same row.
 A missing flag cannot satisfy a predicate, including false. Results
 describe the saved action bar and leave current cast eligibility unverified.
+Use `compare_snapshots.pet_action_bar_changes` to compare saved pet and
+bar context and changed numeric slots. Slot comparison requires a bar
+reported in both captures. One-sided rows are unobserved on the other
+side. Pet identity and casting eligibility remain unverified.
 
 Saved carried bag space comparisons list changed bag slots in numeric
 order, with before and after readings and signed capacity changes.
