@@ -116,9 +116,9 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(page['rows'],plan['rows'])
                     self.assertEqual(page['suggested_locations']['locations'],[])
                     self.assertIsNone((await inspect_restock(f_missing))['bank_withdrawal_plan'])
-                    async def space(key, limits):
+                    async def space(key, limits, items=requirements['items']):
                         reply = await session.call_tool('inspect_snapshot',{
-                            'snapshot_id':key,'section':'bags','bag_restock_requirements':requirements['items'],
+                            'snapshot_id':key,'section':'bags','bag_restock_requirements':items,
                             'bag_restock_stack_limits':limits})
                         self.assertFalse(reply.isError,reply)
                         return json.loads(reply.content[0].text)['bag_restock_new_stack_space']
@@ -129,6 +129,14 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(estimate['observed_general_free_slots'],2)
                         self.assertIs(estimate['fits_observed_general_slots_under_assumptions'],fits)
                         self.assertIs(estimate['placement_verified'],False)
+                    for limit, contradicted, slots in [(9,True,None),(10,False,1),(11,False,1)]:
+                        estimate = await space(d_key,[{'item_id':100,'maximum_stack':limit}],
+                                               [{'item_id':100,'quantity':19}])
+                        row = estimate['items'][0]
+                        self.assertEqual(row['largest_observed_bag_stack'],10)
+                        self.assertIs(row['assumption_below_observed_stack'],contradicted)
+                        self.assertEqual(row['new_stack_slots'],slots)
+                        self.assertEqual(estimate['new_stack_slots'],slots)
                     unknown = await space(d_key,[{'item_id':100,'maximum_stack':1}])
                     self.assertIsNone(unknown['new_stack_slots'])
                     self.assertIsNone((await space(h_key,[{'item_id':200,'maximum_stack':3}]))[

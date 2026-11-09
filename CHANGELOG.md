@@ -1,5 +1,7 @@
 # Changelog
 
+- Flag restocking stack assumptions contradicted by saved carried stacks.
+
 - Estimate general bag space for saved Forever restocking using supplied stack limits.
 
 - Allow saved Forever bag restocking to reference a separate compatible inbox capture.

@@ -2706,6 +2706,24 @@ pub fn restock_new_stack_space(
     if review["storage_observed"] != true {
         return None;
     }
+    let mut largest_bag_stacks = BTreeMap::<u32, u64>::new();
+    if let Some(bags) = snapshot.sections.get("bags").and_then(Value::as_object) {
+        for item in bags
+            .values()
+            .filter_map(Value::as_object)
+            .flat_map(|slots| slots.values())
+        {
+            if let Some((id, count)) = item["item_id"]
+                .as_u64()
+                .and_then(|id| u32::try_from(id).ok())
+                .zip(item["count"].as_u64())
+                && stack_limits.contains_key(&id)
+            {
+                let largest = largest_bag_stacks.entry(id).or_default();
+                *largest = (*largest).max(count);
+            }
+        }
+    }
     let mut total = Some(0u64);
     let mut items = Vec::new();
     for row in review["items"].as_array()? {
@@ -2715,12 +2733,19 @@ pub fn restock_new_stack_space(
         }
         let item_id = u32::try_from(row["item_id"].as_u64()?).ok()?;
         let limit = stack_limits.get(&item_id).copied();
-        let slots = limit.map(|limit| shortfall.div_ceil(u64::from(limit.get())));
+        let largest = largest_bag_stacks.get(&item_id).copied();
+        let contradicted = limit
+            .zip(largest)
+            .map(|(limit, largest)| largest > u64::from(limit.get()));
+        let slots = limit
+            .filter(|_| contradicted != Some(true))
+            .map(|limit| shortfall.div_ceil(u64::from(limit.get())));
         total = total
             .zip(slots)
             .and_then(|(sum, slots)| sum.checked_add(slots));
         items.push(json!({"item_id":item_id,"bag_shortfall":shortfall,
-            "assumed_stack_limit":limit,"new_stack_slots":slots}));
+            "assumed_stack_limit":limit,"largest_observed_bag_stack":largest,
+            "assumption_below_observed_stack":contradicted,"new_stack_slots":slots}));
     }
     let general_free =
         carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());

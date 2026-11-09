@@ -3017,3 +3017,7 @@ rows to estimate new stacks for the requested bag shortfall. The estimate
 compares only observed general-purpose free slots. It excludes merging into
 existing stacks, specialty bag fit and merchant bundle surplus. Missing
 limits or bag capacity leave the relevant totals or comparison unknown.
+
+For supplied limits, the estimate also reports the largest matching carried
+stack, when observed. A limit smaller than that stack leaves the slot
+estimate unknown. Observed quantities do not establish the native stack cap.
