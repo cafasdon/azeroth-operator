@@ -76,6 +76,12 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                     yields=await search(**yield_args)
                     self.assertEqual([r['recipe_id'] for r in yields['records']],[2,10,1,11])
                     self.assertEqual(yields['ordering_basis'],'captured_base_output_minimum_per_craft_only')
+                    efficiency={'order':'reported_base_output_per_reagent_desc','output_item_id':100,'reagent_item_id':10}
+                    efficient=await search(**efficiency)
+                    self.assertEqual([r['recipe_id'] for r in efficient['records']],[10,1])
+                    self.assertEqual(efficient['ordering_basis'],'captured_base_output_minimum_per_selected_required_reagent')
+                    await search(error=True,order=efficiency['order'],output_item_id=100)
+                    await search(error=True,order=efficiency['order'],reagent_item_id=10)
                     self.assertIs(yields['craftability_verified'],False)
                     yield_page=await search(**yield_args,**args,offset=1,limit=2)
                     self.assertEqual([r['recipe_id'] for r in yield_page['records']],[10,1])

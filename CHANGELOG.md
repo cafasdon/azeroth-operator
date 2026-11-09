@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever recipes by minimum base output per unit of a selected required reagent.
+
 - Filter saved Forever recipes by their reported relative difficulty.
 
 - Compare captured Forever recipe skill-up flags, counts and difficulty across saved profession views.

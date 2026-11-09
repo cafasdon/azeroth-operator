@@ -99,6 +99,10 @@ paging. The ordering uses the saved schematic's base range and excludes
 bonus output and total craftable quantity.
 Use `minimum_base_output` to require a positive lower bound per craft.
 Missing yield ranges are excluded when this filter is supplied.
+Use `reported_base_output_per_reagent_desc` with both `output_item_id` and
+`reagent_item_id` to sort by minimum base yield divided by the captured
+required quantity of that reagent. Missing yields sort last. The comparison
+accounts for the selected reagent only.
 [Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
 
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge

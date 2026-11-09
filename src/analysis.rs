@@ -22,6 +22,7 @@ pub enum RecipeSearchOrder {
     ReportedSkillUpsDesc,
     ReportedCooldownRemainingAsc,
     ReportedBaseOutputMinimumDesc,
+    ReportedBaseOutputPerReagentDesc,
 }
 
 #[derive(
@@ -449,6 +450,11 @@ pub fn search_recipe_materials_ordered(
         "Observed item capacity ordering requires material filtering"
     );
     ensure!(
+        order != RecipeSearchOrder::ReportedBaseOutputPerReagentDesc
+            || (output_item_id.is_some() && reagent_item_id.is_some()),
+        "Reagent efficiency ordering requires output and reagent item IDs"
+    );
+    ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
     );
@@ -595,6 +601,27 @@ pub fn search_recipe_materials_ordered(
                 id.parse::<u32>().unwrap(),
             )
         });
+    } else if order == RecipeSearchOrder::ReportedBaseOutputPerReagentDesc {
+        let reagent_key = reagent_item_id.unwrap().to_string();
+        let ratio = |row: &Value| {
+            row["base_output_quantity"]["minimum"]
+                .as_u64()
+                .zip(row["reagents"][&reagent_key].as_u64())
+        };
+        matches.sort_unstable_by(|(left_id, left, _, _), (right_id, right, _, _)| {
+            let order = match (ratio(left), ratio(right)) {
+                (Some((left_output, left_cost)), Some((right_output, right_cost))) => {
+                    (right_output * left_cost).cmp(&(left_output * right_cost))
+                }
+                (left, right) => right.is_some().cmp(&left.is_some()),
+            };
+            order.then_with(|| {
+                left_id
+                    .parse::<u32>()
+                    .unwrap()
+                    .cmp(&right_id.parse::<u32>().unwrap())
+            })
+        });
     } else if order == RecipeSearchOrder::ReportedBaseOutputMinimumDesc {
         matches.sort_unstable_by_key(|(id, row, _, _)| {
             let minimum = row["base_output_quantity"]["minimum"].as_u64();
@@ -652,6 +679,8 @@ pub fn search_recipe_materials_ordered(
             RecipeSearchOrder::ReportedSkillUpsDesc => "captured_same_profession_skill_ups_only",
             RecipeSearchOrder::ReportedBaseOutputMinimumDesc =>
                 "captured_base_output_minimum_per_craft_only",
+            RecipeSearchOrder::ReportedBaseOutputPerReagentDesc =>
+                "captured_base_output_minimum_per_selected_required_reagent",
             RecipeSearchOrder::RecipeId => "recipe_id",
         });
         result["shared_material_allocation_performed"] = json!(false);
