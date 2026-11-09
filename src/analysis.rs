@@ -1097,6 +1097,8 @@ pub fn reagent_chain_stock_plan(
             }))
         })
         .collect();
+    let bank_locations =
+        chain_withdrawal_locations(inventory.unwrap_or(snapshot), &bank_withdrawals);
     let nonmaterial = ordered_recipe_requirements_with_charges(reviews.iter(), true);
     let checkpoints = [
         ("materials", &checkpoint["first_uncovered_recipe"]),
@@ -1132,6 +1134,7 @@ pub fn reagent_chain_stock_plan(
             "all_observed_storage":captured_checks_pass("all_observed_storage")},
         "starting_materials":materials,"material_checkpoint":checkpoint,
         "suggested_bank_withdrawal_list":bank_withdrawals,
+        "suggested_bank_withdrawal_locations":bank_locations,
         "acquisition_shortfalls_vs_observed_storage":acquisition_shortfalls,
         "first_step_to_review":first_review_step,
         "nonmaterial_requirements":nonmaterial,
@@ -1139,6 +1142,55 @@ pub fn reagent_chain_stock_plan(
         "withdrawal_eligibility_verified":false,"current_stock_verified":false,"minimum_yields_verified":false,
         "craftability_verified":false,"live":false,"game_execution":false}),
     )
+}
+
+fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value {
+    let mut locations = Vec::new();
+    let mut truncated = false;
+    for storage in ["character_bank", "account_bank"] {
+        let mut remaining: BTreeMap<_, _> = withdrawals
+            .iter()
+            .filter_map(|row| {
+                let quantity = row[storage].as_u64()?;
+                (quantity > 0).then(|| (row["item_id"].as_u64().unwrap(), quantity))
+            })
+            .collect();
+        if remaining.is_empty() {
+            continue;
+        }
+        let Some(containers) = stock.sections.get(storage).and_then(Value::as_object) else {
+            continue;
+        };
+        for (container, slots) in containers {
+            for (slot, item) in slots.as_object().into_iter().flatten() {
+                let Some(quantity) = item["item_id"]
+                    .as_u64()
+                    .and_then(|id| remaining.get_mut(&id))
+                else {
+                    continue;
+                };
+                let count = item["count"].as_u64().unwrap();
+                let take = count.min(*quantity);
+                if take == 0 {
+                    continue;
+                }
+                if locations.len() == 50 {
+                    truncated = true;
+                    break;
+                }
+                *quantity -= take;
+                locations.push(json!({"storage":storage,"container":container,"slot":slot,
+                    "item_id":item["item_id"],"observed_quantity":count,"suggested_quantity":take}));
+            }
+            if truncated {
+                break;
+            }
+        }
+        if truncated {
+            break;
+        }
+    }
+    json!({"locations":locations,"truncated":truncated})
 }
 
 impl RecipeChainDraft<'_> {

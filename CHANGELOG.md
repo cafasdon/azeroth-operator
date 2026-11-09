@@ -1,5 +1,7 @@
 # Changelog
 
+- Locate suggested Forever reagent-chain withdrawals in captured bank slots.
+
 - List starting materials still short against observed storage in Forever reagent-chain stock plans.
 
 - List suggested saved bank withdrawals for Forever reagent-chain starting materials.

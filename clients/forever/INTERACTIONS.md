@@ -279,6 +279,10 @@ The stock plan also lists positive suggested bank withdrawals by item, using
 the character bank before the account bank and showing any bag shortfall
 left after those suggestions. It only lists observed quantities for known
 bag shortfalls. See starting materials for missing stock observations.
+The accompanying location report allocates those suggestions to saved bank
+containers and slots, showing the observed stack quantity and suggested
+quantity per slot. It lists up to 50 locations and marks omitted allocations
+as truncated. The full per-item withdrawal totals remain available.
 The separate `acquisition_shortfalls_vs_observed_storage` list shows positive
 starting-material shortfalls after counting all observed storage. It can
 include items with no suggested withdrawal and uses the same starting
