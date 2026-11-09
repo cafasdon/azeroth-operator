@@ -46,6 +46,9 @@ struct ResolveCharacter {
     exact_client: Option<azeroth_operator::ClientIdentity>,
     /// Require every named section in the same saved capture of the explicit character.
     required_sections: Option<Vec<String>>,
+    /// Return ambiguity if multiple matching captures share the latest timestamp.
+    #[serde(default)]
+    require_unique_latest: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2034,9 +2037,10 @@ impl Operator {
                 || args.captured_through.is_some()
                 || args.exact_client.is_some()
                 || args.required_sections.is_some()
+                || args.require_unique_latest
             {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Capture time, exact client and section filters require an explicit character",
+                    "Capture time, exact client, section and uniqueness options require an explicit character",
                 )]);
             }
             return CallToolResult::success(vec![ContentBlock::text(
@@ -2056,14 +2060,26 @@ impl Operator {
                 ..Default::default()
             },
             0,
-            1,
+            if args.require_unique_latest { 2 } else { 1 },
         ) {
             Ok(result) => {
-                let selection = result["snapshots"].as_array().and_then(|rows| rows.first());
-                CallToolResult::success(vec![ContentBlock::text(serde_json::json!({
-                    "status":if selection.is_some() { "explicit_saved_character" } else { "no_matching_snapshot" },
-                    "selection":selection,"live":false,"active_character_verified":false
-                }).to_string())])
+                let rows = result["snapshots"]
+                    .as_array()
+                    .map_or(&[][..], Vec::as_slice);
+                let tied = args.require_unique_latest
+                    && matches!(rows, [first, second, ..] if first["captured_at"] == second["captured_at"]);
+                let (status, selection) = match (tied, rows.first()) {
+                    (true, _) => ("ambiguous_latest_snapshot", None),
+                    (false, Some(row)) => ("explicit_saved_character", Some(row)),
+                    (false, None) => ("no_matching_snapshot", None),
+                };
+                CallToolResult::success(vec![ContentBlock::text(
+                    serde_json::json!({
+                        "status":status,
+                        "selection":selection,"live":false,"active_character_verified":false
+                    })
+                    .to_string(),
+                )])
             }
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
                 "Character selection unavailable or invalid",

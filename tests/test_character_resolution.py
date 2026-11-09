@@ -113,6 +113,25 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                         reply = await session.call_tool('resolve_character', args)
                         self.assertTrue(reply.isError)
                         self.assertNotIn(other, str(reply))
+                    tied_capture = deepcopy(changed_build)
+                    tied_capture['client']['build'] = '70864'
+                    tied_capture['sections']['weapon_enchants'] = base['sections']['weapon_enchants']
+                    tied_key = store.ingest(tied_capture)
+                    strict = {**target,'require_unique_latest':True}
+                    tied = await resolve(strict)
+                    self.assertEqual(tied, {'status':'ambiguous_latest_snapshot','selection':None,
+                                            'live':False,'active_character_verified':False})
+                    for filters, selected in [
+                        ({'exact_client':changed_build['client']}, changed_build_key),
+                        ({'required_sections':['weapon_enchants']}, tied_key),
+                        ({'captured_through':later['captured_at']}, expected),
+                    ]:
+                        self.assertEqual((await resolve({**strict, **filters}))['selection']['snapshot_id'],
+                                         selected)
+                    self.assertEqual((await resolve(target))['selection']['snapshot_id'],
+                                     min(tied_key,changed_build_key))
+                    self.assertTrue((await session.call_tool('resolve_character', {
+                        'family':'forever','require_unique_latest':True})).isError)
                     tools = {tool.name for tool in (await session.list_tools()).tools}
                     self.assertIn('resolve_character', tools)
 

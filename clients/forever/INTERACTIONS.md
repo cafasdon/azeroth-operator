@@ -2946,3 +2946,11 @@ training points at pet trainers. Each matching lesson must individually
 fit the spendable balance from the same capture. The result reports that
 balance and its unit. Lesson counts describe individual prices and do not
 establish that all matching lessons fit a single budget.
+
+## Explicit character resolution with tied captures
+
+Set `resolve_character.require_unique_latest` with an explicit character to
+require a single newest matching capture. If the two most recent matching
+captures share a timestamp, the result is `ambiguous_latest_snapshot` with
+a null selection. Time, exact client and required sections narrow the matches
+before the tie check. Active character identity remains unavailable.
