@@ -87,6 +87,14 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     deadline=await query(quest_projected_expiry_by='2025-01-01T00:01:00Z')
                     self.assertEqual(set(deadline['data']),{'3'})
                     self.assertEqual(deadline['quest_timer_unknown_count'],9)
+                    self.assertEqual(deadline['quest_projected_expiry_by_quest_id'],{'3':'2025-01-01T00:01:00Z'})
+                    self.assertNotIn('quest_projected_expiry_by_quest_id',default)
+                    self.assertEqual(deadline['data']['3'],saved['sections']['quests']['3'])
+                    filtered=await query(quest_projected_expiry_by='2025-01-01T00:01:00Z',
+                        quest_reward_item_id=858)
+                    self.assertEqual(filtered['quest_projected_expiry_by_quest_id'],{})
+                    absent_deadline=await query(snapshot_id=missing,quest_projected_expiry_by='2025-01-01T00:01:00Z')
+                    self.assertIsNone(absent_deadline['quest_projected_expiry_by_quest_id'])
                     self.assertEqual((await query(quest_projected_expiry_by='2025-01-01T00:00:59Z'))['data'],{})
                     self.assertEqual((await query(quest_projected_expiry_by='2025-01-01T00:01:00Z',
                         quest_max_remaining_seconds=59))['data'],{})

@@ -2973,6 +2973,7 @@ impl Operator {
                     if let Some(maximum) = args.quest_max_remaining_seconds {
                         value["quest_max_remaining_seconds"] = serde_json::json!(maximum);
                     }
+                    let mut projected_expiries = serde_json::Map::new();
                     if let Some(deadline) = args.quest_projected_expiry_by {
                         value["quest_projected_expiry_by"] = serde_json::json!(deadline);
                     }
@@ -2983,7 +2984,7 @@ impl Operator {
                         value["quest_timer_unknown_count"] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
-                                quests.retain(|_, quest| {
+                                quests.retain(|id, quest| {
                                     let Some(seconds) =
                                         quest["timer"]["remaining_seconds"].as_u64()
                                     else {
@@ -3004,7 +3005,14 @@ impl Operator {
                                                 captured_at?.checked_add_signed(delta)
                                             });
                                         unknown += usize::from(expiry.is_none());
-                                        expiry.is_some_and(|expiry| expiry <= deadline)
+                                        expiry.is_some_and(|expiry| {
+                                            if expiry > deadline {
+                                                return false;
+                                            }
+                                            projected_expiries
+                                                .insert(id.clone(), serde_json::json!(expiry));
+                                            true
+                                        })
                                     })
                                 });
                                 unknown
@@ -3147,6 +3155,13 @@ impl Operator {
                                     quests, reputation,
                                 )
                             });
+                    }
+                    if args.quest_projected_expiry_by.is_some() {
+                        value["quest_projected_expiry_by_quest_id"] =
+                            serde_json::json!(data.as_object().map(|quests| {
+                                projected_expiries.retain(|id, _| quests.contains_key(id));
+                                projected_expiries
+                            }));
                     }
                     value["data"] = data;
                 }

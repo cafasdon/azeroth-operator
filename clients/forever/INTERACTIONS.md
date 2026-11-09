@@ -12,6 +12,9 @@ Use `quest_projected_expiry_by` when inspecting a saved quest log to find
 reported timers projected to expire by an inclusive RFC 3339 deadline.
 Projection uses the capture timestamp plus saved remaining seconds.
 Missing timers stay unknown. Current quest status requires a fresh capture.
+Deadline results include `quest_projected_expiry_by_quest_id` for the quests
+that passed every filter. The map is empty when no quest matches and null
+when the saved quest log is unavailable.
 
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate
