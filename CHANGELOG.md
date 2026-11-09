@@ -1,5 +1,10 @@
 # Changelog
 
+- Add list_snapshots.gossip_option for same-row saved dialogue discovery by
+  label, option/spell ID or raw status/flags. Preserve unknown fields, owner
+  isolation, latest-before-predicate selection and bounded ordered results;
+  infer no NPC identity, service availability or selection eligibility.
+
 - Add passive Forever visible-gossip-option capture, strict Rust/Python readers,
   raw MCP inspection and summary counts. Preserve nullable IDs and raw reported
   metadata, guard restricted values and require stable visible projections.

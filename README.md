@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Saved dialogue discovery now searches exact display labels, option/spell IDs
+and raw status/flags on the same recorded choice. Missing metadata stays unknown;
+results identify historical captures, not current NPC services.
+[Query contract](docs/ADR-062-saved-gossip-option-discovery.md).
+
 Forever exports can now record the dialogue choices in an already visible NPC
 gossip panel, beyond quest lists. Saved choices are inspectable through MCP;
 selection and other dialogue actions stay unavailable.

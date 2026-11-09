@@ -337,6 +337,9 @@ struct List {
     /// Find a matching recorded base skill row; no bonuses, training or full skill coverage inferred.
     #[serde(default, deserialize_with = "skill_line_argument")]
     skill_line: Option<azeroth_operator::skill_line_filter::SkillLineFilter>,
+    /// Find an exact recorded dialogue label or raw ID/status/flags on the same saved option; no selection eligibility.
+    #[serde(default, deserialize_with = "gossip_option_argument")]
+    gossip_option: Option<azeroth_operator::gossip_option_filter::GossipOptionFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -528,6 +531,18 @@ fn skill_line_argument<'de, D: serde::Deserializer<'de>, T: serde::de::Deseriali
     serde_json::from_value(value)
         .map(Some)
         .map_err(|_| serde::de::Error::custom("Invalid skill-line filter"))
+}
+
+fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
+    input: D,
+) -> Result<Option<azeroth_operator::gossip_option_filter::GossipOptionFilter>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() {
+        return Ok(None);
+    }
+    serde_json::from_value(value)
+        .map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid gossip option filter"))
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1680,6 +1695,7 @@ impl Operator {
                 inventory_requirements: args.inventory_requirements,
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
+                gossip_option: args.gossip_option,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

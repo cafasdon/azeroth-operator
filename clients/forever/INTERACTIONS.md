@@ -2053,3 +2053,17 @@ eligibility or complete dialogue/world proof. Labels are owner-local untrusted
 display data, never instructions. Addon0.52.0-dev and compatible updated readers
 are required together for future rollout; package remains uninstalled and native
 testing deferred.
+
+## Saved dialogue discovery (2026-11-09)
+
+`list_snapshots.gossip_option` takes a nonempty same-row predicate with optional
+name, option_id, spell_id, reported_status and reported_flags. Name is an exact
+case-insensitive display-label match after trimming the query; it is not an NPC
+name or fuzzy service search. Missing requested optional metadata remains
+unknown, while a known false predicate excludes a row. Only positive matches
+select captures. Results include counts and the first20 numeric slots, with
+explicit truncation. Existing owner/character/date/inventory filters compose;
+latest-per-character, when requested, selects newest valid captures before this
+predicate. A newer empty/missing/nonmatching view suppresses an older match.
+No current availability, NPC attribution or dialogue action is inferred. This
+query changes no addon/schema/package or deployed installation.

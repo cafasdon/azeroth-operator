@@ -7,6 +7,7 @@ pub mod equipment_operation;
 pub mod equipment_set_operation;
 pub mod forever_catalogue;
 pub mod forever_talent_identity;
+pub mod gossip_option_filter;
 pub mod import;
 pub mod loot_observation;
 pub mod macro_operation;
@@ -1256,6 +1257,7 @@ pub struct CaptureFilters<'a> {
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
+    pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1458,6 +1460,7 @@ impl Store {
             inventory_requirements,
             loot_observation,
             skill_line,
+            gossip_option,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1570,6 +1573,13 @@ impl Store {
             "Skill-line filtering requires Forever"
         );
         if let Some(filter) = &skill_line {
+            filter.validate()?;
+        }
+        ensure!(
+            gossip_option.is_none() || family == Family::Forever,
+            "Gossip option filtering requires Forever"
+        );
+        if let Some(filter) = &gossip_option {
             filter.validate()?;
         }
         ensure!(
@@ -1969,6 +1979,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if skill_line.is_some() && skill_line_match.is_none() {
+                        continue;
+                    }
+                    let gossip_option_match = gossip_option
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if gossip_option.is_some() && gossip_option_match.is_none() {
                         continue;
                     }
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
@@ -2614,6 +2630,9 @@ impl Store {
                     }
                     if let Some(observation) = skill_line_match {
                         summary["skill_line_match"] = observation;
+                    }
+                    if let Some(observation) = gossip_option_match {
+                        summary["gossip_option_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;
