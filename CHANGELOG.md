@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve an explicitly selected character within a requested saved capture window.
+
 - Filter combined saved Forever reset schedules by dungeon, raid or world boss.
 
 - Show captured dungeon and raid lockout details in the combined Forever reset schedule.

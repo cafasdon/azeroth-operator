@@ -38,6 +38,10 @@ struct ResolveCharacter {
     family: Family,
     /// Explicit saved character; no target leaves active identity unknown.
     character: Option<azeroth_operator::Character>,
+    /// Inclusive earliest capture timestamp for the explicit character.
+    captured_from: Option<String>,
+    /// Inclusive latest capture timestamp for the explicit character.
+    captured_through: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1878,16 +1882,28 @@ impl Operator {
     )]
     fn resolve_character(&self, Parameters(args): Parameters<ResolveCharacter>) -> CallToolResult {
         let Some(character) = args.character else {
+            if args.captured_from.is_some() || args.captured_through.is_some() {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Capture time bounds require an explicit character",
+                )]);
+            }
             return CallToolResult::success(vec![ContentBlock::text(
                 serde_json::json!({"status":"active_identity_unavailable","selection":null,
                     "live":false,"active_character_verified":false})
                 .to_string(),
             )]);
         };
-        match self
-            .store
-            .list_matching(args.family, Some(&character), 0, 1)
-        {
+        match self.store.list_filtered(
+            args.family,
+            Some(&character),
+            azeroth_operator::CaptureFilters {
+                captured_from: args.captured_from.as_deref(),
+                captured_through: args.captured_through.as_deref(),
+                ..Default::default()
+            },
+            0,
+            1,
+        ) {
             Ok(result) => {
                 let selection = result["snapshots"].as_array().and_then(|rows| rows.first());
                 CallToolResult::success(vec![ContentBlock::text(serde_json::json!({

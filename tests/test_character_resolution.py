@@ -50,6 +50,18 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotEqual(first, expected)
                     self.assertFalse(result['active_character_verified'])
                     self.assertFalse(result['live'])
+                    target = {'family':'forever','character':{'name':'Example','realm':'Test'}}
+                    bounded = await resolve({**target,'captured_through':'2025-01-01T00:00:00Z'})
+                    self.assertEqual(bounded['selection']['snapshot_id'], first)
+                    stale = await resolve({**target,'captured_from':'2025-01-03T00:00:00Z'})
+                    self.assertEqual(stale['status'], 'no_matching_snapshot')
+                    self.assertIsNone(stale['selection'])
+                    for args in [
+                        {'family':'forever','captured_from':'2025-01-01T00:00:00Z'},
+                        {**target,'captured_from':'2025-01-03T00:00:00Z',
+                         'captured_through':'2025-01-01T00:00:00Z'},
+                    ]:
+                        self.assertTrue((await session.call_tool('resolve_character', args)).isError)
                     for family, name in [('retail', 'Example'), ('classic', 'Example'),
                                          ('forever', 'Missing'), ('forever', 'PrivateOtherOwner')]:
                         result = await resolve({'family': family, 'character': {'name': name, 'realm': 'Test'}})
