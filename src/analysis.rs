@@ -4147,6 +4147,7 @@ fn compare_skill_lines(
 ) -> Value {
     let mut matched = 0;
     let mut changes = BTreeMap::new();
+    let mut modifier_changes = BTreeMap::new();
     for (key, old) in before {
         let Some(new) = after.get(key) else { continue };
         matched += 1;
@@ -4166,13 +4167,35 @@ fn compare_skill_lines(
                 "max_rank_before":cap_before,"max_rank_after":cap_after,"max_rank_delta":cap_after-cap_before,
             }));
         }
+        let mut fields = serde_json::Map::new();
+        for field in ["modifier", "temporary_points"] {
+            let previous = old[field].as_i64();
+            let current = new[field].as_i64();
+            if previous != current {
+                fields.insert(
+                    field.to_owned(),
+                    json!({
+                        "before":previous,"after":current,
+                        "delta":previous.zip(current).map(|(before, after)| after - before)
+                    }),
+                );
+            }
+        }
+        if !fields.is_empty() {
+            modifier_changes.insert(id, json!({"skill_line_id":id,"fields":fields}));
+        }
     }
-    json!({
+    let mut result = json!({
         "matched_skill_count":matched,
         "before_only_count":before.len()-matched,
         "after_only_count":after.len()-matched,
         "changes":changes.into_values().collect::<Vec<_>>()
-    })
+    });
+    if !modifier_changes.is_empty() {
+        result["modifier_observation_changes"] =
+            json!(modifier_changes.into_values().collect::<Vec<_>>());
+    }
+    result
 }
 
 fn diff(a: &Value, b: &Value, path: &str, paths: &mut Vec<String>, count: &mut usize) {

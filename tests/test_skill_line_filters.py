@@ -120,6 +120,18 @@ class SkillFilterTests(unittest.IsolatedAsyncioTestCase):
                     for bad in [{'filter':selected,'limit':0},{'filter':selected,'limit':51},{'filter':selected,'offset':-1},
                         {'filter':selected,'limit':'PRIVATE'},{'minimum_rank':1},{'filter':selected,'extra':'PRIVATE'}]:
                         await call('inspect_snapshot',True,snapshot_id=keys['mixed'],section='skill_lines',skill_line_filter=bad)
+                    changed=deepcopy(cases['mixed'])
+                    changed['captured_at']='2025-01-02T00:00:00Z'
+                    changed['sections']['skill_lines']['42']['modifier']=0
+                    changed['sections']['skill_lines']['43'].pop('temporary_points')
+                    changed['sections']['skill_lines']['100']['temporary_points']=0
+                    changed_key=store.ingest(changed)
+                    comparison=await call('compare_snapshots',before_id=keys['mixed'],after_id=changed_key)
+                    self.assertEqual(comparison['skill_line_progress']['changes'],[])
+                    self.assertEqual(comparison['skill_line_progress']['modifier_observation_changes'],[
+                        {'skill_line_id':42,'fields':{'modifier':{'before':-5,'after':0,'delta':5}}},
+                        {'skill_line_id':43,'fields':{'temporary_points':{'before':50,'after':None,'delta':None}}},
+                        {'skill_line_id':100,'fields':{'temporary_points':{'before':None,'after':0,'delta':None}}}])
             for path,data in before.items():self.assertEqual(path.read_bytes(),data)
 
 

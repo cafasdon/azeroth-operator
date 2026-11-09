@@ -4,6 +4,8 @@ Saved skill-line discovery and inspection accept exact signed `modifier` and
 `temporary_points` predicates. They match on the same skill row as base rank
 and category predicates. Missing values remain unknown, explicit zero is
 searchable, and the two fields stay separate from base rank.
+Snapshot comparisons report changes in those fields for skill IDs seen in both
+captures. The delta is available only when both captures report the field.
 
 Local world references: optional NPC/object spawn records can accompany captured
 reagent sources and flow into chain acquisition reviews without repeated external

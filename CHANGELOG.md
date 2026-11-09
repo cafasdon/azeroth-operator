@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reported Forever skill modifiers and temporary points independently of base ranks.
+
 - Search and inspect saved Forever skill lines by exact reported modifiers and temporary points.
 
 - Filter saved Forever recipes by an explicitly reported daily cooldown flag.
