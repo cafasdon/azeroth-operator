@@ -2250,6 +2250,7 @@ pub struct ComparisonSelectors {
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
     pub group_context_changes: bool,
+    pub player_pvp_progression_changes: bool,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
@@ -2270,6 +2271,47 @@ pub struct ComparisonSelectors {
     pub experience: bool,
     pub spellbook: bool,
     pub action_bar_slots: bool,
+}
+
+fn player_pvp_progression_observation(section: &Value) -> Value {
+    let points = section["rank_points"].as_u64().unwrap();
+    let threshold = section["next_rank_threshold"].as_u64().unwrap();
+    let remaining = if threshold > 0 && points <= threshold {
+        Some(threshold - points)
+    } else {
+        None
+    };
+    let mut report = section.clone();
+    report["remaining_points_to_reported_next_threshold"] = json!(remaining);
+    if let Some(totals) = section.get("total_points_by_rank") {
+        let lookup = |field: &str| {
+            section[field]
+                .as_u64()
+                .and_then(|rank| totals[rank.to_string()].as_u64())
+        };
+        let current = lookup("rank").map(|base| base + points);
+        report["reported_total_rank_points"] = json!(current);
+        let mut caps = serde_json::Map::new();
+        for field in [
+            "max_rank",
+            "current_week_max_rank",
+            "previous_week_max_rank",
+        ] {
+            let remaining = current
+                .zip(lookup(field))
+                .filter(|(_, cap)| *cap > 0)
+                .map(|(current, cap)| cap.saturating_sub(current));
+            caps.insert(field.to_string(), json!(remaining));
+        }
+        report["remaining_points_to_reported_caps"] = Value::Object(caps);
+        report["cap_distance_basis"] =
+            json!("captured_total_thresholds_and_within_rank_points_only");
+    }
+    report["current_progression_verified"] = json!(false);
+    report["rank_eligibility_verified"] = json!(false);
+    report["reward_eligibility_verified"] = json!(false);
+    report["game_execution"] = json!(false);
+    report
 }
 
 pub fn compare_observations(
@@ -2303,6 +2345,22 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if selectors.player_pvp_progression_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "PvP progression comparison requires Forever"
+        );
+        let before = before
+            .sections
+            .get("player_pvp_progression")
+            .map(player_pvp_progression_observation);
+        let after = after
+            .sections
+            .get("player_pvp_progression")
+            .map(player_pvp_progression_observation);
+        comparison["player_pvp_progression_changes"] = json!({"before":before,"after":after,
+            "same_season_verified":false,"earned_points_delta":null,"live":false});
+    }
     if selectors.group_context_changes {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -6687,46 +6745,7 @@ pub fn summary(s: &Snapshot) -> Value {
     summary["player_pvp_progression_observation"] = s
         .sections
         .get("player_pvp_progression")
-        .map(|section| {
-            let points = section["rank_points"].as_u64().unwrap();
-            let threshold = section["next_rank_threshold"].as_u64().unwrap();
-            let remaining = if threshold > 0 && points <= threshold {
-                Some(threshold - points)
-            } else {
-                None
-            };
-            let mut report = section.clone();
-            report["remaining_points_to_reported_next_threshold"] = json!(remaining);
-            if let Some(totals) = section.get("total_points_by_rank") {
-                let lookup = |field: &str| {
-                    section[field]
-                        .as_u64()
-                        .and_then(|rank| totals[rank.to_string()].as_u64())
-                };
-                let current = lookup("rank").map(|base| base + points);
-                report["reported_total_rank_points"] = json!(current);
-                let mut caps = serde_json::Map::new();
-                for field in [
-                    "max_rank",
-                    "current_week_max_rank",
-                    "previous_week_max_rank",
-                ] {
-                    let remaining = current
-                        .zip(lookup(field))
-                        .filter(|(_, cap)| *cap > 0)
-                        .map(|(current, cap)| cap.saturating_sub(current));
-                    caps.insert(field.to_string(), json!(remaining));
-                }
-                report["remaining_points_to_reported_caps"] = Value::Object(caps);
-                report["cap_distance_basis"] =
-                    json!("captured_total_thresholds_and_within_rank_points_only");
-            }
-            report["current_progression_verified"] = json!(false);
-            report["rank_eligibility_verified"] = json!(false);
-            report["reward_eligibility_verified"] = json!(false);
-            report["game_execution"] = json!(false);
-            report
-        })
+        .map(player_pvp_progression_observation)
         .unwrap_or(Value::Null);
     summary["player_trade_offer_observation"] = s
         .sections

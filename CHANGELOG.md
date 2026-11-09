@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever personal PvP observations and cap distances side by side.
+
 - Compare reported home and instance group context across saved Forever captures.
 
 - Filter Forever owned-gear review by simulator input availability before paging.

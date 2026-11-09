@@ -28,3 +28,18 @@ These are historical arithmetic projections, not earned-points deltas, season
 binding, guaranteed eligibility or a promise about today's caps. No scoreboard,
 competitor identity, queue, reward action, refresh or automatic gameplay is added.
 No native qualification, installation or deployment is included.
+
+Set `player_pvp_progression_changes` to `true` on `compare_snapshots` to see the
+same rank and cap projections used by `character_summary` for each capture.
+The comparison requires the same character and client in chronological order.
+Missing observations return null. Season continuity remains unverified and the
+earned-points delta stays unknown.
+
+The offline build and three scoped MCP tests passed. The PvP fixture verified
+that both comparison projections match their character summaries and that a
+missing side stays null. Jev 1.14.0 advisory
+`71fed3c939807c5b6af1f863d5928e6db480f7dcc1ed06025e59413dfa7bf6cd`
+returned integrate .72 at confidence .58 with 407 input and 49 output tokens
+in .300 seconds.
+Independent review verified capture identity and ordering rejection, both missing
+observations, and unknown earned points when the reported rank falls.

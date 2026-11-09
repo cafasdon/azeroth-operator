@@ -63,9 +63,11 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         result=await asyncio.wait_for(session.call_tool(tool,args),timeout=10)
                         self.assertEqual(bool(result.isError),error,result);self.assertNotIn('PRIVATE',str(result))
                         return None if error else json.loads(result.content[0].text)
+                    summaries = {}
                     for key,row in valid:
                         inspection=await call('inspect_snapshot',snapshot_id=key,section='player_pvp_progression')
                         report=(await call('character_summary',snapshot_id=key))['player_pvp_progression_observation']
+                        summaries[key] = report
                         if row is None:self.assertFalse(inspection['available']);self.assertIsNone(report)
                         else:
                             self.assertEqual(inspection['data'],row)
@@ -83,6 +85,16 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                             else:self.assertNotIn('remaining_points_to_reported_caps',report)
                             for flag in ['current_progression_verified','rank_eligibility_verified','reward_eligibility_verified','game_execution']:
                                 self.assertIs(report[flag],False)
+                    old, new = valid[6][0], valid[10][0]
+                    selector = 'player_pvp_progression_changes'
+                    self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
+                    for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:
+                        compared = (await call('compare_snapshots',before_id=first,after_id=second,**{selector:True}))[selector]
+                        self.assertEqual(compared['before'], summaries[first])
+                        self.assertEqual(compared['after'], summaries[second])
+                        self.assertIsNone(compared['earned_points_delta'])
+                        self.assertIs(compared['same_season_verified'], False)
+                        self.assertIs(compared['live'], False)
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='player_pvp_progression')
             self.assertEqual(before,{p.name:p.read_bytes() for p in Path(folder).glob('*.json')})
 
