@@ -36,3 +36,26 @@ The owner-local store, validation, containment and scan limits remain in force.
 No new tool route, addon, sync, external data call, game operation, installation
 or deployment. Native completeness, active identity, transfers and full owned
 BiS remain outside this historical discovery contract.
+
+## All-item requirements
+
+Optional `inventory_requirements` extends discovery to a shopping or reagent
+list. It requires one storage and 1..64 distinct items with positive u32 item_id
+and positive u64 quantity. It is mutually exclusive with inventory_item. Bank
+family restrictions and other listing predicates remain unchanged.
+
+Scan the selected section once, accumulating only requested IDs with checked
+u64 addition. Every requirement must be covered by observed quantities in that
+same capture/storage. Partial lists in different characters, storage sections or
+capture times are never pooled. Missing, unavailable, empty or short storage
+does not qualify. Newest-before-filter selection still prevents old-stock
+revival; explicit historical date bounds remain supported.
+
+`inventory_requirements_match` retains only requested item IDs and required /
+observed quantities in request order, with basis same_snapshot_single_storage
+and all_requirements_covered_by_observed_quantities=true. Ownership, access,
+shared-scope, aggregation, craftability, transferability and execution remain
+unverified/false. The predicate can compose with captured profession/recipe
+filters, but material support and those observations do not establish current
+craftability. An omitted character may be unobserved or nonmatching; omission
+does not prove they lack the items or cannot craft.

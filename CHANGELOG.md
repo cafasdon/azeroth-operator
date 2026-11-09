@@ -1,5 +1,10 @@
 # Changelog
 
+- Discover saved captures that cover every item in a bounded shopping/reagent
+  list within one explicit storage. Count requested items in one scan, compose
+  profession filters and preserve unknown/latest/shared-bank boundaries without
+  crafting, transfer or cross-character stock claims.
+
 - Discover saved characters by one item's observed quantity in one explicit
   storage, without a simulator catalogue. Preserve newest-before-filter
   selection, unknown storage and per-capture shared-bank boundaries; no sums

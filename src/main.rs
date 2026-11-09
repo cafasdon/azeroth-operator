@@ -324,6 +324,8 @@ struct List {
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
     /// Find saved characters by one base item's observed quantity in one explicit storage; never aggregate characters or shared banks.
     inventory_item: Option<azeroth_operator::InventoryItemFilter>,
+    /// Find one capture whose explicit storage covers every item requirement; never pool characters or imply craftability.
+    inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1604,6 +1606,7 @@ impl Operator {
                 bag_family_space: args.bag_family_space,
                 pet_food: args.pet_food,
                 inventory_item: args.inventory_item,
+                inventory_requirements: args.inventory_requirements,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

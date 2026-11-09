@@ -2101,3 +2101,8 @@ zero; newest-per-character selection runs before the quantity predicate.
 Shared-bank observations remain separate and are never summed across characters.
 The owner-local query needs no simulator catalogue and does not identify the
 active player or verify present stock/access. See ADR 049 and [verification](../../docs/inventory-item-discovery-verification-2026-11-09.md).
+
+Shopping/reagent discovery can require all 1..64 requested item quantities within
+one explicit saved storage, optionally alongside captured profession filters.
+Partial stock across characters, storages or times is never pooled. Material
+support does not verify current crafting or transfer eligibility. See [verification](../../docs/inventory-requirements-discovery-verification-2026-11-09.md).
