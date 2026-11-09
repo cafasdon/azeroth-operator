@@ -160,6 +160,9 @@ struct Inspect {
     quest_inventory_snapshot_id: Option<String>,
     /// Quote quest inventory shortfalls using this saved same-character merchant visit.
     quest_inventory_merchant_snapshot_id: Option<String>,
+    /// Show verified local catalogue sources for known quest inventory shortfalls.
+    #[serde(default)]
+    quest_inventory_catalogue_sources: bool,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2526,12 +2529,13 @@ impl Operator {
                 "Quest item catalogue requires a quest ID and the quests section",
             )]);
         }
-        if (args.quest_inventory_merchant_snapshot_id.is_some()
+        if (args.quest_inventory_catalogue_sources
+            || args.quest_inventory_merchant_snapshot_id.is_some()
             || args.quest_inventory_snapshot_id.is_some())
             && args.quest_inventory_requirements.is_none()
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Quest inventory and merchant captures require quest inventory requirements",
+                "Quest inventory, merchant and catalogue options require quest inventory requirements",
             )]);
         }
         if let Some(requirements) = &args.quest_inventory_requirements
@@ -3474,6 +3478,22 @@ impl Operator {
                                 serde_json::json!(quest_stock.unwrap().captured_at),
                             );
                         }
+                    }
+                    if args.quest_inventory_catalogue_sources {
+                        let sources = self
+                            .forever_catalogue
+                            .as_deref()
+                            .ok_or_else(|| anyhow::anyhow!("Local catalogue unavailable"))
+                            .and_then(azeroth_operator::forever_catalogue::EquipmentCatalogue::load)
+                            .and_then(|catalogue| {
+                                catalogue.quest_inventory_sources(&value["quest_inventory_review"])
+                            });
+                        let Ok(sources) = sources else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest inventory sources require a verified local catalogue",
+                            )]);
+                        };
+                        value["quest_inventory_catalogue_source_review"] = sources;
                     }
                     if let Some(merchant_id) = &args.quest_inventory_merchant_snapshot_id {
                         let snapshot = quest_stock.unwrap();

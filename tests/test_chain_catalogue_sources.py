@@ -25,6 +25,7 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
         value = fixture()
         value['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
         value['sections']['bags'] = {'0':{'1':{'item_id':2505,'count':1,'link':'PRIVATE_LINK'}}}
+        value['sections']['quests'] = {'42':{'title':'Fixture quest','level':60}}
         value['sections']['profession_recipe_materials'] = {
             'coverage':'reported_known_spell_schematics','profession_id':164,
             'entries':{'101':fixed(99999997,{'2505':3,'744':1,'872':2,'2870':1,'720':1,'2840':4})}}
@@ -86,6 +87,21 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(rows[720]['status'],'source_metadata_missing')
                     self.assertIsNone(rows[720]['sources'])
                     self.assertEqual(rows[2840]['status'],'item_not_in_catalogue')
+                    quest_request = {'snapshot_id':key,'section':'quests','quest_id':42,
+                        'quest_inventory_requirements':{'storage':'bags','items':[
+                            {'item_id':2505,'quantity':3},{'item_id':2840,'quantity':4}]},
+                        'quest_inventory_catalogue_sources':True}
+                    quest_reply = await session.call_tool('inspect_snapshot',quest_request)
+                    self.assertFalse(quest_reply.isError,quest_reply)
+                    quest_sources = json.loads(quest_reply.content[0].text)['quest_inventory_catalogue_source_review']
+                    self.assertEqual(quest_sources['records'],[rows[2505],rows[2840]])
+                    self.assertEqual(quest_sources['basis'],'user_supplied_quest_item_shortfalls')
+                    self.assertIs(quest_sources['quest_item_binding_verified'],False)
+                    bank_reply = await session.call_tool('inspect_snapshot',{**quest_request,
+                        'quest_inventory_requirements':{**quest_request['quest_inventory_requirements'],
+                                                        'storage':'character_bank'}})
+                    self.assertFalse(bank_reply.isError,bank_reply)
+                    self.assertIsNone(json.loads(bank_reply.content[0].text)['quest_inventory_catalogue_source_review'])
                     alternatives = (await call(ambiguous_key,reagent_chain_catalogue_sources=True,
                         preview_reagent_producer_choices=True))['reagent_chain']['producer_previews']['candidate_previews']
                     self.assertIsNone(alternatives[0]['catalogue_source_summary'])

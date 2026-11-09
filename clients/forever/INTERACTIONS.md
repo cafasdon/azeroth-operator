@@ -22,6 +22,10 @@ Set `quest_inventory_snapshot_id` to check a same-time or newer capture of
 the same character and exact client. The quest stays anchored to the
 original capture. Inventory quantities and merchant affordability use the
 selected stock capture.
+Enable `quest_inventory_catalogue_sources` to look up known shortfalls in
+the verified local catalogue. The result lists public acquisition references
+with their catalogue provenance. Missing stock leaves the source review
+unknown, and recorded sources leave current availability unverified.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.

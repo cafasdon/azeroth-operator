@@ -2782,6 +2782,29 @@ impl EquipmentCatalogue {
                 "Duplicate chain material"
             );
         }
+        self.material_source_records(seen, "chain_external_material_shortfalls")
+    }
+
+    pub fn quest_inventory_sources(&self, review: &Value) -> Result<Value> {
+        if review["storage_observed"] != true {
+            return Ok(Value::Null);
+        }
+        let needs = review["items"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|row| {
+                let quantity = row["shortfall_vs_observed"].as_u64().filter(|n| *n > 0)?;
+                Some((row["item_id"].as_u64()?, quantity))
+            })
+            .collect();
+        let mut report =
+            self.material_source_records(needs, "user_supplied_quest_item_shortfalls")?;
+        report["quest_item_binding_verified"] = json!(false);
+        Ok(report)
+    }
+
+    fn material_source_records(&self, seen: BTreeMap<u64, u64>, basis: &str) -> Result<Value> {
         let mut matched = 0;
         let mut with_sources = 0;
         let records = seen
@@ -2813,15 +2836,13 @@ impl EquipmentCatalogue {
             })
             .collect::<Vec<_>>();
         let provenance: Value = serde_json::from_str(PIN)?;
-        Ok(
-            json!({"basis":"chain_external_material_shortfalls","catalogue_source":provenance,
+        Ok(json!({"basis":basis,"catalogue_source":provenance,
             "external_item_count":records.len(),"matched_item_count":matched,
             "unmatched_item_count":records.len()-matched,"items_with_recorded_sources":with_sources,
             "source_limit_per_item":8,"records":records,
             "complete_world_sources_verified":false,"current_availability_verified":false,
             "acquisition_eligibility_verified":false,"ownership_verified":false,
-            "live":false,"game_execution":false}),
-        )
+            "live":false,"game_execution":false}))
     }
 
     pub fn quest_item_references(&self, quest: &Value, snapshot: &Snapshot) -> Value {

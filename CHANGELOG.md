@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up local catalogue acquisition sources for saved Forever quest item shortfalls.
+
 - Summarise saved stock coverage for user-supplied Forever quest item checklists.
 
 - Recheck saved Forever quest item requirements against a compatible newer inventory capture.
