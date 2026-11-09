@@ -315,6 +315,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(conflicting_price.isError)
                         for spendable, expected in [(9,0),(10,1),(-1,0)]:
                             reserve=forever["sections"]["wallet"]["copper"]-spendable
+                            reserved_visits = await session.call_tool("list_snapshots", {
+                                **quest_history,
+                                "trainer_service_name":"potion","trainer_service_status":"available",
+                                "trainer_affordable_only":True,"trainer_balance_reserve":reserve,
+                            })
+                            self.assertFalse(reserved_visits.isError,reserved_visits)
+                            matches = json.loads(reserved_visits.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in matches],
+                                             [forever_key] if expected else [])
+                            if expected:
+                                self.assertEqual(matches[0]["trainer_match"]["balance_after_reserve"],
+                                    {"unit":"copper","reserve":reserve,"spendable":spendable})
                             reserved=await session.call_tool("inspect_snapshot",{
                                 "snapshot_id":forever_key,"section":"trainer_services",
                                 "trainer_service_name":"potion","trainer_service_status":"available",
@@ -329,6 +341,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(after_reserve["reserve_covered"],spendable >= 0)
                             self.assertEqual(after_reserve["spendable_balance"],spendable if spendable >= 0 else None)
                             self.assertEqual(after_reserve["retained_lessons_affordable"],spendable >= 0)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family":"forever","trainer_balance_reserve":0,
+                        })).isError)
                         reserved_order = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 5], "trainer_wallet_projection": True,

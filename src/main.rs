@@ -540,6 +540,8 @@ struct List {
     /// Match trainer lessons priced within the wallet or pet points from that capture.
     #[serde(default)]
     trainer_affordable_only: bool,
+    /// Reserve captured wallet copper or pet training points. Requires trainer_affordable_only.
+    trainer_balance_reserve: Option<u64>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
     /// Narrow the flight destination search to this captured departure node.
@@ -2177,6 +2179,7 @@ impl Operator {
                 trainer_max_price_copper: args.trainer_max_price_copper,
                 trainer_max_price_points: args.trainer_max_price_points,
                 trainer_affordable_only: args.trainer_affordable_only,
+                trainer_balance_reserve: args.trainer_balance_reserve,
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
                 flight_max_fare_copper: args.flight_max_fare_copper,

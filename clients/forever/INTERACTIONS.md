@@ -2937,3 +2937,12 @@ Set `list_snapshots.weapon_enchant.projected_expiry_by` to an RFC 3339
 deadline. A match requires a temporary enchant and a timer reported on the
 same hand and row. The inclusive deadline uses the capture timestamp and
 recorded milliseconds. The result describes historical observations.
+
+## Saved trainer affordability after a reserve
+
+Set `list_snapshots.trainer_balance_reserve` with
+`trainer_affordable_only: true` to preserve copper at regular trainers or
+training points at pet trainers. Each matching lesson must individually
+fit the spendable balance from the same capture. The result reports that
+balance and its unit. Lesson counts describe individual prices and do not
+establish that all matching lessons fit a single budget.

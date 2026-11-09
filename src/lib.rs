@@ -1894,6 +1894,7 @@ pub struct CaptureFilters<'a> {
     pub trainer_max_price_copper: Option<u64>,
     pub trainer_max_price_points: Option<u32>,
     pub trainer_affordable_only: bool,
+    pub trainer_balance_reserve: Option<u64>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
@@ -2122,6 +2123,7 @@ impl Store {
             trainer_max_price_copper,
             trainer_max_price_points,
             trainer_affordable_only,
+            trainer_balance_reserve,
             flight_destination_node_id,
             flight_origin_node_id,
             flight_max_fare_copper,
@@ -2413,6 +2415,10 @@ impl Store {
             .or_else(|| {
                 trainer_max_price_points.map(|amount| ("price_training_points", u64::from(amount)))
             });
+        ensure!(
+            trainer_balance_reserve.is_none() || trainer_affordable_only,
+            "Trainer balance reserve requires the affordability filter"
+        );
         let filter_trainer = trainer_service_name.is_some()
             || trainer_service_status.is_some()
             || trainer_price.is_some()
@@ -3530,11 +3536,14 @@ impl Store {
                         } else {
                             ("price_copper", s.sections.get("wallet").and_then(|wallet| wallet["copper"].as_u64()))
                         };
+                        let spendable = balance.and_then(|balance| {
+                            balance.checked_sub(trainer_balance_reserve.unwrap_or_default())
+                        });
                         let count = trainer["entries"].as_object()?.values()
                             .filter(|row| {
                                 trainer_service_status.is_none_or(|status| row["status"] == status)
                                     && (!trainer_affordable_only || row[balance_field].as_u64()
-                                        .zip(balance).is_some_and(|(price, balance)| price <= balance))
+                                        .zip(spendable).is_some_and(|(price, spendable)| price <= spendable))
                                     && trainer_price.is_none_or(|(field, maximum)| {
                                         row[field].as_u64().is_some_and(|price| price <= maximum)
                                     })
@@ -3543,8 +3552,17 @@ impl Store {
                                     })
                             })
                             .count();
-                        (count > 0).then(|| json!({"lesson_count":count,"kind":trainer["kind"],
-                            "captured_player_map_id":s.sections.get("stats").and_then(|stats| stats["map_id"].as_u64())}))
+                        (count > 0).then(|| {
+                            let mut result = json!({"lesson_count":count,"kind":trainer["kind"],
+                                "captured_player_map_id":s.sections.get("stats").and_then(|stats| stats["map_id"].as_u64())});
+                            if let Some(reserve) = trainer_balance_reserve {
+                                result["balance_after_reserve"] = json!({
+                                    "unit":if balance_field == "price_copper" {"copper"} else {"training_points"},
+                                    "reserve":reserve,"spendable":spendable,
+                                });
+                            }
+                            result
+                        })
                     }).flatten();
                     if filter_trainer && trainer_match.is_none() {
                         continue;

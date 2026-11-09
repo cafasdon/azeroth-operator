@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever trainer visits with lessons affordable after a balance reserve.
+
 - Find saved Forever temporary weapon enchants by projected expiry.
 
 - Show the shortest matching saved quest timer in Forever timed-quest searches.
