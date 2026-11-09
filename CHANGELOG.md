@@ -1,5 +1,9 @@
 # Changelog
 
+- Validate pinned Hunter pet attack-speed enums before requests and prepared
+  merging. Share type/uptime validation and retain template pet assumptions in
+  final reports. Preserve captured level-60 enforcement and false native proof.
+
 - Reject unsupported Hunter ammunition enum selections before review/prepared
   simulation execution. Carry pinned template ammo ID/ranged-DPS reference into
   final context, with identity, availability and native-effect proof false.

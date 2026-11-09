@@ -631,3 +631,14 @@ availability and native-effect flags stay false even if a captured item ID
 coincides. Standalone CLI and final saved-journal/evaluator context retain the
 report. No ammo capture, bag-stock/consumption claim, template correction,
 optimisation, addon change or live action is introduced.
+
+## Hunter pet template boundary (2026-11-09)
+
+Request preflight and prepared merging validate pinned pet type, uptime and all
+10 pet attack-speed enum selections. Missing/null speed selects the none default;
+unknown numbers, malformed types and duplicate aliases reject. Final context
+includes template_pet_reference: type, uptime and attack-speed enum name, with
+identity, speed, training, happiness and native-effect verification false.
+Active simulated pets still require an explicitly captured level of 60. No
+actual pet speed, family/training match or native model qualification is implied.
+See docs/ADR-067-hunter-pet-template-options.md. Offline only; live testing deferred.

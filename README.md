@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Hunter pet template options now reject unsupported attack-speed selections,
+including during prepared merging. Reports expose template pet assumptions;
+captured identity, training and native effects remain unverified.
+[Contract](docs/ADR-067-hunter-pet-template-options.md).
+
 Hunter simulation preflight now validates ammunition against the pinned engine’s
 reference choices. Unknown numeric selections are rejected instead of silently
 modeling zero ammunition damage. Reports retain explicit template-only ammo

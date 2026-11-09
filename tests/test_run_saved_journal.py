@@ -188,6 +188,10 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertEqual(observation['template_ammo_reference']['item_id'],0)
                     self.assertEqual(observation['template_ammo_reference']['bonus_ranged_dps'],0)
                     self.assertIs(observation['template_ammo_reference']['identity_verified'],False)
+                    pet=observation['template_pet_reference']
+                    self.assertEqual(pet['attack_speed'],'PetAttackSpeedNone')
+                    self.assertIs(pet['native_effect_verified'],False)
+                    self.assertIs(pet['identity_verified'],False)
                 self.assertEqual(result['unvisited_encounter_indices'], [])
                 self.assertEqual(len(result['ranked_gear_sets']),3)
                 for row,expected in zip(result['ranked_gear_sets'],[25,0,-2.5],strict=True):

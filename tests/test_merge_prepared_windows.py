@@ -73,7 +73,7 @@ class MergePreparedWindowTests(unittest.TestCase):
             self.assertEqual([row['request_sha256'] for row in merged['requests']], [row['request_sha256'] for row in reverse['requests']])
             mutations = ['context', 'fingerprint', 'equipment', 'request_hash', 'source_hash', 'missing',
                          'review', 'accounting', 'offset', 'flag', 'bag_identity_type',
-                         'bag_identity_mismatch', 'quiver_enum', 'ammo_enum']
+                         'bag_identity_mismatch', 'quiver_enum', 'ammo_enum', 'pet_speed_enum', 'pet_type_enum', 'pet_uptime']
             for mutation in mutations:
                 bad = deepcopy(artifacts)
                 target = bad[1]
@@ -100,7 +100,16 @@ class MergePreparedWindowTests(unittest.TestCase):
                 if mutation == 'ammo_enum':
                     row['request']['raid']['parties'][0]['players'][0]['hunter']['options']={'classOptions':{'ammo':999999}}
                     row['request_sha256']=hashlib.sha256(encoded(row['request'])).hexdigest()
-                if mutation == 'ammo_enum':
+                if mutation in ['pet_speed_enum','pet_type_enum','pet_uptime']:
+                    key,value={'pet_speed_enum':('petAttackSpeed',999999),
+                        'pet_type_enum':('petType',999999),'pet_uptime':('petUptime',2)}[mutation]
+                    row['request']['raid']['parties'][0]['players'][0]['hunter']['options']={'classOptions':{key:value}}
+                    row['request_sha256']=hashlib.sha256(encoded(row['request'])).hexdigest()
+                if mutation in ['pet_speed_enum','pet_type_enum','pet_uptime']:
+                    expected={'pet_speed_enum':'Invalid Hunter pet attack speed',
+                        'pet_type_enum':'Invalid Hunter pet type','pet_uptime':'Invalid Hunter pet uptime'}[mutation]
+                    with self.assertRaisesRegex(ValueError,expected):merge_prepared(journal,bad)
+                elif mutation == 'ammo_enum':
                     with self.assertRaisesRegex(ValueError,'Unsupported Hunter ammunition selection'):
                         merge_prepared(journal,bad)
                 else:

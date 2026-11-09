@@ -319,6 +319,9 @@ class UnsupportedSimulationPetLevel(ValueError):
 HUNTER_PET_TYPES = ("PetNone", "Bat", "Bear", "BirdOfPrey", "Boar", "CarrionBird",
                     "Cat", "CoreHound", "Crab", "Crocilisk", "Fox", "Gorilla", "Hyena",
                     "Raptor", "Scorpid", "Spider", "Tallstrider", "Turtle", "WindSerpent", "Wolf")
+HUNTER_PET_ATTACK_SPEEDS = ("PetAttackSpeedNone", "SlowerAttackIII", "SlowerAttackII",
+    "FasterAttackI", "FasterAttackII", "FasterAttackIII", "FasterAttackIV",
+    "FasterAttackV", "FasterAttackVI", "FasterAttackVII")
 
 # Pinned 9dc32ac proto/hunter.proto and sim/hunter/ammo_auto_gen.go.
 # Values are reference effects, never proof of a native applied bonus.
@@ -349,6 +352,12 @@ def hunter_quiver_observation(player, observed):
         'complete_equipped_bag_identity_verified':False,'quiver_bonus_verified':False,
         'ammo_identity_verified':False,'simulator_input_modified':False,'game_execution':False}
     if player_spec(player)!='hunter': return report
+    pet_type,uptime,speed = hunter_pet_template_options(player)
+    report['template_pet_reference']={'basis':'pinned_template_selection_only',
+        'pet_type':HUNTER_PET_TYPES[pet_type],'pet_uptime':uptime,
+        'attack_speed':HUNTER_PET_ATTACK_SPEEDS[speed],
+        'identity_verified':False,'attack_speed_verified':False,
+        'training_verified':False,'happiness_verified':False,'native_effect_verified':False}
     options=player['hunter'].get('options')
     options={} if options is None else options
     class_options=proto_option(options,'classOptions','class_options',{})
@@ -390,11 +399,8 @@ def proto_option(value, camel, snake, default):
     return default if selected is None else selected
 
 
-def check_hunter_pet_level(player, observed, require_level=True):
-    report = {"level": "not_applicable", "simulator_pet_level": None,
-              "family_and_training": "unverified", "happiness": "unverified"}
-    if player_spec(player) != "hunter":
-        return report
+def hunter_pet_template_options(player):
+    """Validate pinned template choices without inferring a captured pet identity."""
     options = player["hunter"].get("options")
     options = {} if options is None else options
     class_options = proto_option(options, "classOptions", "class_options", {})
@@ -408,6 +414,20 @@ def check_hunter_pet_level(player, observed, require_level=True):
         uptime = float(uptime)
     if type(uptime) not in (int, float) or not 0 <= uptime <= 1:
         raise ValueError("Invalid Hunter pet uptime")
+    speed = proto_option(class_options, "petAttackSpeed", "pet_attack_speed", 0)
+    if type(speed) is str:
+        speed = HUNTER_PET_ATTACK_SPEEDS.index(speed) if speed in HUNTER_PET_ATTACK_SPEEDS else None
+    if type(speed) is not int or not 0 <= speed < len(HUNTER_PET_ATTACK_SPEEDS):
+        raise ValueError("Invalid Hunter pet attack speed")
+    return pet_type, uptime, speed
+
+
+def check_hunter_pet_level(player, observed, require_level=True):
+    report = {"level": "not_applicable", "simulator_pet_level": None,
+              "family_and_training": "unverified", "happiness": "unverified"}
+    if player_spec(player) != "hunter":
+        return report
+    pet_type, uptime, speed = hunter_pet_template_options(player)
     report["template_pet_type"] = HUNTER_PET_TYPES[pet_type]
     report["template_pet_uptime"] = uptime
     if not pet_type or uptime == 0:
