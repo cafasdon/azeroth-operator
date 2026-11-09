@@ -67,6 +67,26 @@ async def readback_forever_fixture(binary, store, snapshot_id, closed_bank_id, r
                         "after_capture_status": "reported_unavailable"}
             if any(comparison["sections"][bank] != expected for bank in banks):
                 raise ValueError("Unexpected fixture bank comparison")
+            services = await call("list_snapshots", family="forever",
+                                  merchant_item_id=744, merchant_target_quantity=6,
+                                  trainer_service_name="Fixture lesson", trainer_service_status="available",
+                                  trainer_max_price_copper=500, flight_origin_node_id=12,
+                                  flight_destination_node_id=14, flight_max_fare_copper=250,
+                                  gossip_option={"option_id": 42, "reported_status": 0})
+            captured = next((row for row in services["snapshots"] if row["snapshot_id"] == snapshot_id), None)
+            if captured is None or captured["client"] != coverage["client"]:
+                raise ValueError("Fixture capture did not match the saved service search")
+            merchant = captured["merchant_match"]["lowest_cost_quantity_plan"]
+            trainer = captured["trainer_match"]
+            flight = captured["flight_match"]
+            gossip = captured["gossip_option_match"]
+            if (merchant["slot"] != 1 or merchant["plan"]["bundles"] != 2
+                    or merchant["plan"]["required_copper"] != 500
+                    or trainer["kind"] != "tradeskills" or trainer["lesson_count"] != 1
+                    or flight["origin_node_id"] != 12 or flight["destination_node_id"] != 14
+                    or flight["fare_copper"] != 250
+                    or gossip["matching_option_count"] != 1 or gossip["game_execution"] is not False):
+                raise ValueError("Unexpected fixture service search result")
 
 
 def verify(directory, verifier, mcp_binary=None):

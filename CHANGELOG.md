@@ -1,5 +1,7 @@
 # Changelog
 
+- Verify merchant, trainer, flight and dialogue search through the packaged Forever fixture.
+
 - Verify closed-bank coverage and unknown stock through the packaged Forever MCP fixture.
 
 - Verify recipe and quest planning through the packaged Forever fixture's MCP readback.

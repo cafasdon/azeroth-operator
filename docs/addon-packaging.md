@@ -54,6 +54,8 @@ It checks exact capture metadata, section coverage, bank item counts,
 recipe quantities and a quest inventory checklist from that same export.
 It also imports a second export with the banks closed and checks that
 coverage, item search and comparisons preserve the unavailable readings.
+The service search checks a merchant bundle quote, a trainer match, a
+flight fare and a gossip option from the original capture.
 The temporary store is removed with the staged package files.
 
 Packages remain development-only. Actual client exports and manager flavour
