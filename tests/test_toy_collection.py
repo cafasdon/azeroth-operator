@@ -67,6 +67,26 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    for selector, expected in [
+                        ({"item_id":1,"collected":True,"favorite":False},[key]),
+                        ({"item_id":1,"collected":False,"favorite":True},[after_key]),
+                        ({"item_id":1,"collected":True,"favorite":True},[]),
+                        ({"item_id":2,"collected":False},[key]),
+                        ({"item_id":99,"collected":False},[]),
+                    ]:
+                        found = await session.call_tool("list_snapshots", {
+                            "family":"forever","toy_in_view":selector,
+                        })
+                        self.assertFalse(found.isError,found)
+                        rows = json.loads(found.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in rows],expected)
+                        for row in rows:
+                            self.assertEqual(row["toy_in_view_match"],{
+                                "coverage":"filtered_journal",**selector,
+                                "favorite":selector.get("favorite",False)})
+                    for family, selector in [("retail",{"item_id":1}),("forever",{"item_id":0})]:
+                        rejected=await session.call_tool("list_snapshots",{"family":family,"toy_in_view":selector})
+                        self.assertTrue(rejected.isError)
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "toy_collection_view"})
                     self.assertFalse(result.isError)
                     self.assertEqual(json.loads(result.content[0].text)["data"], captured["sections"]["toy_collection_view"])

@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Use `list_snapshots` with `toy_in_view` to find an exact toy item ID in a
+saved filtered journal. Optional `collected` and `favorite` flags must
+match that row. An absent toy does not establish ownership status.
+
 Saved mount comparisons count reported usable mounts, favourites, and
 mounts with both flags in each capture. These counts describe the saved
 journal and do not establish current summoning eligibility.

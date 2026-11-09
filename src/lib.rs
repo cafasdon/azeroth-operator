@@ -373,6 +373,14 @@ pub struct CollectedMountFilter {
     pub favorite: Option<bool>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ToyViewFilter {
+    pub item_id: std::num::NonZeroU32,
+    pub collected: Option<bool>,
+    pub favorite: Option<bool>,
+}
+
 impl CollectedMountFilter {
     pub fn match_view(&self, view: &Value) -> Option<Value> {
         let row = view["entries"].get(self.mount_id.to_string())?;
@@ -1421,6 +1429,7 @@ pub struct CaptureFilters<'a> {
     pub paragon: Option<ParagonFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub collected_mount: Option<CollectedMountFilter>,
+    pub toy_in_view: Option<ToyViewFilter>,
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
     pub profession_recipe: Option<ProfessionRecipeFilter>,
@@ -1630,6 +1639,7 @@ impl Store {
             paragon,
             tracked_achievement,
             collected_mount,
+            toy_in_view,
             saved_instance,
             saved_world_boss,
             profession_recipe,
@@ -1678,6 +1688,10 @@ impl Store {
         ensure!(
             collected_mount.is_none() || family == Family::Forever,
             "Mount filtering requires Forever"
+        );
+        ensure!(
+            toy_in_view.is_none() || family == Family::Forever,
+            "Toy view filtering requires Forever"
         );
         ensure!(
             saved_instance
@@ -2427,6 +2441,23 @@ impl Store {
                     if collected_mount.is_some() && mount_match.is_none() {
                         continue;
                     }
+                    let toy_match = toy_in_view.as_ref().and_then(|filter| {
+                        let view = s.sections.get("toy_collection_view")?;
+                        let row = view["entries"].get(filter.item_id.to_string())?;
+                        (filter
+                            .collected
+                            .is_none_or(|flag| row["collected"].as_bool() == Some(flag))
+                            && filter
+                                .favorite
+                                .is_none_or(|flag| row["favorite"].as_bool() == Some(flag)))
+                        .then(|| {
+                            json!({"item_id":filter.item_id,"collected":row["collected"],
+                                "favorite":row["favorite"],"coverage":view["coverage"]})
+                        })
+                    });
+                    if toy_in_view.is_some() && toy_match.is_none() {
+                        continue;
+                    }
                     let achievement_match = tracked_achievement
                         .as_ref()
                         .zip(achievement_key.as_ref())
@@ -2939,6 +2970,9 @@ impl Store {
                     }
                     if let Some(observation) = mount_match {
                         summary["collected_mount_match"] = observation;
+                    }
+                    if let Some(observation) = toy_match {
+                        summary["toy_in_view_match"] = observation;
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

@@ -377,6 +377,8 @@ struct List {
     tracked_achievement: Option<azeroth_operator::TrackedAchievementFilter>,
     /// Find an observed collected mount by ID and optional recorded usability/favourite flags.
     collected_mount: Option<azeroth_operator::CollectedMountFilter>,
+    /// Find an exact toy ID in the saved filtered journal with optional recorded flags.
+    toy_in_view: Option<azeroth_operator::ToyViewFilter>,
     /// Match a named saved instance and its recorded lock/reset state.
     saved_instance: Option<azeroth_operator::SavedInstanceFilter>,
     /// Find a named world boss in the saved cache; does not establish loot eligibility.
@@ -1782,6 +1784,7 @@ impl Operator {
                 paragon: args.paragon,
                 tracked_achievement: args.tracked_achievement,
                 collected_mount: args.collected_mount,
+                toy_in_view: args.toy_in_view,
                 saved_instance: args.saved_instance,
                 saved_world_boss: args.saved_world_boss,
                 profession_recipe: args.profession_recipe,
