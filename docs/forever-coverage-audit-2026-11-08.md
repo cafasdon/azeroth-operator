@@ -93,6 +93,20 @@ availability, present craftability and complete profession coverage remain open.
 
 ## Evidence boundaries
 
+Owned-item review now exposes `simulator_item_resolution`. The fixed tags
+distinguish catalogue gaps, unreadable item links, unavailable modifier values,
+unresolved suffix or enchant references, and other simulator resolution gaps.
+The first applicable cause is shown when multiple gaps exist. The ranker carries
+recognised unresolved tags into plan exclusions. A resolved tag describes the
+availability of a simulator item input. Native equip eligibility is assessed
+separately.
+
+Offline build and five scoped tests passed. The actual plan CLI returned the
+three expected reasons for an incomplete link, unknown suffix and unknown enchant.
+Independent Callers and Failure reviews checked legacy responses and unrecognised
+tags. Jev 1.14.0 advisory `03d5a63b14280f586cf304981f12baa58d26c9cf89796e2853fa4bb0b9088e12`
+returned integrate .88 at confidence .82 with 394 input and 49 output tokens in .410s.
+
 Owned-gear reports now include `unresolved_candidate_locations_by_slot` for
 locations that reached item resolution and were omitted before enumeration.
 One physical item may appear under multiple eligible slots. The merge and journal

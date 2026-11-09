@@ -1,5 +1,8 @@
 # Changelog
 
+- Explain unresolved Forever gear candidates in owned-item reviews and plan
+  exclusions, including unreadable links and unresolved enchant or suffix references.
+
 - Report per-slot candidate locations omitted before gear enumeration because
   their simulator item could not be resolved. Carry the counts through saved
   window merges, journal status and owned-gear evaluation.

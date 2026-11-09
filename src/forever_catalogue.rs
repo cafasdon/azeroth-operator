@@ -3445,6 +3445,40 @@ pub fn review_owned(
                 let native_slot_conflict = draft_selection.as_ref().and_then(|selection| {
                     native_slot_category_conflict(item, selection.target_slot)
                 });
+                let candidates = modifiers
+                    .as_ref()
+                    .map(|fields| modifier_candidates(db, fields, reference.copied()));
+                let simulator_item_resolution =
+                    match (reference, modifiers.as_ref(), candidates.as_ref()) {
+                        (None, _, _) => "catalogue_item_unavailable",
+                        (_, None, _) => "item_link_unresolved",
+                        (_, Some(fields), _)
+                            if fields["enchant_id"].is_null()
+                                || fields["random_suffix_id"].is_null() =>
+                        {
+                            "modifier_values_unavailable"
+                        }
+                        (_, _, Some(review)) if !review["simulator_item_spec"].is_null() => {
+                            "resolved"
+                        }
+                        (_, Some(fields), Some(review))
+                            if fields["random_suffix_id"]
+                                .as_i64()
+                                .is_some_and(|id| id != 0)
+                                && review["default_scaling_suffix_allocation_delta"].is_null() =>
+                        {
+                            "suffix_reference_unresolved"
+                        }
+                        (_, Some(fields), Some(review))
+                            if fields["enchant_id"].as_u64().is_some_and(|id| id != 0)
+                                && review["fitting_enchants"]
+                                    .as_array()
+                                    .is_some_and(|rows| rows.len() != 1) =>
+                        {
+                            "enchant_reference_unresolved"
+                        }
+                        _ => "simulator_item_unresolved",
+                    };
                 entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
                     "weapon_skill":weapon_skill,
                     "catalogue_item_requirement_conflict":item_conflict,
@@ -3452,7 +3486,8 @@ pub fn review_owned(
                     "native_required_level_shortfall":native_shortfall,
                     "native_slot_category_conflict":native_slot_conflict,
                     "draft_selection":draft_selection,
-                    "catalogue_modifier_candidates":modifiers.as_ref().map(|fields| modifier_candidates(db, fields, reference.copied())),
+                    "catalogue_modifier_candidates":candidates,
+                    "simulator_item_resolution":simulator_item_resolution,
                     "link_modifiers":modifiers,
                     "catalogue_base_item":reference.map(|item| json!({
                         "id":item["id"],"name":item["name"],"type":item["type"],

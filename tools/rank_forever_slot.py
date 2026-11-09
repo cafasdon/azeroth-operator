@@ -192,9 +192,14 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
             modifiers = modifier_review or {}
             spec = modifiers.get("simulator_item_spec")
             if modifier_review is None or ("simulator_item_spec" in modifiers and spec is None):
+                resolution = row.get("simulator_item_resolution")
                 skipped.append({
                     **({"selections": [selection]} if multi else {"selection": selection}),
                     "reason": "unresolved_simulator_item",
+                    **({"simulator_item_resolution": resolution} if resolution in (
+                        "catalogue_item_unavailable", "item_link_unresolved", "modifier_values_unavailable",
+                        "suffix_reference_unresolved", "enchant_reference_unresolved", "simulator_item_unresolved",
+                    ) else {}),
                 })
                 continue
             if collapse_identical and source["kind"] != "equipment":
