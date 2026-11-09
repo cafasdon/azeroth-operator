@@ -183,6 +183,9 @@ struct Inspect {
     bag_restock_merchant_snapshot_id: Option<String>,
     /// Compare independent residual quotes from one to four compatible saved merchant visits.
     bag_restock_compare_merchant_snapshot_ids: Option<Vec<String>>,
+    /// Choose the cheapest complete quote per item across the selected saved visits.
+    #[serde(default)]
+    bag_restock_split_merchant_plan: bool,
     /// Look up captured item source references for the residual bag shortfall.
     bag_restock_source_snapshot_id: Option<String>,
     /// Look up pinned local catalogue sources for the residual bag shortfall.
@@ -2855,6 +2858,13 @@ impl Operator {
                 "Restocking comparison requires one to four distinct saved merchant snapshots",
             )]);
         }
+        if args.bag_restock_split_merchant_plan
+            && args.bag_restock_compare_merchant_snapshot_ids.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A split restocking plan requires saved merchant comparison snapshots",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -3239,6 +3249,7 @@ impl Operator {
                             .as_ref()
                             .and_then(|review| review["items"].as_array());
                         let mut visits = Vec::new();
+                        let mut best_by_item = std::collections::BTreeMap::new();
                         for id in ids {
                             let Ok(merchant) = self.store.read(id).and_then(|merchant| {
                                 azeroth_operator::analysis::ensure_same_character_and_client(
@@ -3255,6 +3266,24 @@ impl Operator {
                                     rows, &merchant, &snapshot,
                                 )
                             });
+                            if args.bag_restock_split_merchant_plan
+                                && let Some(rows) = quote
+                                    .as_ref()
+                                    .and_then(|quote| quote["reagents"].as_array())
+                            {
+                                for row in rows {
+                                    let plan = &row["lowest_cost_copper_only_bundle_mix"];
+                                    if let Some((item, cost)) = row["item_id"]
+                                        .as_u64()
+                                        .zip(plan["required_copper"].as_u64())
+                                        && best_by_item
+                                            .get(&item)
+                                            .is_none_or(|(best, _, _)| cost < *best)
+                                    {
+                                        best_by_item.insert(item, (cost, id, plan.clone()));
+                                    }
+                                }
+                            }
                             visits.push(serde_json::json!({
                                 "snapshot_id":id,"captured_at":merchant.captured_at,
                                 "quote_available":quote.as_ref().is_some_and(serde_json::Value::is_object),
@@ -3285,6 +3314,34 @@ impl Operator {
                             "offers_combined_across_visits":false,"purchase_eligibility_verified":false,
                             "live":false,
                         });
+                        if args.bag_restock_split_merchant_plan {
+                            let plan = demands.map(|rows| {
+                                let mut missing = Vec::new();
+                                let mut items = Vec::new();
+                                let mut subtotal = Some(0u64);
+                                for row in rows {
+                                    let item = row["item_id"].as_u64().unwrap();
+                                    if row["shortfall_vs_observed"] == 0 {
+                                        continue;
+                                    }
+                                    if let Some((cost, id, bundles)) = best_by_item.get(&item) {
+                                        subtotal = subtotal.and_then(|sum| sum.checked_add(*cost));
+                                        items.push(serde_json::json!({"item_id":item,
+                                            "merchant_snapshot_id":id,"bundle_plan":bundles}));
+                                    } else {
+                                        missing.push(item);
+                                    }
+                                }
+                                let total = subtotal.filter(|_| missing.is_empty());
+                                let wallet = snapshot.sections.get("wallet").and_then(|row| row["copper"].as_u64());
+                                serde_json::json!({"items":items,"unquoted_item_ids":missing,
+                                    "quoted_subtotal_copper":subtotal,"complete_quote_copper":total,
+                                    "affordable_from_inventory_wallet":total.zip(wallet).map(|(cost,balance)| cost <= balance),
+                                    "offers_combined_within_item_across_visits":false,
+                                    "purchase_eligibility_verified":false,"live":false})
+                            });
+                            value["bag_restock_split_merchant_plan"] = serde_json::json!(plan);
+                        }
                     }
                     if let Some(id) = args.bag_restock_merchant_snapshot_id.as_deref() {
                         let Ok(merchant) = self.store.read(id).and_then(|merchant| {

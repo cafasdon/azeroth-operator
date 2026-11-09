@@ -3048,3 +3048,9 @@ saved visits for the same character and exact client. The review compares
 each visit independently against the same post-bank shortfall and inventory
 wallet. It reports every tied lowest complete quote. Partial quotes and
 unobserved offers remain visible without pooling stock across visits.
+
+Enable `bag_restock_split_merchant_plan` with the visit comparison to
+choose the cheapest complete bundle quote for each item, breaking item
+price ties by the requested visit order. Each item uses one visit. The
+plan excludes travel costs and uses the saved inventory wallet. An
+unquoted item leaves the complete plan price unknown.

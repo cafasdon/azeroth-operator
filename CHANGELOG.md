@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved Forever restocking across merchant visits by choosing one complete quote per item.
+
 - Compare independent saved Forever merchant quotes for one bag restocking shortfall.
 
 - Compare residual Forever bag shortfalls with readable loot from a saved capture.

@@ -70,6 +70,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             partial_merchant = deepcopy(merchant)
             partial_merchant['sections']['merchant_stock'].pop('2')
             partial_merchant_key = store.ingest(partial_merchant)
+            other_merchant = deepcopy(merchant)
+            other_merchant['sections']['merchant_stock'] = {'1':merchant['sections']['merchant_stock']['2']}
+            other_merchant_key = store.ingest(other_merchant)
             retail = store.ingest(fixture())
             tied = deepcopy(changed)
             tied['character']['name'] = 'Tied'
@@ -233,6 +236,23 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(comparison['offers_combined_across_visits'])
                     for ids in [[],[merchant_key,merchant_key],[retail],[merchant_key]*5]:
                         await query(error=True,**restock,bag_restock_compare_merchant_snapshot_ids=ids)
+                    split_args = {'section':'bags','snapshot_id':key,
+                        'bag_restock_requirements':requirements['items'],
+                        'bag_restock_split_merchant_plan':True}
+                    split = await query(**split_args,bag_restock_compare_merchant_snapshot_ids=[
+                        partial_merchant_key,other_merchant_key])
+                    self.assertIsNone(split['bag_restock_merchant_comparison']['lowest_complete_quote_copper'])
+                    plan = split['bag_restock_split_merchant_plan']
+                    self.assertEqual(plan['complete_quote_copper'],9)
+                    self.assertEqual([row['merchant_snapshot_id'] for row in plan['items']],
+                                     [partial_merchant_key,other_merchant_key])
+                    self.assertIs(plan['affordable_from_inventory_wallet'],False)
+                    partial_plan = (await query(**split_args,bag_restock_compare_merchant_snapshot_ids=[
+                        other_merchant_key]))['bag_restock_split_merchant_plan']
+                    self.assertEqual(partial_plan['unquoted_item_ids'],[118])
+                    self.assertEqual(partial_plan['quoted_subtotal_copper'],2)
+                    self.assertIsNone(partial_plan['complete_quote_copper'])
+                    await query(error=True,**split_args)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},
                                                     {'item_id':858,'maximum_stack':2}]}
