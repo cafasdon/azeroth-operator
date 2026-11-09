@@ -23,6 +23,45 @@ def talent_map():
     return json.loads(data)
 
 
+def _allocation_definitions(allocation, nodes, trees, count, integer):
+    """Validate standalone review JSON independently of snapshot-store ingestion."""
+    def key(value):
+        return (isinstance(value,str) and value.isascii() and value.isdecimal()
+                and str(int(value))==value and 1<=int(value)<=2**32-1)
+    if (not isinstance(allocation,dict) or set(allocation)!={'coverage','queried_node_count','queried_entry_count','definitions'}
+            or allocation['coverage']!='queried_config_tree_entries'
+            or not integer(allocation['queried_node_count']) or allocation['queried_node_count']!=count
+            or not integer(allocation['queried_entry_count']) or not isinstance(allocation['definitions'],dict)
+            or allocation['queried_entry_count']!=len(allocation['definitions']) or len(allocation['definitions'])>4096):
+        raise ValueError('Invalid queried talent allocation')
+    definitions={};entries=set();node_trees={};node_counts={};locations={}
+    for definition,row in allocation['definitions'].items():
+        if (not key(definition) or not isinstance(row,dict)
+                or set(row)!={'node_id','entry_id','tree_id','purchased_rank','max_rank'}
+                or any(not integer(row[field],1) for field in ['node_id','entry_id','tree_id','max_rank'])
+                or not integer(row['purchased_rank']) or row['purchased_rank']>row['max_rank']
+                or str(row['tree_id']) not in trees or row['entry_id'] in entries
+                or row['node_id'] in node_trees and node_trees[row['node_id']]!=row['tree_id']):
+            raise ValueError('Invalid queried talent definition')
+        entries.add(row['entry_id']);node_trees[row['node_id']]=row['tree_id']
+        node_counts[row['node_id']]=node_counts.get(row['node_id'],0)+1
+        if node_counts[row['node_id']]>64:raise ValueError('Queried talent node entry budget exceeded')
+        if row['purchased_rank']>0:
+            active=nodes.get(str(row['node_id']))
+            if active is None or active['entry_id']!=row['entry_id'] or active['tree_id']!=row['tree_id']:
+                raise ValueError('Queried purchased talent entry mismatch')
+        definitions[int(definition)]=row
+        locations[(row['node_id'],row['entry_id'])]=(int(definition),row)
+    if len(node_trees)>count:raise ValueError('Queried talent node budget exceeded')
+    for node,active in nodes.items():
+        observed=locations.get((int(node),active['entry_id']))
+        if (observed is None or observed[1]['tree_id']!=active['tree_id']
+                or 'definition_id' in active and (active['definition_id']!=observed[0]
+                    or any(active[field]!=observed[1][field] for field in ['purchased_rank','max_rank']))):
+            raise ValueError('Queried active talent allocation mismatch')
+    return definitions
+
+
 def check_talent_identity(player, observed, class_name, require_match=True):
     report = {'status': 'unverified', 'basis': 'captured_purchased_ranks_and_pinned_definitions',
               'talent_map_sha256': MAP_SHA256, 'allocation_match_verified': False,
@@ -34,7 +73,7 @@ def check_talent_identity(player, observed, class_name, require_match=True):
     if not isinstance(observed, dict):
         raise ValueError('Invalid captured talent observation')
     # Equipment review projection contains only these non-personal fields.
-    if set(observed) - {'config_id', 'nodes', 'observed_tree_ids', 'observed_node_count', 'staged_changes_observed'}:
+    if set(observed) - {'config_id', 'nodes', 'observed_tree_ids', 'observed_node_count', 'staged_changes_observed','definition_allocation'}:
         raise ValueError('Invalid captured talent observation')
     def integer(value, lower=0):
         return type(value) is int and lower <= value <= 2**32 - 1
@@ -64,6 +103,9 @@ def check_talent_identity(player, observed, class_name, require_match=True):
                 or node['definition_id'] in definitions):
             raise ValueError('Invalid or ambiguous captured talent definition')
         definitions[node['definition_id']] = node
+    allocated=None
+    if 'definition_allocation' in observed:
+        allocated=_allocation_definitions(observed['definition_allocation'],nodes,trees,count,integer)
     source = talent_map()['classes'].get(class_name)
     if source is None:
         raise ValueError('Unsupported talent map class')
@@ -82,7 +124,15 @@ def check_talent_identity(player, observed, class_name, require_match=True):
         ranks.extend(int(digit) for digit in part.ljust(size, '0'))
     mapped = {row['definition_id']: (min(rank, row['max_rank']), row['max_rank'])
               for row, rank in zip(source['talents'], ranks)}
-    report['unknown_node_count'] = unknown + len(definitions.keys() - mapped.keys())
+    if allocated is None:
+        report['unknown_node_count'] = unknown + len(definitions.keys() - mapped.keys())
+    else:
+        definitions=allocated
+        report['basis']='captured_queried_definition_allocations_and_pinned_definitions'
+        report['queried_definition_count']=len(definitions)
+        report['unmapped_definition_count']=len(definitions.keys()-mapped.keys())
+        report['missing_pinned_definition_count']=len(mapped.keys()-definitions.keys())
+        report['unknown_node_count']=len({definitions[definition]['node_id'] for definition in definitions.keys()-mapped.keys()})
     staged = observed.get('staged_changes_observed')
     report['staged_changes_observed'] = staged
     for definition, node in sorted(definitions.items()):

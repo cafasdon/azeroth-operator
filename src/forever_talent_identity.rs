@@ -183,12 +183,41 @@ pub fn review(snapshot: &Snapshot, talent_string: &str) -> Result<Value> {
         ensure!(seen.insert(definition), "Ambiguous captured definition");
         definitions.insert(definition, node);
     }
+    let allocation = observed.get("definition_allocation");
+    if let Some(allocation) = allocation {
+        definitions = allocation["definitions"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(definition, row)| (definition.parse::<u64>().unwrap(), row))
+            .collect();
+        let unmapped: Vec<_> = definitions
+            .keys()
+            .filter(|definition| !mapped.contains_key(definition))
+            .collect();
+        unknown = unmapped
+            .iter()
+            .map(|definition| definitions[definition]["node_id"].as_u64().unwrap())
+            .collect::<BTreeSet<_>>()
+            .len();
+        report["basis"] = json!("captured_queried_definition_allocations_and_pinned_definitions");
+        report["queried_definition_count"] = json!(definitions.len());
+        report["unmapped_definition_count"] = json!(unmapped.len());
+        report["missing_pinned_definition_count"] = json!(
+            mapped
+                .keys()
+                .filter(|definition| !definitions.contains_key(definition))
+                .count()
+        );
+    }
     let mut compared = 0;
     let mut limit_disagreements = 0;
     let mut conflicts = Vec::new();
     for (definition, node) in definitions {
         let Some((rank, maximum)) = mapped.get(&definition) else {
-            unknown += 1;
+            if allocation.is_none() {
+                unknown += 1;
+            }
             continue;
         };
         if node["max_rank"].as_u64() != Some(*maximum) {

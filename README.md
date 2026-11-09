@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Simulation preflight now checks explicitly captured inactive talent ranks too.
+Known conflicts with matching pinned rank limits and explicitly false staging
+are rejected before the engine runs. Missing definitions remain unknown; older
+captures keep active-node comparison. [Comparison contract](docs/ADR-056-queried-allocation-simulation-checks.md).
+
 Simulator talent preparation can use explicitly captured purchased ranks for
 every pinned class definition, including observed zero ranks. Ask
 `captured_talent_loadout` for `prepare_simulator_talents: true`; missing,

@@ -2,6 +2,9 @@
 
 Date: 2026-11-09. Status: offline source integration; native testing deferred.
 
+Extended by [ADR-056](ADR-056-queried-allocation-simulation-checks.md), which feeds
+the allocation into equipment-review and explicit-template comparison too.
+
 ## Missing outcome
 
 Active talent entries alone cannot establish zero purchased ranks for every
@@ -85,8 +88,8 @@ the capture reflects the character currently in play.
 The draft may be placed in an explicit simulator template for review. Existing
 class/race/profession/pet/level/gear/encounter/engine guards still apply. The
 preparation query itself does not invoke an engine, alter a template or auto-select
-a rotation. The current Python simulator's strict active-node projection remains
-unchanged; it is not silently extended to infer full allocation coverage.
+a rotation. ADR-056 extends the Python comparison projection to explicit queried
+ranks; it still cannot infer missing zeros or full native allocation coverage.
 
 ## Verification boundary
 

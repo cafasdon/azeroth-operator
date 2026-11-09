@@ -1,5 +1,10 @@
 # Changelog
 
+- Feed queried talent allocations into equipment reviews, MCP comparison and
+  simulator preflight. Reject known inactive-zero mismatches before execution,
+  validate standalone review groups, and report one coherent queried-definition
+  comparison scope. Missing definitions remain unknown; legacy captures unchanged.
+
 - Capture optional queried-entry talent allocations, including explicit inactive
   zero ranks, with strict cross-reader linkage and 64-entry/node, 4096-entry
   limits. Add explicit MCP simulator-string preparation only for exact pinned

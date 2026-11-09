@@ -468,3 +468,8 @@ Explicit MCP simulator preparation requires exact pinned definitions/caps and
 known committed state; missing data yields no string. Full native/model/legality,
 current identity and owned-BiS proof remain open. Uninstalled package only.
 [Contract](ADR-055-queried-talent-allocation.md).
+
+Simulation preflight now consumes queried allocation observations, including
+explicit inactive zeros. Known committed conflicts reject before engine/cache use; missing
+or model-unmapped evidence remains explicit, with no complete native/model/BiS
+claim. [Contract](ADR-056-queried-allocation-simulation-checks.md).

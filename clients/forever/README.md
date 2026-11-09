@@ -2163,3 +2163,11 @@ inactive zeros are never guessed. It generates no native import or game action.
 Matching reader/importer plus uninstalled addon 0.50.0-dev support are required.
 [Contract](../../docs/ADR-055-queried-talent-allocation.md) ·
 [Offline evidence](../../docs/talent-allocation-verification-2026-11-09.md).
+
+Explicit queried allocations now reach equipment reviews and both MCP/simulator
+comparison. Captured inactive zero ranks can reject template points before the
+engine runs. Reports use a queried-definition basis/counters when available;
+missing definitions remain unknown and legacy active-only captures retain their
+old shape. No new addon package or gameplay action.
+[Contract](../../docs/ADR-056-queried-allocation-simulation-checks.md) ·
+[Evidence](../../docs/allocation-simulation-checks-verification-2026-11-09.md).

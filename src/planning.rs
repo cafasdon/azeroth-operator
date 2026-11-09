@@ -159,7 +159,7 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             .filter(|talents| snapshot.client.family==crate::Family::Forever && talents.get("observed_tree_ids").is_some())
             .map(|talents| {
                 let mut fields=serde_json::Map::new();
-                for key in ["config_id","nodes","observed_tree_ids","observed_node_count","staged_changes_observed"] {
+                for key in ["config_id","nodes","observed_tree_ids","observed_node_count","staged_changes_observed","definition_allocation"] {
                     if let Some(value)=talents.get(key) {fields.insert(key.into(),value.clone());}
                 }
                 Value::Object(fields)
