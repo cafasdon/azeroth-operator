@@ -436,3 +436,10 @@ check known purchased ranks in equipment reviews before simulation. Staged or
 known conflicting observations require correction; partial/unknown and full
 allocation/model coverage stay unverified. No automatic talent actions or live
 qualification. See [ADR-051](ADR-051-forever-simulator-talent-observations.md).
+
+Direct MCP purchased-talent comparison now reaches the existing talent review
+route via an optional simulator string and an explicit saved Forever snapshot.
+It preserves native import unavailability, partial/unknown evidence and false
+full-allocation/model flags. No simulator or game runs through this query.
+[Contract](ADR-052-forever-talent-template-mcp.md) ·
+[Offline checks](forever-talent-mcp-verification-2026-11-09.md).

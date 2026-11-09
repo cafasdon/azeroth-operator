@@ -12,6 +12,12 @@ unverified. Matching MCP support and addon
 [Offline evidence](docs/forever-talent-definitions-verification-2026-11-09.md).
 See the [local mapping contract](docs/ADR-051-forever-simulator-talent-observations.md).
 
+`captured_talent_loadout` also accepts optional `simulator_talent_string` for an
+explicit saved Forever snapshot. Its `simulator_talent_observation` compares known
+purchased ranks directly through the MCP, without running an engine or returning
+a game import. Native import availability remains separate; full allocation and
+model coverage stay unverified. [Direct MCP contract](docs/ADR-052-forever-talent-template-mcp.md).
+
 Saved-character inventory discovery can filter `list_snapshots` with
 `inventory_item`: an item ID, explicit storage and observed quantity bounds.
 Use `latest_per_character` to avoid reviving an older stock observation when a

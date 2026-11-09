@@ -486,6 +486,14 @@ struct Summary {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct TalentSummary {
+    snapshot_id: String,
+    /// Optional Forever simulator digit string; never a game import or action.
+    simulator_talent_string: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct MerchantCartLine {
     slot: std::num::NonZeroU32,
     bundles: std::num::NonZeroU32,
@@ -1377,25 +1385,32 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Return the original captured Retail talent import string for player review, if available. Does not apply talents, create optimal builds or verify game acceptance.",
+        description = "Return the captured Retail talent import string if available. Optional simulator_talent_string compares purchased ranks from an explicit Forever capture with pinned local simulator definitions; native import availability stays separate. Missing evidence stays unverified. Does not simulate, apply talents, create optimal builds or verify full allocation or game acceptance.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
             open_world_hint = false
         )
     )]
-    fn captured_talent_loadout(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+    fn captured_talent_loadout(
+        &self,
+        Parameters(args): Parameters<TalentSummary>,
+    ) -> CallToolResult {
         let result = (|| {
             let snapshot = self.store.read(&args.snapshot_id)?;
             let mut review = azeroth_operator::planning::captured_loadout(&snapshot)?;
+            if let Some(text) = args.simulator_talent_string {
+                review["simulator_talent_observation"] =
+                    azeroth_operator::forever_talent_identity::review(&snapshot, &text)?;
+            }
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
         })();
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
-            Err(_) => {
-                CallToolResult::error(vec![ContentBlock::text("Snapshot unavailable or invalid")])
-            }
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Snapshot or talent review input unavailable or invalid",
+            )]),
         }
     }
     #[tool(

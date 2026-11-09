@@ -1,5 +1,10 @@
 # Changelog
 
+- Extend captured_talent_loadout with an optional saved-Forever simulator-string
+  comparison using the embedded pinned map. Return numeric purchased-rank
+  conflicts and explicit partial/staged/unknown evidence directly through MCP;
+  preserve native import availability and existing Retail review behaviour.
+
 - Bundle a reproducible nine-class talent-definition map from pinned simulator
   source. Carry non-personal purchased-rank observations into equipment reviews,
   reject known template conflicts and staged changes before simulation, and

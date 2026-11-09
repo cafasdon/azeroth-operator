@@ -6,6 +6,7 @@ pub mod binding_operation;
 pub mod equipment_operation;
 pub mod equipment_set_operation;
 pub mod forever_catalogue;
+pub mod forever_talent_identity;
 pub mod import;
 pub mod macro_operation;
 pub mod planning;

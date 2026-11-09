@@ -2119,3 +2119,12 @@ Known conflicts and staged changes stop simulation; plan-only reports can retain
 the diagnostics. Unknown data and full allocation/model coverage remain
 unverified. See [ADR-051](../../docs/ADR-051-forever-simulator-talent-observations.md)
 and [verification](../../docs/forever-talent-mapping-verification-2026-11-09.md).
+
+Direct MCP talent-template review: call `captured_talent_loadout` with an
+explicit saved snapshot and optional `simulator_talent_string`. The nested
+`simulator_talent_observation` compares known purchased ranks with pinned
+simulator definitions. It is not a native import, simulator run, full allocation
+proof or game action. Omit the option for existing behaviour. Unknown metadata
+and staging stay explicit; class comes only from that saved capture.
+[Contract](../../docs/ADR-052-forever-talent-template-mcp.md) ·
+[Offline checks](../../docs/forever-talent-mcp-verification-2026-11-09.md).
