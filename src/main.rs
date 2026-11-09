@@ -45,6 +45,8 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Look up one species and observed row bounds in the saved pet_collection_view section.
+    pet_species: Option<azeroth_operator::PetSpeciesFilter>,
     /// Project historical reset timestamps for saved_instances or saved_world_bosses; no current eligibility.
     #[serde(default, deserialize_with = "saved_reset_flag")]
     saved_reset_projection: bool,
@@ -1831,6 +1833,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.pet_species.as_ref().is_some_and(|filter| {
+            args.section.as_deref() != Some("pet_collection_view") || filter.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Pet species lookup requires pet_collection_view and ordered row bounds",
+            )]);
+        }
         if args.saved_reset_projection
             && !matches!(
                 args.section.as_deref(),
@@ -2390,6 +2399,15 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(filter) = &args.pet_species {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Pet species lookup requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["pet_species_match"] =
+                        serde_json::json!(filter.match_view(&value["data"]));
+                }
                 if args.saved_reset_projection {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

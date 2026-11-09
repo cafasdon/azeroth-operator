@@ -6,6 +6,8 @@ counts. The overlap describes the saved views, whose filters may differ.
 Species discovery accepts `maximum_owned_rows` and `maximum_unowned_rows`
 alongside the existing minimums. Zero matches an observed zero count for
 that species, while an absent species does not match.
+Use the same `pet_species` selector when inspecting `pet_collection_view`.
+The response adds `pet_species_match` while preserving the captured view.
 
 Saved mail attachment comparisons show the unloaded message count on each
 side, separately from unreadable attachment slots in loaded messages.

@@ -81,6 +81,13 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
                     ]:
                         result=await search(character=value['character'],pet_species=filters)
                         self.assertEqual(len(result['snapshots']),expected)
+                        inspected=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
+                            'section':'pet_collection_view','pet_species':filters})
+                        self.assertFalse(inspected.isError,inspected)
+                        data=json.loads(inspected.content[0].text)
+                        self.assertEqual(data['data'],view)
+                        self.assertEqual(data['pet_species_match'],
+                            result['snapshots'][0]['pet_species_match'] if expected else None)
                     self.assertEqual(len((await search(**args))['snapshots']),1)
                     self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
                     self.assertEqual(len((await search(**args,latest_per_character=True,

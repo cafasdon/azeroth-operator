@@ -467,6 +467,44 @@ pub struct PetSpeciesFilter {
     pub maximum_unowned_rows: Option<u32>,
 }
 
+impl PetSpeciesFilter {
+    pub fn validate(&self) -> Result<()> {
+        for (minimum, maximum) in [
+            (self.minimum_owned_rows, self.maximum_owned_rows),
+            (self.minimum_unowned_rows, self.maximum_unowned_rows),
+        ] {
+            ensure!(
+                minimum.zip(maximum).is_none_or(|(min, max)| min <= max),
+                "Pet species row bounds are reversed"
+            );
+        }
+        Ok(())
+    }
+
+    pub fn match_view(&self, view: &Value) -> Option<Value> {
+        let row = view["entries"].get(self.species_id.to_string())?;
+        let owned = row["owned_rows"].as_u64()?;
+        let unowned = row["unowned_rows"].as_u64()?;
+        (self
+            .minimum_owned_rows
+            .is_none_or(|min| owned >= u64::from(min))
+            && self
+                .minimum_unowned_rows
+                .is_none_or(|min| unowned >= u64::from(min))
+            && self
+                .maximum_owned_rows
+                .is_none_or(|max| owned <= u64::from(max))
+            && self
+                .maximum_unowned_rows
+                .is_none_or(|max| unowned <= u64::from(max)))
+        .then(|| {
+            json!({"coverage":view["coverage"],"displayed_rows":view["displayed_rows"],
+                "species_id":self.species_id,"name":row["name"],
+                "owned_rows":owned,"unowned_rows":unowned})
+        })
+    }
+}
+
 #[derive(Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SpellResourceFilter {
@@ -1721,19 +1759,8 @@ impl Store {
             pet_species.is_none() || family == Family::Forever,
             "Pet species view filtering requires Forever"
         );
-        let pet_species_key = pet_species
-            .as_ref()
-            .map(|filter| filter.species_id.to_string());
         if let Some(filter) = &pet_species {
-            for (minimum, maximum) in [
-                (filter.minimum_owned_rows, filter.maximum_owned_rows),
-                (filter.minimum_unowned_rows, filter.maximum_unowned_rows),
-            ] {
-                ensure!(
-                    minimum.zip(maximum).is_none_or(|(min, max)| min <= max),
-                    "Pet species row bounds are reversed"
-                );
-            }
+            filter.validate()?;
         }
         ensure!(
             active_pet.is_none() || family == Family::Forever,
@@ -2177,18 +2204,8 @@ impl Store {
                     } else {
                         None
                     };
-                    let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
-                        let view=s.sections.get("pet_collection_view")?;
-                        let row=view["entries"].get(key)?;
-                        let owned = row["owned_rows"].as_u64().unwrap();
-                        let unowned = row["unowned_rows"].as_u64().unwrap();
-                        (filter.minimum_owned_rows.is_none_or(|min| owned >= u64::from(min))
-                            && filter.minimum_unowned_rows.is_none_or(|min| unowned >= u64::from(min))
-                            && filter.maximum_owned_rows.is_none_or(|max| owned <= u64::from(max))
-                            && filter.maximum_unowned_rows.is_none_or(|max| unowned <= u64::from(max)))
-                            .then(||json!({"coverage":view["coverage"],"displayed_rows":view["displayed_rows"],
-                                "species_id":filter.species_id,"name":row["name"],
-                                "owned_rows":row["owned_rows"],"unowned_rows":row["unowned_rows"]}))
+                    let pet_species_match = pet_species.as_ref().and_then(|filter| {
+                        filter.match_view(s.sections.get("pet_collection_view")?)
                     });
                     if pet_species.is_some() && pet_species_match.is_none() {
                         continue;

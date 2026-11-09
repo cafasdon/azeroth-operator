@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up a specific species and row-count range when inspecting a saved Forever pet journal.
+
 - Find saved Forever pet journal species by inclusive ranges of observed owned and unowned rows.
 
 - Show shared species coverage in saved Forever pet journal comparisons.
