@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+Reagent-chain preparation now accounts for repeated producer uses against one
+saved charge pool per recipe. Per-step requests stay visible beside cumulative
+shortfalls; newer stock never refreshes those charges. This remains a conditional
+material draft, with current craftability unverified.
+[Evidence](docs/chain-charge-accounting-verification-2026-11-09.md).
+
 `search_forever_recipes` can filter captured bulk cooldown state, minimum charges
 and maximum remaining seconds alongside material and recipe-view filters. Charges
 take precedence when classifying state; missing numeric observations stay unknown.

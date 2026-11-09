@@ -1,5 +1,9 @@
 # Changelog
 
+- Account cumulatively for repeated producer recipes in reagent-chain charge
+  checks and stock preparation, preserving per-request evidence, unknown charge
+  counts, original capture provenance and ordinary unique-recipe batch outputs.
+
 - Filter bulk recipe discovery by captured cooldown state, observed charge minimum
   and remaining-time maximum, with same-row composition, explicit unknown numeric
   predicates and original recipe provenance when inventory is refreshed.

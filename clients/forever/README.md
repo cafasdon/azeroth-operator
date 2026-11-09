@@ -1,5 +1,22 @@
 # Forever
 
+Reagent-chain steps now expose `captured_charge_accounting`: cumulative requested
+crafts for that recipe, saved charges, modeled charges before/after the step,
+cumulative shortfall and coverage. `captured_nonmaterial_checks` retains the
+per-request charge check and adds `observed_charges_cover_cumulative_crafts`.
+Repeated producer IDs share one pool; different IDs stay separate because shared
+cooldown groups are not captured. No elapsed recharge is inferred.
+
+The optional chain stock plan's `nonmaterial_requirements.charge_accounting`
+repeats the same accounting in printed order, with one-based `recipe_number`.
+Its first observed shortfall includes a cumulative-charge failure. Missing
+charges produce null counts/coverage; a timer alone is not a charge count.
+Zero remaining charges after a deficit is a conditional lower bound, not proof
+that the step can complete. Material draft completion can coexist with a charge
+shortfall. Original recipe timestamps remain authoritative even with newer
+inventory. Ordinary unique-recipe batch/dependency output shape is unchanged.
+[Offline evidence](../../docs/chain-charge-accounting-verification-2026-11-09.md).
+
 `search_forever_recipes.cooldown_filter` accepts `state` (`available`, `waiting`,
 `unknown`), `minimum_charges` and `maximum_remaining_seconds`. Supply at least one
 predicate. Numeric bounds are inclusive u32 values; missing numbers cannot match

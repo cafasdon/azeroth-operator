@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Repeated producers in captured reagent chains now consume one modeled saved
+charge pool per recipe across their printed steps. Step and stock-plan checks
+expose cumulative shortages independently of material feasibility. Unknown counts
+stay unknown, newer stock does not replenish them and no craft is executed.
+Shared cooldown groups and actual recharge/readiness remain unqualified.
+[Evidence](../../docs/chain-charge-accounting-verification-2026-11-09.md).
+
 Bulk recipe discovery can narrow historical cooldown state, charges and timer
 together with learned/skill-up and material predicates. Results retain original
 cooldown provenance while compatible newer inventory updates stock only. Explicit

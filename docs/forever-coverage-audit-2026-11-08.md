@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: repeated producer steps now share a per-recipe captured charge
+ledger in chain and stock preparation, closing independent full-charge reuse.
+[Offline evidence](chain-charge-accounting-verification-2026-11-09.md). Shared
+cooldown groups, recharge, current readiness and full profession planning remain
+unqualified.
+
 9 November update: bulk recipe discovery now filters original captured cooldown
 state, charges and remaining seconds alongside view/material predicates. Missing
 numeric evidence remains unknown and newer inventory never refreshes cooldowns.

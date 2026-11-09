@@ -728,6 +728,7 @@ pub fn recipe_reagent_chain_with_choices(
         steps: Vec::new(),
         external: BTreeMap::new(),
         relevant: BTreeSet::new(),
+        charges: RecipeChargeLedger::default(),
     };
     let blocked = chain.craft(recipe_id, crafts).err();
     let complete = blocked.is_none();
@@ -783,6 +784,32 @@ struct RecipeChainDraft<'a> {
     steps: Vec<Value>,
     external: BTreeMap<u64, u64>,
     relevant: BTreeSet<u64>,
+    charges: RecipeChargeLedger,
+}
+
+/// Per-recipe historical charge accounting; all callers have at most eight
+/// validated 1..=1000-craft steps from the same recipe capture. No recharge or
+/// relationship between different recipes' cooldown pools is inferred.
+#[derive(Default)]
+struct RecipeChargeLedger {
+    requested: BTreeMap<u64, u64>,
+}
+
+impl RecipeChargeLedger {
+    fn consume(&mut self, review: &Value) -> Value {
+        let recipe = &review["recipe"];
+        let id = recipe["recipe_id"].as_u64().unwrap();
+        let requested = self.requested.entry(id).or_default();
+        let before = *requested;
+        *requested += review["requested_crafts"].as_u64().unwrap();
+        let charges = recipe["cooldown"]["charges"].as_u64();
+        json!({"requested_crafts_through_step":*requested,
+            "observed_charges":charges,
+            "observed_charges_before_step":charges.map(|n| n.saturating_sub(before)),
+            "observed_charges_remaining_if_completed":charges.map(|n| n.saturating_sub(*requested)),
+            "shortfall_vs_cumulative_crafts":charges.map(|n| requested.saturating_sub(n)),
+            "covers_cumulative_crafts":charges.map(|n| n >= *requested)})
+    }
 }
 
 /// Reuse ordered-batch accounting for the exact printed chain steps, without external acquisitions.
@@ -833,7 +860,7 @@ pub fn reagent_chain_stock_plan(
         json!({"basis":"minimum_starting_items_for_printed_chain_order_and_reported_minimum_yields",
         "material_coverage":ordered_recipe_material_coverage(&materials),
         "starting_materials":materials,"material_checkpoint":checkpoint,
-        "nonmaterial_requirements":ordered_recipe_requirements(reviews.iter()),
+        "nonmaterial_requirements":ordered_recipe_requirements_with_charges(reviews.iter(), true),
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
         "withdrawal_eligibility_verified":false,"current_stock_verified":false,"minimum_yields_verified":false,
         "craftability_verified":false,"live":false,"game_execution":false}),
@@ -928,10 +955,13 @@ impl RecipeChainDraft<'_> {
             .checked_add(quantity)
             .ok_or_else(|| json!({"reason":"quantity_overflow"}))?;
         self.balance.insert(output, amount);
+        let charges = self.charges.consume(&review);
         self.steps.push(json!({"recipe_id":id,"crafts":crafts,"output_item_id":output,
             "minimum_output_if_completed":quantity,"required_reagents":required,
+            "captured_charge_accounting":charges,
             "captured_nonmaterial_checks":{"recipe_learned":review["captured_preparation"]["recipe_learned"],
                 "observed_conditions_met":review["captured_preparation"]["observed_conditions_met"],
+                "observed_charges_cover_cumulative_crafts":charges["covers_cumulative_crafts"],
                 "observed_charges_cover_request":review["captured_preparation"]["observed_charges_cover_request"]}}));
         self.active.remove(&id.get());
         Ok(())
@@ -1412,22 +1442,42 @@ pub fn recipe_dependency_order<'a>(
 }
 
 pub fn ordered_recipe_requirements<'a>(reviews: impl Iterator<Item = &'a Value>) -> Value {
-    let checks = [
+    ordered_recipe_requirements_with_charges(reviews, false)
+}
+
+fn ordered_recipe_requirements_with_charges<'a>(
+    reviews: impl Iterator<Item = &'a Value>,
+    cumulative: bool,
+) -> Value {
+    let mut checks = vec![
         "recipe_learned",
         "observed_conditions_met",
         "observed_charges_cover_request",
     ];
+    if cumulative {
+        checks.push("observed_charges_cover_cumulative_crafts");
+    }
     let mut first_shortfall = None;
     let mut recipes_with_unknown_checks = 0;
+    let mut ledger = RecipeChargeLedger::default();
+    let mut charge_accounting = Vec::new();
     for (index, review) in reviews.enumerate() {
-        let preparation = &review["captured_preparation"];
+        let mut preparation = review["captured_preparation"].clone();
+        if cumulative {
+            let mut charges = ledger.consume(review);
+            preparation["observed_charges_cover_cumulative_crafts"] =
+                charges["covers_cumulative_crafts"].clone();
+            charges["recipe_number"] = json!(index + 1);
+            charges["recipe_id"] = review["recipe"]["recipe_id"].clone();
+            charge_accounting.push(charges);
+        }
         if checks.iter().any(|check| preparation[*check].is_null()) {
             recipes_with_unknown_checks += 1;
         }
         if first_shortfall.is_none() {
             let failed: Vec<_> = checks
-                .into_iter()
-                .filter(|check| preparation[*check] == false)
+                .iter()
+                .filter(|check| preparation[**check] == false)
                 .collect();
             if !failed.is_empty() {
                 first_shortfall = Some(json!({
@@ -1437,8 +1487,12 @@ pub fn ordered_recipe_requirements<'a>(reviews: impl Iterator<Item = &'a Value>)
             }
         }
     }
-    json!({"first_observed_shortfall":first_shortfall,
-        "recipes_with_unknown_checks":recipes_with_unknown_checks})
+    let mut result = json!({"first_observed_shortfall":first_shortfall,
+        "recipes_with_unknown_checks":recipes_with_unknown_checks});
+    if cumulative {
+        result["charge_accounting"] = json!(charge_accounting);
+    }
+    result
 }
 
 pub fn bag_restock(by_storage: &Value, required: u64) -> (Option<u64>, Option<Value>) {
