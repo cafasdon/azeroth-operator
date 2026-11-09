@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures containing an exact helpful or harmful player aura.
+
 - Compare saved Forever health and power by missing units and percentage-point change.
 
 - Filter saved Forever resources by a percentage range and exact primary power type.

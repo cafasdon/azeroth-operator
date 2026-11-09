@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `list_snapshots.player_aura` with a `group` of `helpful` or
+`harmful` and an exact `spell_id`. Matches count observed rows for that
+ID in the selected group, including duplicates. An absent match leaves
+the aura's presence outside the saved observation unknown.
+
 Use `list_snapshots.player_resource` with `resource` set to `health` or
 `primary_power` and at least one predicate. Whole `minimum_percent` and
 `maximum_percent` bounds from 0 to 100 are inclusive and use the exact

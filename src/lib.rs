@@ -1443,6 +1443,39 @@ pub struct PlayerResourceFilter {
     power_type: Option<u8>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum PlayerAuraGroup {
+    Helpful,
+    Harmful,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PlayerAuraFilter {
+    group: PlayerAuraGroup,
+    spell_id: std::num::NonZeroU32,
+}
+
+impl PlayerAuraFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        let group = match self.group {
+            PlayerAuraGroup::Helpful => "helpful",
+            PlayerAuraGroup::Harmful => "harmful",
+        };
+        let spell_id = u64::from(self.spell_id.get());
+        let count = section["groups"][group]["entries"]
+            .as_object()?
+            .values()
+            .filter(|row| row["spell_id"].as_u64() == Some(spell_id))
+            .count();
+        (count > 0).then(|| {
+            json!({"group":group,"spell_id":spell_id,
+            "matching_observed_rows":count,"effectiveness_verified":false})
+        })
+    }
+}
+
 impl PlayerResourceFilter {
     fn observation_match(&self, section: &Value) -> Option<Value> {
         let resource = match self.resource {
@@ -1560,6 +1593,7 @@ pub struct CaptureFilters<'a> {
     pub maximum_pvp_points_to_next_threshold: Option<u32>,
     pub pvp_cap_distance: Option<PvpCapDistanceFilter>,
     pub player_resource: Option<PlayerResourceFilter>,
+    pub player_aura: Option<PlayerAuraFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1777,6 +1811,7 @@ impl Store {
             maximum_pvp_points_to_next_threshold,
             pvp_cap_distance,
             player_resource,
+            player_aura,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -1927,6 +1962,10 @@ impl Store {
             || pvp_season_id.is_some()
             || maximum_pvp_points_to_next_threshold.is_some()
             || pvp_cap_distance.is_some();
+        ensure!(
+            player_aura.is_none() || family == Family::Forever,
+            "Player aura search requires Forever"
+        );
         if let Some(filter) = &player_resource {
             ensure!(
                 family == Family::Forever,
@@ -2452,6 +2491,12 @@ impl Store {
                         filter.observation_match(s.sections.get("player_resources")?)
                     });
                     if player_resource.is_some() && player_resource_match.is_none() {
+                        continue;
+                    }
+                    let player_aura_match = player_aura.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("player_auras")?)
+                    });
+                    if player_aura.is_some() && player_aura_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3235,6 +3280,9 @@ impl Store {
                     }
                     if let Some(observation) = player_resource_match {
                         summary["player_resource_match"] = observation;
+                    }
+                    if let Some(observation) = player_aura_match {
+                        summary["player_aura_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

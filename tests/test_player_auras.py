@@ -69,6 +69,20 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    async def search(group, spell_id, family='forever', error=False):
+                        result = await session.call_tool('list_snapshots', {'family': family,
+                            'player_aura': {'group': group, 'spell_id': spell_id}})
+                        self.assertEqual(bool(result.isError), error, result)
+                        return None if error else json.loads(result.content[0].text)['snapshots']
+                    matches = await search('helpful', 100)
+                    self.assertEqual([row['snapshot_id'] for row in matches], [valid[1][0]])
+                    self.assertEqual(matches[0]['player_aura_match'], {'group': 'helpful',
+                        'spell_id': 100, 'matching_observed_rows': 2, 'effectiveness_verified': False})
+                    self.assertEqual(await search('harmful', 100), [])
+                    self.assertEqual([row['snapshot_id'] for row in await search('helpful', 4294967294)],
+                                     [valid[3][0]])
+                    await search('helpful', 0, error=True)
+                    await search('helpful', 100, family='retail', error=True)
                     for key, value in valid:
                         response = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(response.isError)
