@@ -396,3 +396,8 @@ bag locations from the same capture. Matching-location counters precede paging;
 equipment/bank quantities and separately requested snapshot evidence stay
 independent. Missing-section legacy lookup shape is preserved. Timers remain
 historical and do not prove current item usability. See [verification](item-cooldown-lookup-verification-2026-11-09.md).
+
+Python ingestion and existing-capture reads now enforce the Rust item stack-count
+contract: container rows require positive u32 integers; equipment permits absent
+or null counts only. Invalid ingestion fails before writes. Count parity is
+verified with 120 actual MCP cases; broader schema equivalence remains separate.

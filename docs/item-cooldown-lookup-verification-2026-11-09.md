@@ -63,3 +63,8 @@ land .96 / fix .04 / insufficient .00; existing-gap record-separately 1.00;
 716 input, 96 output, .303s. Author disposition: land the bounded join on direct
 evidence and two clean reviews, keep the existing validation gap and broad goal
 open. No native usability or full BiS claim.
+
+Subsequent status: the recorded stack-count discrepancy is repaired by the
+focused Python count guard; see
+[stack-count parity evidence](item-stack-count-parity-verification-2026-11-09.md).
+This does not claim full schema parity beyond the tested count contract.

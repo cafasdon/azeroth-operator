@@ -1,5 +1,9 @@
 # Changelog
 
+- Align Python item stack-count validation with the Rust reader: carried/bank
+  items require positive u32 integers; equipment accepts absent/null counts only.
+  Reject malformed captures before ingestion writes, preserving valid history.
+
 - Join historical cooldown observations into exact matching bag locations in
   item lookup, with matching-location counters before pagination and independent
   per-capture evidence. Preserve old capture output and inventory quantities.

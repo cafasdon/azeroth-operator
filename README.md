@@ -15,6 +15,10 @@ snapshot results retain their own capture time and evidence. Equipment/bank
 matches receive no borrowed cooldown data, and legacy captures keep their prior
 lookup shape. [Verification](docs/item-cooldown-lookup-verification-2026-11-09.md).
 
+Python ingestion now rejects missing or malformed container stack counts before
+writing, matching Rust's count contract. Equipment's absent/null count behaviour
+is preserved. [Parity evidence](docs/item-stack-count-parity-verification-2026-11-09.md).
+
 Optional local reagent references can now retain bounded NPC/object spawn
 locations. Reagent chains return only the referenced location records, preserving
 provider area/phase namespaces, unknown data and truncation. No route or movement

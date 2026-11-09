@@ -168,6 +168,12 @@ def validate_snapshot(value):
         for group in groups:
             if not isinstance(group,dict):continue
             for item in group.values():
+                if isinstance(item,dict):
+                    count=item.get('count')
+                    if ((storage=='equipment' and count is not None)
+                            or (storage!='equipment' and (type(count) is not int
+                                or not 1<=count<=4_294_967_295))):
+                        raise ValueError('Missing or invalid item stack count')
                 if isinstance(item,dict) and "sell_price_copper" in item:
                     if (type(item["sell_price_copper"]) is not int or not 0<=item["sell_price_copper"]<=9_999_999_999_999
                             or not isinstance(item.get("link"),str) or not 1<=len(item["link"].encode())<=4096):
