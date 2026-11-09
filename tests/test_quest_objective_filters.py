@@ -40,6 +40,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                 for i, row in enumerate(rows, 1)}
             saved['sections']['quests']['3']['item_rewards'] = {'1': {'item_id': 118, 'quantity': 2}}
             saved['sections']['quests']['7']['item_rewards'] = {'1': {'item_id': 858, 'quantity': 3}}
+            saved['sections']['quests']['3']['timer'] = {'remaining_seconds':60,'total_seconds':120}
             key = store.ingest(saved)
             changed=deepcopy(saved)
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
@@ -83,6 +84,14 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(absent['quest_objective_unknown_count'])
                     self.assertEqual((await query(quest_objective_kind='Monster'))['data'], {})
                     default = await query()
+                    deadline=await query(quest_projected_expiry_by='2025-01-01T00:01:00Z')
+                    self.assertEqual(set(deadline['data']),{'3'})
+                    self.assertEqual(deadline['quest_timer_unknown_count'],9)
+                    self.assertEqual((await query(quest_projected_expiry_by='2025-01-01T00:00:59Z'))['data'],{})
+                    self.assertEqual((await query(quest_projected_expiry_by='2025-01-01T00:01:00Z',
+                        quest_max_remaining_seconds=59))['data'],{})
+                    await query(error=True,quest_projected_expiry_by='2025-01-01')
+                    await query(error=True,quest_projected_expiry_by='2025-01-01T00:01:00Z',section='equipment')
                     self.assertEqual(default['data'], saved['sections']['quests'])
                     self.assertNotIn('quest_objective_filter', default)
                     for bad in [{'quest_objective_kind': ''}, {'quest_objective_kind': 'x' * 65},

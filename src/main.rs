@@ -160,6 +160,8 @@ struct Inspect {
     quest_objective_min_remaining: Option<u32>,
     /// Keep saved Forever quests with at most this many seconds remaining at capture.
     quest_max_remaining_seconds: Option<u32>,
+    /// Keep quests whose saved timer projects an expiry at or before this RFC 3339 timestamp.
+    quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
     quest_max_required_copper: Option<u64>,
     /// Keep saved Forever quests with at least this much recorded XP reward.
@@ -2045,6 +2047,8 @@ impl Operator {
         ];
         let filter_rewards = reward_filters.iter().any(|(_, id, _, _)| id.is_some());
         let filter_quest_map = args.quest_waypoint_map_id.is_some() || args.quest_on_captured_map;
+        let filter_quest_timer =
+            args.quest_max_remaining_seconds.is_some() || args.quest_projected_expiry_by.is_some();
         let filter_quest_objectives = args.quest_objective_kind.is_some()
             || args.quest_objective_finished.is_some()
             || args.quest_objective_max_remaining.is_some()
@@ -2169,7 +2173,7 @@ impl Operator {
                 || filter_quest_objectives
                 || args.quest_difficulty.is_some()
                 || args.quest_readiness.is_some()
-                || args.quest_max_remaining_seconds.is_some()
+                || filter_quest_timer
                 || args.quest_max_required_copper.is_some()
                 || args.quest_min_reward_xp.is_some()
                 || args.quest_list_xp_projection
@@ -2229,7 +2233,7 @@ impl Operator {
                 "Quest readiness selection requires the quests section without a quest ID",
             )]);
         }
-        if args.quest_max_remaining_seconds.is_some()
+        if filter_quest_timer
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -2852,7 +2856,7 @@ impl Operator {
                     || filter_quest_objectives
                     || args.quest_difficulty.is_some()
                     || args.quest_readiness.is_some()
-                    || args.quest_max_remaining_seconds.is_some()
+                    || filter_quest_timer
                     || args.quest_max_required_copper.is_some()
                     || args.quest_min_reward_xp.is_some()
                     || args.quest_list_xp_projection
@@ -2968,13 +2972,40 @@ impl Operator {
                     }
                     if let Some(maximum) = args.quest_max_remaining_seconds {
                         value["quest_max_remaining_seconds"] = serde_json::json!(maximum);
+                    }
+                    if let Some(deadline) = args.quest_projected_expiry_by {
+                        value["quest_projected_expiry_by"] = serde_json::json!(deadline);
+                    }
+                    if filter_quest_timer {
+                        let captured_at = value["captured_at"]
+                            .as_str()
+                            .and_then(|text| text.parse::<chrono::DateTime<chrono::Utc>>().ok());
                         value["quest_timer_unknown_count"] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
                                 quests.retain(|_, quest| {
-                                    let remaining = quest["timer"]["remaining_seconds"].as_u64();
-                                    unknown += usize::from(remaining.is_none());
-                                    remaining.is_some_and(|seconds| seconds <= u64::from(maximum))
+                                    let Some(seconds) =
+                                        quest["timer"]["remaining_seconds"].as_u64()
+                                    else {
+                                        unknown += 1;
+                                        return false;
+                                    };
+                                    if args
+                                        .quest_max_remaining_seconds
+                                        .is_some_and(|max| seconds > u64::from(max))
+                                    {
+                                        return false;
+                                    }
+                                    args.quest_projected_expiry_by.is_none_or(|deadline| {
+                                        let expiry = i64::try_from(seconds)
+                                            .ok()
+                                            .and_then(chrono::TimeDelta::try_seconds)
+                                            .and_then(|delta| {
+                                                captured_at?.checked_add_signed(delta)
+                                            });
+                                        unknown += usize::from(expiry.is_none());
+                                        expiry.is_some_and(|expiry| expiry <= deadline)
+                                    })
                                 });
                                 unknown
                             }));

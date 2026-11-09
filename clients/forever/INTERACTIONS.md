@@ -8,6 +8,10 @@ Quest log inspection accepts `quest_objective_min_remaining` and
 `quest_objective_max_remaining` independently or together. Both endpoints
 are inclusive and must match the same objective as any kind or finished
 filter. Missing counts stay unknown, and reversed bounds are rejected.
+Use `quest_projected_expiry_by` when inspecting a saved quest log to find
+reported timers projected to expire by an inclusive RFC 3339 deadline.
+Projection uses the capture timestamp plus saved remaining seconds.
+Missing timers stay unknown. Current quest status requires a fresh capture.
 
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate
