@@ -94,6 +94,10 @@ async def execute(args):
     resolved = bool(coordinates and progress['resolution_accounting']['unresolved_proposed_coordinates'] == 0)
     simulated = bool(ranked and ranked['all_saved_resolved_results_complete'])
     complete = coordinates and resolved and simulated
+    inventory_evidence = progress.get('inventory_evidence') if progress else None
+    inventory_status = ('unavailable' if inventory_evidence is None else
+        'observed_with_gaps' if inventory_evidence['unavailable_storage_sections']
+            or inventory_evidence['catalogue_unmatched_item_locations'] else 'observed_without_reported_gaps')
     status = ('reported_space_complete' if complete else 'collection_incomplete' if not coordinates
         else 'unresolved_plans' if not resolved else 'simulation_incomplete')
     report = {'mode': 'owned_gear_evaluation', 'status': status,
@@ -102,6 +106,7 @@ async def execute(args):
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
         'ranking_objective':objective,
+        'inventory_evidence':inventory_evidence,'inventory_evidence_status':inventory_status,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
         'reported_proposals_resolved': resolved, 'all_saved_resolved_results_complete': simulated,

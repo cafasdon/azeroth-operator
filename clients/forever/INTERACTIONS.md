@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Inventory scope evidence now survives gear-window aggregation, journal restart
+and unified evaluation. Missing banks and unmatched catalogue items remain
+visible alongside a computationally complete ranking. Strict metadata checks
+reject malformed or changed evidence; legacy absence stays unknown. Observed
+sections never establish complete ownership, native eligibility or full BiS.
+[Evidence](../../docs/gear-inventory-propagation-verification-2026-11-09.md).
+
 Recipe material discovery can combine original saved schematics/recipe-view
 flags with a no-older same-character exact-client/build inventory capture.
 `inventory_snapshot_id` requires `material_filter`; stock coverage comes solely

@@ -277,3 +277,9 @@ then extends fixed-material discovery to an explicit newer compatible inventory
 capture. Recipe/view evidence retains its original provenance and missing bank
 data is never backfilled from the older recipe capture. Actual current learning,
 craftability, full profession coverage and native qualification remain open.
+
+[Inventory evidence propagation](gear-inventory-propagation-verification-2026-11-09.md)
+closes a reporting gap between saved gear plans and final optimisation results.
+Observed/unavailable storage and unmatched catalogue IDs now remain visible
+through aggregation and restart, even when all reported simulations finish.
+Legacy evidence stays unknown and full owned-pool/native/model proof stays open.

@@ -1,5 +1,9 @@
 # Changelog
 
+- Carry bounded inventory scope/gap evidence through merged gear windows,
+  restart status and final owned-gear evaluation, with strict metadata validation
+  and explicit unknown legacy evidence; keep ownership/BiS proof separate.
+
 - Allow recipe material searches to use an explicit no-older same-character
   inventory capture, preserving original recipe/skill-up evidence and exposing
   separate provenance without merging missing banks from old observations.

@@ -36,6 +36,37 @@ def digest(value):
     return value
 
 
+def checked_inventory_evidence(value):
+    """Validate reported inventory scope; observed sections never prove ownership."""
+    if value is None:
+        return None
+    fields={'scope','observed_storage_sections','unavailable_storage_sections','all_storage_sections_observed',
+        'catalogue_unmatched_item_locations','catalogue_unmatched_distinct_item_ids','catalogue_unmatched_item_ids',
+        'catalogue_unmatched_item_ids_truncated','complete_ownership_verified',
+        'complete_simulator_resolution_verified','best_in_slot_verified'}
+    require(isinstance(value,dict) and set(value)==fields)
+    require(value['scope']=='all_observed_storage_before_filters')
+    storages=['equipment','bags','character_bank','account_bank']
+    observed=value['observed_storage_sections']; missing=value['unavailable_storage_sections']
+    for group in [observed,missing]:
+        require(isinstance(group,list) and len(group)<=4
+            and all(isinstance(name,str) and name in storages for name in group)
+            and group==[name for name in storages if name in group])
+    require(set(observed).isdisjoint(missing) and set(observed+missing)==set(storages))
+    require(value['all_storage_sections_observed'] is (not missing))
+    locations=integer(value['catalogue_unmatched_item_locations'],0,2**64-1)
+    count=integer(value['catalogue_unmatched_distinct_item_ids'],0,min(locations,2**32-1))
+    require((count==0)==(locations==0) and (bool(observed) or locations==0))
+    ids=value['catalogue_unmatched_item_ids']
+    require(isinstance(ids,list) and len(ids)==min(50,count))
+    for item in ids: integer(item,1,2**32-1)
+    require(ids==sorted(set(ids)))
+    require(value['catalogue_unmatched_item_ids_truncated'] is (count>50))
+    require(all(value[flag] is False for flag in ['complete_ownership_verified',
+        'complete_simulator_resolution_verified','best_in_slot_verified']))
+    return value
+
+
 def retained_equipment(row):
     if 'simulator_equipment_spec' not in row:
         return None
@@ -105,6 +136,7 @@ def merge_reports(reports):
         require(integer(report.get('baseline_review'), 1, 1) == 1)
         search = report.get('gear_search')
         require(isinstance(search, dict))
+        inventory = checked_inventory_evidence(search.get('inventory_evidence'))
         current_snapshot = digest(search.get('snapshot_id'))
         slots = search.get('requested_slots')
         require(isinstance(slots, list) and 1 <= len(slots) <= 17
@@ -199,6 +231,7 @@ def merge_reports(reports):
     return {'mode': 'gear_window_coverage', 'basis': 'validated_local_plan_report_metadata',
             **({'collection_binding_sha256': binding} if binding is not None else {}),
             'snapshot_id': snapshot, 'scope_sha256': scope, 'window_count': len(windows),
+            'inventory_evidence':inventory,
             'resolution_accounting': accounting,
             'total_combinations_decimal': str(total), 'covered_coordinate_count': sum(end - start for start, end in intervals),
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,

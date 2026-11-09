@@ -175,6 +175,7 @@ def journal_status(path, deadline=None):
                 gaps.append({'start_decimal': str(cursor), 'end_decimal': str(total)})
         require(monotonic() <= deadline)
         return {'mode': 'gear_window_journal', 'snapshot_id': summary['snapshot_id'] if summary else None,
+                'inventory_evidence':summary['inventory_evidence'] if summary else None,
                 **({'collection_binding_sha256': summary['collection_binding_sha256']}
                    if summary and 'collection_binding_sha256' in summary else {}),
                 'scope_sha256': summary['scope_sha256'] if summary else None,

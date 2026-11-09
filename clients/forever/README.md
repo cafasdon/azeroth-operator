@@ -1,5 +1,15 @@
 # Forever
 
+Merged gear windows, journal status and unified evaluation retain
+`inventory_evidence`: the original all-observed-storage scope before candidate
+filters, unavailable sections and bounded unmatched catalogue item IDs/counts.
+The unified result labels evidence `unavailable`, `observed_with_gaps` or
+`observed_without_reported_gaps`. Legacy missing evidence stays null; even the
+last status does not prove complete ownership or simulator resolution. The
+existing false proof flags remain in force. Changed collection software bindings
+require a new plan journal; existing journals remain readable and preserved.
+[Evidence](../../docs/gear-inventory-propagation-verification-2026-11-09.md).
+
 `search_forever_recipes` accepts `inventory_snapshot_id` when a `material_filter`
 is supplied. It checks fixed-reagent support against that explicit capture,
 requiring the same character name/realm, exact client/build and a timestamp no

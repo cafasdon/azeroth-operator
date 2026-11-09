@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Owned-gear evaluation now keeps inventory evidence visible through plan merging,
+journal restart and final rankings: observed/missing storage and bounded unmatched
+catalogue IDs. Computational completion remains separate from ownership proof.
+[Evidence](docs/gear-inventory-propagation-verification-2026-11-09.md).
+
 Recipe discovery can use a newer same-character inventory capture with
 `search_forever_recipes.inventory_snapshot_id` and `material_filter`. Recipes and
 skill-up flags stay tied to the original recipe capture; stock and missing bank
