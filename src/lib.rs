@@ -1893,6 +1893,7 @@ pub struct CaptureFilters<'a> {
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
+    pub quest_reward_item_id: Option<std::num::NonZeroU32>,
     pub quest_objective_kind: Option<&'a str>,
     pub quest_objective_finished: Option<bool>,
     pub quest_objective_remaining: (Option<u32>, Option<u32>),
@@ -2132,6 +2133,7 @@ impl Store {
             xp_gain_enabled_only,
             quest_id,
             quest_title,
+            quest_reward_item_id,
             quest_objective_kind,
             quest_objective_finished,
             quest_objective_remaining,
@@ -2711,6 +2713,7 @@ impl Store {
         ensure!(
             (quest_id.is_none()
                 && quest_title.is_none()
+                && quest_reward_item_id.is_none()
                 && quest_readiness.is_none()
                 && quest_waypoint_map_id.is_none()
                 && !quest_on_captured_map
@@ -3349,6 +3352,12 @@ impl Store {
                     } else {
                         quest_waypoint_map_id.map(|id| u64::from(id.get()))
                     };
+                    let has_reward = |quest: &Value, field: &str, item_id: u32| {
+                        quest[field].as_object().is_some_and(|rows| {
+                            rows.values()
+                                .any(|row| row["item_id"].as_u64() == Some(u64::from(item_id)))
+                        })
+                    };
                     let matches_quest = |quest: &Value| {
                         quest_title.as_ref().is_none_or(|title| {
                             quest["title"]
@@ -3363,6 +3372,10 @@ impl Store {
                                 quest["timer"]["remaining_seconds"]
                                     .as_u64()
                                     .is_some_and(|seconds| seconds <= u64::from(maximum))
+                            })
+                            && quest_reward_item_id.is_none_or(|id| {
+                                has_reward(quest, "item_rewards", id.get())
+                                    || has_reward(quest, "item_choices", id.get())
                             })
                             && (!filter_quest_objectives
                                 || analysis::quest_objective_matches(
@@ -3388,6 +3401,7 @@ impl Store {
                     }
                     let quest_count = (quest_key.is_none()
                         && (quest_title.is_some()
+                            || quest_reward_item_id.is_some()
                             || quest_readiness.is_some()
                             || waypoint_map.is_some()
                             || filter_quest_timer
@@ -3795,7 +3809,11 @@ impl Store {
                     if let Some(map) = waypoint_map {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
                     }
-                    if quest_on_captured_map || quest_title.is_some() || filter_quest_objectives {
+                    if quest_on_captured_map
+                        || quest_title.is_some()
+                        || filter_quest_objectives
+                        || quest_reward_item_id.is_some()
+                    {
                         let mut local: Vec<_> = s
                             .sections
                             .get("quests")
@@ -3828,6 +3846,12 @@ impl Store {
                                 .map(|(id, quest)| {
                                 let mut row = json!({"quest_id":id,"title":quest["title"].as_str().filter(|title| title.len() <= 256),
                                     "readiness":analysis::quest_readiness(quest)});
+                                if let Some(item) = quest_reward_item_id {
+                                    row["recorded_reward_match"] = json!({"item_id":item,
+                                        "fixed":has_reward(quest, "item_rewards", item.get()),
+                                        "choice":has_reward(quest, "item_choices", item.get()),
+                                        "reward_eligibility_verified":false});
+                                }
                                 if local_quest_soonest_first {
                                     row["remaining_seconds"] = json!(quest["timer"]["remaining_seconds"].as_u64());
                                 }

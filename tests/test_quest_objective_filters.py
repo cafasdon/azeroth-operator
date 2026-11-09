@@ -86,6 +86,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                                          'client_version':'fixture','map_id':1414,'map_name':'Market'}
             tied['sections']['quests']['3']['next_waypoint_map_id'] = 1414
             tied['sections']['quests']['10']['next_waypoint_map_id'] = 1415
+            tied['sections']['quests']['10']['item_choices'] = {'1':{'item_id':118,'quantity':1}}
             tied_key = store.ingest(tied)
             many_local = deepcopy(tied)
             many_local['character']['name'] = 'ManyLocal'
@@ -172,6 +173,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(ordered['quest_match']['quest_count'],43)
                     await timed(error=True,local_quest_soonest_first=True)
                     await timed(error=True,local_quest_offset=0)
+                    rewards = await timed(quest_reward_item_id=118,character=tied['character'])
+                    matches = rewards[0]['quest_match']['matching_quests']
+                    self.assertEqual([row['quest_id'] for row in matches],[3,10])
+                    self.assertEqual([row['recorded_reward_match'] for row in matches],[
+                        {'item_id':118,'fixed':True,'choice':False,'reward_eligibility_verified':False},
+                        {'item_id':118,'fixed':False,'choice':True,'reward_eligibility_verified':False}])
+                    self.assertEqual(await timed(quest_reward_item_id=118,quest_id=7),[])
+                    self.assertEqual(await timed(quest_reward_item_id=858,quest_title='Quest 3'),[])
+                    await timed(error=True,family='retail',quest_reward_item_id=118)
+                    await timed(error=True,quest_reward_item_id=0)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
                         quest_objective_finished=False,quest_objective_min_remaining=1,
                         quest_objective_max_remaining=1)

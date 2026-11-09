@@ -3124,3 +3124,8 @@ Saved quest searches accept `quest_objective_kind`,
 All objective predicates apply to one objective on the matching quest.
 Quantity bounds require known objective counts. Results include a bounded
 shortlist of matching quests.
+
+Use `list_snapshots.quest_reward_item_id` to find quests with the requested
+item in recorded fixed rewards or choices. The shortlist identifies which
+kind matched. Other quest criteria apply to the same quest. Reward
+eligibility remains unverified.

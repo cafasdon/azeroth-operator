@@ -551,6 +551,8 @@ struct List {
     quest_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive title in the saved Forever quest log.
     quest_title: Option<String>,
+    /// Match an item ID in the same quest's recorded fixed or choice rewards.
+    quest_reward_item_id: Option<std::num::NonZeroU32>,
     /// Match an exact recorded objective kind on the same quest.
     quest_objective_kind: Option<String>,
     /// Match the reported finished state on the same objective.
@@ -2308,6 +2310,7 @@ impl Operator {
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),
+                quest_reward_item_id: args.quest_reward_item_id,
                 quest_objective_kind: args.quest_objective_kind.as_deref(),
                 quest_objective_finished: args.quest_objective_finished,
                 quest_objective_remaining: (
