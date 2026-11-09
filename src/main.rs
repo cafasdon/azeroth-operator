@@ -99,6 +99,10 @@ struct Inspect {
     trainer_service_status: Option<String>,
     /// Select up to 32 distinct slots from the captured trainer list.
     trainer_service_slots: Option<Vec<std::num::NonZeroU32>>,
+    /// Keep lessons with a recorded copper price at or below this amount.
+    trainer_max_price_copper: Option<u64>,
+    /// Keep lessons with a recorded pet training-point price at or below this amount.
+    trainer_max_price_points: Option<u32>,
     /// Review a saved merchant offer by its 1-based goods-tab slot.
     merchant_offer_slot: Option<std::num::NonZeroU32>,
     /// Requested bundles for the saved merchant offer. Defaults to one.
@@ -1979,8 +1983,24 @@ impl Operator {
                 "Expected 1 to 32 distinct trainer slots from 1 to 512",
             )]);
         }
-        let filter_trainer =
-            trainer_name.is_some() || trainer_status.is_some() || trainer_slots.is_some();
+        if args.trainer_max_price_copper.is_some_and(|copper| {
+            copper > 9_999_999_999_999 || args.trainer_max_price_points.is_some()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Specify one valid trainer price ceiling",
+            )]);
+        }
+        let trainer_price = args
+            .trainer_max_price_copper
+            .map(|amount| ("price_copper", amount))
+            .or_else(|| {
+                args.trainer_max_price_points
+                    .map(|amount| ("price_training_points", u64::from(amount)))
+            });
+        let filter_trainer = trainer_name.is_some()
+            || trainer_status.is_some()
+            || trainer_slots.is_some()
+            || trainer_price.is_some();
         let review_trainer = args.trainer_wallet_projection
             || args.trainer_points_projection
             || args.trainer_requirements_review
@@ -2676,6 +2696,9 @@ impl Operator {
                                         lesson["name"].as_str().is_some_and(|name| {
                                             name.to_lowercase().contains(search)
                                         })
+                                    })
+                                    && trainer_price.is_none_or(|(field, max)| {
+                                        lesson[field].as_u64().is_some_and(|price| price <= max)
                                     })
                             });
                             entries.len()

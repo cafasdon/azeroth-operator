@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Inspect `trainer_services` with either `trainer_max_price_copper` or
+`trainer_max_price_points` to apply an inclusive ceiling to known lesson
+prices. Combine with the recorded `available` status to shortlist lessons
+that were available at capture. Budget projections use the retained rows.
+
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes
 map transitions and can be combined with captured wallet affordability.
