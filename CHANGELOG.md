@@ -1,5 +1,7 @@
 # Changelog
 
+- Sort saved Forever local quest shortlists by recorded timer when requested.
+
 - Page through saved Forever local quest matches within each capture.
 
 - Include a bounded matching quest shortlist in saved Forever local-map searches.

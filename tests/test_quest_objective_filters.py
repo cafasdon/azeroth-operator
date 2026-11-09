@@ -91,6 +91,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             many_local['character']['name'] = 'ManyLocal'
             many_local['sections']['quests'] = {str(i):{'title':f'Local {i}','level':60,
                 'next_waypoint_map_id':1414} for i in range(1,44)}
+            for quest_id, seconds in [(41,62),(42,61),(43,61)]:
+                many_local['sections']['quests'][str(quest_id)]['timer'] = {
+                    'remaining_seconds':seconds,'total_seconds':120}
             many_local_key = store.ingest(many_local)
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
@@ -150,6 +153,15 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(match['matching_quests_offset'],offset)
                         self.assertEqual([quest['quest_id'] for quest in match['matching_quests']],ids)
                         self.assertIs(match['matching_quests_has_more'],more)
+                    for offset, ids in [(0,[42,43,41,*range(1,18)]),(1,[43,41,*range(1,19)])]:
+                        ordered = (await timed(quest_on_captured_map=True,local_quest_soonest_first=True,
+                                               local_quest_offset=offset,character=many_local['character']))[0]
+                        matches = ordered['quest_match']['matching_quests']
+                        self.assertEqual([row['quest_id'] for row in matches],ids)
+                        self.assertEqual(matches[0]['remaining_seconds'],61)
+                        self.assertIsNone(matches[-1]['remaining_seconds'])
+                        self.assertEqual(ordered['quest_match']['quest_count'],43)
+                    await timed(error=True,local_quest_soonest_first=True)
                     await timed(error=True,local_quest_offset=0)
                     async def query(error=False, **options):
                         reply = await session.call_tool('inspect_snapshot', {'snapshot_id': key,

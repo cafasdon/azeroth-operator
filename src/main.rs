@@ -558,6 +558,9 @@ struct List {
     quest_on_captured_map: bool,
     /// Skip this many matched quests in each saved local-map shortlist.
     local_quest_offset: Option<usize>,
+    /// Put known shortest timers first within each saved local-map shortlist.
+    #[serde(default)]
+    local_quest_soonest_first: bool,
     /// Match quests with a recorded remaining duration at or below this many seconds.
     quest_max_remaining_seconds: Option<u32>,
     /// Match quests whose historical expiry projects at or before this timestamp.
@@ -2298,6 +2301,7 @@ impl Operator {
                 quest_waypoint_map_id: args.quest_waypoint_map_id,
                 quest_on_captured_map: args.quest_on_captured_map,
                 local_quest_offset: args.local_quest_offset,
+                local_quest_soonest_first: args.local_quest_soonest_first,
                 quest_max_remaining_seconds: args.quest_max_remaining_seconds,
                 quest_projected_expiry_by: args.quest_projected_expiry_by,
                 merchant_item_id: args.merchant_item_id,

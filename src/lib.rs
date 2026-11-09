@@ -1896,6 +1896,7 @@ pub struct CaptureFilters<'a> {
     pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     pub quest_on_captured_map: bool,
     pub local_quest_offset: Option<usize>,
+    pub local_quest_soonest_first: bool,
     pub quest_max_remaining_seconds: Option<u32>,
     pub quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
@@ -2130,6 +2131,7 @@ impl Store {
             quest_waypoint_map_id,
             quest_on_captured_map,
             local_quest_offset,
+            local_quest_soonest_first,
             quest_max_remaining_seconds,
             quest_projected_expiry_by,
             merchant_item_id,
@@ -2694,8 +2696,8 @@ impl Store {
             "Choose either a waypoint map ID or the captured player map"
         );
         ensure!(
-            local_quest_offset.is_none() || quest_on_captured_map,
-            "Local quest paging requires the captured player map filter"
+            (local_quest_offset.is_none() && !local_quest_soonest_first) || quest_on_captured_map,
+            "Local quest paging and ordering require the captured player map filter"
         );
         let quest_key = quest_id.map(|id| id.to_string());
         ensure!(
@@ -3764,7 +3766,12 @@ impl Store {
                             })
                             .filter_map(|(key, quest)| Some((key.parse::<u32>().ok()?, quest)))
                             .collect();
-                        local.sort_unstable_by_key(|(id, _)| *id);
+                        local.sort_unstable_by_key(|(id, quest)| {
+                            let timer = local_quest_soonest_first
+                                .then(|| quest["timer"]["remaining_seconds"].as_u64())
+                                .flatten();
+                            (timer.is_none(), timer, *id)
+                        });
                         summary["quest_match"]["matching_quests_truncated"] =
                             json!(local.len() > 20);
                         if let Some(offset) = local_quest_offset {
@@ -3776,8 +3783,14 @@ impl Store {
                             local
                                 .into_iter()
                                 .skip(local_quest_offset.unwrap_or_default()).take(20)
-                                .map(|(id, quest)| json!({"quest_id":id,"title":quest["title"].as_str().filter(|title| title.len() <= 256),
-                                "readiness":analysis::quest_readiness(quest)}))
+                                .map(|(id, quest)| {
+                                let mut row = json!({"quest_id":id,"title":quest["title"].as_str().filter(|title| title.len() <= 256),
+                                    "readiness":analysis::quest_readiness(quest)});
+                                if local_quest_soonest_first {
+                                    row["remaining_seconds"] = json!(quest["timer"]["remaining_seconds"].as_u64());
+                                }
+                                row
+                            })
                                 .collect::<Vec<_>>()
                         );
                         summary["quest_match"]["on_captured_player_map"] = json!(true);

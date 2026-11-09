@@ -3108,3 +3108,7 @@ labels over 256 bytes.
 Set `local_quest_offset` with the local-map search to skip matching quests
 within each capture. The page holds up to 20 rows, with a separate flag
 for more rows after the page. Capture pagination and quest totals are independent.
+
+Set `local_quest_soonest_first: true` to sort each local shortlist by known
+remaining time before paging. Ties use numeric quest ID. Quests without a
+recorded timer appear last. This order describes the saved readings.
