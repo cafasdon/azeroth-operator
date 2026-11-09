@@ -1,5 +1,91 @@
 local _, AO = ...
 AO.collectors = {}
+-- Optional separately installed reference provider; no provider code/data is bundled.
+AO.collectors.recipe_item_sources = function(materials)
+    assert(AO.family=="forever" and type(materials)=="table", "Recipe materials unavailable")
+    local provider=LibQuestieDB
+    assert(type(provider)=="table" and type(provider.RequireContract)=="function"
+        and type(provider.ModeIndicator)=="table" and type(provider.ModeIndicator.GetStatus)=="function"
+        and type(provider.Item)=="table" and type(provider.Item.Exists)=="function"
+        and type(provider.Item.Get)=="function", "Reference provider unavailable")
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted reference value")
+        return value
+    end
+    local function uint(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid reference number")
+        return value
+    end
+    local function context()
+        assert(public(provider.RequireContract(1))==true, "Reference contract unavailable")
+        local status=public(provider.ModeIndicator.GetStatus())
+        assert(type(status)=="table" and public(status.expansion)=="Forever", "Reference flavour unavailable")
+        local mode=public(status.mode)
+        assert(mode=="source" or mode=="baked", "Reference mode unavailable")
+        return mode,uint(status.contractVersion,1,4294967295)
+    end
+    local mode,contract=context()
+    local ids,seen={},{}
+    for _,row in pairs(materials.entries) do
+        if row.status=="fixed_items" then
+            for id in pairs(row.reagents) do
+                id=uint(tonumber(id),1,4294967295)
+                if not seen[id] then seen[id]=true; ids[#ids+1]=id end
+            end
+        end
+    end
+    assert(#ids<=16384, "Reference input budget exceeded")
+    table.sort(ids)
+    local fields={npc_drops="npcDrops",object_drops="objectDrops",container_drops="itemDrops",
+        quest_rewards="questRewards",vendors="vendors"}
+    local function references(id,key)
+        local values=public(provider.Item.Get(id,key))
+        if values==nil then return end -- Provider normalises empty arrays to nil; not proof of absence.
+        assert(type(values)=="table", "Invalid reference list")
+        local unique,count,maximum,positions={},0,0,0
+        for position,value in pairs(values) do
+            position=uint(position,1,4096); positions=positions+1
+            assert(positions<=4096, "Reference list budget exceeded")
+            maximum=math.max(maximum,position)
+            value=uint(value,1,4294967295)
+            if not unique[value] then unique[value]=true; count=count+1 end
+        end
+        assert(maximum==positions, "Sparse reference list")
+        local ordered={}; for value in pairs(unique) do ordered[#ordered+1]=value end
+        table.sort(ordered)
+        local entries={}; for i=1,math.min(8,#ordered) do entries[tostring(ordered[i])]=true end
+        return {entries=entries,distinct_id_count=count,truncated=count>8}
+    end
+    local function read(id)
+        local exists=public(provider.Item.Exists(id))
+        assert(type(exists)=="boolean", "Invalid reference existence")
+        if not exists then return {status="not_in_provider"} end
+        local row={status="reported"}
+        for field,key in pairs(fields) do
+            local ok,value=pcall(references,id,key)
+            if ok then row[field]=value end
+        end
+        return row
+    end
+    local function equal(a,b)
+        if type(a)~=type(b) then return false end
+        if type(a)~="table" then return a==b end
+        for key,value in pairs(a) do if not equal(value,b[key]) then return false end end
+        for key in pairs(b) do if a[key]==nil then return false end end
+        return true
+    end
+    local entries={}
+    for i=1,math.min(64,#ids) do
+        local ok,first=pcall(read,ids[i]); local again,second=pcall(read,ids[i])
+        entries[tostring(ids[i])]=ok and again and equal(first,second) and first or {status="unavailable"}
+    end
+    local afterMode,afterContract=context()
+    assert(LibQuestieDB==provider and afterMode==mode and afterContract==contract, "Reference context changed")
+    return {coverage="first_reported_fixed_recipe_reagents",provider="questiedb",provider_mode=mode,
+        provider_contract_version=contract,profession_id=materials.profession_id,
+        reported_item_count=#ids,entries=entries}
+end
 local savedInstanceUpdate
 if AO.family=="forever" and CreateFrame then
     local ok,observer=pcall(function()

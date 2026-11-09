@@ -6,6 +6,31 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Find recipes supported by observed materials
 
+The source addon can also capture optional `recipe_item_sources` during manual
+`/aoexport` when a separately installed compatible QuestieDB explicitly reports
+Forever and a supported public contract. This is not installed/deployed or
+native-qualified. With no provider or captured bulk materials, its section is
+unavailable and the other export sections continue normally.
+
+Use `inspect_snapshot` with `section: "recipe_item_sources"`. The section records
+provider mode/contract, profession ID, total distinct fixed-reagent item count
+and the numerically first 64 item rows. Remaining items are unqueried. Item
+status distinguishes `reported`, `not_in_provider` and `unavailable`. A reported
+row can contain `npc_drops`, `object_drops`, `container_drops`, `quest_rewards`
+and `vendors`. Each has `entries` keyed by source ID, `distinct_id_count` and
+`truncated`, retaining the smallest eight unique IDs. Missing categories remain
+unknown; provider nil/normalised-empty values do not prove no sources. An explicit
+valid empty array becomes a zero-count category.
+
+These are historical provider references, not live NPC sightings, available
+stock, reachable routes or eligibility. No names, coordinates or free-form
+provider errors enter this section. Contract/mode do not establish dataset
+revision or accuracy. The provider and its database are not bundled; no automatic
+download or installation is added. These captures do not yet join into chain
+source annotations, stock/quote planning or routing. Native acceptance and full
+world/acquisition data remain open.
+See [ADR 025](../../docs/ADR-025-optional-local-recipe-item-sources.md).
+
 For one exact bulk recipe, `review_forever_recipe` can take
 `suggest_reagent_chain: true` with its normal `crafts` or
 `target_output_quantity`. The new `reagent_chain` draft expands at most eight

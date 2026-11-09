@@ -222,3 +222,10 @@ one review. Match gaps, absent metadata and truncation remain visible. This
 connects crafting analysis to existing local reference data, but does not fill
 missing common reagents, establish full world/acquisition coverage, choose a
 route or verify current eligibility. These larger requirements remain open.
+
+[Optional owner-local reagent references](recipe-item-sources-verification-2026-11-09.md)
+then add source-only capture through a separately installed compatible provider's
+public API. This can preserve source IDs beyond the simulator cache, but only
+the bounded fixed-reagent subset queried during export; the provider database is
+not bundled and its revision/completeness is unverified. Inspection is supported;
+chain integration, source/route resolution and native acceptance remain open.

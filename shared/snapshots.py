@@ -22,6 +22,7 @@ SECTIONS = SECTIONS | {"pet_action_bar"}
 SECTIONS = SECTIONS | {"player_resources"}
 SECTIONS = SECTIONS | {"profession_spells"}
 SECTIONS = SECTIONS | {"profession_recipe_materials"}
+SECTIONS = SECTIONS | {"recipe_item_sources"}
 SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
@@ -187,6 +188,36 @@ def validate_snapshot(value):
                             or not 1<=row[k]<=4_294_967_295 for k in (field,"count"))):
                         raise ValueError("Invalid known attachment")
                 else:raise ValueError("Invalid attachment kind")
+    if "recipe_item_sources" in sections:
+        source = sections["recipe_item_sources"]
+        def reference_uint(v, low=0, high=4_294_967_295):
+            return type(v) is int and low <= v <= high
+        def reference_id(k):
+            return isinstance(k, str) and k.isascii() and k.isdecimal() and str(int(k)) == k and reference_uint(int(k), 1)
+        fields = {"npc_drops", "object_drops", "container_drops", "quest_rewards", "vendors"}
+        if (c["family"] != "forever" or not isinstance(source, dict)
+                or set(source) != {"coverage", "provider", "provider_mode", "provider_contract_version", "profession_id", "reported_item_count", "entries"}
+                or source["coverage"] != "first_reported_fixed_recipe_reagents" or source["provider"] != "questiedb"
+                or source["provider_mode"] not in ("source", "baked")
+                or not reference_uint(source["provider_contract_version"], 1) or not reference_uint(source["profession_id"], 1)
+                or not reference_uint(source["reported_item_count"], 0, 16384) or not isinstance(source["entries"], dict)
+                or len(source["entries"]) != min(64, source["reported_item_count"])):
+            raise ValueError("Invalid reference coverage")
+        for item, row in source["entries"].items():
+            if not reference_id(item) or not isinstance(row, dict): raise ValueError("Invalid reference row")
+            if row.get("status") != "reported":
+                if set(row) != {"status"} or row["status"] not in ("not_in_provider", "unavailable"):
+                    raise ValueError("Invalid reference status")
+                continue
+            if set(row) - (fields | {"status"}): raise ValueError("Invalid reference fields")
+            for field in fields & set(row):
+                ref = row[field]
+                if (not isinstance(ref, dict) or set(ref) != {"entries", "distinct_id_count", "truncated"}
+                        or not reference_uint(ref["distinct_id_count"], 0, 4096) or type(ref["truncated"]) is not bool
+                        or ref["truncated"] != (ref["distinct_id_count"] > 8) or not isinstance(ref["entries"], dict)
+                        or len(ref["entries"]) != min(8, ref["distinct_id_count"])
+                        or any(not reference_id(k) or v is not True for k, v in ref["entries"].items())):
+                    raise ValueError("Invalid reference list")
     if "profession_recipe_view" in sections:
         view = sections["profession_recipe_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)

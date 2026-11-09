@@ -168,6 +168,86 @@ fn entries(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "recipe_item_sources" => {
+            object(
+                value,
+                &[
+                    ("coverage", "text", true),
+                    ("provider", "text", true),
+                    ("provider_mode", "text", true),
+                    ("provider_contract_version", "positive", true),
+                    ("profession_id", "positive", true),
+                    ("reported_item_count", "uint", true),
+                    ("entries", "map", true),
+                ],
+            )?;
+            let count = value["reported_item_count"].as_u64().unwrap();
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(
+                value["coverage"] == "first_reported_fixed_recipe_reagents"
+                    && value["provider"] == "questiedb"
+                    && matches!(value["provider_mode"].as_str(), Some("source" | "baked"))
+                    && count <= 16384
+                    && rows.len() == count.min(64) as usize,
+                "Invalid reference coverage"
+            );
+            for (id, row) in rows {
+                index(id, 1, u32::MAX)?;
+                if row["status"] != "reported" {
+                    object(row, &[("status", "text", true)])?;
+                    ensure!(
+                        matches!(
+                            row["status"].as_str(),
+                            Some("not_in_provider" | "unavailable")
+                        ),
+                        "Invalid reference status"
+                    );
+                    continue;
+                }
+                object(
+                    row,
+                    &[
+                        ("status", "text", true),
+                        ("npc_drops", "map", false),
+                        ("object_drops", "map", false),
+                        ("container_drops", "map", false),
+                        ("quest_rewards", "map", false),
+                        ("vendors", "map", false),
+                    ],
+                )?;
+                for field in [
+                    "npc_drops",
+                    "object_drops",
+                    "container_drops",
+                    "quest_rewards",
+                    "vendors",
+                ] {
+                    let Some(reference) = row.get(field) else {
+                        continue;
+                    };
+                    object(
+                        reference,
+                        &[
+                            ("entries", "map", true),
+                            ("distinct_id_count", "uint", true),
+                            ("truncated", "bool", true),
+                        ],
+                    )?;
+                    let entries = reference["entries"].as_object().unwrap();
+                    let count = reference["distinct_id_count"].as_u64().unwrap();
+                    ensure!(
+                        count <= 4096
+                            && entries.len() == count.min(8) as usize
+                            && reference["truncated"].as_bool() == Some(count > 8),
+                        "Invalid reference count"
+                    );
+                    for (id, flag) in entries {
+                        index(id, 1, u32::MAX)?;
+                        ensure!(*flag == true, "Invalid reference entry");
+                    }
+                }
+            }
+        }
         "pet_collection_view" => {
             object(
                 value,

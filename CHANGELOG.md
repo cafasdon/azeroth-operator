@@ -1,5 +1,9 @@
 # Changelog
 
+- Add optional source-only capture of bounded recipe reagent source IDs through
+  a separately installed compatible local provider, with strict owner-store
+  inspection, context guards and explicit missing/truncated evidence.
+
 - Connect ingredient-chain external shortages to bounded pinned local catalogue
   acquisition records, with provenance, unmatched/source-metadata gaps and
   explicit source truncation; preserve independent stock and quote decisions.

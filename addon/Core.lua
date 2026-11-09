@@ -50,6 +50,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="profession_recipe_view"
         sectionNames[#sectionNames+1]="profession_spells"
         sectionNames[#sectionNames+1]="profession_recipe_materials"
+        sectionNames[#sectionNames+1]="recipe_item_sources"
         sectionNames[#sectionNames+1]="mail_attachments"
         sectionNames[#sectionNames+1]="pet_collection_view"
         sectionNames[#sectionNames+1]="reputation"
@@ -82,7 +83,9 @@ function AO.Capture(includeWallet)
     for _, name in ipairs(sectionNames) do
         local collector = AO.collectors and AO.collectors[name]
         if collector then
-            local ok, data = pcall(collector, name=="pet_care" and sections.bags or nil)
+            local input = name=="pet_care" and sections.bags
+                or name=="recipe_item_sources" and sections.profession_recipe_materials or nil
+            local ok, data = pcall(collector, input)
             if ok and data then
                 local serializable, text = pcall(json, data)
                 if serializable then

@@ -1,5 +1,16 @@
 # Forever interaction map
 
+Optional source-only `recipe_item_sources` capture reads a separately installed
+compatible QuestieDB during manual export. It uses already captured fixed
+recipe reagent IDs, queries the numerically first 64 and records all-ID count.
+Five source-ID categories retain eight unique IDs each with count/truncation;
+missing, secret, invalid or unstable evidence stays unavailable or omitted.
+Inspect this owner-local section with `inspect_snapshot`. No provider dataset,
+network refresh, installation, game action or private name/coordinate capture
+is added. Dataset revision, native behaviour, completeness and availability
+remain unqualified; chain joins and routing remain unfinished.
+[Offline evidence](../../docs/recipe-item-sources-verification-2026-11-09.md).
+
 `review_forever_recipe` can add `reagent_chain_catalogue_sources: true` in exact
 standalone chain mode. This requires a configured verified local catalogue and
 adds nested `reagent_chain.catalogue_sources`: net shortage quantities, public
