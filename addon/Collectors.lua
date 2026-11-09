@@ -185,8 +185,19 @@ AO.collectors.player_pvp_progression = function()
         if totalsOk and not rawequal(rawget(major,totalsKey),totals) then totalsOk=false end
         return row
     end
+    local seasonGetter=rawget(_G,"GetCurrentArenaSeason")
+    local function readSeason()
+        local ok,value=pcall(function()
+            assert(type(public(seasonGetter))=="function"
+                and rawequal(rawget(_G,"GetCurrentArenaSeason"),seasonGetter))
+            return uint(seasonGetter())
+        end)
+        if ok and value>0 and rawequal(rawget(_G,"GetCurrentArenaSeason"),seasonGetter) then return value end
+    end
+    local seasonBefore=readSeason()
     local first=read()
     local second=read()
+    local seasonAfter=readSeason()
     assert(first.rank==second.rank and first.rank_points==second.rank_points
         and first.next_rank_threshold==second.next_rank_threshold, "PvP progression changed")
     local result={coverage="reported_pvp_rank_faction",faction_id=2800,rank=first.rank,
@@ -196,6 +207,9 @@ AO.collectors.player_pvp_progression = function()
     end
     local totalsStable=stableTotals()
     fixedApis()
+    if seasonBefore and seasonBefore==seasonAfter and rawequal(rawget(_G,"GetCurrentArenaSeason"),seasonGetter) then
+        result.reported_season_id=seasonBefore
+    end
     -- fixedApis invokes restriction callbacks too, so finish with a raw identity
     -- check before retaining any optional totals.
     if totalsStable and rawequal(rawget(major,totalsKey),totals) then

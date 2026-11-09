@@ -111,6 +111,30 @@ fn capture(lua: &Lua, mode: &str) -> Result<Snapshot, Box<dyn std::error::Error>
 }
 
 #[test]
+fn season_observation_requires_stable_positive_reads() -> Result<(), Box<dyn std::error::Error>> {
+    for (getter, expected) in [
+        ("return 7", Some(7)),
+        ("return calls+1", None),
+        ("return 0", None),
+        ("return 'PRIVATE'", None),
+        ("error('PRIVATE')", None),
+        (
+            "GetCurrentArenaSeason=function() return 7 end; return 7",
+            None,
+        ),
+    ] {
+        let lua = fixture()?;
+        lua.load(format!("function GetCurrentArenaSeason() {getter} end"))
+            .exec()?;
+        let snapshot = capture(&lua, "normal")?;
+        let row = &snapshot.sections["player_pvp_progression"];
+        assert_eq!(row["reported_season_id"].as_u64(), expected, "{getter}");
+        assert_eq!(row["rank"], 4);
+    }
+    Ok(())
+}
+
+#[test]
 fn pvp_projection_reads_only_fixed_faction_twice() -> Result<(), Box<dyn std::error::Error>> {
     let lua = fixture()?;
     let snapshot = capture(&lua, "normal")?;

@@ -2046,6 +2046,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("current_week_max_rank", "uint", false),
                     ("previous_week_max_rank", "uint", false),
                     ("total_points_by_rank", "map", false),
+                    ("reported_season_id", "positive", false),
                 ],
             )?;
             ensure!(
@@ -2066,6 +2067,14 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         "Invalid PvP progression value"
                     );
                 }
+            }
+            if let Some(season) = value.get("reported_season_id") {
+                ensure!(
+                    season
+                        .as_u64()
+                        .is_some_and(|n| (1..=u64::from(u32::MAX)).contains(&n)),
+                    "Invalid PvP season observation"
+                );
             }
             if let Some(totals) = value.get("total_points_by_rank") {
                 let totals = totals

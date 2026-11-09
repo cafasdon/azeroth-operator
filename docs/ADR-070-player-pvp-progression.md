@@ -24,6 +24,16 @@ eligibility, rewards, current progression or a season-wide points requirement.
 
 Read no scoreboard, opponent, team, names, reward descriptions or queue state.
 Do not refresh data, open panels, queue, join, accept or initiate gameplay. Do not
-read a separate season API and imply atomic season binding. The reference gives
+infer atomic season binding from a separate season API. The reference gives
 API usage, not native availability, policy approval or complete PvP coverage.
 Live testing, installation and deployment remain deferred.
+
+The collector may include `reported_season_id` using the positive season number
+displayed by the pinned Forever PvP UI. It reads the season around both
+progression projections and retains the ID only when both reads agree and the
+getter stays stable. Missing, restricted, zero and changing values omit the ID.
+Nine offline Lua export tests and the real stdio MCP fixture passed, including
+legacy, equal-ID and different-ID comparisons and malformed season values.
+Jev 1.14.0 advisory `4a632094cf77c648f376a10ff1faf456caacba6242c744e0a8dface896ff0d8a`
+returned integrate .63 at confidence .44, with 429 input and 49 output tokens
+in .307 seconds.

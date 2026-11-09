@@ -35,6 +35,10 @@ The comparison requires the same character and client in chronological order.
 Missing observations return null. Season continuity remains unverified and the
 earned-points delta stays unknown.
 
+If both captures report a season ID, `reported_season_ids_match` says whether
+the numbers agree. Older captures or unavailable season reads produce null.
+Season continuity and earned points remain unknown even when the IDs match.
+
 The offline build and three scoped MCP tests passed. The PvP fixture verified
 that both comparison projections match their character summaries and that a
 missing side stays null. Jev 1.14.0 advisory

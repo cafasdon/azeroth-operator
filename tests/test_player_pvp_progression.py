@@ -35,12 +35,16 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
             row=deepcopy(section);row.pop(key);invalid.append(row)
         for key in numeric:
             for value in [None,True,False,-1,1.0,'1',4294967296,[],{}]:invalid.append({**full,key:value})
+        for season in [None,True,0,-1,1.0,'1',4294967296]:
+            invalid.append({**full,'reported_season_id':season})
         for totals in [None,[],{}, {'0':0},{'03':100},{'PRIVATE':1},{'3':True},{'3':1.0},
                        {'3':None},{'3':'100'},{'3':-1},{'3':4294967296},{'3':{}},
                        {'3':1,'4':2,'5':3,'14':4,'6':5}]:invalid.append({**full,'total_points_by_rank':totals})
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));valid=[];bad=[]
-            for row in [None,section,full,maximum,zero,overflow,planned,planned_zero,planned_max,planned_partial,planned_past]:
+            for row in [None,section,full,maximum,zero,overflow,planned,planned_zero,planned_max,planned_partial,planned_past,
+                        {**planned,'reported_season_id':7},{**planned_past,'reported_season_id':7},
+                        {**planned_past,'reported_season_id':8}]:
                 saved=deepcopy(base)
                 if row is not None:saved['sections']['player_pvp_progression']=row
                 valid.append((store.ingest(saved),row))
@@ -110,6 +114,11 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIsNone(compared['earned_points_delta'])
                         self.assertIs(compared['same_season_verified'], False)
                         self.assertIs(compared['live'], False)
+                        self.assertIsNone(compared['reported_season_ids_match'])
+                    for index, expected in [(12,True),(13,False)]:
+                        compared = (await call('compare_snapshots',before_id=valid[11][0],after_id=valid[index][0],**{selector:True}))[selector]
+                        self.assertIs(compared['reported_season_ids_match'],expected)
+                        self.assertIsNone(compared['earned_points_delta'])
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='player_pvp_progression')
             self.assertEqual(before,{p.name:p.read_bytes() for p in Path(folder).glob('*.json')})
 
