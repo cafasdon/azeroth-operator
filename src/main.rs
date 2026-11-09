@@ -491,6 +491,9 @@ struct Compare {
     /// Compare historical bulk cooldown observations for shared recipe IDs within one profession.
     #[serde(default)]
     recipe_cooldown_changes: bool,
+    /// Compare displayed loot quantities and slot counts across two historical Forever captures.
+    #[serde(default)]
+    loot_window_changes: bool,
     /// Compare shared pet-journal species row counts without inferring collection gains or losses.
     #[serde(default)]
     pet_view_changes: bool,
@@ -1619,6 +1622,7 @@ impl Operator {
                     saved_instance_changes: args.saved_instance_changes,
                     profession_recipe_changes: args.profession_recipe_changes,
                     recipe_cooldown_changes: args.recipe_cooldown_changes,
+                    loot_window_changes: args.loot_window_changes,
                     profession_spell_changes: args.profession_spell_changes,
                     player_resource_changes: args.player_resource_changes,
                     group_context_changes: args.group_context_changes,

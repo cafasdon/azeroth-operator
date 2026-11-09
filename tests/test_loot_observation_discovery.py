@@ -44,6 +44,18 @@ class LootDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    reply=await session.call_tool('compare_snapshots',{'before_id':keys['old_short'],
+                        'after_id':keys['new_short'],'loot_window_changes':True})
+                    self.assertFalse(reply.isError,reply)
+                    changes=json.loads(reply.content[0].text)['loot_window_changes']
+                    self.assertEqual(changes['item_changes'],[
+                        {'id':10,'before_observed_quantity':6,'after_observed_quantity':1}])
+                    self.assertEqual(changes['reported_currency_changes'],[])
+                    self.assertFalse(changes['source_identity_verified'])
+                    reply=await session.call_tool('compare_snapshots',{'before_id':keys['old_missing'],
+                        'after_id':keys['new_missing'],'loot_window_changes':True})
+                    self.assertFalse(reply.isError,reply)
+                    self.assertIsNone(json.loads(reply.content[0].text)['loot_window_changes'])
                     async def query(filter=None,error=False,**extra):
                         args={'family':'forever',**extra}
                         if filter is not None:args['loot_observation']=filter

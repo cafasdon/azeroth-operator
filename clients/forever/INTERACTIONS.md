@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `compare_snapshots` with `loot_window_changes: true` to compare two saved
+loot windows. Readable item totals and raw currency totals are separate, and
+money and unreadable slot counts retain each capture's scope. Missing rows
+stay null even when an explicit zero is recorded on the other side. The
+comparison does not identify a shared source or credit inventory or balances.
+
 Saved profession recipe-view comparisons report changes in the client-reported
 skill-up flag, count and relative difficulty for recipe IDs seen in both
 captures of the same profession. Missing observations remain null, and the

@@ -2395,6 +2395,7 @@ pub struct ComparisonSelectors {
     pub saved_instance_changes: bool,
     pub profession_recipe_changes: bool,
     pub recipe_cooldown_changes: bool,
+    pub loot_window_changes: bool,
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub achievement_id: Option<u32>,
@@ -2665,6 +2666,18 @@ pub fn compare_observations(
             .get("saved_instances")
             .zip(after.sections.get("saved_instances"))
             .map(|(old, new)| compare_saved_instances(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.loot_window_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Loot comparison requires Forever"
+        );
+        comparison["loot_window_changes"] = before
+            .sections
+            .get("loot_window")
+            .zip(after.sections.get("loot_window"))
+            .map(|(old, new)| crate::loot_observation::compare(old, new))
             .unwrap_or(Value::Null);
     }
     if selectors.recipe_cooldown_changes {

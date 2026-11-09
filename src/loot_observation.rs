@@ -4,6 +4,7 @@ use anyhow::{Result, ensure};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::{Value, json};
+use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
 
 fn one() -> u64 {
@@ -137,6 +138,46 @@ impl LootObservationFilter {
         }
         Some(report)
     }
+}
+
+pub(crate) fn compare(before: &Value, after: &Value) -> Value {
+    fn totals(section: &Value, kind: &str, id_key: &str, quantity_key: &str) -> BTreeMap<u64, u64> {
+        let mut totals = BTreeMap::new();
+        for row in section["entries"].as_object().unwrap().values() {
+            if row["status"] == kind {
+                *totals.entry(row[id_key].as_u64().unwrap()).or_default() +=
+                    row[quantity_key].as_u64().unwrap();
+            }
+        }
+        totals
+    }
+    let changes = |kind, id_key, quantity_key| {
+        let old = totals(before, kind, id_key, quantity_key);
+        let new = totals(after, kind, id_key, quantity_key);
+        let ids: BTreeSet<_> = old.keys().chain(new.keys()).copied().collect();
+        ids.into_iter()
+            .filter(|id| old.get(id) != new.get(id))
+            .map(|id| {
+                json!({"id":id,"before_observed_quantity":old.get(&id),
+                "after_observed_quantity":new.get(&id)})
+            })
+            .collect::<Vec<_>>()
+    };
+    let slot_counts = |section: &Value| {
+        let rows = section["entries"].as_object().unwrap();
+        json!({
+            "money":rows.values().filter(|row| row["status"] == "money").count(),
+            "unreadable_or_non_item":rows.values().filter(|row| row["status"] == "unreadable_or_non_item").count(),
+        })
+    };
+    json!({
+        "basis":"captured_displayed_slots_only",
+        "item_changes":changes("item","item_id","quantity"),
+        "reported_currency_changes":changes("reported_currency","reported_currency_id","reported_quantity"),
+        "before_slot_counts":slot_counts(before),"after_slot_counts":slot_counts(after),
+        "source_identity_verified":false,"lootability_verified":false,
+        "counts_toward_owned_inventory":false,"counts_toward_owned_balances":false,"live":false
+    })
 }
 
 #[cfg(test)]
