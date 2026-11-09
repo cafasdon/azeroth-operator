@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever snapshots that report an exact profession spell ID.
+
 - Look up an exact spell ID in a saved Forever profession observation.
 
 - Report shared spell IDs when comparing two saved Forever observations of the same profession.

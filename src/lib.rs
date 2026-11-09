@@ -1424,6 +1424,7 @@ pub struct CaptureFilters<'a> {
     pub pvp_rank_range: (Option<u32>, Option<u32>),
     pub pvp_season_id: Option<std::num::NonZeroU32>,
     pub group_context: Option<GroupContextFilter>,
+    pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1634,6 +1635,7 @@ impl Store {
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
             pvp_season_id,
             group_context,
+            profession_spell_id,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1790,6 +1792,10 @@ impl Store {
         ensure!(
             group_context.is_none() || family == Family::Forever,
             "Group context filtering requires Forever"
+        );
+        ensure!(
+            profession_spell_id.is_none() || family == Family::Forever,
+            "Profession spell filtering requires Forever"
         );
         if let Some(filter) = &gossip_option {
             filter.validate()?;
@@ -2218,6 +2224,20 @@ impl Store {
                     if outgoing_trade_item_id.is_some() && outgoing_trade_item_match.is_none() {
                         continue;
                     }
+                    let profession_spell_match = if let Some(id) = profession_spell_id {
+                        let Some(section) = s.sections.get("profession_spells") else {
+                            continue;
+                        };
+                        if section["entries"].get(id.to_string()).is_none() {
+                            continue;
+                        }
+                        Some(
+                            json!({"spell_id":id,"profession_id":section["profession_id"],
+                            "current_knowledge_verified":false}),
+                        )
+                    } else {
+                        None
+                    };
                     let group_context_match = group_context
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
@@ -2966,6 +2986,9 @@ impl Store {
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;
+                    }
+                    if let Some(observation) = profession_spell_match {
+                        summary["profession_spell_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;

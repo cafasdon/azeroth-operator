@@ -553,6 +553,9 @@ Inspect `profession_spells` with `profession_spell_id` for an exact spell ID.
 The lookup identifies the captured profession and reports true for a visible
 ID, false for an ID absent from a recorded set and null when the set is
 unavailable. The original capture remains in the response.
+Use the same `profession_spell_id` with `list_snapshots` and `family:
+"forever"` to find captures where that exact ID was reported. Results identify
+the captured profession. Unknown or nonmatching captures are excluded.
 [Offline evidence](../../docs/profession-spells-verification-2026-11-08.md).
 
 Manual player-resource observations retain readable stable health and primary

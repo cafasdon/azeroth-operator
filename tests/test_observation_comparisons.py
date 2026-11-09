@@ -53,6 +53,20 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
                     wrong_section = await session.call_tool('inspect_snapshot', {
                         'snapshot_id': old, 'section': 'equipment', 'profession_spell_id': 10})
                     self.assertTrue(wrong_section.isError)
+                    found = await session.call_tool('list_snapshots', {
+                        'family': 'forever', 'profession_spell_id': 10})
+                    self.assertFalse(found.isError, found)
+                    rows = json.loads(found.content[0].text)['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in rows], [old])
+                    self.assertEqual(rows[0]['profession_spell_match'], {
+                        'spell_id': 10, 'profession_id': 164, 'current_knowledge_verified': False})
+                    newest = await session.call_tool('list_snapshots', {
+                        'family': 'forever', 'profession_spell_id': 10, 'latest_per_character': True})
+                    self.assertFalse(newest.isError, newest)
+                    self.assertEqual(json.loads(newest.content[0].text)['snapshots'], [])
+                    wrong_family = await session.call_tool('list_snapshots', {
+                        'family': 'retail', 'profession_spell_id': 10})
+                    self.assertTrue(wrong_family.isError)
                     async def compare(a=old, b=new, **options):
                         response = await session.call_tool('compare_snapshots', {'before_id': a, 'after_id': b, **options})
                         self.assertFalse(response.isError, response)
