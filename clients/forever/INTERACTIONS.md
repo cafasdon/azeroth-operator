@@ -3042,3 +3042,9 @@ with readable loot in a compatible saved capture. The report identifies the
 loot capture and shows how much might be covered if those items were acquired.
 Missing loot or no known positive residual yields an unknown or inapplicable
 review. Loot observations do not reduce the bank plan or merchant quote.
+
+Set `bag_restock_compare_merchant_snapshot_ids` to one to four distinct
+saved visits for the same character and exact client. The review compares
+each visit independently against the same post-bank shortfall and inventory
+wallet. It reports every tied lowest complete quote. Partial quotes and
+unobserved offers remain visible without pooling stock across visits.

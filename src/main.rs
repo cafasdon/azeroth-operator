@@ -181,6 +181,8 @@ struct Inspect {
     bag_restock_stack_limits: Option<Vec<RestockStackLimit>>,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
+    /// Compare independent residual quotes from one to four compatible saved merchant visits.
+    bag_restock_compare_merchant_snapshot_ids: Option<Vec<String>>,
     /// Look up captured item source references for the residual bag shortfall.
     bag_restock_source_snapshot_id: Option<String>,
     /// Look up pinned local catalogue sources for the residual bag shortfall.
@@ -2841,6 +2843,18 @@ impl Operator {
                 "A saved inbox selection requires bag_restock_pending_mail",
             )]);
         }
+        if args
+            .bag_restock_compare_merchant_snapshot_ids
+            .as_ref()
+            .is_some_and(|ids| {
+                !(1..=4).contains(&ids.len())
+                    || ids.iter().collect::<std::collections::BTreeSet<_>>().len() != ids.len()
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Restocking comparison requires one to four distinct saved merchant snapshots",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -2849,6 +2863,7 @@ impl Operator {
         });
         if ((args.bag_restock_location_offset.is_some()
             || args.bag_restock_merchant_snapshot_id.is_some()
+            || args.bag_restock_compare_merchant_snapshot_ids.is_some()
             || args.bag_restock_source_snapshot_id.is_some()
             || args.bag_restock_catalogue_sources
             || args.bag_restock_pending_mail
@@ -3217,6 +3232,59 @@ impl Operator {
                             sources["snapshot_id"] = serde_json::json!(id);
                         }
                         value["bag_restock_captured_sources"] = sources;
+                    }
+                    if let Some(ids) = &args.bag_restock_compare_merchant_snapshot_ids {
+                        let residual = bank_restock_residual(&value["bag_restock_review"]);
+                        let demands = residual
+                            .as_ref()
+                            .and_then(|review| review["items"].as_array());
+                        let mut visits = Vec::new();
+                        for id in ids {
+                            let Ok(merchant) = self.store.read(id).and_then(|merchant| {
+                                azeroth_operator::analysis::ensure_same_character_and_client(
+                                    &snapshot, &merchant,
+                                )?;
+                                Ok(merchant)
+                            }) else {
+                                return CallToolResult::error(vec![ContentBlock::text(
+                                    "Restocking comparison requires compatible saved merchant snapshots",
+                                )]);
+                            };
+                            let quote = demands.map(|rows| {
+                                azeroth_operator::analysis::material_merchant_plan(
+                                    rows, &merchant, &snapshot,
+                                )
+                            });
+                            visits.push(serde_json::json!({
+                                "snapshot_id":id,"captured_at":merchant.captured_at,
+                                "quote_available":quote.as_ref().is_some_and(serde_json::Value::is_object),
+                                "complete_quote_copper":quote.as_ref().and_then(|quote| quote["copper_only_bundle_mix_total"].as_u64()),
+                                "unquoted_item_ids":quote.as_ref().map(|quote| &quote["copper_only_bundle_mix_unquoted_item_ids"]),
+                                "affordable_from_inventory_wallet":quote.as_ref().and_then(|quote| quote["copper_only_bundle_mix_affordable"].as_bool()),
+                            }));
+                        }
+                        let cheapest = visits
+                            .iter()
+                            .filter_map(|row| row["complete_quote_copper"].as_u64())
+                            .min();
+                        let cheapest_ids: Vec<_> = cheapest
+                            .into_iter()
+                            .flat_map(|cost| {
+                                visits
+                                    .iter()
+                                    .filter(move |row| {
+                                        row["complete_quote_copper"].as_u64() == Some(cost)
+                                    })
+                                    .map(|row| &row["snapshot_id"])
+                            })
+                            .collect();
+                        value["bag_restock_merchant_comparison"] = serde_json::json!({
+                            "visits":visits,"lowest_complete_quote_copper":cheapest,
+                            "lowest_complete_quote_snapshot_ids":cheapest_ids,
+                            "inventory_captured_at":snapshot.captured_at,
+                            "offers_combined_across_visits":false,"purchase_eligibility_verified":false,
+                            "live":false,
+                        });
                     }
                     if let Some(id) = args.bag_restock_merchant_snapshot_id.as_deref() {
                         let Ok(merchant) = self.store.read(id).and_then(|merchant| {

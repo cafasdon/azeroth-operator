@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare independent saved Forever merchant quotes for one bag restocking shortfall.
+
 - Compare residual Forever bag shortfalls with readable loot from a saved capture.
 
 - Explain finite, sold-out and extended-cost offers in saved Forever restocking quotes.

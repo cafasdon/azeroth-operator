@@ -67,6 +67,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     **bundled_merchant['sections']['merchant_stock']['2'],
                     'available':available,'extended_cost':extended}
             bundled_merchant_key = store.ingest(bundled_merchant)
+            partial_merchant = deepcopy(merchant)
+            partial_merchant['sections']['merchant_stock'].pop('2')
+            partial_merchant_key = store.ingest(partial_merchant)
             retail = store.ingest(fixture())
             tied = deepcopy(changed)
             tied['character']['name'] = 'Tied'
@@ -217,6 +220,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(bag_quote['purchase_eligibility_verified'],False)
                     self.assertEqual([{k:v for k,v in row.items() if k != 'captured_offer_coverage'}
                                       for row in bag_quote['reagents']],residual['reagents'])
+                    compare_ids = [partial_merchant_key,bundled_merchant_key,key,merchant_key]
+                    comparison = (await query(**restock,bag_restock_compare_merchant_snapshot_ids=compare_ids))[
+                        'bag_restock_merchant_comparison']
+                    self.assertEqual([visit['snapshot_id'] for visit in comparison['visits']],compare_ids)
+                    self.assertEqual([visit['complete_quote_copper'] for visit in comparison['visits']],
+                                     [None,2,None,2])
+                    self.assertEqual(comparison['visits'][0]['unquoted_item_ids'],[858])
+                    self.assertFalse(comparison['visits'][2]['quote_available'])
+                    self.assertEqual(comparison['lowest_complete_quote_snapshot_ids'],
+                                     [bundled_merchant_key,merchant_key])
+                    self.assertFalse(comparison['offers_combined_across_visits'])
+                    for ids in [[],[merchant_key,merchant_key],[retail],[merchant_key]*5]:
+                        await query(error=True,**restock,bag_restock_compare_merchant_snapshot_ids=ids)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},
                                                     {'item_id':858,'maximum_stack':2}]}
