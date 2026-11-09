@@ -1459,6 +1459,55 @@ pub struct PlayerAuraFilter {
     maximum_applications: Option<u32>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum WeaponEnchantHand {
+    MainHand,
+    OffHand,
+    Ranged,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WeaponEnchantFilter {
+    hand: WeaponEnchantHand,
+    enchant_id: Option<std::num::NonZeroU32>,
+    minimum_charges: Option<u32>,
+    maximum_remaining_milliseconds: Option<u32>,
+}
+
+impl WeaponEnchantFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        let hand = match self.hand {
+            WeaponEnchantHand::MainHand => "main_hand",
+            WeaponEnchantHand::OffHand => "off_hand",
+            WeaponEnchantHand::Ranged => "ranged",
+        };
+        let mut matches: Vec<_> = section["hands"][hand]["entries"]
+            .as_object()?
+            .iter()
+            .filter_map(|(slot, row)| {
+                (row["has_enchant"] == true
+                    && self
+                        .enchant_id
+                        .is_none_or(|id| row["enchant_id"].as_u64() == Some(u64::from(id.get())))
+                    && self.minimum_charges.is_none_or(|min| {
+                        row["charges"].as_u64().is_some_and(|n| n >= u64::from(min))
+                    })
+                    && self.maximum_remaining_milliseconds.is_none_or(|max| {
+                        row["remaining_milliseconds"]
+                            .as_u64()
+                            .is_some_and(|n| n <= u64::from(max))
+                    }))
+                .then(|| slot.parse::<u32>().unwrap())
+            })
+            .collect();
+        matches.sort_unstable();
+        (!matches.is_empty())
+            .then(|| json!({"hand":hand,"matching_observed_rows":matches,"live":false}))
+    }
+}
+
 impl PlayerAuraFilter {
     fn observation_match(&self, section: &Value) -> Option<Value> {
         let group = match self.group {
@@ -1604,6 +1653,7 @@ pub struct CaptureFilters<'a> {
     pub pvp_cap_distance: Option<PvpCapDistanceFilter>,
     pub player_resource: Option<PlayerResourceFilter>,
     pub player_aura: Option<PlayerAuraFilter>,
+    pub weapon_enchant: Option<WeaponEnchantFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1822,6 +1872,7 @@ impl Store {
             pvp_cap_distance,
             player_resource,
             player_aura,
+            weapon_enchant,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -1982,6 +2033,10 @@ impl Store {
                 .and_then(|filter| filter.minimum_applications.zip(filter.maximum_applications))
                 .is_none_or(|(min, max)| min <= max),
             "Invalid player aura application range"
+        );
+        ensure!(
+            weapon_enchant.is_none() || family == Family::Forever,
+            "Weapon enchant search requires Forever"
         );
         if let Some(filter) = &player_resource {
             ensure!(
@@ -2514,6 +2569,12 @@ impl Store {
                         filter.observation_match(s.sections.get("player_auras")?)
                     });
                     if player_aura.is_some() && player_aura_match.is_none() {
+                        continue;
+                    }
+                    let weapon_enchant_match = weapon_enchant.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("weapon_enchants")?)
+                    });
+                    if weapon_enchant.is_some() && weapon_enchant_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3300,6 +3361,9 @@ impl Store {
                     }
                     if let Some(observation) = player_aura_match {
                         summary["player_aura_match"] = observation;
+                    }
+                    if let Some(observation) = weapon_enchant_match {
+                        summary["weapon_enchant_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

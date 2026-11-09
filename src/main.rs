@@ -433,6 +433,8 @@ struct List {
     player_resource: Option<azeroth_operator::PlayerResourceFilter>,
     /// Match an exact spell ID in a saved helpful or harmful Forever player aura list.
     player_aura: Option<azeroth_operator::PlayerAuraFilter>,
+    /// Search saved Forever weapon enchant rows for one hand and optional exact readings.
+    weapon_enchant: Option<azeroth_operator::WeaponEnchantFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
@@ -2065,6 +2067,7 @@ impl Operator {
                 pvp_cap_distance: args.pvp_cap_distance,
                 player_resource: args.player_resource,
                 player_aura: args.player_aura,
+                weapon_enchant: args.weapon_enchant,
                 group_context: args.group_context,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,

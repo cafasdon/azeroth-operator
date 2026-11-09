@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
+`off_hand` or `ranged` enchant list. Set an optional exact `enchant_id`,
+`minimum_charges` or `maximum_remaining_milliseconds`. All predicates
+must match the same row that reported an enchant. Missing readings cannot
+satisfy a bound, and zero remains a known value. Results give the numeric
+row indices. Timers describe the capture.
+
 Use `list_snapshots.player_aura` with a `group` of `helpful` or
 `harmful` and an exact `spell_id`. Matches count observed rows for that
 ID in the selected group, including duplicates. An absent match leaves

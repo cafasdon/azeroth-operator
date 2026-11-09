@@ -62,6 +62,19 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     async def call(tool,**args):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
+                    async def search(hand, **filters):
+                        return (await call('list_snapshots',family='forever',
+                            weapon_enchant={'hand':hand,**filters}))['snapshots']
+                    found = await search('main_hand',enchant_id=42,minimum_charges=0,
+                                         maximum_remaining_milliseconds=0)
+                    self.assertEqual([row['snapshot_id'] for row in found],[keys[0]])
+                    self.assertEqual(found[0]['weapon_enchant_match'],
+                        {'hand':'main_hand','matching_observed_rows':[1],'live':False})
+                    self.assertEqual(await search('main_hand',enchant_id=42,minimum_charges=1),[])
+                    self.assertEqual(await search('off_hand',enchant_id=42),[])
+                    unrestricted = await search('main_hand')
+                    self.assertEqual(next(row for row in unrestricted if row['snapshot_id']==keys[0])
+                        ['weapon_enchant_match']['matching_observed_rows'],[1,2,10])
                     data=await call('inspect_snapshot',snapshot_id=keys[0],section='weapon_enchants')
                     self.assertEqual(data['data'],value['sections']['weapon_enchants'])
                     summary=(await call('character_summary',snapshot_id=keys[0]))['weapon_enchant_observations']

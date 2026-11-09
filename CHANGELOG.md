@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever weapon enchants by hand, exact ID, charges and reported timer.
+
 - Page through saved stack groups independently of item locations.
 
 - Review identical saved stacks separately in Forever character or account banks.
