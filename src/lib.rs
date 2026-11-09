@@ -1512,11 +1512,43 @@ pub struct PetActionSpellFilter {
     in_range: Option<bool>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PetActionCommandFilter {
+    command_token: String,
+    is_active: Option<bool>,
+}
+
+pub(crate) fn valid_pet_action_command(token: &str) -> bool {
+    token.len() <= 64
+        && token.strip_prefix("PET_").is_some_and(|suffix| {
+            !suffix.is_empty()
+                && suffix
+                    .bytes()
+                    .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit() || byte == b'_')
+        })
+}
+
+fn match_pet_action_rows(section: &Value, predicate: impl Fn(&Value) -> bool) -> Option<Value> {
+    let mut matches: BTreeMap<u32, &Value> = BTreeMap::new();
+    for (slot, row) in section["entries"].as_object()? {
+        if predicate(row) {
+            matches.insert(slot.parse().ok()?, row);
+        }
+    }
+    (!matches.is_empty()).then(|| {
+        let rows: Vec<_> = matches
+            .into_iter()
+            .map(|(slot, row)| json!({"slot":slot,"observation":row}))
+            .collect();
+        json!({"matches":rows,"cast_eligibility_verified":false,"live":false})
+    })
+}
+
 impl PetActionSpellFilter {
     fn observation_match(&self, section: &Value) -> Option<Value> {
-        let mut matches: BTreeMap<u32, &Value> = BTreeMap::new();
-        for (slot, row) in section["entries"].as_object()? {
-            if row["kind"] == "spell"
+        match_pet_action_rows(section, |row| {
+            row["kind"] == "spell"
                 && row["spell_id"].as_u64() == Some(u64::from(self.spell_id.get()))
                 && [
                     ("is_active", self.is_active),
@@ -1528,16 +1560,18 @@ impl PetActionSpellFilter {
                 .all(|(field, expected)| {
                     expected.is_none_or(|flag| row[field].as_bool() == Some(flag))
                 })
-            {
-                matches.insert(slot.parse().ok()?, row);
-            }
-        }
-        (!matches.is_empty()).then(|| {
-            let rows: Vec<_> = matches
-                .into_iter()
-                .map(|(slot, row)| json!({"slot":slot,"observation":row}))
-                .collect();
-            json!({"matches":rows,"cast_eligibility_verified":false,"live":false})
+        })
+    }
+}
+
+impl PetActionCommandFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        match_pet_action_rows(section, |row| {
+            row["kind"] == "command"
+                && row["command_token"] == self.command_token.as_str()
+                && self
+                    .is_active
+                    .is_none_or(|flag| row["is_active"].as_bool() == Some(flag))
         })
     }
 }
@@ -1787,6 +1821,7 @@ pub struct CaptureFilters<'a> {
     pub weapon_enchant: Option<WeaponEnchantFilter>,
     pub merchant_buyback: Option<MerchantBuybackFilter>,
     pub pet_action_spell: Option<PetActionSpellFilter>,
+    pub pet_action_command: Option<PetActionCommandFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -2011,6 +2046,7 @@ impl Store {
             weapon_enchant,
             merchant_buyback,
             pet_action_spell,
+            pet_action_command,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -2209,6 +2245,12 @@ impl Store {
         ensure!(
             pet_action_spell.is_none() || family == Family::Forever,
             "Pet action spell search requires Forever"
+        );
+        ensure!(
+            pet_action_command.as_ref().is_none_or(|filter| {
+                family == Family::Forever && valid_pet_action_command(&filter.command_token)
+            }),
+            "Pet action command search requires Forever and an exact PET_ command token"
         );
         if let Some(filter) = &player_resource {
             ensure!(
@@ -2790,6 +2832,12 @@ impl Store {
                         filter.observation_match(s.sections.get("pet_action_bar")?)
                     });
                     if pet_action_spell.is_some() && pet_action_match.is_none() {
+                        continue;
+                    }
+                    let pet_command_match = pet_action_command.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("pet_action_bar")?)
+                    });
+                    if pet_action_command.is_some() && pet_command_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3588,6 +3636,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_action_match {
                         summary["pet_action_spell_match"] = observation;
+                    }
+                    if let Some(observation) = pet_command_match {
+                        summary["pet_action_command_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

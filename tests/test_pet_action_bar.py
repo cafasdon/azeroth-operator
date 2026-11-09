@@ -77,6 +77,27 @@ class PetActionBarTests(unittest.IsolatedAsyncioTestCase):
                     maximum_matches=await search(2**32-1,autocast_enabled=False)
                     self.assertEqual([row['slot'] for row in maximum_matches[0]['pet_action_spell_match']['matches']],
                                      list(range(1,11)))
+                    token = 'PET_ACTION_ATTACK'
+                    async def commands(**flags):
+                        result = await call('list_snapshots', family='forever',
+                            pet_action_command={'command_token':token, **flags})
+                        return result['snapshots']
+                    found = await commands(is_active=False)
+                    self.assertEqual([row['snapshot_id'] for row in found], [keys[0]])
+                    self.assertEqual(found[0]['pet_action_command_match'], {
+                        'matches':[{'slot':1,'observation':value['sections']['pet_action_bar']['entries']['1']}],
+                        'cast_eligibility_verified':False,'live':False})
+                    self.assertEqual(await commands(is_active=True), [])
+                    unreported = deepcopy(value)
+                    unreported['sections']['pet_action_bar']['entries']['1'].pop('is_active')
+                    unreported_key = store.ingest(unreported)
+                    self.assertEqual({row['snapshot_id'] for row in await commands()}, {keys[0], unreported_key})
+                    self.assertEqual([row['snapshot_id'] for row in await commands(is_active=False)], [keys[0]])
+                    for family, invalid in [('forever','PET_'),('forever','pet_action_attack'),
+                                            ('forever','PET_'+'X'*61),('retail',token)]:
+                        rejected = await session.call_tool('list_snapshots', {'family':family,
+                            'pet_action_command':{'command_token':invalid}})
+                        self.assertTrue(rejected.isError)
                     changed=deepcopy(value)
                     changed['sections']['pet_action_bar']['entries']['2']['autocast_enabled']=False
                     changed['sections']['pet_action_bar']['entries'].pop('10')

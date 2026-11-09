@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `list_snapshots.pet_action_command` with an exact `command_token` such as
+`PET_ACTION_ATTACK` to locate saved command slots. Optional `is_active` matches
+only explicit captured flags. Results are historical readings in slot order.
+They carry no current control or cast eligibility guarantee.
+
 Use `list_snapshots.pet_action_spell` with an exact `spell_id` to find
 saved pet bar slots. Optional `is_active`, `autocast_allowed`,
 `autocast_enabled` and `in_range` flags must match on the same row.

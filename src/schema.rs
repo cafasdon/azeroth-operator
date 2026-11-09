@@ -2447,11 +2447,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         row.get("spell_id").is_none()
                             && row["command_token"]
                                 .as_str()
-                                .is_some_and(|token| token.len() <= 64
-                                    && token.strip_prefix("PET_").is_some_and(|s| !s.is_empty()
-                                        && s.bytes().all(|b| b.is_ascii_uppercase()
-                                            || b.is_ascii_digit()
-                                            || b == b'_'))),
+                                .is_some_and(crate::valid_pet_action_command),
                         "Invalid pet action command"
                     ),
                     _ => anyhow::bail!("Invalid pet action kind"),

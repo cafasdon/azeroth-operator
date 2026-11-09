@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet commands by exact token and recorded active state.
+
 - Compare saved Forever pet action-bar context and observed slot changes.
 
 - Find saved Forever pet action spells by exact ID and captured flags.
