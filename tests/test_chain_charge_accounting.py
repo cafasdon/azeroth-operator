@@ -48,6 +48,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                 'recipe_id':102,'name':'Fixture recipe','learned':True,
                 'requirements':'fixed_items','reagents':{'10':1},
                 'crafting_conditions':{'1':{'name':'Fixture station','kind':'area','met':False}}}
+            conditional['sections']['tracked_recipes'] = {
+                'coverage':'player_tracked_recipes_only',
+                'crafts':{'102':{'learned':True}},'recrafts':{'103':{}}}
             conditional_key = store.ingest(conditional)
             before = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -110,6 +113,14 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(later['steps'][1]['captured_charge_accounting']['observed_charges'],1)
                     ordinary = await plan(keys[1],reagent_chain_stock_plan=False)
                     conditioned = await plan(conditional_key)
+                    self.assertEqual([step['recipe_tracking']['tracked_as_craft']
+                                      for step in conditioned['steps']], [True, True, False, False])
+                    self.assertEqual([step['recipe_tracking']['tracked_as_recraft']
+                                      for step in conditioned['steps']], [False, False, True, False])
+                    self.assertEqual([step['recipe_tracking']['tracked_craft_learned']
+                                      for step in conditioned['steps']], [True, True, None, None])
+                    self.assertTrue(all(step['recipe_tracking']['tracked_as_craft'] is None
+                                        for step in one['steps']))
                     self.assertEqual([step['captured_nonmaterial_checks']['observed_conditions_met']
                                       for step in conditioned['steps']], [False, False, None, None])
                     unmet = conditional['sections']['selected_recipe']['crafting_conditions']

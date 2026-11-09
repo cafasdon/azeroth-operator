@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved craft and recraft tracking membership for each Forever reagent-chain recipe.
+
 - Show saved craftable counts and per-step shortfalls in Forever reagent chains.
 
 - Identify the saved unmet crafting conditions for each Forever reagent-chain step.

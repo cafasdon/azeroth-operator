@@ -264,6 +264,10 @@ Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks
 and material planning, where earlier steps can supply ingredients.
+Each step includes `recipe_tracking` from the recipe capture, with craft and
+recraft membership reported separately. Missing tracking observations stay
+unknown. Membership alone does not change recipe selection. Conflicting
+saved learning flags still reject the recipe.
 Individual recipe reviews additionally report
 `base_output_for_charge_covered_crafts_if_completed`. This scales the base
 yield range by the smaller of requested crafts and captured charges. It is
