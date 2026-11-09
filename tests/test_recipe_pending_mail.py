@@ -71,7 +71,8 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(without_observations(result),without_observations(baseline))
                     self.assertEqual(result['pending_mail_material_observations'],{
                         'coverage':'loaded_inbox_attachments','captured_at':'2025-01-01T00:00:00Z',
-                        'loaded_messages':2,'total_messages':6,'unknown_attachment_slots':1,'counts_toward_material_capacity':False,
+                        'loaded_messages':2,'total_messages':6,'unloaded_messages':4,
+                        'unknown_attachment_slots':1,'counts_toward_material_capacity':False,
                         'items':[{'item_id':2,'known_quantity':9,'known_attachment_slots':1},
                                  {'item_id':10,'known_quantity':7,'known_attachment_slots':2}],
                         'unobserved_reagent_ids':[720]})

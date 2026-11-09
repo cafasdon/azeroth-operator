@@ -1388,6 +1388,7 @@ fn review_recipe_observation(
             }
             json!({"coverage":"loaded_inbox_attachments","captured_at":stock.captured_at,
                 "loaded_messages":mail["loaded_messages"],"total_messages":mail["total_messages"],
+                "unloaded_messages":unloaded_mail_messages(mail),
                 "unknown_attachment_slots":unknown,"counts_toward_material_capacity":false,
                 "items":items,"unobserved_reagent_ids":unobserved})
         }).unwrap_or(Value::Null);

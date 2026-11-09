@@ -7,6 +7,8 @@ Character summaries show the same unloaded count alongside observed item,
 currency and unreadable attachment slots.
 Attachment search matches carry both coverage counts so observed quantities
 can be read alongside gaps in the saved inbox.
+Crafting plans that show pending mail reagents also report unloaded messages.
+Pending quantities remain separate from available crafting materials.
 
 Merchant discovery accepts `merchant_stock_state` with an existing offer
 selector. Use `unlimited`, `limited_in_stock` or `sold_out` to match the
