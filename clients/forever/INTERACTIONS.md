@@ -309,6 +309,9 @@ observed stock and any output already modeled by earlier steps. The map
 contains only positive shortfalls and excludes nested producer plans.
 Charge estimates do not deduct earlier usage. An explicit producer choice is
 still required.
+Candidates marked `already_active_in_chain` are on the current dependency
+path. Choosing one at that point creates a cycle. Other candidates can
+still lead to a cycle deeper in their dependencies.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

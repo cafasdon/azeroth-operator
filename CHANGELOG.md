@@ -1,5 +1,7 @@
 # Changelog
 
+- Flag alternative Forever reagent producers that would immediately cycle back into the active chain.
+
 - Compare alternative Forever recipe ingredient shortfalls against the modeled chain balance.
 
 - Compare direct reagent requirements for alternative saved Forever recipe producers.

@@ -1279,6 +1279,7 @@ impl RecipeChainDraft<'_> {
                                     .collect::<BTreeMap<_, _>>()
                             });
                             json!({"recipe_id":id,"reported_minimum_output_per_craft":minimum,
+                            "already_active_in_chain":self.active.contains(&id.get()),
                             "crafts_for_current_deficit":crafts,
                             "fits_step_craft_limit":crafts.map(|count| count <= 1000),
                             "direct_reagents_for_current_deficit":direct_reagents,
