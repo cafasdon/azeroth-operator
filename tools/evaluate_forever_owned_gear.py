@@ -15,13 +15,17 @@ from tools.sync_exports import ordinary
 from tools import role_metrics as roles
 
 
+OWNED_STORAGE_SECTIONS = ('equipment', 'bags', 'character_bank', 'account_bank')
+
+
 async def selected_snapshot(args, deadline):
     snapshot = getattr(args, 'snapshot_id', None)
     name, realm = getattr(args, 'character_name', None), getattr(args, 'character_realm', None)
     client = getattr(args, 'character_client', None)
     unique_latest = getattr(args, 'require_unique_latest', False)
     latest_sections = getattr(args, 'require_latest_section', None)
-    require(type(unique_latest) is bool)
+    all_storage = getattr(args, 'require_all_storage_sections', False)
+    require(type(unique_latest) is bool and type(all_storage) is bool)
     capture_bounds = {
         field: value
         for field in ('captured_from', 'captured_through')
@@ -30,19 +34,29 @@ async def selected_snapshot(args, deadline):
     if snapshot is not None:
         require(name is None and realm is None and client is None and not capture_bounds
                 and not unique_latest and latest_sections is None)
-        return digest(snapshot), 'explicit_saved_snapshot'
-    require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
-    request = {'family':'forever', 'character':{'name':name, 'realm':realm}, **capture_bounds}
-    if unique_latest:
-        request['require_unique_latest'] = True
-    if latest_sections is not None:
-        request['required_sections'] = latest_sections
-        request['require_latest_coverage'] = True
-    if client is not None:
-        variant, build, interface = client
-        require(interface.isascii() and interface.isdecimal() and len(interface) <= 10)
-        request['exact_client'] = {'family':'forever', 'variant':variant, 'build':build,
-                                   'interface':integer(int(interface), 1, 4294967295)}
+        snapshot = digest(snapshot)
+        if not all_storage:
+            return snapshot, 'explicit_saved_snapshot'
+        tool = 'inspect_snapshot'
+        request = {'snapshot_id': snapshot, 'coverage_sections': list(OWNED_STORAGE_SECTIONS)}
+    else:
+        require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
+        tool = 'resolve_character'
+        request = {'family':'forever', 'character':{'name':name, 'realm':realm}, **capture_bounds}
+        if unique_latest:
+            request['require_unique_latest'] = True
+        if all_storage:
+            latest_sections = list(latest_sections or [])
+            latest_sections.extend(section for section in OWNED_STORAGE_SECTIONS
+                                   if section not in latest_sections)
+        if latest_sections is not None:
+            request['required_sections'] = latest_sections
+            request['require_latest_coverage'] = True
+        if client is not None:
+            variant, build, interface = client
+            require(interface.isascii() and interface.isdecimal() and len(interface) <= 10)
+            request['exact_client'] = {'family':'forever', 'variant':variant, 'build':build,
+                                       'interface':integer(int(interface), 1, 4294967295)}
     require(monotonic() < deadline)
     ranker = collection.ranker
     async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
@@ -51,9 +65,16 @@ async def selected_snapshot(args, deadline):
             async with ranker.stdio_client(params, errlog=errlog) as (reader, writer):
                 async with ranker.ClientSession(reader, writer) as session:
                     await session.initialize()
-                    reply = await session.call_tool('resolve_character', request)
+                    reply = await session.call_tool(tool, request)
                     require(not reply.isError and len(reply.content) == 1)
                     result = parse_report(reply.content[0].text.encode())
+                    if snapshot is not None:
+                        require(result['snapshot_id'] == snapshot
+                                and result['client']['family'] == 'forever'
+                                and result['live'] is False
+                                and result['section_coverage'] ==
+                                    {section: 'observed' for section in OWNED_STORAGE_SECTIONS})
+                        return snapshot, 'explicit_saved_snapshot'
                     require(result['status'] == 'explicit_saved_character'
                         and result['live'] is False and result['active_character_verified'] is False)
                     if latest_sections is not None:
@@ -199,6 +220,8 @@ def parser():
                      help='Reject tied newest captures with --character-name')
     cli.add_argument('--require-latest-section', action='append', metavar='SECTION',
                      help='Require this section on the newest capture with --character-name; repeat for multiple sections')
+    cli.add_argument('--require-all-storage-sections', action='store_true',
+                     help='Require equipment, bags, character bank and account bank in the selected capture')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

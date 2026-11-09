@@ -167,10 +167,30 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(cached['simulation']['encounter_contexts'],contexts)
                 self.assertEqual(runs.call_count,calls)
                 self.assertEqual(journal.read_bytes(),before)
+                all_storage = '--require-all-storage-sections'
+                absent_journal = base/'must-not-create.sqlite'
+                launch(['--checkpoint-only','--journal',str(absent_journal),all_storage],fails=True)
+                self.assertFalse(absent_journal.exists())
+                full_storage = deepcopy(value)
+                full_storage['character']['name'] = 'FullStorage'
+                full_storage['sections'].update(character_bank={},account_bank={})
+                full_key = SnapshotStore(base).ingest(full_storage)
+                for selector_args, expected_selection in [
+                    (['--snapshot-id',full_key], 'explicit_saved_snapshot'),
+                    (['--character-name','FullStorage','--character-realm',value['character']['realm']],
+                     'explicit_saved_character'),
+                ]:
+                    index = argv.index('--snapshot-id')
+                    options = workflow.parser().parse_args([*argv[:index],*selector_args,*argv[index+2:],all_storage])
+                    with patch.dict(os.environ,env):
+                        self.assertEqual(asyncio.run(workflow.selected_snapshot(options,monotonic()+15)),
+                                         (full_key,expected_selection))
                 original_argv = argv[:]
                 index = argv.index('--snapshot-id')
                 argv[index:index+2] = ['--character-name',value['character']['name'],
                     '--character-realm',value['character']['realm']]
+                launch(['--checkpoint-only','--journal',str(absent_journal),all_storage],fails=True)
+                self.assertFalse(absent_journal.exists())
                 named = launch(['--checkpoint-only'])
                 self.assertEqual(named['selection'],'explicit_saved_character')
                 self.assertEqual(named['snapshot_id'],key)

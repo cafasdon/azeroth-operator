@@ -483,6 +483,9 @@ the character currently in play.
 Use `--require-unique-latest` to reject tied newest captures. Repeat
 `--require-latest-section SECTION` to require coverage on the newest capture.
 A missing section stops the run before journal writes.
+Use `--require-all-storage-sections` with either selector to require observed
+equipment, bags, character bank and account bank. Observed sections may be
+empty or partial. This check does not verify complete ownership.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained

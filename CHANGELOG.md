@@ -1,5 +1,7 @@
 # Changelog
 
+- Let Forever owned-gear evaluation require all four storage sections before collection.
+
 - Apply optional latest-capture uniqueness and coverage checks in the Forever owned-gear evaluator.
 
 - Allow explicit character resolution to require section coverage on the newest capture.
