@@ -3086,3 +3086,7 @@ slots, bundle quantities, purchase subtotal and assumed visit cost.
 The checklist also shows cumulative cost and the inventory wallet remainder
 or shortfall at each stop, using the displayed request order. This order is
 a budgeting assumption. A missing wallet leaves those balance fields unknown.
+
+Compared merchant visits and checklist stops include the captured player map
+ID when available. Stops also identify the merchant capture time. The map
+describes the player's saved location during the visit.

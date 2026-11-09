@@ -59,6 +59,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             merchant['sections']['merchant_stock']={
                 '1':{'item_id':118,'bundle_size':3,'price_copper':7,'available':-1,'extended_cost':False},
                 '2':{'item_id':858,'bundle_size':1,'price_copper':2,'available':-1,'extended_cost':False}}
+            merchant['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,
+                                             'client_version':'fixture','map_id':1414}
             merchant_key=store.ingest(merchant)
             bundled_merchant = deepcopy(merchant)
             bundled_merchant['sections']['merchant_stock']['2']['bundle_size'] = 3
@@ -233,6 +235,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([visit['complete_quote_copper'] for visit in comparison['visits']],
                                      [None,2,None,2])
                     self.assertEqual(comparison['visits'][0]['unquoted_item_ids'],[858])
+                    self.assertEqual(comparison['visits'][0]['captured_player_map_id'],1414)
+                    self.assertIsNone(comparison['visits'][2]['captured_player_map_id'])
                     self.assertFalse(comparison['visits'][2]['quote_available'])
                     self.assertEqual(comparison['lowest_complete_quote_snapshot_ids'],
                                      [bundled_merchant_key,merchant_key])
@@ -271,6 +275,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         running_cost = 0
                         for visit in checklist:
                             running_cost += visit['purchase_copper'] + visit['assumed_visit_cost_copper']
+                            self.assertEqual(visit['captured_player_map_id'],1414)
+                            self.assertEqual(visit['merchant_captured_at'],merchant['captured_at'])
                             self.assertEqual(visit['cumulative_cost_copper'],running_cost)
                             self.assertEqual(visit['inventory_wallet_remaining_copper'],
                                              7-running_cost if running_cost <= 7 else None)

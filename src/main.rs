@@ -3360,6 +3360,7 @@ impl Operator {
                             }
                             visits.push(serde_json::json!({
                                 "snapshot_id":id,"captured_at":merchant.captured_at,
+                                "captured_player_map_id":merchant.sections.get("stats").and_then(|stats| stats["map_id"].as_u64()),
                                 "quote_available":quote.as_ref().is_some_and(serde_json::Value::is_object),
                                 "complete_quote_copper":quote.as_ref().and_then(|quote| quote["copper_only_bundle_mix_total"].as_u64()),
                                 "unquoted_item_ids":quote.as_ref().map(|quote| &quote["copper_only_bundle_mix_unquoted_item_ids"]),
@@ -3381,13 +3382,6 @@ impl Operator {
                                     .map(|row| &row["snapshot_id"])
                             })
                             .collect();
-                        value["bag_restock_merchant_comparison"] = serde_json::json!({
-                            "visits":visits,"lowest_complete_quote_copper":cheapest,
-                            "lowest_complete_quote_snapshot_ids":cheapest_ids,
-                            "inventory_captured_at":snapshot.captured_at,
-                            "offers_combined_across_visits":false,"purchase_eligibility_verified":false,
-                            "live":false,
-                        });
                         if let Some(costs) = visit_costs.as_deref() {
                             value["bag_restock_travel_adjusted_merchant_plan"] =
                                 serde_json::json!(demands.and_then(|rows| {
@@ -3425,9 +3419,26 @@ impl Operator {
                                                 .is_some_and(|spendable| total <= spendable)),
                                         });
                                     }
+                                    if let Some(checklist) = plan["merchant_visit_checklist"].as_array_mut() {
+                                        for stop in checklist {
+                                            if let Some(visit) = visits.iter().find(|visit| {
+                                                visit["snapshot_id"] == stop["merchant_snapshot_id"]
+                                            }) {
+                                                stop["captured_player_map_id"] = visit["captured_player_map_id"].clone();
+                                                stop["merchant_captured_at"] = visit["captured_at"].clone();
+                                            }
+                                        }
+                                    }
                                     Some(plan)
                                 }));
                         }
+                        value["bag_restock_merchant_comparison"] = serde_json::json!({
+                            "visits":visits,"lowest_complete_quote_copper":cheapest,
+                            "lowest_complete_quote_snapshot_ids":cheapest_ids,
+                            "inventory_captured_at":snapshot.captured_at,
+                            "offers_combined_across_visits":false,"purchase_eligibility_verified":false,
+                            "live":false,
+                        });
                         if args.bag_restock_split_merchant_plan {
                             let plan = demands.map(|rows| {
                                 let mut missing = Vec::new();
