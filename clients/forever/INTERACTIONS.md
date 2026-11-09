@@ -26,6 +26,10 @@ Enable `quest_inventory_catalogue_sources` to look up known shortfalls in
 the verified local catalogue. The result lists public acquisition references
 with their catalogue provenance. Missing stock leaves the source review
 unknown, and recorded sources leave current availability unverified.
+Set `quest_inventory_source_snapshot_id` to look up the same shortfalls
+in a compatible saved provider capture. Source references and coordinates
+come from that capture, independently of inventory. The lookup preserves
+source provenance and leaves native spawn and routing unverified.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.

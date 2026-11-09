@@ -26,6 +26,7 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
         base=fixture()
         base['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
         base['sections']['bags']={'0':{'1':{'item_id':2840,'count':1,'link':'PRIVATE_LINK'}}}
+        base['sections']['quests']={'42':{'title':'Fixture quest','level':60}}
         base['sections']['profession_recipe_materials']={'coverage':'reported_known_spell_schematics',
             'profession_id':164,'entries':{'101':fixed(100,{'20':3,'30':1,'40':1,'50':1,'60':1}),
                 '102':fixed(20,{'2840':2},2)}}
@@ -85,6 +86,22 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(source['items_with_retained_sources'],1)
                     rows={r['item_id']:r for r in source['records']}
                     self.assertEqual(rows[2840]['quantity'],3)
+                    quest_request={'snapshot_id':key,'section':'quests','quest_id':42,
+                        'quest_inventory_requirements':{'storage':'bags','items':[{'item_id':2840,'quantity':4}]},
+                        'quest_inventory_source_snapshot_id':key}
+                    reply=await session.call_tool('inspect_snapshot',quest_request)
+                    self.assertFalse(reply.isError,reply)
+                    report=json.loads(reply.content[0].text)['quest_inventory_captured_source_review']
+                    self.assertEqual(report['records'],[rows[2840]])
+                    self.assertEqual(report['snapshot_id'],key)
+                    self.assertIs(report['quest_item_binding_verified'],False)
+                    reply=await session.call_tool('inspect_snapshot',{**quest_request,
+                        'quest_inventory_source_snapshot_id':older_key,'quest_inventory_snapshot_id':inventory_key})
+                    self.assertFalse(reply.isError,reply)
+                    report=json.loads(reply.content[0].text)['quest_inventory_captured_source_review']
+                    self.assertEqual(report['records'][0]['quantity'],2)
+                    self.assertEqual(report['records'][0]['references']['vendors'],refs([91]))
+                    self.assertEqual(report['snapshot_id'],older_key)
                     self.assertNotIn(20,rows)
                     self.assertEqual(rows[2840]['references'],{k:v for k,v in
                         base['sections']['recipe_item_sources']['entries']['2840'].items() if k!='status'})

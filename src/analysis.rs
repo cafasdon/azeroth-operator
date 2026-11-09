@@ -6445,6 +6445,42 @@ pub fn reagent_chain_captured_sources(
             "Duplicate chain material"
         );
     }
+    Ok(captured_material_sources(
+        needs,
+        source,
+        "chain_external_material_shortfalls",
+    ))
+}
+
+pub fn quest_inventory_captured_sources(
+    review: &Value,
+    quest: &Snapshot,
+    source: &Snapshot,
+) -> Result<Value> {
+    ensure!(
+        quest.client.family == crate::Family::Forever,
+        "Expected Forever"
+    );
+    ensure_same_character_and_client(quest, source)?;
+    if review["storage_observed"] != true {
+        return Ok(Value::Null);
+    }
+    let needs = review["items"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let quantity = row["shortfall_vs_observed"].as_u64().filter(|n| *n > 0)?;
+            Some((row["item_id"].as_u64()?, quantity))
+        })
+        .collect();
+    let mut report =
+        captured_material_sources(needs, source, "user_supplied_quest_item_shortfalls");
+    report["quest_item_binding_verified"] = json!(false);
+    Ok(report)
+}
+
+fn captured_material_sources(needs: BTreeMap<u64, u64>, source: &Snapshot, basis: &str) -> Value {
     let section = source.sections.get("recipe_item_sources");
     let fields = [
         "npc_drops",
@@ -6550,7 +6586,7 @@ pub fn reagent_chain_captured_sources(
             }
             projected
         });
-    let mut result = json!({"basis":"chain_external_material_shortfalls","captured_at":source.captured_at,
+    let mut result = json!({"basis":basis,"captured_at":source.captured_at,
         "section_available":section.is_some(),"source_capture_coverage":coverage,
         "external_item_count":records.len(),"captured_item_count":captured,
         "uncaptured_item_count":records.len()-captured,"items_reported_by_provider":reported,
@@ -6561,7 +6597,7 @@ pub fn reagent_chain_captured_sources(
     if let Some(locations) = locations {
         result["entity_locations"] = locations;
     }
-    Ok(result)
+    result
 }
 
 /// Chain leaves are already net shortages: do not subtract the observed stock again.

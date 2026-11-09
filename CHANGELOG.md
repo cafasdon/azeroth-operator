@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up saved provider acquisition references for Forever quest item shortfalls.
+
 - Look up local catalogue acquisition sources for saved Forever quest item shortfalls.
 
 - Summarise saved stock coverage for user-supplied Forever quest item checklists.

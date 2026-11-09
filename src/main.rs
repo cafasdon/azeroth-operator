@@ -163,6 +163,8 @@ struct Inspect {
     /// Show verified local catalogue sources for known quest inventory shortfalls.
     #[serde(default)]
     quest_inventory_catalogue_sources: bool,
+    /// Use this same-character saved source capture for known quest inventory shortfalls.
+    quest_inventory_source_snapshot_id: Option<String>,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2530,12 +2532,13 @@ impl Operator {
             )]);
         }
         if (args.quest_inventory_catalogue_sources
+            || args.quest_inventory_source_snapshot_id.is_some()
             || args.quest_inventory_merchant_snapshot_id.is_some()
             || args.quest_inventory_snapshot_id.is_some())
             && args.quest_inventory_requirements.is_none()
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Quest inventory, merchant and catalogue options require quest inventory requirements",
+                "Quest inventory, merchant and source options require quest inventory requirements",
             )]);
         }
         if let Some(requirements) = &args.quest_inventory_requirements
@@ -3478,6 +3481,24 @@ impl Operator {
                                 serde_json::json!(quest_stock.unwrap().captured_at),
                             );
                         }
+                    }
+                    if let Some(id) = &args.quest_inventory_source_snapshot_id {
+                        let sources = self.store.read(id).and_then(|source| {
+                            azeroth_operator::analysis::quest_inventory_captured_sources(
+                                &value["quest_inventory_review"],
+                                review_snapshot.as_ref().unwrap(),
+                                &source,
+                            )
+                        });
+                        let Ok(mut sources) = sources else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest inventory sources require a compatible saved source capture",
+                            )]);
+                        };
+                        if sources.is_object() {
+                            sources["snapshot_id"] = serde_json::json!(id);
+                        }
+                        value["quest_inventory_captured_source_review"] = sources;
                     }
                     if args.quest_inventory_catalogue_sources {
                         let sources = self
