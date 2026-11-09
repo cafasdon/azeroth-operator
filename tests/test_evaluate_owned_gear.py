@@ -176,6 +176,14 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(named['snapshot_id'],key)
                 self.assertEqual(named['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
                 self.assertEqual(runs.call_count,calls)
+                changed_build = deepcopy(value)
+                changed_build['captured_at'] = '2025-02-01T00:00:00Z'
+                changed_build['client']['build'] = '70863'
+                SnapshotStore(base).ingest(changed_build)
+                exact = launch(['--checkpoint-only','--character-client','live','70862','16001'])
+                self.assertEqual(exact['snapshot_id'],key)
+                self.assertEqual(exact['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
+                self.assertEqual(runs.call_count,calls)
                 argv[:] = original_argv
                 for first,second_stage in zip(captured[::2],captured[1::2],strict=True):
                     self.assertEqual((first[0],second_stage[0]),('collection','simulation'))

@@ -1,5 +1,7 @@
 # Changelog
 
+- Select an exact saved Forever client build when evaluating a named character's owned gear.
+
 - Resolve explicitly selected characters against an exact saved client identity.
 
 - Resolve an explicitly selected character within a requested saved capture window.

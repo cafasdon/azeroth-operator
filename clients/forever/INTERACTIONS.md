@@ -6,6 +6,8 @@ matching capture within those bounds. Without an explicit character, active
 identity stays unknown and time bounds are rejected.
 The optional `exact_client` requires the capture to match the supplied
 family, variant, build and interface. It also requires an explicit character.
+The owned-gear evaluator accepts `--character-client VARIANT BUILD INTERFACE`
+with a named character to apply that exact constraint before collecting gear.
 
 Inspect `trainer_services` with either `trainer_max_price_copper` or
 `trainer_max_price_points` to apply an inclusive ceiling to known lesson

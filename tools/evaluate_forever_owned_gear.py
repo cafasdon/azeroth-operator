@@ -18,10 +18,17 @@ from tools import role_metrics as roles
 async def selected_snapshot(args, deadline):
     snapshot = getattr(args, 'snapshot_id', None)
     name, realm = getattr(args, 'character_name', None), getattr(args, 'character_realm', None)
+    client = getattr(args, 'character_client', None)
     if snapshot is not None:
-        require(name is None and realm is None)
+        require(name is None and realm is None and client is None)
         return digest(snapshot), 'explicit_saved_snapshot'
     require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
+    request = {'family':'forever', 'character':{'name':name, 'realm':realm}}
+    if client is not None:
+        variant, build, interface = client
+        require(interface.isascii() and interface.isdecimal() and len(interface) <= 10)
+        request['exact_client'] = {'family':'forever', 'variant':variant, 'build':build,
+                                   'interface':integer(int(interface), 1, 4294967295)}
     require(monotonic() < deadline)
     ranker = collection.ranker
     async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
@@ -30,12 +37,13 @@ async def selected_snapshot(args, deadline):
             async with ranker.stdio_client(params, errlog=errlog) as (reader, writer):
                 async with ranker.ClientSession(reader, writer) as session:
                     await session.initialize()
-                    reply = await session.call_tool('resolve_character', {'family':'forever',
-                        'character':{'name':name, 'realm':realm}})
+                    reply = await session.call_tool('resolve_character', request)
                     require(not reply.isError and len(reply.content) == 1)
                     result = parse_report(reply.content[0].text.encode())
                     require(result['status'] == 'explicit_saved_character'
                         and result['live'] is False and result['active_character_verified'] is False)
+                    if client is not None:
+                        require(result['selection']['client'] == request['exact_client'])
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
@@ -166,6 +174,8 @@ def parser():
     selector.add_argument('--snapshot-id')
     selector.add_argument('--character-name')
     cli.add_argument('--character-realm', help='Required with --character-name; selects historical owner-store data')
+    cli.add_argument('--character-client', nargs=3, metavar=('VARIANT', 'BUILD', 'INTERFACE'),
+                     help='Require an exact saved Forever client with --character-name')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')
