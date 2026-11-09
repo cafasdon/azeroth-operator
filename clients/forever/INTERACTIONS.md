@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Saved mail attachment comparisons show the unloaded message count on each
+side, separately from unreadable attachment slots in loaded messages.
+These counts describe the captures and do not identify messages or transfers.
+
 Merchant discovery accepts `merchant_stock_state` with an existing offer
 selector. Use `unlimited`, `limited_in_stock` or `sold_out` to match the
 stock reported for the same offer in the saved visit.

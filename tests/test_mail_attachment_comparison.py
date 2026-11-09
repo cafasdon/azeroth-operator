@@ -57,6 +57,7 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta,{'coverage':'loaded_inbox_attachments','message_identity':'unverified',
                         'inventory_transfers':'unverified','deliveries_or_retrievals':'unverified',
                         'before_loaded_messages':2,'after_loaded_messages':2,'before_total_messages':4,'after_total_messages':5,
+                        'before_unloaded_messages':2,'after_unloaded_messages':3,
                         'before_unknown_attachment_slots':1,'after_unknown_attachment_slots':2,
                         'observed_only_before':[{'kind':'currency','id':3,'known_quantity':1,'attachment_slots':1},
                                                 {'kind':'item','id':2,'known_quantity':1,'attachment_slots':1}],
@@ -79,7 +80,9 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                             [('currency',3),('currency',720),('item',2),('item',10),('item',720)])
                         self.assertEqual(result['after_unknown_attachment_slots'],unknown_slots)
                         self.assertTrue(all('known_quantity_delta' not in row for row in result['observed_only_before']))
-                    self.assertEqual((await compare(empty,empty))['mail_attachment_changes']['observed_only_after'],[])
+                    empty_comparison=(await compare(empty,empty))['mail_attachment_changes']
+                    self.assertEqual(empty_comparison['observed_only_after'],[])
+                    self.assertEqual(empty_comparison['after_unloaded_messages'],0)
                     self.assertNotIn('mail_attachment_changes',await compare(before,after,enabled=False))
                     for a,b,sign in [(tiny,huge,1),(huge,tiny,-1)]:
                         result=(await compare(a,b))['mail_attachment_changes']['shared_observation_changes'][0]

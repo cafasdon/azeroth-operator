@@ -3847,6 +3847,8 @@ fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
         "deliveries_or_retrievals":"unverified",
         "before_loaded_messages":before["loaded_messages"],"after_loaded_messages":after["loaded_messages"],
         "before_total_messages":before["total_messages"],"after_total_messages":after["total_messages"],
+        "before_unloaded_messages":before["total_messages"].as_u64().unwrap()-before["loaded_messages"].as_u64().unwrap(),
+        "after_unloaded_messages":after["total_messages"].as_u64().unwrap()-after["loaded_messages"].as_u64().unwrap(),
         "before_unknown_attachment_slots":old_unknown,"after_unknown_attachment_slots":new_unknown,
         "observed_only_before":only_before,"observed_only_after":only_after,"shared_observation_changes":changes})
 }
