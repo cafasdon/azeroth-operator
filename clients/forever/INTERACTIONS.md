@@ -541,6 +541,8 @@ Opt-in saved comparisons cover reported profession spell sets and player resourc
 counters. Profession ID and primary-power context must match for derived results;
 missing observations stay unknown. Spell additions/removals are reported-set
 differences, and counter changes do not prove learning, healing or resource use.
+The profession comparison also counts spells reported in both captures and
+lists up to the first 50 shared IDs in numeric order, with a truncation flag.
 [Offline evidence](../../docs/observation-comparisons-verification-2026-11-08.md).
 
 Visible local profession capture can retain stable reported known spell IDs

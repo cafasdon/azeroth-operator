@@ -2664,11 +2664,15 @@ pub fn compare_observations(
                 let old_ids=ids(old);let new_ids=ids(new);
                 let added:Vec<_>=new_ids.difference(&old_ids).copied().collect();
                 let removed:Vec<_>=old_ids.difference(&new_ids).copied().collect();
+                let shared_count = new_ids.len() - added.len();
                 json!({"profession_id":new["profession_id"],"before_reported_count":old_ids.len(),
                     "after_reported_count":new_ids.len(),"newly_reported_spell_count":added.len(),
                     "no_longer_reported_spell_count":removed.len(),
                     "newly_reported_spell_ids":added.iter().take(50).collect::<Vec<_>>(),
                     "no_longer_reported_spell_ids":removed.iter().take(50).collect::<Vec<_>>(),
+                    "shared_reported_spell_count":shared_count,
+                    "shared_reported_spell_ids":old_ids.intersection(&new_ids).take(50).collect::<Vec<_>>(),
+                    "shared_reported_truncated":shared_count>50,
                     "newly_reported_truncated":added.len()>50,"no_longer_reported_truncated":removed.len()>50,
                     "learning_verified":false,"complete_recipe_knowledge_verified":false})
             }).unwrap_or(Value::Null);

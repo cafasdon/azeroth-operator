@@ -1,5 +1,7 @@
 # Changelog
 
+- Report shared spell IDs when comparing two saved Forever observations of the same profession.
+
 - Compare saved Forever party, raid and own-player leadership flags by group category.
 
 - Show whether saved Forever trade shortfalls fit within the remaining snapshot slots and their quantity bounds.

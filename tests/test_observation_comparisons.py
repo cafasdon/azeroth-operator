@@ -50,6 +50,9 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(spells['no_longer_reported_spell_ids'], [10, 100])
                     self.assertEqual(spells['before_reported_count'], 3)
                     self.assertEqual(spells['after_reported_count'], 2)
+                    self.assertEqual(spells['shared_reported_spell_count'], 1)
+                    self.assertEqual(spells['shared_reported_spell_ids'], [2])
+                    self.assertIs(spells['shared_reported_truncated'], False)
                     self.assertFalse(spells['learning_verified'])
                     self.assertFalse(spells['complete_recipe_knowledge_verified'])
                     counters = result['player_resource_changes']
@@ -92,6 +95,13 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(bounded['no_longer_reported_spell_ids'], list(range(1, 51)))
                     self.assertTrue(bounded['newly_reported_truncated'])
                     self.assertTrue(bounded['no_longer_reported_truncated'])
+                    many_after['sections']['profession_spells']['entries'].update(
+                        many_before['sections']['profession_spells']['entries'])
+                    shared = (await compare(store.ingest(many_before), store.ingest(many_after),
+                                            profession_spell_changes=True))['profession_spell_changes']
+                    self.assertEqual(shared['shared_reported_spell_count'], 51)
+                    self.assertEqual(shared['shared_reported_spell_ids'], list(range(1, 51)))
+                    self.assertIs(shared['shared_reported_truncated'], True)
                     for mismatch in ['character', 'build', 'variant']:
                         bad = deepcopy(later)
                         if mismatch == 'character':
