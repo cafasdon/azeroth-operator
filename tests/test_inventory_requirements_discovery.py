@@ -189,6 +189,31 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     rejected=await session.call_tool('inspect_snapshot',{
                         **options,'bag_restock_stack_limits':[{'item_id':100,'maximum_stack':20}]})
                     self.assertTrue(rejected.isError)
+                    bank_stock=deepcopy(d)
+                    bank_stock['sections']['character_bank']['6']['1'].update(
+                        link='item:200:0',reported_stack_limit=10)
+                    bank_stack_options={'section':'bags',
+                        'bag_restock_requirements':[{'item_id':200,'quantity':19}],
+                        'bag_restock_use_reported_stack_limits':True}
+                    async def bank_space(snapshot,include_banks):
+                        reply=await session.call_tool('inspect_snapshot',{
+                            **bank_stack_options,'snapshot_id':store.ingest(snapshot),
+                            'bag_restock_include_bank_stack_limits':include_banks})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)['bag_restock_new_stack_space']
+                    self.assertIsNone((await bank_space(bank_stock,False))['new_stack_slots'])
+                    estimated=await bank_space(bank_stock,True)
+                    self.assertEqual(estimated['basis'],'requested_shortfall_in_new_stacks_using_reported_inventory_limits')
+                    self.assertEqual(estimated['new_stack_slots'],2)
+                    self.assertEqual(estimated['items'][0]['assumed_same_item_stack_headroom'],0)
+                    for limit in [10,11,None]:
+                        bank_stock['sections']['account_bank']={'7':{'1':{'item_id':200,'count':1,
+                            'link':'item:200:0',**({'reported_stack_limit':limit} if limit is not None else {})}}}
+                        self.assertEqual((await bank_space(bank_stock,True))['new_stack_slots'],2 if limit==10 else None)
+                    rejected=await session.call_tool('inspect_snapshot',{
+                        **bank_stack_options,'snapshot_id':d_key,'bag_restock_use_reported_stack_limits':False,
+                        'bag_restock_include_bank_stack_limits':True})
+                    self.assertTrue(rejected.isError)
                     for args in [
                         {'snapshot_id':d_key,'section':'bags','bag_restock_location_offset':0},
                         {'snapshot_id':d_key,'section':'equipment','bag_restock_requirements':requirements['items']},

@@ -3220,5 +3220,10 @@ must report the same limit. Missing or conflicting limits leave that item's
 estimate unknown. The projection assumes the limit applies to incoming
 copies, including any quoted merchant bundles. This option is exclusive
 with supplied `bag_restock_stack_limits`.
+Also set `bag_restock_include_bank_stack_limits` to include observed
+character and account bank copies in the agreement check. This can supply a
+limit for an item with no carried copies. Any recorded copy with a missing
+or different limit makes the estimate unknown. Free slots and merge
+headroom still refer to carried bags.
 Update the importer and reader before syncing captures with this field.
 [Forever item API documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ItemDocumentation.lua)

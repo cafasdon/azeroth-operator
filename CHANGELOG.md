@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally use recorded bank stack limits in saved restocking estimates.
+
 - Estimate saved restocking bag space using agreeing carried stack limits.
 
 - Estimate saved stack consolidation using agreeing captured stack limits.

@@ -182,6 +182,9 @@ struct Inspect {
     /// Estimate bag space from agreeing stack limits on recorded carried copies.
     #[serde(default)]
     bag_restock_use_reported_stack_limits: bool,
+    /// Include recorded bank copies when inferring restock stack limits.
+    #[serde(default)]
+    bag_restock_include_bank_stack_limits: bool,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
     /// Compare independent residual quotes from one to four compatible saved merchant visits.
@@ -3039,6 +3042,12 @@ impl Operator {
         } else {
             None
         };
+        if args.bag_restock_include_bank_stack_limits && !args.bag_restock_use_reported_stack_limits
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Bank stack limits require reported stack limit estimates",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -3248,12 +3257,24 @@ impl Operator {
                             "Bag restocking requires a saved Forever snapshot",
                         )]);
                     }
-                    let stack_limits = if args.bag_restock_use_reported_stack_limits {
-                        Some(azeroth_operator::analysis::reported_carried_stack_limits(
-                            &snapshot,
-                        ))
+                    use azeroth_operator::analysis::RestockStackLimitSource;
+                    let (stack_limits, limit_source) = if args.bag_restock_use_reported_stack_limits
+                    {
+                        let include_banks = args.bag_restock_include_bank_stack_limits;
+                        let source = if include_banks {
+                            RestockStackLimitSource::ReportedBagsAndBanks
+                        } else {
+                            RestockStackLimitSource::ReportedBags
+                        };
+                        (
+                            Some(azeroth_operator::analysis::reported_inventory_stack_limits(
+                                &snapshot,
+                                include_banks,
+                            )),
+                            source,
+                        )
                     } else {
-                        stack_limits
+                        (stack_limits, RestockStackLimitSource::Supplied)
                     };
                     value["bag_restock_review"] = requirements.review_observed_stock(
                         &snapshot,
@@ -3266,7 +3287,7 @@ impl Operator {
                                 &value["bag_restock_review"],
                                 limits,
                                 None,
-                                args.bag_restock_use_reported_stack_limits,
+                                limit_source,
                             ));
                     }
                     if let Some(id) = args.bag_restock_loot_snapshot_id.as_deref() {
@@ -3627,7 +3648,7 @@ impl Operator {
                                     &value["bag_restock_review"],
                                     limits,
                                     Some(&quote),
-                                    args.bag_restock_use_reported_stack_limits,
+                                    limit_source,
                                 )
                             );
                         }
