@@ -3036,3 +3036,9 @@ Restocking merchant quotes include per-item counts of sold-out,
 extended-cost, unlimited copper-only and finite copper-only offer slots.
 Finite stock quantities remain unverified, so these rows explain a quote gap
 without treating finite offers as unlimited.
+
+Set `bag_restock_loot_snapshot_id` to compare positive residual shortfalls
+with readable loot in a compatible saved capture. The report identifies the
+loot capture and shows how much might be covered if those items were acquired.
+Missing loot or no known positive residual yields an unknown or inapplicable
+review. Loot observations do not reduce the bank plan or merchant quote.

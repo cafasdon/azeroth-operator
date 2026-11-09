@@ -191,6 +191,8 @@ struct Inspect {
     bag_restock_pending_mail: bool,
     /// Use an explicitly selected compatible inbox capture for bag_restock_pending_mail.
     bag_restock_mail_snapshot_id: Option<String>,
+    /// Compare residual bag shortfalls with readable loot from a compatible saved capture.
+    bag_restock_loot_snapshot_id: Option<String>,
     /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
@@ -2849,7 +2851,8 @@ impl Operator {
             || args.bag_restock_merchant_snapshot_id.is_some()
             || args.bag_restock_source_snapshot_id.is_some()
             || args.bag_restock_catalogue_sources
-            || args.bag_restock_pending_mail)
+            || args.bag_restock_pending_mail
+            || args.bag_restock_loot_snapshot_id.is_some())
             && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
                 args.section.as_deref() != Some("bags")
@@ -3106,6 +3109,44 @@ impl Operator {
                                 limits,
                                 None,
                             ));
+                    }
+                    if let Some(id) = args.bag_restock_loot_snapshot_id.as_deref() {
+                        let result = self.store.read(id).and_then(|loot| {
+                            azeroth_operator::analysis::ensure_same_character_and_client(
+                                &snapshot, &loot,
+                            )?;
+                            let residual = bank_restock_residual(&value["bag_restock_review"]);
+                            let needs: Vec<_> = residual
+                                .as_ref()
+                                .and_then(|review| review["items"].as_array())
+                                .into_iter()
+                                .flatten()
+                                .filter_map(|row| {
+                                    Some(azeroth_operator::analysis::LootRequirement {
+                                        item_id: std::num::NonZeroU32::new(
+                                            u32::try_from(row["item_id"].as_u64()?).ok()?,
+                                        )?,
+                                        quantity: std::num::NonZeroU64::new(
+                                            row["shortfall_vs_observed"].as_u64()?,
+                                        )?,
+                                    })
+                                })
+                                .collect();
+                            if needs.is_empty() {
+                                Ok(serde_json::Value::Null)
+                            } else {
+                                azeroth_operator::analysis::review_loot_requirements(&loot, &needs)
+                            }
+                        });
+                        let Ok(mut loot) = result else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Bag restocking requires a compatible saved loot snapshot",
+                            )]);
+                        };
+                        if loot.is_object() {
+                            loot["snapshot_id"] = serde_json::json!(id);
+                        }
+                        value["bag_restock_loot_review"] = loot;
                     }
                     if args.bag_restock_pending_mail {
                         let mail_id = args.bag_restock_mail_snapshot_id.as_deref();

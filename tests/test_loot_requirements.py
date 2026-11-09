@@ -51,6 +51,23 @@ class LootRequirementTests(unittest.IsolatedAsyncioTestCase):
                         args={'snapshot_id':key,'section':'loot_window',**extra}
                         if demands is not None:args['loot_requirements']=demands
                         return await call('inspect_snapshot',**args)
+                    keys = {mode:key for mode,key,_ in cases}
+                    restock = {'snapshot_id':keys['missing'],'section':'bags',
+                        'bag_restock_requirements':[{'item_id':10,'quantity':10},{'item_id':20,'quantity':1}]}
+                    plain = await call('inspect_snapshot',**restock)
+                    for mode, readable in [('mixed',12),('empty',0),('unknown',0)]:
+                        result = await call('inspect_snapshot',**restock,bag_restock_loot_snapshot_id=keys[mode])
+                        self.assertEqual(result['bag_restock_review'],plain['bag_restock_review'])
+                        loot = result['bag_restock_loot_review']
+                        self.assertEqual(loot['snapshot_id'],keys[mode])
+                        self.assertEqual(loot['items'][0]['requested_quantity'],8)
+                        self.assertEqual(loot['items'][0]['readable_quantity'],readable)
+                        self.assertIs(loot['counts_toward_owned_inventory'],False)
+                    missing = await call('inspect_snapshot',**restock,bag_restock_loot_snapshot_id=keys['missing'])
+                    self.assertIsNone(missing['bag_restock_loot_review'])
+                    await call('inspect_snapshot',error=True,**restock,bag_restock_loot_snapshot_id=retail_key)
+                    await call('inspect_snapshot',error=True,snapshot_id=keys['missing'],section='bags',
+                               bag_restock_loot_snapshot_id=keys['mixed'])
                     for mode,key,loot in cases:
                         plain=await inspect(key)
                         self.assertNotIn('loot_requirement_review',plain)

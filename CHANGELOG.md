@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare residual Forever bag shortfalls with readable loot from a saved capture.
+
 - Explain finite, sold-out and extended-cost offers in saved Forever restocking quotes.
 
 - Show hypothetical bag space if restocking items can merge into existing carried stacks.
