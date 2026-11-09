@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Saved profession recipe-view comparisons report changes in the client-reported
+skill-up flag, count and relative difficulty for recipe IDs seen in both
+captures of the same profession. Missing observations remain null, and the
+comparison does not predict skill gains.
+
 Use `compare_snapshots` with `recipe_cooldown_changes: true` to compare bulk
 cooldown observations for shared recipe IDs in the same profession. The
 report counts all changes and shows up to 50 in numeric recipe ID order.

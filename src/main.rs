@@ -485,7 +485,7 @@ struct Compare {
     /// Compare public saved-instance descriptions; ambiguous rows never produce deltas.
     #[serde(default)]
     saved_instance_changes: bool,
-    /// Compare learning observations for shared recipes only when captured profession IDs agree.
+    /// Compare learning, reported skill-ups and difficulty for shared recipes when captured profession IDs agree.
     #[serde(default)]
     profession_recipe_changes: bool,
     /// Compare historical bulk cooldown observations for shared recipe IDs within one profession.

@@ -3834,7 +3834,8 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
     let mut result = json!({"coverage":"filtered_local_recipe_list","same_profession":same_profession,
         "before_profession_id":before["profession_id"],"after_profession_id":after["profession_id"],
         "before_observed_rows":old.len(),"after_observed_rows":new.len(),
-        "observed_only_before":null,"observed_only_after":null,"learning_observation_changes":null});
+        "observed_only_before":null,"observed_only_after":null,"learning_observation_changes":null,
+        "skill_up_observation_changes":null});
     if !same_profession {
         return result;
     }
@@ -3846,6 +3847,7 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
     let mut only_before = Vec::new();
     let mut only_after = Vec::new();
     let mut changes = Vec::new();
+    let mut skill_up_changes = Vec::new();
     for id in ids {
         match (old.get(&id.to_string()), new.get(&id.to_string())) {
             (Some(a), Some(b)) => {
@@ -3856,6 +3858,20 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
                         json!({"recipe_id":id,"before_learned":first,"after_learned":second}),
                     );
                 }
+                let fields: serde_json::Map<_, _> =
+                    ["can_skill_up", "skill_ups_reported", "relative_difficulty"]
+                        .into_iter()
+                        .filter(|field| a[*field] != b[*field])
+                        .map(|field| {
+                            (
+                                field.to_owned(),
+                                json!({"before":a[field],"after":b[field]}),
+                            )
+                        })
+                        .collect();
+                if !fields.is_empty() {
+                    skill_up_changes.push(json!({"recipe_id":id,"fields":fields}));
+                }
             }
             (Some(_), None) => only_before.push(id),
             (None, Some(_)) => only_after.push(id),
@@ -3865,6 +3881,7 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
     result["observed_only_before"] = json!(only_before);
     result["observed_only_after"] = json!(only_after);
     result["learning_observation_changes"] = json!(changes);
+    result["skill_up_observation_changes"] = json!(skill_up_changes);
     result
 }
 
