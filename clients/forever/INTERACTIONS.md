@@ -11,6 +11,9 @@ filter. Missing counts stay unknown, and reversed bounds are rejected.
 Use `quest_projected_expiry_by` when inspecting a saved quest log to find
 reported timers projected to expire by an inclusive RFC 3339 deadline.
 Projection uses the capture timestamp plus saved remaining seconds.
+Comparing a saved quest by ID shows both projected expiry timestamps and
+whether they differ when both timers are available. A countdown can change
+the reported remaining seconds while leaving projected expiry unchanged.
 Missing timers stay unknown. Current quest status requires a fresh capture.
 Deadline results include `quest_projected_expiry_by_quest_id` for the quests
 that passed every filter. The map is empty when no quest matches and null

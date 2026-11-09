@@ -44,6 +44,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             key = store.ingest(saved)
             changed=deepcopy(saved)
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
+            changed['captured_at']='2025-01-01T00:00:30Z'
+            changed['sections']['quests']['3']['timer']['remaining_seconds']=30
             changed_key=store.ingest(changed)
             retail = store.ingest(fixture())
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
@@ -144,4 +146,11 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quantities['after']['monster'],{'fulfilled':2,'required':4,'remaining':3,
                         'counted_objectives':2,'unknown_objectives':0})
                     self.assertFalse(quantities['objective_identity_verified'])
+                    reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':3})
+                    self.assertFalse(reply.isError,reply)
+                    timer=json.loads(reply.content[0].text)['quest_change']['timer_change']
+                    self.assertEqual(timer['remaining_seconds_delta'],-30)
+                    self.assertEqual(timer['before_projected_expiry_at'],'2025-01-01T00:01:00Z')
+                    self.assertEqual(timer['after_projected_expiry_at'],timer['before_projected_expiry_at'])
+                    self.assertFalse(timer['projected_expiry_changed'])
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})

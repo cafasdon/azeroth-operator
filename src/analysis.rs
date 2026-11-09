@@ -3007,10 +3007,18 @@ pub fn compare_observations(
             && (old_timer.is_some() || new_timer.is_some())
         {
             let pair = old_timer.zip(new_timer);
+            let old_expiry = old_timer.and_then(|(seconds, _)| {
+                crate::saved_resets::projected_reset_at(seconds, before.captured_at)
+            });
+            let new_expiry = new_timer.and_then(|(seconds, _)| {
+                crate::saved_resets::projected_reset_at(seconds, after.captured_at)
+            });
             comparison["quest_change"]["timer_change"] = json!({
                 "before_observed":old_timer.is_some(),"after_observed":new_timer.is_some(),
                 "remaining_seconds_delta":pair.map(|(old,new)| new.0 - old.0),
-                "total_seconds_delta":pair.map(|(old,new)| new.1 - old.1)
+                "total_seconds_delta":pair.map(|(old,new)| new.1 - old.1),
+                "before_projected_expiry_at":old_expiry,"after_projected_expiry_at":new_expiry,
+                "projected_expiry_changed":old_expiry.zip(new_expiry).map(|(old,new)| old != new)
             });
         }
         if before.client.family == crate::Family::Forever {
@@ -6884,8 +6892,7 @@ pub fn timed_quest_checklist(
         .collect();
     timed.sort_unstable_by_key(|(seconds, id, _)| (*seconds, *id));
     let entries: Vec<_> = timed.iter().take(20).map(|(seconds, id, quest)| {
-        let expiry = chrono::TimeDelta::try_seconds(*seconds)
-            .and_then(|delta| captured_at.checked_add_signed(delta));
+            let expiry = crate::saved_resets::projected_reset_at(*seconds, captured_at);
         json!({"quest_id":id,"remaining_seconds_at_capture":seconds,"projected_expiry_at":expiry,
             "readiness_at_capture":quest_readiness(quest)})
     }).collect();
