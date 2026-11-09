@@ -1,5 +1,9 @@
 # Changelog
 
+- Add passive Forever player trade-offer capture, strict local readers and MCP
+  numeric summary. Limit observation to six normal outgoing item slots, preserve
+  unknowns and keep offers separate from owned stock. No trade actions or partner data.
+
 - Add optional per-encounter improvement floors to owned-gear evaluation and
   saved-journal ranking. Filter before top selection, including partial pages;
   retain explicit threshold, units and candidate-instance exclusion accounting.

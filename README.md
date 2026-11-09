@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Forever exports now support passive inspection of the player's six normal outgoing
+trade item slots. Reports retain item quantities and explicit unknowns, with no
+counterparty details, trade actions or inventory credit.
+[Contract](docs/ADR-069-player-trade-offer-observation.md).
+
 Owned gear evaluation now supports `--minimum-encounter-improvement 0` to keep
 only sets whose simulated point estimate does not worsen any requested encounter.
 The threshold uses the selected role metric's units and reuses completed results.

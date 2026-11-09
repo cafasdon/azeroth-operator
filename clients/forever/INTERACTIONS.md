@@ -2149,3 +2149,14 @@ Partial pages require observations against baseline in every requested encounter
 Excluded counts are candidate instances, including duplicates across pages, not
 unique gear or incomplete candidates. Default is unconstrained. This adds no
 simulation runs or native/BiS proof. See docs/ADR-068-encounter-improvement-floor.md.
+
+## Player trade offer (2026-11-09)
+
+Forever manual exports can observe the player's six normal outgoing item slots
+while TradeFrame is already shown. Inspect player_trade_offer or read
+player_trade_offer_observation in character_summary. Rows contain stable numeric
+item IDs/quantities or unreadable_or_empty; that status never proves empty.
+Hidden/unavailable panels omit the section. No target offer/identity, money,
+acceptance, enchant slot or trade action is captured or invoked. Offers never
+increase owned stock or establish a completed/current trade. Offline source only;
+native testing stays deferred. See docs/ADR-069-player-trade-offer-observation.md.

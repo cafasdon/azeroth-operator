@@ -1,5 +1,64 @@
 local _, AO = ...
 AO.collectors = {}
+-- Passive manual-export observation of the player's six normal trade slots.
+-- Pinned TradeFrame.lua (9dc84f0d3bbae1768ac3405b3716000bd93eda06):
+-- normal slots 1..6, enchant slot 7; item quantity and ID are returns 3 and 8.
+AO.collectors.player_trade_offer = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Trade restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted trade observation")
+        return value
+    end
+    local function positive(value)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=1 and value<=4294967295,
+            "Invalid trade number")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Trade window unavailable")
+    local frame=public(TradeFrame)
+    assert(type(frame)=="table", "Trade window unavailable")
+    local shown=public(frame.IsShown)
+    local info=public(GetTradePlayerItemInfo)
+    assert(type(shown)=="function" and type(info)=="function", "Trade window unavailable")
+    local function fixedApis()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and rawequal(public(TradeFrame),frame) and public(frame.IsShown)==shown
+            and public(GetTradePlayerItemInfo)==info, "Trade API changed")
+    end
+    local function context()
+        fixedApis()
+        local visible=public(shown(frame))
+        assert(type(visible)=="boolean" and visible, "Trade window is not shown")
+        -- The visibility callback itself may replace the frame or API.
+        fixedApis()
+    end
+    local function read(slot)
+        fixedApis()
+        local _,_,quantity,_,_,_,_,itemID=info(slot)
+        local row={status="item",item_id=positive(itemID),quantity=positive(quantity)}
+        fixedApis()
+        return row
+    end
+    context()
+    local first={}
+    for slot=1,6 do
+        local ok,row=pcall(read,slot)
+        if ok then first[slot]=row end
+    end
+    context()
+    context()
+    local entries={}
+    for slot=1,6 do
+        local ok,row=pcall(read,slot)
+        local prior=first[slot]
+        entries[tostring(slot)]=ok and prior and prior.item_id==row.item_id
+            and prior.quantity==row.quantity and row or {status="unreadable_or_empty"}
+    end
+    context()
+    return {coverage="visible_player_trade_normal_slots",entries=entries}
+end
 -- Observe only the already-open loot panel during a manual export.
 AO.collectors.loot_window = function()
     local secret=issecretvalue

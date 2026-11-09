@@ -28,6 +28,7 @@ SECTIONS = SECTIONS | {"gossip_quests"}
 SECTIONS = SECTIONS | {"gossip_options"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
 SECTIONS = SECTIONS | {"loot_window"}
+SECTIONS = SECTIONS | {"player_trade_offer"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -827,6 +828,23 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "player_trade_offer" in sections:
+        trade=sections["player_trade_offer"]
+        if (c["family"]!="forever" or not isinstance(trade,dict)
+                or set(trade)!={"coverage","entries"}
+                or trade["coverage"]!="visible_player_trade_normal_slots"
+                or not isinstance(trade["entries"],dict)
+                or set(trade["entries"])!={str(i) for i in range(1,7)}):
+            raise ValueError("Invalid player trade coverage")
+        for row in trade["entries"].values():
+            if not isinstance(row,dict):raise ValueError("Invalid player trade slot")
+            if row.get("status")=="item":
+                if (set(row)!={"status","item_id","quantity"}
+                        or any(type(row[key]) is not int or not 1<=row[key]<=4_294_967_295
+                               for key in ('item_id','quantity'))):
+                    raise ValueError("Invalid player trade item")
+            elif row!={"status":"unreadable_or_empty"}:
+                raise ValueError("Invalid player trade slot")
     if "loot_window" in sections:
         loot=sections["loot_window"]
         if (c["family"]!="forever" or not isinstance(loot,dict)

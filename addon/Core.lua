@@ -45,6 +45,7 @@ function AO.Capture(includeWallet)
     if AO.family=="forever" then
         table.insert(sectionNames,3,"bag_item_cooldowns")
         sectionNames[#sectionNames+1]="loot_window"
+        sectionNames[#sectionNames+1]="player_trade_offer"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"

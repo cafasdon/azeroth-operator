@@ -6646,6 +6646,25 @@ pub fn summary(s: &Snapshot) -> Value {
             "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
             "current_usability_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
+    summary["player_trade_offer_observation"] = s
+        .sections
+        .get("player_trade_offer")
+        .map(|section| {
+            let rows = section["entries"].as_object().unwrap();
+            let mut quantities = BTreeMap::<u32, u64>::new();
+            let mut items = 0;
+            for row in rows.values().filter(|row| row["status"] == "item") {
+                items += 1;
+                *quantities
+                    .entry(row["item_id"].as_u64().unwrap() as u32)
+                    .or_default() += row["quantity"].as_u64().unwrap();
+            }
+            json!({"coverage":section["coverage"],"normal_slots":6,"item_slots":items,
+            "unreadable_or_empty_slots":6-items,"observed_offered_item_quantities":quantities,
+            "counts_toward_owned_inventory":false,"trade_completion_verified":false,
+            "current_offer_verified":false,"game_execution":false})
+        })
+        .unwrap_or(Value::Null);
     summary["loot_window_observation"] = s
         .sections
         .get("loot_window")

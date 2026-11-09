@@ -1992,6 +1992,41 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_trade_offer" => {
+            object(
+                value,
+                &[("coverage", "text", true), ("entries", "map", true)],
+            )?;
+            ensure!(
+                value["coverage"] == "visible_player_trade_normal_slots",
+                "Invalid player trade coverage"
+            );
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(rows.len() == 6, "Incomplete player trade slots");
+            for (slot, row) in rows {
+                index(slot, 1, 6)?;
+                match row["status"].as_str() {
+                    Some("item") => {
+                        object(
+                            row,
+                            &[
+                                ("status", "text", true),
+                                ("item_id", "positive", true),
+                                ("quantity", "positive", true),
+                            ],
+                        )?;
+                        ensure!(
+                            ["item_id", "quantity"].iter().all(|key| row[*key]
+                                .as_u64()
+                                .is_some_and(|n| (1..=u64::from(u32::MAX)).contains(&n))),
+                            "Invalid player trade item"
+                        );
+                    }
+                    Some("unreadable_or_empty") => object(row, &[("status", "text", true)])?,
+                    _ => anyhow::bail!("Invalid player trade slot"),
+                }
+            }
+        }
         "loot_window" => {
             object(
                 value,
