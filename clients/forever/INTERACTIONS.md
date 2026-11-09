@@ -1,5 +1,10 @@
 # Forever interaction map
 
+`compare_snapshots` accepts `saved_world_boss_changes: true` to compare
+reported reset durations by unique case-insensitive boss names. Duplicate
+names are ambiguous. Names seen on only one side are counted separately.
+This is a comparison of captured values, without verified lockout identity.
+
 Saved instance and world boss discovery accept `projected_reset_by` alongside
 the exact name filter. The deadline is inclusive and uses the capture time plus
 the reported duration. Negative timers are unevaluable. A match describes

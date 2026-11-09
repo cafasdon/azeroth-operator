@@ -2393,6 +2393,7 @@ pub struct ComparisonSelectors {
     pub mount_collection_changes: bool,
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
+    pub saved_world_boss_changes: bool,
     pub profession_recipe_changes: bool,
     pub recipe_cooldown_changes: bool,
     pub loot_window_changes: bool,
@@ -2654,6 +2655,18 @@ pub fn compare_observations(
             .get("toy_collection_view")
             .zip(after.sections.get("toy_collection_view"))
             .map(|(old, new)| compare_toy_views(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.saved_world_boss_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Saved world boss comparison requires Forever"
+        );
+        comparison["saved_world_boss_changes"] = before
+            .sections
+            .get("saved_world_bosses")
+            .zip(after.sections.get("saved_world_bosses"))
+            .map(|(old, new)| crate::saved_resets::compare_world_bosses(old, new))
             .unwrap_or(Value::Null);
     }
     if selectors.saved_instance_changes {

@@ -43,6 +43,10 @@ class WorldBossTests(unittest.IsolatedAsyncioTestCase):
             many['sections']['saved_world_bosses']['entries'] = {
                 str(i): {'name': 'Boss', 'reset_seconds': i} for i in range(1, 26)}
             many_key = store.ingest(many)
+            changed = copy.deepcopy(value)
+            changed['captured_at'] = '2025-01-02T00:00:00Z'
+            changed['sections']['saved_world_bosses']['entries']['1'] = {'name':'BOSS','reset_seconds':-1}
+            changed['sections']['saved_world_bosses']['entries']['2'] = {'name':'Other','reset_seconds':0}
             bad_keys = []
             mutations = [
                 lambda x: x['client'].update(family='retail'),
@@ -111,6 +115,22 @@ class WorldBossTests(unittest.IsolatedAsyncioTestCase):
                     for source in bad_keys:
                         result = await session.call_tool('inspect_snapshot', {'snapshot_id':source,'section':'saved_world_bosses'})
                         self.assertTrue(result.isError)
+                    changed_key=store.ingest(changed)
+                    async def compare(after):
+                        reply=await session.call_tool('compare_snapshots',{'before_id':key,
+                            'after_id':after,'saved_world_boss_changes':True})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)['saved_world_boss_changes']
+                    report=await compare(changed_key)
+                    self.assertEqual(report['changes'],[
+                        {'name':'BOSS','before_reset_seconds':124,'after_reset_seconds':-1}])
+                    self.assertEqual(report['observed_only_after_count'],1)
+                    self.assertFalse(report['lockout_identity_verified'])
+                    changed['sections']['saved_world_bosses']['entries']['2']['name']='Boss'
+                    ambiguous=await compare(store.ingest(changed))
+                    self.assertEqual(ambiguous['ambiguous_names'],['boss'])
+                    self.assertEqual(ambiguous['changes'],[])
+                    self.assertIsNone(await compare(newest_key))
 
 
 if __name__ == '__main__':

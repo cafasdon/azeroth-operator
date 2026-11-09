@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reported reset durations across saved Forever world boss captures.
+
 - Show projected reset timestamps in time-bounded saved Forever lockout searches.
 
 - Search saved Forever instance and world boss resets within a historical time window.

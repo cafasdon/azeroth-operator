@@ -2,6 +2,7 @@
 use anyhow::{Result, ensure};
 use chrono::{DateTime, TimeDelta, Utc};
 use serde_json::{Value, json};
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) fn projected_reset_at(
     seconds: i64,
@@ -88,6 +89,50 @@ pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) 
     result["unknown_count"] = json!(entries.len() - projected);
     result["rows"] = json!(rows);
     Ok(result)
+}
+
+pub(crate) fn compare_world_bosses(before: &Value, after: &Value) -> Value {
+    fn index(section: &Value) -> BTreeMap<String, Vec<&Value>> {
+        let mut names: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
+        for row in section["entries"].as_object().unwrap().values() {
+            names
+                .entry(row["name"].as_str().unwrap().to_lowercase())
+                .or_default()
+                .push(row);
+        }
+        names
+    }
+    let old = index(before);
+    let new = index(after);
+    let names: BTreeSet<_> = old.keys().chain(new.keys()).collect();
+    let mut changes = Vec::new();
+    let mut ambiguous = Vec::new();
+    let mut only_before = 0;
+    let mut only_after = 0;
+    for name in names {
+        match (
+            old.get(name).map(Vec::as_slice),
+            new.get(name).map(Vec::as_slice),
+        ) {
+            (Some([old]), Some([new])) => {
+                if old["reset_seconds"] != new["reset_seconds"] {
+                    changes.push(
+                        json!({"name":new["name"],"before_reset_seconds":old["reset_seconds"],
+                        "after_reset_seconds":new["reset_seconds"]}),
+                    );
+                }
+            }
+            (Some(rows), None) if rows.len() == 1 => only_before += 1,
+            (None, Some(rows)) if rows.len() == 1 => only_after += 1,
+            _ => ambiguous.push(name),
+        }
+    }
+    json!({"basis":"captured_case_insensitive_names_only","changes":changes,
+        "ambiguous_names":ambiguous,"observed_only_before_count":only_before,
+        "observed_only_after_count":only_after,
+        "before_cache_update_age_seconds":before["update_age_seconds"],
+        "after_cache_update_age_seconds":after["update_age_seconds"],
+        "lockout_identity_verified":false,"current_availability_verified":false,"live":false})
 }
 
 #[cfg(test)]
