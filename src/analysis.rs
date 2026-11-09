@@ -3823,7 +3823,7 @@ fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
     (totals, unknown)
 }
 
-fn unloaded_mail_messages(mail: &Value) -> u64 {
+pub(crate) fn unloaded_mail_messages(mail: &Value) -> u64 {
     mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
 }
 

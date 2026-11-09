@@ -1,5 +1,7 @@
 # Changelog
 
+- Show unloaded messages and unreadable slots alongside saved Forever attachment matches.
+
 - Show unloaded inbox message counts in saved Forever character summaries.
 
 - Show the number of unloaded messages on both sides of a saved Forever attachment comparison.

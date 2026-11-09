@@ -79,6 +79,8 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(match['matched_locations'],2)
                     self.assertEqual([row['attachment_slot'] for row in match['locations']],[1,3])
                     self.assertEqual(match['total_messages'],4)
+                    self.assertEqual(match['unloaded_messages'],3)
+                    self.assertEqual(match['unknown_attachment_slots'],1)
                     for minimum,expected in [(0,1),(7,1),(8,0),(2**64-1,0)]:
                         q={**query,'mail_attachment':{'kind':'item','id':720,'minimum_quantity':minimum}}
                         self.assertEqual(len((await search(**q))['snapshots']),expected)

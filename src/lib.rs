@@ -2231,8 +2231,10 @@ impl Store {
                             MailAttachmentKind::Currency=>("currency","currency_id"),
                         };
                         let mut locations=Vec::new();
+                        let mut unknown_slots=0;
                         for (message,attachments) in mail["messages"].as_object()?.iter() {
                             for (slot,row) in attachments.as_object()?.iter() {
+                                unknown_slots += usize::from(row["kind"] == "unknown");
                                 if row["kind"]==kind && row[field].as_u64()==Some(u64::from(filter.id.get())) {
                                     locations.push((message.parse::<u32>().unwrap(),slot.parse::<u32>().unwrap(),row["count"].as_u64().unwrap()));
                                 }
@@ -2244,6 +2246,8 @@ impl Store {
                         locations.sort_by_key(|(message,slot,_)| (*message,*slot));
                         Some(json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
                             "total_messages":mail["total_messages"],"kind":filter.kind,"id":filter.id,
+                            "unloaded_messages":analysis::unloaded_mail_messages(mail),
+                            "unknown_attachment_slots":unknown_slots,
                             "quantity":quantity,"matched_locations":locations.len(),"truncated":locations.len()>20,
                             "locations":locations.iter().take(20).map(|(message,slot,count)|json!({
                                 "message_slot":message,"attachment_slot":slot,"count":count})).collect::<Vec<_>>()}))
