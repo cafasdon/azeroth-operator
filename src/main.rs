@@ -58,6 +58,8 @@ struct Inspect {
     /// Project historical reset timestamps for saved_instances or saved_world_bosses; no current eligibility.
     #[serde(default, deserialize_with = "saved_reset_flag")]
     saved_reset_projection: bool,
+    /// Classify projected resets against this explicit timestamp. Requires saved_reset_projection.
+    saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Compare 1..64 distinct base-item requirements with readable saved loot; no acquisition or stock credit.
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
@@ -2031,6 +2033,11 @@ impl Operator {
                 "Pet species lookup requires pet_collection_view and ordered row bounds",
             )]);
         }
+        if args.saved_reset_reference_at.is_some() && !args.saved_reset_projection {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A reset reference time requires saved reset projection",
+            )]);
+        }
         if args.saved_reset_projection
             && !matches!(
                 args.section.as_deref(),
@@ -2773,11 +2780,14 @@ impl Operator {
                             )
                             .ok()
                         });
-                    let Some(projected) = projected else {
+                    let Some(mut projected) = projected else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Invalid saved reset projection",
                         )]);
                     };
+                    if let Some(reference) = args.saved_reset_reference_at {
+                        azeroth_operator::saved_resets::classify_at(&mut projected, reference);
+                    }
                     value["saved_reset_projection"] = projected;
                 }
                 if let Some(filter) = args.skill_line_filter.as_ref() {

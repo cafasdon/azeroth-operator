@@ -91,6 +91,29 @@ pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) 
     Ok(result)
 }
 
+/// Classify historical projections relative to a caller-supplied timestamp.
+pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
+    let classification = projection["rows"].as_array().map(|rows| {
+        let mut elapsed = Vec::new();
+        let mut upcoming = Vec::new();
+        let mut unknown = Vec::new();
+        for row in rows {
+            let bucket = match row["projected_reset_at"]
+                .as_str()
+                .and_then(|value| value.parse::<DateTime<Utc>>().ok())
+            {
+                Some(reset) if reset <= reference => &mut elapsed,
+                Some(_) => &mut upcoming,
+                None => &mut unknown,
+            };
+            bucket.push(row["slot"].clone());
+        }
+        json!({"at_or_before_slots":elapsed,"after_slots":upcoming,"unknown_slots":unknown})
+    });
+    projection["reference_at"] = json!(reference);
+    projection["relative_to_reference"] = json!(classification);
+}
+
 pub(crate) fn compare_world_bosses(before: &Value, after: &Value) -> Value {
     fn index(section: &Value) -> BTreeMap<String, Vec<&Value>> {
         let mut names: BTreeMap<String, Vec<&Value>> = BTreeMap::new();

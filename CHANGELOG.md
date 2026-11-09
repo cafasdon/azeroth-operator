@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever dungeon, raid and world boss reset projections with an explicit reference time.
+
 - Show local catalogue acquisition references in Forever producer previews.
 
 - Compare saved ingredient acquisition sources across Forever producer previews.

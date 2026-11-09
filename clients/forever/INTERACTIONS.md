@@ -2343,6 +2343,11 @@ Development addon 0.51.0-dev is packaged and verified offline, not installed.
 
 ## Historical saved reset projection (2026-11-09)
 
+With `saved_reset_projection` enabled, supply `saved_reset_reference_at` to
+classify saved instance or world boss reset slots at or before that time,
+after it, or unknown. This compares historical timestamps only. Missing
+sections return a null classification.
+
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the
 new sibling report projects capture timestamp plus nonnegative reported reset

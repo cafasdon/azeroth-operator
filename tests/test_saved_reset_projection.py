@@ -99,6 +99,14 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(projected['rows'][2]['projected_reset_at'], capture['captured_at'])
                     self.assertEqual([projected[f] for f in ['recorded_count','projected_count','unknown_count']], [3,2,1])
                     self.assertEqual(projected['cache_update_age_seconds'], 999)
+                    reference = {'saved_reset_reference_at':'2025-01-01T23:59:00Z'}
+                    relative = (await inspect(**reference))['saved_reset_projection']
+                    self.assertEqual(relative['relative_to_reference'], {
+                        'at_or_before_slots':[3],'after_slots':[1],'unknown_slots':[2]})
+                    self.assertEqual(relative['rows'],projected['rows'])
+                    self.assertIsNone((await inspect(missing_key,**reference))[
+                        'saved_reset_projection']['relative_to_reference'])
+                    await inspect(flag=False,error=True,**reference)
                     for field in ['complete_coverage_verified','current_lockout_verified',
                                   'current_availability_verified','extension_outcome_inferred','game_execution','live']:
                         self.assertIs(projected[field], False)
