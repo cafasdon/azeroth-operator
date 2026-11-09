@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever PvP rank readings when both captures report the same season ID.
+
 - Compare saved Forever spell charges, cast counts and cooldown flags for shared exact reported IDs.
 
 - Compare saved Forever spell usability readings for shared exact reported IDs.

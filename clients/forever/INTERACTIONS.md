@@ -1,5 +1,11 @@
 # Forever interaction map
 
+The saved PvP progression comparison reports a signed rank difference when
+both captures report the same season ID. It also subtracts the reported
+rank-point readings when the rank is unchanged. Different or missing season
+IDs leave this calculation unknown. The calculation leaves verified season
+continuity and points earned unconfirmed.
+
 The saved action-bar spellbook review lists observed spell slots whose
 action ID matched neither a captured base nor reported spell ID. Missing
 spellbook or action observations leave the list unknown. An unmatched slot

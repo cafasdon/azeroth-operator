@@ -2904,7 +2904,20 @@ pub fn compare_observations(
             .map(player_pvp_progression_observation);
         let season = |row: &Option<Value>| row.as_ref()?.get("reported_season_id")?.as_u64();
         let season_match = season(&before).zip(season(&after)).map(|(a, b)| a == b);
+        let observed_change = before.as_ref().zip(after.as_ref()).and_then(|(a, b)| {
+            if season_match != Some(true) {
+                return None;
+            }
+            let rank_delta = b["rank"].as_i64()? - a["rank"].as_i64()?;
+            let rank_points_delta = if rank_delta == 0 {
+                Some(b["rank_points"].as_i64()? - a["rank_points"].as_i64()?)
+            } else {
+                None
+            };
+            Some(json!({"rank_delta":rank_delta,"same_rank_reported_points_delta":rank_points_delta}))
+        });
         comparison["player_pvp_progression_changes"] = json!({"before":before,"after":after,
+            "observed_change_with_matching_season_id":observed_change,
             "reported_season_ids_match":season_match,"same_season_verified":false,"earned_points_delta":null,"live":false});
     }
     if selectors.group_context_changes {

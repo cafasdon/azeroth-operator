@@ -44,7 +44,8 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
             store=SnapshotStore(Path(folder));valid=[];bad=[]
             for row in [None,section,full,maximum,zero,overflow,planned,planned_zero,planned_max,planned_partial,planned_past,
                         {**planned,'reported_season_id':7},{**planned_past,'reported_season_id':7},
-                        {**planned_past,'reported_season_id':8}]:
+                        {**planned_past,'reported_season_id':8},
+                        {**section,'rank':4,'rank_points':0,'reported_season_id':7}]:
                 saved=deepcopy(base)
                 if row is not None:saved['sections']['player_pvp_progression']=row
                 valid.append((store.ingest(saved),row))
@@ -109,9 +110,10 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     season = await call('list_snapshots',family='forever',pvp_season_id=7,minimum_pvp_rank=3,maximum_pvp_rank=3)
                     self.assertEqual({row['snapshot_id'] for row in season['snapshots']}, {valid[11][0],valid[12][0]})
                     self.assertTrue(all(row['pvp_rank_match']['reported_season_id']==7 for row in season['snapshots']))
-                    second_page = await call('list_snapshots',family='forever',pvp_season_id=7,limit=1,offset=1)
+                    second_page = await call('list_snapshots',family='forever',pvp_season_id=7,
+                        minimum_pvp_rank=3,maximum_pvp_rank=3,limit=1,offset=1)
                     self.assertEqual([row['snapshot_id'] for row in second_page['snapshots']], [season['snapshots'][1]['snapshot_id']])
-                    for filters in [{'pvp_season_id':7,'minimum_pvp_rank':4}, {'pvp_season_id':9},
+                    for filters in [{'pvp_season_id':7,'minimum_pvp_rank':5}, {'pvp_season_id':9},
                                     {'pvp_season_id':7,'latest_per_character':True}]:
                         self.assertEqual((await call('list_snapshots',family='forever',**filters))['snapshots'],[])
                     for bad_season in [0,True,-1,1.5,'7',4294967296]:
@@ -127,9 +129,18 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(compared['same_season_verified'], False)
                         self.assertIs(compared['live'], False)
                         self.assertIsNone(compared['reported_season_ids_match'])
+                        self.assertIsNone(compared['observed_change_with_matching_season_id'])
                     for index, expected in [(12,True),(13,False)]:
                         compared = (await call('compare_snapshots',before_id=valid[11][0],after_id=valid[index][0],**{selector:True}))[selector]
                         self.assertIs(compared['reported_season_ids_match'],expected)
+                        self.assertIsNone(compared['earned_points_delta'])
+                        self.assertEqual(compared['observed_change_with_matching_season_id'],
+                            {'rank_delta':0,'same_rank_reported_points_delta':290} if expected else None)
+                    for first, second, delta, points in [(12,11,0,-290),(11,14,1,None),(14,11,-1,None),(11,11,0,0)]:
+                        compared = (await call('compare_snapshots',before_id=valid[first][0],
+                            after_id=valid[second][0],**{selector:True}))[selector]
+                        self.assertEqual(compared['observed_change_with_matching_season_id'],
+                            {'rank_delta':delta,'same_rank_reported_points_delta':points})
                         self.assertIsNone(compared['earned_points_delta'])
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='player_pvp_progression')
             self.assertEqual(before,{p.name:p.read_bytes() for p in Path(folder).glob('*.json')})
