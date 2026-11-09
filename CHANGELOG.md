@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise saved stock coverage for user-supplied Forever quest item checklists.
+
 - Recheck saved Forever quest item requirements against a compatible newer inventory capture.
 
 - Quote saved merchant prices for user-supplied Forever quest item shortfalls.

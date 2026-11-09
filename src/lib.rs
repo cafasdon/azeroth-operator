@@ -842,7 +842,15 @@ impl InventoryRequirementsFilter {
             json!({"item_id":row.item_id,"required_quantity":required,"observed_quantity":observed,
                 "shortfall_vs_observed":observed.map(|count| required.saturating_sub(count))})
         }).collect();
+        let short_item_count = quantities.as_ref().map(|_| {
+            items
+                .iter()
+                .filter(|row| row["shortfall_vs_observed"].as_u64().is_some_and(|n| n > 0))
+                .count()
+        });
         json!({"storage":self.storage,"items":items,"storage_observed":quantities.is_some(),
+            "short_item_count":short_item_count,
+            "all_requirements_covered_by_observed_quantities":short_item_count.map(|count| count == 0),
             "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false})
     }
 

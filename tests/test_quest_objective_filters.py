@@ -125,6 +125,12 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         {'item_id':118,'required_quantity':5,'observed_quantity':3,'shortfall_vs_observed':2},
                         {'item_id':858,'required_quantity':1,'observed_quantity':0,'shortfall_vs_observed':1}])
                     self.assertIs(reviewed['quest_item_binding_verified'],False)
+                    self.assertEqual(reviewed['short_item_count'],2)
+                    self.assertIs(reviewed['all_requirements_covered_by_observed_quantities'],False)
+                    covered=(await query(quest_id=3,quest_inventory_requirements={
+                        'storage':'bags','items':[{'item_id':118,'quantity':3}]}))['quest_inventory_review']
+                    self.assertEqual(covered['short_item_count'],0)
+                    self.assertIs(covered['all_requirements_covered_by_observed_quantities'],True)
                     quote=(await query(quest_id=3,quest_inventory_requirements=requirements,
                         quest_inventory_merchant_snapshot_id=merchant_key))['quest_inventory_merchant_quote']
                     self.assertEqual(quote['merchant_snapshot_id'],merchant_key)
@@ -146,6 +152,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     bank=(await query(quest_id=3,quest_inventory_requirements={
                         **requirements,'storage':'character_bank'}))['quest_inventory_review']
                     self.assertIs(bank['storage_observed'],False)
+                    self.assertIsNone(bank['short_item_count'])
+                    self.assertIsNone(bank['all_requirements_covered_by_observed_quantities'])
                     self.assertIsNone(bank['items'][0]['shortfall_vs_observed'])
                     self.assertIsNone((await query(quest_id=999,quest_inventory_requirements=requirements))[
                         'quest_inventory_review'])
