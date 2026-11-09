@@ -60,5 +60,8 @@ Set `stack_group_storage` to `character_bank` or `account_bank` to review
 that saved Forever bank instead of carried bags. Each report uses only
 the selected storage. Bank locations use container and slot numbers.
 Absent storage returns null, including a bank that was unavailable at capture.
+Set `stack_group_offset` to page through groups in numeric location order
+in batches of 20. `has_more_groups` reports whether another page follows.
+Group counts and capacity totals still cover the whole selected storage.
 
 Review evidence: Jev1.14.0 advisory returned insufficient_evidence (probability0.89, confidence0.83), request b3ad4cbdedd82530f21d67d1c5fc58019053ecc850b9c01c6aa9c13a03ccb37f, 767 input/116 output tokens,0.321s. This is not a review pass or native verification. Required adversarial-review instruction file was unavailable at its configured path. Direct source review confirms two bounded writes and observation-only completion; native assumptions remain explicitly unqualified.

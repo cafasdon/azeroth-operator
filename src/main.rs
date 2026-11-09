@@ -858,6 +858,8 @@ struct FindItem {
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
     /// Scope the stack review to bags, character_bank, or account_bank. Banks require Forever.
     stack_group_storage: Option<azeroth_operator::InventoryStorage>,
+    /// Skip this many stack groups, independently of item location paging.
+    stack_group_offset: Option<usize>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1291,7 +1293,9 @@ impl Operator {
             let additional = args.additional_snapshot_ids.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
             anyhow::ensure!(
-                (args.assumed_max_stack_size.is_none() && args.stack_group_storage.is_none())
+                (args.assumed_max_stack_size.is_none()
+                    && args.stack_group_storage.is_none()
+                    && args.stack_group_offset.is_none())
                     || args.bag_stack_groups,
                 "Stack review options require bag stack groups"
             );
@@ -1324,7 +1328,8 @@ impl Operator {
                             snapshot,
                             args.item_id.get(),
                             args.assumed_max_stack_size,
-                            args.stack_group_storage
+                            args.stack_group_storage,
+                            args.stack_group_offset
                         ));
                 }
                 Ok::<_, anyhow::Error>(found)

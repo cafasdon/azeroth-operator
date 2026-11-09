@@ -97,6 +97,18 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         'estimated_group_count':21,'inconsistent_group_count':1,
                         'maximum_slots_freed_across_estimated_groups':21,
                         'maximum_disjoint_whole_stack_pairs_across_estimated_groups':21})
+                    for offset, count, more in [(0,20,True),(20,2,False),(22,0,False)]:
+                        page = await session.call_tool('find_snapshot_item', {
+                            'snapshot_id':store.ingest(many),'item_id':1,'bag_stack_groups':True,
+                            'assumed_max_stack_size':2,'stack_group_offset':offset})
+                        self.assertFalse(page.isError,page)
+                        data = json.loads(page.content[0].text)['bag_stack_groups']
+                        self.assertEqual((data['group_offset'],len(data['groups']),data['has_more_groups']),
+                                         (offset,count,more))
+                        self.assertEqual(data['capacity_projection_summary'],groups['capacity_projection_summary'])
+                        if offset == 20:
+                            self.assertEqual(data['groups'][0]['locations'][0]['slot'],41)
+                            self.assertEqual(data['groups'][0]['capacity_projection']['whole_stack_pair_examples'][0]['combined_count'],2)
                     refused = await session.call_tool('find_snapshot_item', {
                         'snapshot_id':store.ingest(stacks),'item_id':1,'assumed_max_stack_size':10})
                     self.assertTrue(refused.isError)

@@ -1,5 +1,7 @@
 # Changelog
 
+- Page through saved stack groups independently of item locations.
+
 - Review identical saved stacks separately in Forever character or account banks.
 
 - Show saved bag locations for hypothetical disjoint whole-stack pairs.

@@ -2561,6 +2561,7 @@ pub fn observed_bag_stack_groups(
     item_id: u32,
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
     storage: Option<crate::InventoryStorage>,
+    group_offset: Option<usize>,
 ) -> Option<Value> {
     let section = storage
         .unwrap_or(crate::InventoryStorage::Bags)
@@ -2605,7 +2606,12 @@ pub fn observed_bag_stack_groups(
             json!({"container":container,"slot":slot,"count":count})
         }
     };
-    for rows in &groups {
+    let offset = group_offset.unwrap_or(0);
+    for (index, rows) in groups.iter().enumerate() {
+        let visible = index >= offset && index - offset < 20;
+        if !visible && maximum.is_none() {
+            continue;
+        }
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
         let minimum = maximum
             .filter(|maximum| rows.iter().all(|row| row.2 <= *maximum))
@@ -2620,7 +2626,7 @@ pub fn observed_bag_stack_groups(
             while low < high {
                 let combined = by_count[low].2 + by_count[high].2;
                 if combined <= maximum {
-                    if shown.len() < 20 && pair_examples.len() < 5 {
+                    if visible && pair_examples.len() < 5 {
                         pair_examples.push(json!({"stacks":[stack_location(by_count[low]),
                             stack_location(by_count[high])],"combined_count":combined}));
                     }
@@ -2636,7 +2642,7 @@ pub fn observed_bag_stack_groups(
             estimated_groups += 1;
             maximum_slots_freed += freed;
         }
-        if shown.len() == 20 {
+        if !visible {
             continue;
         }
         let locations: Vec<_> = rows.iter().take(10).copied().map(stack_location).collect();
@@ -2657,6 +2663,10 @@ pub fn observed_bag_stack_groups(
         "stack_compatibility_verified":false,"game_execution":false});
     if storage.is_some() {
         report["storage"] = json!(section);
+    }
+    if group_offset.is_some() {
+        report["group_offset"] = json!(offset);
+        report["has_more_groups"] = json!(groups.len().saturating_sub(offset) > shown.len());
     }
     if let Some(maximum) = maximum {
         report["assumed_max_stack_size"] = json!(maximum);
