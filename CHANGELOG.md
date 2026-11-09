@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate general bag space for saved Forever restocking using supplied stack limits.
+
 - Allow saved Forever bag restocking to reference a separate compatible inbox capture.
 
 - Show pending item attachments alongside residual Forever bag restocking shortfalls.

@@ -56,6 +56,13 @@ struct ResolveCharacter {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct RestockStackLimit {
+    item_id: std::num::NonZeroU32,
+    maximum_stack: std::num::NonZeroU32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
@@ -170,6 +177,8 @@ struct Inspect {
     bag_restock_requirements: Option<Vec<azeroth_operator::InventoryRequirement>>,
     /// Page observed bank source locations for bag_restock_requirements.
     bag_restock_location_offset: Option<usize>,
+    /// Estimate general bag slots for requested shortfalls using supplied stack limits.
+    bag_restock_stack_limits: Option<Vec<RestockStackLimit>>,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
     /// Look up captured item source references for the residual bag shortfall.
@@ -2852,6 +2861,30 @@ impl Operator {
                 "Bag restocking requires the bags section and one to 64 distinct positive item requirements",
             )]);
         }
+        let stack_limits = if let Some(limits) = &args.bag_restock_stack_limits {
+            let index: std::collections::BTreeMap<_, _> = limits
+                .iter()
+                .map(|row| (row.item_id.get(), row.maximum_stack))
+                .collect();
+            if limits.is_empty()
+                || index.len() != limits.len()
+                || !bag_restock.as_ref().is_some_and(|requirements| {
+                    index.keys().all(|id| {
+                        requirements
+                            .items
+                            .iter()
+                            .any(|row| row.item_id.get() == *id)
+                    })
+                })
+            {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Restock stack limits require distinct requested item IDs",
+                )]);
+            }
+            Some(index)
+        } else {
+            None
+        };
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -3065,6 +3098,14 @@ impl Operator {
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
+                    if let Some(limits) = &stack_limits {
+                        value["bag_restock_new_stack_space"] =
+                            serde_json::json!(azeroth_operator::analysis::restock_new_stack_space(
+                                &snapshot,
+                                &value["bag_restock_review"],
+                                limits,
+                            ));
+                    }
                     if args.bag_restock_pending_mail {
                         let mail_id = args.bag_restock_mail_snapshot_id.as_deref();
                         let mail_snapshot = if let Some(id) = mail_id {

@@ -3011,3 +3011,9 @@ With pending mail enabled, set `bag_restock_mail_snapshot_id` to use a
 separate saved inbox for the same character and exact client. The response
 identifies the inbox capture and timestamp. Inventory, bank quantities, and
 merchant affordability still use their original captures.
+
+Supply `bag_restock_stack_limits` as distinct `{item_id, maximum_stack}`
+rows to estimate new stacks for the requested bag shortfall. The estimate
+compares only observed general-purpose free slots. It excludes merging into
+existing stacks, specialty bag fit and merchant bundle surplus. Missing
+limits or bag capacity leave the relevant totals or comparison unknown.

@@ -32,7 +32,10 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             c['sections']['professions']={'1':{'name':'Synthetic','rank':300,'max_rank':300,'skill_line':164}}
             shared={'7':{'1':{'item_id':100,'count':10},'2':{'item_id':200,'count':5}}}
             c['sections']['account_bank']=deepcopy(shared); c_key=store.ingest(c)
-            d=sample('D',4,[(100,10)]); d['sections']['character_bank']={'6':{'1':{'item_id':200,'count':5}}}; d_key=store.ingest(d)
+            d=sample('D',4,[(100,10)]); d['sections']['character_bank']={'6':{'1':{'item_id':200,'count':5}}}; d['sections']['bag_capacity']={
+                '0':{'total_slots':16,'free_slots':2,'family_mask':0},
+                '1':{'total_slots':8,'free_slots':8,'family_mask':32},
+                **{str(i):{'total_slots':0,'free_slots':0} for i in range(2,5)}}; d_key=store.ingest(d)
             e_old=store.ingest(sample('E',1,complete)); store.ingest(sample('E',5,[(100,10)]))
             f_old=store.ingest(sample('F',2,complete)); f_missing=store.ingest(sample('F',6))
             g=sample('G',7,[]); g['sections']['equipment']={'11':{'item_id':100},'12':{'item_id':200}}; g_key=store.ingest(g)
@@ -113,6 +116,24 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(page['rows'],plan['rows'])
                     self.assertEqual(page['suggested_locations']['locations'],[])
                     self.assertIsNone((await inspect_restock(f_missing))['bank_withdrawal_plan'])
+                    async def space(key, limits):
+                        reply = await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':'bags','bag_restock_requirements':requirements['items'],
+                            'bag_restock_stack_limits':limits})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)['bag_restock_new_stack_space']
+
+                    for limit,slots,fits in [(2,3,False),(3,2,True)]:
+                        estimate = await space(d_key,[{'item_id':200,'maximum_stack':limit}])
+                        self.assertEqual(estimate['new_stack_slots'],slots)
+                        self.assertEqual(estimate['observed_general_free_slots'],2)
+                        self.assertIs(estimate['fits_observed_general_slots_under_assumptions'],fits)
+                        self.assertIs(estimate['placement_verified'],False)
+                    unknown = await space(d_key,[{'item_id':100,'maximum_stack':1}])
+                    self.assertIsNone(unknown['new_stack_slots'])
+                    self.assertIsNone((await space(h_key,[{'item_id':200,'maximum_stack':3}]))[
+                        'observed_general_free_slots'])
+                    self.assertIsNone(await space(f_missing,[{'item_id':200,'maximum_stack':3}]))
                     for args in [
                         {'snapshot_id':d_key,'section':'bags','bag_restock_location_offset':0},
                         {'snapshot_id':d_key,'section':'equipment','bag_restock_requirements':requirements['items']},

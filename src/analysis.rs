@@ -2698,6 +2698,41 @@ fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Val
     Ok(json!({"item_id":item_id,"by_storage":by_storage,"net_delta":net_delta}))
 }
 
+pub fn restock_new_stack_space(
+    snapshot: &Snapshot,
+    review: &Value,
+    stack_limits: &BTreeMap<u32, std::num::NonZeroU32>,
+) -> Option<Value> {
+    if review["storage_observed"] != true {
+        return None;
+    }
+    let mut total = Some(0u64);
+    let mut items = Vec::new();
+    for row in review["items"].as_array()? {
+        let shortfall = row["shortfall_vs_observed"].as_u64()?;
+        if shortfall == 0 {
+            continue;
+        }
+        let item_id = u32::try_from(row["item_id"].as_u64()?).ok()?;
+        let limit = stack_limits.get(&item_id).copied();
+        let slots = limit.map(|limit| shortfall.div_ceil(u64::from(limit.get())));
+        total = total
+            .zip(slots)
+            .and_then(|(sum, slots)| sum.checked_add(slots));
+        items.push(json!({"item_id":item_id,"bag_shortfall":shortfall,
+            "assumed_stack_limit":limit,"new_stack_slots":slots}));
+    }
+    let general_free =
+        carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
+    Some(json!({
+        "basis":"requested_shortfall_in_new_stacks_using_supplied_limits",
+        "items":items,"new_stack_slots":total,"observed_general_free_slots":general_free,
+        "fits_observed_general_slots_under_assumptions":total.zip(general_free)
+            .map(|(needed, free)| needed <= free),
+        "stack_limits_verified":false,"placement_verified":false,"live":false,
+    }))
+}
+
 pub(crate) fn carried_bag_space(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bag_capacity")?.as_object()?;
     let mut total = 0;
