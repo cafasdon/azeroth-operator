@@ -1,5 +1,9 @@
 # Changelog
 
+- Compare saved readable loot with up to 64 distinct base-item requirements,
+  preserving unknown slots and conditional coverage without inventory credit,
+  current lootability or acquisition actions.
+
 - Search and inspect saved spellbook resources with shared same-row charge/cast-
   count ranges and cooldown flags, including resource-only capture discovery,
   explicit unknown counters and unchanged legacy ID-query projections.

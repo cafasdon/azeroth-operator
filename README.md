@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Loot inspection can compare readable displayed items against an explicit reagent
+or shopping list. It reports coverage and hypothetical remaining needs if those
+items are acquired, without granting owned stock or assuming loot rights.
+[Offline evidence](docs/loot-requirements-verification-2026-11-09.md).
+
 Saved spellbook searches can now combine charge/cast-count ranges and cooldown
 flags, or discover matching resource observations without a spell ID. Inspection
 uses the same predicates and keeps unknown values separate from zero/false.

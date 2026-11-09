@@ -45,6 +45,8 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Compare 1..64 distinct base-item requirements with readable saved loot; no acquisition or stock credit.
+    loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
@@ -1647,6 +1649,15 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if let Some(requirements) = args.loot_requirements.as_ref() {
+            if args.section.as_deref() != Some("loot_window")
+                || azeroth_operator::analysis::validate_loot_requirements(requirements).is_err()
+            {
+                return CallToolResult::error(vec![ContentBlock::text(
+                    "Loot requirements need the loot_window section and one to 64 distinct positive item IDs and quantities",
+                )]);
+            }
+        }
         if args.buyback_wallet_reserve_copper.is_some() && args.buyback_slots.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Buyback reserve requires selected buyback slots",
@@ -2135,6 +2146,22 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(requirements) = args.loot_requirements.as_ref() {
+                    let reviewed = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                        azeroth_operator::analysis::review_loot_requirements(
+                            &snapshot,
+                            requirements,
+                        )
+                    });
+                    match reviewed {
+                        Ok(review) => value["loot_requirement_review"] = review,
+                        Err(_) => {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Loot requirement review needs a valid owned Forever capture",
+                            )]);
+                        }
+                    }
+                }
                 if review_trainer && value["client"]["family"] != "forever" {
                     return CallToolResult::error(vec![ContentBlock::text(
                         "Trainer review requires a saved Forever snapshot",

@@ -7,6 +7,11 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: saved loot observations now support conditional comparison
+with explicit item requirements, beyond inspection/summary. [Offline evidence](loot-requirements-verification-2026-11-09.md).
+Unreadable quantities, actual pickup rights/availability and native qualification
+remain unknown; displayed loot is never credited as owned stock.
+
 9 November update: spell resources now support saved-capture discovery and
 same-row inspection filtering, closing the preceding capture-to-search gap.
 [Offline evidence](spell-resource-search-verification-2026-11-09.md). Current

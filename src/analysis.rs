@@ -1557,6 +1557,87 @@ pub fn combine_recipe_outputs<'a>(reviews: impl Iterator<Item = &'a Value>) -> V
     json!({"items":items,"recipes_without_observed_output_item":recipes_without_observed_output_item})
 }
 
+#[derive(serde::Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct LootRequirement {
+    pub item_id: std::num::NonZeroU32,
+    pub quantity: std::num::NonZeroU64,
+}
+
+pub fn validate_loot_requirements(requirements: &[LootRequirement]) -> Result<()> {
+    ensure!(
+        (1..=64).contains(&requirements.len()),
+        "Expected one to 64 loot requirements"
+    );
+    let ids: BTreeSet<_> = requirements.iter().map(|row| row.item_id).collect();
+    ensure!(
+        ids.len() == requirements.len(),
+        "Duplicate loot requirement item ID"
+    );
+    Ok(())
+}
+
+/// Conditional comparison against readable displayed rows, never inventory credit.
+pub fn review_loot_requirements(
+    snapshot: &Snapshot,
+    requirements: &[LootRequirement],
+) -> Result<Value> {
+    validate_loot_requirements(requirements)?;
+    ensure!(
+        snapshot.client.family == crate::Family::Forever,
+        "Expected a Forever loot capture"
+    );
+    let Some(section) = snapshot.sections.get("loot_window") else {
+        return Ok(Value::Null);
+    };
+    let entries = section["entries"]
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Loot rows unavailable"))?;
+    let unknown = entries
+        .values()
+        .filter(|row| row["status"] != "item")
+        .count();
+    let mut all_covered = true;
+    let mut rows = Vec::new();
+    for requirement in requirements {
+        let item_id = requirement.item_id.get();
+        let requested = requirement.quantity.get();
+        let mut matching: Vec<_> = entries
+            .iter()
+            .filter(|(_, row)| {
+                row["status"] == "item" && row["item_id"].as_u64() == Some(u64::from(item_id))
+            })
+            .map(|(slot, row)| {
+                Ok((
+                    slot.parse::<u32>()?,
+                    row["quantity"]
+                        .as_u64()
+                        .ok_or_else(|| anyhow::anyhow!("Loot quantity unavailable"))?,
+                ))
+            })
+            .collect::<Result<_>>()?;
+        matching.sort_unstable_by_key(|(slot, _)| *slot);
+        let readable = matching.iter().try_fold(0u64, |sum, (_, quantity)| {
+            sum.checked_add(*quantity)
+                .ok_or_else(|| anyhow::anyhow!("Loot quantity overflow"))
+        })?;
+        all_covered &= readable >= requested;
+        rows.push(json!({"item_id":item_id,"requested_quantity":requested,"readable_quantity":readable,
+            "matching_slots":matching.iter().map(|(slot,quantity)|json!({"slot":slot,"quantity":quantity})).collect::<Vec<_>>(),
+            "covered_quantity_if_readable_items_acquired":readable.min(requested),
+            "remaining_request_if_readable_items_acquired":requested.saturating_sub(readable),
+            "readable_slots_cover_request":readable >= requested}));
+    }
+    Ok(
+        json!({"basis":"captured_readable_loot_rows_only","grouping":"base_item_id_only",
+        "captured_at":snapshot.captured_at,"slot_count":section["slot_count"],
+        "unreadable_or_non_item_slots":unknown,"additional_matching_quantities_unknown":unknown > 0,
+        "all_requests_covered_by_readable_slots":all_covered,"items":rows,
+        "counts_toward_owned_inventory":false,"ownership_verified":false,"lootability_verified":false,
+        "game_execution":false,"live":false}),
+    )
+}
+
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),

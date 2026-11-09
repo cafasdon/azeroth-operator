@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Loot requirement review compares captured readable base-item quantities with an
+explicit shopping/reagent list. Unknown slots stay explicit; coverage and remaining
+needs are conditional on acquiring known displayed items, without pickup rights
+or owned-stock credit. All acquisition remains with the player.
+[Evidence](../../docs/loot-requirements-verification-2026-11-09.md).
+
 Spell-resource discovery now filters captured current-charge/cast-count ranges
 and cooldown enabled/active flags on the same row as spell identity/metadata.
 Inspection shares the predicates; unknown versus zero/false remains explicit.

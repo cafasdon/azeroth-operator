@@ -1,5 +1,29 @@
 # Forever
 
+`inspect_snapshot` with `section: loot_window` accepts optional `loot_requirements`,
+a list of one to 64 distinct `{item_id, quantity}` objects. IDs are positive u32;
+quantities are positive u64 so large reagent demands remain representable.
+Duplicate IDs, unknown fields, zero/fractional/Boolean/out-of-range values and
+wrong sections reject. Omitted/null requirements preserve existing inspection.
+
+`loot_requirement_review.items` preserves request order and lists matching slots
+in numeric order, summing readable quantities by base item ID only. It reports
+`readable_quantity`, `covered_quantity_if_readable_items_acquired`,
+`remaining_request_if_readable_items_acquired` and `readable_slots_cover_request`.
+These are hypothetical calculations using readable rows alone; they do not verify
+specific item variants, pickup rights or current availability. A false readable-
+coverage flag means known rows are insufficient, not that other loot cannot exist.
+
+The review retains the capture time and unreadable/non-item slot count; when such
+slots exist, `additional_matching_quantities_unknown` is true. It does not invent
+their IDs/quantities or claim a full-window item total. A missing loot section
+returns null review, distinct from an observed empty window with zero readable
+items. Ownership, lootability and execution flags remain false. Item searches,
+recipe stock and owned-gear searches receive no credit until separate inventory
+evidence actually observes the items. No loot action, new capture or external
+lookup is performed.
+[Offline evidence](../../docs/loot-requirements-verification-2026-11-09.md).
+
 `list_snapshots.spellbook_spell.resources` and
 `inspect_snapshot.spellbook_resource_filter` share six predicates:
 `minimum_charges`, `maximum_charges`, `minimum_reported_cast_count`,
