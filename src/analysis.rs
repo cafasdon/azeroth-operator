@@ -2822,6 +2822,7 @@ pub struct ComparisonSelectors {
     pub player_resource_changes: bool,
     pub player_aura_changes: bool,
     pub weapon_enchant_changes: bool,
+    pub merchant_buyback_changes: bool,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
@@ -3222,6 +3223,13 @@ pub fn compare_observations(
             "Weapon enchant comparison requires Forever"
         );
         comparison["weapon_enchant_changes"] = compare_weapon_enchants(before, after);
+    }
+    if selectors.merchant_buyback_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Merchant buyback comparison requires Forever"
+        );
+        comparison["merchant_buyback_changes"] = compare_merchant_buyback(before, after);
     }
     if selectors.selected_recipe_changes {
         ensure!(
@@ -4454,6 +4462,26 @@ fn compare_reported_spell_readings<T: Ord>(
             })
             .collect(),
     )
+}
+
+fn compare_merchant_buyback(before: &Snapshot, after: &Snapshot) -> Value {
+    let rows = |snapshot: &Snapshot| {
+        let entries = snapshot.sections.get("merchant_buyback")?["entries"].as_object()?;
+        let mut rows: Vec<_> = entries.values().cloned().collect();
+        rows.sort_unstable_by_key(|row| {
+            (
+                row["item_id"].as_u64(),
+                row["count"].as_u64(),
+                row["buyback_price_copper"].as_u64(),
+            )
+        });
+        Some(rows)
+    };
+    let old = rows(before);
+    let new = rows(after);
+    let changed = old.as_ref().zip(new.as_ref()).map(|(a, b)| a != b);
+    json!({"before_entries":old,"after_entries":new,"observed_entries_changed":changed,
+        "transactions_verified":false,"included_in_owned_inventory":false,"live":false})
 }
 
 fn compare_weapon_enchants(before: &Snapshot, after: &Snapshot) -> Value {

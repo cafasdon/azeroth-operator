@@ -109,6 +109,21 @@ class MerchantBuybackTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await search(4549,minimum_remaining_wallet_copper=6),[])
                     self.assertEqual(await search(118,minimum_remaining_wallet_copper=0),[])
                     self.assertEqual(await search(4549,minimum_remaining_wallet_copper=5,maximum_price_copper=9),[])
+                    reordered = deepcopy(funded)
+                    reordered['sections']['merchant_buyback']['entries'] = {
+                        '1':cases[1]['2'], '2':cases[1]['1']}
+                    async def compare(after):
+                        return (await call('compare_snapshots',before_id=valid[1][0],after_id=after,
+                            merchant_buyback_changes=True))['merchant_buyback_changes']
+                    unchanged = await compare(store.ingest(reordered))
+                    self.assertFalse(unchanged['observed_entries_changed'])
+                    self.assertEqual(unchanged['before_entries'],unchanged['after_entries'])
+                    self.assertFalse(unchanged['transactions_verified'])
+                    self.assertTrue((await compare(valid[4][0]))['observed_entries_changed'])
+                    self.assertEqual((await compare(valid[2][0]))['after_entries'],[])
+                    missing = await compare(valid[0][0])
+                    self.assertIsNone(missing['after_entries'])
+                    self.assertIsNone(missing['observed_entries_changed'])
                     for key, rows in valid:
                         summary = (await call('character_summary', snapshot_id=key))['merchant_buyback_observations']
                         if rows is None:

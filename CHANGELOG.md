@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever merchant buyback entries independently of slot order.
+
 - Find saved Forever buyback quotes that fit the captured wallet after reserving copper.
 
 - Search saved Forever buyback entries by item, quantity and whole-entry price.

@@ -8,6 +8,10 @@ Results leave ownership and current buyback eligibility unverified.
 Set `minimum_remaining_wallet_copper` to require that an individual quote
 fits the wallet captured in the same save and leaves that much copper.
 Zero still requires a known wallet and price. Entries are checked separately.
+Use `compare_snapshots.merchant_buyback_changes` to compare saved lists
+by item ID, quantity and whole-entry price, ignoring slot order and
+retaining duplicate entries. Missing lists remain unknown and observed
+empty lists stay empty. Differences leave transactions unverified.
 
 Use `list_snapshots.required_sections` to find captures containing all
 named sections together. Observed empty sections count as present.

@@ -563,6 +563,9 @@ struct Compare {
     /// Compare saved Forever weapon enchant readings by hand.
     #[serde(default)]
     weapon_enchant_changes: bool,
+    /// Compare saved Forever buyback entries without attributing transactions.
+    #[serde(default)]
+    merchant_buyback_changes: bool,
     /// Restrict the saved aura comparison to this exact spell ID.
     player_aura_spell_id: Option<std::num::NonZeroU32>,
     /// Compare reported group categories across two saved Forever captures.
@@ -1914,6 +1917,7 @@ impl Operator {
                     player_resource_changes: args.player_resource_changes,
                     player_aura_changes: args.player_aura_changes,
                     weapon_enchant_changes: args.weapon_enchant_changes,
+                    merchant_buyback_changes: args.merchant_buyback_changes,
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
