@@ -1,5 +1,7 @@
 # Changelog
 
+- Search saved Forever buyback entries by item, quantity and whole-entry price.
+
 - Scope saved snapshot search and coverage totals to an exact client build and variant.
 
 - Verify merchant, trainer, flight and dialogue search through the packaged Forever fixture.

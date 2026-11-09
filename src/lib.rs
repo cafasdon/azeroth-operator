@@ -1493,6 +1493,44 @@ pub struct WeaponEnchantFilter {
     maximum_remaining_milliseconds: Option<u32>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MerchantBuybackFilter {
+    item_id: std::num::NonZeroU32,
+    minimum_quantity: Option<std::num::NonZeroU32>,
+    maximum_price_copper: Option<u64>,
+}
+
+impl MerchantBuybackFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        let mut matches: BTreeMap<u32, &Value> = BTreeMap::new();
+        for (slot, row) in section["entries"].as_object()? {
+            if row["item_id"].as_u64() == Some(u64::from(self.item_id.get()))
+                && self.minimum_quantity.is_none_or(|min| {
+                    row["count"]
+                        .as_u64()
+                        .is_some_and(|n| n >= u64::from(min.get()))
+                })
+                && self.maximum_price_copper.is_none_or(|max| {
+                    row["buyback_price_copper"]
+                        .as_u64()
+                        .is_some_and(|n| n <= max)
+                })
+            {
+                matches.insert(slot.parse().ok()?, row);
+            }
+        }
+        (!matches.is_empty()).then(|| {
+            let rows: Vec<_> = matches
+                .into_iter()
+                .map(|(slot, row)| json!({"slot":slot,"observation":row}))
+                .collect();
+            json!({"matches":rows,"included_in_owned_inventory":false,
+                "buyback_eligibility_verified":false,"live":false})
+        })
+    }
+}
+
 #[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum WeaponEnchantType {
@@ -1691,6 +1729,7 @@ pub struct CaptureFilters<'a> {
     pub player_resource: Option<PlayerResourceFilter>,
     pub player_aura: Option<PlayerAuraFilter>,
     pub weapon_enchant: Option<WeaponEnchantFilter>,
+    pub merchant_buyback: Option<MerchantBuybackFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1913,6 +1952,7 @@ impl Store {
             player_resource,
             player_aura,
             weapon_enchant,
+            merchant_buyback,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -2094,6 +2134,15 @@ impl Store {
                 .and_then(|filter| filter.minimum_charges.zip(filter.maximum_charges))
                 .is_none_or(|(min, max)| min <= max),
             "Invalid weapon enchant charge range"
+        );
+        ensure!(
+            merchant_buyback.as_ref().is_none_or(|filter| {
+                family == Family::Forever
+                    && filter
+                        .maximum_price_copper
+                        .is_none_or(|price| price <= 9_999_999_999_999)
+            }),
+            "Merchant buyback search requires Forever and a valid copper limit"
         );
         if let Some(filter) = &player_resource {
             ensure!(
@@ -2663,6 +2712,12 @@ impl Store {
                         filter.observation_match(s.sections.get("weapon_enchants")?)
                     });
                     if weapon_enchant.is_some() && weapon_enchant_match.is_none() {
+                        continue;
+                    }
+                    let buyback_match = merchant_buyback.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("merchant_buyback")?)
+                    });
+                    if merchant_buyback.is_some() && buyback_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3455,6 +3510,9 @@ impl Store {
                     }
                     if let Some(observation) = weapon_enchant_match {
                         summary["weapon_enchant_match"] = observation;
+                    }
+                    if let Some(observation) = buyback_match {
+                        summary["merchant_buyback_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

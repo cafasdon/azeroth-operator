@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `list_snapshots.merchant_buyback` with an exact `item_id` to find
+saved buyback entries. Optional `minimum_quantity` and
+`maximum_price_copper` are inclusive and apply to the same entry.
+The price is for the whole entry. A missing price cannot meet a ceiling.
+Results leave ownership and current buyback eligibility unverified.
+
 Use `list_snapshots.required_sections` to find captures containing all
 named sections together. Observed empty sections count as present.
 Missing sections, including those with a recorded unavailable reason,

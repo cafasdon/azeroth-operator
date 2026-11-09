@@ -84,6 +84,21 @@ class MerchantBuybackTests(unittest.IsolatedAsyncioTestCase):
                         response = await session.call_tool(tool, args)
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
+                    async def search(item_id, **filters):
+                        return (await call('list_snapshots',family='forever',
+                            merchant_buyback={'item_id':item_id,**filters}))['snapshots']
+                    zero = await search(4549,minimum_quantity=3,maximum_price_copper=0)
+                    self.assertEqual([row['snapshot_id'] for row in zero],[valid[4][0]])
+                    self.assertEqual(zero[0]['merchant_buyback_match'],{
+                        'matches':[{'slot':1,'observation':cases[4]['1']}],
+                        'included_in_owned_inventory':False,'buyback_eligibility_verified':False,'live':False})
+                    self.assertEqual(await search(4549,minimum_quantity=4,maximum_price_copper=10),[])
+                    self.assertEqual(await search(118,maximum_price_copper=9999999999999),[])
+                    unknown = await search(118)
+                    self.assertEqual({row['snapshot_id'] for row in unknown},{valid[1][0],owned_copy_key})
+                    maximum = await search(4294967295,maximum_price_copper=9999999999999)
+                    self.assertEqual([row['slot'] for row in maximum[0]['merchant_buyback_match']['matches']],
+                                     list(range(1,13)))
                     for key, rows in valid:
                         summary = (await call('character_summary', snapshot_id=key))['merchant_buyback_observations']
                         if rows is None:
