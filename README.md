@@ -179,6 +179,13 @@ observation does not verify current craftability, cooldowns or charges; an
 inventory override does not refresh it.
 [Offline evidence](docs/reported-craftable-count-verification-2026-11-09.md).
 
+Recipe chains can opt into `reagent_chain_catalogue_sources` to attach cached
+public acquisition records to their net external shortages. The configured
+catalogue must match its embedded pin. Missing items/source metadata stay
+explicit, lists are bounded, and no current availability or eligibility is
+inferred. The cache lacks common reagents and is not a full world database.
+[Offline evidence](docs/chain-catalogue-sources-verification-2026-11-09.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

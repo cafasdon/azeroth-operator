@@ -2233,6 +2233,63 @@ fn scaled_suffix_effects(item: &Value, suffix: &Value) -> Option<(Value, Value)>
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn chain_source_references_bound_and_validate_leaves() {
+        let db: &'static serde_json::Value = Box::leak(Box::new(serde_json::json!({
+            "items":[{"id":1,"name":"Public","sources":(1..=10).map(|id|serde_json::json!({"soldBy":{"npcId":id}})).collect::<Vec<_>>()},
+                {"id":2,"sources":[]},{"id":3}],
+            "npcs":[{"id":1,"name":"One"},{"id":9,"name":"Nine"}]
+        })));
+        let items = Box::leak(Box::new(
+            db["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|row| (row["id"].as_u64().unwrap(), row))
+                .collect(),
+        ));
+        let catalogue = super::EquipmentCatalogue { db, items };
+        let chain = serde_json::json!({"draft_complete":true,"external_material_requirements":[
+            {"item_id":1,"quantity":u64::MAX},{"item_id":2,"quantity":2},
+            {"item_id":3,"quantity":3},{"item_id":4,"quantity":4}]});
+        let result = catalogue.reagent_chain_sources(&chain).unwrap();
+        assert_eq!(result["matched_item_count"], 3);
+        assert_eq!(result["unmatched_item_count"], 1);
+        assert_eq!(result["items_with_recorded_sources"], 1);
+        let rows = result["records"].as_array().unwrap();
+        assert_eq!(rows[0]["quantity"], u64::MAX);
+        assert_eq!(rows[0]["source_count"], 10);
+        assert_eq!(rows[0]["sources"].as_array().unwrap().len(), 8);
+        assert_eq!(rows[0]["sources_truncated"], true);
+        assert_eq!(rows[0]["source_references"].as_array().unwrap().len(), 8);
+        assert!(!rows[0].to_string().contains("Nine"));
+        assert_eq!(rows[1]["status"], "no_sources_recorded");
+        assert_eq!(rows[1]["sources"], serde_json::json!([]));
+        assert_eq!(rows[2]["status"], "source_metadata_missing");
+        assert!(rows[2]["sources"].is_null());
+        assert_eq!(rows[3]["status"], "item_not_in_catalogue");
+        assert!(
+            catalogue
+                .reagent_chain_sources(&serde_json::json!({"draft_complete":false}))
+                .unwrap()
+                .is_null()
+        );
+        for leaves in [
+            serde_json::json!([{"item_id":0,"quantity":1}]),
+            serde_json::json!([{"item_id":1,"quantity":0}]),
+            serde_json::json!([{"item_id":1,"quantity":1},{"item_id":1,"quantity":2}]),
+            serde_json::json!([{"item_id":4294967296u64,"quantity":1}]),
+            serde_json::json!([{"item_id":1,"quantity":true}]),
+            serde_json::json!(vec![serde_json::json!({"item_id":1,"quantity":1}); 513]),
+        ] {
+            assert!(
+                catalogue
+                    .reagent_chain_sources(&serde_json::json!({"draft_complete":true,
+                "external_material_requirements":leaves}))
+                    .is_err()
+            );
+        }
+    }
     use super::*;
 
     #[test]
@@ -2696,6 +2753,72 @@ impl EquipmentCatalogue {
             index
         });
         Ok(Self { db, items })
+    }
+
+    /// Public reference data for already-net chain leaves, independent of owned stock.
+    pub fn reagent_chain_sources(&self, chain: &Value) -> Result<Value> {
+        if chain["draft_complete"] != true {
+            return Ok(Value::Null);
+        }
+        let leaves = chain["external_material_requirements"]
+            .as_array()
+            .ok_or_else(|| anyhow::anyhow!("Missing chain external materials"))?;
+        ensure!(leaves.len() <= 512, "Too many chain external materials");
+        let mut seen = BTreeMap::new();
+        for leaf in leaves {
+            let id = leaf["item_id"]
+                .as_u64()
+                .filter(|n| *n > 0 && *n <= u64::from(u32::MAX))
+                .ok_or_else(|| anyhow::anyhow!("Invalid chain material ID"))?;
+            let quantity = leaf["quantity"]
+                .as_u64()
+                .filter(|n| *n > 0)
+                .ok_or_else(|| anyhow::anyhow!("Invalid chain material quantity"))?;
+            ensure!(
+                seen.insert(id, quantity).is_none(),
+                "Duplicate chain material"
+            );
+        }
+        let mut matched = 0;
+        let mut with_sources = 0;
+        let records = seen
+            .into_iter()
+            .map(|(id, quantity)| {
+                let item = self.items.get(&id).copied();
+                let sources = item.and_then(|item| item["sources"].as_array());
+                if item.is_some() {
+                    matched += 1;
+                }
+                if sources.is_some_and(|rows| !rows.is_empty()) {
+                    with_sources += 1;
+                }
+                let retained = sources.map(|rows| rows.iter().take(8).cloned().collect::<Vec<_>>());
+                let references = retained.as_ref().map(|rows| {
+                    let projection = json!({"id":id,"sources":rows});
+                    source_references(self.db, &[&projection])
+                });
+                json!({"item_id":id,"quantity":quantity,
+                "status":if item.is_none() { "item_not_in_catalogue" }
+                    else if sources.is_none() { "source_metadata_missing" }
+                    else if sources.unwrap().is_empty() { "no_sources_recorded" }
+                    else { "sources_recorded" },
+                "name":item.map(|row| &row["name"]),
+                "sources":retained,"source_count":sources.map(Vec::len),
+                "returned_source_count":sources.map(|rows| rows.len().min(8)),
+                "sources_truncated":sources.map(|rows| rows.len() > 8),
+                "source_references":references})
+            })
+            .collect::<Vec<_>>();
+        let provenance: Value = serde_json::from_str(PIN)?;
+        Ok(
+            json!({"basis":"chain_external_material_shortfalls","catalogue_source":provenance,
+            "external_item_count":records.len(),"matched_item_count":matched,
+            "unmatched_item_count":records.len()-matched,"items_with_recorded_sources":with_sources,
+            "source_limit_per_item":8,"records":records,
+            "complete_world_sources_verified":false,"current_availability_verified":false,
+            "acquisition_eligibility_verified":false,"ownership_verified":false,
+            "live":false,"game_execution":false}),
+        )
     }
 
     pub fn quest_item_references(&self, quest: &Value, snapshot: &Snapshot) -> Value {

@@ -14,7 +14,30 @@ yields. All steps share the same observed inventory and prior conditional
 outputs; leftovers can satisfy later steps. Repeated producer steps are allowed.
 `external_material_requirements` lists leaf shortages with no captured fixed
 producer. Look these item IDs up in the local catalogue for recorded acquisition
-sources; the draft does not purchase or craft anything.
+sources, or add `reagent_chain_catalogue_sources: true` to attach them directly
+from the configured verified local cache. The draft does not purchase or craft
+anything.
+
+This opt-in adds `reagent_chain.catalogue_sources`, independent of stock and
+merchant quotes. Each net external shortage retains its quantity, cached item
+name, source count, first eight source records, truncation flag and matching
+cached NPC/zone/faction references. `source_index` is one-based within that
+item's retained source list. Provenance identifies the pinned public dataset.
+Counts describe the cache, not source completeness. `item_not_in_catalogue`,
+`source_metadata_missing` and `no_sources_recorded` distinguish unknown item,
+absent metadata and an observed empty source list; none means unobtainable.
+The current cache lacks common reagents such as copper bars and rough grinding
+stones, so unresolved material sources remain a substantial gap.
+
+The option requires exact standalone chain mode and a configured checksum-valid
+catalogue, even when the chain is blocked. Missing/corrupt cache rejects the
+opt-in request; omission or false does not load it. Blocked drafts have null
+source annotations, while complete zero-shortage drafts have empty records.
+An explicit inventory capture changes net shortages before lookup; stock is not
+subtracted again. Public reference records do not prove current vendor stock,
+quest/drop eligibility, crafting knowledge or ownership. No source is selected
+as optimal and no acquisition route, purchase or game action is executed.
+See [ADR 024](../../docs/ADR-024-chain-catalogue-sources.md).
 
 `draft_complete` means the bounded material model was derived, even when
 `requires_external_materials` is true. It does not mean that materials are owned

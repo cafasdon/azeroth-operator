@@ -1,5 +1,9 @@
 # Changelog
 
+- Connect ingredient-chain external shortages to bounded pinned local catalogue
+  acquisition records, with provenance, unmatched/source-metadata gaps and
+  explicit source truncation; preserve independent stock and quote decisions.
+
 - Capture stable public reported craftable counts for fixed bulk recipes and
   expose timestamped observations in exact recipe reviews; keep material
   planning independent and omit unavailable, changing or secret counts.

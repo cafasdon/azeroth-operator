@@ -1,5 +1,16 @@
 # Forever interaction map
 
+`review_forever_recipe` can add `reagent_chain_catalogue_sources: true` in exact
+standalone chain mode. This requires a configured verified local catalogue and
+adds nested `reagent_chain.catalogue_sources`: net shortage quantities, public
+item names, up to eight source records per item, corresponding cached NPC/zone/
+faction references, provenance and match/source counters. Blocked chains return
+null; complete empty demand returns an empty record list. Missing items and
+source metadata stay explicit. References neither alter owned stock/quotes nor
+prove availability, eligibility or full world coverage. Common reagents are
+absent from this partial cache; missing references do not mean unobtainable.
+[Offline evidence](../../docs/chain-catalogue-sources-verification-2026-11-09.md).
+
 Fixed bulk recipe rows can retain `reported_craftable_count` from two stable
 public API reads during manual export. Exact-ID review exposes the count,
 recipe capture time and saturated requested-craft shortfall separately from
