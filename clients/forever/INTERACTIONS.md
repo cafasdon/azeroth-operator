@@ -3166,3 +3166,8 @@ account bank. Counts describe the full saved section before filters and
 paging. A zero count means the capture recorded no item rows for that
 container ID. Unlisted container IDs have unknown coverage. These counts
 do not establish whether a bag was equipped, its capacity, or complete ownership.
+
+Use `review_forever_owned_gear.container_id` to limit results to a recorded bag
+or bank container before paging. It can be combined with `storage` and item
+filters. The coverage counts still describe the full capture, so a missing
+container can be distinguished from a recorded container with no item rows.

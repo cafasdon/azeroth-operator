@@ -880,6 +880,9 @@ struct OwnedGearReview {
     exclude_observed_requirement_conflicts: bool,
     /// Restrict matching gear locations to one captured storage section before paging.
     storage: Option<azeroth_operator::forever_catalogue::GearStorage>,
+    /// Restrict results to a recorded bag or bank container ID before paging.
+    #[schemars(range(min = 0, max = 64))]
+    container_id: Option<u8>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1431,6 +1434,7 @@ impl Operator {
                 args.include_simulator_item_resolution_counts,
                 args.exclude_observed_requirement_conflicts,
                 args.storage,
+                args.container_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)
@@ -1438,7 +1442,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds.",
+                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds. A container ID must be from 0 to 64 and cannot be used with equipment storage.",
             )]),
         }
     }

@@ -3399,6 +3399,7 @@ pub fn review_owned(
     include_resolution_counts: bool,
     exclude_observed_requirement_conflicts: bool,
     storage_filter: Option<GearStorage>,
+    container_filter: Option<u8>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == Family::Forever,
@@ -3413,6 +3414,12 @@ pub fn review_owned(
         .map(|id| u64::from(id.get()))
         .collect();
     let matches_required_level = required_level_check(required_levels.0, required_levels.1)?;
+    ensure!(
+        container_filter
+            .is_none_or(|id| id <= 64 && !matches!(storage_filter, Some(GearStorage::Equipment))),
+        "Expected a bag or bank container ID from 0 to 64"
+    );
+    let container_filter = container_filter.map(|id| id.to_string());
     ensure!(
         observed_item_ids.len() <= 16 && item_filter.len() == observed_item_ids.len(),
         "Expected at most sixteen distinct item IDs"
@@ -3495,6 +3502,9 @@ pub fn review_owned(
                 || wrong_slot
                 || catalogue_matched.is_some_and(|expected| reference.is_some() != expected)
                 || storage_filter.is_some_and(|wanted| wanted.section() != storage)
+                || container_filter
+                    .as_deref()
+                    .is_some_and(|wanted| container != Some(wanted))
                 || !matches_required_level(reference.copied())
             {
                 return;

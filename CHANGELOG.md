@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever owned gear by a specific bag or bank container.
+
 - Report occupied slots by observed container in saved Forever owned-gear reviews.
 
 - Find saved Forever pet journal species by public species name.
