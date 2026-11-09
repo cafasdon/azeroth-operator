@@ -376,13 +376,13 @@ fn lua_export_roundtrip_and_failed_capture_preserves_previous()
 #[test]
 fn forever_bank_export_distinguishes_observed_empty_and_unavailable()
 -> Result<(), Box<dyn std::error::Error>> {
-    verify_forever_capture_fixture(None, 16001)
+    verify_forever_capture_fixture(None, 16001).map(|_| ())
 }
 
 pub fn verify_forever_capture_fixture(
     staged: Option<&std::path::Path>,
     interface: u32,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let lua = Lua::new();
     lua.globals().set("expected_interface", interface)?;
     lua.load(r#"
@@ -747,7 +747,8 @@ pub fn verify_forever_capture_fixture(
             format!("AzerothOperatorExport = \"{hex}\"").as_bytes(),
         )?)
     };
-    let snapshot = read()?;
+    let export: String = lua.globals().get("AzerothOperatorExport")?;
+    let snapshot = decode(format!("AzerothOperatorExport = \"{export}\"").as_bytes())?;
     assert_eq!(snapshot.sections["stats"]["faction"], "Horde");
     lua.load("factionTag='Neutral';SlashCmdList.AZEROTHOPERATOR()")
         .exec()?;
@@ -1465,5 +1466,5 @@ pub fn verify_forever_capture_fixture(
                 .is_null()
         );
     }
-    Ok(())
+    Ok(format!("AzerothOperatorExport = \"{export}\""))
 }

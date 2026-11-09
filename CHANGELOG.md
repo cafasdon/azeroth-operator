@@ -1,5 +1,7 @@
 # Changelog
 
+- Verify packaged Forever synthetic exports through the CLI importer and local MCP readback.
+
 - Summarise section coverage across all matching saves independently of snapshot paging.
 
 - Inspect selected snapshot section coverage without returning payloads or unavailability reason text.

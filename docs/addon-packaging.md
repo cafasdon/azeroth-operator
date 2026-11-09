@@ -46,6 +46,13 @@ observation, then changes the mock interface and proves capture fails while the
 prior export survives. `live_qualified` remains false. This supplements the
 eleven-section producer tests; it does not test the real game APIs.
 
+For Forever packages, pass `--mcp target/debug/azeroth-operator.exe` to
+`tools.verify_addon_packages` to import the packaged fixture's actual
+synthetic export into a temporary owner store and read it back through
+local MCP stdio. This optional check requires the Python MCP client.
+It checks exact capture metadata, section coverage and bank item counts,
+then removes the temporary store with the staged package files.
+
 Packages remain development-only. Actual client exports and manager flavour
 detection are still required before advertising a qualified release. No GitHub,
 CurseForge, Wago or WoWInterface release is published by these tools.
