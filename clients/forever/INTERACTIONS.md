@@ -3212,5 +3212,13 @@ report the same limit. Incomplete or conflicting groups stay unestimated.
 The summary covers all matching groups before paging. This option is
 exclusive with `assumed_max_stack_size`; actual merge eligibility remains
 unverified.
+
+With `inspect_snapshot.bag_restock_requirements`, set
+`bag_restock_use_reported_stack_limits` to estimate bag space using the
+saved carried copies of each requested item. Every recorded carried copy
+must report the same limit. Missing or conflicting limits leave that item's
+estimate unknown. The projection assumes the limit applies to incoming
+copies, including any quoted merchant bundles. This option is exclusive
+with supplied `bag_restock_stack_limits`.
 Update the importer and reader before syncing captures with this field.
 [Forever item API documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ItemDocumentation.lua)

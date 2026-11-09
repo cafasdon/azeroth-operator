@@ -2803,11 +2803,46 @@ fn compare_item(
     Ok(result)
 }
 
+pub fn reported_carried_stack_limits(snapshot: &Snapshot) -> BTreeMap<u32, std::num::NonZeroU32> {
+    let mut limits = BTreeMap::new();
+    if let Some(bags) = snapshot.sections.get("bags").and_then(Value::as_object) {
+        for item in bags
+            .values()
+            .filter_map(Value::as_object)
+            .flat_map(|slots| slots.values())
+        {
+            let Some(id) = item["item_id"]
+                .as_u64()
+                .and_then(|id| u32::try_from(id).ok())
+            else {
+                continue;
+            };
+            let limit = item["reported_stack_limit"]
+                .as_u64()
+                .and_then(|limit| u32::try_from(limit).ok())
+                .and_then(std::num::NonZeroU32::new);
+            limits
+                .entry(id)
+                .and_modify(|previous| {
+                    if *previous != limit {
+                        *previous = None;
+                    }
+                })
+                .or_insert(limit);
+        }
+    }
+    limits
+        .into_iter()
+        .filter_map(|(id, limit)| Some((id, limit?)))
+        .collect()
+}
+
 pub fn restock_new_stack_space(
     snapshot: &Snapshot,
     review: &Value,
     stack_limits: &BTreeMap<u32, std::num::NonZeroU32>,
     merchant_quote: Option<&Value>,
+    use_reported_limits: bool,
 ) -> Option<Value> {
     if review["storage_observed"] != true {
         return None;
@@ -2910,8 +2945,12 @@ pub fn restock_new_stack_space(
     let general_free =
         carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
     Some(json!({
-        "basis":if merchant_quote.is_some() {"bank_and_quoted_bundles_in_new_stacks_using_supplied_limits"}
-            else {"requested_shortfall_in_new_stacks_using_supplied_limits"},
+        "basis":match (merchant_quote.is_some(), use_reported_limits) {
+            (true,true) => "bank_and_quoted_bundles_in_new_stacks_using_reported_bag_limits",
+            (false,true) => "requested_shortfall_in_new_stacks_using_reported_bag_limits",
+            (true,false) => "bank_and_quoted_bundles_in_new_stacks_using_supplied_limits",
+            (false,false) => "requested_shortfall_in_new_stacks_using_supplied_limits",
+        },
         "items":items,"new_stack_slots":total,"observed_general_free_slots":general_free,
         "fits_observed_general_slots_under_assumptions":total.zip(general_free)
             .map(|(needed, free)| needed <= free),

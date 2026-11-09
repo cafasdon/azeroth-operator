@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate saved restocking bag space using agreeing carried stack limits.
+
 - Estimate saved stack consolidation using agreeing captured stack limits.
 
 - Capture reported Forever stack limits for saved item locations.

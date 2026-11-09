@@ -44,6 +44,15 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             boundary_key=store.ingest(sample('Boundary',8,[(item,1) for item in range(1,65)]))
             retail_key=store.ingest(sample('Retail',9,complete,'retail'))
             classic_key=store.ingest(sample('Classic',9,complete,'classic'))
+            stack_captures={}
+            for label,limits in [('agreed',(12,12)),('missing',(12,None)),('conflicting',(12,13))]:
+                stock=deepcopy(d)
+                stock['sections']['bags']['0']={
+                    str(slot): {'item_id':100,'count':5,'link':'item:100:0',
+                        **({'reported_stack_limit':limit} if limit is not None else {})}
+                    for slot,limit in enumerate(limits,1)
+                }
+                stack_captures[label]=stock
             SnapshotStore(Path(other)).ingest(sample('PRIVATE_OTHER_OWNER',9,complete))
             protected={path:path.read_bytes() for path in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}; env.pop('AZEROTH_FOREVER_CATALOGUE',None)
@@ -167,6 +176,19 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone((await space(h_key,[{'item_id':200,'maximum_stack':3}]))[
                         'observed_general_free_slots'])
                     self.assertIsNone(await space(f_missing,[{'item_id':200,'maximum_stack':3}]))
+                    for label,stock in stack_captures.items():
+                        options={'snapshot_id':store.ingest(stock),'section':'bags',
+                                 'bag_restock_requirements':[{'item_id':100,'quantity':23}],
+                                 'bag_restock_use_reported_stack_limits':True}
+                        reply=await session.call_tool('inspect_snapshot',options)
+                        self.assertFalse(reply.isError,reply)
+                        projection=json.loads(reply.content[0].text)['bag_restock_new_stack_space']
+                        self.assertEqual(projection['basis'],'requested_shortfall_in_new_stacks_using_reported_bag_limits')
+                        self.assertEqual(projection['new_stack_slots'],2 if label=='agreed' else None)
+                        self.assertEqual(projection['new_stack_slots_if_same_item_stacks_merge'],0 if label=='agreed' else None)
+                    rejected=await session.call_tool('inspect_snapshot',{
+                        **options,'bag_restock_stack_limits':[{'item_id':100,'maximum_stack':20}]})
+                    self.assertTrue(rejected.isError)
                     for args in [
                         {'snapshot_id':d_key,'section':'bags','bag_restock_location_offset':0},
                         {'snapshot_id':d_key,'section':'equipment','bag_restock_requirements':requirements['items']},

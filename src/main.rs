@@ -179,6 +179,9 @@ struct Inspect {
     bag_restock_location_offset: Option<usize>,
     /// Estimate general bag slots for requested shortfalls using supplied stack limits.
     bag_restock_stack_limits: Option<Vec<RestockStackLimit>>,
+    /// Estimate bag space from agreeing stack limits on recorded carried copies.
+    #[serde(default)]
+    bag_restock_use_reported_stack_limits: bool,
     /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
     bag_restock_merchant_snapshot_id: Option<String>,
     /// Compare independent residual quotes from one to four compatible saved merchant visits.
@@ -2998,6 +3001,7 @@ impl Operator {
             || args.bag_restock_source_snapshot_id.is_some()
             || args.bag_restock_catalogue_sources
             || args.bag_restock_pending_mail
+            || args.bag_restock_use_reported_stack_limits
             || args.bag_restock_loot_snapshot_id.is_some())
             && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
@@ -3015,7 +3019,8 @@ impl Operator {
                 .iter()
                 .map(|row| (row.item_id.get(), row.maximum_stack))
                 .collect();
-            if limits.is_empty()
+            if args.bag_restock_use_reported_stack_limits
+                || limits.is_empty()
                 || index.len() != limits.len()
                 || !bag_restock.as_ref().is_some_and(|requirements| {
                     index.keys().all(|id| {
@@ -3027,7 +3032,7 @@ impl Operator {
                 })
             {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Restock stack limits require distinct requested item IDs",
+                    "Supply distinct requested item stack limits or use reported limits",
                 )]);
             }
             Some(index)
@@ -3243,6 +3248,13 @@ impl Operator {
                             "Bag restocking requires a saved Forever snapshot",
                         )]);
                     }
+                    let stack_limits = if args.bag_restock_use_reported_stack_limits {
+                        Some(azeroth_operator::analysis::reported_carried_stack_limits(
+                            &snapshot,
+                        ))
+                    } else {
+                        stack_limits
+                    };
                     value["bag_restock_review"] = requirements.review_observed_stock(
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
@@ -3254,6 +3266,7 @@ impl Operator {
                                 &value["bag_restock_review"],
                                 limits,
                                 None,
+                                args.bag_restock_use_reported_stack_limits,
                             ));
                     }
                     if let Some(id) = args.bag_restock_loot_snapshot_id.as_deref() {
@@ -3614,6 +3627,7 @@ impl Operator {
                                     &value["bag_restock_review"],
                                     limits,
                                     Some(&quote),
+                                    args.bag_restock_use_reported_stack_limits,
                                 )
                             );
                         }
