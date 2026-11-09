@@ -41,6 +41,7 @@ const SECTIONS: &[&str] = &[
     "player_resources",
     "player_auras",
     "loot_window",
+    "bag_item_cooldowns",
     "gossip_quests",
     "spellbook",
     "flight_map",
@@ -218,6 +219,7 @@ impl Snapshot {
                         | "player_resources"
                         | "player_auras"
                         | "loot_window"
+                        | "bag_item_cooldowns"
                         | "gossip_quests"
                         | "spellbook"
                         | "flight_map"
@@ -252,6 +254,9 @@ impl Snapshot {
                 value.is_array() || value.is_object(),
                 "Section must be an array or object"
             );
+        }
+        if let Some(cooldowns) = self.sections.get("bag_item_cooldowns") {
+            schema::bag_item_cooldowns(cooldowns, self.sections.get("bags"))?;
         }
         if self.sections.contains_key("character_bank")
             || self.sections.contains_key("account_bank")

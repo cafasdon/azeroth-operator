@@ -687,6 +687,114 @@ AO.collectors.bags = function()
     error("Container API unavailable")
 end
 
+-- Passive observations only for locations already captured in the carried bag section.
+AO.collectors.bag_item_cooldowns = function(bags)
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted cooldown observation")
+        return value
+    end
+    local function number(value,low,high,whole)
+        value=public(value)
+        assert(type(value)=="number" and value==value and value>=low and value<=high
+            and (not whole or value%1==0), "Invalid cooldown number")
+        return value
+    end
+    local function context()
+        assert(AO.family=="forever", "Cooldown client unavailable")
+        local combat=public(InCombatLockdown)
+        if combat~=nil then
+            assert(type(combat)=="function" and public(combat())==false, "Cooldown unavailable in combat")
+        end
+    end
+    context()
+    assert(type(public(bags))=="table", "Captured bags unavailable")
+    local function key(value,low,high)
+        value=public(value)
+        assert(type(value)=="string", "Invalid captured location")
+        local parsed=number(tonumber(value),low,high,true)
+        assert(tostring(parsed)==value, "Noncanonical captured location")
+        return parsed
+    end
+    local entries,locations,bagCount={},{},0
+    for bag,slots in pairs(bags) do
+        local bagID=key(bag,0,64)
+        bagCount=bagCount+1
+        assert(bagCount<=65 and type(public(slots))=="table", "Invalid captured bags")
+        entries[bag]={}
+        for slot,item in pairs(slots) do
+            local slotID=key(slot,1,1024)
+            assert(#locations<4096 and type(public(item))=="table", "Captured item budget exceeded")
+            local id=number(item.item_id,1,4294967295,true)
+            entries[bag][slot]={item_id=id,status="unavailable"}
+            local identityOK,link,count=pcall(function()
+                local originalLink=public(item.link)
+                assert(type(originalLink)=="string" and #originalLink>0 and #originalLink<=2048,
+                    "Captured identity unavailable")
+                return originalLink,number(item.count,1,4294967295,true)
+            end)
+            locations[#locations+1]={bag=bag,slot=slot,bagID=bagID,slotID=slotID,id=id,
+                identityOK=identityOK,link=identityOK and link or nil,count=identityOK and count or nil}
+        end
+    end
+    local function api()
+        local container=public(C_Container)
+        if container==nil then return end
+        assert(type(container)=="table", "Invalid container API")
+        local cooldown=public(container.GetContainerItemCooldown)
+        local info=public(container.GetContainerItemInfo)
+        local clock=public(GetTime)
+        if cooldown==nil or info==nil or clock==nil then return end
+        assert(type(cooldown)=="function" and type(info)=="function" and type(clock)=="function",
+            "Invalid cooldown API")
+        return {container=container,cooldown=cooldown,info=info,clock=clock}
+    end
+    local found,initial=pcall(api)
+    assert(not found or initial~=nil, "Cooldown API unavailable")
+    local function sameApi(expected)
+        context()
+        local current=api()
+        assert(current and current.container==expected.container and current.cooldown==expected.cooldown
+            and current.info==expected.info and current.clock==expected.clock, "Cooldown API changed")
+    end
+    local function read(location,expected)
+        sameApi(expected)
+        assert(location.identityOK, "Captured identity unavailable")
+        local link,count=location.link,location.count
+        local function identity()
+            local current=public(expected.info(location.bagID,location.slotID))
+            assert(type(current)=="table", "Captured item unavailable")
+            local id=number(current.itemID,1,4294967295,true)
+            local currentLink=public(current.hyperlink)
+            local currentCount=number(current.stackCount,1,4294967295,true)
+            assert(type(currentLink)=="string" and id==location.id and currentLink==link
+                and currentCount==count, "Captured item changed")
+        end
+        identity()
+        local start,duration,enabled=expected.cooldown(location.bagID,location.slotID)
+        start=number(start,0,4294967295,false)
+        duration=number(duration,0,4294967295,false)
+        enabled=number(enabled,0,1,true)
+        local now=number(expected.clock(),0,4294967295,false)
+        assert(now>=start, "Cooldown clock precedes start")
+        local remaining=number(math.ceil(math.max(0,start+duration-now)),0,4294967295,true)
+        identity()
+        sameApi(expected)
+        return {start=start,duration=duration,enabled=enabled,remaining=remaining}
+    end
+    for _,location in ipairs(locations) do
+        if found and initial then
+            local ok,first=pcall(read,location,initial)
+            local again,second=pcall(read,location,initial)
+            if ok and again and first.start==second.start and first.duration==second.duration
+                and first.enabled==second.enabled and first.remaining==second.remaining then
+                entries[location.bag][location.slot]={item_id=location.id,status="reported",
+                    enabled=first.enabled==1,remaining_seconds=first.remaining}
+            end
+        end
+    end
+    return {coverage="captured_carried_items_only",captured_item_locations=#locations,entries=entries}
+end
+
 local function bankItems(kind)
     assert(BankFrame and BankFrame:IsShown(), "Bank is not open")
     local bankType=Enum.BankType[kind]

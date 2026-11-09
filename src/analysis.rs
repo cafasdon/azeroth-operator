@@ -6181,6 +6181,16 @@ pub fn summary(s: &Snapshot) -> Value {
             "currency_slots":rows.iter().filter(|row| row["kind"]=="currency").count(),
             "unknown_slots":rows.iter().filter(|row| row["kind"]=="unknown").count()})
     }).unwrap_or(Value::Null);
+    summary["bag_item_cooldown_observation"] = s.sections.get("bag_item_cooldowns").map(|section| {
+        let rows: Vec<_> = section["entries"].as_object().unwrap().values()
+            .flat_map(|bag| bag.as_object().unwrap().values()).collect();
+        let reported = rows.iter().filter(|row| row["status"] == "reported").count();
+        json!({"coverage":section["coverage"],"captured_item_locations":rows.len(),
+            "reported_item_locations":reported,"unavailable_item_locations":rows.len()-reported,
+            "disabled_item_locations":rows.iter().filter(|row| row["enabled"] == false).count(),
+            "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
+            "current_usability_verified":false,"game_execution":false})
+    }).unwrap_or(Value::Null);
     summary["loot_window_observation"] = s
         .sections
         .get("loot_window")

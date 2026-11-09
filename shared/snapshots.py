@@ -27,6 +27,7 @@ SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
 SECTIONS = SECTIONS | {"loot_window"}
+SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
 def _validate_action_bar_observation(observation):
@@ -97,6 +98,38 @@ def _validate_currency_balances(observation):
             raise ValueError("Invalid currency balance entry")
 
 
+def _validate_bag_item_cooldowns(observation, bags):
+    def index(key, low, high):
+        return (isinstance(key,str) and 1 <= len(key) <= 4 and key.isascii()
+            and key.isdecimal() and str(int(key)) == key and low <= int(key) <= high)
+    if (not isinstance(observation,dict) or set(observation) != {'coverage','captured_item_locations','entries'}
+            or observation['coverage'] != 'captured_carried_items_only'
+            or type(observation['captured_item_locations']) is not int
+            or not 0 <= observation['captured_item_locations'] <= 4096
+            or not isinstance(bags,dict) or not isinstance(observation['entries'],dict)
+            or len(observation['entries']) > 65 or observation['entries'].keys() != bags.keys()):
+        raise ValueError('Invalid bag cooldown coverage')
+    count = 0
+    for bag,rows in observation['entries'].items():
+        if (not index(bag,0,64) or not isinstance(rows,dict) or not isinstance(bags[bag],dict)
+                or rows.keys() != bags[bag].keys()):
+            raise ValueError('Invalid bag cooldown source')
+        for slot,row in rows.items():
+            count += 1
+            if count > 4096 or not index(slot,1,1024) or not isinstance(row,dict):
+                raise ValueError('Invalid bag cooldown slot')
+            status = row.get('status')
+            fields = {'item_id','status'} | ({'enabled','remaining_seconds'} if status == 'reported' else set())
+            if (status not in ('reported','unavailable') or set(row) != fields
+                    or type(row.get('item_id')) is not int or not 1 <= row['item_id'] <= 4_294_967_295
+                    or not isinstance(bags[bag][slot],dict) or row['item_id'] != bags[bag][slot].get('item_id')
+                    or (status == 'reported' and (type(row['enabled']) is not bool
+                        or type(row['remaining_seconds']) is not int or not 0 <= row['remaining_seconds'] <= 4_294_967_295))):
+                raise ValueError('Invalid bag cooldown row')
+    if count != observation['captured_item_locations']:
+        raise ValueError('Invalid bag cooldown count')
+
+
 def validate_snapshot(value):
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("Expected snapshot schema_version 1")
@@ -114,6 +147,9 @@ def validate_snapshot(value):
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
     unavailable = value.get("unavailable", {})
+    if 'bag_item_cooldowns' in sections:
+        if c['family'] != 'forever': raise ValueError('Bag cooldowns require Forever')
+        _validate_bag_item_cooldowns(sections['bag_item_cooldowns'],sections.get('bags'))
     if (not isinstance(unavailable, dict) or set(unavailable) - SECTIONS
             or set(unavailable) & sections.keys()):
         raise ValueError("Invalid unavailable section")

@@ -1875,3 +1875,11 @@ paired simulations and uncached direct references: nine coordinates, seven gear
 states, zero warm simulations. This is one Hunter/encounter caller-path check;
 native legality, broader model accuracy and full owned BiS remain unqualified.
 See real-empty-equipment-verification-2026-11-09.md.
+
+Passive carried-item cooldown observations are available in manual Forever
+exports with addon 0.46.0-dev and matching readers. `bag_item_cooldowns` retains
+source bag/slot/item linkage, stable public timer/enabled data or explicit unknown
+rows. Summary counters distinguish readable, unavailable, disabled and positive
+timers. No item is used; zero timers do not establish current usability. The
+package remains uninstalled and native qualification pending. See ADR 048 and
+bag-item-cooldowns-verification-2026-11-09.md.

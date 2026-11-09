@@ -1,5 +1,10 @@
 # Changelog
 
+- Capture optional passive Forever carried-item cooldown observations in a
+  separate source-linked section, preserving unreadable/changed rows as unknown.
+  Add strict cross-reader validation and historical summary counters; qualify
+  uninstalled capture-only addon 0.46.0-dev offline, without item activation.
+
 - Qualify the saved empty-ring search with actual pinned engine simulations,
   paired numeric evidence, warm checkpoint reuse and uncached direct-run
   comparisons; no game or general BiS qualification.

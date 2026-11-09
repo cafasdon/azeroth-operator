@@ -280,8 +280,83 @@ fn reference_locations(source: &Value, cache: &Value) -> Result<()> {
     Ok(())
 }
 
+pub fn bag_item_cooldowns(value: &Value, bags: Option<&Value>) -> Result<()> {
+    object(
+        value,
+        &[
+            ("coverage", "text", true),
+            ("captured_item_locations", "uint", true),
+            ("entries", "map", true),
+        ],
+    )?;
+    ensure!(
+        value["coverage"] == "captured_carried_items_only",
+        "Invalid bag cooldown coverage"
+    );
+    let expected = value["captured_item_locations"]
+        .as_u64()
+        .filter(|n| *n <= 4096)
+        .ok_or_else(|| anyhow::anyhow!("Invalid bag cooldown count"))?;
+    let source = bags
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow::anyhow!("Source bags unavailable"))?;
+    let entries = value["entries"].as_object().unwrap();
+    ensure!(
+        entries.len() <= 65 && entries.keys().eq(source.keys()),
+        "Bag cooldown source mismatch"
+    );
+    let mut count = 0_u64;
+    for (bag, rows) in entries {
+        index(bag, 0, 64)?;
+        let rows = rows
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("Invalid bag cooldown slots"))?;
+        let captured = source[bag]
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("Invalid source bag"))?;
+        ensure!(
+            rows.keys().eq(captured.keys()),
+            "Bag cooldown slot mismatch"
+        );
+        for (slot, row) in rows {
+            count += 1;
+            ensure!(count <= 4096, "Bag cooldown budget exceeded");
+            index(slot, 1, 1024)?;
+            match row["status"].as_str() {
+                Some("reported") => object(
+                    row,
+                    &[
+                        ("item_id", "positive", true),
+                        ("status", "text", true),
+                        ("enabled", "bool", true),
+                        ("remaining_seconds", "uint", true),
+                    ],
+                )?,
+                Some("unavailable") => object(
+                    row,
+                    &[("item_id", "positive", true), ("status", "text", true)],
+                )?,
+                _ => anyhow::bail!("Invalid bag cooldown status"),
+            }
+            ensure!(
+                row["item_id"]
+                    .as_u64()
+                    .is_some_and(|id| id <= u64::from(u32::MAX))
+                    && row["item_id"] == captured[slot]["item_id"]
+                    && row
+                        .get("remaining_seconds")
+                        .is_none_or(|n| n.as_u64().is_some_and(|n| n <= u64::from(u32::MAX))),
+                "Invalid bag cooldown item or timer"
+            );
+        }
+    }
+    ensure!(count == expected, "Bag cooldown count mismatch");
+    Ok(())
+}
+
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "bag_item_cooldowns" => {} // Validated with its source bags by Snapshot::validate.
         "recipe_item_sources" => {
             object(
                 value,

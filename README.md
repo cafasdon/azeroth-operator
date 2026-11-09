@@ -1,5 +1,14 @@
 # Azeroth Operator
 
+Forever manual captures can include carried-item cooldown observations linked
+to the captured bag slots. Each item has a readable historical timer/enabled
+state or explicit unavailable status; summaries keep those counts separate.
+This does not establish current usability or activate items. Requires matching
+MCP support and addon 0.46.0-dev. The package is uninstalled and native capture
+remains unqualified.
+[Contract](docs/ADR-048-passive-bag-item-cooldowns.md) ·
+[Offline evidence](docs/bag-item-cooldowns-verification-2026-11-09.md).
+
 Optional local reagent references can now retain bounded NPC/object spawn
 locations. Reagent chains return only the referenced location records, preserving
 provider area/phase namespaces, unknown data and truncation. No route or movement

@@ -43,6 +43,7 @@ function AO.Capture(includeWallet)
     local unavailable = {}
     local sectionNames={"equipment", "bags", "stats", "talents", "macros", "bindings", "action_bars", "professions", "quests", "currencies", "achievements", "operation_receipts", "binding_state", "action_bar_observation", "equipment_sets"}
     if AO.family=="forever" then
+        table.insert(sectionNames,3,"bag_item_cooldowns")
         sectionNames[#sectionNames+1]="loot_window"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
@@ -84,7 +85,7 @@ function AO.Capture(includeWallet)
     for _, name in ipairs(sectionNames) do
         local collector = AO.collectors and AO.collectors[name]
         if collector then
-            local input = name=="pet_care" and sections.bags
+            local input = (name=="pet_care" or name=="bag_item_cooldowns") and sections.bags
                 or name=="recipe_item_sources" and sections.profession_recipe_materials or nil
             local ok, data = pcall(collector, input)
             if ok and data then
