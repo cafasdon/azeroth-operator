@@ -47,6 +47,7 @@ const SECTIONS: &[&str] = &[
     "loot_window",
     "bag_item_cooldowns",
     "gossip_quests",
+    "gossip_options",
     "spellbook",
     "flight_map",
     "durability_alerts",
@@ -225,6 +226,7 @@ impl Snapshot {
                         | "loot_window"
                         | "bag_item_cooldowns"
                         | "gossip_quests"
+                        | "gossip_options"
                         | "spellbook"
                         | "flight_map"
                         | "durability_alerts"

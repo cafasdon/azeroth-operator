@@ -676,6 +676,8 @@ pub fn verify_forever_capture_fixture(
             end
             return {friendshipFactionID=0}
         end}
+        GossipFrame={IsVisible=function() return not fixtureGossipHidden end}
+        C_GossipInfo.GetOptions=function() return {{name="Browse services",gossipOptionID=42,status=0},{name="Tell me more"}} end
         C_MajorFactions={
             GetMajorFactionData=function(id)
                 assert(id==20)
@@ -940,6 +942,18 @@ pub fn verify_forever_capture_fixture(
     assert_eq!(snapshot.sections["stats"]["map_name"], "Fixture zone");
     assert_eq!(snapshot.sections["stats"]["map_parent_id"], 1414);
     let summary = azeroth_operator::analysis::summary(&snapshot);
+    assert_eq!(
+        snapshot.sections["gossip_options"],
+        serde_json::json!({"coverage":"visible_gossip_options",
+        "entries":{"1":{"name":"Browse services","option_id":42,"reported_status":0},"2":{"name":"Tell me more"}}})
+    );
+    assert_eq!(
+        summary["gossip_option_observations"]["observed_option_count"],
+        2
+    );
+    lua.load("fixtureGossipHidden=true;AO.Capture()").exec()?;
+    assert!(read()?.unavailable.contains_key("gossip_options"));
+    lua.load("fixtureGossipHidden=false").exec()?;
     assert_eq!(
         snapshot.sections["skill_lines"],
         serde_json::json!({

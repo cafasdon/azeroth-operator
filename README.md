@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Forever exports can now record the dialogue choices in an already visible NPC
+gossip panel, beyond quest lists. Saved choices are inspectable through MCP;
+selection and other dialogue actions stay unavailable.
+[Capture contract](docs/ADR-061-visible-gossip-options.md).
+
 Interrupted gear searches can now retain a ranking of loadouts tested in every
 requested encounter. Missing results receive no score or replacement weight;
 unfinished pages stay incomplete and resumable.

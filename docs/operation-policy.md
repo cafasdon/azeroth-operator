@@ -87,3 +87,13 @@ These statuses describe Azeroth Operator, not every possible third-party addon. 
 Record the exact operation, client family/variant/build/interface, official policy/API evidence, player interaction required, combat/protected/secret-value restrictions, data prerequisites and observed result. Unknown evidence must remain explicit. A working fixture or successful API call is not enough to enable execution. Preserve original scope: supporting a review draft does not fulfil an equip/build/item-management request.
 
 No game action is newly enabled by this record. Live qualification, operation-specific policy evidence and feature implementation remain outstanding in ROADMAP.md.
+
+## Visible dialogue observation (2026-11-09)
+
+Source-only Forever gossip_options capture reads an already visible ordinary
+addon panel during the existing manual out-of-combat export. It calls neither
+selection nor refresh/close APIs, reads no entered code/confirmation text, and
+adds no route to the offline MCP allowlist. Labels remain untrusted owner-local
+data. This captures a partial observation and supplies no NPC identity, action
+eligibility or Blizzard approval. Compatible readers must accompany any later
+addon rollout; no installation or native qualification occurred in this unit.

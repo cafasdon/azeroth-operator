@@ -3320,3 +3320,57 @@ AO.collectors.reputation = function()
     assert(api.GetNumFactions()==count, "Reputation rows changed")
     return {coverage="visible_faction_rows_only",entries=rows}
 end
+
+AO.collectors.gossip_options = function()
+    assert(AO.family=="forever", "Gossip options unavailable")
+    local api,frame=C_GossipInfo,GossipFrame
+    assert(questRewardAccessible(api) and type(api)=="table"
+        and questRewardAccessible(frame) and (type(frame)=="table" or type(frame)=="userdata"), "Gossip API unavailable")
+    local fetch,show=api.GetOptions,frame.IsVisible
+    assert(questRewardAccessible(fetch) and type(fetch)=="function"
+        and questRewardAccessible(show) and type(show)=="function", "Gossip getters unavailable")
+    local function context()
+        local current,currentFrame=C_GossipInfo,GossipFrame
+        assert(questRewardAccessible(current) and current==api
+            and questRewardAccessible(currentFrame) and currentFrame==frame
+            and questRewardAccessible(current.GetOptions) and current.GetOptions==fetch
+            and questRewardAccessible(currentFrame.IsVisible) and currentFrame.IsVisible==show,
+            "Gossip context changed")
+        local visible=show(frame)
+        assert(questRewardAccessible(visible) and visible==true, "Gossip panel hidden")
+    end
+    local function read()
+        context()
+        local values=fetch()
+        assert(questRewardAccessible(values) and type(values)=="table" and #values<=128, "Gossip options unavailable")
+        local rows,count={},0
+        for slot,info in pairs(values) do
+            assert(questRewardInteger(slot,1,#values) and questRewardAccessible(info) and type(info)=="table", "Invalid gossip option")
+            local name=info.name
+            assert(questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=512, "Invalid gossip option name")
+            local row={name=name}
+            for field,native in pairs({option_id="gossipOptionID",spell_id="spellID",reported_status="status",reported_flags="flags",reported_order_index="orderIndex"}) do
+                local low,high=0,4294967295
+                if field=="option_id" or field=="spell_id" then low=1 end
+                if field=="reported_order_index" then low,high=-2147483648,2147483647 end
+                local value=info[native]
+                if questRewardInteger(value,low,high) then row[field]=value end
+            end
+            rows[tostring(slot)]=row;count=count+1
+        end
+        assert(count==#values, "Sparse gossip options")
+        context()
+        return rows,count
+    end
+    local first,count=read()
+    local second,later=read()
+    assert(count==later, "Gossip options changed")
+    for slot,row in pairs(first) do
+        local other=second[slot]
+        assert(other, "Gossip options changed")
+        for field,value in pairs(row) do assert(other[field]==value, "Gossip option changed") end
+        for field,value in pairs(other) do assert(row[field]==value, "Gossip option changed") end
+    end
+    context()
+    return {coverage="visible_gossip_options",entries=first}
+end

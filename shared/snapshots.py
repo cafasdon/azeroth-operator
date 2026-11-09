@@ -25,6 +25,7 @@ SECTIONS = SECTIONS | {"profession_recipe_materials"}
 SECTIONS = SECTIONS | {"recipe_item_sources"}
 SECTIONS = SECTIONS | {"player_auras"}
 SECTIONS = SECTIONS | {"gossip_quests"}
+SECTIONS = SECTIONS | {"gossip_options"}
 SECTIONS = SECTIONS | {"merchant_buyback"}
 SECTIONS = SECTIONS | {"loot_window"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
@@ -852,6 +853,24 @@ def validate_snapshot(value):
                     or any(type(row[field]) is not int or not 1<=row[field]<=4_294_967_295 for field in ("item_id","count"))
                     or "buyback_price_copper" in row and (type(row["buyback_price_copper"]) is not int or not 0<=row["buyback_price_copper"]<=9_999_999_999_999)):
                 raise ValueError("Invalid buyback observation")
+    if "gossip_options" in sections:
+        gossip = sections["gossip_options"]
+        if (c["family"] != "forever" or not isinstance(gossip, dict)
+                or set(gossip) != {"coverage", "entries"} or gossip["coverage"] != "visible_gossip_options"
+                or not isinstance(gossip["entries"], dict) or len(gossip["entries"]) > 128
+                or set(gossip["entries"]) != {str(i) for i in range(1, len(gossip["entries"])+1)}):
+            raise ValueError("Invalid gossip option coverage")
+        for row in gossip["entries"].values():
+            if (not isinstance(row, dict) or not {"name"} <= row.keys()
+                    or set(row)-{"name", "option_id", "spell_id", "reported_status", "reported_flags", "reported_order_index"}
+                    or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode("utf-8")) <= 512):
+                raise ValueError("Invalid gossip option")
+            for field in ("option_id", "spell_id", "reported_status", "reported_flags", "reported_order_index"):
+                if field in row:
+                    low, high = ((-2**31, 2**31-1) if field == "reported_order_index" else
+                                 (1 if field in ("option_id", "spell_id") else 0, 2**32-1))
+                    if type(row[field]) is not int or not low <= row[field] <= high:
+                        raise ValueError("Invalid gossip option number")
     if "gossip_quests" in sections:
         gossip=sections["gossip_quests"]
         if (c["family"]!="forever" or not isinstance(gossip,dict) or gossip.get("coverage")!="visible_gossip_quest_lists"

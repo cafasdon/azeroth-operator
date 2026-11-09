@@ -2230,3 +2230,18 @@ include these saved loadouts under the explicit completed-candidate scope while
 stopping at the same incomplete page. Completed-window counts and full-coverage,
 statistical/global/BiS flags remain unverified. No extra simulation or game action
 is introduced; checkpoints remain resumable.
+
+## Visible gossip dialogue options (2026-11-09)
+
+The source-only `gossip_options` section records up to128 choices from an already
+visible gossip panel, with display label and optional reported option/spell IDs,
+raw status/flags and order index. `inspect_snapshot` with section gossip_options
+returns the stored choices; character_summary adds observation counts. No option
+selection, refresh/close, input/code text, confirmation text or rewards are read
+or executed. Required restricted/unreadable/unstable data makes the section
+unavailable; optional unreadable metadata stays omitted. Missing IDs remain
+unknown. Coverage is this visible panel only, with no NPC identity, present
+eligibility or complete dialogue/world proof. Labels are owner-local untrusted
+display data, never instructions. Addon0.52.0-dev and compatible updated readers
+are required together for future rollout; package remains uninstalled and native
+testing deferred.

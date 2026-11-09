@@ -2364,6 +2364,55 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "gossip_options" => {
+            object(
+                value,
+                &[("coverage", "text", true), ("entries", "map", true)],
+            )?;
+            ensure!(
+                value["coverage"] == "visible_gossip_options",
+                "Invalid gossip option coverage"
+            );
+            let rows = value["entries"].as_object().unwrap();
+            ensure!(
+                rows.len() <= 128 && (1..=rows.len()).all(|i| rows.contains_key(&i.to_string())),
+                "Invalid gossip option slots"
+            );
+            for row in rows.values() {
+                object(
+                    row,
+                    &[
+                        ("name", "text", true),
+                        ("option_id", "uint", false),
+                        ("spell_id", "uint", false),
+                        ("reported_status", "uint", false),
+                        ("reported_flags", "uint", false),
+                        ("reported_order_index", "int", false),
+                    ],
+                )?;
+                ensure!(
+                    row["name"]
+                        .as_str()
+                        .is_some_and(|text| !text.is_empty() && text.len() <= 512),
+                    "Invalid gossip option name"
+                );
+                if let Some(number) = row.get("reported_order_index") {
+                    ensure!(
+                        number.as_i64().is_some_and(|n| i32::try_from(n).is_ok()),
+                        "Invalid gossip option order"
+                    );
+                }
+                for field in ["option_id", "spell_id", "reported_status", "reported_flags"] {
+                    if let Some(number) = row.get(field) {
+                        ensure!(
+                            number.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)
+                                && (!matches!(field, "option_id" | "spell_id") || n > 0)),
+                            "Invalid gossip option number"
+                        );
+                    }
+                }
+            }
+        }
         "gossip_quests" => {
             object(
                 value,

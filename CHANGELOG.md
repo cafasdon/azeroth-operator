@@ -1,5 +1,10 @@
 # Changelog
 
+- Add passive Forever visible-gossip-option capture, strict Rust/Python readers,
+  raw MCP inspection and summary counts. Preserve nullable IDs and raw reported
+  metadata, guard restricted values and require stable visible projections.
+  Package 0.52.0-dev offline; no selection, installation or native qualification.
+
 - Rank the completed-candidate intersection of an unfinished encounter page,
   requiring every requested encounter and its baseline. Retain bounded saved
   loadouts in final partial rankings without advancing the unfinished page or

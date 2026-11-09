@@ -6646,6 +6646,13 @@ pub fn summary(s: &Snapshot) -> Value {
             "known_price_subtotal_copper":subtotal,"total_listed_quote_copper":if prices.len()==rows.len() {Some(subtotal)} else {None},
             "included_in_owned_inventory":false,"buyback_eligibility_verified":false})
     }).unwrap_or(Value::Null);
+    summary["gossip_option_observations"] = s.sections.get("gossip_options").map(|section| {
+        let rows=section["entries"].as_object().unwrap();
+        json!({"coverage":section["coverage"],"observed_option_count":rows.len(),
+            "options_with_reported_id":rows.values().filter(|row|row.get("option_id").is_some()).count(),
+            "npc_identity_verified":false,"selection_eligibility_verified":false,
+            "complete_dialogue_coverage_verified":false,"game_execution":false})
+    }).unwrap_or(Value::Null);
     summary["gossip_quest_observations"] = s.sections.get("gossip_quests").map(|section| {
         let describe=|rows:Option<&Value>|rows.map(|rows| {
             let rows=rows.as_object().unwrap();
