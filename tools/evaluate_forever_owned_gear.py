@@ -53,6 +53,8 @@ async def execute(args):
     deadline = monotonic() + args.time_budget_seconds
     expected_engine = digest(args.engine_sha256.lower())
     require(type(getattr(args,'positional_equipment',False)) is bool)
+    require(type(getattr(args,'include_empty_slots',False)) is bool
+        and (not getattr(args,'include_empty_slots',False) or getattr(args,'positional_equipment',False)))
     require(args.engine.is_absolute() and args.mcp.is_absolute())
     args.engine = args.engine.resolve(strict=True)
     args.mcp = args.mcp.resolve(strict=True)
@@ -144,6 +146,8 @@ async def execute(args):
         'active_character_verified': False, 'complete_ownership_verified': False,
         'global_ranking_verified': False, 'best_in_slot_verified': False,
         'feasible_set_coverage_verified': False, 'game_execution': False}
+    if getattr(args,'include_empty_slots',False):
+        report['empty_slot_choices_included'] = True
     require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
     return report
 
@@ -164,6 +168,7 @@ def parser():
     cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
+    cli.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')
     for name, default in [('window-size', 64), ('max-windows', 4), ('max-pages', 64),
         ('page-limit', 8), ('top', 10), ('max-new-runs', 16), ('iteration-budget', 100000),

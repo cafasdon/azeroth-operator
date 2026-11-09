@@ -201,8 +201,10 @@ def combination_window(options, max_swaps, offset, limit):
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
                   max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None,
-                  positional_equipment=False):
+                  positional_equipment=False, include_empty_slots=False):
     if type(positional_equipment) is not bool: raise ValueError('Invalid equipment layout')
+    if type(include_empty_slots) is not bool or (include_empty_slots and not positional_equipment):
+        raise ValueError('Empty choices require positional equipment')
     if (type(combination_offset) is not int or combination_offset < 0
             or (combination_limit is None and combination_offset != 0)
             or (combination_limit is not None and (type(combination_limit) is not int
@@ -275,7 +277,10 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 simultaneous_slots, set_id, storage, candidate_filters,
             )
             skipped.extend(exclusions)
-            options.append([None, *candidates])
+            native_slot = next(native for native,index in PROJECTED_SLOT_INDEX.items() if SIMULATOR_SLOTS[index] == slot)
+            empty_choice = ([{'clear_equipment_slot':native_slot}] if include_empty_slots
+                and baseline['checks']['simulator_equipment_spec']['items'][PROJECTED_SLOT_INDEX[native_slot]] else [])
+            options.append([None, *empty_choice, *candidates])
         if combination_limit is not None:
             combination_count, drafts_to_scan = combination_window(
                 options, max_swaps, combination_offset, combination_limit)
@@ -307,8 +312,10 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         for coordinate, combination in enumerate(drafts_to_scan, combination_offset):
             outcome = {'coordinate_decimal': str(coordinate), 'status': 'unresolved'}
             outcomes.append(outcome)
-            selections = [choice for choice in combination if choice is not None]
-            if not selections:
+            explicit_clears = sorted(choice['clear_equipment_slot'] for choice in combination
+                if choice is not None and 'clear_equipment_slot' in choice)
+            selections = [choice for choice in combination if choice is not None and 'clear_equipment_slot' not in choice]
+            if not selections and not explicit_clears:
                 outcome.update(status='baseline', review=1)
                 continue
             targets = {selection["target_slot"] for selection in selections}
@@ -324,6 +331,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 outcome.update(status='excluded', reason='reused_source_location')
                 continue
             draft_args = {"selections": selections}
+            if explicit_clears:
+                draft_args['clear_equipment_slots'] = explicit_clears
             if 16 in targets and 17 not in targets:
                 draft_args["allow_two_hand_off_hand_clear"] = True
             proposed.append(draft_args)
@@ -368,18 +377,18 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                     drafts.append((selections, draft))
                     outcome.update(status='resolved', review=len(drafts))
                 elif conflicts := draft["checks"].get("native_slot_category_conflicts"):
-                    skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
+                    skipped.append({**({"selections":selections} if multi or not selections else {"selection":selections[0]}),
                                     "reason":"native_slot_category_conflict","conflicts":conflicts})
                 elif conflicts := draft["checks"].get("native_required_level_shortfalls"):
-                    skipped.append({**({"selections":selections} if multi else {"selection":selections[0]}),
+                    skipped.append({**({"selections":selections} if multi or not selections else {"selection":selections[0]}),
                                     "reason":"native_required_level_shortfall","conflicts":conflicts})
                 elif conflicts := draft["checks"].get("catalogue_requirement_conflicts"):
                     skipped.append({
-                        **({"selections": selections} if multi else {"selection": selections[0]}),
+                        **({"selections": selections} if multi or not selections else {"selection": selections[0]}),
                         "reason": "catalogue_requirement_conflict",
                         "conflicts": conflicts,
                     })
-                elif multi:
+                elif multi or not selections:
                     skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
                 else:
                     skipped.append({"selection": selections[0], "reason": "unresolved_simulator_draft"})
@@ -397,7 +406,8 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             },
             "maximum_simultaneous_swaps": max_swaps if max_swaps is not None else len(slots),
             "candidate_locations_by_slot": {
-                slot: len(choices) - 1 for slot, choices in zip(slots, options, strict=True)
+                slot: sum(choice is not None and 'clear_equipment_slot' not in choice for choice in choices)
+                for slot, choices in zip(slots, options, strict=True)
             },
             "combinations_including_baseline": combination_count,
             "proposed_alternative_drafts": len(proposed),
@@ -411,6 +421,10 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         }
         if positional_equipment:
             search['equipment_layout']='azeroth_equipment_preserve_slots_v1'
+        if include_empty_slots:
+            search['include_empty_slots'] = True
+            search['empty_choices_by_slot'] = {slot: any(choice is not None and 'clear_equipment_slot' in choice
+                for choice in choices) for slot,choices in zip(slots,options,strict=True)}
         if combination_limit is not None:
             scope = {"snapshot_id": snapshot_id, "slots": list(slots), "options": options,
                      "filters": search["candidate_filters"], "max_swaps": max_swaps,
@@ -446,6 +460,8 @@ def plan_report(drafts, include_gear_hashes=False, include_equipment_specs=False
              **({'simulator_equipment_spec': draft['checks']['simulator_equipment_spec']}
                 if include_equipment_specs else {}),
              "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
+            | ({'explicit_clear_equipment_slots': [row['slot'] for row in draft['explicitly_cleared_equipment']]}
+                if draft.get('explicitly_cleared_equipment') else {})
             for index, (selections, draft) in enumerate(drafts, 1)
         ],
     }

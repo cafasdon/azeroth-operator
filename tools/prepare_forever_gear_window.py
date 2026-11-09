@@ -13,7 +13,8 @@ from mcp.client.stdio import stdio_client
 from tools import journal_forever_gear_windows as journal
 from tools import run_forever_sim as adapter
 from tools.collect_forever_gear_windows import file_digest
-from tools.merge_forever_gear_windows import MAX_REPORT_BYTES, integer, parse_report, require, retained_equipment
+from tools.merge_forever_gear_windows import (MAX_REPORT_BYTES, cleared_for_review, integer,
+    parse_report, require, retained_equipment, selections_for_review)
 
 
 def encoded(value):
@@ -25,34 +26,6 @@ def read_input(path, expected_sha256):
         data = handle.read(MAX_REPORT_BYTES + 1)
     require(hashlib.sha256(data).hexdigest() == expected_sha256)
     return parse_report(data)
-
-
-def selections_for_review(rows):
-    require(isinstance(rows, list) and len(rows) <= 17)
-    for row in rows:
-        require(isinstance(row, dict) and set(row) == {'target_slot', 'source', 'expected_item_id'})
-        integer(row['target_slot'], 1, 19)
-        integer(row['expected_item_id'], 1, 2**32 - 1)
-        source = row['source']
-        require(isinstance(source, dict))
-        kind = source.get('kind')
-        fields = {'equipment': {'slot'}, 'bag': {'bag', 'slot'},
-                  'character_bank': {'container', 'slot'}, 'account_bank': {'container', 'slot'}}
-        require(isinstance(kind, str) and kind in fields and set(source) == {'kind', *fields[kind]})
-        for field in fields[kind]:
-            integer(source[field], 1 if field == 'slot' else 0, 2**32 - 1)
-    return rows
-
-
-def cleared_for_review(draft):
-    cleared = draft.get('cleared_equipment_slots', [])
-    require(isinstance(cleared,list) and (not cleared or
-        (len(cleared)==1 and type(cleared[0]) is int and cleared[0]==17)))
-    if cleared:
-        targets={row['target_slot'] for row in selections_for_review(draft['selections'])}
-        spec=retained_equipment(draft)
-        require(16 in targets and 17 not in targets and spec is not None and spec['items'][15]=={})
-    return cleared
 
 
 async def prepare(args):
@@ -87,7 +60,7 @@ async def prepare(args):
     require(summary['equipment_specs_retained'])
     for draft in report['resolved_drafts']:
         selections_for_review(draft['selections'])
-        cleared_for_review(draft)
+        cleared_for_review(draft, report['gear_search'])
     requests, size = [], 0
     with tempfile.TemporaryFile(mode='w+') as errlog:
         async with stdio_client(StdioServerParameters(command=str(args.mcp), env=dict(os.environ)), errlog=errlog) as (read, write):
@@ -98,6 +71,8 @@ async def prepare(args):
                     selected = draft['selections']
                     targets = {row['target_slot'] for row in selected}
                     arguments = {'snapshot_id': summary['snapshot_id'], 'selections': selected}
+                    if 'explicit_clear_equipment_slots' in draft:
+                        arguments['clear_equipment_slots'] = draft['explicit_clear_equipment_slots']
                     if report['gear_search'].get('equipment_layout') == adapter.layout.CONTRACT:
                         arguments['positional_simulator_equipment']=True
                     if 16 in targets and 17 not in targets:
@@ -108,7 +83,8 @@ async def prepare(args):
                     require(review.get('snapshot_id') == summary['snapshot_id']
                             and review.get('game_execution') is False and review.get('live') is False)
                     checks = review['checks']
-                    require(cleared_for_review(draft) == checks.get('simulator_cleared_equipment_slots', []))
+                    require(cleared_for_review(draft, report['gear_search'])
+                            == checks.get('simulator_cleared_equipment_slots', []))
                     require(all(checks.get(key) is True for key in ['selected_locations_observed',
                         'item_ids_match_snapshot', 'unique_sources_and_targets']))
                     spec = retained_equipment({'simulator_equipment_spec': checks.get('simulator_equipment_spec'),

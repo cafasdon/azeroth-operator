@@ -28,8 +28,8 @@ its trusted engine/capability checks remain required for execution. The legacy
 automatic-placement layout is refused for explicit clears. Additional drafts
 share the snapshot/layout but retain independent clear lists.
 
-This establishes the review representation. Automatic search enumeration and
-saved journal ingestion of general explicit clear requests remain open; legacy
-off-hand-only journal validation is deliberately unchanged. Neither full legal
-set coverage nor owned BiS is established by this addition. No addon package,
-game installation, deployment or live qualification occurs.
+This established the review representation. Subsequent opt-in search and saved
+journal integration is described in ADR 047; legacy reports retain their
+off-hand-only clearing contract. Neither full legal set coverage nor owned BiS
+is established by these additions. No addon package, game installation,
+deployment or live qualification occurs.

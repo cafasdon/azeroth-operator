@@ -321,8 +321,14 @@ Positional Forever equipment reviews also accept `clear_equipment_slots`, on
 the primary draft or each additional draft. Only distinct captured occupied
 simulator slots may be cleared, and they cannot also be selected targets.
 The review retains the previous items and projects exact empty slots; it does
-not move gear or assign bag destinations. Automatic search enumeration and
-saved-plan ingestion of these new explicit clears remain pending.
+not move gear or assign bag destinations. Collection and owned evaluation accept
+`--include-empty-slots` with `--positional-equipment` to enumerate removals of
+occupied requested slots, including simultaneous removal/replacement choices.
+Standalone collection also requires `--retain-equipment-specs`. Saved replay
+revalidates explicit clears against the original capture; checkpoint reuse
+preserves the choice and changing the opt-in rejects a mixed journal resume.
+[Search contract](docs/ADR-047-empty-equipment-search.md) ·
+[Search verification](docs/empty-equipment-search-verification-2026-11-09.md).
 [Contract](docs/ADR-046-explicit-empty-equipment-review.md) ·
 [Offline evidence](docs/explicit-empty-equipment-verification-2026-11-09.md).
 [Contract](docs/ADR-028-positional-equipment-engine.md) ·

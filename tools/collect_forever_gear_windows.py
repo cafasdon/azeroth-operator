@@ -50,6 +50,7 @@ def request_binding(args, deadline, template_sha256):
     require(current_template == template_sha256)
     selection = {field: getattr(args, field) for field in fields}
     if getattr(args,'positional_equipment',False): selection['positional_equipment']=True
+    if getattr(args,'include_empty_slots',False): selection['include_empty_slots']=True
     request = {'version': 1, 'mcp_path': str(args.mcp), 'mcp_sha256': file_digest(args.mcp, deadline),
                'template_path': str(args.template), 'template_sha256': current_template,
                'python': sys.version, 'mcp_sdk': version('mcp'), 'sources': sources,
@@ -59,6 +60,9 @@ def request_binding(args, deadline, template_sha256):
 
 def validate(args):
     require(type(getattr(args,'positional_equipment',False)) is bool)
+    require(type(getattr(args,'include_empty_slots',False)) is bool
+        and (not getattr(args,'include_empty_slots',False) or
+            (getattr(args,'positional_equipment',False) and args.retain_equipment_specs)))
     digest(args.snapshot_id)
     require(args.mcp.is_absolute() and args.mcp.is_file())
     args.mcp = args.mcp.resolve(strict=True)
@@ -131,7 +135,8 @@ async def collect_windows(args, *, deadline=None):
                 can_dual_wield=can_dual_wield, set_id=args.set_id, max_drafts=args.max_drafts,
                 storage=args.storage, max_swaps=args.max_swaps, candidate_filters=filters,
                 combination_offset=offset, combination_limit=limit,
-                positional_equipment=getattr(args,'positional_equipment',False)), timeout=min(45, remaining))
+                positional_equipment=getattr(args,'positional_equipment',False),
+                include_empty_slots=getattr(args,'include_empty_slots',False)), timeout=min(45, remaining))
             drafts, skipped, coverage, stats, _, _, search = collected
             require(search['snapshot_id'] == args.snapshot_id and search['requested_slots'] == args.slot
                     and search['combination_window']['offset'] == offset
@@ -173,6 +178,7 @@ def parser():
     result.add_argument('--retain-equipment-specs', action='store_true',
                         help='Persist numeric equipment inputs; does not qualify or run simulations')
     result.add_argument('--positional-equipment',action='store_true',help='Prepare exact-slot inputs requiring the qualified positional engine')
+    result.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment and retained specs')
     result.add_argument('--item-id', type=int, action='append')
     result.add_argument('--set-id', type=int)
     result.add_argument('--storage', choices=['equipment', 'bags', 'character_bank', 'account_bank'])

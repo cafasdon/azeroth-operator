@@ -75,6 +75,8 @@ def attach_saved_loadouts(path, leaders, source, deadline):
                 'cleared_equipment_slots':cleared,
                 'current_locations_verified':False,'native_equip_eligibility_verified':False,
                 'game_execution':False}
+            if draft.get('explicit_clear_equipment_slots'):
+                leader['saved_loadout']['explicit_clear_equipment_slots'] = draft['explicit_clear_equipment_slots']
     finally:
         connection.close()
 

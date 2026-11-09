@@ -1,5 +1,10 @@
 # Changelog
 
+- Enumerate optional occupied-slot removal choices through positional collection,
+  saved-plan validation/replay, owned evaluation and retained winner loadouts.
+  Bind the opt-in to resume identity and validate declared choices against
+  retained baseline occupancy; no game actions or full BiS claim.
+
 - Add explicit desired empty slots to positional Forever equipment reviews,
   including independent batch drafts, retained previous-item evidence and
   occupied-slot/target guards. No gear movement or automatic search expansion.

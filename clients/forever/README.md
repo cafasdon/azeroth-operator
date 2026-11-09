@@ -2056,5 +2056,5 @@ slots through `clear_equipment_slots`, independently for primary/additional
 drafts. Previous-item evidence stays attached, and the exact simulator layout
 preserves the holes. Invalid/duplicate/uncaptured slots, shirt/tabard and selected
 target overlaps are refused. No items move; bag destinations and native legality
-remain unknown. General empty-choice search enumeration and saved-plan ingestion
-are still pending. See ADR 046 and explicit-clear offline verification.
+remain unknown. Opt-in empty-choice search and saved-plan replay are now
+implemented; see ADR 047 and empty-equipment search verification.

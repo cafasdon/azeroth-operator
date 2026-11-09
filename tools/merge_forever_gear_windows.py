@@ -14,6 +14,7 @@ ACCOUNTING_FIELDS = ('baseline_coordinates', 'pre_review_excluded_coordinates',
                     'proposed_alternative_coordinates', 'resolved_alternative_draft_instances',
                     'equivalent_alternative_coordinates', 'unresolved_proposed_coordinates',
                     'baseline_review_instances')
+NATIVE_EQUIPMENT_SLOTS = (1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 13, 14, 16, 17, 18)
 
 
 def empty_accounting():
@@ -86,6 +87,69 @@ def retained_equipment(row):
     return spec
 
 
+def selections_for_review(rows):
+    require(isinstance(rows, list) and len(rows) <= 17)
+    for row in rows:
+        require(isinstance(row, dict) and set(row) == {'target_slot', 'source', 'expected_item_id'})
+        integer(row['target_slot'], 1, 19)
+        integer(row['expected_item_id'], 1, 2**32 - 1)
+        source = row['source']
+        require(isinstance(source, dict))
+        kind = source.get('kind')
+        fields = {'equipment': {'slot'}, 'bag': {'bag', 'slot'},
+                  'character_bank': {'container', 'slot'}, 'account_bank': {'container', 'slot'}}
+        require(isinstance(kind, str) and kind in fields and set(source) == {'kind', *fields[kind]})
+        for field in fields[kind]:
+            integer(source[field], 1 if field == 'slot' else 0, 2**32 - 1)
+    return rows
+
+
+def native_clear_slots(value):
+    """Require the canonical native-slot list, without coercion or duplicates."""
+    require(isinstance(value, list) and 1 <= len(value) <= 17)
+    require(all(type(slot) is int and slot in NATIVE_EQUIPMENT_SLOTS for slot in value))
+    require(value == sorted(set(value)))
+    return value
+
+
+def cleared_for_review(draft, search=None):
+    """Validate explicit holes separately from the legacy automatic off-hand clear."""
+    cleared = draft.get('cleared_equipment_slots', [])
+    if 'explicit_clear_equipment_slots' not in draft:
+        require(isinstance(cleared, list) and (not cleared or
+            (len(cleared) == 1 and type(cleared[0]) is int and cleared[0] == 17)))
+        if not cleared:
+            return cleared
+        explicit = []
+    else:
+        explicit = native_clear_slots(draft['explicit_clear_equipment_slots'])
+        require(type(draft.get('review')) is int and draft['review'] > 1)
+        if search is not None:
+            require(search.get('equipment_layout') == layout.CONTRACT
+                    and search.get('include_empty_slots') is True)
+            requested = search.get('requested_slots')
+            choices = search.get('empty_choices_by_slot')
+            require(isinstance(requested, list) and isinstance(choices, dict))
+            for slot in explicit:
+                name = SIMULATOR_SLOTS[NATIVE_EQUIPMENT_SLOTS.index(slot)]
+                require(name in requested and choices.get(name) is True)
+        native_clear_slots(cleared)
+    selected = selections_for_review(draft['selections'])
+    targets = {row['target_slot'] for row in selected}
+    spec = retained_equipment(draft)
+    require(spec is not None)
+    if explicit:
+        require(layout.positional(spec) and targets.isdisjoint(explicit))
+        require(targets.issubset(NATIVE_EQUIPMENT_SLOTS) and len(targets) == len(selected))
+        sources = [json.dumps(row['source'], sort_keys=True) for row in selected]
+        require(len(set(sources)) == len(sources))
+        require(all(spec['items'][NATIVE_EQUIPMENT_SLOTS.index(slot)] == {} for slot in explicit))
+        require(set(cleared) in (set(explicit), set(explicit) | {17}))
+    if not explicit or 17 in set(cleared) - set(explicit):
+        require(16 in targets and 17 not in targets and spec['items'][15] == {})
+    return cleared
+
+
 def coordinate_outcomes(report):
     window = report['gear_search']['combination_window']
     if 'coordinate_outcomes' not in window:
@@ -142,12 +206,24 @@ def merge_reports(reports):
         require(isinstance(slots, list) and 1 <= len(slots) <= 17
                 and all(isinstance(slot, str) and slot in SIMULATOR_SLOTS for slot in slots)
                 and len(set(slots)) == len(slots))
+        mode = search.get('equipment_layout', 'auto_place')
+        require(mode in ('auto_place', layout.CONTRACT))
+        include_empty = search.get('include_empty_slots', False)
+        require(type(include_empty) is bool and (not include_empty or mode == layout.CONTRACT))
+        empty_choices = search.get('empty_choices_by_slot')
+        if include_empty:
+            require(isinstance(empty_choices, dict) and set(empty_choices) == set(slots)
+                    and all(type(value) is bool for value in empty_choices.values()))
+        else:
+            require('empty_choices_by_slot' not in search)
         counts = search.get('candidate_locations_by_slot')
         require(isinstance(counts, dict) and set(counts) == set(slots))
         swaps = integer(search.get('maximum_simultaneous_swaps'), 1, 17)
         coefficients = [1] + [0] * min(swaps, len(slots))
         for slot in slots:
             count = integer(counts[slot], 0, 256)
+            if include_empty:
+                count += int(empty_choices[slot])
             for size in range(len(coefficients) - 1, 0, -1):
                 coefficients[size] += coefficients[size - 1] * count
         total = sum(coefficients)
@@ -177,12 +253,15 @@ def merge_reports(reports):
         require(all(isinstance(row, dict) for row in drafts))
         retains_equipment = 'simulator_equipment_spec' in drafts[0]
         require(all(('simulator_equipment_spec' in row) == retains_equipment for row in drafts))
-        mode=search.get('equipment_layout','auto_place')
-        require(mode in ('auto_place',layout.CONTRACT))
+        require(not include_empty or retains_equipment)
         if retains_equipment:
             require(all(layout.positional(retained_equipment(row)) == (mode==layout.CONTRACT) for row in drafts))
+        if include_empty:
+            baseline_spec = retained_equipment(drafts[0])
+            require(all(empty_choices[slot] is bool(baseline_spec['items'][SIMULATOR_SLOTS.index(slot)])
+                for slot in slots))
         current_signature = json.dumps([current_snapshot, current_scope, current_binding, retains_equipment, slots, counts, swaps,
-            search['candidate_filters'], search.get('inventory_evidence'),mode],
+            search['candidate_filters'], search.get('inventory_evidence'),mode,include_empty,empty_choices],
             sort_keys=True, separators=(',', ':'), allow_nan=False)
         if signature is None:
             signature, scope, snapshot = current_signature, current_scope, current_snapshot
@@ -203,7 +282,11 @@ def merge_reports(reports):
         for review, row in enumerate(drafts, 1):
             require(isinstance(row, dict) and integer(row.get('review'), 1, 129) == review)
             selections = row.get('selections')
-            require(isinstance(selections, list) and (not selections if review == 1 else 1 <= len(selections) <= 17))
+            explicit = 'explicit_clear_equipment_slots' in row
+            require(isinstance(selections, list) and (not selections if review == 1
+                    else (0 if explicit else 1) <= len(selections) <= 17))
+            if explicit:
+                cleared_for_review(row, search)
             key = digest(row.get('simulator_gear_sha256'))
             spec = retained_equipment(row)
             if spec is not None:
