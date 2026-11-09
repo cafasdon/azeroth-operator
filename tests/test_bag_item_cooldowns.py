@@ -100,6 +100,25 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                     refused = await session.call_tool('find_snapshot_item', {
                         'snapshot_id':store.ingest(stacks),'item_id':1,'assumed_max_stack_size':10})
                     self.assertTrue(refused.isError)
+                    banks = deepcopy(stacks)
+                    banks['sections']['character_bank'] = {'6': {
+                        '1':{'item_id':1,'count':2,'link':'PRIVATE_LINK'},
+                        '2':{'item_id':1,'count':3,'link':'PRIVATE_LINK'}}}
+                    banks['sections']['account_bank'] = {}
+                    async def bank_review(snapshot, storage):
+                        reply = await session.call_tool('find_snapshot_item', {
+                            'snapshot_id':store.ingest(snapshot),'item_id':1,
+                            'bag_stack_groups':True,'stack_group_storage':storage,'assumed_max_stack_size':5})
+                        self.assertFalse(reply.isError,reply)
+                        self.assertNotIn('PRIVATE',reply.content[0].text)
+                        return json.loads(reply.content[0].text)['bag_stack_groups']
+                    bank = await bank_review(banks, 'character_bank')
+                    self.assertEqual(bank['storage'],'character_bank')
+                    self.assertEqual(bank['groups'][0]['total_quantity'],5)
+                    self.assertEqual(bank['groups'][0]['locations'],[
+                        {'container':6,'slot':1,'count':2},{'container':6,'slot':2,'count':3}])
+                    self.assertEqual((await bank_review(banks, 'account_bank'))['group_count'],0)
+                    self.assertIsNone(await bank_review(stacks, 'account_bank'))
                     inspected = await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'bag_item_cooldowns'})
                     self.assertFalse(inspected.isError,inspected)
                     self.assertEqual(json.loads(inspected.content[0].text)['data'],value['sections']['bag_item_cooldowns'])

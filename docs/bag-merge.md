@@ -56,5 +56,9 @@ one round of whole-stack pairing, with native eligibility unverified.
 Each displayed group shows up to five of those pairs as saved bag/slot
 locations and combined counts. A pair can use a location beyond the
 group's location preview. These are unordered stack pairs for inspection.
+Set `stack_group_storage` to `character_bank` or `account_bank` to review
+that saved Forever bank instead of carried bags. Each report uses only
+the selected storage. Bank locations use container and slot numbers.
+Absent storage returns null, including a bank that was unavailable at capture.
 
 Review evidence: Jev1.14.0 advisory returned insufficient_evidence (probability0.89, confidence0.83), request b3ad4cbdedd82530f21d67d1c5fc58019053ecc850b9c01c6aa9c13a03ccb37f, 767 input/116 output tokens,0.321s. This is not a review pass or native verification. Required adversarial-review instruction file was unavailable at its configured path. Direct source review confirms two bounded writes and observation-only completion; native assumptions remain explicitly unqualified.

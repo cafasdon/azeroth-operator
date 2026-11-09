@@ -2560,8 +2560,12 @@ pub fn observed_bag_stack_groups(
     snapshot: &Snapshot,
     item_id: u32,
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
+    storage: Option<crate::InventoryStorage>,
 ) -> Option<Value> {
-    let bags = snapshot.sections.get("bags")?.as_object()?;
+    let section = storage
+        .unwrap_or(crate::InventoryStorage::Bags)
+        .section_name();
+    let bags = snapshot.sections.get(section)?.as_object()?;
     let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64)>>::new();
     let mut locations_without_link = 0;
     for (bag, slots) in bags {
@@ -2594,7 +2598,13 @@ pub fn observed_bag_stack_groups(
     let mut estimated_groups = 0;
     let mut maximum_slots_freed = 0;
     let mut disjoint_pairs = 0;
-    let stack_location = |(bag, slot, count)| json!({"bag":bag,"slot":slot,"count":count});
+    let stack_location = |(container, slot, count)| {
+        if section == "bags" {
+            json!({"bag":container,"slot":slot,"count":count})
+        } else {
+            json!({"container":container,"slot":slot,"count":count})
+        }
+    };
     for rows in &groups {
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
         let minimum = maximum
@@ -2645,6 +2655,9 @@ pub fn observed_bag_stack_groups(
     let mut report = json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
         "locations_without_link":locations_without_link,
         "stack_compatibility_verified":false,"game_execution":false});
+    if storage.is_some() {
+        report["storage"] = json!(section);
+    }
     if let Some(maximum) = maximum {
         report["assumed_max_stack_size"] = json!(maximum);
         report["capacity_projection_summary"] = json!({

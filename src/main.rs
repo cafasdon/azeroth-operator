@@ -856,6 +856,8 @@ struct FindItem {
     bag_stack_groups: bool,
     /// User-supplied stack capacity for a hypothetical consolidation estimate.
     assumed_max_stack_size: Option<std::num::NonZeroU32>,
+    /// Scope the stack review to bags, character_bank, or account_bank. Banks require Forever.
+    stack_group_storage: Option<azeroth_operator::InventoryStorage>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1289,8 +1291,9 @@ impl Operator {
             let additional = args.additional_snapshot_ids.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
             anyhow::ensure!(
-                args.assumed_max_stack_size.is_none() || args.bag_stack_groups,
-                "Stack capacity assumptions require bag stack groups"
+                (args.assumed_max_stack_size.is_none() && args.stack_group_storage.is_none())
+                    || args.bag_stack_groups,
+                "Stack review options require bag stack groups"
             );
             let query = |id: &str, snapshot: &azeroth_operator::Snapshot| {
                 let mut found = azeroth_operator::analysis::find_item(
@@ -1301,11 +1304,27 @@ impl Operator {
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
                 if args.bag_stack_groups {
+                    match args.stack_group_storage {
+                        Some(azeroth_operator::InventoryStorage::Equipment) => {
+                            anyhow::bail!("Equipment has no stack groups");
+                        }
+                        Some(
+                            azeroth_operator::InventoryStorage::CharacterBank
+                            | azeroth_operator::InventoryStorage::AccountBank,
+                        ) => {
+                            anyhow::ensure!(
+                                snapshot.client.family == azeroth_operator::Family::Forever,
+                                "Bank stack reviews require Forever"
+                            );
+                        }
+                        _ => {}
+                    }
                     found["bag_stack_groups"] =
                         serde_json::json!(azeroth_operator::analysis::observed_bag_stack_groups(
                             snapshot,
                             args.item_id.get(),
-                            args.assumed_max_stack_size
+                            args.assumed_max_stack_size,
+                            args.stack_group_storage
                         ));
                 }
                 Ok::<_, anyhow::Error>(found)
@@ -1328,7 +1347,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Item search requires up to eight distinct compatible snapshots, a limit from 1 to 50, and bag stack groups when a stack capacity is supplied.",
+                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50. Stack review options require bag stack groups. Choose bags or a saved Forever bank.",
             )]),
         }
     }

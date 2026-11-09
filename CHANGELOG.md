@@ -1,5 +1,7 @@
 # Changelog
 
+- Review identical saved stacks separately in Forever character or account banks.
+
 - Show saved bag locations for hypothetical disjoint whole-stack pairs.
 
 - Count disjoint whole-stack pairs that fit the assumed saved bag capacity.
