@@ -69,6 +69,21 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(rings['items'][0]['simulator_item_resolution'], 'item_link_unresolved')
                     for filtered in [resolved, unresolved, past_end, rings]:
                         self.assertEqual(filtered['inventory_evidence'], mixed_evidence)
+                    unmatched = await review(mixed_id, catalogue_matched=False, limit=1)
+                    self.assertEqual(unmatched['filtered_item_locations'], 2)
+                    self.assertTrue(unmatched['has_more'])
+                    self.assertEqual(unmatched['items'][0]['simulator_item_resolution'], 'catalogue_item_unavailable')
+                    tail = await review(mixed_id, catalogue_matched=False, offset=1, limit=1, storage='bags')
+                    self.assertEqual(tail['filtered_item_locations'], 2)
+                    self.assertFalse(tail['has_more'])
+                    self.assertNotEqual(unmatched['items'],tail['items'])
+                    matched = await review(mixed_id, catalogue_matched=True, simulator_input_resolved=False)
+                    self.assertEqual(matched['filtered_item_locations'], 1)
+                    self.assertEqual(matched['items'][0]['simulator_item_resolution'], 'item_link_unresolved')
+                    conflict = await review(mixed_id, catalogue_matched=False, simulator_slot='finger1')
+                    self.assertEqual(conflict['items'], [])
+                    for page in [unmatched, tail, matched, conflict]:
+                        self.assertEqual(page['inventory_evidence'], mixed_evidence)
                     evidence = result['inventory_evidence']
                     self.assertEqual(evidence['observed_storage_sections'], ['equipment', 'bags'])
                     self.assertEqual(evidence['unavailable_storage_sections'], ['character_bank', 'account_bank'])
@@ -92,6 +107,11 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(bounded['catalogue_unmatched_item_locations'], 52)
                     self.assertEqual(bounded['catalogue_unmatched_item_ids'], list(range(4294967200, 4294967250)))
                     self.assertTrue(bounded['catalogue_unmatched_item_ids_truncated'])
+                    beyond_sample = await review(many_id, catalogue_matched=False, offset=50, limit=2)
+                    self.assertEqual(beyond_sample['filtered_item_locations'],52)
+                    self.assertEqual(len(beyond_sample['items']),2)
+                    self.assertFalse(beyond_sample['has_more'])
+
 
 
 if __name__ == '__main__':

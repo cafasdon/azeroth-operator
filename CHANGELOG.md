@@ -1,5 +1,7 @@
 # Changelog
 
+- Page observed owned-item locations by whether their base ID matches the pinned Forever catalogue.
+
 - Let owned-gear evaluation withhold simulation when observed items lack a catalogue match.
 
 - Let Forever owned-gear evaluation require all four storage sections before collection.

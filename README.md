@@ -490,6 +490,9 @@ Use `--require-catalogue-coverage` to skip simulation when saved plan windows
 have missing catalogue evidence or unmatched observed item locations. The
 report explains the stop and keeps collected windows for inspection. This
 checks base-item matches independently of storage and modifier coverage.
+Use `review_forever_owned_gear` with `catalogue_matched: false` to page
+through unmatched observed locations. It can be combined with a storage
+filter, and the inventory evidence still describes all observed storage.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained

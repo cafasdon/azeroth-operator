@@ -3330,6 +3330,7 @@ pub fn review_owned(
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
     observed_random_suffix_id: Option<i32>,
     simulator_input_resolved: Option<bool>,
+    catalogue_matched: Option<bool>,
     exclude_observed_requirement_conflicts: bool,
     storage_filter: Option<GearStorage>,
 ) -> Result<Value> {
@@ -3423,6 +3424,7 @@ pub fn review_owned(
                 || wrong_set
                 || wrong_item
                 || wrong_slot
+                || catalogue_matched.is_some_and(|expected| reference.is_some() != expected)
                 || storage_filter.is_some_and(|wanted| wanted.section() != storage)
                 || !matches_required_level(reference.copied())
             {

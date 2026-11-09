@@ -779,6 +779,8 @@ struct OwnedGearReview {
     observed_random_suffix_id: Option<i32>,
     /// Select locations with or without a resolved simulator item input before paging.
     simulator_input_resolved: Option<bool>,
+    /// Filter by base-item presence in the pinned catalogue before paging.
+    catalogue_matched: Option<bool>,
     /// Exclude known catalogue conflicts against the saved character. Unknown eligibility can still match.
     #[serde(default)]
     exclude_observed_requirement_conflicts: bool,
@@ -1330,6 +1332,7 @@ impl Operator {
                 args.observed_enchant_effect_id,
                 args.observed_random_suffix_id,
                 args.simulator_input_resolved,
+                args.catalogue_matched,
                 args.exclude_observed_requirement_conflicts,
                 args.storage,
             )?;
