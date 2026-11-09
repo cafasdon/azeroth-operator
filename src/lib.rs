@@ -3159,6 +3159,13 @@ impl Store {
             if name == "pet_care" && s.client.family == Family::Forever {
                 result["pet_food_locations"] = json!(analysis::pet_food_locations(&s));
             }
+            if name == "player_pvp_progression" && s.client.family == Family::Forever {
+                result["player_pvp_progression_observation"] = json!(
+                    s.sections
+                        .get(name)
+                        .map(analysis::player_pvp_progression_observation)
+                );
+            }
         } else {
             result["available_sections"] = json!(s.sections.keys().collect::<Vec<_>>());
             result["unavailable"] = json!(s.unavailable);

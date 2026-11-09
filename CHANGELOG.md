@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved Forever PvP threshold and cap distances directly in PvP snapshot inspection.
+
 - Distinguish filtered Forever trainer lesson slots from slots missing in the saved capture.
 
 - Show how far an ordered Forever trainer lesson plan gets after reserving part of the saved balance.

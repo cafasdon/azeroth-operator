@@ -2408,7 +2408,10 @@ qualification stays deferred. See docs/ADR-070-player-pvp-progression.md.
 ## PvP cap-distance planning (2026-11-09)
 
 Optional captured total_points_by_rank contains at most four referenced current/
-cap rank thresholds. MCP summary adds reported_total_rank_points and
+cap rank thresholds. Direct `inspect_snapshot` of `player_pvp_progression`
+includes the same `player_pvp_progression_observation` as character summary,
+alongside the raw captured data. An unavailable Forever observation is null.
+The observation adds reported_total_rank_points and
 remaining_points_to_reported_caps only when totals are available. Distances use
 captured total thresholds plus within-rank points, floored at zero. Missing
 current/target thresholds or zero cap totals remain unknown. No rank interpolation,

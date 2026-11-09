@@ -2436,7 +2436,7 @@ pub(crate) fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeM
     (items, quantities)
 }
 
-fn player_pvp_progression_observation(section: &Value) -> Value {
+pub(crate) fn player_pvp_progression_observation(section: &Value) -> Value {
     let points = section["rank_points"].as_u64().unwrap();
     let threshold = section["next_rank_threshold"].as_u64().unwrap();
     let remaining = if threshold > 0 && points <= threshold {

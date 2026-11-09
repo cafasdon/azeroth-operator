@@ -74,6 +74,7 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     for key,row in valid:
                         inspection=await call('inspect_snapshot',snapshot_id=key,section='player_pvp_progression')
                         report=(await call('character_summary',snapshot_id=key))['player_pvp_progression_observation']
+                        self.assertEqual(inspection['player_pvp_progression_observation'],report)
                         summaries[key] = report
                         if row is None:self.assertFalse(inspection['available']);self.assertIsNone(report)
                         else:
