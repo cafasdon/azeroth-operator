@@ -492,6 +492,15 @@ struct TalentSummary {
     snapshot_id: String,
     /// Optional Forever simulator digit string; never a game import or action.
     simulator_talent_string: Option<String>,
+    /// Prepare a simulator-only digit string from explicit ranks for every pinned definition; never infer missing zeros.
+    #[serde(default, deserialize_with = "talent_preparation_flag")]
+    prepare_simulator_talents: bool,
+}
+
+fn talent_preparation_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
+    serde_json::Value::deserialize(input)?
+        .as_bool()
+        .ok_or_else(|| serde::de::Error::custom("Invalid simulator talent preparation flag"))
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1387,7 +1396,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Return the captured Retail talent import string if available. Optional simulator_talent_string compares purchased ranks from an explicit Forever capture with pinned local simulator definitions; native import availability stays separate. Missing evidence stays unverified. Does not simulate, apply talents, create optimal builds or verify full allocation or game acceptance.",
+        description = "Return the captured Retail talent import string if available. Forever simulator_talent_string compares purchased ranks; prepare_simulator_talents prepares simulator digits only from an exact captured definition set with no staged changes. These modes are exclusive. Native import availability stays separate. Does not simulate, apply talents, optimise or verify build legality, native completeness or game acceptance.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1399,11 +1408,19 @@ impl Operator {
         Parameters(args): Parameters<TalentSummary>,
     ) -> CallToolResult {
         let result = (|| {
+            anyhow::ensure!(
+                !args.prepare_simulator_talents || args.simulator_talent_string.is_none(),
+                "Exclusive talent review modes"
+            );
             let snapshot = self.store.read(&args.snapshot_id)?;
             let mut review = azeroth_operator::planning::captured_loadout(&snapshot)?;
             if let Some(text) = args.simulator_talent_string {
                 review["simulator_talent_observation"] =
                     azeroth_operator::forever_talent_identity::review(&snapshot, &text)?;
+            }
+            if args.prepare_simulator_talents {
+                review["simulator_talent_preparation"] =
+                    azeroth_operator::forever_talent_identity::prepare(&snapshot)?;
             }
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
             Ok::<_, anyhow::Error>(review)

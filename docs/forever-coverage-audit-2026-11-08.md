@@ -461,3 +461,10 @@ one historical owner capture, retaining unreadable rows and false ownership,
 reward, balance and live flags. Latest-valid selection remains before feature
 predicates; no character pooling or game action. Native/hosted qualification
 remains pending. [Contract](ADR-054-saved-loot-discovery.md).
+
+Queried allocation bridge: optional observations now include inactive explicit
+purchased zeros, with all-entry identity/rank linkage and bounded capture.
+Explicit MCP simulator preparation requires exact pinned definitions/caps and
+known committed state; missing data yields no string. Full native/model/legality,
+current identity and owned-BiS proof remain open. Uninstalled package only.
+[Contract](ADR-055-queried-talent-allocation.md).

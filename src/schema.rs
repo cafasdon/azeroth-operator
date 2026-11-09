@@ -359,6 +359,7 @@ pub fn has_talent_definition_observation(value: &Value) -> bool {
         "observed_tree_ids",
         "observed_node_count",
         "staged_changes_observed",
+        "definition_allocation",
     ]
     .iter()
     .any(|key| value.get(*key).is_some())
@@ -395,6 +396,91 @@ fn talent_definition_observation(value: &Value) -> Result<()> {
     );
     if let Some(staged) = value.get("staged_changes_observed") {
         ensure!(staged.is_boolean(), "Invalid observed staged changes");
+    }
+    if let Some(allocation) = value.get("definition_allocation") {
+        object(
+            allocation,
+            &[
+                ("coverage", "text", true),
+                ("queried_node_count", "uint", true),
+                ("queried_entry_count", "uint", true),
+                ("definitions", "map", true),
+            ],
+        )?;
+        let definitions = allocation["definitions"].as_object().unwrap();
+        ensure!(
+            allocation["coverage"] == "queried_config_tree_entries"
+                && allocation["queried_node_count"] == value["observed_node_count"]
+                && allocation["queried_entry_count"].as_u64() == Some(definitions.len() as u64)
+                && definitions.len() <= 4096,
+            "Invalid definition allocation coverage"
+        );
+        let mut entries = std::collections::BTreeSet::new();
+        let mut node_trees = std::collections::BTreeMap::new();
+        let mut node_entries = std::collections::BTreeMap::<u64, u32>::new();
+        let mut locations = std::collections::BTreeMap::new();
+        for (definition, row) in definitions {
+            index(definition, 1, u32::MAX)?;
+            object(
+                row,
+                &[
+                    ("node_id", "positive", true),
+                    ("entry_id", "positive", true),
+                    ("tree_id", "positive", true),
+                    ("purchased_rank", "uint", true),
+                    ("max_rank", "positive", true),
+                ],
+            )?;
+            let node = row["node_id"].as_u64().unwrap();
+            let entry = row["entry_id"].as_u64().unwrap();
+            let tree = row["tree_id"].as_u64().unwrap();
+            let count = node_entries.entry(node).or_default();
+            *count += 1;
+            ensure!(*count <= 64, "Definition node entry budget exceeded");
+            ensure!(
+                trees.contains_key(&tree.to_string())
+                    && entries.insert(entry)
+                    && row["purchased_rank"].as_u64() <= row["max_rank"].as_u64(),
+                "Invalid definition allocation row"
+            );
+            if let Some(previous) = node_trees.insert(node, tree) {
+                ensure!(previous == tree, "Definition node tree mismatch");
+            }
+            locations.insert((node, entry), (definition, row));
+            if row["purchased_rank"].as_u64().unwrap() > 0 {
+                let active = nodes
+                    .get(&node.to_string())
+                    .ok_or_else(|| anyhow::anyhow!("Purchased definition has no active entry"))?;
+                ensure!(
+                    active["entry_id"].as_u64() == Some(entry)
+                        && active["tree_id"].as_u64() == Some(tree),
+                    "Purchased definition active entry mismatch"
+                );
+            }
+        }
+        ensure!(
+            node_trees.len() as u64 <= value["observed_node_count"].as_u64().unwrap(),
+            "Definition node budget mismatch"
+        );
+        for (node, active) in nodes {
+            let (definition, row) = locations
+                .get(&(node.parse::<u64>()?, active["entry_id"].as_u64().unwrap()))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Active entry missing from definition allocation")
+                })?;
+            ensure!(
+                row["tree_id"] == active["tree_id"],
+                "Active definition tree mismatch"
+            );
+            if active.get("definition_id").is_some() {
+                ensure!(
+                    active["definition_id"].as_u64() == Some(definition.parse::<u64>()?)
+                        && active["purchased_rank"] == row["purchased_rank"]
+                        && active["max_rank"] == row["max_rank"],
+                    "Active definition metadata mismatch"
+                );
+            }
+        }
     }
     for node in nodes.values() {
         ensure!(
@@ -2728,6 +2814,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("observed_tree_ids", "map", false),
                     ("observed_node_count", "uint", false),
                     ("staged_changes_observed", "bool", false),
+                    ("definition_allocation", "map", false),
                 ],
             )?;
             entries(

@@ -1,5 +1,12 @@
 # Azeroth Operator
 
+Simulator talent preparation can use explicitly captured purchased ranks for
+every pinned class definition, including observed zero ranks. Ask
+`captured_talent_loadout` for `prepare_simulator_talents: true`; missing,
+ambiguous, mismatched or staged evidence produces no string. This prepares a
+simulator-only draft, with native completeness, legality and model accuracy
+still unverified. [Allocation contract](docs/ADR-055-queried-talent-allocation.md).
+
 Saved-loot discovery can find captures that displayed an item, a raw reported
 currency ID or a money slot. Quantity bounds apply only to matching readable
 rows in one capture; money amounts remain unknown. With `latest_per_character`,

@@ -2,6 +2,10 @@
 
 Date: 2026-11-09. Status: accepted for offline source integration.
 
+Extension: [ADR-055](ADR-055-queried-talent-allocation.md) supersedes the original
+no-generation limit only for explicit simulator preparation from a complete
+matching observed definition set. Native imports/actions remain excluded.
+
 ## Problem
 
 An explicit simulation template can describe different purchased talents from

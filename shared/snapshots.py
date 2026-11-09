@@ -151,7 +151,7 @@ def _validate_inventory_item_identity(item):
 
 def _validate_talent_definition_observation(talents, family):
     if not isinstance(talents,dict): return
-    root_fields={'observed_tree_ids','observed_node_count','staged_changes_observed'}
+    root_fields={'observed_tree_ids','observed_node_count','staged_changes_observed','definition_allocation'}
     extra_fields={'definition_id','purchased_rank','max_rank'}
     nodes=talents.get('nodes')
     present=bool(root_fields & talents.keys()) or (isinstance(nodes,dict)
@@ -178,6 +178,38 @@ def _validate_talent_definition_observation(talents, family):
                 or not uint(node['max_rank'],1) or not uint(node['purchased_rank'])
                 or node['purchased_rank']>node['max_rank']):
             raise ValueError('Invalid observed talent definition ranks')
+    if 'definition_allocation' in talents:
+        allocation=talents['definition_allocation']
+        if (not isinstance(allocation,dict) or set(allocation)!={'coverage','queried_node_count','queried_entry_count','definitions'}
+                or allocation['coverage']!='queried_config_tree_entries'
+                or not uint(allocation['queried_node_count']) or allocation['queried_node_count']!=count
+                or not uint(allocation['queried_entry_count']) or not isinstance(allocation['definitions'],dict)
+                or allocation['queried_entry_count']!=len(allocation['definitions']) or len(allocation['definitions'])>4096):
+            raise ValueError('Invalid definition allocation coverage')
+        entries=set();node_trees={};locations={};node_entries={}
+        for definition,row in allocation['definitions'].items():
+            if (not _inventory_index(definition,1,4_294_967_295) or not isinstance(row,dict)
+                    or set(row)!={'node_id','entry_id','tree_id','purchased_rank','max_rank'}
+                    or any(not uint(row[key],1) for key in ['node_id','entry_id','tree_id','max_rank'])
+                    or not uint(row['purchased_rank']) or row['purchased_rank']>row['max_rank']
+                    or str(row['tree_id']) not in trees or row['entry_id'] in entries
+                    or row['node_id'] in node_trees and node_trees[row['node_id']]!=row['tree_id']):
+                raise ValueError('Invalid definition allocation row')
+            entries.add(row['entry_id']);node_trees[row['node_id']]=row['tree_id']
+            node_entries[row['node_id']]=node_entries.get(row['node_id'],0)+1
+            if node_entries[row['node_id']]>64:raise ValueError('Definition node entry budget exceeded')
+            locations[(row['node_id'],row['entry_id'])]=(int(definition),row)
+            if row['purchased_rank']>0:
+                active=nodes.get(str(row['node_id']))
+                if active is None or active['entry_id']!=row['entry_id'] or active['tree_id']!=row['tree_id']:
+                    raise ValueError('Purchased definition active entry mismatch')
+        if len(node_trees)>count:raise ValueError('Definition node budget mismatch')
+        for node,active in nodes.items():
+            observed=locations.get((int(node),active['entry_id']))
+            if (observed is None or observed[1]['tree_id']!=active['tree_id']
+                    or 'definition_id' in active and (active['definition_id']!=observed[0]
+                        or any(active[key]!=observed[1][key] for key in ['purchased_rank','max_rank']))):
+                raise ValueError('Active definition allocation mismatch')
 
 
 def validate_snapshot(value):

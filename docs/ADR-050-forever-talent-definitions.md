@@ -2,6 +2,9 @@
 
 Date: 9 November 2026. Status: source/offline capture qualification.
 
+Extended by [ADR-055](ADR-055-queried-talent-allocation.md), which adds optional
+queried-entry allocations; this document records the initial active-node scope.
+
 Owned-gear results depend on the build. The adapter currently validates an
 explicit template talent string but does not compare it with native allocated
 talents. Existing captured entry IDs are not simulator definition IDs. The

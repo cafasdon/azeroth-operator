@@ -2,6 +2,9 @@
 
 Date: 2026-11-09. Status: accepted for offline source integration.
 
+Extended by [ADR-055](ADR-055-queried-talent-allocation.md) with a separate,
+explicit preparation mode; the comparison mode described here is preserved.
+
 ## Problem and decision
 
 ADR-051 connects captured purchased ranks to local simulation commands. The MCP

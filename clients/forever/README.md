@@ -2114,8 +2114,8 @@ support does not verify current crafting or transfer eligibility. See [verificat
 
 Forever talent observations can retain stable native definition IDs, purchased
 ranks, native rank limits and an observed staged-change flag. Boosted active
-ranks remain separate and uncertain metadata stays unknown. No simulator talent
-conversion or allocation match is verified. Addon 0.47.0-dev remains uninstalled;
+ranks remain separate and uncertain metadata stays unknown. These active-node
+fields alone do not establish inactive zero ranks or a full allocation match. Addon 0.47.0-dev remains uninstalled;
 see [verification](../../docs/forever-talent-definitions-verification-2026-11-09.md).
 
 Simulator talent observations now use a bundled pinned nine-class definition
@@ -2154,3 +2154,12 @@ row, respects latest-valid captures before feature predicates, and composes with
 character/date/profession/inventory filters. It never credits owned stock or
 balances. [Contract](../../docs/ADR-054-saved-loot-discovery.md) ·
 [Offline evidence](../../docs/loot-discovery-verification-2026-11-09.md).
+
+Explicit simulator talent preparation: `captured_talent_loadout` with
+`prepare_simulator_talents: true` can build simulator digits from a queried
+allocation only when every pinned class definition and native maximum matches
+and staging is explicitly false. Missing or ambiguous evidence yields no string;
+inactive zeros are never guessed. It generates no native import or game action.
+Matching reader/importer plus uninstalled addon 0.50.0-dev support are required.
+[Contract](../../docs/ADR-055-queried-talent-allocation.md) ·
+[Offline evidence](../../docs/talent-allocation-verification-2026-11-09.md).

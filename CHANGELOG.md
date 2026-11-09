@@ -1,5 +1,11 @@
 # Changelog
 
+- Capture optional queried-entry talent allocations, including explicit inactive
+  zero ranks, with strict cross-reader linkage and 64-entry/node, 4096-entry
+  limits. Add explicit MCP simulator-string preparation only for exact pinned
+  class definitions/rank limits with known committed state; otherwise refuse
+  preparation. No native import, talent action, optimisation or legality claim.
+
 - Add list_snapshots.loot_observation to discover historical item/raw-currency
   observations by same-capture readable quantity, or money-slot presence.
   Require an actual matching row even for zero; preserve latest/unknown/owner

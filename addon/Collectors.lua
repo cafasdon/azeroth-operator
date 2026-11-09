@@ -1342,7 +1342,8 @@ local function foreverTalents()
                 seen[nodeID]=true
                 local node=public(initial.nodes(configID,nodeID))
                 local row=baseNode(node,nodeID,treeID)
-                if row then result.nodes[tostring(nodeID)]=row;raw[tostring(nodeID)]=node end
+                raw[tostring(nodeID)]=node
+                if row then result.nodes[tostring(nodeID)]=row end
             end
         end
         context()
@@ -1376,6 +1377,61 @@ local function foreverTalents()
         assert(purchased<=maximum, "Invalid purchased talent rank")
         return {definition_id=definition,purchased_rank=purchased,max_rank=maximum},getter
     end
+    -- Complete only for the entries returned by this config's queried trees.
+    -- An unreadable choice invalidates this optional group, never implies zero.
+    local function allocation(base,raw,refresh)
+        local getter=public(initial.traits.GetEntryInfo)
+        assert(type(getter)=="function", "Talent definition API unavailable")
+        local result={coverage="queried_config_tree_entries",queried_node_count=base.count,
+            queried_entry_count=0,definitions={}}
+        local seenEntries={}
+        for _,treeID in ipairs(base.tree_ids) do
+            for _,nodeID in ipairs(base.tree_nodes[tostring(treeID)]) do
+                context()
+                local key=tostring(nodeID)
+                local node=raw[key]
+                if refresh then node=public(initial.nodes(configID,nodeID)) end
+                assert(equal(baseNode(node,nodeID,treeID),base.nodes[key]), "Talent allocation base changed")
+                local entries=ids(node.entryIDs,64,0)
+                local committed=ids(node.entryIDsWithCommittedRanks,64,0)
+                local purchased=uint(node.ranksPurchased,0)
+                local member={}
+                for _,entryID in ipairs(entries) do member[entryID]=true end
+                local row=base.nodes[key]
+                assert(not row or member[row.entry_id], "Active talent entry absent")
+                for _,entryID in ipairs(committed) do
+                    assert(member[entryID], "Committed talent entry absent")
+                end
+                local selected
+                if purchased>0 then
+                    assert(#committed==1 and row and committed[1]==row.entry_id,
+                        "Ambiguous purchased talent choice")
+                    selected=committed[1]
+                end
+                for _,entryID in ipairs(entries) do
+                    result.queried_entry_count=result.queried_entry_count+1
+                    assert(result.queried_entry_count<=4096 and not seenEntries[entryID],
+                        "Talent entry budget or identity invalid")
+                    seenEntries[entryID]=true
+                    assert(public(initial.traits.GetEntryInfo)==getter, "Talent definition API changed")
+                    local entry=public(getter(configID,entryID))
+                    context()
+                    assert(type(entry)=="table" and public(initial.traits.GetEntryInfo)==getter,
+                        "Talent definition changed")
+                    assert(public(entry.subTreeID)==nil, "Subtree talent allocation unavailable")
+                    local definition,maximum=uint(entry.definitionID,1),uint(entry.maxRanks,1)
+                    local rank=entryID==selected and purchased or 0
+                    assert(rank<=maximum and not result.definitions[tostring(definition)],
+                        "Talent definition allocation invalid")
+                    result.definitions[tostring(definition)]={node_id=nodeID,entry_id=entryID,
+                        tree_id=treeID,purchased_rank=rank,max_rank=maximum}
+                end
+            end
+        end
+        context()
+        assert(public(initial.traits.GetEntryInfo)==getter, "Talent definition API changed")
+        return result,getter
+    end
     stage()
     local first,raw=graph()
     local optional,getters={},{}
@@ -1384,6 +1440,8 @@ local function foreverTalents()
         if ok then optional[key]=value;getters[key]=getter end
         context()
     end
+    local allocationOK,allocated,allocationGetter=pcall(allocation,first,raw,false)
+    context()
     stage()
     stage()
     -- Recheck each active node before the second optional read. The final whole
@@ -1395,7 +1453,16 @@ local function foreverTalents()
         if not ok or getters[key]~=getter or not equal(optional[key],value) then optional[key]=nil end
         context()
     end
+    if allocationOK then
+        local ok,value,getter=pcall(allocation,first,raw,true)
+        allocationOK=ok and getter==allocationGetter and equal(allocated,value)
+        context()
+    end
     stage()
+    if allocationOK then
+        local ok,same=pcall(function() return public(initial.traits.GetEntryInfo)==allocationGetter end)
+        allocationOK=ok and same
+    end
     local second=graph()
     assert(equal(first,second), "Talent observation changed")
     local observed={}
@@ -1406,6 +1473,7 @@ local function foreverTalents()
     local result={config_id=configID,nodes=first.nodes,observed_tree_ids=observed,
         observed_node_count=first.count,loadout_export={status="unavailable",reason="client_not_supported"}}
     if stageOK then result.staged_changes_observed=stageValue end
+    if allocationOK then result.definition_allocation=allocated end
     return result
 end
 
