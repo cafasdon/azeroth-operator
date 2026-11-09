@@ -504,6 +504,194 @@ pub fn review_recipe_with_inventory(
     review_recipe_observation(snapshot, recipe, crafts, inventory)
 }
 
+/// Draft a bounded producer chain; simulated acquisition and output are not owned stock.
+pub fn recipe_reagent_chain(
+    snapshot: &Snapshot,
+    recipe_id: std::num::NonZeroU32,
+    crafts: u32,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
+    ensure!(
+        snapshot.client.family == crate::Family::Forever && (1..=1000).contains(&crafts),
+        "Invalid recipe chain request"
+    );
+    if let Some(stock) = inventory {
+        ensure_comparable(snapshot, stock)?;
+    }
+    let stock = RecipeMaterialStock::from_snapshot(
+        inventory.unwrap_or(snapshot),
+        RecipeMaterialScope::AllObservedStorage,
+    )?;
+    let section = snapshot
+        .sections
+        .get("profession_recipe_materials")
+        .ok_or_else(|| anyhow::anyhow!("Bulk recipes unavailable"))?;
+    let mut producers = BTreeMap::<u64, Vec<std::num::NonZeroU32>>::new();
+    for (id, row) in section["entries"]
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Bulk recipes unavailable"))?
+    {
+        if row["status"] == "fixed_items"
+            && let Some(output) = row["output_item_id"].as_u64()
+        {
+            producers.entry(output).or_default().push(
+                std::num::NonZeroU32::new(id.parse()?)
+                    .ok_or_else(|| anyhow::anyhow!("Invalid recipe ID"))?,
+            );
+        }
+    }
+    for choices in producers.values_mut() {
+        choices.sort_unstable();
+    }
+    let mut chain = RecipeChainDraft {
+        snapshot,
+        inventory,
+        producers,
+        balance: stock.quantities,
+        inventory_observed: !stock.observed.is_empty(),
+        active: BTreeSet::new(),
+        steps: Vec::new(),
+        external: BTreeMap::new(),
+        relevant: BTreeSet::new(),
+    };
+    let blocked = chain.craft(recipe_id, crafts).err();
+    let complete = blocked.is_none();
+    let external: Vec<_> = chain
+        .external
+        .iter()
+        .map(|(id, quantity)| {
+            json!({"item_id":id,"quantity":quantity,
+        "basis":"no_captured_fixed_producer"})
+        })
+        .collect();
+    let remaining: Vec<_> = chain
+        .relevant
+        .iter()
+        .map(|id| {
+            json!({"item_id":id,
+        "quantity":chain.balance.get(id).copied().unwrap_or(0)})
+        })
+        .collect();
+    Ok(
+        json!({"basis":"captured_fixed_recipes_observed_stock_and_reported_minimum_yields",
+        "root_recipe_id":recipe_id,"root_crafts":crafts,"maximum_steps":8,
+        "status":if complete {"draft_complete"} else {"blocked"},"draft_complete":complete,"blocked_reason":blocked,
+        "steps":chain.steps,"external_material_requirements":complete.then_some(external),
+        "requires_external_materials":complete.then_some(!chain.external.is_empty()),
+        "modeled_remaining_items_if_completed":complete.then_some(remaining),
+        "observed_storage":stock.observed,"unobserved_storage":stock.missing,
+        "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
+        "complete_ownership_verified":false,"minimum_yields_verified":false,"optimisation_verified":false,
+        "craftability_verified":false,"live":false,"game_execution":false}),
+    )
+}
+
+struct RecipeChainDraft<'a> {
+    snapshot: &'a Snapshot,
+    inventory: Option<&'a Snapshot>,
+    producers: BTreeMap<u64, Vec<std::num::NonZeroU32>>,
+    balance: BTreeMap<u64, u64>,
+    inventory_observed: bool,
+    active: BTreeSet<u32>,
+    steps: Vec<Value>,
+    external: BTreeMap<u64, u64>,
+    relevant: BTreeSet<u64>,
+}
+
+impl RecipeChainDraft<'_> {
+    fn craft(&mut self, id: std::num::NonZeroU32, crafts: u32) -> std::result::Result<(), Value> {
+        if self.active.contains(&id.get()) {
+            return Err(json!({"reason":"cyclic_uncovered_demand","recipe_id":id}));
+        }
+        if self.steps.len() + self.active.len() >= 8 {
+            return Err(json!({"reason":"step_budget","recipe_id":id}));
+        }
+        if !(1..=1000).contains(&crafts) {
+            return Err(json!({"reason":"craft_count_budget","recipe_id":id}));
+        }
+        let review = plan_recipe_by_id(self.snapshot, Some(id), Some(crafts), None, self.inventory)
+            .map_err(
+                |_| json!({"reason":"recipe_observation_conflict_or_unavailable","recipe_id":id}),
+            )?;
+        if review["recipe"]["requirements"] != "fixed_items" {
+            return Err(json!({"reason":"unsupported_materials","recipe_id":id}));
+        }
+        let output = review["base_output_if_completed"]["item_id"].as_u64();
+        let quantity = review["base_output_if_completed"]["minimum"]
+            .as_u64()
+            .filter(|n| *n > 0);
+        let (Some(output), Some(quantity)) = (output, quantity) else {
+            return Err(json!({"reason":"output_or_minimum_yield_unavailable","recipe_id":id}));
+        };
+        self.active.insert(id.get());
+        self.relevant.insert(output);
+        let mut required = Vec::new();
+        for material in review["materials"].as_array().unwrap() {
+            let item = material["item_id"].as_u64().unwrap();
+            let demand = material["required"].as_u64().unwrap();
+            self.relevant.insert(item);
+            if !self.inventory_observed {
+                return Err(json!({"reason":"inventory_unobserved","item_id":item}));
+            }
+            let available = self.balance.get(&item).copied().unwrap_or(0);
+            if available < demand {
+                let deficit = demand - available;
+                let choices = self.producers.get(&item).map(Vec::as_slice).unwrap_or(&[]);
+                if choices.len() > 1 {
+                    return Err(
+                        json!({"reason":"ambiguous_captured_producer","item_id":item,
+                    "candidate_recipe_ids":choices.iter().take(20).collect::<Vec<_>>(),"candidate_count":choices.len(),
+                    "candidates_truncated":choices.len()>20}),
+                    );
+                }
+                if let Some(producer) = choices.first().copied() {
+                    let row = &self.snapshot.sections["profession_recipe_materials"]["entries"]
+                        [producer.to_string()];
+                    let minimum = row["base_output_quantity"]["minimum"].as_u64().filter(|n|*n > 0)
+                        .ok_or_else(||json!({"reason":"output_or_minimum_yield_unavailable","recipe_id":producer}))?;
+                    let count = u32::try_from(deficit.div_ceil(minimum))
+                        .ok()
+                        .filter(|n| *n <= 1000)
+                        .ok_or_else(
+                            || json!({"reason":"craft_count_budget","recipe_id":producer}),
+                        )?;
+                    self.craft(producer, count)?;
+                } else {
+                    let total = self.external.entry(item).or_default();
+                    *total = total
+                        .checked_add(deficit)
+                        .ok_or_else(|| json!({"reason":"quantity_overflow"}))?;
+                    self.balance.insert(item, demand);
+                }
+            }
+            let amount = self
+                .balance
+                .get(&item)
+                .copied()
+                .unwrap_or(0)
+                .checked_sub(demand)
+                .ok_or_else(|| json!({"reason":"producer_did_not_cover_demand","item_id":item}))?;
+            self.balance.insert(item, amount);
+            required.push(json!({"item_id":item,"quantity":demand}));
+        }
+        let amount = self
+            .balance
+            .get(&output)
+            .copied()
+            .unwrap_or(0)
+            .checked_add(quantity)
+            .ok_or_else(|| json!({"reason":"quantity_overflow"}))?;
+        self.balance.insert(output, amount);
+        self.steps.push(json!({"recipe_id":id,"crafts":crafts,"output_item_id":output,
+            "minimum_output_if_completed":quantity,"required_reagents":required,
+            "captured_nonmaterial_checks":{"recipe_learned":review["captured_preparation"]["recipe_learned"],
+                "observed_conditions_met":review["captured_preparation"]["observed_conditions_met"],
+                "observed_charges_cover_request":review["captured_preparation"]["observed_charges_cover_request"]}}));
+        self.active.remove(&id.get());
+        Ok(())
+    }
+}
+
 fn review_recipe_observation(
     snapshot: &Snapshot,
     recipe: &Value,

@@ -6,6 +6,33 @@ See the [interaction map](INTERACTIONS.md) for implemented coverage, planned ana
 
 ## Find recipes supported by observed materials
 
+For one exact bulk recipe, `review_forever_recipe` can take
+`suggest_reagent_chain: true` with its normal `crafts` or
+`target_output_quantity`. The new `reagent_chain` draft expands at most eight
+producer-first steps using only captured fixed recipes and reported minimum
+yields. All steps share the same observed inventory and prior conditional
+outputs; leftovers can satisfy later steps. Repeated producer steps are allowed.
+`external_material_requirements` lists leaf shortages with no captured fixed
+producer. Look these item IDs up in the local catalogue for recorded acquisition
+sources; the draft does not purchase or craft anything.
+
+`draft_complete` means the bounded material model was derived, even when
+`requires_external_materials` is true. It does not mean that materials are owned
+or the chain can currently be crafted. Missing storage stays explicit; modeled
+outputs and external acquisitions never become observed inventory. Unknown
+nonmaterial checks remain unknown, and all ownership, yield, optimisation and
+craftability verification flags stay false.
+
+Normal root recipe, request and inventory validation still runs first and can
+reject the whole review, including a root learning conflict. During expansion,
+multiple captured producers, an uncovered cycle, unknown output/yield,
+producer learning conflicts, unobserved inventory or step/craft limits return a
+blocked chain with an explicit reason. Its prefix steps are incomplete; full external
+requirements and final stock projection are null. This mode requires an exact
+`recipe_id` and cannot combine with `additional_recipes`, dependency-order or
+merchant-plan modes. The default recipe review is unchanged. See
+[ADR 019](../../docs/ADR-019-captured-reagent-chains.md).
+
 To narrow discovery by saved recipe-view flags, add `recipe_view_filter`, for
 example `{"learned":true,"can_skill_up":true,"minimum_skill_ups_reported":1}`.
 Supply at least one non-null predicate. `learned` and `can_skill_up` are optional

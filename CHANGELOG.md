@@ -1,5 +1,9 @@
 # Changelog
 
+- Draft bounded ingredient producer chains from captured recipes, sharing
+  observed stock and minimum-yield leftovers across steps and listing external
+  needs; stop on ambiguous producers, cycles, missing evidence or budgets.
+
 - Search captured bulk recipes by same-profession recipe-view learned and
   skill-up flags, optionally combined with material support; retain explicit
   unknowns and avoid inferring actual learning, skill gains or craftability.

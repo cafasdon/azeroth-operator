@@ -554,6 +554,9 @@ struct RecipeReview {
     /// Suggest a producer-before-consumer order for a batch with known fixed inputs and outputs.
     #[serde(default)]
     suggest_dependency_order: bool,
+    /// Draft up to eight automatic captured producer steps for one exact bulk recipe; no batch or merchant mode.
+    #[serde(default)]
+    suggest_reagent_chain: bool,
     /// Match material shortfalls against saved merchant offers.
     #[serde(default)]
     merchant_reagent_plan: bool,
@@ -1077,7 +1080,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare one to eight saved Forever recipes with observed bags and banks for 1 to 1000 crafts each. Optional recipe_id selects an exact bulk-observed recipe; omit for the selected schematic. Multiple recipes share one compatible inventory snapshot. Offline estimate only.",
+        description = "Compare one to eight saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. Exact recipe_id selects bulk observations. A standalone exact recipe can suggest a bounded reagent producer chain, sharing modeled stock and listing external needs; ambiguous or unsupported evidence blocks expansion. Offline drafts only, no crafting actions.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1091,6 +1094,14 @@ impl Operator {
                 "Merchant snapshot requires a merchant reagent plan"
             );
             let additional = args.additional_recipes.unwrap_or_default();
+            anyhow::ensure!(
+                !args.suggest_reagent_chain
+                    || (args.recipe_id.is_some()
+                        && additional.is_empty()
+                        && !args.suggest_dependency_order
+                        && !args.merchant_reagent_plan),
+                "Reagent chains require one exact bulk recipe without batch or merchant mode"
+            );
             anyhow::ensure!(additional.len() <= 7, "Too many recipes");
             anyhow::ensure!(
                 !args.suggest_dependency_order || !additional.is_empty(),
@@ -1109,6 +1120,14 @@ impl Operator {
                 args.target_output_quantity,
                 inventory.as_ref(),
             )?;
+            if args.suggest_reagent_chain {
+                review["reagent_chain"] = azeroth_operator::analysis::recipe_reagent_chain(
+                    &snapshot,
+                    args.recipe_id.unwrap(),
+                    review["requested_crafts"].as_u64().unwrap() as u32,
+                    inventory.as_ref(),
+                )?;
+            }
             if let Some(id) = args.inventory_snapshot_id {
                 review["inventory_snapshot_id"] = serde_json::json!(id);
             }

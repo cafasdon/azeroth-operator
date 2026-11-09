@@ -182,3 +182,10 @@ subsequently combine captured learned/skill-up observations with optional
 material support through exact same-profession joins. Missing and conflicting
 evidence is not promoted into verified learning or gains. Full levelling
 progression and native profession qualification remain open.
+
+[Captured reagent-chain drafts](reagent-chain-verification-2026-11-09.md)
+then connect an exact bulk recipe goal to bounded unambiguous intermediate
+producers and external material needs, with a shared stock ledger and explicit
+blockers. The model does not execute actions, establish acquisition availability,
+verify yields/ownership or optimise the full crafting route. These and native
+profession qualification remain unfinished.

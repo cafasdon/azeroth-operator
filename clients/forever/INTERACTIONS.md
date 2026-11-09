@@ -1,5 +1,13 @@
 # Forever interaction map
 
+An exact bulk recipe review can opt into `suggest_reagent_chain`. The bounded
+producer draft reuses observed stock and conditional minimum-yield leftovers,
+chooses only unambiguous captured fixed producers, and lists external material
+needs. Ambiguity, cycles, missing evidence and step/craft limits block expansion.
+Draft completion is not ownership or eligibility; modeled acquisition/output
+does not become inventory. No price optimisation or gameplay action is performed.
+[Offline evidence](../../docs/reagent-chain-verification-2026-11-09.md).
+
 Bulk recipe discovery can join captured recipe-view learned, skill-up and
 minimum reported-point predicates through `recipe_view_filter`. Exact recipe
 and profession IDs must agree. Same-row three-valued matching preserves
