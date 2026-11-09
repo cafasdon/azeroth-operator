@@ -589,11 +589,297 @@ impl ActivePetCaptureFilter {
     }
 }
 
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum InventoryStorage {
+    Equipment,
+    Bags,
+    CharacterBank,
+    AccountBank,
+}
+
+impl InventoryStorage {
+    fn section_name(self) -> &'static str {
+        match self {
+            Self::Equipment => "equipment",
+            Self::Bags => "bags",
+            Self::CharacterBank => "character_bank",
+            Self::AccountBank => "account_bank",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InventoryItemFilter {
+    pub item_id: std::num::NonZeroU32,
+    pub storage: InventoryStorage,
+    pub minimum_quantity: u64,
+    pub maximum_quantity: Option<u64>,
+}
+
+impl InventoryItemFilter {
+    pub fn validate(&self, family: &Family) -> Result<()> {
+        ensure!(
+            !matches!(
+                self.storage,
+                InventoryStorage::CharacterBank | InventoryStorage::AccountBank
+            ) || *family == Family::Forever,
+            "Bank inventory filtering requires Forever"
+        );
+        ensure!(
+            self.maximum_quantity
+                .is_none_or(|maximum| self.minimum_quantity <= maximum),
+            "Inventory minimum quantity exceeds maximum quantity"
+        );
+        Ok(())
+    }
+
+    // The store validates the complete source snapshot before applying filters.
+    // Absence means unknown; an observed empty section means zero.
+    fn observed_quantity(&self, snapshot: &Snapshot) -> Option<u64> {
+        let section = snapshot
+            .sections
+            .get(self.storage.section_name())?
+            .as_object()?;
+        let requested = u64::from(self.item_id.get());
+        let mut quantity = 0_u64;
+        match self.storage {
+            InventoryStorage::Equipment => {
+                for item in section.values() {
+                    if item["item_id"].as_u64()? == requested {
+                        quantity = quantity.checked_add(1)?;
+                    }
+                }
+            }
+            _ => {
+                for container in section.values() {
+                    for item in container.as_object()?.values() {
+                        if item["item_id"].as_u64()? == requested {
+                            let count = item["count"].as_u64()?;
+                            if count == 0 || count > u64::from(u32::MAX) {
+                                return None;
+                            }
+                            quantity = quantity.checked_add(count)?;
+                        }
+                    }
+                }
+            }
+        }
+        Some(quantity)
+    }
+
+    fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
+        let quantity = self.observed_quantity(snapshot)?;
+        if quantity < self.minimum_quantity
+            || self
+                .maximum_quantity
+                .is_some_and(|maximum| quantity > maximum)
+        {
+            return None;
+        }
+        Some(json!({
+            "item_id": self.item_id,
+            "storage": self.storage,
+            "observed_quantity": quantity,
+            "basis": "same_snapshot_single_storage",
+            "complete_ownership_verified": false,
+            "current_access_verified": false,
+            "shared_storage_scope_verified": false,
+            "cross_character_aggregation_performed": false,
+            "game_execution": false,
+        }))
+    }
+}
+
+#[cfg(test)]
+mod inventory_item_filter_tests {
+    use super::*;
+
+    fn filter(
+        storage: InventoryStorage,
+        minimum: u64,
+        maximum: Option<u64>,
+    ) -> InventoryItemFilter {
+        InventoryItemFilter {
+            item_id: std::num::NonZeroU32::new(123).unwrap(),
+            storage,
+            minimum_quantity: minimum,
+            maximum_quantity: maximum,
+        }
+    }
+
+    fn snapshot(sections: Value) -> Snapshot {
+        let snapshot: Snapshot = serde_json::from_value(json!({
+            "schema_version": 1,
+            "source": "fixture",
+            "captured_at": "2025-01-01T00:00:00Z",
+            "client": {"family": "forever", "variant": "test", "build": "123", "interface": 123},
+            "character": {"name": "Example", "realm": "Test"},
+            "sections": sections,
+        }))
+        .unwrap();
+        snapshot.validate().unwrap();
+        snapshot
+    }
+
+    #[test]
+    fn required_fields_and_unknown_fields_are_rejected() {
+        let valid = json!({"item_id": 123, "storage": "bags", "minimum_quantity": 0});
+        assert!(serde_json::from_value::<InventoryItemFilter>(valid.clone()).is_ok());
+        for field in ["item_id", "storage", "minimum_quantity"] {
+            let mut missing = valid.clone();
+            missing.as_object_mut().unwrap().remove(field);
+            assert!(serde_json::from_value::<InventoryItemFilter>(missing).is_err());
+        }
+        for (field, value) in [
+            ("item_id", json!(0)),
+            ("storage", json!("all")),
+            ("minimum_quantity", json!(-1)),
+            ("minimum_quantity", json!(1.5)),
+            ("aggregate_characters", json!(true)),
+        ] {
+            let mut invalid = valid.clone();
+            invalid[field] = value;
+            assert!(serde_json::from_value::<InventoryItemFilter>(invalid).is_err());
+        }
+    }
+
+    #[test]
+    fn banks_require_forever_and_quantity_bounds_are_ordered() {
+        for storage in [
+            InventoryStorage::CharacterBank,
+            InventoryStorage::AccountBank,
+        ] {
+            let query = filter(storage, 0, Some(0));
+            assert!(query.validate(&Family::Forever).is_ok());
+            assert!(query.validate(&Family::Retail).is_err());
+            assert!(query.validate(&Family::Classic).is_err());
+        }
+        for storage in [InventoryStorage::Equipment, InventoryStorage::Bags] {
+            for family in [Family::Forever, Family::Retail, Family::Classic] {
+                assert!(filter(storage, 0, Some(0)).validate(&family).is_ok());
+                assert!(filter(storage, 2, Some(1)).validate(&family).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn missing_or_unavailable_is_unknown_but_empty_is_observed_zero() {
+        for storage in [
+            InventoryStorage::Equipment,
+            InventoryStorage::Bags,
+            InventoryStorage::CharacterBank,
+            InventoryStorage::AccountBank,
+        ] {
+            let query = filter(storage, 0, Some(0));
+            let mut absent = snapshot(json!({}));
+            assert_eq!(query.observed_quantity(&absent), None);
+            assert!(query.observation_match(&absent).is_none());
+            absent
+                .unavailable
+                .insert(storage.section_name().into(), "Not captured".into());
+            absent.validate().unwrap();
+            assert!(query.observation_match(&absent).is_none());
+            let mut sections = serde_json::Map::new();
+            sections.insert(storage.section_name().into(), json!({}));
+            let empty = snapshot(Value::Object(sections));
+            assert_eq!(query.observed_quantity(&empty), Some(0));
+            assert!(query.observation_match(&empty).is_some());
+        }
+    }
+
+    #[test]
+    fn equipment_counts_locations_and_emits_only_match_metadata() {
+        let capture = snapshot(json!({"equipment": {
+            "11": {"item_id": 123, "guid": "private-guid", "link": "private-link"},
+            "12": {"item_id": 123},
+            "16": {"item_id": 456}
+        }}));
+        let query = filter(InventoryStorage::Equipment, 2, Some(2));
+        assert_eq!(query.observed_quantity(&capture), Some(2));
+        assert_eq!(
+            query.observation_match(&capture).unwrap(),
+            json!({
+                "item_id": 123,
+                "storage": "equipment",
+                "observed_quantity": 2,
+                "basis": "same_snapshot_single_storage",
+                "complete_ownership_verified": false,
+                "current_access_verified": false,
+                "shared_storage_scope_verified": false,
+                "cross_character_aggregation_performed": false,
+                "game_execution": false
+            })
+        );
+        assert!(
+            filter(InventoryStorage::Equipment, 3, None)
+                .observation_match(&capture)
+                .is_none()
+        );
+        assert!(
+            filter(InventoryStorage::Equipment, 0, Some(1))
+                .observation_match(&capture)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn container_stacks_use_u64_and_never_add_other_storage() {
+        let capture = snapshot(json!({
+            "equipment": {"11": {"item_id": 123}},
+            "bags": {"0": {"1": {"item_id": 123, "count": u32::MAX}},
+                     "1": {"1": {"item_id": 123, "count": u32::MAX},
+                           "2": {"item_id": 456, "count": 999}}},
+            "character_bank": {"5": {"1": {"item_id": 123, "count": 7}}},
+            "account_bank": {"10": {"1": {"item_id": 123, "count": 11}}}
+        }));
+        for (storage, expected) in [
+            (InventoryStorage::Equipment, 1),
+            (InventoryStorage::Bags, 2 * u64::from(u32::MAX)),
+            (InventoryStorage::CharacterBank, 7),
+            (InventoryStorage::AccountBank, 11),
+        ] {
+            let query = filter(storage, expected, Some(expected));
+            assert_eq!(query.observed_quantity(&capture), Some(expected));
+            assert!(query.observation_match(&capture).is_some());
+        }
+    }
+
+    #[test]
+    fn nonmatching_items_are_zero_without_cross_snapshot_aggregation() {
+        let first = snapshot(json!({"bags": {"0": {"1": {"item_id": 123, "count": 2}}}}));
+        let second = snapshot(json!({"bags": {"0": {"1": {"item_id": 123, "count": 3}}}}));
+        let query = filter(InventoryStorage::Bags, 5, None);
+        assert!(query.observation_match(&first).is_none());
+        assert!(query.observation_match(&second).is_none());
+        let nonmatching = snapshot(json!({"bags": {"0": {"1": {"item_id": 456, "count": 99}}}}));
+        assert_eq!(query.observed_quantity(&nonmatching), Some(0));
+        assert!(
+            filter(InventoryStorage::Bags, 0, Some(0))
+                .observation_match(&nonmatching)
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn malformed_matching_counts_fail_closed() {
+        let mut capture = snapshot(json!({"bags": {"0": {"1": {"item_id": 123, "count": 1}}}}));
+        let query = filter(InventoryStorage::Bags, 0, None);
+        for count in [json!(0), json!(u64::from(u32::MAX) + 1), Value::Null] {
+            capture.sections.get_mut("bags").unwrap()["0"]["1"]["count"] = count;
+            assert!(capture.validate().is_err());
+            assert!(query.observation_match(&capture).is_none());
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
     pub captured_through: Option<&'a str>,
     pub latest_per_character: bool,
+    pub inventory_item: Option<InventoryItemFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -792,6 +1078,7 @@ impl Store {
             captured_from,
             captured_through,
             latest_per_character,
+            inventory_item,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -846,6 +1133,9 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        if let Some(filter) = &inventory_item {
+            filter.validate(&family)?;
+        }
         ensure!(
             collected_mount.is_none() || family == Family::Forever,
             "Mount filtering requires Forever"
@@ -1257,6 +1547,12 @@ impl Store {
                                 && s.character.realm.to_lowercase() == target.realm.to_lowercase()
                         }) =>
                 {
+                    let inventory_item_match = inventory_item
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if inventory_item.is_some() && inventory_item_match.is_none() {
+                        continue;
+                    }
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
                         let view=s.sections.get("pet_collection_view")?;
                         let row=view["entries"].get(key)?;
@@ -1888,6 +2184,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_species_match {
                         summary["pet_species_match"] = observation;
+                    }
+                    if let Some(observation) = inventory_item_match {
+                        summary["inventory_item_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;

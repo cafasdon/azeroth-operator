@@ -322,6 +322,8 @@ struct List {
     bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
     /// Find saved captures with enough carried food classified as accepted by the active pet.
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
+    /// Find saved characters by one base item's observed quantity in one explicit storage; never aggregate characters or shared banks.
+    inventory_item: Option<azeroth_operator::InventoryItemFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1555,7 +1557,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Supports capture time bounds and newest-per-character selection. Forever listings can filter captured quests, currency, XP, maps, professions, recipes, bag space, pet food, repair quotes, merchant offers, trainer lessons and flights. Does not identify the character currently in play.",
+        description = "List saved snapshots for an explicit client family and optional character name plus realm, newest capture first. Supports capture time bounds, newest-per-character selection and exact item quantity filters in one explicit observed storage without cross-character aggregation. Forever listings can filter captured quests, currency, XP, maps, professions, recipes, bag space, pet food, repair quotes, merchant offers, trainer lessons and flights. Does not identify the character currently in play.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1601,6 +1603,7 @@ impl Operator {
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
                 bag_family_space: args.bag_family_space,
                 pet_food: args.pet_food,
+                inventory_item: args.inventory_item,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

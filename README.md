@@ -1,5 +1,14 @@
 # Azeroth Operator
 
+Saved-character inventory discovery can filter `list_snapshots` with
+`inventory_item`: an item ID, explicit storage and observed quantity bounds.
+Use `latest_per_character` to avoid reviving an older stock observation when a
+newer capture is empty or unknown. Quantities stay separate per capture/storage;
+shared banks are never totalled across characters. This is historical discovery,
+not active-character detection or current access.
+[Contract](docs/ADR-049-saved-inventory-discovery.md) ·
+[Offline evidence](docs/inventory-item-discovery-verification-2026-11-09.md).
+
 Forever manual captures can include carried-item cooldown observations linked
 to the captured bag slots. Each item has a readable historical timer/enabled
 state or explicit unavailable status; summaries keep those counts separate.

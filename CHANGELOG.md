@@ -1,5 +1,10 @@
 # Changelog
 
+- Discover saved characters by one item's observed quantity in one explicit
+  storage, without a simulator catalogue. Preserve newest-before-filter
+  selection, unknown storage and per-capture shared-bank boundaries; no sums
+  across characters or current ownership/access claims.
+
 - Align Python base inventory structure with the Rust reader: reject unsupported
   item fields, invalid IDs/keys/shapes, malformed links/GUIDs and bank-family or
   container collisions before ingestion writes. Preserve valid optional values.

@@ -1905,3 +1905,10 @@ Base inventory ingestion now follows the existing Rust structure, item-field,
 identity, UTF-8 and bank-container contract, rejecting unsupported fields before
 writes. Invalid saved captures are refused without rewriting them. Verified with
 241 actual MCP structure cases; full snapshot-schema equivalence remains separate.
+
+Saved-character item discovery uses list_snapshots.inventory_item with an
+explicit storage and observed quantity bounds. Unknown storage does not match
+zero; newest-per-character selection runs before the quantity predicate.
+Shared-bank observations remain separate and are never summed across characters.
+The owner-local query needs no simulator catalogue and does not identify the
+active player or verify present stock/access. See ADR 049 and [verification](../../docs/inventory-item-discovery-verification-2026-11-09.md).
