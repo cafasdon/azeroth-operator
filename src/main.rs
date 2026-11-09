@@ -342,6 +342,10 @@ struct List {
     gossip_option: Option<azeroth_operator::gossip_option_filter::GossipOptionFilter>,
     /// Find saved Forever captures whose outgoing trade offer visibly contained this base item ID.
     outgoing_trade_item_id: Option<std::num::NonZeroU32>,
+    /// Inclusive minimum reported personal PvP rank in a saved Forever capture.
+    minimum_pvp_rank: Option<u32>,
+    /// Inclusive maximum reported personal PvP rank in a saved Forever capture.
+    maximum_pvp_rank: Option<u32>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1730,6 +1734,7 @@ impl Operator {
                 skill_line: args.skill_line,
                 gossip_option: args.gossip_option,
                 outgoing_trade_item_id: args.outgoing_trade_item_id,
+                pvp_rank_range: (args.minimum_pvp_rank, args.maximum_pvp_rank),
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,

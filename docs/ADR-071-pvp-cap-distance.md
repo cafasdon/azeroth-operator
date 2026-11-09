@@ -43,3 +43,19 @@ returned integrate .72 at confidence .58 with 407 input and 49 output tokens
 in .300 seconds.
 Independent review verified capture identity and ordering rejection, both missing
 observations, and unknown earned points when the reported rank falls.
+
+Use `minimum_pvp_rank` or `maximum_pvp_rank` on `list_snapshots` with
+`family: forever` to find saved observations by reported rank. The bounds are
+inclusive and accept zero. Captures without a PvP observation are excluded.
+With `latest_per_character`, the latest capture in the requested date range
+must satisfy the rank filter. Results carry `pvp_rank_match` as historical
+evidence. Current progression remains unverified.
+
+The offline build and two MCP tests passed. The PvP fixture covered zero and
+maximum ranks, missing observations, latest-capture selection, reversed bounds
+and unsupported clients. Jev 1.14.0 advisory
+`d0408b4a34693801337102daa753d1ff12a3b1ac057cf20c93d51479c5b225c2`
+returned integrate .63 at confidence .44 with 403 input and 49 output tokens
+in .354 seconds.
+Independent review also verified a two-sided inclusive range, paging and
+rejection of malformed bounds.

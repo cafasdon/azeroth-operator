@@ -44,6 +44,9 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                 saved=deepcopy(base)
                 if row is not None:saved['sections']['player_pvp_progression']=row
                 valid.append((store.ingest(saved),row))
+            newest = deepcopy(base)
+            newest['captured_at'] = '2025-01-02T00:00:00Z'
+            store.ingest(newest)
             snapshots=[]
             for row in invalid:
                 saved=deepcopy(base);saved['sections']['player_pvp_progression']=row;snapshots.append(saved)
@@ -86,6 +89,18 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                             for flag in ['current_progression_verified','rank_eligibility_verified','reward_eligibility_verified','game_execution']:
                                 self.assertIs(report[flag],False)
                     old, new = valid[6][0], valid[10][0]
+                    zero_rank = await call('list_snapshots',family='forever',maximum_pvp_rank=0)
+                    self.assertEqual({row['snapshot_id'] for row in zero_rank['snapshots']}, {valid[4][0],valid[7][0]})
+                    highest = await call('list_snapshots',family='forever',minimum_pvp_rank=4294967295,limit=1)
+                    self.assertEqual(len(highest['snapshots']),1)
+                    self.assertEqual(highest['snapshots'][0]['pvp_rank_match']['rank'],4294967295)
+                    self.assertIs(highest['snapshots'][0]['pvp_rank_match']['current_progression_verified'],False)
+                    latest = await call('list_snapshots',family='forever',minimum_pvp_rank=0,latest_per_character=True)
+                    self.assertEqual(latest['snapshots'],[])
+                    plain = await call('list_snapshots',family='forever',limit=1)
+                    self.assertNotIn('pvp_rank_match',plain['snapshots'][0])
+                    await call('list_snapshots',error=True,family='forever',minimum_pvp_rank=4,maximum_pvp_rank=3)
+                    await call('list_snapshots',error=True,family='retail',maximum_pvp_rank=0)
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:

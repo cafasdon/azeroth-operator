@@ -1265,6 +1265,7 @@ pub struct CaptureFilters<'a> {
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
     pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
+    pub pvp_rank_range: (Option<u32>, Option<u32>),
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1469,6 +1470,7 @@ impl Store {
             skill_line,
             gossip_option,
             outgoing_trade_item_id,
+            pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1590,6 +1592,17 @@ impl Store {
         ensure!(
             outgoing_trade_item_id.is_none() || family == Family::Forever,
             "Outgoing trade filtering requires Forever"
+        );
+        let filter_pvp_rank = minimum_pvp_rank.is_some() || maximum_pvp_rank.is_some();
+        ensure!(
+            !filter_pvp_rank || family == Family::Forever,
+            "PvP rank filtering requires Forever"
+        );
+        ensure!(
+            minimum_pvp_rank
+                .zip(maximum_pvp_rank)
+                .is_none_or(|(min, max)| min <= max),
+            "Reversed PvP rank bounds"
         );
         if let Some(filter) = &gossip_option {
             filter.validate()?;
@@ -2010,6 +2023,21 @@ impl Store {
                     if outgoing_trade_item_id.is_some() && outgoing_trade_item_match.is_none() {
                         continue;
                     }
+                    let pvp_rank_match = if filter_pvp_rank {
+                        let Some(progression) = s.sections.get("player_pvp_progression") else {
+                            continue;
+                        };
+                        let rank = progression["rank"].as_u64().unwrap();
+                        if minimum_pvp_rank.is_some_and(|min| rank < u64::from(min))
+                            || maximum_pvp_rank.is_some_and(|max| rank > u64::from(max))
+                        {
+                            continue;
+                        }
+                        Some(json!({"rank":rank,"faction_id":progression["faction_id"],
+                            "coverage":progression["coverage"],"current_progression_verified":false}))
+                    } else {
+                        None
+                    };
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
                         let view=s.sections.get("pet_collection_view")?;
                         let row=view["entries"].get(key)?;
@@ -2659,6 +2687,9 @@ impl Store {
                     }
                     if let Some(observation) = outgoing_trade_item_match {
                         summary["outgoing_trade_item_match"] = observation;
+                    }
+                    if let Some(observation) = pvp_rank_match {
+                        summary["pvp_rank_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;
