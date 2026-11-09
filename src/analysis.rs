@@ -1146,7 +1146,7 @@ pub fn reagent_chain_stock_plan(
 
 fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value {
     let mut locations = Vec::new();
-    let mut truncated = false;
+    let mut total_locations = 0;
     for storage in ["character_bank", "account_bank"] {
         let mut remaining: BTreeMap<_, _> = withdrawals
             .iter()
@@ -1183,19 +1183,16 @@ fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value 
             if take == 0 {
                 continue;
             }
-            if locations.len() == 50 {
-                truncated = true;
-                break;
-            }
             *quantity -= take;
-            locations.push(json!({"storage":storage,"container":container.to_string(),
-                "slot":slot.to_string(),"item_id":id,"observed_quantity":count,"suggested_quantity":take}));
-        }
-        if truncated {
-            break;
+            total_locations += 1;
+            if locations.len() < 50 {
+                locations.push(json!({"storage":storage,"container":container.to_string(),
+                    "slot":slot.to_string(),"item_id":id,"observed_quantity":count,"suggested_quantity":take}));
+            }
         }
     }
-    json!({"locations":locations,"truncated":truncated})
+    json!({"locations":locations,"total_locations":total_locations,
+        "truncated":total_locations > locations.len()})
 }
 
 impl RecipeChainDraft<'_> {

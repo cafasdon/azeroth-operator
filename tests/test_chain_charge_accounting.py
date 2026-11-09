@@ -90,11 +90,12 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                         'locations':[{'storage':storage,'container':container,'slot':'1','item_id':10,
                                       'observed_quantity':1,'suggested_quantity':1}
                                      for storage,container in [('character_bank','6'),('account_bank','7')]],
-                        'truncated':False})
+                        'total_locations':2,'truncated':False})
                     compact = await plan(keys[1],inventory_snapshot_id=large_stack_inventory)
                     self.assertEqual(compact['stock_plan']['suggested_bank_withdrawal_locations'], {
                         'locations':[{'storage':'character_bank','container':'6','slot':'2','item_id':10,
-                                      'observed_quantity':3,'suggested_quantity':2}], 'truncated':False})
+                                      'observed_quantity':3,'suggested_quantity':2}],
+                        'total_locations':1,'truncated':False})
                     self.assertEqual(one['stock_plan']['suggested_bank_withdrawal_list'], [])
                     self.assertEqual(banked['stock_plan']['acquisition_shortfalls_vs_observed_storage'], [])
                     partial = await plan(keys[1],inventory_snapshot_id=partial_bank_inventory)

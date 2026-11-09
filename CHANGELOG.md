@@ -1,5 +1,7 @@
 # Changelog
 
+- Report the full number of suggested Forever withdrawal slots when location output is truncated.
+
 - Prefer larger captured stacks to minimise bank slots in Forever chain withdrawal guides.
 
 - Locate suggested Forever reagent-chain withdrawals in captured bank slots.
