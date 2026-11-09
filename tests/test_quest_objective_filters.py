@@ -48,6 +48,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
             changed['captured_at']='2025-01-01T00:00:30Z'
             changed['sections']['quests']['3']['timer']['remaining_seconds']=30
+            changed['sections']['bags']['0']['1']['count']=4
+            changed['sections']['wallet']['copper']=2
             changed_key=store.ingest(changed)
             merchant=deepcopy(base)
             merchant['sections']['merchant_stock']={
@@ -128,6 +130,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quote['merchant_snapshot_id'],merchant_key)
                     self.assertEqual(quote['copper_only_bundle_mix_total'],9)
                     self.assertIs(quote['copper_only_bundle_mix_affordable'],False)
+                    newer=await query(quest_id=3,quest_inventory_requirements=requirements,
+                        quest_inventory_snapshot_id=changed_key,quest_inventory_merchant_snapshot_id=merchant_key)
+                    self.assertEqual(newer['data'],exact['data'])
+                    self.assertEqual(newer['quest_inventory_review']['inventory_snapshot_id'],changed_key)
+                    self.assertEqual(newer['quest_inventory_review']['items'][0]['shortfall_vs_observed'],0)
+                    self.assertEqual(newer['quest_inventory_merchant_quote']['copper_only_bundle_mix_total'],2)
+                    self.assertIs(newer['quest_inventory_merchant_quote']['copper_only_bundle_mix_affordable'],True)
+                    await query(error=True,snapshot_id=changed_key,quest_id=3,
+                                quest_inventory_requirements=requirements,quest_inventory_snapshot_id=key)
+                    await query(error=True,quest_id=3,quest_inventory_snapshot_id=changed_key)
                     await query(error=True,quest_id=3,quest_inventory_merchant_snapshot_id=merchant_key)
                     await query(error=True,quest_id=3,quest_inventory_requirements=requirements,
                                 quest_inventory_merchant_snapshot_id=retail)

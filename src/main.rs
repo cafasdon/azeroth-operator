@@ -156,6 +156,8 @@ struct Inspect {
     quest_item_catalogue: bool,
     /// Compare user-supplied quest item requirements with one saved storage section.
     quest_inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
+    /// Use this compatible same-time or newer capture for quest inventory and wallet observations.
+    quest_inventory_snapshot_id: Option<String>,
     /// Quote quest inventory shortfalls using this saved same-character merchant visit.
     quest_inventory_merchant_snapshot_id: Option<String>,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
@@ -2524,11 +2526,12 @@ impl Operator {
                 "Quest item catalogue requires a quest ID and the quests section",
             )]);
         }
-        if args.quest_inventory_merchant_snapshot_id.is_some()
+        if (args.quest_inventory_merchant_snapshot_id.is_some()
+            || args.quest_inventory_snapshot_id.is_some())
             && args.quest_inventory_requirements.is_none()
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "A quest merchant quote requires quest inventory requirements",
+                "Quest inventory and merchant captures require quest inventory requirements",
             )]);
         }
         if let Some(requirements) = &args.quest_inventory_requirements
@@ -3438,15 +3441,42 @@ impl Operator {
                     } else {
                         None
                     };
+                    let inventory_override = if let Some(id) = &args.quest_inventory_snapshot_id {
+                        let inventory = self.store.read(id).and_then(|inventory| {
+                            azeroth_operator::analysis::ensure_comparable(
+                                review_snapshot.as_ref().unwrap(),
+                                &inventory,
+                            )?;
+                            Ok(inventory)
+                        });
+                        let Ok(inventory) = inventory else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest inventory requires a compatible same-time or newer capture",
+                            )]);
+                        };
+                        Some(inventory)
+                    } else {
+                        None
+                    };
+                    let quest_stock = inventory_override.as_ref().or(review_snapshot.as_ref());
                     if let Some(requirements) = &args.quest_inventory_requirements {
                         value["quest_inventory_review"] = serde_json::json!(
                             quest
-                                .zip(review_snapshot.as_ref())
+                                .zip(quest_stock)
                                 .map(|(_, snapshot)| requirements.review_observed_stock(snapshot))
                         );
+                        if let Some(id) = &args.quest_inventory_snapshot_id
+                            && let Some(report) = value["quest_inventory_review"].as_object_mut()
+                        {
+                            report.insert("inventory_snapshot_id".into(), serde_json::json!(id));
+                            report.insert(
+                                "inventory_captured_at".into(),
+                                serde_json::json!(quest_stock.unwrap().captured_at),
+                            );
+                        }
                     }
                     if let Some(merchant_id) = &args.quest_inventory_merchant_snapshot_id {
-                        let snapshot = review_snapshot.as_ref().unwrap();
+                        let snapshot = quest_stock.unwrap();
                         let merchant = self.store.read(merchant_id).and_then(|merchant| {
                             azeroth_operator::analysis::ensure_same_character_and_client(
                                 snapshot, &merchant,

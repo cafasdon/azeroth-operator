@@ -1,5 +1,7 @@
 # Changelog
 
+- Recheck saved Forever quest item requirements against a compatible newer inventory capture.
+
 - Quote saved merchant prices for user-supplied Forever quest item shortfalls.
 
 - Check user-supplied Forever quest item requirements against saved inventory.

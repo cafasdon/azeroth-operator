@@ -4705,7 +4705,7 @@ fn observed_flag_changed(before: Option<&Value>, after: Option<&Value>, key: &st
     Some(before?.get(key)?.as_bool()? != after?.get(key)?.as_bool()?)
 }
 
-fn ensure_comparable(before: &Snapshot, after: &Snapshot) -> Result<()> {
+pub fn ensure_comparable(before: &Snapshot, after: &Snapshot) -> Result<()> {
     ensure_same_character_and_client(before, after)?;
     ensure!(
         before.captured_at <= after.captured_at,

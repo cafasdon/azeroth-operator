@@ -15,6 +15,10 @@ binding and quest readiness unverified.
 Add `quest_inventory_merchant_snapshot_id` to price the shortfalls from a
 saved merchant visit for the same character and client. Quotes use the
 inventory capture's wallet and preserve unknown stock or incomplete prices.
+Set `quest_inventory_snapshot_id` to check a same-time or newer capture of
+the same character and exact client. The quest stays anchored to the
+original capture. Inventory quantities and merchant affordability use the
+selected stock capture.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.
