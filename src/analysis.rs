@@ -2556,7 +2556,11 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
     Ok(result)
 }
 
-pub fn observed_bag_stack_groups(snapshot: &Snapshot, item_id: u32) -> Option<Value> {
+pub fn observed_bag_stack_groups(
+    snapshot: &Snapshot,
+    item_id: u32,
+    assumed_max_stack_size: Option<std::num::NonZeroU32>,
+) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64)>>::new();
     let mut locations_without_link = 0;
@@ -2589,14 +2593,26 @@ pub fn observed_bag_stack_groups(snapshot: &Snapshot, item_id: u32) -> Option<Va
         let locations: Vec<_> = rows.iter().take(10).map(|&(bag, slot, count)| {
             json!({"bag":bag,"slot":slot,"count":count})
         }).collect();
-        json!({"stack_count":rows.len(),"total_quantity":rows.iter().map(|row|row.2).sum::<u64>(),
-            "locations":locations,"locations_truncated":rows.len()>locations.len()})
+        let quantity = rows.iter().map(|row| row.2).sum::<u64>();
+        let mut group = json!({"stack_count":rows.len(),"total_quantity":quantity,
+            "locations":locations,"locations_truncated":rows.len()>locations.len()});
+        if let Some(maximum) = assumed_max_stack_size {
+            let maximum = u64::from(maximum.get());
+            let consistent = rows.iter().all(|row| row.2 <= maximum);
+            let minimum = consistent.then(|| quantity.div_ceil(maximum));
+            group["capacity_projection"] = json!({"observed_counts_fit_assumption":consistent,
+                "minimum_stacks_under_assumption":minimum,
+                "maximum_slots_freed_under_assumption":minimum.map(|count| rows.len() as u64 - count)});
+        }
+        group
     }).collect();
-    Some(
-        json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
+    let mut report = json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
         "locations_without_link":locations_without_link,
-        "stack_compatibility_verified":false,"game_execution":false}),
-    )
+        "stack_compatibility_verified":false,"game_execution":false});
+    if let Some(maximum) = assumed_max_stack_size {
+        report["assumed_max_stack_size"] = json!(maximum.get());
+    }
+    Some(report)
 }
 
 fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Value> {

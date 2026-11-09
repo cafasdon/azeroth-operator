@@ -854,6 +854,8 @@ struct FindItem {
     /// Review carried stacks with identical saved item links, without generating operations.
     #[serde(default)]
     bag_stack_groups: bool,
+    /// User-supplied stack capacity for a hypothetical consolidation estimate.
+    assumed_max_stack_size: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1286,6 +1288,10 @@ impl Operator {
         let result = (|| {
             let additional = args.additional_snapshot_ids.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
+            anyhow::ensure!(
+                args.assumed_max_stack_size.is_none() || args.bag_stack_groups,
+                "Stack capacity assumptions require bag stack groups"
+            );
             let query = |id: &str, snapshot: &azeroth_operator::Snapshot| {
                 let mut found = azeroth_operator::analysis::find_item(
                     snapshot,
@@ -1298,7 +1304,8 @@ impl Operator {
                     found["bag_stack_groups"] =
                         serde_json::json!(azeroth_operator::analysis::observed_bag_stack_groups(
                             snapshot,
-                            args.item_id.get()
+                            args.item_id.get(),
+                            args.assumed_max_stack_size
                         ));
                 }
                 Ok::<_, anyhow::Error>(found)
@@ -1321,7 +1328,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50.",
+                "Item search requires up to eight distinct compatible snapshots, a limit from 1 to 50, and bag stack groups when a stack capacity is supplied.",
             )]),
         }
     }

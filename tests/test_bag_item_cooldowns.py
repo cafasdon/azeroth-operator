@@ -60,6 +60,19 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         'stack_compatibility_verified':False,'game_execution':False,
                         'groups':[{'stack_count':2,'total_quantity':10,'locations_truncated':False,
                                    'locations':[{'bag':0,'slot':2,'count':7},{'bag':0,'slot':10,'count':3}]}]})
+                    for capacity, expected in [(6,(False,None,None)),(7,(True,2,0)),(10,(True,1,1))]:
+                        projected = await session.call_tool('find_snapshot_item', {
+                            'snapshot_id':store.ingest(stacks),'item_id':1,'bag_stack_groups':True,
+                            'assumed_max_stack_size':capacity})
+                        self.assertFalse(projected.isError,projected)
+                        groups = json.loads(projected.content[0].text)['bag_stack_groups']
+                        self.assertEqual(groups['assumed_max_stack_size'],capacity)
+                        self.assertEqual(groups['groups'][0]['capacity_projection'],dict(zip((
+                            'observed_counts_fit_assumption','minimum_stacks_under_assumption',
+                            'maximum_slots_freed_under_assumption'),expected)))
+                    refused = await session.call_tool('find_snapshot_item', {
+                        'snapshot_id':store.ingest(stacks),'item_id':1,'assumed_max_stack_size':10})
+                    self.assertTrue(refused.isError)
                     inspected = await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'bag_item_cooldowns'})
                     self.assertFalse(inspected.isError,inspected)
                     self.assertEqual(json.loads(inspected.content[0].text)['data'],value['sections']['bag_item_cooldowns'])

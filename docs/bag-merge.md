@@ -39,4 +39,12 @@ uses the whole saved bag observation independently of item-search paging.
 Absent bag data returns null. Links and GUIDs are omitted. The report
 leaves native stack compatibility and capacity unverified.
 
+With bag stack groups enabled, `assumed_max_stack_size` adds a hypothetical
+minimum stack count and maximum slots freed for each displayed group.
+The estimate uses the full group quantity, including undisplayed slots,
+and assumes the items can be redistributed freely up to that capacity.
+Any recorded stack above the supplied capacity leaves the estimate unknown.
+The estimate does not verify capacity, placement, or the feasibility of
+any specific merge.
+
 Review evidence: Jev1.14.0 advisory returned insufficient_evidence (probability0.89, confidence0.83), request b3ad4cbdedd82530f21d67d1c5fc58019053ecc850b9c01c6aa9c13a03ccb37f, 767 input/116 output tokens,0.321s. This is not a review pass or native verification. Required adversarial-review instruction file was unavailable at its configured path. Direct source review confirms two bounded writes and observation-only completion; native assumptions remain explicitly unqualified.

@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate saved bag stack consolidation under a caller-supplied capacity.
+
 - Review saved carried stacks with identical item links without exposing links or producing operations.
 
 - Show exact saved Forever aura readings on each side of a comparison, even with partial coverage.
