@@ -7214,12 +7214,31 @@ pub fn summary(s: &Snapshot) -> Value {
             observed
         })
         .unwrap_or(Value::Null);
-    summary["pet_collection_view_counts"] = s.sections.get("pet_collection_view").map(|view| {
-        let rows=view["entries"].as_object().unwrap();
-        json!({"displayed_rows":view["displayed_rows"],"species_observed":rows.len(),
-            "owned_rows_observed":rows.values().map(|row|row["owned_rows"].as_u64().unwrap()).sum::<u64>(),
-            "unowned_rows_observed":rows.values().map(|row|row["unowned_rows"].as_u64().unwrap()).sum::<u64>()})
-    }).unwrap_or(Value::Null);
+    summary["pet_collection_view_counts"] = s
+        .sections
+        .get("pet_collection_view")
+        .map(|view| {
+            let rows = view["entries"].as_object().unwrap();
+            let (mut owned_rows, mut unowned_rows) = (0u64, 0u64);
+            let (mut owned_only, mut unowned_only, mut mixed) = (0, 0, 0);
+            for row in rows.values() {
+                let owned = row["owned_rows"].as_u64().unwrap();
+                let unowned = row["unowned_rows"].as_u64().unwrap();
+                owned_rows += owned;
+                unowned_rows += unowned;
+                match (owned > 0, unowned > 0) {
+                    (true, true) => mixed += 1,
+                    (true, false) => owned_only += 1,
+                    (false, true) => unowned_only += 1,
+                    (false, false) => {}
+                }
+            }
+            json!({"displayed_rows":view["displayed_rows"],"species_observed":rows.len(),
+            "owned_rows_observed":owned_rows,"unowned_rows_observed":unowned_rows,
+            "species_with_owned_rows_only":owned_only,"species_with_unowned_rows_only":unowned_only,
+            "species_with_both_row_types":mixed})
+        })
+        .unwrap_or(Value::Null);
     summary["mail_attachment_counts"] = s.sections.get("mail_attachments").map(|mail| {
         let rows: Vec<_> = mail["messages"].as_object().unwrap().values()
             .flat_map(|attachments| attachments.as_object().unwrap().values()).collect();

@@ -1,5 +1,7 @@
 # Changelog
 
+- Break down saved Forever pet journal species by observed owned and unowned row presence.
+
 - Filter saved Forever pet journal species by observed owned and unowned row presence.
 
 - Filter saved Forever mount journal rows by reported usability and favourite flags.

@@ -37,6 +37,8 @@ To shortlist without a species ID, inspect `pet_collection_view` with
 `pet_has_owned_rows`, `pet_has_unowned_rows`, or both. False requires an
 observed zero count for that flag. `pet_species_matched_count` counts the
 retained species while the displayed row count describes the original capture.
+Character summaries count species with only owned rows, only unowned rows,
+or both in the saved view. The breakdown describes visible observations.
 
 Saved mail attachment comparisons show the unloaded message count on each
 side, separately from unreadable attachment slots in loaded messages.

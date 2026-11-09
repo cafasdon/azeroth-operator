@@ -121,8 +121,10 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
                     response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_collection_view'})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)['data'],view)
-                    for source,expected in [(key,{'displayed_rows':3,'species_observed':2,'owned_rows_observed':2,'unowned_rows_observed':1}),
-                        (empty_key,{'displayed_rows':0,'species_observed':0,'owned_rows_observed':0,'unowned_rows_observed':0}),
+                    for source,expected in [(key,{'displayed_rows':3,'species_observed':2,'owned_rows_observed':2,'unowned_rows_observed':1,
+                        'species_with_owned_rows_only':1,'species_with_unowned_rows_only':1,'species_with_both_row_types':0}),
+                        (empty_key,{'displayed_rows':0,'species_observed':0,'owned_rows_observed':0,'unowned_rows_observed':0,
+                        'species_with_owned_rows_only':0,'species_with_unowned_rows_only':0,'species_with_both_row_types':0}),
                         (missing_key,None)]:
                         response=await session.call_tool('character_summary',{'snapshot_id':source})
                         self.assertFalse(response.isError)

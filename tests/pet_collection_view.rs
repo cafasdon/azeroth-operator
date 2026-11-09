@@ -65,7 +65,8 @@ fn pet_view_aggregates_species_without_individual_identity()
     assert_eq!(
         azeroth_operator::analysis::summary(&saved)["pet_collection_view_counts"],
         serde_json::json!({
-        "displayed_rows":3,"species_observed":2,"owned_rows_observed":2,"unowned_rows_observed":1})
+        "displayed_rows":3,"species_observed":2,"owned_rows_observed":2,"unowned_rows_observed":1,
+        "species_with_owned_rows_only":1,"species_with_unowned_rows_only":1,"species_with_both_row_types":0})
     );
     lua.load("mode='empty'").exec()?;
     assert_eq!(
