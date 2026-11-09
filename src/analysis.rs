@@ -6815,6 +6815,7 @@ pub fn quest_objective_matches(
     quest: &Value,
     kind: Option<&str>,
     finished: Option<bool>,
+    minimum_remaining: Option<u32>,
     maximum_remaining: Option<u32>,
 ) -> Option<bool> {
     let objectives = quest["objectives"].as_object()?;
@@ -6825,13 +6826,18 @@ pub fn quest_objective_matches(
         {
             continue;
         }
-        if let Some(maximum) = maximum_remaining {
+        if minimum_remaining.is_some() || maximum_remaining.is_some() {
             let remaining = objective["required"]
                 .as_u64()
                 .zip(objective["fulfilled"].as_u64())
                 .map(|(required, fulfilled)| required.saturating_sub(fulfilled));
             match remaining {
-                Some(remaining) if remaining <= u64::from(maximum) => return Some(true),
+                Some(remaining)
+                    if minimum_remaining.is_none_or(|min| remaining >= u64::from(min))
+                        && maximum_remaining.is_none_or(|max| remaining <= u64::from(max)) =>
+                {
+                    return Some(true);
+                }
                 Some(_) => {}
                 None => unknown = true,
             }

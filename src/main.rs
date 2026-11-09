@@ -156,6 +156,8 @@ struct Inspect {
     /// Keep quests with an objective needing at most this many recorded units.
     /// All objective filters must match the same objective row.
     quest_objective_max_remaining: Option<u32>,
+    /// Keep quests with an objective needing at least this many recorded units.
+    quest_objective_min_remaining: Option<u32>,
     /// Keep saved Forever quests with at most this many seconds remaining at capture.
     quest_max_remaining_seconds: Option<u32>,
     /// Keep saved Forever quests with a recorded required copper cost at or below this amount.
@@ -2045,7 +2047,17 @@ impl Operator {
         let filter_quest_map = args.quest_waypoint_map_id.is_some() || args.quest_on_captured_map;
         let filter_quest_objectives = args.quest_objective_kind.is_some()
             || args.quest_objective_finished.is_some()
-            || args.quest_objective_max_remaining.is_some();
+            || args.quest_objective_max_remaining.is_some()
+            || args.quest_objective_min_remaining.is_some();
+        if args
+            .quest_objective_min_remaining
+            .zip(args.quest_objective_max_remaining)
+            .is_some_and(|(min, max)| min > max)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest objective remaining bounds are reversed",
+            )]);
+        }
         if args
             .quest_objective_kind
             .as_ref()
@@ -2932,6 +2944,10 @@ impl Operator {
                             "finished": args.quest_objective_finished,
                             "maximum_remaining": args.quest_objective_max_remaining,
                         });
+                        if let Some(minimum) = args.quest_objective_min_remaining {
+                            value["quest_objective_filter"]["minimum_remaining"] =
+                                serde_json::json!(minimum);
+                        }
                         value["quest_objective_unknown_count"] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
@@ -2941,6 +2957,7 @@ impl Operator {
                                             quest,
                                             args.quest_objective_kind.as_deref(),
                                             args.quest_objective_finished,
+                                            args.quest_objective_min_remaining,
                                             args.quest_objective_max_remaining,
                                         );
                                     unknown += usize::from(matched.is_none());

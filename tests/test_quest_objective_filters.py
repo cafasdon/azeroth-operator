@@ -72,6 +72,12 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(set((await query(quest_objective_kind='monster',
                         quest_objective_finished=False))['data']), {'3', '6', '7', '9', '10'})
                     self.assertEqual(set((await query(quest_objective_max_remaining=0))['data']), {'4', '5', '7'})
+                    bounded=await query(quest_objective_kind='monster',quest_objective_min_remaining=1,
+                        quest_objective_max_remaining=1)
+                    self.assertEqual(set(bounded['data']),{'3','10'})
+                    self.assertEqual(bounded['quest_objective_filter']['minimum_remaining'],1)
+                    self.assertEqual(set((await query(quest_objective_min_remaining=2))['data']),{'9'})
+                    await query(error=True,quest_objective_min_remaining=2,quest_objective_max_remaining=1)
                     absent = await query(snapshot_id=missing, **options)
                     self.assertIsNone(absent['data'])
                     self.assertIsNone(absent['quest_objective_unknown_count'])

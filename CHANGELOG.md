@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever quest objectives by an inclusive range of remaining units.
+
 - Show recorded objective quantities by kind when comparing a saved Forever quest.
 
 - Compare reported reset durations across saved Forever world boss captures.

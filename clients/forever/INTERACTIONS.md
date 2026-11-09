@@ -4,6 +4,10 @@ Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows
 without quantities separately and leaves totals null when no counts are
 reported for that kind. Objective slot numbers do not establish identity.
+Quest log inspection accepts `quest_objective_min_remaining` and
+`quest_objective_max_remaining` independently or together. Both endpoints
+are inclusive and must match the same objective as any kind or finished
+filter. Missing counts stay unknown, and reversed bounds are rejected.
 
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate
