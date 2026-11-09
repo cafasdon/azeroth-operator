@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever mount journal rows by reported usability and favourite flags.
+
 - Filter saved Forever toy journal rows by recorded collection and favourite flags.
 
 - Count favourites and collected favourites in saved Forever toy journal summaries.

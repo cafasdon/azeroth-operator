@@ -109,6 +109,28 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                         "before_id": before_key, "after_id": after_key, "mount_collection_changes": True})
                     self.assertFalse(compared.isError)
                     changes = json.loads(compared.content[0].text)["mount_collection_changes"]
+                    for source, flags, expected in [
+                        (after_key, {"mount_usable":True}, {"3","10"}),
+                        (after_key, {"mount_usable":False,"mount_favorite":True}, {"2"}),
+                        (after_key, {"mount_usable":True,"mount_favorite":True}, set()),
+                        (missing_key, {"mount_favorite":False}, None),
+                    ]:
+                        filtered=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
+                            "section":"mount_collection",**flags})
+                        self.assertFalse(filtered.isError,filtered)
+                        result=json.loads(filtered.content[0].text)
+                        self.assertEqual(result["mount_matched_count"],None if expected is None else len(expected))
+                        if expected is not None:
+                            self.assertEqual(set(result["data"]["entries"]),expected)
+                            self.assertEqual(result["data"]["catalogue_count"],4)
+                    for source,section,extra in [
+                        (retail_key,"mount_collection",{}),(after_key,"equipment",{}),
+                        (after_key,"mount_collection",{"mount_id":2}),
+                        (after_key,"mount_collection",{"collected_mount":{"mount_id":2}}),
+                    ]:
+                        filtered=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
+                            "section":section,"mount_favorite":True,**extra})
+                        self.assertTrue(filtered.isError)
                     selector = {"mount_id":2,"usable":False,"favorite":True}
                     for source, expected in [(after_key, {"spell_id":40002, **selector}),
                                              (before_key,None),(missing_key,None)]:

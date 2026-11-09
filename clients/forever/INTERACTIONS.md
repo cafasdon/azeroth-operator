@@ -21,6 +21,9 @@ An unavailable journal returns null and an observed empty journal returns zero c
 Use `collected_mount` with a mount ID and optional usability or favourite
 flags when inspecting `mount_collection`. The lookup reports a match
 separately from the original captured view.
+To shortlist mounts without an ID, inspect `mount_collection` with
+`mount_usable`, `mount_favorite`, or both. `mount_matched_count` counts the
+retained rows. The catalogue count still describes the original capture.
 
 Saved pet journal comparisons report how many species were visible in both
 captures and how many of those kept the same observed owned and unowned row

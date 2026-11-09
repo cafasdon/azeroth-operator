@@ -207,6 +207,10 @@ struct Inspect {
     achievement_filter: Option<azeroth_operator::analysis::AchievementFilter>,
     /// Select a collected mount by ID. Absence does not establish non-ownership.
     mount_id: Option<std::num::NonZeroU32>,
+    /// Keep saved mount rows with this reported usability flag.
+    mount_usable: Option<bool>,
+    /// Keep saved mount rows with this reported favourite flag.
+    mount_favorite: Option<bool>,
     /// Select one item from a captured filtered toy view; absent items have unknown collection state.
     toy_item_id: Option<std::num::NonZeroU32>,
     /// Keep only saved toy rows with this recorded collection flag.
@@ -1844,6 +1848,16 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        let filter_mounts = args.mount_usable.is_some() || args.mount_favorite.is_some();
+        if filter_mounts
+            && (args.section.as_deref() != Some("mount_collection")
+                || args.mount_id.is_some()
+                || args.collected_mount.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Mount flag filtering requires the mount_collection section without an exact mount selector",
+            )]);
+        }
         let filter_toys = args.toy_collected.is_some() || args.toy_favorite.is_some();
         if filter_toys
             && (args.section.as_deref() != Some("toy_collection_view")
@@ -2433,6 +2447,27 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if filter_mounts {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Mount flag filtering requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let count = value["data"]
+                        .get_mut("entries")
+                        .and_then(|entries| entries.as_object_mut())
+                        .map(|entries| {
+                            entries.retain(|_, row| {
+                                args.mount_usable
+                                    .is_none_or(|flag| row["usable"].as_bool() == Some(flag))
+                                    && args
+                                        .mount_favorite
+                                        .is_none_or(|flag| row["favorite"].as_bool() == Some(flag))
+                            });
+                            entries.len()
+                        });
+                    value["mount_matched_count"] = serde_json::json!(count);
+                }
                 if filter_toys {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
