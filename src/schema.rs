@@ -354,6 +354,81 @@ pub fn bag_item_cooldowns(value: &Value, bags: Option<&Value>) -> Result<()> {
     Ok(())
 }
 
+pub fn has_talent_definition_observation(value: &Value) -> bool {
+    [
+        "observed_tree_ids",
+        "observed_node_count",
+        "staged_changes_observed",
+    ]
+    .iter()
+    .any(|key| value.get(*key).is_some())
+        || value["nodes"].as_object().is_some_and(|nodes| {
+            nodes.values().any(|node| {
+                ["definition_id", "purchased_rank", "max_rank"]
+                    .iter()
+                    .any(|key| node.get(*key).is_some())
+            })
+        })
+}
+
+fn talent_definition_observation(value: &Value) -> Result<()> {
+    if !has_talent_definition_observation(value) {
+        return Ok(());
+    }
+    let trees = value["observed_tree_ids"]
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("Missing observed talent trees"))?;
+    ensure!(
+        (1..=16).contains(&trees.len()),
+        "Invalid observed talent tree count"
+    );
+    for (tree, observed) in trees {
+        index(tree, 1, u32::MAX)?;
+        ensure!(observed == true, "Invalid observed talent tree");
+    }
+    let nodes = value["nodes"].as_object().unwrap();
+    ensure!(
+        value["observed_node_count"]
+            .as_u64()
+            .is_some_and(|count| count <= 4096 && count >= nodes.len() as u64),
+        "Invalid observed talent node count"
+    );
+    if let Some(staged) = value.get("staged_changes_observed") {
+        ensure!(staged.is_boolean(), "Invalid observed staged changes");
+    }
+    for node in nodes.values() {
+        ensure!(
+            node["tree_id"]
+                .as_u64()
+                .is_some_and(|tree| trees.contains_key(&tree.to_string())),
+            "Talent tree observation mismatch"
+        );
+        let fields = ["definition_id", "purchased_rank", "max_rank"];
+        let count = fields
+            .iter()
+            .filter(|field| node.get(**field).is_some())
+            .count();
+        ensure!(
+            count == 0 || count == fields.len(),
+            "Incomplete talent definition observation"
+        );
+        if count > 0 {
+            ensure!(
+                node["definition_id"]
+                    .as_u64()
+                    .is_some_and(|id| id > 0 && id <= u64::from(u32::MAX))
+                    && node["max_rank"].as_u64().is_some_and(|maximum| maximum > 0
+                        && maximum <= u64::from(u32::MAX)
+                        && node["purchased_rank"]
+                            .as_u64()
+                            .is_some_and(|rank| rank <= maximum)),
+                "Invalid talent definition observation"
+            );
+        }
+    }
+    Ok(())
+}
+
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
         "bag_item_cooldowns" => {} // Validated with its source bags by Snapshot::validate.
@@ -2641,6 +2716,9 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("unspent_spec", "uint", false),
                     ("loadout_export", "map", false),
                     ("saved_loadouts", "map", false),
+                    ("observed_tree_ids", "map", false),
+                    ("observed_node_count", "uint", false),
+                    ("staged_changes_observed", "bool", false),
                 ],
             )?;
             entries(
@@ -2649,8 +2727,12 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("entry_id", "positive", true),
                     ("rank", "positive", true),
                     ("tree_id", "positive", true),
+                    ("definition_id", "positive", false),
+                    ("purchased_rank", "uint", false),
+                    ("max_rank", "positive", false),
                 ],
             )?;
+            talent_definition_observation(value)?;
             if let Some(catalog) = value.get("saved_loadouts") {
                 object(
                     catalog,

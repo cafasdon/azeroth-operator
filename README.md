@@ -1,5 +1,13 @@
 # Azeroth Operator
 
+Forever talent captures can retain stable trait definition IDs, purchased ranks
+and native rank limits alongside active ranks, plus an observed staged-change
+flag when readable. Unknown metadata remains omitted. These observations do not
+yet convert or verify simulator talent strings. Matching MCP support and addon
+0.47.0-dev are required; the package remains uninstalled.
+[Contract](docs/ADR-050-forever-talent-definitions.md) ·
+[Offline evidence](docs/forever-talent-definitions-verification-2026-11-09.md).
+
 Saved-character inventory discovery can filter `list_snapshots` with
 `inventory_item`: an item ID, explicit storage and observed quantity bounds.
 Use `latest_per_character` to avoid reviving an older stock observation when a

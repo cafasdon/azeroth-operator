@@ -1,5 +1,10 @@
 # Changelog
 
+- Add bounded stable Forever trait-definition observations, keeping purchased
+  ranks separate from active/boosted ranks and omitting uncertain metadata.
+  Validate tree/count/rank linkage in both readers and expose unverified-mapping
+  summaries. Qualify uninstalled addon 0.47.0-dev offline; no talent actions.
+
 - Discover saved captures that cover every item in a bounded shopping/reagent
   list within one explicit storage. Count requested items in one scan, compose
   profession filters and preserve unknown/latest/shared-bank boundaries without

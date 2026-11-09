@@ -1192,7 +1192,156 @@ local function savedLoadouts()
     return result
 end
 
+local function foreverTalents()
+    local function public(value)
+        assert(not issecretvalue or not issecretvalue(value), "Restricted talent observation")
+        return value
+    end
+    local function uint(value,minimum)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=minimum and value<=4294967295,
+            "Invalid talent number")
+        return value
+    end
+    local function guard()
+        assert(AO.family=="forever", "Talent client changed")
+        local combat=public(InCombatLockdown)
+        if combat~=nil then
+            assert(type(combat)=="function" and public(combat())==false, "Talent observation unavailable in combat")
+        end
+    end
+    local function api()
+        guard()
+        local class,traits=public(C_ClassTalents),public(C_Traits)
+        assert(type(class)=="table" and type(traits)=="table", "Trait API unavailable")
+        local active,config,trees,nodes=public(class.GetActiveConfigID),public(traits.GetConfigInfo),
+            public(traits.GetTreeNodes),public(traits.GetNodeInfo)
+        assert(type(active)=="function" and type(config)=="function" and type(trees)=="function"
+            and type(nodes)=="function", "Trait API unavailable")
+        return {class=class,traits=traits,active=active,config=config,trees=trees,nodes=nodes}
+    end
+    local initial=api()
+    local configID=uint(initial.active(),1)
+    local function context()
+        local current=api()
+        for key,value in pairs(initial) do assert(current[key]==value, "Trait API changed") end
+        assert(uint(initial.active(),1)==configID, "Active talent config changed")
+    end
+    local function ids(values,maximum,minimum)
+        values=public(values)
+        assert(type(values)=="table", "Talent ID list unavailable")
+        local result,seen,count,last={},{},0,0
+        for position,value in pairs(values) do
+            position=uint(position,1);value=uint(value,1)
+            count=count+1;last=math.max(last,position)
+            assert(position<=maximum and count<=maximum and not seen[value], "Invalid talent ID list")
+            seen[value]=true;result[position]=value
+        end
+        assert(count>=minimum and count==last, "Sparse talent ID list")
+        return result
+    end
+    local function baseNode(node,nodeID,treeID)
+        node=public(node)
+        assert(type(node)=="table" and uint(node.ID,1)==nodeID, "Talent node identity changed")
+        local active=public(node.activeEntry)
+        if active==nil then return end
+        assert(type(active)=="table", "Invalid active talent entry")
+        local rank=uint(active.rank,0)
+        if rank==0 then return end
+        return {entry_id=uint(active.entryID,1),rank=rank,tree_id=treeID}
+    end
+    local function equal(left,right)
+        if type(left)~=type(right) then return false end
+        if type(left)~="table" then return left==right end
+        for key,value in pairs(left) do if not equal(value,right[key]) then return false end end
+        for key in pairs(right) do if left[key]==nil then return false end end
+        return true
+    end
+    local function graph()
+        context()
+        local config=public(initial.config(configID))
+        assert(type(config)=="table", "Active talent config unavailable")
+        local treeIDs=ids(config.treeIDs,16,1)
+        local result={tree_ids=treeIDs,tree_nodes={},nodes={},count=0}
+        local raw,seen={},{}
+        for _,treeID in ipairs(treeIDs) do
+            local nodeIDs=ids(initial.trees(treeID),4096,0)
+            result.tree_nodes[tostring(treeID)]=nodeIDs
+            for _,nodeID in ipairs(nodeIDs) do
+                result.count=result.count+1
+                assert(result.count<=4096 and not seen[nodeID], "Talent node budget or identity invalid")
+                seen[nodeID]=true
+                local node=public(initial.nodes(configID,nodeID))
+                local row=baseNode(node,nodeID,treeID)
+                if row then result.nodes[tostring(nodeID)]=row;raw[tostring(nodeID)]=node end
+            end
+        end
+        context()
+        return result,raw
+    end
+    local stageGetter,stageValue,stageOK=nil,nil,true
+    local function stage()
+        local ok,value,getter=pcall(function()
+            local getter=public(initial.traits.ConfigHasStagedChanges)
+            assert(type(getter)=="function", "Staged state unavailable")
+            local value=public(getter(configID))
+            assert(type(value)=="boolean" and public(initial.traits.ConfigHasStagedChanges)==getter,
+                "Staged state changed")
+            return value,getter
+        end)
+        if not ok or (stageGetter~=nil and (stageGetter~=getter or stageValue~=value)) then stageOK=false end
+        if ok and stageGetter==nil then stageGetter,stageValue=getter,value end
+        context()
+    end
+    local function metadata(node,row)
+        local getter=public(initial.traits.GetEntryInfo)
+        assert(type(getter)=="function", "Talent definition API unavailable")
+        local purchased=uint(node.ranksPurchased,0)
+        local committed=ids(node.entryIDsWithCommittedRanks,64,0)
+        if purchased>0 then
+            assert(#committed==1 and committed[1]==row.entry_id, "Ambiguous purchased talent choice")
+        end
+        local entry=public(getter(configID,row.entry_id))
+        assert(type(entry)=="table" and public(initial.traits.GetEntryInfo)==getter, "Talent definition changed")
+        local definition,maximum=uint(entry.definitionID,1),uint(entry.maxRanks,1)
+        assert(purchased<=maximum, "Invalid purchased talent rank")
+        return {definition_id=definition,purchased_rank=purchased,max_rank=maximum},getter
+    end
+    stage()
+    local first,raw=graph()
+    local optional,getters={},{}
+    for key,row in pairs(first.nodes) do
+        local ok,value,getter=pcall(metadata,raw[key],row)
+        if ok then optional[key]=value;getters[key]=getter end
+        context()
+    end
+    stage()
+    stage()
+    -- Recheck each active node before the second optional read. The final whole
+    -- graph read follows all optional getters, so they cannot hide base changes.
+    for key,row in pairs(first.nodes) do
+        local node=public(initial.nodes(configID,tonumber(key)))
+        assert(equal(baseNode(node,tonumber(key),row.tree_id),row), "Active talent entry changed")
+        local ok,value,getter=pcall(metadata,node,row)
+        if not ok or getters[key]~=getter or not equal(optional[key],value) then optional[key]=nil end
+        context()
+    end
+    stage()
+    local second=graph()
+    assert(equal(first,second), "Talent observation changed")
+    local observed={}
+    for _,treeID in ipairs(first.tree_ids) do observed[tostring(treeID)]=true end
+    for key,tuple in pairs(optional) do
+        for field,value in pairs(tuple) do first.nodes[key][field]=value end
+    end
+    local result={config_id=configID,nodes=first.nodes,observed_tree_ids=observed,
+        observed_node_count=first.count,loadout_export={status="unavailable",reason="client_not_supported"}}
+    if stageOK then result.staged_changes_observed=stageValue end
+    return result
+end
+
 AO.collectors.talents = function()
+    if AO.family=="forever" then return foreverTalents() end
     assert(C_ClassTalents and C_ClassTalents.GetActiveConfigID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetTreeNodes and C_Traits.GetNodeInfo, "Trait API unavailable")
     local configID = C_ClassTalents.GetActiveConfigID()
     assert(configID, "No active config")

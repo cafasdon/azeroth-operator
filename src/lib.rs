@@ -249,6 +249,12 @@ impl Snapshot {
                 "Observation requires Forever"
             );
             schema::validate(name, value)?;
+            if name == "talents" && schema::has_talent_definition_observation(value) {
+                ensure!(
+                    self.client.family == Family::Forever,
+                    "Talent definition observations require Forever"
+                );
+            }
             ensure!(SECTIONS.contains(&name.as_str()), "Unknown section");
             ensure!(
                 value.is_array() || value.is_object(),

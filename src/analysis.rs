@@ -6548,6 +6548,23 @@ pub fn summary(s: &Snapshot) -> Value {
             "currency_slots":rows.iter().filter(|row| row["kind"]=="currency").count(),
             "unknown_slots":rows.iter().filter(|row| row["kind"]=="unknown").count()})
     }).unwrap_or(Value::Null);
+    if let Some(talents) = s
+        .sections
+        .get("talents")
+        .filter(|talents| talents.get("observed_tree_ids").is_some())
+    {
+        let nodes = talents["nodes"].as_object().unwrap();
+        let defined = nodes
+            .values()
+            .filter(|node| node.get("definition_id").is_some())
+            .count();
+        summary["talent_definition_observation"] = json!({"basis":"reported_active_config_trait_observations",
+            "observed_tree_count":talents["observed_tree_ids"].as_object().unwrap().len(),
+            "observed_node_count":talents["observed_node_count"],"active_entry_nodes":nodes.len(),
+            "nodes_with_definition_observation":defined,"nodes_without_definition_observation":nodes.len()-defined,
+            "staged_changes_observed":talents.get("staged_changes_observed"),
+            "allocation_match_verified":false,"simulation_mapping_verified":false,"game_execution":false});
+    }
     summary["bag_item_cooldown_observation"] = s.sections.get("bag_item_cooldowns").map(|section| {
         let rows: Vec<_> = section["entries"].as_object().unwrap().values()
             .flat_map(|bag| bag.as_object().unwrap().values()).collect();

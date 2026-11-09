@@ -149,6 +149,37 @@ def _validate_inventory_item_identity(item):
         raise ValueError('Invalid inventory item GUID')
 
 
+def _validate_talent_definition_observation(talents, family):
+    if not isinstance(talents,dict): return
+    root_fields={'observed_tree_ids','observed_node_count','staged_changes_observed'}
+    extra_fields={'definition_id','purchased_rank','max_rank'}
+    nodes=talents.get('nodes')
+    present=bool(root_fields & talents.keys()) or (isinstance(nodes,dict)
+        and any(isinstance(node,dict) and extra_fields & node.keys() for node in nodes.values()))
+    if not present: return
+    def uint(number,minimum=0):
+        return type(number) is int and minimum <= number <= 4_294_967_295
+    trees=talents.get('observed_tree_ids'); count=talents.get('observed_node_count')
+    allowed={'config_id','name','nodes','has_unspent','unspent_class','unspent_spec','loadout_export','saved_loadouts'}|root_fields
+    if (family!='forever' or set(talents)-allowed or not uint(talents.get('config_id'),1)
+            or not isinstance(trees,dict) or not 1<=len(trees)<=16
+            or any(not _inventory_index(tree,1,4_294_967_295) or observed is not True for tree,observed in trees.items())
+            or not isinstance(nodes,dict) or not uint(count) or not len(nodes)<=count<=4096
+            or ('staged_changes_observed' in talents and type(talents['staged_changes_observed']) is not bool)):
+        raise ValueError('Invalid talent definition observation')
+    for node_id,node in nodes.items():
+        if (not _inventory_index(node_id,1,4_294_967_295) or not isinstance(node,dict)
+                or set(node)-({'entry_id','rank','tree_id'}|extra_fields)
+                or any(not uint(node.get(field),1) for field in ['entry_id','rank','tree_id'])
+                or str(node['tree_id']) not in trees):
+            raise ValueError('Invalid observed talent node')
+        present_fields=extra_fields & node.keys()
+        if present_fields and (present_fields!=extra_fields or not uint(node['definition_id'],1)
+                or not uint(node['max_rank'],1) or not uint(node['purchased_rank'])
+                or node['purchased_rank']>node['max_rank']):
+            raise ValueError('Invalid observed talent definition ranks')
+
+
 def validate_snapshot(value):
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("Expected snapshot schema_version 1")
@@ -166,6 +197,7 @@ def validate_snapshot(value):
     if not isinstance(sections, dict) or set(sections) - SECTIONS:
         raise ValueError("Unsupported snapshot section")
     unavailable = value.get("unavailable", {})
+    _validate_talent_definition_observation(sections.get('talents'),c['family'])
     if 'bag_item_cooldowns' in sections:
         if c['family'] != 'forever': raise ValueError('Bag cooldowns require Forever')
         _validate_bag_item_cooldowns(sections['bag_item_cooldowns'],sections.get('bags'))

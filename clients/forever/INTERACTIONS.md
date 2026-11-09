@@ -1917,3 +1917,9 @@ Shopping/reagent discovery can require all 1..64 requested item quantities withi
 one explicit saved storage, optionally alongside captured profession filters.
 Partial stock across characters, storages or times is never pooled. Material
 support does not verify current crafting or transfer eligibility. See [verification](../../docs/inventory-requirements-discovery-verification-2026-11-09.md).
+
+Forever talent observations can retain stable native definition IDs, purchased
+ranks, native rank limits and an observed staged-change flag. Boosted active
+ranks remain separate and uncertain metadata stays unknown. No simulator talent
+conversion or allocation match is verified. Addon 0.47.0-dev remains uninstalled;
+see [verification](../../docs/forever-talent-definitions-verification-2026-11-09.md).
