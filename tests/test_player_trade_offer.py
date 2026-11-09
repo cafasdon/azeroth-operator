@@ -27,6 +27,9 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
         mixed['entries']['2']={'status':'item','item_id':10,'quantity':5}
         maximum=deepcopy(unknown)
         maximum['entries']={str(i):{'status':'item','item_id':4294967295,'quantity':4294967295} for i in range(1,7)}
+        full = deepcopy(maximum)
+        for row in full['entries'].values():
+            row.update(item_id=10, quantity=1)
         invalid=[None,{},[],{**unknown,'coverage':'all_trade'},
             {**unknown,'partner':'PRIVATE'},{**unknown,'entries':{}},
             {**unknown,'entries':None}]
@@ -40,7 +43,7 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                 section=deepcopy(mixed);section['entries']['1'][key]=value;invalid.append(section)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));valid=[];bad=[]
-            for section in [None,unknown,mixed,maximum]:
+            for section in [None,unknown,mixed,maximum,full]:
                 saved=deepcopy(base)
                 if section is not None:saved['sections']['player_trade_offer']=section
                 valid.append((store.ingest(saved),section))
@@ -86,6 +89,26 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         recipe=await call('review_forever_recipe',snapshot_id=key,crafts=1)
                         self.assertEqual(recipe['materials'][0]['quantity_observed'],2)
                         self.assertEqual(recipe['material_capacity']['bags']['supported_crafts'],0)
+                    missing_id, unknown_id, mixed_id, maximum_id, full_id = [key for key,_ in valid]
+                    selector = 'player_trade_offer_changes'
+                    self.assertNotIn(selector, await call('compare_snapshots',before_id=mixed_id,after_id=maximum_id))
+                    async def compare(a,b):
+                        return (await call('compare_snapshots',before_id=a,after_id=b,**{selector:True}))[selector]
+                    exact = await compare(maximum_id,full_id)
+                    self.assertEqual(exact['items'], [
+                        {'item_id':10,'before_observed_quantity':0,'after_observed_quantity':6,'quantity_delta':6},
+                        {'item_id':4294967295,'before_observed_quantity':25769803770,'after_observed_quantity':0,'quantity_delta':-25769803770},
+                    ])
+                    for flag in ['same_trade_verified','trade_completion_verified','live']:
+                        self.assertIs(exact[flag],False)
+                    partial = await compare(mixed_id,full_id)
+                    self.assertEqual(partial['items'], [{'item_id':10,'before_observed_quantity':9,
+                        'after_observed_quantity':6,'quantity_delta':None}])
+                    for key,slots in [(missing_id,None),(unknown_id,0)]:
+                        uncertain = await compare(key,full_id)
+                        self.assertEqual(uncertain['before_readable_item_slots'],slots)
+                        self.assertIsNone(uncertain['items'][0]['before_observed_quantity'])
+                        self.assertIsNone(uncertain['items'][0]['quantity_delta'])
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='player_trade_offer')
             self.assertEqual(before,{p.name:p.read_bytes() for p in Path(folder).glob('*.json')})
 

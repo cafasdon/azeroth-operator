@@ -2251,6 +2251,7 @@ pub struct ComparisonSelectors {
     pub player_resource_changes: bool,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
+    pub player_trade_offer_changes: bool,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
@@ -2271,6 +2272,19 @@ pub struct ComparisonSelectors {
     pub experience: bool,
     pub spellbook: bool,
     pub action_bar_slots: bool,
+}
+
+fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeMap<u32, u64>) {
+    let rows = section["entries"].as_object().unwrap();
+    let mut quantities = BTreeMap::new();
+    let mut items = 0;
+    for row in rows.values().filter(|row| row["status"] == "item") {
+        items += 1;
+        *quantities
+            .entry(row["item_id"].as_u64().unwrap() as u32)
+            .or_default() += row["quantity"].as_u64().unwrap();
+    }
+    (items, quantities)
 }
 
 fn player_pvp_progression_observation(section: &Value) -> Value {
@@ -2345,6 +2359,48 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if selectors.player_trade_offer_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Trade offer comparison requires Forever"
+        );
+        let old = before
+            .sections
+            .get("player_trade_offer")
+            .map(observed_trade_offer_quantities);
+        let new = after
+            .sections
+            .get("player_trade_offer")
+            .map(observed_trade_offer_quantities);
+        let ids: BTreeSet<_> = old
+            .iter()
+            .chain(new.iter())
+            .flat_map(|(_, quantities)| quantities.keys().copied())
+            .collect();
+        let quantity = |side: &Option<(usize, BTreeMap<u32, u64>)>, id| {
+            let (slots, quantities) = side.as_ref()?;
+            quantities
+                .get(&id)
+                .copied()
+                .or_else(|| (*slots == 6).then_some(0))
+        };
+        let fully_read = |side: &Option<(usize, BTreeMap<u32, u64>)>| {
+            side.as_ref().is_some_and(|(slots, _)| *slots == 6)
+        };
+        let items: Vec<_> = ids.into_iter().map(|id| {
+            let before_quantity = quantity(&old, id);
+            let after_quantity = quantity(&new, id);
+            let delta = if fully_read(&old) && fully_read(&new) {
+                before_quantity.zip(after_quantity).map(|(a,b)| b as i64 - a as i64)
+            } else { None };
+            json!({"item_id":id,"before_observed_quantity":before_quantity,"after_observed_quantity":after_quantity,"quantity_delta":delta})
+        }).collect();
+        comparison["player_trade_offer_changes"] = json!({"items":items,
+            "before_readable_item_slots":old.as_ref().map(|(slots, _)| *slots),
+            "after_readable_item_slots":new.as_ref().map(|(slots, _)| *slots),
+            "basis":"captured_normal_offer_slots_by_base_item_id",
+            "same_trade_verified":false,"trade_completion_verified":false,"live":false});
+    }
     if selectors.player_pvp_progression_changes {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -6751,15 +6807,7 @@ pub fn summary(s: &Snapshot) -> Value {
         .sections
         .get("player_trade_offer")
         .map(|section| {
-            let rows = section["entries"].as_object().unwrap();
-            let mut quantities = BTreeMap::<u32, u64>::new();
-            let mut items = 0;
-            for row in rows.values().filter(|row| row["status"] == "item") {
-                items += 1;
-                *quantities
-                    .entry(row["item_id"].as_u64().unwrap() as u32)
-                    .or_default() += row["quantity"].as_u64().unwrap();
-            }
+            let (items, quantities) = observed_trade_offer_quantities(section);
             json!({"coverage":section["coverage"],"normal_slots":6,"item_slots":items,
             "unreadable_or_empty_slots":6-items,"observed_offered_item_quantities":quantities,
             "counts_toward_owned_inventory":false,"trade_completion_verified":false,

@@ -443,6 +443,9 @@ struct Compare {
     /// Compare the reported personal PvP progression and cap distances in saved Forever captures.
     #[serde(default)]
     player_pvp_progression_changes: bool,
+    /// Compare captured outgoing trade item quantities by base item ID.
+    #[serde(default)]
+    player_trade_offer_changes: bool,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever currency balance by ID.
@@ -1603,6 +1606,7 @@ impl Operator {
                     player_resource_changes: args.player_resource_changes,
                     group_context_changes: args.group_context_changes,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
+                    player_trade_offer_changes: args.player_trade_offer_changes,
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),

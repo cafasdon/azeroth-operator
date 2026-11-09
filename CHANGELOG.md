@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved outgoing trade offers by base item ID in Forever.
+
 - Compare saved Forever personal PvP observations and cap distances side by side.
 
 - Compare reported home and instance group context across saved Forever captures.
