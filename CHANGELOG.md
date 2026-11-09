@@ -1,5 +1,7 @@
 # Changelog
 
+- Add a timed quest checklist to saved Forever character summaries.
+
 - Filter saved Forever timed quests within a projected expiry window.
 
 - Show projected expiry timestamps for saved Forever quests returned by a deadline search.

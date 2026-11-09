@@ -17,6 +17,9 @@ that passed every filter. The map is empty when no quest matches and null
 when the saved quest log is unavailable.
 Use `quest_projected_expiry_from` for an inclusive lower bound, alone or
 together with the deadline. Reversed windows are rejected.
+`character_summary` lists up to 20 saved timed quests, shortest reported
+timer first, with historical expiry and turn-in readiness. Quests without
+reported timers are counted separately.
 
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate

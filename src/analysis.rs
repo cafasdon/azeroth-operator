@@ -6868,6 +6868,32 @@ pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     json!({"ready_for_turn_in":ready,"turn_in_not_ready":not_ready,"failed":failed,"turn_in_unknown":unknown})
 }
 
+fn timed_quest_checklist(
+    quests: &serde_json::Map<String, Value>,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Value {
+    let mut timed: Vec<_> = quests
+        .iter()
+        .filter_map(|(id, quest)| {
+            Some((
+                quest["timer"]["remaining_seconds"].as_i64()?,
+                id.parse::<u32>().ok()?,
+                quest,
+            ))
+        })
+        .collect();
+    timed.sort_unstable_by_key(|(seconds, id, _)| (*seconds, *id));
+    let entries: Vec<_> = timed.iter().take(20).map(|(seconds, id, quest)| {
+        let expiry = chrono::TimeDelta::try_seconds(*seconds)
+            .and_then(|delta| captured_at.checked_add_signed(delta));
+        json!({"quest_id":id,"remaining_seconds_at_capture":seconds,"projected_expiry_at":expiry,
+            "readiness_at_capture":quest_readiness(quest)})
+    }).collect();
+    json!({"entries":entries,"recorded_timer_count":timed.len(),
+        "quest_count_without_recorded_timer":quests.len()-timed.len(),
+        "truncated":timed.len()>entries.len(),"current_status_verified":false})
+}
+
 fn quest_waypoint_maps(quests: &serde_json::Map<String, Value>) -> Value {
     let mut maps = BTreeMap::<u64, Vec<u32>>::new();
     let mut unknown = Vec::new();
@@ -7103,6 +7129,10 @@ pub fn summary(s: &Snapshot) -> Value {
             "current_offer_verified":false,"game_execution":false})
         })
         .unwrap_or(Value::Null);
+    if is_forever {
+        summary["timed_quest_checklist"] =
+            json!(quests.map(|quests| timed_quest_checklist(quests, s.captured_at)));
+    }
     summary["loot_window_observation"] = s
         .sections
         .get("loot_window")
