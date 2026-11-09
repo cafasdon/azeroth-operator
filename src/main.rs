@@ -730,6 +730,8 @@ struct RecipeReview {
     /// Estimate initial carried material needs and bank withdrawals for the printed reagent-chain order.
     #[serde(default)]
     reagent_chain_stock_plan: bool,
+    /// Zero-based offset into the saved chain withdrawal slots. Requires a chain stock plan.
+    reagent_chain_withdrawal_offset: Option<usize>,
     /// Annotate chain external shortages with bounded public sources from the verified local catalogue.
     #[serde(default)]
     reagent_chain_catalogue_sources: bool,
@@ -1336,6 +1338,10 @@ impl Operator {
                 "Chain stock planning requires reagent-chain mode"
             );
             anyhow::ensure!(
+                args.reagent_chain_withdrawal_offset.is_none() || args.reagent_chain_stock_plan,
+                "Withdrawal location paging requires a chain stock plan"
+            );
+            anyhow::ensure!(
                 args.reagent_producer_choices.is_none() || args.suggest_reagent_chain,
                 "Producer choices require reagent-chain mode"
             );
@@ -1384,6 +1390,7 @@ impl Operator {
                         &review["reagent_chain"],
                         &snapshot,
                         inventory.as_ref(),
+                        args.reagent_chain_withdrawal_offset.unwrap_or_default(),
                     )?;
                     review["reagent_chain"]["stock_plan"] = plan;
                 }

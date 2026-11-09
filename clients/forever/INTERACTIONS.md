@@ -285,6 +285,10 @@ quantity per slot. It lists up to 50 locations and marks omitted allocations
 as truncated. The full per-item withdrawal totals remain available.
 The report's `total_locations` counts all suggested slots across both banks,
 including those beyond the display limit.
+Set `reagent_chain_withdrawal_offset` with the chain stock plan to request
+another page of up to 50 slots. Keep the recipe, stock and plan inputs the
+same between pages. `has_more` indicates locations after the current page,
+and `truncated` indicates that the page shows fewer than the full total.
 Within each bank, larger stacks are used first to minimise slots per item.
 Equal quantities are ordered by numeric container and slot.
 The separate `acquisition_shortfalls_vs_observed_storage` list shows positive

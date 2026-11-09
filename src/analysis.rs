@@ -1033,6 +1033,7 @@ pub fn reagent_chain_stock_plan(
     chain: &Value,
     snapshot: &Snapshot,
     inventory: Option<&Snapshot>,
+    withdrawal_offset: usize,
 ) -> Result<Value> {
     if chain["draft_complete"] != true {
         return Ok(Value::Null);
@@ -1097,8 +1098,11 @@ pub fn reagent_chain_stock_plan(
             }))
         })
         .collect();
-    let bank_locations =
-        chain_withdrawal_locations(inventory.unwrap_or(snapshot), &bank_withdrawals);
+    let bank_locations = chain_withdrawal_locations(
+        inventory.unwrap_or(snapshot),
+        &bank_withdrawals,
+        withdrawal_offset,
+    );
     let nonmaterial = ordered_recipe_requirements_with_charges(reviews.iter(), true);
     let checkpoints = [
         ("materials", &checkpoint["first_uncovered_recipe"]),
@@ -1144,7 +1148,7 @@ pub fn reagent_chain_stock_plan(
     )
 }
 
-fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value {
+fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value], offset: usize) -> Value {
     let mut locations = Vec::new();
     let mut total_locations = 0;
     for storage in ["character_bank", "account_bank"] {
@@ -1184,14 +1188,15 @@ fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value]) -> Value 
                 continue;
             }
             *quantity -= take;
-            total_locations += 1;
-            if locations.len() < 50 {
+            if total_locations >= offset && locations.len() < 50 {
                 locations.push(json!({"storage":storage,"container":container.to_string(),
                     "slot":slot.to_string(),"item_id":id,"observed_quantity":count,"suggested_quantity":take}));
             }
+            total_locations += 1;
         }
     }
     json!({"locations":locations,"total_locations":total_locations,
+        "offset":offset,"has_more":total_locations.saturating_sub(offset) > locations.len(),
         "truncated":total_locations > locations.len()})
 }
 
