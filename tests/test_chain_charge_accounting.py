@@ -44,6 +44,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
             bank_stock['sections']['character_bank'] = {'6':{'1':{'item_id':10,'count':1}}}
             bank_stock['sections']['account_bank'] = {'7':{'1':{'item_id':10,'count':1}}}
             bank_inventory = store.ingest(bank_stock)
+            partial_bank = deepcopy(bank_stock)
+            partial_bank['sections']['account_bank'] = {}
+            partial_bank_inventory = store.ingest(partial_bank)
             conditional = deepcopy(base)
             conditional['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
                 'charges':1,'max_charges':1,'remaining_seconds':60}
@@ -81,6 +84,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                         {'item_id':10,'character_bank':1,'account_bank':1,
                          'remaining_bag_shortfall_after_suggested_withdrawals':0}])
                     self.assertEqual(one['stock_plan']['suggested_bank_withdrawal_list'], [])
+                    self.assertEqual(banked['stock_plan']['acquisition_shortfalls_vs_observed_storage'], [])
+                    partial = await plan(keys[1],inventory_snapshot_id=partial_bank_inventory)
+                    self.assertEqual(partial['stock_plan']['acquisition_shortfalls_vs_observed_storage'],
+                                     [{'item_id':10,'quantity':1}])
                     covered_chain = await plan(covered_key)
                     self.assertIs(covered_chain['stock_plan']['nonmaterial_requirements'][
                         'observed_charges_cover_chain'], True)

@@ -1,5 +1,7 @@
 # Changelog
 
+- List starting materials still short against observed storage in Forever reagent-chain stock plans.
+
 - List suggested saved bank withdrawals for Forever reagent-chain starting materials.
 
 - Highlight the earliest saved material or nonmaterial checkpoint in a Forever reagent chain.

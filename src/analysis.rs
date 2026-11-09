@@ -1073,6 +1073,15 @@ pub fn reagent_chain_stock_plan(
     ensure!(combined.is_array(), "Unsupported chain materials");
     let (materials, checkpoint) = ordered_recipe_materials(reviews.iter(), &combined)?;
     let material_coverage = ordered_recipe_material_coverage(&materials);
+    let acquisition_shortfalls: Vec<_> = materials
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let quantity = row["shortfall_vs_observed"].as_u64()?;
+            (quantity > 0).then(|| json!({"item_id":row["item_id"],"quantity":quantity}))
+        })
+        .collect();
     let bank_withdrawals: Vec<_> = materials
         .as_array()
         .into_iter()
@@ -1123,6 +1132,7 @@ pub fn reagent_chain_stock_plan(
             "all_observed_storage":captured_checks_pass("all_observed_storage")},
         "starting_materials":materials,"material_checkpoint":checkpoint,
         "suggested_bank_withdrawal_list":bank_withdrawals,
+        "acquisition_shortfalls_vs_observed_storage":acquisition_shortfalls,
         "first_step_to_review":first_review_step,
         "nonmaterial_requirements":nonmaterial,
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,

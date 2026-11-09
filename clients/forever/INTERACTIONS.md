@@ -279,6 +279,11 @@ The stock plan also lists positive suggested bank withdrawals by item, using
 the character bank before the account bank and showing any bag shortfall
 left after those suggestions. It only lists observed quantities for known
 bag shortfalls. See starting materials for missing stock observations.
+The separate `acquisition_shortfalls_vs_observed_storage` list shows positive
+starting-material shortfalls after counting all observed storage. It can
+include items with no suggested withdrawal and uses the same starting
+requirements as the printed chain. An empty list means no positive shortfall
+was observed. Uncaptured storage may contain additional stock.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks
