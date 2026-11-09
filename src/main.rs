@@ -189,6 +189,8 @@ struct Inspect {
     /// Assumed copper cost per used visit for the optional travel-adjusted split plan.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_cost_per_merchant_visit_copper: Option<u64>,
+    /// Assumed costs in the same order as the selected merchant snapshot IDs.
+    bag_restock_merchant_visit_costs_copper: Option<Vec<u64>>,
     /// Look up captured item source references for the residual bag shortfall.
     bag_restock_source_snapshot_id: Option<String>,
     /// Look up pinned local catalogue sources for the residual bag shortfall.
@@ -2876,6 +2878,23 @@ impl Operator {
                 "Merchant visit cost requires a split restocking plan and a valid copper amount",
             )]);
         }
+        if args
+            .bag_restock_merchant_visit_costs_copper
+            .as_ref()
+            .is_some_and(|costs| {
+                !args.bag_restock_split_merchant_plan
+                    || args.bag_restock_cost_per_merchant_visit_copper.is_some()
+                    || args
+                        .bag_restock_compare_merchant_snapshot_ids
+                        .as_ref()
+                        .is_none_or(|ids| costs.len() != ids.len())
+                    || costs.iter().any(|cost| *cost > 9_999_999_999_999)
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Supply one valid cost per compared visit with split planning, without a uniform cost",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -3259,6 +3278,11 @@ impl Operator {
                         let demands = residual
                             .as_ref()
                             .and_then(|review| review["items"].as_array());
+                        let uniform_cost = args.bag_restock_cost_per_merchant_visit_copper;
+                        let visit_costs = args
+                            .bag_restock_merchant_visit_costs_copper
+                            .clone()
+                            .or_else(|| uniform_cost.map(|cost| vec![cost; ids.len()]));
                         let mut visits = Vec::new();
                         let mut best_by_item = std::collections::BTreeMap::new();
                         let mut travel_quotes = Vec::new();
@@ -3296,7 +3320,7 @@ impl Operator {
                                     }
                                 }
                             }
-                            if args.bag_restock_cost_per_merchant_visit_copper.is_some() {
+                            if visit_costs.is_some() {
                                 travel_quotes.push(
                                     quote
                                         .as_ref()
@@ -3343,20 +3367,28 @@ impl Operator {
                             "offers_combined_across_visits":false,"purchase_eligibility_verified":false,
                             "live":false,
                         });
-                        if let Some(cost) = args.bag_restock_cost_per_merchant_visit_copper {
+                        if let Some(costs) = visit_costs.as_deref() {
                             value["bag_restock_travel_adjusted_merchant_plan"] =
                                 serde_json::json!(demands.and_then(|rows| {
                                     let wallet = snapshot
                                         .sections
                                         .get("wallet")
                                         .and_then(|row| row["copper"].as_u64());
-                                    azeroth_operator::analysis::restock_travel_adjusted_plan(
-                                        rows,
-                                        ids,
-                                        &travel_quotes,
-                                        cost,
-                                        wallet,
-                                    )
+                                    let mut plan =
+                                        azeroth_operator::analysis::restock_travel_adjusted_plan(
+                                            rows,
+                                            ids,
+                                            &travel_quotes,
+                                            costs,
+                                            wallet,
+                                        )?;
+                                    if let Some(cost) = uniform_cost {
+                                        plan["assumed_copper_per_visit"] = serde_json::json!(cost);
+                                    } else {
+                                        plan["assumed_visit_costs_copper"] =
+                                            serde_json::json!(costs);
+                                    }
+                                    Some(plan)
                                 }));
                         }
                         if args.bag_restock_split_merchant_plan {

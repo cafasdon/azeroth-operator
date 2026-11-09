@@ -7297,10 +7297,10 @@ pub fn restock_travel_adjusted_plan(
     demands: &[Value],
     visit_ids: &[String],
     quotes: &[BTreeMap<u64, (u64, Value)>],
-    cost_per_visit: u64,
+    visit_costs: &[u64],
     wallet: Option<u64>,
 ) -> Option<Value> {
-    if visit_ids.len() != quotes.len() || quotes.len() > 4 {
+    if visit_ids.len() != quotes.len() || visit_costs.len() != quotes.len() || quotes.len() > 4 {
         return None;
     }
     let items: Vec<_> = demands
@@ -7334,9 +7334,11 @@ pub fn restock_travel_adjusted_plan(
         else {
             continue;
         };
-        let Some(total) = cost_per_visit
-            .checked_mul(u64::from(count))
-            .and_then(|travel| purchases.checked_add(travel))
+        let Some(total) = visit_costs
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| subset & (1 << index) != 0)
+            .try_fold(purchases, |sum, (_, cost)| sum.checked_add(*cost))
         else {
             continue;
         };
@@ -7350,7 +7352,7 @@ pub fn restock_travel_adjusted_plan(
         "items":assignments.into_iter().map(|(item, (_, index, plan))| json!({
             "item_id":item,"merchant_snapshot_id":visit_ids[index],"bundle_plan":plan,
         })).collect::<Vec<_>>(),
-        "visit_count":count,"assumed_copper_per_visit":cost_per_visit,
+        "visit_count":count,
         "purchase_copper":purchases,"assumed_visit_cost_copper":total-purchases,
         "complete_quote_copper":total,"affordable_from_inventory_wallet":wallet.map(|balance| total <= balance),
         "travel_cost_verified":false,"purchase_eligibility_verified":false,"live":false,

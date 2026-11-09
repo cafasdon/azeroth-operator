@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever restocking plans with a different assumed cost for each visit.
+
 - Compare split restocking plans with an assumed copper cost per merchant visit.
 
 - Plan saved Forever restocking across merchant visits by choosing one complete quote per item.

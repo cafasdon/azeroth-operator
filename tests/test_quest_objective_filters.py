@@ -268,6 +268,26 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(travel['bag_restock_split_merchant_plan'],plan)
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=[merchant_key],
                                 bag_restock_cost_per_merchant_visit_copper=10**13)
+                    visit_ids = [partial_merchant_key,other_merchant_key,expensive_merchant_key]
+                    for costs, selected, total in [
+                        ([10,0,0],[expensive_merchant_key,expensive_merchant_key],11),
+                        ([0,0,10],[partial_merchant_key,other_merchant_key],9),
+                        ([0,0,1],[partial_merchant_key,other_merchant_key],9),
+                    ]:
+                        adjusted = (await query(**split_args,
+                            bag_restock_compare_merchant_snapshot_ids=visit_ids,
+                            bag_restock_merchant_visit_costs_copper=costs))[
+                                'bag_restock_travel_adjusted_merchant_plan']
+                        self.assertEqual(adjusted['assumed_visit_costs_copper'],costs)
+                        self.assertEqual(adjusted['complete_quote_copper'],total)
+                        self.assertEqual([row['merchant_snapshot_id'] for row in adjusted['items']],selected)
+                        self.assertNotIn('assumed_copper_per_visit',adjusted)
+                    for costs in [[],[0,0],[0,0,10**13]]:
+                        await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
+                                    bag_restock_merchant_visit_costs_copper=costs)
+                    await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
+                                bag_restock_merchant_visit_costs_copper=[0,0,0],
+                                bag_restock_cost_per_merchant_visit_copper=0)
                     await query(error=True,**split_args)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},

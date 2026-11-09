@@ -3060,3 +3060,8 @@ to compare complete shopping plans including an assumed cost per used visit.
 Ties prefer fewer visits. The result uses one complete bundle quote per item
 and leaves the travel-adjusted plan unknown if no complete plan can be priced.
 The visit cost is supplied by the caller.
+
+Use `bag_restock_merchant_visit_costs_copper` for different assumed visit
+costs. Supply one cost per merchant snapshot ID in the same order. This
+option requires split planning and is mutually exclusive with the uniform
+visit cost.
