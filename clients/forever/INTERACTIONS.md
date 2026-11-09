@@ -10,6 +10,9 @@ Use `list_snapshots.pvp_cap_distance` with `cap` set to `max_rank`,
 `maximum_remaining_points`. The filter uses the same captured threshold
 arithmetic as the progression summary. Unknown distances are excluded.
 Zero includes saved totals at or above the selected positive cap threshold.
+Saved comparisons with matching reported season IDs show signed changes to
+each reported cap rank and point threshold. They compare remaining points
+only when the cap rank and threshold agree and both distances are known.
 
 Use `maximum_reported_member_count` in the `list_snapshots.group_context`
 filter to cap the captured member count. Combine it with

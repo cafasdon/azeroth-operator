@@ -45,7 +45,9 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
             for row in [None,section,full,maximum,zero,overflow,planned,planned_zero,planned_max,planned_partial,planned_past,
                         {**planned,'reported_season_id':7},{**planned_past,'reported_season_id':7},
                         {**planned_past,'reported_season_id':8},
-                        {**section,'rank':4,'rank_points':0,'reported_season_id':7}]:
+                        {**section,'rank':4,'rank_points':0,'reported_season_id':7},
+                        {**planned,'current_week_max_rank':14,'rank_points':0,'reported_season_id':7,
+                         'total_points_by_rank':{'3':100,'4':220,'14':1000}}]:
                 saved=deepcopy(base)
                 if row is not None:saved['sections']['player_pvp_progression']=row
                 valid.append((store.ingest(saved),row))
@@ -108,7 +110,7 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     await call('list_snapshots',error=True,family='forever',minimum_pvp_rank=4,maximum_pvp_rank=3)
                     await call('list_snapshots',error=True,family='retail',maximum_pvp_rank=0)
                     season = await call('list_snapshots',family='forever',pvp_season_id=7,minimum_pvp_rank=3,maximum_pvp_rank=3)
-                    self.assertEqual({row['snapshot_id'] for row in season['snapshots']}, {valid[11][0],valid[12][0]})
+                    self.assertEqual({row['snapshot_id'] for row in season['snapshots']}, {valid[11][0],valid[12][0],valid[15][0]})
                     self.assertTrue(all(row['pvp_rank_match']['reported_season_id']==7 for row in season['snapshots']))
                     second_page = await call('list_snapshots',family='forever',pvp_season_id=7,
                         minimum_pvp_rank=3,maximum_pvp_rank=3,limit=1,offset=1)
@@ -158,12 +160,22 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(compared['live'], False)
                         self.assertIsNone(compared['reported_season_ids_match'])
                         self.assertIsNone(compared['observed_change_with_matching_season_id'])
+                        self.assertIsNone(compared['observed_cap_changes_with_matching_season_id'])
                     for index, expected in [(12,True),(13,False)]:
                         compared = (await call('compare_snapshots',before_id=valid[11][0],after_id=valid[index][0],**{selector:True}))[selector]
                         self.assertIs(compared['reported_season_ids_match'],expected)
                         self.assertIsNone(compared['earned_points_delta'])
                         self.assertEqual(compared['observed_change_with_matching_season_id'],
                             {'rank_delta':0,'same_rank_reported_points_delta':290} if expected else None)
+                    cap_changes = (await call('compare_snapshots',before_id=valid[11][0],
+                        after_id=valid[15][0],**{selector:True}))[selector]['observed_cap_changes_with_matching_season_id']
+                    self.assertEqual(cap_changes, {
+                        'max_rank':{'reported_cap_rank_delta':0,'reported_cap_threshold_delta':0,
+                                    'same_target_remaining_points_delta':10},
+                        'current_week_max_rank':{'reported_cap_rank_delta':9,'reported_cap_threshold_delta':700,
+                                                 'same_target_remaining_points_delta':None},
+                        'previous_week_max_rank':{'reported_cap_rank_delta':0,'reported_cap_threshold_delta':20,
+                                                  'same_target_remaining_points_delta':None}})
                     for first, second, delta, points in [(12,11,0,-290),(11,14,1,None),(14,11,-1,None),(11,11,0,0)]:
                         compared = (await call('compare_snapshots',before_id=valid[first][0],
                             after_id=valid[second][0],**{selector:True}))[selector]
