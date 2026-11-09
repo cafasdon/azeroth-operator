@@ -147,6 +147,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([step['reported_craftable_count_observation']
                                       for step in conditioned['steps']], [craftable, craftable, None, None])
                     nonmaterial = conditioned['stock_plan']['nonmaterial_requirements']
+                    self.assertEqual(nonmaterial['observed_chain_conditions'],
+                                     {'steps_met':0,'steps_unmet':2,'steps_unknown':2,'all_met':False})
+                    self.assertEqual(one['stock_plan']['nonmaterial_requirements']['observed_chain_conditions'],
+                                     {'steps_met':0,'steps_unmet':0,'steps_unknown':4,'all_met':None})
                     self.assertEqual(nonmaterial['first_observed_shortfall']['recipe_number'],1)
                     self.assertEqual(nonmaterial['first_observed_shortfall']['failed_checks'],
                                      ['observed_conditions_met'])

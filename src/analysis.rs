@@ -1692,9 +1692,15 @@ fn ordered_recipe_requirements_with_charges<'a>(
     let mut recipes_with_unknown_checks = 0;
     let mut ledger = RecipeChargeLedger::default();
     let mut charge_accounting = Vec::new();
+    let mut condition_checks = (0, 0, 0);
     for (index, review) in reviews.enumerate() {
         let mut preparation = review["captured_preparation"].clone();
         if cumulative {
+            match preparation["observed_conditions_met"].as_bool() {
+                Some(true) => condition_checks.0 += 1,
+                Some(false) => condition_checks.1 += 1,
+                None => condition_checks.2 += 1,
+            }
             let mut charges = ledger.consume(review);
             preparation["observed_charges_cover_cumulative_crafts"] =
                 charges["covers_cumulative_crafts"].clone();
@@ -1721,6 +1727,13 @@ fn ordered_recipe_requirements_with_charges<'a>(
     let mut result = json!({"first_observed_shortfall":first_shortfall,
         "recipes_with_unknown_checks":recipes_with_unknown_checks});
     if cumulative {
+        let (met, unmet, unknown) = condition_checks;
+        result["observed_chain_conditions"] = json!({
+            "steps_met":met,"steps_unmet":unmet,"steps_unknown":unknown,
+            "all_met":if unmet > 0 { Some(false) }
+                else if unknown == 0 && met > 0 { Some(true) }
+                else { None },
+        });
         let first_charge_shortfall = charge_accounting
             .iter()
             .find(|row| row["covers_cumulative_crafts"] == false);

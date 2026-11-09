@@ -263,6 +263,10 @@ recipes unknown. Each step lists the saved unmet condition rows under
 `unmet_crafting_conditions`. An observed list with no unmet rows is empty,
 and an unavailable list is null. A newer inventory snapshot does not supply
 conditions.
+The stock plan counts steps with met, unmet and unknown conditions. Its
+`observed_chain_conditions.all_met` is false when any step has an observed
+unmet condition, true when every step's saved condition check passes, and
+null otherwise. Repeated recipe steps are counted separately.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks
