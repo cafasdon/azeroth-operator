@@ -586,3 +586,17 @@ chance, yields and native eligibility do not change the ordering. An explicit
 newer inventory may change the order while recipe/view/cooldown provenance stays
 original. Omitted/null/recipe_id ordering preserves existing default output.
 No addon/schema/deployment or crafting action is introduced.
+
+## Equipped bag item observations (2026-11-09)
+
+Non-backpack positive-capacity bag rows may include equipped_item with item_id
+and the API-reported inventory_slot. Required capacity getters are guarded;
+optional identity failures omit only identity. Two matching mapping/item reads
+must agree with captured capacity/free slots and known family, with final getter
+identity checks. Ambiguous duplicate inventory-slot mappings lose both identities.
+Missing identity never means an empty bag slot or no quiver. Raw bag inspection
+and equipped_bag_item_observations summary expose numeric IDs, without stock
+credit, NPC data or gameplay actions. This is a prerequisite for future captured
+quiver checks; simulator quiver/ammunition options remain unverified and unchanged.
+Addon0.53.0-dev and compatible readers are required together for future rollout.
+The package remains uninstalled and native qualification stays deferred.

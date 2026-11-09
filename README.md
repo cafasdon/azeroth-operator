@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Saved bag-capacity observations can now include the equipped container’s item
+ID and reported inventory slot when stable public reads agree. These identities
+are inspectable but receive no material-stock or verified quiver-bonus credit.
+[Capture contract](docs/ADR-064-equipped-bag-item-observations.md).
+
 Profession recipe search can now order a stock-based shortlist by independent
 observed item capacity before pagination. Combine it with saved skill-up and
 cooldown filters; it does not predict gains or allocate shared materials.

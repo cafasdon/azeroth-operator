@@ -2214,6 +2214,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 .as_object()
                 .ok_or_else(|| anyhow::anyhow!("Expected bag capacity map"))?;
             ensure!((5..=6).contains(&bags.len()), "Invalid carried bag range");
+            let mut inventory_slots = std::collections::BTreeSet::new();
             for (key, bag) in bags {
                 index(key, 0, (bags.len() - 1) as u32)?;
                 object(
@@ -2222,6 +2223,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("total_slots", "uint", true),
                         ("free_slots", "uint", true),
                         ("family_mask", "uint", false),
+                        ("equipped_item", "map", false),
                     ],
                 )?;
                 let total = bag["total_slots"].as_u64().unwrap();
@@ -2235,6 +2237,20 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                             .is_none_or(|mask| total > 0 && !mask.is_null()),
                     "Invalid bag capacity"
                 );
+                if let Some(item) = bag.get("equipped_item") {
+                    object(
+                        item,
+                        &[
+                            ("item_id", "positive", true),
+                            ("inventory_slot", "positive", true),
+                        ],
+                    )?;
+                    let slot = item["inventory_slot"].as_u64().unwrap();
+                    ensure!(
+                        key != "0" && total > 0 && slot <= 255 && inventory_slots.insert(slot),
+                        "Invalid equipped bag identity"
+                    );
+                }
             }
         }
         "pet_action_bar" => {

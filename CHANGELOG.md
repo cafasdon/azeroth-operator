@@ -1,5 +1,10 @@
 # Changelog
 
+- Add optional stable equipped-item identity to non-backpack bag-capacity
+  observations, with guarded APIs, strict paired fields and duplicate-mapping
+  suppression. Preserve base capacities on optional failures. Package0.53.0-dev
+  offline; no stock credit, simulator quiver validation or installation.
+
 - Add opt-in observed_item_capacity_desc recipe search ordering with explicit
   material scope, finite item capacities first and numeric recipe-ID ties.
   Preserve legacy default output and original recipe/cooldown provenance;

@@ -423,7 +423,7 @@ pub fn verify_forever_capture_fixture(
         C_Map={GetBestMapForUnit=function(unit) assert(unit=="player"); return 1411 end,
             GetMapInfo=function(id) assert(id==1411); return {mapID=1411,name="Fixture zone",parentMapID=1414} end,
             GetMapLevels=function(id) assert(id==1411); return 5,12,1,2 end}
-        function GetInventoryItemID() end
+        function GetInventoryItemID(_,slot) if slot==20 then return 8217 end end
         NUM_TOTAL_EQUIPPED_BAG_SLOTS=4
         Enum={BankType={Character=0,Account=2},TradeskillRecipeType={Item=1,Salvage=2,Enchant=3},
             ContentTrackingType={Achievement=2}}
@@ -447,6 +447,7 @@ pub fn verify_forever_capture_fixture(
                 if bag==1 then return 8 end
                 return bag==6 and 2 or 0
             end,
+            ContainerIDToInventoryID=function(bag) return 19+bag end,
             GetContainerNumFreeSlots=function(bag)
                 if bag==0 then return badCapacity and 17 or 16,0 end
                 if bag==1 then return 8,32 end
@@ -1031,7 +1032,12 @@ pub fn verify_forever_capture_fixture(
     );
     assert_eq!(
         snapshot.sections["bag_capacity"]["1"],
-        serde_json::json!({"total_slots":8,"free_slots":8,"family_mask":32})
+        serde_json::json!({"total_slots":8,"free_slots":8,"family_mask":32,
+            "equipped_item":{"item_id":8217,"inventory_slot":20}})
+    );
+    assert_eq!(
+        summary["equipped_bag_item_observations"]["entries"],
+        serde_json::json!([{"bag":1,"item_id":8217,"inventory_slot":20}])
     );
     assert_eq!(
         summary["carried_bag_space"],

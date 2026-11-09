@@ -703,8 +703,9 @@ def validate_snapshot(value):
         if (c["family"] != "forever" or not isinstance(bags, dict) or len(bags) not in (5, 6)
                 or set(bags) != {str(index) for index in range(len(bags))}):
             raise ValueError("Invalid carried bag range")
+        inventory_slots = set()
         for slot, bag in bags.items():
-            if not isinstance(bag, dict) or set(bag) - {"total_slots", "free_slots", "family_mask"}:
+            if not isinstance(bag, dict) or set(bag) - {"total_slots", "free_slots", "family_mask", "equipped_item"}:
                 raise ValueError("Invalid bag capacity")
             total, free = bag.get("total_slots"), bag.get("free_slots")
             if (type(total) is not int or type(free) is not int
@@ -713,6 +714,14 @@ def validate_snapshot(value):
             if "family_mask" in bag and (total == 0 or type(bag["family_mask"]) is not int
                                          or not 0 <= bag["family_mask"] <= 4_294_967_295):
                 raise ValueError("Invalid bag family")
+            if "equipped_item" in bag:
+                item = bag["equipped_item"]
+                if (slot == "0" or total == 0 or not isinstance(item, dict) or set(item) != {"item_id", "inventory_slot"}
+                        or type(item["item_id"]) is not int or not 1 <= item["item_id"] <= 4_294_967_295
+                        or type(item["inventory_slot"]) is not int or not 1 <= item["inventory_slot"] <= 255
+                        or item["inventory_slot"] in inventory_slots):
+                    raise ValueError("Invalid equipped bag identity")
+                inventory_slots.add(item["inventory_slot"])
     if "pet_action_bar" in sections:
         bar=sections["pet_action_bar"]
         if (c["family"]!="forever" or not isinstance(bar,dict) or set(bar)!={"coverage","pet_present","has_action_bar","entries"}

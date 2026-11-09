@@ -6709,6 +6709,27 @@ pub fn summary(s: &Snapshot) -> Value {
             "known_price_subtotal_copper":subtotal,"total_listed_quote_copper":if prices.len()==rows.len() {Some(subtotal)} else {None},
             "included_in_owned_inventory":false,"buyback_eligibility_verified":false})
     }).unwrap_or(Value::Null);
+    summary["equipped_bag_item_observations"] = s
+        .sections
+        .get("bag_capacity")
+        .map(|section| {
+            let mut rows: Vec<_> = section
+                .as_object()
+                .unwrap()
+                .iter()
+                .filter_map(|(bag, row)| {
+                    row.get("equipped_item").map(|item| {
+                        json!({"bag":bag.parse::<u32>().unwrap(),
+                "item_id":item["item_id"],"inventory_slot":item["inventory_slot"]})
+                    })
+                })
+                .collect();
+            rows.sort_unstable_by_key(|row| row["bag"].as_u64().unwrap());
+            json!({"observed_identity_count":rows.len(),"entries":rows,
+            "complete_equipped_bag_identity_verified":false,"quiver_bonus_verified":false,
+            "credited_as_material_stock":false,"game_execution":false})
+        })
+        .unwrap_or(Value::Null);
     summary["gossip_option_observations"] = s.sections.get("gossip_options").map(|section| {
         let rows=section["entries"].as_object().unwrap();
         json!({"coverage":section["coverage"],"observed_option_count":rows.len(),

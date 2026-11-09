@@ -2377,22 +2377,79 @@ AO.collectors.instance_context = function()
     return context
 end
 
+local function equippedBagIdentity(api,getSlots,getFree,bag,capacity,free,family,observeSlot)
+    local convert,getItem=api.ContainerIDToInventoryID,GetInventoryItemID
+    if not (questRewardAccessible(convert) and type(convert)=="function"
+        and questRewardAccessible(getItem) and type(getItem)=="function") then return end
+    local function read()
+        if not questRewardInteger(getSlots(bag),capacity,capacity) then return end
+        local currentFree,currentFamily=getFree(bag)
+        if not questRewardInteger(currentFree,free,free) then return end
+        if family~=nil and not (questRewardInteger(currentFamily,family,family)) then return end
+        local slot=convert(bag)
+        if not questRewardInteger(slot,1,255) then return end
+        observeSlot(slot)
+        local item=getItem("player",slot)
+        if not questRewardInteger(item,1,4294967295) then return end
+        return slot,item
+    end
+    local slot,item=read()
+    if not slot then return end
+    local later,other=read()
+    if not later or slot~=later or item~=other then return end
+    if not questRewardInteger(getSlots(bag),capacity,capacity) then return end
+    local currentFree,currentFamily=getFree(bag)
+    if not questRewardInteger(currentFree,free,free)
+        or family~=nil and not questRewardInteger(currentFamily,family,family) then return end
+    local current=C_Container
+    if not (questRewardAccessible(current) and current==api
+        and questRewardAccessible(current.ContainerIDToInventoryID) and current.ContainerIDToInventoryID==convert
+        and questRewardAccessible(current.GetContainerNumSlots) and current.GetContainerNumSlots==getSlots
+        and questRewardAccessible(current.GetContainerNumFreeSlots) and current.GetContainerNumFreeSlots==getFree
+        and questRewardAccessible(GetInventoryItemID) and GetInventoryItemID==getItem) then return end
+    return {inventory_slot=slot,item_id=item}
+end
+
 AO.collectors.bag_capacity = function()
     local last=NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4
     assert(questRewardInteger(last,4,5), "Unsupported carried bag range")
-    local result={}
+    local api=C_Container
+    assert(questRewardAccessible(api) and type(api)=="table", "Bag API unavailable")
+    local getSlots,getFree=api.GetContainerNumSlots,api.GetContainerNumFreeSlots
+    assert(questRewardAccessible(getSlots) and type(getSlots)=="function"
+        and questRewardAccessible(getFree) and type(getFree)=="function", "Bag getters unavailable")
+    local result,seen={},{}
     for bag=0,last do
-        local capacity=C_Container.GetContainerNumSlots(bag)
+        local capacity=getSlots(bag)
         assert(questRewardInteger(capacity,bag==0 and 1 or 0,1024), "Invalid bag capacity")
         local entry={total_slots=capacity,free_slots=0}
         if capacity>0 then
-            local free,family=C_Container.GetContainerNumFreeSlots(bag)
+            local free,family=getFree(bag)
             assert(questRewardInteger(free,0,capacity), "Invalid free slot count")
             entry.free_slots=free
             if questRewardInteger(family,0,4294967295) then entry.family_mask=family end
+            if bag>0 then
+                local key=tostring(bag)
+                local function observeSlot(slot)
+                    local previous=seen[slot]
+                    if previous~=nil and previous~=key then
+                        if previous then result[previous].equipped_item=nil end
+                        seen[slot]=false
+                    elseif previous==nil then
+                        seen[slot]=key
+                    end
+                end
+                local ok,identity=pcall(equippedBagIdentity,api,getSlots,getFree,bag,capacity,entry.free_slots,entry.family_mask,observeSlot)
+                if ok and identity and seen[identity.inventory_slot]==key then entry.equipped_item=identity end
+            end
         end
         result[tostring(bag)]=entry
     end
+    local current=C_Container
+    assert(questRewardAccessible(current) and current==api
+        and questRewardAccessible(current.GetContainerNumSlots) and current.GetContainerNumSlots==getSlots
+        and questRewardAccessible(current.GetContainerNumFreeSlots) and current.GetContainerNumFreeSlots==getFree,
+        "Bag API changed")
     return result
 end
 
