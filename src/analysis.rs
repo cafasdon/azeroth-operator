@@ -6242,6 +6242,8 @@ fn merchant_reagent_budget(
         "unlimited_copper_only_shortfall":budget.map(|(cost, balance)| cost.saturating_sub(balance)),
         "copper_only_bundle_mix_total":mix_total,
         "copper_only_bundle_mix_quoted_subtotal":mix_subtotal,
+        "copper_only_bundle_mix_quoted_subtotal_wallet_shortfall":
+            mix_subtotal.zip(wallet).map(|(cost, balance)| cost.saturating_sub(balance)),
         "copper_only_bundle_mix_unquoted_item_ids":unquoted,
         "copper_only_bundle_mix_affordable":mix_budget.map(|(cost, balance)| cost <= balance),
         "copper_only_bundle_mix_shortfall":mix_budget.map(|(cost, balance)| cost.saturating_sub(balance))})

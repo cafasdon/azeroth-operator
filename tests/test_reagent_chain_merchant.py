@@ -95,6 +95,7 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quote['reagents'][0]['offers_by_slot']['1']['extra_units'],1)
                     self.assertEqual(quote['unlimited_copper_only_total'],7)
                     self.assertEqual(quote['unlimited_copper_only_shortfall'],1)
+                    self.assertEqual(quote['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'],1)
                     self.assertFalse(quote['unlimited_copper_only_affordable'])
                     reply=await session.call_tool('review_forever_recipe',{
                         'snapshot_id':variants['bundle_mix'],'recipe_id':101,'crafts':1,
@@ -104,6 +105,7 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(combined['unlimited_copper_only_total'],10)
                     self.assertEqual(combined['copper_only_bundle_mix_total'],9)
                     self.assertEqual(combined['copper_only_bundle_mix_quoted_subtotal'],9)
+                    self.assertEqual(combined['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'],0)
                     self.assertEqual(combined['copper_only_bundle_mix_unquoted_item_ids'],[])
                     self.assertEqual(combined['reagents'][0]['bundle_mix_quote_status'],'quoted')
                     self.assertTrue(combined['copper_only_bundle_mix_affordable'])
@@ -115,6 +117,7 @@ class ReagentChainMerchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(limited.isError,limited)
                     partial=json.loads(limited.content[0].text)['reagent_chain']['merchant_reagent_plan']
                     self.assertEqual(partial['copper_only_bundle_mix_quoted_subtotal'],0)
+                    self.assertEqual(partial['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'],0)
                     self.assertEqual(partial['copper_only_bundle_mix_unquoted_item_ids'],[10])
                     self.assertEqual(partial['reagents'][0]['bundle_mix_quote_status'],'no_eligible_offer')
                     self.assertIsNone(partial['copper_only_bundle_mix_affordable'])

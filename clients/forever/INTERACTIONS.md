@@ -28,6 +28,8 @@ Partial quotes identify unpriced item IDs and show the subtotal of priced
 reagents. Each unpriced row distinguishes an unknown shortage, a shortage
 outside the optimiser range, and a shortage with no eligible offer.
 Affordability still requires a complete quote.
+The quoted subtotal's wallet shortfall can be calculated even for a partial
+quote. A zero subtotal shortfall only covers the priced rows.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows
