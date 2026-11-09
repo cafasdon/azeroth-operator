@@ -1,5 +1,9 @@
 # Changelog
 
+- Align Python base inventory structure with the Rust reader: reject unsupported
+  item fields, invalid IDs/keys/shapes, malformed links/GUIDs and bank-family or
+  container collisions before ingestion writes. Preserve valid optional values.
+
 - Filter and page historical bag cooldown observations by item IDs, status,
   enabled flag and inclusive timer bounds, with numeric ordering, separate
   unknown/nonmatching counts and explicit missing-versus-empty results.

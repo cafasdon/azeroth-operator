@@ -1900,3 +1900,8 @@ flags and inclusive timer bounds through bag_cooldown_filter. Numeric bag/slot
 ordering and bounded pages preserve full pre-pagination matched/unknown/nonmatch
 counts. Missing observations remain null; known empty captures remain empty.
 This does not establish current item usability. See [verification](../../docs/bag-cooldown-filter-verification-2026-11-09.md).
+
+Base inventory ingestion now follows the existing Rust structure, item-field,
+identity, UTF-8 and bank-container contract, rejecting unsupported fields before
+writes. Invalid saved captures are refused without rewriting them. Verified with
+241 actual MCP structure cases; full snapshot-schema equivalence remains separate.

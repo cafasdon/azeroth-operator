@@ -25,6 +25,11 @@ Python ingestion now rejects missing or malformed container stack counts before
 writing, matching Rust's count contract. Equipment's absent/null count behaviour
 is preserved. [Parity evidence](docs/item-stack-count-parity-verification-2026-11-09.md).
 
+Base inventory validation also enforces Rust's item-field, identity, location
+and bank-container contract before ingestion. Unsupported extra fields are
+rejected; invalid saved captures remain unchanged and are refused on read.
+[Inventory structure evidence](docs/inventory-item-shape-parity-verification-2026-11-09.md).
+
 Optional local reagent references can now retain bounded NPC/object spawn
 locations. Reagent chains return only the referenced location records, preserving
 provider area/phase namespaces, unknown data and truncation. No route or movement

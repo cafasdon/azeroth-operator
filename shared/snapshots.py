@@ -130,6 +130,25 @@ def _validate_bag_item_cooldowns(observation, bags):
         raise ValueError('Invalid bag cooldown count')
 
 
+def _inventory_index(key, minimum, maximum):
+    return (isinstance(key,str) and 1 <= len(key) <= 10 and key.isascii()
+        and key.isdecimal() and str(int(key)) == key and minimum <= int(key) <= maximum)
+
+
+def _validate_inventory_item_identity(item):
+    allowed={'item_id','link','count','guid','required_level','sell_price_copper','equip_location','native_stats'}
+    if (not isinstance(item,dict) or set(item)-allowed or type(item.get('item_id')) is not int
+            or not 1 <= item['item_id'] <= 4_294_967_295):
+        raise ValueError('Invalid inventory item fields or identity')
+    link=item.get('link')
+    if link is not None and (not isinstance(link,str) or len(link.encode()) > 4096):
+        raise ValueError('Invalid inventory item link')
+    guid=item.get('guid')
+    if guid is not None and (not isinstance(guid,str) or not 1 <= len(guid.encode()) <= 128
+            or any(ord(character)<32 or 127<=ord(character)<=159 for character in guid)):
+        raise ValueError('Invalid inventory item GUID')
+
+
 def validate_snapshot(value):
     if not isinstance(value, dict) or value.get("schema_version") != 1:
         raise ValueError("Expected snapshot schema_version 1")
@@ -161,13 +180,26 @@ def validate_snapshot(value):
         raise ValueError("Invalid unavailable reason")
     if "action_bar_observation" in sections:
         _validate_action_bar_observation(sections["action_bar_observation"])
+    bank_sections_present='character_bank' in sections or 'account_bank' in sections
+    if bank_sections_present and c['family'] != 'forever':
+        raise ValueError('Bank snapshots require Forever')
+    inventory_containers=set()
     for storage in ("equipment","bags","character_bank","account_bank"):
         data=sections.get(storage,{})
-        if not isinstance(data,dict):continue
+        if not isinstance(data,dict): raise ValueError('Inventory section must be an object')
+        if storage!='equipment':
+            for container in data:
+                if (not _inventory_index(container,0,64)
+                        or (bank_sections_present and container in inventory_containers)):
+                    raise ValueError('Invalid or repeated inventory container')
+                inventory_containers.add(container)
         groups=[data] if storage=="equipment" else data.values()
         for group in groups:
-            if not isinstance(group,dict):continue
-            for item in group.values():
+            if not isinstance(group,dict): raise ValueError('Inventory slots must be an object')
+            for slot,item in group.items():
+                if not _inventory_index(slot,1,19 if storage=='equipment' else 1024):
+                    raise ValueError('Invalid inventory slot')
+                _validate_inventory_item_identity(item)
                 if isinstance(item,dict):
                     count=item.get('count')
                     if ((storage=='equipment' and count is not None)
