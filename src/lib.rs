@@ -99,7 +99,7 @@ pub enum Family {
     Forever,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ClientIdentity {
     pub family: Family,
@@ -1412,6 +1412,7 @@ impl GroupContextFilter {
 
 #[derive(Default)]
 pub struct CaptureFilters<'a> {
+    pub exact_client: Option<&'a ClientIdentity>,
     pub captured_from: Option<&'a str>,
     pub captured_through: Option<&'a str>,
     pub latest_per_character: bool,
@@ -1623,6 +1624,7 @@ impl Store {
         limit: usize,
     ) -> Result<Value> {
         let CaptureFilters {
+            exact_client,
             captured_from,
             captured_through,
             latest_per_character,
@@ -2107,6 +2109,16 @@ impl Store {
             );
         }
         paths.sort();
+        if let Some(client) = exact_client {
+            ensure!(
+                client.family == family
+                    && client.interface > 0
+                    && [&client.variant, &client.build]
+                        .iter()
+                        .all(|text| !text.trim().is_empty() && text.len() <= 128),
+                "Invalid exact client identity"
+            );
+        }
         let mut rows = Vec::new();
         let mut latest = BTreeMap::new();
         let mut invalid = 0;
@@ -2119,6 +2131,7 @@ impl Store {
             if latest_per_character
                 && let Ok(snapshot) = &snapshot
                 && snapshot.client.family == family
+                && exact_client.is_none_or(|client| snapshot.client == *client)
                 && captured_from.is_none_or(|from| snapshot.captured_at >= from)
                 && captured_through.is_none_or(|through| snapshot.captured_at <= through)
             {
@@ -2137,6 +2150,7 @@ impl Store {
             match snapshot {
                 Ok(s)
                     if s.client.family == family
+                        && exact_client.is_none_or(|client| s.client == *client)
                         && captured_from.is_none_or(|from| s.captured_at >= from)
                         && captured_through.is_none_or(|through| s.captured_at <= through)
                         && (!filter_instance

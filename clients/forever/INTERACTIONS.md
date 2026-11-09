@@ -4,6 +4,8 @@ For an explicit saved character, `resolve_character` accepts inclusive
 `captured_from` and `captured_through` timestamps. It selects the newest
 matching capture within those bounds. Without an explicit character, active
 identity stays unknown and time bounds are rejected.
+The optional `exact_client` requires the capture to match the supplied
+family, variant, build and interface. It also requires an explicit character.
 
 Inspect `trainer_services` with either `trainer_max_price_copper` or
 `trainer_max_price_points` to apply an inclusive ceiling to known lesson

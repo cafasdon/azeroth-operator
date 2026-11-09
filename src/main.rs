@@ -42,6 +42,8 @@ struct ResolveCharacter {
     captured_from: Option<String>,
     /// Inclusive latest capture timestamp for the explicit character.
     captured_through: Option<String>,
+    /// Require this exact client family, variant, build and interface for the explicit character.
+    exact_client: Option<azeroth_operator::ClientIdentity>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1882,9 +1884,12 @@ impl Operator {
     )]
     fn resolve_character(&self, Parameters(args): Parameters<ResolveCharacter>) -> CallToolResult {
         let Some(character) = args.character else {
-            if args.captured_from.is_some() || args.captured_through.is_some() {
+            if args.captured_from.is_some()
+                || args.captured_through.is_some()
+                || args.exact_client.is_some()
+            {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Capture time bounds require an explicit character",
+                    "Capture time bounds and exact client selection require an explicit character",
                 )]);
             }
             return CallToolResult::success(vec![ContentBlock::text(
@@ -1897,6 +1902,7 @@ impl Operator {
             args.family,
             Some(&character),
             azeroth_operator::CaptureFilters {
+                exact_client: args.exact_client.as_ref(),
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
                 ..Default::default()
@@ -1935,6 +1941,7 @@ impl Operator {
             family,
             args.character.as_ref(),
             azeroth_operator::CaptureFilters {
+                exact_client: None,
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
                 latest_per_character: args.latest_per_character,

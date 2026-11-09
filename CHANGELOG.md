@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve explicitly selected characters against an exact saved client identity.
+
 - Resolve an explicitly selected character within a requested saved capture window.
 
 - Filter combined saved Forever reset schedules by dungeon, raid or world boss.

@@ -25,6 +25,10 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
             later = deepcopy(base)
             later['captured_at'] = '2025-01-02T00:00:00Z'
             expected = store.ingest(later)
+            changed_build = deepcopy(later)
+            changed_build['captured_at'] = '2025-01-02T12:00:00Z'
+            changed_build['client']['build'] = '70863'
+            changed_build_key = store.ingest(changed_build)
             newest = deepcopy(later)
             newest['captured_at'] = '2025-01-03T00:00:00Z'
             newest['character']['name'] = 'Another'
@@ -46,11 +50,15 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                                                'live': False, 'active_character_verified': False})
                     result = await resolve({'family': 'forever', 'character': {'name': 'example', 'realm': 'test'}})
                     self.assertEqual(result['status'], 'explicit_saved_character')
-                    self.assertEqual(result['selection']['snapshot_id'], expected)
+                    self.assertEqual(result['selection']['snapshot_id'], changed_build_key)
                     self.assertNotEqual(first, expected)
                     self.assertFalse(result['active_character_verified'])
                     self.assertFalse(result['live'])
                     target = {'family':'forever','character':{'name':'Example','realm':'Test'}}
+                    exact = await resolve({**target,'exact_client':base['client']})
+                    self.assertEqual(exact['selection']['snapshot_id'],expected)
+                    absent_client = {**base['client'],'variant':'different'}
+                    self.assertIsNone((await resolve({**target,'exact_client':absent_client}))['selection'])
                     bounded = await resolve({**target,'captured_through':'2025-01-01T00:00:00Z'})
                     self.assertEqual(bounded['selection']['snapshot_id'], first)
                     stale = await resolve({**target,'captured_from':'2025-01-03T00:00:00Z'})
@@ -58,6 +66,8 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(stale['selection'])
                     for args in [
                         {'family':'forever','captured_from':'2025-01-01T00:00:00Z'},
+                        {'family':'forever','exact_client':base['client']},
+                        {**target,'exact_client':{**base['client'],'family':'retail'}},
                         {**target,'captured_from':'2025-01-03T00:00:00Z',
                          'captured_through':'2025-01-01T00:00:00Z'},
                     ]:
