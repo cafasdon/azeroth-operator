@@ -200,6 +200,21 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(residual['copper_only_bundle_mix_total'],2)
                     self.assertIs(residual['copper_only_bundle_mix_affordable'],True)
                     self.assertEqual([row['item_id'] for row in residual['reagents']],[858])
+                    restock = {'section':'bags','snapshot_id':bank_stock_key,
+                               'bag_restock_requirements':requirements['items'],
+                               'bag_restock_merchant_snapshot_id':merchant_key}
+                    bag_quote = (await query(**restock))['bag_restock_merchant_quote']
+                    self.assertEqual(bag_quote['merchant_snapshot_id'],merchant_key)
+                    self.assertEqual(bag_quote['copper_only_bundle_mix_total'],2)
+                    self.assertIs(bag_quote['copper_only_bundle_mix_affordable'],True)
+                    self.assertIs(bag_quote['purchase_eligibility_verified'],False)
+                    self.assertEqual(bag_quote['reagents'],residual['reagents'])
+                    self.assertIsNone((await query(**{**restock,'snapshot_id':missing}))[
+                        'bag_restock_merchant_quote'])
+                    self.assertIsNone((await query(**{**restock,'bag_restock_merchant_snapshot_id':key}))[
+                        'bag_restock_merchant_quote'])
+                    await query(error=True,**{**restock,'bag_restock_merchant_snapshot_id':retail})
+                    await query(error=True,section='bags',bag_restock_merchant_snapshot_id=merchant_key)
                     newer=await query(quest_id=3,quest_inventory_requirements=requirements,
                         quest_inventory_snapshot_id=changed_key,quest_inventory_merchant_snapshot_id=merchant_key)
                     self.assertEqual(newer['data'],exact['data'])

@@ -170,6 +170,8 @@ struct Inspect {
     bag_restock_requirements: Option<Vec<azeroth_operator::InventoryRequirement>>,
     /// Page observed bank source locations for bag_restock_requirements.
     bag_restock_location_offset: Option<usize>,
+    /// Price the remaining shortfall using an explicitly selected compatible saved merchant visit.
+    bag_restock_merchant_snapshot_id: Option<String>,
     /// Use this compatible same-time or newer capture for quest inventory and wallet observations.
     quest_inventory_snapshot_id: Option<String>,
     /// Quote quest inventory shortfalls using this saved same-character merchant visit.
@@ -706,6 +708,20 @@ struct TalentSummary {
     /// Prepare a simulator-only digit string from explicit ranks for every pinned definition; never infer missing zeros.
     #[serde(default, deserialize_with = "talent_preparation_flag")]
     prepare_simulator_talents: bool,
+}
+
+fn bank_restock_residual(review: &serde_json::Value) -> Option<serde_json::Value> {
+    let rows = review.pointer("/bank_withdrawal_plan/rows")?.as_array()?;
+    let items: Vec<_> = rows
+        .iter()
+        .map(|row| {
+            serde_json::json!({
+                "item_id":row["item_id"],
+                "shortfall_vs_observed":row["remaining_after_observed_withdrawals"],
+            })
+        })
+        .collect();
+    Some(serde_json::json!({"storage_observed":true,"items":items}))
 }
 
 fn talent_preparation_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
@@ -2792,7 +2808,9 @@ impl Operator {
                 items,
             }
         });
-        if (args.bag_restock_location_offset.is_some() && bag_restock.is_none())
+        if ((args.bag_restock_location_offset.is_some()
+            || args.bag_restock_merchant_snapshot_id.is_some())
+            && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
                 args.section.as_deref() != Some("bags")
                     || args.spending_budget.is_some()
@@ -3016,6 +3034,34 @@ impl Operator {
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
+                    if let Some(id) = args.bag_restock_merchant_snapshot_id.as_deref() {
+                        let Ok(merchant) = self.store.read(id).and_then(|merchant| {
+                            azeroth_operator::analysis::ensure_same_character_and_client(
+                                &snapshot, &merchant,
+                            )?;
+                            Ok(merchant)
+                        }) else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Bag restocking requires a compatible saved merchant snapshot",
+                            )]);
+                        };
+                        let mut quote = bank_restock_residual(&value["bag_restock_review"])
+                            .and_then(|review| {
+                                Some(azeroth_operator::analysis::material_merchant_plan(
+                                    review["items"].as_array()?,
+                                    &merchant,
+                                    &snapshot,
+                                ))
+                            })
+                            .unwrap_or(serde_json::Value::Null);
+                        if quote.is_object() {
+                            quote["merchant_snapshot_id"] = serde_json::json!(id);
+                            quote["inventory_captured_at"] =
+                                serde_json::json!(snapshot.captured_at);
+                            quote["purchase_eligibility_verified"] = serde_json::json!(false);
+                        }
+                        value["bag_restock_merchant_quote"] = quote;
+                    }
                 }
                 if let Some(maximum) = args.equipment_durability_max_percent {
                     if value["client"]["family"] != "forever" {
@@ -3757,16 +3803,7 @@ impl Operator {
                             );
                         }
                     }
-                    let residual_review = value
-                        .pointer("/quest_inventory_review/bank_withdrawal_plan/rows")
-                        .and_then(serde_json::Value::as_array)
-                        .map(|rows| {
-                            serde_json::json!({"storage_observed":true,
-                            "items":rows.iter().map(|row| serde_json::json!({
-                                "item_id":row["item_id"],
-                                "shortfall_vs_observed":row["remaining_after_observed_withdrawals"],
-                            })).collect::<Vec<_>>() })
-                        });
+                    let residual_review = bank_restock_residual(&value["quest_inventory_review"]);
                     if let Some(id) = &args.quest_inventory_source_snapshot_id {
                         let sources =
                             self.store.read(id).and_then(|source| {

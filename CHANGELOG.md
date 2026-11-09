@@ -1,5 +1,7 @@
 # Changelog
 
+- Quote residual bag restocking shortfalls from a saved Forever merchant visit.
+
 - Review a saved Forever bag restocking plan and page its bank source locations.
 
 - Show observed bank restocking quantities in saved Forever bag shortfall searches.

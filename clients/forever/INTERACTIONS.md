@@ -2980,3 +2980,8 @@ one to 64 distinct positive item quantities on a selected Forever capture.
 The review includes suggested bank source locations and supports
 `bag_restock_location_offset`. Missing bags leave the plan unknown. Source
 locations are historical and withdrawal eligibility remains unverified.
+
+Set `bag_restock_merchant_snapshot_id` to a saved visit for the same
+character and exact client to quote quantities still short after observed
+bank withdrawals. Affordability uses the inventory capture's wallet. Missing
+bags or merchant stock leave the quote unknown. Purchases remain with the player.
