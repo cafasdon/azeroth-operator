@@ -8,6 +8,9 @@ Inspect `equipment_durability` with `equipment_durability_max_percent` to
 shortlist slots at or below an inclusive whole percentage from 0 to 100.
 The calculation uses the exact captured ratio, with no rounding. Missing
 durability data gives null, and the raw capture stays available.
+The same threshold on `list_snapshots` finds saved Forever captures with at
+least one matching slot and returns the matching slot numbers. Missing or
+empty observations do not match.
 
 For an explicit saved character, `resolve_character` accepts inclusive
 `captured_from` and `captured_through` timestamps. It selects the newest

@@ -1436,6 +1436,7 @@ pub struct CaptureFilters<'a> {
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub repair_max_quote_copper: Option<u64>,
+    pub equipment_durability_max_percent: Option<u8>,
     pub repair_affordable_only: bool,
     pub minimum_free_bag_slots: Option<u32>,
     pub minimum_general_free_bag_slots: Option<u32>,
@@ -1648,6 +1649,7 @@ impl Store {
             player_map_id,
             player_parent_map_id,
             repair_max_quote_copper,
+            equipment_durability_max_percent,
             repair_affordable_only,
             minimum_free_bag_slots,
             minimum_general_free_bag_slots,
@@ -2010,6 +2012,11 @@ impl Store {
         let instance_name = instance.name.map(str::to_lowercase);
         let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
         let filter_repair = repair_max_quote_copper.is_some() || repair_affordable_only;
+        ensure!(
+            equipment_durability_max_percent
+                .is_none_or(|maximum| family == Family::Forever && maximum <= 100),
+            "Durability filtering requires Forever and a percentage from 0 to 100"
+        );
         let bag_family_space = bag_family_space.map(|filter| {
             (
                 filter.family_mask.to_string(),
@@ -2682,6 +2689,22 @@ impl Store {
                     } else {
                         None
                     };
+                    let durability_matches = if let Some(maximum) = equipment_durability_max_percent
+                    {
+                        let Some(slots) = s
+                            .sections
+                            .get("equipment_durability")
+                            .and_then(|section| {
+                                analysis::equipment_durability_matching_slots(section, maximum)
+                            })
+                            .filter(|slots| !slots.is_empty())
+                        else {
+                            continue;
+                        };
+                        Some(slots)
+                    } else {
+                        None
+                    };
                     let repair_quote = if filter_repair {
                         let quote = s
                             .sections
@@ -3021,6 +3044,9 @@ impl Store {
                     }
                     if let Some(quote) = repair_quote {
                         summary["repair_quote_match"] = json!({"copper":quote});
+                    }
+                    if let Some(slots) = durability_matches {
+                        summary["equipment_durability_matching_slots"] = json!(slots);
                     }
                     if filter_player_map && let Some(stats) = player_map {
                         summary["player_map_match"] = json!({

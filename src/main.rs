@@ -372,6 +372,9 @@ struct List {
     player_parent_map_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever visits with a repair-all quote at or below this amount.
     repair_max_quote_copper: Option<u64>,
+    /// Find saved Forever captures with a slot at or below this whole durability percentage.
+    #[schemars(range(min = 0, max = 100))]
+    equipment_durability_max_percent: Option<u8>,
     /// Require the repair-all quote to fit the wallet recorded on the same visit.
     #[serde(default)]
     repair_affordable_only: bool,
@@ -1968,6 +1971,7 @@ impl Operator {
                 player_map_id: args.player_map_id,
                 player_parent_map_id: args.player_parent_map_id,
                 repair_max_quote_copper: args.repair_max_quote_copper,
+                equipment_durability_max_percent: args.equipment_durability_max_percent,
                 repair_affordable_only: args.repair_affordable_only,
                 minimum_free_bag_slots: args.minimum_free_bag_slots,
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,
@@ -2715,17 +2719,10 @@ impl Operator {
                             "Durability shortlisting requires a saved Forever snapshot",
                         )]);
                     }
-                    let matches = value["data"]["entries"].as_object().map(|entries| {
-                        entries
-                            .iter()
-                            .filter_map(|(slot, row)| {
-                                let current = row["current"].as_u64().unwrap();
-                                let capacity = row["maximum"].as_u64().unwrap();
-                                (current * 100 <= capacity * u64::from(maximum))
-                                    .then(|| slot.parse::<u32>().unwrap())
-                            })
-                            .collect::<std::collections::BTreeSet<_>>()
-                    });
+                    let matches = azeroth_operator::analysis::equipment_durability_matching_slots(
+                        &value["data"],
+                        maximum,
+                    );
                     value["equipment_durability_matching_slots"] = serde_json::json!(matches);
                 }
                 if let Some(spell_id) = args.profession_spell_id {

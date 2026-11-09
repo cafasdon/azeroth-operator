@@ -11,6 +11,20 @@ struct ObservedReagent {
     locations: Vec<Value>,
 }
 
+pub fn equipment_durability_matching_slots(section: &Value, maximum: u8) -> Option<BTreeSet<u32>> {
+    section["entries"].as_object().map(|entries| {
+        entries
+            .iter()
+            .filter_map(|(slot, row)| {
+                let current = row["current"].as_u64().unwrap();
+                let capacity = row["maximum"].as_u64().unwrap();
+                (current * 100 <= capacity * u64::from(maximum))
+                    .then(|| slot.parse::<u32>().unwrap())
+            })
+            .collect()
+    })
+}
+
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
 )]

@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures with equipped slots at or below a durability threshold.
+
 - Shortlist saved Forever equipment slots by an exact durability threshold.
 
 - Compare saved Forever equipment durability by observed slot.

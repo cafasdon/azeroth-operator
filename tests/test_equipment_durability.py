@@ -69,6 +69,14 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                                              equipment_durability_max_percent=maximum)
                         self.assertEqual(shortlist['equipment_durability_matching_slots'],expected)
                     self.assertNotIn('equipment_durability_matching_slots',captured)
+                    listing=await call('list_snapshots',family='forever',
+                                       equipment_durability_max_percent=33)
+                    self.assertEqual({row['snapshot_id']:row['equipment_durability_matching_slots']
+                                      for row in listing['snapshots']},
+                                     {keys[0]:[1],keys[5]:[2]})
+                    latest=await call('list_snapshots',family='forever',latest_per_character=True,
+                                      equipment_durability_max_percent=33)
+                    self.assertEqual([row['snapshot_id'] for row in latest['snapshots']],[keys[5]])
                     for section, maximum in [('equipment',50),('equipment_durability',101)]:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':keys[0],
                             'section':section,'equipment_durability_max_percent':maximum})
