@@ -7293,6 +7293,70 @@ pub fn material_merchant_plan(
     plan
 }
 
+pub fn restock_travel_adjusted_plan(
+    demands: &[Value],
+    visit_ids: &[String],
+    quotes: &[BTreeMap<u64, (u64, Value)>],
+    cost_per_visit: u64,
+    wallet: Option<u64>,
+) -> Option<Value> {
+    if visit_ids.len() != quotes.len() || quotes.len() > 4 {
+        return None;
+    }
+    let items: Vec<_> = demands
+        .iter()
+        .filter(|row| row["shortfall_vs_observed"] != 0)
+        .map(|row| row["item_id"].as_u64())
+        .collect::<Option<_>>()?;
+    let mut best = None;
+    for subset in 0..(1u8 << quotes.len()) {
+        let assignments = items
+            .iter()
+            .map(|item| {
+                quotes
+                    .iter()
+                    .enumerate()
+                    .filter(|(index, _)| subset & (1 << index) != 0)
+                    .filter_map(|(index, quote)| {
+                        quote.get(item).map(|(cost, plan)| (*cost, index, plan))
+                    })
+                    .min_by_key(|(cost, index, _)| (*cost, *index))
+                    .map(|assignment| (*item, assignment))
+            })
+            .collect::<Option<Vec<_>>>();
+        let Some(assignments) = assignments else {
+            continue;
+        };
+        let count = subset.count_ones();
+        let Some(purchases) = assignments
+            .iter()
+            .try_fold(0u64, |sum, (_, (cost, _, _))| sum.checked_add(*cost))
+        else {
+            continue;
+        };
+        let Some(total) = cost_per_visit
+            .checked_mul(u64::from(count))
+            .and_then(|travel| purchases.checked_add(travel))
+        else {
+            continue;
+        };
+        let key = (total, count, subset);
+        if best.as_ref().is_none_or(|(best_key, _, _)| key < *best_key) {
+            best = Some((key, purchases, assignments));
+        }
+    }
+    let ((total, count, _), purchases, assignments) = best?;
+    Some(json!({
+        "items":assignments.into_iter().map(|(item, (_, index, plan))| json!({
+            "item_id":item,"merchant_snapshot_id":visit_ids[index],"bundle_plan":plan,
+        })).collect::<Vec<_>>(),
+        "visit_count":count,"assumed_copper_per_visit":cost_per_visit,
+        "purchase_copper":purchases,"assumed_visit_cost_copper":total-purchases,
+        "complete_quote_copper":total,"affordable_from_inventory_wallet":wallet.map(|balance| total <= balance),
+        "travel_cost_verified":false,"purchase_eligibility_verified":false,"live":false,
+    }))
+}
+
 /// Explain why captured merchant rows may be absent from a copper-only restocking quote.
 pub fn restock_merchant_offer_coverage(quote: &mut Value, merchant: &Snapshot) {
     let Some(offers) = merchant

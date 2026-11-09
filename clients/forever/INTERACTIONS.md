@@ -3054,3 +3054,9 @@ choose the cheapest complete bundle quote for each item, breaking item
 price ties by the requested visit order. Each item uses one visit. The
 plan excludes travel costs and uses the saved inventory wallet. An
 unquoted item leaves the complete plan price unknown.
+
+With split planning enabled, set `bag_restock_cost_per_merchant_visit_copper`
+to compare complete shopping plans including an assumed cost per used visit.
+Ties prefer fewer visits. The result uses one complete bundle quote per item
+and leaves the travel-adjusted plan unknown if no complete plan can be priced.
+The visit cost is supplied by the caller.

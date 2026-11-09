@@ -73,6 +73,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             other_merchant = deepcopy(merchant)
             other_merchant['sections']['merchant_stock'] = {'1':merchant['sections']['merchant_stock']['2']}
             other_merchant_key = store.ingest(other_merchant)
+            expensive_merchant = deepcopy(merchant)
+            expensive_merchant['sections']['merchant_stock']['1']['price_copper'] = 9
+            expensive_merchant_key = store.ingest(expensive_merchant)
             retail = store.ingest(fixture())
             tied = deepcopy(changed)
             tied['character']['name'] = 'Tied'
@@ -252,6 +255,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(partial_plan['unquoted_item_ids'],[118])
                     self.assertEqual(partial_plan['quoted_subtotal_copper'],2)
                     self.assertIsNone(partial_plan['complete_quote_copper'])
+                    for visit_cost,count,purchases,total in [(0,2,9,9),(2,1,11,13),(3,1,11,14)]:
+                        travel = await query(**split_args,bag_restock_compare_merchant_snapshot_ids=[
+                            partial_merchant_key,other_merchant_key,expensive_merchant_key],
+                            bag_restock_cost_per_merchant_visit_copper=visit_cost)
+                        adjusted = travel['bag_restock_travel_adjusted_merchant_plan']
+                        self.assertEqual(adjusted['visit_count'],count)
+                        self.assertEqual(adjusted['purchase_copper'],purchases)
+                        self.assertEqual(adjusted['complete_quote_copper'],total)
+                        self.assertEqual(adjusted['assumed_visit_cost_copper'],visit_cost*count)
+                        self.assertIs(adjusted['travel_cost_verified'],False)
+                        self.assertEqual(travel['bag_restock_split_merchant_plan'],plan)
+                    await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=[merchant_key],
+                                bag_restock_cost_per_merchant_visit_copper=10**13)
                     await query(error=True,**split_args)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},
