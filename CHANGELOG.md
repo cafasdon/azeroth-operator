@@ -1,5 +1,7 @@
 # Changelog
 
+- Shortlist saved Forever recipe timers by an estimated end deadline.
+
 - Show estimated cooldown end times in saved Forever recipe cooldown searches, based on the original recipe capture.
 
 - Sort saved Forever recipes by reported cooldown time remaining.

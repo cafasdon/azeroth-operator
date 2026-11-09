@@ -63,6 +63,9 @@ elapsed recharge, live craftability or complete profession coverage is inferred.
 Cooldown-filtered or timer-ordered rows show an estimated end for positive
 reported timers, based on the original recipe capture. A timer can run while
 a charge was available. Zero and missing timers return no end estimate.
+Use `cooldown_filter.estimated_end_by` with an RFC 3339 timestamp to shortlist
+estimated ends at or before a deadline. Rows without an estimate are
+unevaluable for this predicate, including rows with a reported zero timer.
 [Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
 
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge

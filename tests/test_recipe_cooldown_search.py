@@ -93,6 +93,18 @@ class RecipeCooldownSearchTests(unittest.IsolatedAsyncioTestCase):
                             expected_end = (capture_time + timedelta(seconds=remaining)).isoformat().replace('+00:00', 'Z') if remaining else None
                             self.assertEqual(row['estimated_cooldown_end_at'], expected_end)
                     self.assertTrue(all('estimated_cooldown_end_at' not in row for row in baseline['records']))
+                    deadline = (capture_time + timedelta(seconds=30)).isoformat()
+                    cutoff = await search(cooldown_filter={'estimated_end_by':deadline},
+                        order=order, inventory_snapshot_id=inventory,
+                        material_filter={'scope':'bags','minimum_crafts':1})
+                    self.assertEqual([row['recipe_id'] for row in cutoff['records']], [7,3])
+                    self.assertEqual(cutoff['cooldown_unknown_count'],6)
+                    self.assertEqual(cutoff['cooldown_nonmatching_count'],2)
+                    combined_deadline = await search(cooldown_filter={
+                        'estimated_end_by':deadline,'state':'available'})
+                    self.assertEqual(combined_deadline['records'],[])
+                    self.assertEqual(combined_deadline['cooldown_unknown_count'],2)
+                    await search(error=True,cooldown_filter={'estimated_end_by':'2025-01-01'})
                     for expected_state,minimum,maximum in product([None,'available','waiting','unknown'],
                         [None,0,1,2,4294967295],[None,0,30,4294967295]):
                         criteria={field:value for field,value in [('state',expected_state),('minimum_charges',minimum),

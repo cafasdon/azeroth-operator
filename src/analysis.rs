@@ -139,9 +139,16 @@ pub struct RecipeCooldownFilter {
     pub state: Option<RecipeCooldownState>,
     pub minimum_charges: Option<u32>,
     pub maximum_remaining_seconds: Option<u32>,
+    /// Inclusive RFC 3339 deadline for a positive reported timer's estimated end.
+    /// Zero and missing timers have no estimate.
+    pub estimated_end_by: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-fn recipe_cooldown_matches(row: &Value, filter: &RecipeCooldownFilter) -> Option<bool> {
+fn recipe_cooldown_matches(
+    row: &Value,
+    filter: &RecipeCooldownFilter,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Option<bool> {
     let checks: Vec<_> = [
         filter
             .state
@@ -155,6 +162,9 @@ fn recipe_cooldown_matches(row: &Value, filter: &RecipeCooldownFilter) -> Option
             row["cooldown"]["remaining_seconds"]
                 .as_u64()
                 .map(|seconds| seconds <= u64::from(maximum))
+        }),
+        filter.estimated_end_by.map(|deadline| {
+            estimated_recipe_cooldown_end(row, captured_at).map(|end| end <= deadline)
         }),
     ]
     .into_iter()
@@ -423,7 +433,8 @@ pub fn search_recipe_materials_ordered(
         ensure!(
             filter.state.is_some()
                 || filter.minimum_charges.is_some()
-                || filter.maximum_remaining_seconds.is_some(),
+                || filter.maximum_remaining_seconds.is_some()
+                || filter.estimated_end_by.is_some(),
             "Cooldown filter requires at least one predicate"
         );
     }
@@ -468,7 +479,7 @@ pub fn search_recipe_materials_ordered(
         })
         .filter_map(|(id, row)| {
             if let Some(filter) = cooldown_filter {
-                match recipe_cooldown_matches(row, filter) {
+                match recipe_cooldown_matches(row, filter, snapshot.captured_at) {
                     Some(true) => {}
                     Some(false) => {
                         cooldown_nonmatching += 1;
