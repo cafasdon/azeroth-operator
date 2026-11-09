@@ -3830,7 +3830,17 @@ pub fn action_bar_spellbook(
             })
             .collect::<BTreeMap<_, _>>()
     });
-    let mut review = json!({"spellbook_available":book.is_some(),"spell_slots":slots});
+    let unmatched_slots = slots.as_ref().filter(|_| book.is_some()).map(|slots| {
+        slots
+            .iter()
+            .filter_map(|(slot, row)| {
+                (row["matches_base_spell_id"] == false && row["matches_reported_spell_id"] == false)
+                    .then(|| slot.parse::<u32>().unwrap())
+            })
+            .collect::<BTreeSet<_>>()
+    });
+    let mut review = json!({"spellbook_available":book.is_some(),"spell_slots":slots,
+        "observed_action_spell_slots_without_spellbook_match":unmatched_slots});
     let matches = book.zip(action_slots).map(|(book, actions)| {
         let mut matches: BTreeMap<u64, BTreeSet<_>> = actions.values()
             .filter(|row| row["kind"] == "spell")

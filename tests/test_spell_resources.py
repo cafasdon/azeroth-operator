@@ -74,8 +74,13 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                     for key,mode,book in good:
                         summary = (await call('character_summary',snapshot_id=key))['spellbook_resource_observations']
                         review = (await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',action_bar_spellbook=True))['action_bar_spellbook']
+                        if mode in ('full','legacy'):
+                            self.assertEqual(review['observed_action_spell_slots_without_spellbook_match'],[4])
+                        elif mode == 'empty':
+                            self.assertEqual(review['observed_action_spell_slots_without_spellbook_match'],[1,2,3,4,5])
                         if book is None:
                             self.assertIsNone(summary)
+                            self.assertIsNone(review['observed_action_spell_slots_without_spellbook_match'])
                             self.assertNotIn('matched_spellbook_resources_by_action_id',review)
                             continue
                         values = list(book['entries'].values())

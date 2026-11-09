@@ -1,5 +1,10 @@
 # Forever interaction map
 
+The saved action-bar spellbook review lists observed spell slots whose
+action ID matched neither a captured base nor reported spell ID. Missing
+spellbook or action observations leave the list unknown. An unmatched slot
+can reflect incomplete capture and does not establish castability.
+
 The timed quest checklist counts quests with recorded timers that were ready
 to turn in at capture and highlights the one with the shortest remaining
 timer, breaking ties by quest ID. It checks all retained timed quests,
