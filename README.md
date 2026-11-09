@@ -287,6 +287,14 @@ equipment, selected source locations and cleared slots, tied to the snapshot
 and source report hash. Locations describe the saved plan; refresh observations
 before relying on them in game. [Evidence](docs/ranked-loadout-verification-2026-11-09.md).
 
+Ranked gear also retains `simulation_evidence_by_encounter`: iterations, seed,
+request hashes and available native metric deviations or intervals. Paired
+intervals compare each candidate with the equipped baseline; death intervals
+describe the candidate's marginal death fraction. Neither is an interval for
+the weighted ranking or a selection-adjusted BiS guarantee. Missing intervals
+remain explicitly unavailable. No additional simulations are needed.
+[Offline evidence](docs/ranked-simulation-evidence-verification-2026-11-09.md).
+
 Use `--ranking-objective worst_encounter_gain` on saved-journal or unified
 evaluation to maximise the lowest DPS gain across the supplied encounters.
 The default remains weighted average gain. Switching objectives reuses existing

@@ -354,3 +354,9 @@ known fixed-recipe material captures with optional stable public timers/charges.
 These reach search, charge coverage and batch nonmaterial checks without moving
 their provenance to newer stock captures. Native API responsiveness/completeness,
 current craftability and full profession progression qualification remain open.
+
+Final ranked owned-gear results preserve per-encounter iteration counts, seed,
+request hashes and available numeric uncertainty from the existing simulator
+adapter. Paired intervals concern candidate minus equipped baseline; Wilson
+intervals concern marginal death fraction. Aggregate ranking uncertainty and
+selection-adjusted optimality remain unverified; no extra engine runs occur.

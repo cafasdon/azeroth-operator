@@ -17,6 +17,26 @@ from tools import role_metrics as roles
 RANKING_OBJECTIVES = ('weighted_gain', 'worst_encounter_gain')
 
 
+def encounter_evidence(row, baseline, metric, index):
+    """Retain public numeric evidence; never export private iteration samples."""
+    fields = ['iterations', 'seed', 'request_sha256', roles.FIELDS[metric]]
+    if metric in ('dps', 'dtps', 'tps', 'hps'):
+        fields.extend([f'{metric}_standard_deviation',
+            f'paired_{metric}_standard_error',
+            f'paired_{metric}_delta_interval_approx_95'])
+    if metric == 'death':
+        fields.extend(['simulated_deaths', 'simulated_death_fraction_wilson_95'])
+    return {'encounter_index': index, 'comparison_basis': 'equipped_baseline',
+        'baseline_request_sha256': baseline['request_sha256'],
+        'interval_basis': ('marginal_death_fraction' if metric == 'death'
+            and 'simulated_death_fraction_wilson_95' in row else
+            'candidate_minus_baseline' if f'paired_{metric}_delta_interval_approx_95' in row
+            else 'not_available'),
+        'aggregate_ranking_uncertainty_verified': False,
+        'selection_adjusted': False,
+        **{field: row[field] for field in fields if field in row}}
+
+
 def ranking_objective(args):
     objective = getattr(args, 'ranking_objective', 'weighted_gain')
     require(isinstance(objective,str) and objective in RANKING_OBJECTIVES)
@@ -157,6 +177,9 @@ async def execute(args, *, deadline=None):
                     if metric=='dps' else weighted[gain_field]),
                 'source_window_offset_decimal': selected['selected_window_offsets_decimal'][reference['window_index'] - 1],
                 'source_window_review': reference['review']}
+            row['simulation_evidence_by_encounter'] = [
+                encounter_evidence(rows[review], rows[1], metric, index)
+                for index, rows in enumerate(metrics, 1)]
             require(all(type(gain) in (int,float) and isfinite(gain) for gain in row[gain_field]))
             row[minimum_field] = min(row[gain_field])
             row[maximum_field] = max(row[gain_field])

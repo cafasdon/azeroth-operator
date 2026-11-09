@@ -25,6 +25,32 @@ from tools import journal_forever_gear_windows as journal_tools
 
 
 class SavedJournalTests(unittest.TestCase):
+    def test_evidence_preserves_native_fields_without_samples_or_metadata(self):
+        for metric in runner.roles.FIELDS:
+            row = {'iterations': 200, 'seed': '42', 'request_sha256': 'a'*64,
+                runner.roles.FIELDS[metric]: 3, '_dps_samples': [99], 'private_name': 'PRIVATE'}
+            if metric in ('dps','dtps','tps','hps'):
+                row[f'{metric}_standard_deviation'] = 2
+                row[f'paired_{metric}_standard_error'] = .5
+                row[f'paired_{metric}_delta_interval_approx_95'] = {
+                    'lower': -1, 'upper': 1, 'includes_zero': True}
+            if metric == 'death':
+                row['simulated_deaths'] = 3
+                row['simulated_death_fraction_wilson_95'] = {'lower': .01, 'upper': .1}
+            evidence = runner.encounter_evidence(row, {'request_sha256':'b'*64}, metric, 2)
+            for field, value in row.items():
+                if field not in ('_dps_samples','private_name'):
+                    self.assertEqual(evidence[field], value)
+            self.assertNotIn('PRIVATE', json.dumps(evidence))
+            self.assertNotIn('_dps_samples', evidence)
+            self.assertEqual(evidence['baseline_request_sha256'], 'b'*64)
+            self.assertEqual(evidence['encounter_index'], 2)
+            self.assertFalse(evidence['selection_adjusted'])
+            self.assertFalse(evidence['aggregate_ranking_uncertainty_verified'])
+            self.assertEqual(evidence['comparison_basis'], 'equipped_baseline')
+            self.assertEqual(evidence['interval_basis'], 'marginal_death_fraction' if metric == 'death'
+                else 'not_available' if metric == 'oom' else 'candidate_minus_baseline')
+
     def test_objective_validation_precedes_journal_access(self):
         for value in [None,True,1,[],{},'unknown']:
             with patch.object(runner.journal,'journal_status') as read:
@@ -147,6 +173,11 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertEqual([row['source_window_offset_decimal'] for row in result['ranked_gear_sets']],['1','0','2'])
                 self.assertEqual(len({row['simulator_gear_sha256'] for row in result['ranked_gear_sets']}),3)
                 winner=result['ranked_gear_sets'][0]
+                evidence=winner['simulation_evidence_by_encounter']
+                self.assertEqual([row['encounter_index'] for row in evidence],[1,2])
+                self.assertEqual([row['mean_dps'] for row in evidence],[110,130])
+                self.assertTrue(all(row['iterations']==3 and row['dps_standard_deviation']==1 for row in evidence))
+                self.assertTrue(all('paired_dps_delta_interval_approx_95' not in row for row in evidence))
                 saved=winner['saved_loadout']
                 self.assertEqual(saved['snapshot_id'],key)
                 self.assertEqual(saved['basis'],'validated_saved_plan')

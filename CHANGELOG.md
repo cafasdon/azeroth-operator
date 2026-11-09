@@ -1,5 +1,9 @@
 # Changelog
 
+- Preserve per-encounter numeric simulation evidence on final saved-journal and
+  owned-gear leaders, including baseline request identity and available paired
+  or marginal death intervals, without extra runs or aggregate confidence claims.
+
 - Cache optional public provider NPC/object spawn references for retained recipe
   reagents, with bounded entity/area/point reads and strict reader validation.
   Join only relevant records into chain acquisition output, preserving provider

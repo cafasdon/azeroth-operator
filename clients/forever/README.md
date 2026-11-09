@@ -2036,3 +2036,9 @@ captured quantities and an unchanged required quantity.
 - **Optimisation.** Keep three candidate sets explicit: equipped gear, owned gear and obtainable upgrades. Filter by level, class, faction, weapon and off-hand rules, unique-equipped limits, profession and content availability. Evaluate full sets so set bonuses, caps, enchants, suffixes and procs can affect the result. Label unobserved inventory and unknown acquisition separately. Report the baseline, assumptions, coverage, tested candidate count and uncertainty with rankings. A bounded search result applies only to the evaluated candidates and encounter.
 
 Run personal profiles locally by default. Keep provider revisions and data build claims separate from the character snapshot build. Preserve the distinction between a simulated recommendation and an in-game equipment change.
+
+Final ranked owned-gear results preserve per-encounter iteration counts, seed,
+request hashes and available numeric uncertainty from the existing simulator
+adapter. Paired intervals concern candidate minus equipped baseline; Wilson
+intervals concern marginal death fraction. Aggregate ranking uncertainty and
+selection-adjusted optimality remain unverified; no extra engine runs occur.
