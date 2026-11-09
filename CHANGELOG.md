@@ -1,5 +1,7 @@
 # Changelog
 
+- Page through saved Forever local quest matches within each capture.
+
 - Include a bounded matching quest shortlist in saved Forever local-map searches.
 
 - Find saved Forever quests whose next waypoint is on the captured player map.

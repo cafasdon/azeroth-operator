@@ -87,6 +87,11 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied['sections']['quests']['3']['next_waypoint_map_id'] = 1414
             tied['sections']['quests']['10']['next_waypoint_map_id'] = 1415
             tied_key = store.ingest(tied)
+            many_local = deepcopy(tied)
+            many_local['character']['name'] = 'ManyLocal'
+            many_local['sections']['quests'] = {str(i):{'title':f'Local {i}','level':60,
+                'next_waypoint_map_id':1414} for i in range(1,44)}
+            many_local_key = store.ingest(many_local)
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
             env.pop('AZEROTH_FOREVER_CATALOGUE', None)
@@ -130,9 +135,22 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(local[0]['quest_match']['matching_quests'],
                                      [{'quest_id':3,'title':'Quest 3','readiness':'ready'}])
                     self.assertFalse(local[0]['quest_match']['matching_quests_truncated'])
-                    self.assertEqual(await timed(quest_on_captured_map=True,quest_id=10),[])
+                    self.assertEqual(await timed(quest_on_captured_map=True,quest_id=10,character=tied['character']),[])
                     await timed(error=True,quest_on_captured_map=True,quest_waypoint_map_id=1414)
                     await timed(error=True,family='retail',quest_on_captured_map=True)
+                    for offset, ids, more in [
+                        (0, list(range(1,21)),True),(20,list(range(21,41)),True),
+                        (40,[41,42,43],False),(43,[],False),(2**64-1,[],False),
+                    ]:
+                        rows = await timed(quest_on_captured_map=True, local_quest_offset=offset,
+                                           character=many_local['character'])
+                        self.assertEqual([row['snapshot_id'] for row in rows],[many_local_key])
+                        match = rows[0]['quest_match']
+                        self.assertEqual(match['quest_count'],43)
+                        self.assertEqual(match['matching_quests_offset'],offset)
+                        self.assertEqual([quest['quest_id'] for quest in match['matching_quests']],ids)
+                        self.assertIs(match['matching_quests_has_more'],more)
+                    await timed(error=True,local_quest_offset=0)
                     async def query(error=False, **options):
                         reply = await session.call_tool('inspect_snapshot', {'snapshot_id': key,
                             'section': 'quests', **options})

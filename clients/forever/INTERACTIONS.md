@@ -3104,3 +3104,7 @@ Local-map results also show up to 20 matching quest IDs, titles, and
 recorded readiness states in numeric quest ID order. The match count covers
 all matching quests. The response marks a shortened shortlist and omits
 labels over 256 bytes.
+
+Set `local_quest_offset` with the local-map search to skip matching quests
+within each capture. The page holds up to 20 rows, with a separate flag
+for more rows after the page. Capture pagination and quest totals are independent.

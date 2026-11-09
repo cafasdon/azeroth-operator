@@ -1895,6 +1895,7 @@ pub struct CaptureFilters<'a> {
     pub quest_readiness: Option<analysis::QuestReadiness>,
     pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     pub quest_on_captured_map: bool,
+    pub local_quest_offset: Option<usize>,
     pub quest_max_remaining_seconds: Option<u32>,
     pub quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
@@ -2128,6 +2129,7 @@ impl Store {
             quest_readiness,
             quest_waypoint_map_id,
             quest_on_captured_map,
+            local_quest_offset,
             quest_max_remaining_seconds,
             quest_projected_expiry_by,
             merchant_item_id,
@@ -2690,6 +2692,10 @@ impl Store {
         ensure!(
             !quest_on_captured_map || quest_waypoint_map_id.is_none(),
             "Choose either a waypoint map ID or the captured player map"
+        );
+        ensure!(
+            local_quest_offset.is_none() || quest_on_captured_map,
+            "Local quest paging requires the captured player map filter"
         );
         let quest_key = quest_id.map(|id| id.to_string());
         ensure!(
@@ -3761,10 +3767,15 @@ impl Store {
                         local.sort_unstable_by_key(|(id, _)| *id);
                         summary["quest_match"]["matching_quests_truncated"] =
                             json!(local.len() > 20);
+                        if let Some(offset) = local_quest_offset {
+                            summary["quest_match"]["matching_quests_offset"] = json!(offset);
+                            summary["quest_match"]["matching_quests_has_more"] =
+                                json!(local.len().saturating_sub(offset) > 20);
+                        }
                         summary["quest_match"]["matching_quests"] = json!(
                             local
                                 .into_iter()
-                                .take(20)
+                                .skip(local_quest_offset.unwrap_or_default()).take(20)
                                 .map(|(id, quest)| json!({"quest_id":id,"title":quest["title"].as_str().filter(|title| title.len() <= 256),
                                 "readiness":analysis::quest_readiness(quest)}))
                                 .collect::<Vec<_>>()
