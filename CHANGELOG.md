@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the shortest matching saved quest timer in Forever timed-quest searches.
+
 - Find saved Forever quests by recorded timer or projected historical expiry.
 
 - Find saved Forever world bosses by timer or cache age without a boss name.

@@ -3642,9 +3642,27 @@ impl Store {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
                     }
                     if filter_quest_timer {
+                        let shortest = s.sections.get("quests")
+                            .and_then(Value::as_object)
+                            .into_iter()
+                            .flatten()
+                            .filter(|(key, quest)| {
+                                quest_key.as_ref().is_none_or(|wanted| wanted == *key)
+                                    && matches_quest(quest)
+                            })
+                            .filter_map(|(key, quest)| {
+                                Some((quest["timer"]["remaining_seconds"].as_i64()?,
+                                    key.parse::<u32>().ok()?))
+                            })
+                            .min()
+                            .map(|(seconds, id)| {
+                                json!({"quest_id":id,"remaining_seconds":seconds,
+                                    "projected_expiry_at":saved_resets::projected_reset_at(seconds, s.captured_at)})
+                            });
                         summary["quest_match"]["timer_filter"] = json!({
                             "maximum_remaining_seconds":quest_max_remaining_seconds,
                             "projected_expiry_by":quest_projected_expiry_by,
+                            "shortest_matching_timer":shortest,
                             "current_expiry_verified":false,
                         });
                     }

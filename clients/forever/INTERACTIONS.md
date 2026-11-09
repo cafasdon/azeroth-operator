@@ -2928,3 +2928,5 @@ Use `list_snapshots.quest_max_remaining_seconds` or
 `quest_projected_expiry_by` to find captures with matching timed quests.
 Other quest filters must match the same quest. Expiry is projected from the
 capture timestamp and recorded duration. Unknown timers cannot match.
+Each matching capture includes its shortest matching timer, with ties broken
+by numeric quest ID, and the corresponding projected expiry when available.

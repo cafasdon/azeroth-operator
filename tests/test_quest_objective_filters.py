@@ -61,6 +61,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                 '2':{'item_id':858,'bundle_size':1,'price_copper':2,'available':-1,'extended_cost':False}}
             merchant_key=store.ingest(merchant)
             retail = store.ingest(fixture())
+            tied = deepcopy(changed)
+            tied['character']['name'] = 'Tied'
+            tied['sections']['quests']['10']['timer'] = {'remaining_seconds':30,'total_seconds':120}
+            tied_key = store.ingest(tied)
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
             env.pop('AZEROTH_FOREVER_CATALOGUE', None)
@@ -73,15 +77,24 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         if not error:
                             return json.loads(reply.content[0].text)['snapshots']
 
-                    result = await timed(quest_max_remaining_seconds=30)
+                    result = await timed(quest_max_remaining_seconds=30, character=changed['character'])
                     self.assertEqual([row['snapshot_id'] for row in result], [changed_key])
                     self.assertEqual(result[0]['quest_match']['quest_count'], 1)
                     self.assertIs(result[0]['quest_match']['timer_filter']['current_expiry_verified'], False)
+                    shortest = result[0]['quest_match']['timer_filter']['shortest_matching_timer']
+                    self.assertEqual(shortest, {'quest_id':3,'remaining_seconds':30,
+                                               'projected_expiry_at':'2025-01-01T00:01:00Z'})
+                    tied_result = (await timed(quest_max_remaining_seconds=30, character=tied['character']))[0]
+                    self.assertEqual(tied_result['snapshot_id'], tied_key)
+                    self.assertEqual(tied_result['quest_match']['quest_count'], 2)
+                    self.assertEqual(tied_result['quest_match']['timer_filter']['shortest_matching_timer'], shortest)
+                    specific = (await timed(quest_max_remaining_seconds=30, quest_id=10))[0]
+                    self.assertEqual(specific['quest_match']['timer_filter']['shortest_matching_timer']['quest_id'], 10)
                     self.assertEqual(await timed(quest_max_remaining_seconds=29), [])
                     self.assertEqual(await timed(quest_max_remaining_seconds=60, quest_id=7), [])
-                    self.assertEqual(await timed(quest_max_remaining_seconds=60, quest_readiness='not_ready'), [])
+                    self.assertEqual(await timed(quest_max_remaining_seconds=60, quest_readiness='not_ready', character=changed['character']), [])
                     projected = await timed(quest_projected_expiry_by='2025-01-01T00:01:00Z', quest_id=3)
-                    self.assertEqual({row['snapshot_id'] for row in projected}, {key, bank_stock_key, changed_key})
+                    self.assertEqual({row['snapshot_id'] for row in projected}, {key, bank_stock_key, changed_key, tied_key})
                     self.assertEqual(await timed(quest_projected_expiry_by='2025-01-01T00:00:59Z'), [])
                     await timed(error=True, family='retail', quest_max_remaining_seconds=60)
                     await timed(error=True, quest_max_remaining_seconds=-1)
