@@ -1713,6 +1713,11 @@ fn ordered_recipe_requirements_with_charges<'a>(
     let mut result = json!({"first_observed_shortfall":first_shortfall,
         "recipes_with_unknown_checks":recipes_with_unknown_checks});
     if cumulative {
+        result["first_observed_charge_shortfall"] = json!(
+            charge_accounting
+                .iter()
+                .find(|row| row["covers_cumulative_crafts"] == false)
+        );
         result["charge_accounting"] = json!(charge_accounting);
     }
     result

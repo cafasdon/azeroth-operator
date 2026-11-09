@@ -84,10 +84,15 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(row,{'recipe_number':index,'recipe_id':rid,**expected})
                             self.assertIs(step['captured_nonmaterial_checks']['observed_charges_cover_cumulative_crafts'],expected['covers_cumulative_crafts'])
                         failure = chain['stock_plan']['nonmaterial_requirements']['first_observed_shortfall']
+                        charge_failure = chain['stock_plan']['nonmaterial_requirements'][
+                            'first_observed_charge_shortfall']
                         if charges is not None and charges < 2*crafts:
                             self.assertEqual(failure['recipe_number'],1 if charges < crafts else 2)
                             self.assertIn('observed_charges_cover_cumulative_crafts',failure['failed_checks'])
-                        else: self.assertIsNone(failure)
+                            self.assertEqual(charge_failure,ledger[failure['recipe_number']-1])
+                        else:
+                            self.assertIsNone(failure)
+                            self.assertIsNone(charge_failure)
                         self.assertFalse(chain['craftability_verified']); self.assertFalse(chain['game_execution'])
                     later = await plan(keys[1],inventory_snapshot_id=inventory)
                     self.assertEqual(later['recipe_captured_at'],base['captured_at'])

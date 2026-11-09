@@ -1,5 +1,7 @@
 # Changelog
 
+- Highlight the first known recipe charge shortfall in saved Forever reagent-chain stock plans.
+
 - Show the conditional base yield of charge-covered crafts at each saved Forever reagent-chain step.
 
 - Show the conditional base yield of requested Forever crafts covered by saved recipe charges.
