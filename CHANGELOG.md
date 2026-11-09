@@ -1,5 +1,7 @@
 # Changelog
 
+- Show shared species coverage in saved Forever pet journal comparisons.
+
 - Include unloaded inbox message counts in saved Forever crafting plans that show pending reagents.
 
 - Show unloaded messages and unreadable slots alongside saved Forever attachment matches.

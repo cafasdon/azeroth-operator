@@ -3892,6 +3892,8 @@ fn compare_pet_views(before: &Value, after: &Value) -> Value {
     json!({"coverage":"filtered_journal_species","equal_filters":"unverified",
         "collection_gains_or_losses":"unverified",
         "before_displayed_rows":before["displayed_rows"],"after_displayed_rows":after["displayed_rows"],
+        "shared_species_count":old.len()-only_before.len(),
+        "shared_species_with_unchanged_row_counts":old.len()-only_before.len()-changes.len(),
         "observed_only_before":only_before,"observed_only_after":only_after,
         "observed_count_changes":changes})
 }

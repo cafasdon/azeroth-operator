@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Saved pet journal comparisons report how many species were visible in both
+captures and how many of those kept the same observed owned and unowned row
+counts. The overlap describes the saved views, whose filters may differ.
+
 Saved mail attachment comparisons show the unloaded message count on each
 side, separately from unreadable attachment slots in loaded messages.
 These counts describe the captures and do not identify messages or transfers.

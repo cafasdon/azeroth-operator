@@ -51,6 +51,7 @@ class PetViewComparisonTests(unittest.IsolatedAsyncioTestCase):
                     delta=(await compare(before,after))['pet_view_changes']
                     self.assertEqual(delta,{'coverage':'filtered_journal_species','equal_filters':'unverified',
                         'collection_gains_or_losses':'unverified','before_displayed_rows':6,'after_displayed_rows':6,
+                        'shared_species_count':3,'shared_species_with_unchanged_row_counts':1,
                         'observed_only_before':[8,30],'observed_only_after':[9,40],
                         'observed_count_changes':[
                             {'species_id':2,'before_owned_rows':0,'after_owned_rows':1,'owned_rows_delta':1,
@@ -63,6 +64,7 @@ class PetViewComparisonTests(unittest.IsolatedAsyncioTestCase):
                     delta=(await compare(before,empty))['pet_view_changes']
                     self.assertEqual(delta['observed_only_before'],[2,7,8,10,30])
                     self.assertEqual(delta['observed_count_changes'],[])
+                    self.assertEqual(delta['shared_species_count'],0)
                     self.assertEqual((await compare(empty,empty))['pet_view_changes']['observed_only_after'],[])
                     self.assertNotIn('pet_view_changes',await compare(before,after,enabled=False))
                     retail=store.ingest(fixture())
