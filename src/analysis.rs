@@ -3023,6 +3023,11 @@ pub fn compare_observations(
             if old_objectives.is_some() || new_objectives.is_some() {
                 comparison["quest_change"]["objective_counts_by_kind"] = json!({"before":old_objectives.map(quest_objective_counts),
                            "after":new_objectives.map(quest_objective_counts)});
+                comparison["quest_change"]["objective_quantities_by_kind"] = json!({
+                    "before":old_objectives.map(quest_objective_quantities),
+                    "after":new_objectives.map(quest_objective_quantities),
+                    "objective_identity_verified":false
+                });
             }
         }
     }
@@ -6687,6 +6692,40 @@ fn quest_objective_counts(objectives: &serde_json::Map<String, Value>) -> Value 
             .map(|(kind, (finished, unfinished))| {
                 (kind, json!({"finished":finished,"unfinished":unfinished}))
             })
+            .collect::<BTreeMap<_, _>>()
+    )
+}
+
+fn quest_objective_quantities(objectives: &serde_json::Map<String, Value>) -> Value {
+    let mut counts = BTreeMap::<&str, (u64, u64, u64, usize, usize)>::new();
+    for row in objectives.values() {
+        let Some(kind) = row["kind"].as_str() else {
+            continue;
+        };
+        let (fulfilled, required, remaining, counted, unknown) = counts.entry(kind).or_default();
+        if let Some((done, target)) = row["fulfilled"].as_u64().zip(row["required"].as_u64()) {
+            *fulfilled += done;
+            *required += target;
+            *remaining += target.saturating_sub(done);
+            *counted += 1;
+        } else {
+            *unknown += 1;
+        }
+    }
+    json!(
+        counts
+            .into_iter()
+            .map(
+                |(kind, (fulfilled, required, remaining, counted, unknown))| {
+                    (
+                        kind,
+                        json!({"fulfilled":(counted > 0).then_some(fulfilled),
+            "required":(counted > 0).then_some(required),
+            "remaining":(counted > 0).then_some(remaining),
+            "counted_objectives":counted,"unknown_objectives":unknown}),
+                    )
+                }
+            )
             .collect::<BTreeMap<_, _>>()
     )
 }

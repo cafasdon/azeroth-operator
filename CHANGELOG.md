@@ -1,5 +1,7 @@
 # Changelog
 
+- Show recorded objective quantities by kind when comparing a saved Forever quest.
+
 - Compare reported reset durations across saved Forever world boss captures.
 
 - Show projected reset timestamps in time-bounded saved Forever lockout searches.

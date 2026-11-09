@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Comparing a saved quest by ID reports fulfilled, required and remaining
+quantities by objective kind for each capture. The report counts rows
+without quantities separately and leaves totals null when no counts are
+reported for that kind. Objective slot numbers do not establish identity.
+
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate
 names are ambiguous. Names seen on only one side are counted separately.

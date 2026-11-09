@@ -41,6 +41,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             saved['sections']['quests']['3']['item_rewards'] = {'1': {'item_id': 118, 'quantity': 2}}
             saved['sections']['quests']['7']['item_rewards'] = {'1': {'item_id': 858, 'quantity': 3}}
             key = store.ingest(saved)
+            changed=deepcopy(saved)
+            changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
+            changed_key=store.ingest(changed)
             retail = store.ingest(fixture())
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
@@ -83,4 +86,12 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         {'section': 'equipment', **options}, {'section': None, **options},
                         {'snapshot_id': retail, **options}, {'snapshot_id': '../PRIVATE', **options}]:
                         await query(error=True, **bad)
+                    reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':9})
+                    self.assertFalse(reply.isError,reply)
+                    quantities=json.loads(reply.content[0].text)['quest_change']['objective_quantities_by_kind']
+                    self.assertEqual(quantities['before']['monster'],{'fulfilled':0,'required':3,'remaining':3,
+                        'counted_objectives':1,'unknown_objectives':1})
+                    self.assertEqual(quantities['after']['monster'],{'fulfilled':2,'required':4,'remaining':3,
+                        'counted_objectives':2,'unknown_objectives':0})
+                    self.assertFalse(quantities['objective_identity_verified'])
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})
