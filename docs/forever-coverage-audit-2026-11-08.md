@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: bulk recipe discovery now filters original captured cooldown
+state, charges and remaining seconds alongside view/material predicates. Missing
+numeric evidence remains unknown and newer inventory never refreshes cooldowns.
+[Offline checks](recipe-cooldown-search-verification-2026-11-09.md). Native
+availability, present craftability and complete profession coverage remain open.
+
 | System | Implemented source evidence | Remaining requirement |
 | --- | --- | --- |
 | Character selection | Explicit name/realm selection and saved snapshot listing in `src/main.rs` and `src/lib.rs`; selection contract in `clients/forever/README.md` | Fresh verified active-character signal and default selection; newest saved snapshot does not establish the character in play. Explicit targets must continue to override the default. |

@@ -1,5 +1,12 @@
 # Azeroth Operator
 
+`search_forever_recipes` can filter captured bulk cooldown state, minimum charges
+and maximum remaining seconds alongside material and recipe-view filters. Charges
+take precedence when classifying state; missing numeric observations stay unknown.
+Cooldown evidence stays with the original recipe capture even when stock is newer.
+This does not establish current craftability.
+[Evidence](docs/recipe-cooldown-search-verification-2026-11-09.md).
+
 Bulk recipe captures can now retain stable public cooldown and charge observations.
 Search and recipe/batch reviews carry them into charge checks, capacity and timer
 estimates while keeping recipe and inventory capture times separate.

@@ -603,6 +603,8 @@ struct RecipeSearch {
     material_filter: Option<azeroth_operator::analysis::RecipeMaterialFilter>,
     /// Same-ID/profession captured recipe-view flags, not verified learning or gains.
     recipe_view_filter: Option<azeroth_operator::analysis::RecipeViewFilter>,
+    /// Filter original bulk-row cooldown state, observed charges or recorded timer; no elapsed recharge/current eligibility.
+    cooldown_filter: Option<azeroth_operator::analysis::RecipeCooldownFilter>,
     offset: Option<usize>,
     /// Page size, 1 to 50; defaults to 20. Ordering is numeric recipe ID.
     limit: Option<usize>,
@@ -1066,7 +1068,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Search owner-local captured Forever recipes by exact IDs/status, fixed material support, and/or matching captured profession recipe-view learned/skill-up flags. Material filtering can use an explicit no-older same-character exact-client/build inventory snapshot; recipe flags stay with the recipe capture. Observations do not verify learning, skill gains or craftability. Numeric paging up to 50 rows; unknowns stay unknown. No external lookup or game action.",
+        description = "Search owner-local captured Forever recipes by exact IDs/status, fixed material support, matching captured profession recipe-view flags and original bulk-row cooldown state/charges/timer. Material filtering can use an explicit no-older compatible inventory snapshot; recipe and cooldown evidence stay with the recipe capture. Observations do not verify learning, skill gains, elapsed recharge or craftability. Numeric paging up to 50 rows; unknowns stay unknown. No external lookup or game action.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1085,7 +1087,7 @@ impl Operator {
                 .as_deref()
                 .map(|id| self.store.read(id))
                 .transpose()?;
-            let mut found = azeroth_operator::analysis::search_recipe_materials_with_inventory(
+            let mut found = azeroth_operator::analysis::search_recipe_materials_with_cooldowns(
                 &snapshot,
                 args.recipe_id,
                 args.output_item_id,
@@ -1095,6 +1097,7 @@ impl Operator {
                 args.limit.unwrap_or(20),
                 args.material_filter.as_ref(),
                 args.recipe_view_filter.as_ref(),
+                args.cooldown_filter.as_ref(),
                 inventory.as_ref(),
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);

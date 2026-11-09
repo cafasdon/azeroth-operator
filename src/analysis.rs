@@ -110,6 +110,42 @@ pub struct RecipeViewFilter {
     pub minimum_skill_ups_reported: Option<u32>,
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeCooldownFilter {
+    pub state: Option<RecipeCooldownState>,
+    pub minimum_charges: Option<u32>,
+    pub maximum_remaining_seconds: Option<u32>,
+}
+
+fn recipe_cooldown_matches(row: &Value, filter: &RecipeCooldownFilter) -> Option<bool> {
+    let checks: Vec<_> = [
+        filter
+            .state
+            .map(|state| Some(recipe_cooldown_state(row) == state)),
+        filter.minimum_charges.map(|minimum| {
+            row["cooldown"]["charges"]
+                .as_u64()
+                .map(|charges| charges >= u64::from(minimum))
+        }),
+        filter.maximum_remaining_seconds.map(|maximum| {
+            row["cooldown"]["remaining_seconds"]
+                .as_u64()
+                .map(|seconds| seconds <= u64::from(maximum))
+        }),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if checks.contains(&Some(false)) {
+        Some(false)
+    } else if checks.contains(&None) {
+        None
+    } else {
+        Some(true)
+    }
+}
+
 fn recipe_view_matches(row: Option<&Value>, filter: &RecipeViewFilter) -> Option<bool> {
     let checks: Vec<_> = [
         filter.learned.map(|expected| {
@@ -281,6 +317,34 @@ pub fn search_recipe_materials_with_inventory(
     recipe_view_filter: Option<&RecipeViewFilter>,
     inventory: Option<&Snapshot>,
 ) -> Result<Value> {
+    search_recipe_materials_with_cooldowns(
+        snapshot,
+        recipe_id,
+        output_item_id,
+        reagent_item_id,
+        status,
+        offset,
+        limit,
+        material_filter,
+        recipe_view_filter,
+        None,
+        inventory,
+    )
+}
+
+pub fn search_recipe_materials_with_cooldowns(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+    material_filter: Option<&RecipeMaterialFilter>,
+    recipe_view_filter: Option<&RecipeViewFilter>,
+    cooldown_filter: Option<&RecipeCooldownFilter>,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
@@ -298,6 +362,16 @@ pub fn search_recipe_materials_with_inventory(
     }
     let section = snapshot.sections.get("profession_recipe_materials");
     let rows = section.and_then(|value| value["entries"].as_object());
+    if let Some(filter) = cooldown_filter {
+        ensure!(
+            filter.state.is_some()
+                || filter.minimum_charges.is_some()
+                || filter.maximum_remaining_seconds.is_some(),
+            "Cooldown filter requires at least one predicate"
+        );
+    }
+    let mut cooldown_unknown = 0;
+    let mut cooldown_nonmatching = 0;
     if let Some(filter) = recipe_view_filter {
         ensure!(
             filter.learned.is_some()
@@ -336,6 +410,19 @@ pub fn search_recipe_materials_with_inventory(
                     .is_none_or(|value| row["status"] == *value)
         })
         .filter_map(|(id, row)| {
+            if let Some(filter) = cooldown_filter {
+                match recipe_cooldown_matches(row, filter) {
+                    Some(true) => {}
+                    Some(false) => {
+                        cooldown_nonmatching += 1;
+                        return None;
+                    }
+                    None => {
+                        cooldown_unknown += 1;
+                        return None;
+                    }
+                }
+            }
             let observation = compatible_view.and_then(|view| view["entries"].get(id));
             if let Some(filter) = recipe_view_filter {
                 match recipe_view_matches(observation, filter) {
@@ -376,6 +463,9 @@ pub fn search_recipe_materials_with_inventory(
         .map(|(id, row, support, observation)| {
             let mut record = (*row).clone();
             record["recipe_id"] = json!(id.parse::<u32>().unwrap());
+            if cooldown_filter.is_some() {
+                record["captured_cooldown_state"] = json!(recipe_cooldown_state(row));
+            }
             if let Some(support) = support {
                 record["material_support"] = support.clone();
             }
@@ -404,6 +494,12 @@ pub fn search_recipe_materials_with_inventory(
     if let Some(inventory) = inventory {
         result["recipe_captured_at"] = json!(snapshot.captured_at);
         result["inventory_captured_at"] = json!(inventory.captured_at);
+    }
+    if let Some(filter) = cooldown_filter {
+        result["filters"]["cooldown_filter"] = json!(filter);
+        result["cooldown_unknown_count"] = json!(rows.map(|_| cooldown_unknown));
+        result["cooldown_nonmatching_count"] = json!(rows.map(|_| cooldown_nonmatching));
+        result["cooldown_captured_at"] = json!(snapshot.captured_at);
     }
     if let Some(filter) = material_filter {
         let stock = stock.as_ref().unwrap();

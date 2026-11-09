@@ -1,5 +1,9 @@
 # Changelog
 
+- Filter bulk recipe discovery by captured cooldown state, observed charge minimum
+  and remaining-time maximum, with same-row composition, explicit unknown numeric
+  predicates and original recipe provenance when inventory is refreshed.
+
 - Capture optional stable public bulk-recipe cooldowns/charges, preserve strict
   Python/Rust reader parity and feed original-capture evidence into search and
   recipe/batch planning. Share guarded selected-recipe capture; qualify the

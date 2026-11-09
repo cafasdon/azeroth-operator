@@ -1,5 +1,24 @@
 # Forever
 
+`search_forever_recipes.cooldown_filter` accepts `state` (`available`, `waiting`,
+`unknown`), `minimum_charges` and `maximum_remaining_seconds`. Supply at least one
+predicate. Numeric bounds are inclusive u32 values; missing numbers cannot match
+a numeric predicate. All predicates apply to the same original bulk row before
+recipe-view/material filtering and paging. Charges classify state before timers:
+positive charges are available, zero charges waiting; without charges, zero
+seconds is available and positive seconds waiting. Missing both classifies unknown.
+This is historical metadata, not current readiness or permission to craft.
+
+Results include `captured_cooldown_state`, `cooldown_captured_at`,
+`cooldown_unknown_count` and `cooldown_nonmatching_count` only when filtering.
+Counters cover rows surviving ID/status narrowing, before view/material filters.
+Unknown count means an unevaluable numeric predicate with no known false predicate;
+it is not a count of rows classified `unknown`. Explicit state comparisons are
+decidable, including `state: unknown`. Missing bulk capture gives null counters;
+an observed empty capture gives zero. Newer inventory and selected schematics do
+not fill bulk cooldown gaps; elapsed time never replenishes captured charges.
+[Offline evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
+
 Fixed-item bulk recipe rows can include `cooldown` with observed remaining seconds,
 daily flag and/or a charge/max-charge pair. Capture keeps independently readable
 public timer and charge components only when two normalised reads agree. Missing,

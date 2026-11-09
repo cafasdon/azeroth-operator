@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Bulk recipe discovery can narrow historical cooldown state, charges and timer
+together with learned/skill-up and material predicates. Results retain original
+cooldown provenance while compatible newer inventory updates stock only. Explicit
+unknown state is searchable; missing numeric observations stay unevaluable. No
+elapsed recharge, live craftability or complete profession coverage is inferred.
+[Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
+
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge
 evidence into search, individual/batch reviews and existing nonmaterial planning.
 Recipe and stock provenance remain separate. API absence, restrictions, changing
