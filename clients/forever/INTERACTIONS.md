@@ -2001,3 +2001,14 @@ make the section unavailable. Required read errors remain section-local through
 Core. No skill headers are expanded, no training occurs, and agreement between
 two observations does not prove atomic state, complete skills or native support.
 Development addon 0.51.0-dev is packaged and verified offline, not installed.
+
+## Historical saved reset projection (2026-11-09)
+
+`inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
+accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the
+new sibling report projects capture timestamp plus nonnegative reported reset
+seconds. Negative or out-of-range results remain unknown. Cache update age is
+reported separately, without shifting the projected timestamp. Missing sections
+remain unknown; known empty sections yield an empty report. This is historical
+arithmetic, not a current lockout, extension outcome, entry or loot eligibility
+check. No game/API/addon change or installation is involved.

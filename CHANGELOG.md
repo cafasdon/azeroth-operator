@@ -1,5 +1,9 @@
 # Changelog
 
+- Add opt-in saved instance/world-boss reset timestamp projections from capture
+  time and recorded duration. Keep negative/overflow durations unknown, raw data
+  and cache age separate, and current availability/extension outcomes unverified.
+
 - Guard skill-line namespace/getters before use and reject API replacement or
   differing consecutive row projections. Preserve partial/collapsed coverage
   and raw bonuses; verify development addon 0.51.0-dev offline without installation.

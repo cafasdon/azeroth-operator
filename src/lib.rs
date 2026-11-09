@@ -11,6 +11,7 @@ pub mod import;
 pub mod loot_observation;
 pub mod macro_operation;
 pub mod planning;
+pub mod saved_resets;
 mod schema;
 pub mod skill_line_filter;
 pub mod sync;

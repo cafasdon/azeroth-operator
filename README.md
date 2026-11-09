@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Saved instance and world-boss inspection can now add historical reset-time
+projections with `saved_reset_projection: true`. Negative durations remain unknown;
+this does not establish current lockout or entry availability.
+[Contract](docs/ADR-058-saved-reset-projection.md).
+
 Skill capture now guards restricted API values and compares two bounded row
 projections, rejecting observed rank, identity or metadata changes even when
 the row count stays the same. This remains partial historical capture.

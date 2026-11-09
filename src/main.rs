@@ -45,6 +45,9 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Project historical reset timestamps for saved_instances or saved_world_bosses; no current eligibility.
+    #[serde(default, deserialize_with = "saved_reset_flag")]
+    saved_reset_projection: bool,
     /// Compare 1..64 distinct base-item requirements with readable saved loot; no acquisition or stock credit.
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
@@ -507,6 +510,12 @@ fn talent_preparation_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result
     serde_json::Value::deserialize(input)?
         .as_bool()
         .ok_or_else(|| serde::de::Error::custom("Invalid simulator talent preparation flag"))
+}
+
+fn saved_reset_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
+    serde_json::Value::deserialize(input)?
+        .as_bool()
+        .ok_or_else(|| serde::de::Error::custom("Invalid saved reset projection flag"))
 }
 
 fn skill_line_argument<'de, D: serde::Deserializer<'de>, T: serde::de::DeserializeOwned>(
@@ -1718,6 +1727,16 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.saved_reset_projection
+            && !matches!(
+                args.section.as_deref(),
+                Some("saved_instances" | "saved_world_bosses")
+            )
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reset projection requires a saved reset section",
+            )]);
+        }
         if args.bag_cooldown_filter.as_ref().is_some_and(|filter| {
             args.section.as_deref() != Some("bag_item_cooldowns") || filter.validate().is_err()
         }) {
@@ -2229,6 +2248,30 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if args.saved_reset_projection {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Reset projection requires Forever",
+                        )]);
+                    }
+                    let projected = value["captured_at"]
+                        .as_str()
+                        .and_then(|text| text.parse::<chrono::DateTime<chrono::Utc>>().ok())
+                        .and_then(|date| {
+                            azeroth_operator::saved_resets::project(
+                                args.section.as_deref().unwrap(),
+                                (!value["data"].is_null()).then_some(&value["data"]),
+                                date,
+                            )
+                            .ok()
+                        });
+                    let Some(projected) = projected else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Invalid saved reset projection",
+                        )]);
+                    };
+                    value["saved_reset_projection"] = projected;
+                }
                 if let Some(filter) = args.skill_line_filter.as_ref() {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
