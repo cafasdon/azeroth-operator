@@ -50,8 +50,9 @@ For Forever packages, pass `--mcp target/debug/azeroth-operator.exe` to
 `tools.verify_addon_packages` to import the packaged fixture's actual
 synthetic export into a temporary owner store and read it back through
 local MCP stdio. This optional check requires the Python MCP client.
-It checks exact capture metadata, section coverage and bank item counts,
-then removes the temporary store with the staged package files.
+It checks exact capture metadata, section coverage, bank item counts,
+recipe quantities and a quest inventory checklist from that same export.
+The temporary store is removed with the staged package files.
 
 Packages remain development-only. Actual client exports and manager flavour
 detection are still required before advertising a qualified release. No GitHub,

@@ -1,5 +1,7 @@
 # Changelog
 
+- Verify recipe and quest planning through the packaged Forever fixture's MCP readback.
+
 - Verify packaged Forever synthetic exports through the CLI importer and local MCP readback.
 
 - Summarise section coverage across all matching saves independently of snapshot paging.

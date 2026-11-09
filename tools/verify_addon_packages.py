@@ -37,6 +37,23 @@ async def readback_forever_fixture(binary, store, snapshot_id, receipt):
             if (stock["quantity_by_storage"]["character_bank"] != 1
                     or stock["quantity_by_storage"]["account_bank"] != 0):
                 raise ValueError("Unexpected fixture bank stock")
+            recipe = await call("review_forever_recipe", snapshot_id=snapshot_id, crafts=2)
+            materials = recipe["materials"]
+            if (len(materials) != 1 or materials[0]["item_id"] != 744
+                    or materials[0]["required"] != 6 or materials[0]["quantity_observed"] != 1
+                    or materials[0]["shortfall_vs_observed"] != 5
+                    or recipe["base_output_if_completed"] != {"item_id": 456, "minimum": 4, "maximum": 6}
+                    or recipe["craftability_verified"] is not False):
+                raise ValueError("Unexpected fixture recipe review")
+            quest = await call("inspect_snapshot", snapshot_id=snapshot_id, section="quests", quest_id=42,
+                               quest_inventory_requirements={"storage": "character_bank",
+                                                             "items": [{"item_id": 744, "quantity": 3}]})
+            inventory = quest["quest_inventory_review"]
+            if (quest["quest_observed"] is not True
+                    or inventory["items"] != [{"item_id": 744, "required_quantity": 3,
+                                              "observed_quantity": 1, "shortfall_vs_observed": 2}]
+                    or inventory["quest_item_binding_verified"] is not False):
+                raise ValueError("Unexpected fixture quest inventory review")
 
 
 def verify(directory, verifier, mcp_binary=None):
