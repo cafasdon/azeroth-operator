@@ -1,5 +1,7 @@
 # Changelog
 
+- Let owned-gear evaluation withhold simulation when observed items lack a catalogue match.
+
 - Let Forever owned-gear evaluation require all four storage sections before collection.
 
 - Apply optional latest-capture uniqueness and coverage checks in the Forever owned-gear evaluator.

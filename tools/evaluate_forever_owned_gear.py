@@ -87,6 +87,8 @@ async def selected_snapshot(args, deadline):
 
 async def execute(args):
     args = copy(args)
+    require_catalogue_coverage = getattr(args, "require_catalogue_coverage", False)
+    require(type(require_catalogue_coverage) is bool)
     args.candidate_scan_limit = collection.ranker.validate_candidate_scan_limit(getattr(args, 'candidate_scan_limit', 256))
     objective = simulation.ranking_objective(args)
     floor = simulation.encounter_improvement_floor(args)
@@ -161,11 +163,16 @@ async def execute(args):
             'best_in_slot_verified':False,'feasible_set_coverage_verified':False,
             'simulation_performed':False,'game_execution':False}
     progress = collected['progress']
+    inventory_evidence = progress.get('inventory_evidence') if progress else None
     ranked = None
     reason = 'no_saved_windows'
     if progress and progress['window_count']:
         reason = 'time_budget'
-        if monotonic() < deadline:
+        if require_catalogue_coverage and inventory_evidence is None:
+            reason = 'catalogue_coverage_unavailable'
+        elif require_catalogue_coverage and inventory_evidence['catalogue_unmatched_item_locations']:
+            reason = 'catalogue_unmatched_items'
+        elif monotonic() < deadline:
             ranked = await simulation.execute(copy(args), deadline=deadline)
             require(ranked['journal_coverage'] == progress)
             reason = ranked['stop_reason']
@@ -173,7 +180,6 @@ async def execute(args):
     resolved = bool(coordinates and progress['resolution_accounting']['unresolved_proposed_coordinates'] == 0)
     simulated = bool(ranked and ranked['all_saved_resolved_results_complete'])
     complete = coordinates and resolved and simulated
-    inventory_evidence = progress.get('inventory_evidence') if progress else None
     inventory_status = ('unavailable' if inventory_evidence is None else
         'observed_with_gaps' if inventory_evidence['unavailable_storage_sections']
             or inventory_evidence['catalogue_unmatched_item_locations'] else 'observed_without_reported_gaps')
@@ -189,6 +195,7 @@ async def execute(args):
         'minimum_encounter_improvement':floor,
         'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'inventory_evidence':inventory_evidence,'inventory_evidence_status':inventory_status,
+        'catalogue_coverage_required':require_catalogue_coverage,
         'unresolved_candidate_locations_by_slot': progress.get('unresolved_candidate_locations_by_slot') if progress else None,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
@@ -222,6 +229,8 @@ def parser():
                      help='Require this section on the newest capture with --character-name; repeat for multiple sections')
     cli.add_argument('--require-all-storage-sections', action='store_true',
                      help='Require equipment, bags, character bank and account bank in the selected capture')
+    cli.add_argument('--require-catalogue-coverage', action='store_true',
+                     help='Skip simulation if catalogue evidence is missing or an observed item has no catalogue match')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

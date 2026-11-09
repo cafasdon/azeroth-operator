@@ -167,6 +167,22 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(cached['simulation']['encounter_contexts'],contexts)
                 self.assertEqual(runs.call_count,calls)
                 self.assertEqual(journal.read_bytes(),before)
+                self.assertFalse(cached['catalogue_coverage_required'])
+                with_gap = deepcopy(value)
+                with_gap["character"]["name"] = "CatalogueGap"
+                with_gap['sections']['bags']['0']['2'] = {'item_id':4294967295,'count':1}
+                gap_key = SnapshotStore(base).ingest(with_gap)
+                stage_count = len(captured)
+                gap = launch(['--snapshot-id',gap_key,'--journal',str(base/'gap.sqlite'),
+                              '--simulation-journal',str(base/'gap-results'),
+                              '--require-catalogue-coverage'])
+                self.assertEqual(gap['simulation_stop_reason'],'catalogue_unmatched_items')
+                self.assertTrue(gap['catalogue_coverage_required'])
+                self.assertEqual(gap['inventory_evidence']['catalogue_unmatched_item_ids'],[4294967295])
+                self.assertIsNone(gap['simulation'])
+                self.assertEqual([stage[0] for stage in captured[stage_count:]], ['collection'])
+                del captured[stage_count:]
+                self.assertEqual(runs.call_count,calls)
                 all_storage = '--require-all-storage-sections'
                 absent_journal = base/'must-not-create.sqlite'
                 launch(['--checkpoint-only','--journal',str(absent_journal),all_storage],fails=True)

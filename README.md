@@ -486,6 +486,10 @@ A missing section stops the run before journal writes.
 Use `--require-all-storage-sections` with either selector to require observed
 equipment, bags, character bank and account bank. Observed sections may be
 empty or partial. This check does not verify complete ownership.
+Use `--require-catalogue-coverage` to skip simulation when saved plan windows
+have missing catalogue evidence or unmatched observed item locations. The
+report explains the stop and keeps collected windows for inspection. This
+checks base-item matches independently of storage and modifier coverage.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
