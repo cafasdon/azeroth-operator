@@ -275,6 +275,10 @@ The stock plan's `first_step_to_review` points to the earliest material
 checkpoint or observed nonmaterial shortfall, including both when they
 occur at the same step. It uses all observed storage for the material
 checkpoint. Null means neither checkpoint was reported.
+The stock plan also lists positive suggested bank withdrawals by item, using
+the character bank before the account bank and showing any bag shortfall
+left after those suggestions. It only lists observed quantities for known
+bag shortfalls. See starting materials for missing stock observations.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

@@ -1073,6 +1073,21 @@ pub fn reagent_chain_stock_plan(
     ensure!(combined.is_array(), "Unsupported chain materials");
     let (materials, checkpoint) = ordered_recipe_materials(reviews.iter(), &combined)?;
     let material_coverage = ordered_recipe_material_coverage(&materials);
+    let bank_withdrawals: Vec<_> = materials
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let shortfall = row["shortfall_vs_bags"].as_u64()?;
+            let bank = &row["suggested_bank_withdrawals"];
+            let character = bank["character_bank"].as_u64().unwrap_or(0);
+            let account = bank["account_bank"].as_u64().unwrap_or(0);
+            (character > 0 || account > 0).then(|| json!({
+                "item_id":row["item_id"],"character_bank":character,"account_bank":account,
+                "remaining_bag_shortfall_after_suggested_withdrawals":shortfall - character - account,
+            }))
+        })
+        .collect();
     let nonmaterial = ordered_recipe_requirements_with_charges(reviews.iter(), true);
     let checkpoints = [
         ("materials", &checkpoint["first_uncovered_recipe"]),
@@ -1107,6 +1122,7 @@ pub fn reagent_chain_stock_plan(
         "captured_chain_checks_pass":{"bags":captured_checks_pass("bags"),
             "all_observed_storage":captured_checks_pass("all_observed_storage")},
         "starting_materials":materials,"material_checkpoint":checkpoint,
+        "suggested_bank_withdrawal_list":bank_withdrawals,
         "first_step_to_review":first_review_step,
         "nonmaterial_requirements":nonmaterial,
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,

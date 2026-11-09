@@ -39,6 +39,11 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
             future['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
                 'charges':9,'max_charges':9,'remaining_seconds':0}
             inventory = store.ingest(future)
+            bank_stock = deepcopy(future)
+            bank_stock['sections']['bags'] = {}
+            bank_stock['sections']['character_bank'] = {'6':{'1':{'item_id':10,'count':1}}}
+            bank_stock['sections']['account_bank'] = {'7':{'1':{'item_id':10,'count':1}}}
+            bank_inventory = store.ingest(bank_stock)
             conditional = deepcopy(base)
             conditional['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
                 'charges':1,'max_charges':1,'remaining_seconds':60}
@@ -71,6 +76,11 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                         return json.loads(reply.content[0].text)['reagent_chain']
                     # Red regression: both requests individually fit one charge, but the second reuses it.
                     one = await plan(keys[1])
+                    banked = await plan(keys[1],inventory_snapshot_id=bank_inventory)
+                    self.assertEqual(banked['stock_plan']['suggested_bank_withdrawal_list'], [
+                        {'item_id':10,'character_bank':1,'account_bank':1,
+                         'remaining_bag_shortfall_after_suggested_withdrawals':0}])
+                    self.assertEqual(one['stock_plan']['suggested_bank_withdrawal_list'], [])
                     covered_chain = await plan(covered_key)
                     self.assertIs(covered_chain['stock_plan']['nonmaterial_requirements'][
                         'observed_charges_cover_chain'], True)

@@ -1,5 +1,7 @@
 # Changelog
 
+- List suggested saved bank withdrawals for Forever reagent-chain starting materials.
+
 - Highlight the earliest saved material or nonmaterial checkpoint in a Forever reagent chain.
 
 - Combine saved material, charge and condition checks in Forever reagent-chain stock plans.
