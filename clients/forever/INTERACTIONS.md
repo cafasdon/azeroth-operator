@@ -1853,3 +1853,11 @@ request hashes and available numeric uncertainty from the existing simulator
 adapter. Paired intervals concern candidate minus equipped baseline; Wilson
 intervals concern marginal death fraction. Aggregate ranking uncertainty and
 selection-adjusted optimality remain unverified; no extra engine runs occur.
+
+Owned-gear evaluation can select an explicit character with `--character-name`
+and `--character-realm` instead of `--snapshot-id`. The existing owner-scoped
+MCP resolver chooses the newest matching historical Forever capture once;
+the evaluation pins that snapshot ID. No match fails before plan writes.
+Missing/mixed selectors are rejected; there is no newest-alt or active-player
+fallback. A resumed journal stays bound to its original capture and rejects a
+changed selection. Resolution consumes the shared budget, capped at 15 seconds.

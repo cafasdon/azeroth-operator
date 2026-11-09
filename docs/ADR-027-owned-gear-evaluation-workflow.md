@@ -49,3 +49,11 @@ Resumption uses the same snapshot/template/MCP/software/config binding. Changing
 those inputs can require a new journal; old evidence remains intact and readable
 by its supported tools. No HTTP, data sync, addon installation, deployment,
 automatic equipment change or live qualification is introduced.
+
+Owned-gear evaluation can select an explicit character with `--character-name`
+and `--character-realm` instead of `--snapshot-id`. The existing owner-scoped
+MCP resolver chooses the newest matching historical Forever capture once;
+the evaluation pins that snapshot ID. No match fails before plan writes.
+Missing/mixed selectors are rejected; there is no newest-alt or active-player
+fallback. A resumed journal stays bound to its original capture and rejects a
+changed selection. Resolution consumes the shared budget, capped at 15 seconds.

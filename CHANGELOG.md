@@ -1,5 +1,9 @@
 # Changelog
 
+- Connect explicit name-and-realm selection to owned-gear evaluation through
+  the owner's MCP store; pin the selected historical snapshot and retain
+  unknown active identity, shared deadlines and existing resume bindings.
+
 - Preserve per-encounter numeric simulation evidence on final saved-journal and
   owned-gear leaders, including baseline request identity and available paired
   or marginal death intervals, without extra runs or aggregate confidence claims.

@@ -4,6 +4,7 @@ import asyncio
 from copy import copy
 import os
 from pathlib import Path
+import tempfile
 from time import monotonic
 
 from tools import collect_forever_gear_windows as collection
@@ -12,6 +13,30 @@ from tools.merge_forever_gear_windows import MAX_REPORT_BYTES, MAX_TOTAL_BYTES, 
 from tools.prepare_forever_gear_window import encoded
 from tools.sync_exports import ordinary
 from tools import role_metrics as roles
+
+
+async def selected_snapshot(args, deadline):
+    snapshot = getattr(args, 'snapshot_id', None)
+    name, realm = getattr(args, 'character_name', None), getattr(args, 'character_realm', None)
+    if snapshot is not None:
+        require(name is None and realm is None)
+        return digest(snapshot), 'explicit_saved_snapshot'
+    require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
+    require(monotonic() < deadline)
+    ranker = collection.ranker
+    async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
+        with tempfile.TemporaryFile(mode='w+') as errlog:
+            params = ranker.StdioServerParameters(command=str(args.mcp), env=dict(os.environ))
+            async with ranker.stdio_client(params, errlog=errlog) as (reader, writer):
+                async with ranker.ClientSession(reader, writer) as session:
+                    await session.initialize()
+                    reply = await session.call_tool('resolve_character', {'family':'forever',
+                        'character':{'name':name, 'realm':realm}})
+                    require(not reply.isError and len(reply.content) == 1)
+                    result = parse_report(reply.content[0].text.encode())
+                    require(result['status'] == 'explicit_saved_character'
+                        and result['live'] is False and result['active_character_verified'] is False)
+                    return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
 async def execute(args):
@@ -25,12 +50,13 @@ async def execute(args):
         ('max_payload_mib', 512), ('simulation_journal_mib', 512), ('window_size', 128)]:
         integer(getattr(args, field), 1, maximum)
     require(type(args.paired) is bool and type(args.checkpoint_only) is bool)
-    digest(args.snapshot_id)
+    deadline = monotonic() + args.time_budget_seconds
     expected_engine = digest(args.engine_sha256.lower())
     require(type(getattr(args,'positional_equipment',False)) is bool)
     require(args.engine.is_absolute() and args.mcp.is_absolute())
     args.engine = args.engine.resolve(strict=True)
     args.mcp = args.mcp.resolve(strict=True)
+    args.snapshot_id, selection = await selected_snapshot(args, deadline)
     args.template = args.template.resolve(strict=True)
     require(1 <= len(args.encounter_lookup) <= 8)
     args.encounter_lookup = [path.resolve(strict=True) for path in args.encounter_lookup]
@@ -54,7 +80,7 @@ async def execute(args):
             and (not output.exists() or not path.samefile(output)) for output in reserved)
             and not path.is_relative_to(args.simulation_journal.resolve())
         )
-    deadline = monotonic() + args.time_budget_seconds
+    require(monotonic() < deadline)
     require(collection.file_digest(args.engine, deadline) == expected_engine)
     if getattr(args,'positional_equipment',False):
         simulation.pages.encounters.saved.adapter.verify_positional_engine(args.engine,expected_engine,deadline)
@@ -103,7 +129,7 @@ async def execute(args):
     status = ('reported_space_complete' if complete else 'collection_incomplete' if not coordinates
         else 'unresolved_plans' if not resolved else 'simulation_incomplete')
     report = {'mode': 'owned_gear_evaluation', 'status': status,
-        'selection': 'explicit_saved_snapshot', 'snapshot_id': args.snapshot_id,
+        'selection': selection, 'snapshot_id': args.snapshot_id,
         'requested_slots': args.slot, 'candidate_storage_scope': 'all_observed_storage',
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
@@ -126,7 +152,10 @@ def parser():
     cli = argparse.ArgumentParser(description=__doc__)
     for name in ['mcp', 'template', 'journal', 'engine', 'simulation-journal']:
         cli.add_argument('--' + name, type=Path, required=True)
-    cli.add_argument('--snapshot-id', required=True)
+    selector = cli.add_mutually_exclusive_group(required=True)
+    selector.add_argument('--snapshot-id')
+    selector.add_argument('--character-name')
+    cli.add_argument('--character-realm', help='Required with --character-name; selects historical owner-store data')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

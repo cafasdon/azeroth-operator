@@ -282,6 +282,14 @@ completion flags. Missing ownership/model/native proof still prevents a BiS
 claim. See the [workflow](docs/ADR-027-owned-gear-evaluation-workflow.md) and
 [offline evidence](docs/owned-gear-evaluation-verification-2026-11-09.md).
 
+The evaluator accepts either `--snapshot-id` or `--character-name NAME
+--character-realm REALM`. The latter resolves the newest matching historical
+Forever capture through the owner's MCP store, then pins its snapshot ID for
+the run. Missing targets fail before journal writes. Resolution shares the
+total time budget and has a 15-second ceiling. Neither selector identifies
+the character currently in play.
+[Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
+
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
 equipment, selected source locations and cleared slots, tied to the snapshot
 and source report hash. Locations describe the saved plan; refresh observations

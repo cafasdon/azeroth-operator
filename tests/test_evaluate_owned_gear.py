@@ -163,6 +163,16 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(cached['simulation']['ranked_gear_sets'],report['simulation']['ranked_gear_sets'])
                 self.assertEqual(runs.call_count,calls)
                 self.assertEqual(journal.read_bytes(),before)
+                original_argv = argv[:]
+                index = argv.index('--snapshot-id')
+                argv[index:index+2] = ['--character-name',value['character']['name'],
+                    '--character-realm',value['character']['realm']]
+                named = launch(['--checkpoint-only'])
+                self.assertEqual(named['selection'],'explicit_saved_character')
+                self.assertEqual(named['snapshot_id'],key)
+                self.assertEqual(named['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
+                self.assertEqual(runs.call_count,calls)
+                argv[:] = original_argv
                 for first,second_stage in zip(captured[::2],captured[1::2],strict=True):
                     self.assertEqual((first[0],second_stage[0]),('collection','simulation'))
                     self.assertGreater(second_stage[1],first[1])
