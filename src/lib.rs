@@ -1660,6 +1660,7 @@ pub struct CaptureFilters<'a> {
     pub captured_from: Option<&'a str>,
     pub captured_through: Option<&'a str>,
     pub latest_per_character: bool,
+    pub required_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
@@ -1879,6 +1880,7 @@ impl Store {
             captured_from,
             captured_through,
             latest_per_character,
+            required_sections,
             inventory_item,
             inventory_requirements,
             loot_observation,
@@ -1953,6 +1955,21 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
+        if let Some(sections) = required_sections {
+            ensure!(
+                !sections.is_empty()
+                    && sections.len() <= SECTIONS.len()
+                    && sections
+                        .iter()
+                        .all(|name| SECTIONS.contains(&name.as_str()))
+                    && sections
+                        .iter()
+                        .collect::<std::collections::BTreeSet<_>>()
+                        .len()
+                        == sections.len(),
+                "Required sections must be distinct known section names"
+            );
+        }
         ensure!(
             inventory_item.is_none() || inventory_requirements.is_none(),
             "Inventory item and inventory requirements filters are mutually exclusive"
@@ -2579,6 +2596,11 @@ impl Store {
                     } else {
                         None
                     };
+                    if required_sections.is_some_and(|sections| {
+                        sections.iter().any(|name| !s.sections.contains_key(name))
+                    }) {
+                        continue;
+                    }
                     let group_context_match = group_context
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));

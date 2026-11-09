@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved captures that contain every requested snapshot section.
+
 - Filter saved Forever weapon enchants by type and inclusive charge range.
 
 - Compare saved Forever weapon enchant readings separately for each hand.

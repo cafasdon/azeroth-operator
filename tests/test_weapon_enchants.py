@@ -65,6 +65,20 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     async def search(hand, **filters):
                         return (await call('list_snapshots',family='forever',
                             weapon_enchant={'hand':hand,**filters}))['snapshots']
+                    covered=await call('list_snapshots',family='forever',required_sections=['weapon_enchants'])
+                    self.assertEqual({row['snapshot_id'] for row in covered['snapshots']},
+                        {keys[0],keys[2],keys[3]})
+                    self.assertEqual((await call('list_snapshots',family='forever',
+                        required_sections=['weapon_enchants','player_resources']))['snapshots'],[])
+                    newest=deepcopy(absent)
+                    newest['captured_at']='2025-01-02T00:00:00Z'
+                    store.ingest(newest)
+                    self.assertEqual((await call('list_snapshots',family='forever',latest_per_character=True,
+                        required_sections=['weapon_enchants']))['snapshots'],[])
+                    for required in [[],['weapon_enchants','weapon_enchants'],['unknown']]:
+                        invalid=await session.call_tool('list_snapshots',{
+                            'family':'forever','required_sections':required})
+                        self.assertTrue(invalid.isError)
                     found = await search('main_hand',enchant_id=42,minimum_charges=0,
                                          maximum_remaining_milliseconds=0)
                     self.assertEqual([row['snapshot_id'] for row in found],[keys[0]])

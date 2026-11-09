@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Use `list_snapshots.required_sections` to find captures containing all
+named sections together. Observed empty sections count as present.
+Missing sections, including those with a recorded unavailable reason,
+do not match. With `latest_per_character`, only the newest eligible
+capture is checked for section presence. Presence leaves completeness
+within each section unverified.
+
 Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 `off_hand` or `ranged` enchant list. Set an optional exact `enchant_id`,
 `minimum_charges` or `maximum_remaining_milliseconds`. All predicates

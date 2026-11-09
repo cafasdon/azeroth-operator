@@ -356,6 +356,8 @@ struct List {
     /// Evaluate feature filters only against the newest capture per character, realm and client variant in the time window.
     #[serde(default)]
     latest_per_character: bool,
+    /// Require every named snapshot section to be present in the same capture.
+    required_sections: Option<Vec<String>>,
     /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
     recipe_output_item_id: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the captured selected recipe's profession ID.
@@ -2061,6 +2063,7 @@ impl Operator {
                 pet_food: args.pet_food,
                 inventory_item: args.inventory_item,
                 inventory_requirements: args.inventory_requirements,
+                required_sections: args.required_sections.as_deref(),
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
                 gossip_option: args.gossip_option,
