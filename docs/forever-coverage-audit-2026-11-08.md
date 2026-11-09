@@ -7,6 +7,12 @@ Baseline: `c5a0458`. Live testing, installation and deployment remain deferred.
 
 ## Coverage and remaining proof
 
+9 November update: readable spell charge/cast-count/cooldown-flag observations
+now reach strict local readers, row summaries and exact reported-ID action-bar
+references. [Offline evidence](spell-resources-verification-2026-11-09.md). Native
+behaviour, complete spell coverage, recharge/timing and actual castability remain
+unqualified; no combat automation or gameplay command is introduced.
+
 9 November update: passive visible-loot-window item capture, strict local readers
 and item/unknown-slot summary add a previously uncovered system. Displayed loot
 stays outside ownership and stock calculations. [Offline evidence](loot-window-verification-2026-11-09.md).

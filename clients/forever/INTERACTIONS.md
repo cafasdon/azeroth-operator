@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Spell resources: manual capture can retain stable readable charge counts, reported
+cast counts and enabled/active cooldown flags. Saved summaries distinguish missing
+observations and action-bar references use exact reported spell IDs, preserving
+duplicate rows and disagreements. Timers/GCD, recharge and casting eligibility are
+not inferred; all casting/targeting remains with the player. Native qualification
+is deferred. [Evidence](../../docs/spell-resources-verification-2026-11-09.md).
+
 Loot observation: manual export can inspect an already shown window and retain
 stable public item IDs/quantities, with explicit unreadable/non-item slots. Local
 inspection and summary keep displayed loot separate from owned inventory. No

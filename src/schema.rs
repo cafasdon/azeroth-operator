@@ -2259,12 +2259,41 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("off_spec", "bool", false),
                     ("level_learned", "uint", false),
                     ("usability", "map", false),
+                    ("charge_count", "map", false),
+                    ("reported_cast_count", "uint", false),
+                    ("cooldown_state", "map", false),
                 ],
             )?;
             let rows = value["entries"].as_object().unwrap();
             ensure!(rows.len() <= 1024, "Too many spellbook observations");
             for (key, row) in rows {
                 index(key, 1, 4096)?;
+                if let Some(charges) = row.get("charge_count") {
+                    object(
+                        charges,
+                        &[("current", "uint", true), ("maximum", "positive", true)],
+                    )?;
+                    ensure!(
+                        charges["current"]
+                            .as_u64()
+                            .zip(charges["maximum"].as_u64())
+                            .is_some_and(|(current, maximum)| current <= maximum
+                                && maximum <= u64::from(u32::MAX)),
+                        "Invalid spell charge observation"
+                    );
+                }
+                if let Some(count) = row.get("reported_cast_count") {
+                    ensure!(
+                        count.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),
+                        "Invalid spell cast count observation"
+                    );
+                }
+                if let Some(cooldown) = row.get("cooldown_state") {
+                    object(
+                        cooldown,
+                        &[("enabled", "bool", true), ("active", "bool", true)],
+                    )?;
+                }
                 if let Some(usability) = row.get("usability") {
                     object(
                         usability,

@@ -1,5 +1,36 @@
 # Forever
 
+Manual spellbook capture optionally records `charge_count: {current, maximum}`,
+`reported_cast_count` and `cooldown_state: {enabled, active}` for each exported
+reported spell ID. Counts are public u32 observations; maximum charges is positive
+and current cannot exceed it. Each field group needs two agreeing reads, followed
+by a matching slot/base/reported-ID recheck. An unavailable, throwing, restricted,
+invalid or changing group stays absent independently; identity recheck failure
+omits all new resource fields while preserving existing slot metadata.
+
+Inspect `spellbook`, or `character_summary.spellbook_resource_observations` for
+known/unknown and zero/positive/active/enabled row counts. These count rows, not
+unique spells or independent charge pools; duplicate spell IDs remain separate.
+Reported cast counts describe the API result, including zero for missing spells,
+and do not verify mana, reagents, target, range, cooldown or actual castability.
+No timers, durations, mod rates, duration objects or event-sensitive GCD flag are
+read. No clock advancement or recharge is inferred.
+
+`inspect_snapshot` with `section: action_bar_observation` and
+`action_bar_spellbook: true` can include
+`matched_spellbook_resources_by_action_id`. Each name-free row records its numeric
+spellbook slot, base ID and `queried_spell_id` plus the three optional observations.
+Only exact reported spell IDs join resources; existing base-ID flag matches remain
+separate. Multiple matching book rows are retained in numeric slot order, without
+merging disagreements. Null resource fields remain unknown; empty match lists do
+not prove an action lacks resources. The new map is omitted for legacy spellbooks
+without any resource observations. Cast eligibility stays unverified.
+
+Capture remains passive/out of combat; no casting, targeting, data-load request or
+cooldown event subscription is added. Update readers before installing the new
+capture source. Native secret/API semantics and responsiveness remain unqualified.
+[Offline evidence](../../docs/spell-resources-verification-2026-11-09.md).
+
 Manual `/aoexport` can include `loot_window` when the native LootFrame is already
 shown. It records at most 64 slots with coverage `visible_loot_window_slots`.
 Each slot is either a stable public `item_id` and `quantity` under `status: item`,

@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Spellbook exports can retain readable, stable charge counts, reported cast counts
+and cooldown flags. Local summaries and exact reported-ID action-bar references
+keep these historical observations separate from current casting eligibility.
+[Offline evidence](docs/spell-resources-verification-2026-11-09.md).
+
 Forever manual exports can now observe an already shown loot window. Stable
 public item IDs and quantities are inspectable separately from owned inventory;
 unreadable and non-item slots remain explicit. No looting or rolling is performed.

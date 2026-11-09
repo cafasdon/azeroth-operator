@@ -1,5 +1,10 @@
 # Changelog
 
+- Capture optional stable public spell charges, reported cast counts and cooldown
+  flags, preserving restricted/unknown values as absent. Add bounded row summaries
+  and exact reported-spell-ID action-bar resource references; no timer/GCD reads,
+  recharge inference or casting. Qualify uninstalled 0.44.0-dev package offline.
+
 - Add passive Forever visible-loot-window capture, strict bounded Python/Rust
   readers and an owner-local summary of stable item quantities. Preserve unknown
   slots, omit names/links/source identities and exclude displayed loot from owned

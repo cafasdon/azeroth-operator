@@ -2605,6 +2605,35 @@ pub fn action_bar_spellbook(
         }).collect::<BTreeMap<_, _>>()
     });
     review["matched_spellbook_flags_by_action_id"] = json!(matches);
+    if book.is_some_and(|book| {
+        book.values().any(|row| {
+            ["charge_count", "reported_cast_count", "cooldown_state"]
+                .iter()
+                .any(|field| row.get(*field).is_some())
+        })
+    }) {
+        // Resource getters query the reported spell ID. A base/override alias
+        // alone is insufficient to attach those observations to an action.
+        let resources = book.zip(action_slots).map(|(book, actions)| {
+            let mut by_id: BTreeMap<u64, Vec<Value>> = actions.values()
+                .filter(|row| row["kind"] == "spell")
+                .filter_map(|row| Some((row["id"].as_u64()?, Vec::new())))
+                .collect();
+            for (slot, row) in book {
+                if let Some(entries) = row["spell_id"].as_u64().and_then(|id| by_id.get_mut(&id)) {
+                    entries.push(json!({"spellbook_slot":slot.parse::<u32>().unwrap(),
+                        "base_spell_id":row["base_spell_id"],"queried_spell_id":row["spell_id"],
+                        "charge_count":row.get("charge_count"),"reported_cast_count":row.get("reported_cast_count"),
+                        "cooldown_state":row.get("cooldown_state"),"cast_eligibility_verified":false}));
+                }
+            }
+            for entries in by_id.values_mut() {
+                entries.sort_by_key(|row| row["spellbook_slot"].as_u64().unwrap());
+            }
+            by_id
+        });
+        review["matched_spellbook_resources_by_action_id"] = json!(resources);
+    }
     if !include_reverse {
         return review;
     }
@@ -6151,6 +6180,23 @@ pub fn summary(s: &Snapshot) -> Value {
             "unusable_rows":rows.values().filter(|row|row["usability"]["usable"]==false).count(),
             "insufficient_power_rows":rows.values().filter(|row|row["usability"]["insufficient_power"]==true).count(),
             "cast_eligibility_verified":false})
+    }).unwrap_or(Value::Null);
+    summary["spellbook_resource_observations"] = s.sections.get("spellbook").map(|book| {
+        let rows = book["entries"].as_object().unwrap();
+        let charges = rows.values().filter(|row| row.get("charge_count").is_some()).count();
+        let casts = rows.values().filter(|row| row.get("reported_cast_count").is_some()).count();
+        let cooldowns = rows.values().filter(|row| row.get("cooldown_state").is_some()).count();
+        json!({"coverage":book["coverage"],"observed_rows":rows.len(),
+            "known_charge_rows":charges,"unknown_charge_rows":rows.len()-charges,
+            "positive_charge_rows":rows.values().filter(|row|row["charge_count"]["current"].as_u64().is_some_and(|n|n>0)).count(),
+            "zero_charge_rows":rows.values().filter(|row|row["charge_count"]["current"].as_u64()==Some(0)).count(),
+            "known_reported_cast_count_rows":casts,"unknown_reported_cast_count_rows":rows.len()-casts,
+            "positive_reported_cast_count_rows":rows.values().filter(|row|row["reported_cast_count"].as_u64().is_some_and(|n|n>0)).count(),
+            "zero_reported_cast_count_rows":rows.values().filter(|row|row["reported_cast_count"].as_u64()==Some(0)).count(),
+            "known_cooldown_state_rows":cooldowns,"unknown_cooldown_state_rows":rows.len()-cooldowns,
+            "active_cooldown_rows":rows.values().filter(|row|row["cooldown_state"]["active"]==true).count(),
+            "enabled_cooldown_rows":rows.values().filter(|row|row["cooldown_state"]["enabled"]==true).count(),
+            "cast_eligibility_verified":false,"live":false})
     }).unwrap_or(Value::Null);
     summary["captured_vendor_price_values"] = json!(["equipment","bags","character_bank","account_bank"].into_iter().map(|storage| {
         let value=s.sections.get(storage).map(|section| {

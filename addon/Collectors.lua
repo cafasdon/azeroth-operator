@@ -2456,6 +2456,61 @@ AO.collectors.spellbook = function()
     assert(questRewardInteger(bank,0,4294967295) and questRewardInteger(spellType,0,4294967295), "Spellbook API unavailable")
     local count=api.GetNumSpellBookSkillLines()
     assert(questRewardInteger(count,0,64), "Invalid spellbook skill line count")
+    -- Project only public primitive observations; timers and GCD state are not read.
+    local function resourceGetter(name,id)
+        local spells=C_Spell
+        assert(questRewardAccessible(spells) and type(spells)=="table", "Spell resource API unavailable")
+        local getter=spells[name]
+        assert(questRewardAccessible(getter) and type(getter)=="function", "Spell resource getter unavailable")
+        local value=getter(id)
+        assert(questRewardAccessible(value), "Restricted spell resource")
+        return value
+    end
+    local function readCharges(id)
+        local value=resourceGetter("GetSpellCharges",id)
+        assert(type(value)=="table", "Spell charges unavailable")
+        local current,maximum=value.currentCharges,value.maxCharges
+        assert(questRewardInteger(current,0,4294967295) and questRewardInteger(maximum,1,4294967295)
+            and current<=maximum, "Invalid spell charges")
+        return {current=current,maximum=maximum}
+    end
+    local function readCastCount(id)
+        local value=resourceGetter("GetSpellCastCount",id)
+        assert(questRewardInteger(value,0,4294967295), "Spell cast count unavailable")
+        return value
+    end
+    local function readCooldown(id)
+        local value=resourceGetter("GetSpellCooldown",id)
+        assert(type(value)=="table", "Spell cooldown state unavailable")
+        local enabled,active=value.isEnabled,value.isActive
+        assert(questRewardAccessible(enabled) and type(enabled)=="boolean"
+            and questRewardAccessible(active) and type(active)=="boolean", "Invalid spell cooldown state")
+        return {enabled=enabled,active=active}
+    end
+    local function resources(row,slot)
+        local chargesOk,charges=pcall(readCharges,row.spell_id)
+        local chargesAgain,chargesNext=pcall(readCharges,row.spell_id)
+        local castsOk,casts=pcall(readCastCount,row.spell_id)
+        local castsAgain,castsNext=pcall(readCastCount,row.spell_id)
+        local cooldownOk,cooldown=pcall(readCooldown,row.spell_id)
+        local cooldownAgain,cooldownNext=pcall(readCooldown,row.spell_id)
+        local identityOk,unchanged=pcall(function()
+            local getter=api.GetSpellBookItemInfo
+            assert(questRewardAccessible(getter) and type(getter)=="function", "Spellbook recheck unavailable")
+            local item=getter(slot,bank)
+            assert(questRewardAccessible(item) and type(item)=="table", "Spellbook recheck unavailable")
+            local kind,action,id=item.itemType,item.actionID,item.spellID
+            return questRewardInteger(kind,0,4294967295) and questRewardInteger(action,1,4294967295)
+                and questRewardInteger(id,1,4294967295) and kind==spellType
+                and action==row.base_spell_id and id==row.spell_id
+        end)
+        if not identityOk or not unchanged then return end
+        if chargesOk and chargesAgain and charges.current==chargesNext.current
+            and charges.maximum==chargesNext.maximum then row.charge_count=charges end
+        if castsOk and castsAgain and casts==castsNext then row.reported_cast_count=casts end
+        if cooldownOk and cooldownAgain and cooldown.enabled==cooldownNext.enabled
+            and cooldown.active==cooldownNext.active then row.cooldown_state=cooldown end
+    end
     local entries,visited,total={},{},0
     for line=1,count do
         local skill=api.GetSpellBookSkillLineInfo(line)
@@ -2506,6 +2561,7 @@ AO.collectors.spellbook = function()
                                 and first.insufficient_power==second.insufficient_power then row.usability=first end
                         end
                     end
+                    if AO.family=="forever" then resources(row,slot) end
                     entries[tostring(slot)]=row
                 end
             end
