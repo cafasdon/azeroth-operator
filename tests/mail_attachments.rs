@@ -70,7 +70,7 @@ fn mail_capture_is_idle_partial_and_content_free() -> Result<(), Box<dyn std::er
     assert_eq!(
         azeroth_operator::analysis::summary(&saved)["mail_attachment_counts"],
         serde_json::json!({
-        "loaded_messages":2,"total_messages":5,"observed_slots":3,"item_slots":1,"currency_slots":1,"unknown_slots":1})
+        "loaded_messages":2,"total_messages":5,"unloaded_messages":3,"observed_slots":3,"item_slots":1,"currency_slots":1,"unknown_slots":1})
     );
     for mode in [
         "hidden",

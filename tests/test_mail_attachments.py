@@ -111,6 +111,9 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError)
                         summary=json.loads(response.content[0].text)['mail_attachment_counts']
                         self.assertEqual(summary['observed_slots'] if summary else None,count)
+                        if summary:
+                            self.assertEqual(summary['unloaded_messages'],
+                                summary['total_messages']-summary['loaded_messages'])
                     response=await session.call_tool('find_snapshot_item',{'snapshot_id':key,'item_id':720})
                     self.assertFalse(response.isError)
                     self.assertEqual(json.loads(response.content[0].text)['matched_locations'],0)

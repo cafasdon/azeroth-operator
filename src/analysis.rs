@@ -3823,6 +3823,10 @@ fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
     (totals, unknown)
 }
 
+fn unloaded_mail_messages(mail: &Value) -> u64 {
+    mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
+}
+
 fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
     let (old, old_unknown) = mail_attachment_totals(before);
     let (new, new_unknown) = mail_attachment_totals(after);
@@ -3847,8 +3851,8 @@ fn compare_mail_attachments(before: &Value, after: &Value) -> Value {
         "deliveries_or_retrievals":"unverified",
         "before_loaded_messages":before["loaded_messages"],"after_loaded_messages":after["loaded_messages"],
         "before_total_messages":before["total_messages"],"after_total_messages":after["total_messages"],
-        "before_unloaded_messages":before["total_messages"].as_u64().unwrap()-before["loaded_messages"].as_u64().unwrap(),
-        "after_unloaded_messages":after["total_messages"].as_u64().unwrap()-after["loaded_messages"].as_u64().unwrap(),
+        "before_unloaded_messages":unloaded_mail_messages(before),
+        "after_unloaded_messages":unloaded_mail_messages(after),
         "before_unknown_attachment_slots":old_unknown,"after_unknown_attachment_slots":new_unknown,
         "observed_only_before":only_before,"observed_only_after":only_after,"shared_observation_changes":changes})
 }
@@ -7200,6 +7204,7 @@ pub fn summary(s: &Snapshot) -> Value {
         let rows: Vec<_> = mail["messages"].as_object().unwrap().values()
             .flat_map(|attachments| attachments.as_object().unwrap().values()).collect();
         json!({"loaded_messages":mail["loaded_messages"],"total_messages":mail["total_messages"],
+            "unloaded_messages":unloaded_mail_messages(mail),
             "observed_slots":rows.len(),"item_slots":rows.iter().filter(|row| row["kind"]=="item").count(),
             "currency_slots":rows.iter().filter(|row| row["kind"]=="currency").count(),
             "unknown_slots":rows.iter().filter(|row| row["kind"]=="unknown").count()})
