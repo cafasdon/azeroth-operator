@@ -549,6 +549,10 @@ Visible local profession capture can retain stable reported known spell IDs
 without filter changes. Exact crafted-source IDs can support local learned-output
 searches; conflicts stay unknown. The spell report does not establish complete
 recipe coverage, reagent availability or current craftability.
+Inspect `profession_spells` with `profession_spell_id` for an exact spell ID.
+The lookup identifies the captured profession and reports true for a visible
+ID, false for an ID absent from a recorded set and null when the set is
+unavailable. The original capture remains in the response.
 [Offline evidence](../../docs/profession-spells-verification-2026-11-08.md).
 
 Manual player-resource observations retain readable stable health and primary

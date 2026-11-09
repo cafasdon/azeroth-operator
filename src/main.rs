@@ -62,6 +62,8 @@ struct Inspect {
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
+    /// Check one exact spell ID against the saved Forever profession_spells observation.
+    profession_spell_id: Option<std::num::NonZeroU32>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
     bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
     /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
@@ -1958,6 +1960,13 @@ impl Operator {
                 "Trade offer review needs the player_trade_offer section and one to 64 distinct positive item IDs and quantities",
             )]);
         }
+        if args.profession_spell_id.is_some()
+            && args.section.as_deref() != Some("profession_spells")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Profession spell lookup requires the profession_spells section",
+            )]);
+        }
         if args.buyback_wallet_reserve_copper.is_some() && args.buyback_slots.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Buyback reserve requires selected buyback slots",
@@ -2514,6 +2523,21 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(spell_id) = args.profession_spell_id {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Profession spell lookup requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let data = &value["data"];
+                    let observed = data["entries"]
+                        .as_object()
+                        .map(|entries| entries.contains_key(&spell_id.to_string()));
+                    value["profession_spell_lookup"] = serde_json::json!({
+                        "spell_id": spell_id, "profession_id": data["profession_id"],
+                        "reported_in_capture": observed, "current_knowledge_verified": false,
+                    });
+                }
                 if let Some(requirements) = args.trade_offer_requirements.as_ref() {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

@@ -37,6 +37,22 @@ class ObservationComparisonTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    missing = deepcopy(base)
+                    missing['sections'].pop('profession_spells')
+                    for key, spell, observed in [(old, 10, True), (old, 1, False),
+                                                  (store.ingest(missing), 10, None)]:
+                        response = await session.call_tool('inspect_snapshot', {
+                            'snapshot_id': key, 'section': 'profession_spells', 'profession_spell_id': spell})
+                        self.assertFalse(response.isError, response)
+                        report = json.loads(response.content[0].text)
+                        self.assertEqual(report['profession_spell_lookup'], {
+                            'spell_id': spell, 'profession_id': 164 if observed is not None else None,
+                            'reported_in_capture': observed, 'current_knowledge_verified': False})
+                        self.assertEqual(report['data'], base['sections']['profession_spells']
+                                         if observed is not None else None)
+                    wrong_section = await session.call_tool('inspect_snapshot', {
+                        'snapshot_id': old, 'section': 'equipment', 'profession_spell_id': 10})
+                    self.assertTrue(wrong_section.isError)
                     async def compare(a=old, b=new, **options):
                         response = await session.call_tool('compare_snapshots', {'before_id': a, 'after_id': b, **options})
                         self.assertFalse(response.isError, response)

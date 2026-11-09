@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up an exact spell ID in a saved Forever profession observation.
+
 - Report shared spell IDs when comparing two saved Forever observations of the same profession.
 
 - Compare saved Forever party, raid and own-player leadership flags by group category.
