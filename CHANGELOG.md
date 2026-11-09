@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare direct reagent requirements for alternative saved Forever recipe producers.
+
 - Compare saved yield and charge evidence when a Forever reagent has multiple captured producers.
 
 - Page through saved Forever reagent-chain bank withdrawal locations.

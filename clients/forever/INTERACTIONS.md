@@ -300,8 +300,11 @@ When several saved recipes could produce the same reagent, the chain reports
 the uncovered quantity and estimates for up to 20 candidate recipes. It
 shows crafts needed at the captured minimum yield, whether that fits the
 step limit, and whether the raw saved charge count covers that request.
-These estimates do not deduct earlier charge usage or check materials and
-conditions. An explicit producer choice is still required.
+Candidates within the step limit also show gross direct reagent quantities.
+Those quantities exclude nested recipes and do not deduct stock. They are
+null when the craft count is unknown or exceeds the step limit. Charge
+estimates do not deduct earlier usage. An explicit producer choice is
+still required.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

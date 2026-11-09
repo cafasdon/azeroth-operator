@@ -1253,9 +1253,21 @@ impl RecipeChainDraft<'_> {
                             let crafts =
                                 minimum.map(|yield_per_craft| deficit.div_ceil(yield_per_craft));
                             let charges = row["cooldown"]["charges"].as_u64();
+                            let direct_reagents =
+                                crafts.filter(|count| *count <= 1000).and_then(|count| {
+                                    row["reagents"].as_object().map(|reagents| {
+                                        reagents
+                                            .iter()
+                                            .map(|(item_id, quantity)| {
+                                                (item_id, quantity.as_u64().unwrap() * count)
+                                            })
+                                            .collect::<BTreeMap<_, _>>()
+                                    })
+                                });
                             json!({"recipe_id":id,"reported_minimum_output_per_craft":minimum,
                             "crafts_for_current_deficit":crafts,
                             "fits_step_craft_limit":crafts.map(|count| count <= 1000),
+                            "direct_reagents_for_current_deficit":direct_reagents,
                             "captured_charges":charges,
                             "captured_charges_cover_current_deficit":crafts.zip(charges)
                                 .map(|(count, available)| count <= available)})

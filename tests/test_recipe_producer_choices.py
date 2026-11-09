@@ -61,8 +61,9 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(default['blocked_reason']['candidate_estimates'], [
                         {'recipe_id':id,'reported_minimum_output_per_craft':minimum,
                          'crafts_for_current_deficit':crafts,'fits_step_craft_limit':True,
+                         'direct_reagents_for_current_deficit':reagents,
                          'captured_charges':None,'captured_charges_cover_current_deficit':None}
-                        for id,minimum,crafts in [(102,2,2),(104,1,3)]])
+                        for id,minimum,crafts,reagents in [(102,2,2,{'10':4}),(104,1,3,{'11':3})]])
                     self.assertEqual(default,(await plan(reagent_producer_choices=[]))['reagent_chain'])
                     self.assertEqual(default,(await plan(reagent_producer_choices=None))['reagent_chain'])
                     for chosen,external,crafts in [(102,2,2),(104,0,3)]:
