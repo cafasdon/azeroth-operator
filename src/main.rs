@@ -2721,15 +2721,16 @@ impl Operator {
                     value["trainer_balance_reserve"] = serde_json::json!(reserve);
                 }
                 if filter_trainer {
-                    if let Some(slots) = &args.trainer_service_slots {
-                        value["trainer_missing_requested_slots"] = serde_json::json!(
-                            value["data"]["entries"].as_object().map(|entries| {
-                                slots
-                                    .iter()
-                                    .filter(|slot| !entries.contains_key(&slot.to_string()))
-                                    .collect::<Vec<_>>()
-                            })
-                        );
+                    let missing_slots = args.trainer_service_slots.as_ref().and_then(|slots| {
+                        value["data"]["entries"].as_object().map(|entries| {
+                            slots
+                                .iter()
+                                .filter(|slot| !entries.contains_key(&slot.to_string()))
+                                .collect::<Vec<_>>()
+                        })
+                    });
+                    if args.trainer_service_slots.is_some() {
+                        value["trainer_missing_requested_slots"] = serde_json::json!(missing_slots);
                     }
                     if args.trainer_affordable_only && trainer_balance.is_none() {
                         value["data"] = serde_json::Value::Null;
@@ -2762,6 +2763,21 @@ impl Operator {
                             entries.len()
                         });
                     value["trainer_match_count"] = serde_json::json!(count);
+                    if let Some(slots) = &args.trainer_service_slots {
+                        value["trainer_filtered_requested_slots"] = serde_json::json!(
+                            missing_slots.zip(value["data"]["entries"].as_object()).map(
+                                |(missing, retained)| {
+                                    slots
+                                        .iter()
+                                        .filter(|slot| {
+                                            !missing.contains(slot)
+                                                && !retained.contains_key(&slot.to_string())
+                                        })
+                                        .collect::<Vec<_>>()
+                                }
+                            )
+                        );
+                    }
                 }
                 if args.trainer_wallet_projection {
                     value["trainer_wallet_projection"] =

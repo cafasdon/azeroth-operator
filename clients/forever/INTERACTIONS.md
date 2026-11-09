@@ -17,6 +17,11 @@ fit together after the reserve.
 With `trainer_service_slots`, the after-reserve breakdown also reports how
 many lessons fit in the requested order and identifies the first blocker.
 A slot excluded by the shortlist is reported as `lesson_not_retained`.
+For any explicit slot request, `trainer_filtered_requested_slots` lists
+captured slots excluded by the filters, in request order. Slots absent from
+the capture are reported separately in `trainer_missing_requested_slots`.
+The filtered list is null if the trainer entries or affordability balance
+needed to evaluate the filters are unavailable.
 The ordered result is null if the captured balance cannot cover the reserve.
 
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable

@@ -334,6 +334,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "slot": 5, "reason": "insufficient_balance", "additional_balance_needed": 5,
                             },
                         })
+                        filtered_order = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "trainer_services",
+                            "trainer_service_slots": [5, 99, 1, 2],
+                            "trainer_service_status": "available", "trainer_max_price_copper": 10,
+                        })
+                        self.assertFalse(filtered_order.isError, filtered_order)
+                        filtered = json.loads(filtered_order.content[0].text)
+                        self.assertEqual(filtered["trainer_missing_requested_slots"], [99])
+                        self.assertEqual(filtered["trainer_filtered_requested_slots"], [5, 2])
+                        self.assertEqual(filtered["trainer_match_count"], 1)
                         ordered_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 2], "trainer_wallet_projection": True,

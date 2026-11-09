@@ -1,5 +1,7 @@
 # Changelog
 
+- Distinguish filtered Forever trainer lesson slots from slots missing in the saved capture.
+
 - Show how far an ordered Forever trainer lesson plan gets after reserving part of the saved balance.
 
 - Show a separate after-reserve budget in saved Forever trainer projections.
