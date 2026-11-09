@@ -3031,3 +3031,8 @@ Both estimates also show a separate scenario that assumes incoming items
 can merge into all recorded stacks of the same base ID. This uses supplied
 limits and observed counts. Item variants and native merge compatibility
 remain unverified. The original new-stack estimate is still reported.
+
+Restocking merchant quotes include per-item counts of sold-out,
+extended-cost, unlimited copper-only and finite copper-only offer slots.
+Finite stock quantities remain unverified, so these rows explain a quote gap
+without treating finite offers as unlimited.

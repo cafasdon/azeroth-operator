@@ -62,6 +62,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             merchant_key=store.ingest(merchant)
             bundled_merchant = deepcopy(merchant)
             bundled_merchant['sections']['merchant_stock']['2']['bundle_size'] = 3
+            for slot, available, extended in [(3,1,False),(4,0,True),(5,-1,True)]:
+                bundled_merchant['sections']['merchant_stock'][str(slot)] = {
+                    **bundled_merchant['sections']['merchant_stock']['2'],
+                    'available':available,'extended_cost':extended}
             bundled_merchant_key = store.ingest(bundled_merchant)
             retail = store.ingest(fixture())
             tied = deepcopy(changed)
@@ -211,12 +215,17 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(bag_quote['copper_only_bundle_mix_total'],2)
                     self.assertIs(bag_quote['copper_only_bundle_mix_affordable'],True)
                     self.assertIs(bag_quote['purchase_eligibility_verified'],False)
-                    self.assertEqual(bag_quote['reagents'],residual['reagents'])
+                    self.assertEqual([{k:v for k,v in row.items() if k != 'captured_offer_coverage'}
+                                      for row in bag_quote['reagents']],residual['reagents'])
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},
                                                     {'item_id':858,'maximum_stack':2}]}
                     bundled = await query(**{**with_limits,
                         'bag_restock_merchant_snapshot_id':bundled_merchant_key})
+                    coverage = bundled['bag_restock_merchant_quote']['reagents'][0]['captured_offer_coverage']
+                    self.assertEqual(coverage, {'sold_out_slots':1,'in_stock_extended_cost_slots':1,
+                        'unlimited_copper_only_slots':1,'finite_copper_only_slots':1,
+                        'finite_stock_quantity_verified':False})
                     self.assertEqual(bundled['bag_restock_new_stack_space']['new_stack_slots'],2)
                     estimated = bundled['bag_restock_quoted_bundle_stack_space']
                     self.assertEqual(estimated['new_stack_slots'],3)

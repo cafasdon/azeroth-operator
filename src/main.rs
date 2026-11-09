@@ -3198,6 +3198,9 @@ impl Operator {
                             })
                             .unwrap_or(serde_json::Value::Null);
                         if quote.is_object() {
+                            azeroth_operator::analysis::restock_merchant_offer_coverage(
+                                &mut quote, &merchant,
+                            );
                             quote["merchant_snapshot_id"] = serde_json::json!(id);
                             quote["inventory_captured_at"] =
                                 serde_json::json!(snapshot.captured_at);

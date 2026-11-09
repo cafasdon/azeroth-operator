@@ -7293,6 +7293,44 @@ pub fn material_merchant_plan(
     plan
 }
 
+/// Explain why captured merchant rows may be absent from a copper-only restocking quote.
+pub fn restock_merchant_offer_coverage(quote: &mut Value, merchant: &Snapshot) {
+    let Some(offers) = merchant
+        .sections
+        .get("merchant_stock")
+        .and_then(Value::as_object)
+    else {
+        return;
+    };
+    let mut by_item = BTreeMap::<u64, [usize; 4]>::new();
+    for row in offers.values() {
+        let Some(item_id) = row["item_id"].as_u64() else {
+            continue;
+        };
+        let counts = by_item.entry(item_id).or_default();
+        match row["available"].as_i64() {
+            Some(0) => counts[0] += 1,
+            _ if row["extended_cost"] == true => counts[1] += 1,
+            Some(-1) => counts[2] += 1,
+            Some(1..) => counts[3] += 1,
+            _ => {}
+        }
+    }
+    if let Some(reagents) = quote["reagents"].as_array_mut() {
+        for reagent in reagents {
+            let [sold_out, extended, unlimited, finite] = reagent["item_id"]
+                .as_u64()
+                .and_then(|id| by_item.get(&id).copied())
+                .unwrap_or_default();
+            reagent["captured_offer_coverage"] = json!({
+                "sold_out_slots":sold_out,"in_stock_extended_cost_slots":extended,
+                "unlimited_copper_only_slots":unlimited,"finite_copper_only_slots":finite,
+                "finite_stock_quantity_verified":false,
+            });
+        }
+    }
+}
+
 /// Join historical owner-local provider references to already-net chain leaves.
 pub fn reagent_chain_captured_sources(
     chain: &Value,

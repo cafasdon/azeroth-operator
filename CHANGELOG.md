@@ -1,5 +1,7 @@
 # Changelog
 
+- Explain finite, sold-out and extended-cost offers in saved Forever restocking quotes.
+
 - Show hypothetical bag space if restocking items can merge into existing carried stacks.
 
 - Estimate bag slots for saved Forever restocking including quoted merchant bundle surplus.
