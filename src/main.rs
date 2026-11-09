@@ -414,6 +414,8 @@ struct List {
     /// Require an offer with unlimited or positive captured stock.
     #[serde(default)]
     merchant_in_stock_only: bool,
+    /// Match unlimited, limited in-stock, or sold-out stock as recorded in the capture.
+    merchant_stock_state: Option<azeroth_operator::MerchantStockState>,
     /// Require a captured offer without extended costs.
     #[serde(default)]
     merchant_copper_only: bool,
@@ -1791,6 +1793,7 @@ impl Operator {
                 merchant_max_total_copper: args.merchant_max_total_copper,
                 merchant_max_price_copper: args.merchant_max_price_copper,
                 merchant_in_stock_only: args.merchant_in_stock_only,
+                merchant_stock_state: args.merchant_stock_state,
                 merchant_copper_only: args.merchant_copper_only,
                 merchant_affordable_only: args.merchant_affordable_only,
                 trainer_service_name: args.trainer_service_name.as_deref(),

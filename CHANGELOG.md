@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever merchant visits by reported unlimited, limited, or sold-out stock.
+
 - Compare projected expiry timestamps for saved Forever quest timers.
 
 - Show the timed quest checklist for filtered saved Forever quest logs.

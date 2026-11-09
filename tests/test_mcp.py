@@ -1683,6 +1683,19 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         in_stock_rows = json.loads(in_stock.content[0].text)["snapshots"]
                         self.assertEqual([row["snapshot_id"] for row in in_stock_rows], [merchant_key])
                         self.assertEqual(in_stock_rows[0]["merchant_match"]["offer_count"], 1)
+                        for state, count in [("unlimited", 1), ("limited_in_stock", 0), ("sold_out", 1)]:
+                            stock = await session.call_tool("list_snapshots", {
+                                "family": "forever", "merchant_item_id": 744, "merchant_stock_state": state,
+                            })
+                            self.assertFalse(stock.isError, stock)
+                            stock_rows = json.loads(stock.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in stock_rows],
+                                             [merchant_key] if count else [])
+                            if count:
+                                self.assertEqual(stock_rows[0]["merchant_match"]["offer_count"], count)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "merchant_stock_state": "sold_out",
+                        })).isError)
                         affordability = {"family": "forever", "merchant_item_id": 744,
                                          "merchant_affordable_only": True}
                         affordable = await session.call_tool("list_snapshots", affordability)

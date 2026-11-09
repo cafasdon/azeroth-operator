@@ -392,6 +392,24 @@ pub struct SavedInstanceFilter {
     pub maximum_update_age_seconds: Option<u32>,
 }
 
+#[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MerchantStockState {
+    Unlimited,
+    LimitedInStock,
+    SoldOut,
+}
+
+impl MerchantStockState {
+    fn matches(self, available: Option<i64>) -> bool {
+        match self {
+            Self::Unlimited => available == Some(-1),
+            Self::LimitedInStock => matches!(available, Some(1..)),
+            Self::SoldOut => available == Some(0),
+        }
+    }
+}
+
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SavedWorldBossFilter {
@@ -1365,6 +1383,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_max_total_copper: Option<u64>,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
+    pub merchant_stock_state: Option<MerchantStockState>,
     pub merchant_copper_only: bool,
     pub merchant_affordable_only: bool,
     pub trainer_service_name: Option<&'a str>,
@@ -1572,6 +1591,7 @@ impl Store {
             merchant_max_total_copper,
             merchant_max_price_copper,
             merchant_in_stock_only,
+            merchant_stock_state,
             merchant_copper_only,
             merchant_affordable_only,
             trainer_service_name,
@@ -1814,7 +1834,10 @@ impl Store {
             "Merchant filtering requires Forever"
         );
         ensure!(
-            !(merchant_in_stock_only || merchant_copper_only || merchant_affordable_only)
+            !(merchant_in_stock_only
+                || merchant_copper_only
+                || merchant_affordable_only
+                || merchant_stock_state.is_some())
                 || filter_merchant,
             "Merchant stock and cost filters require an offer selector"
         );
@@ -2635,6 +2658,8 @@ impl Store {
                                             ))
                                             && (!(merchant_copper_only || merchant_affordable_only)
                                                 || offer["extended_cost"] == false)
+                                            && merchant_stock_state.is_none_or(|state|
+                                                state.matches(offer["available"].as_i64()))
                                             && (!merchant_affordable_only
                                                 || merchant_target_quantity.is_some()
                                                 || wallet
