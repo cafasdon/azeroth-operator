@@ -219,10 +219,15 @@ def merge_reports(reports):
         counts = search.get('candidate_locations_by_slot')
         require(isinstance(counts, dict) and set(counts) == set(slots))
         scan_limit = validate_candidate_scan_limit(search.get('candidate_scan_limit', 256))
+        unresolved_candidates = search.get('unresolved_candidate_locations_by_slot')
+        if 'unresolved_candidate_locations_by_slot' in search:
+            require(isinstance(unresolved_candidates, dict) and set(unresolved_candidates) == set(slots))
         swaps = integer(search.get('maximum_simultaneous_swaps'), 1, 17)
         coefficients = [1] + [0] * min(swaps, len(slots))
         for slot in slots:
             count = integer(counts[slot], 0, scan_limit)
+            if unresolved_candidates is not None:
+                integer(unresolved_candidates[slot], 0, scan_limit - count)
             if include_empty:
                 count += int(empty_choices[slot])
             for size in range(len(coefficients) - 1, 0, -1):
@@ -262,7 +267,8 @@ def merge_reports(reports):
             require(all(empty_choices[slot] is bool(baseline_spec['items'][SIMULATOR_SLOTS.index(slot)])
                 for slot in slots))
         current_signature = json.dumps([current_snapshot, current_scope, current_binding, retains_equipment, slots, counts, swaps,
-            search['candidate_filters'], search.get('inventory_evidence'),mode,include_empty,empty_choices],
+            search['candidate_filters'], search.get('inventory_evidence'),mode,include_empty,empty_choices,
+            unresolved_candidates],
             sort_keys=True, separators=(',', ':'), allow_nan=False)
         if signature is None:
             signature, scope, snapshot = current_signature, current_scope, current_snapshot
@@ -316,6 +322,7 @@ def merge_reports(reports):
             **({'collection_binding_sha256': binding} if binding is not None else {}),
             'snapshot_id': snapshot, 'scope_sha256': scope, 'window_count': len(windows),
             'inventory_evidence':inventory,
+            'unresolved_candidate_locations_by_slot': unresolved_candidates,
             'resolution_accounting': accounting,
             'total_combinations_decimal': str(total), 'covered_coordinate_count': sum(end - start for start, end in intervals),
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,

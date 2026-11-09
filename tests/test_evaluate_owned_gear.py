@@ -199,6 +199,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 filled=deepcopy(value)
                 filled['sections']['equipment']={str(slot):{'item_id':item,'link':f'item:{item}:0:0:0:0:0:0'}
                     for slot,item in [(11,4549),(12,4550)]}
+                filled['sections']['bags']['0']['999'] = {'item_id': 4549, 'count': 1, 'link': 'item:4549'}
                 filled_key=SnapshotStore(base).ingest(filled)
                 protected[base/f'{filled_key}.json']=(base/f'{filled_key}.json').read_bytes()
                 complete=launch(['--snapshot-id',filled_key,'--journal',str(base/'complete.sqlite'),
@@ -206,6 +207,8 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                     '--max-new-runs','128'])
                 self.assertEqual(complete['status'],'reported_space_complete')
                 self.assertTrue(complete['reported_space_results_complete'])
+                self.assertEqual(complete['unresolved_candidate_locations_by_slot']['finger1'], 1)
+                self.assertFalse(complete['best_in_slot_verified'])
                 self.assertEqual(len(complete['requested_slots']),17)
             self.assertTrue(plans.journal_status(journal)['reported_coordinate_coverage_complete'])
         proc=subprocess.run([sys.executable,'-m','tools.evaluate_forever_owned_gear','--help'],cwd=root,

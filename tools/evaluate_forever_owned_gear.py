@@ -143,6 +143,7 @@ async def execute(args):
         'minimum_encounter_improvement':floor,
         'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'inventory_evidence':inventory_evidence,'inventory_evidence_status':inventory_status,
+        'unresolved_candidate_locations_by_slot': progress.get('unresolved_candidate_locations_by_slot') if progress else None,
         'collection': collected, 'simulation': ranked, 'simulation_stop_reason': reason,
         'reported_coordinate_coverage_complete': coordinates,
         'reported_proposals_resolved': resolved, 'all_saved_resolved_results_complete': simulated,

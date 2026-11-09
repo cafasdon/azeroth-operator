@@ -29,7 +29,8 @@ class RankInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             sample = fixture()
             sample['client'] = {'family': 'forever', 'variant': 'live', 'build': '70862', 'interface': 16001}
             sample['sections']['bags'] = {'0': {'1': {'item_id': 4549, 'count': 1, 'link': 'item:4549:0:0:0:0:0:0'},
-                                               '2': {'item_id': 4294967295, 'count': 9}}}
+                                               '2': {'item_id': 4294967295, 'count': 9},
+                                               '3': {'item_id': 4549, 'count': 1, 'link': 'item:4549'}}}
             key = SnapshotStore(Path(folder)).ingest(sample)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder, 'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             with patch.dict(os.environ, env), tempfile.TemporaryFile(mode='w+') as errlog:
@@ -41,6 +42,7 @@ class RankInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(search['requested_slots'], ['finger1', 'finger2'])
                 self.assertEqual(search['candidate_filters'], {'item_ids': [4549], 'storage': 'bags'})
                 self.assertEqual(search['maximum_simultaneous_swaps'], 1)
+                self.assertEqual(search['unresolved_candidate_locations_by_slot'], {'finger1': 1, 'finger2': 1})
                 evidence = search['inventory_evidence']
                 self.assertEqual(evidence['catalogue_unmatched_item_ids'], [4294967295])
                 self.assertEqual(evidence['unavailable_storage_sections'], ['character_bank', 'account_bank'])
@@ -95,6 +97,7 @@ class RankInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(report['mode'], 'plan_only')
             self.assertEqual(report['gear_search']['inventory_evidence'], evidence)
             self.assertEqual(report['gear_search']['snapshot_id'], key)
+            self.assertEqual(report['gear_search']['unresolved_candidate_locations_by_slot'], {'finger1': 1})
             self.assertFalse(report['best_in_slot_verified'])
 
     def test_single_and_bulk_report_keep_evidence_and_deny_absolute_bis(self):

@@ -355,6 +355,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
         drafts = [([], baseline)]
         skipped = []
         options = []
+        unresolved_candidate_locations = {}
         coverage = None
         multi = len(slots) > 1
         for slot in slots:
@@ -365,6 +366,9 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                 candidate_scan_limit=candidate_scan_limit,
             )
             skipped.extend(exclusions)
+            unresolved_candidate_locations[slot] = sum(
+                row['reason'] == 'unresolved_simulator_item' for row in exclusions
+            )
             native_slot = next(native for native,index in PROJECTED_SLOT_INDEX.items() if SIMULATOR_SLOTS[index] == slot)
             empty_choice = ([{'clear_equipment_slot':native_slot}] if include_empty_slots
                 and baseline['checks']['simulator_equipment_spec']['items'][PROJECTED_SLOT_INDEX[native_slot]] else [])
@@ -487,6 +491,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             "inventory_evidence": inventory_evidence,
             "requested_slots": list(slots),
             "candidate_scan_limit": candidate_scan_limit,
+            "unresolved_candidate_locations_by_slot": unresolved_candidate_locations,
             "candidate_filters": {
                 **dict(candidate_filters or {}),
                 **({"item_ids": list(item_ids)} if item_ids else {}),

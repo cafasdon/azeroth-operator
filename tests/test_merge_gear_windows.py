@@ -35,6 +35,19 @@ def report(offset, keys, limit=4):
 
 
 class MergeGearWindowTests(unittest.TestCase):
+    def test_unresolved_candidates_are_per_pool_and_legacy_is_unknown(self):
+        pages = [report(0, ['b' * 64]), report(4, ['b' * 64])]
+        field = 'unresolved_candidate_locations_by_slot'
+        self.assertIsNone(merge_reports(pages)[field])
+        for page in pages:
+            page['gear_search'][field] = {'finger1': 1, 'finger2': 0}
+        self.assertEqual(merge_reports(pages)[field], {'finger1': 1, 'finger2': 0})
+        for malformed in [None, {}, {'finger1': True, 'finger2': 0}, {'finger1': 255, 'finger2': 0}, {'finger1': 0, 'finger2': 0}]:
+            bad = deepcopy(pages[1])
+            bad['gear_search'][field] = malformed
+            with self.assertRaises(ValueError):
+                merge_reports([pages[0], bad])
+
     def test_large_window_pool_requires_matching_explicit_scan_budget(self):
         first = report(0, ['b' * 64])
         search = first['gear_search']

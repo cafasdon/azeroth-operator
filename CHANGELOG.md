@@ -1,5 +1,9 @@
 # Changelog
 
+- Report per-slot candidate locations omitted before gear enumeration because
+  their simulator item could not be resolved. Carry the counts through saved
+  window merges, journal status and owned-gear evaluation.
+
 - Allow gear-window merges and journals to use each report's explicit candidate
   scan budget. Older reports retain the 256-location default.
 

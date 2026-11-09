@@ -93,6 +93,21 @@ availability, present craftability and complete profession coverage remain open.
 
 ## Evidence boundaries
 
+Owned-gear reports now include `unresolved_candidate_locations_by_slot` for
+locations that reached item resolution and were omitted before enumeration.
+One physical item may appear under multiple eligible slots. The merge and journal
+report the pool counts once across windows. Older reports show `null` for this
+evidence. Coordinate completion applies to the enumerated pool, with candidate
+resolution gaps and unavailable inventory reported separately.
+
+Offline verification passed 13 tests across rank collection, window merge,
+page reuse and owned evaluation. The local MCP fixture exercised a known ring
+with an incomplete link through the final evaluator. Both independent review
+lenses checked legacy handling, scope agreement and malformed counts. Jev 1.14.0
+advisory `5f1b606447d95c8f1e4b100def27cc3f1eced7613f63df785b6e7ca4a87539b0`
+was inconclusive at .11 confidence, with 418 input and 53 output tokens in .284s.
+Integration rests on the direct tests and independent reviews.
+
 The audit inspected the current section registry, MCP routes, selection
 documentation, catalogue legality checks and simulation research record. It
 does not retest their historical results or assert that every callable route is
