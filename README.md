@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Skill capture now guards restricted API values and compares two bounded row
+projections, rejecting observed rank, identity or metadata changes even when
+the row count stays the same. This remains partial historical capture.
+[Offline evidence](docs/skill-line-capture-verification-2026-11-09.md).
+
 Saved skill-line queries now filter recorded base ranks, caps and points to the
 observed cap, with paged inspection and explicit unknown categories. Historical
 observations do not establish training eligibility or complete skill coverage.

@@ -1,5 +1,9 @@
 # Changelog
 
+- Guard skill-line namespace/getters before use and reject API replacement or
+  differing consecutive row projections. Preserve partial/collapsed coverage
+  and raw bonuses; verify development addon 0.51.0-dev offline without installation.
+
 - Add Forever saved skill-line discovery and paged inspection by ID, category,
   base rank, cap and points to the observed cap. Preserve unknown categories,
   latest-capture selection, owner isolation and raw bonuses; infer no learning

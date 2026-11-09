@@ -2398,29 +2398,58 @@ end
 
 AO.collectors.skill_lines = function()
     local api=C_SkillInfo
-    local count=api.GetNumSkillLines()
-    assert(questRewardInteger(count,1,512), "Skill lines unavailable")
-    local entries={}
-    for index=1,count do
-        local row=api.GetSkillLineInfo(index)
-        assert(questRewardAccessible(row) and type(row)=="table"
-            and questRewardAccessible(row.isHeader) and type(row.isHeader)=="boolean", "Invalid skill line")
-        if not row.isHeader then
-            local id,name,rank,maximum=row.skillID,row.name,row.rank,row.maxRank
-            assert(questRewardInteger(id,1,4294967295) and questRewardAccessible(name) and type(name)=="string"
-                and #name>0 and #name<=256 and questRewardInteger(maximum,0,4294967295)
-                and questRewardInteger(rank,0,maximum), "Invalid skill rank")
-            local key=tostring(id)
-            assert(not entries[key], "Duplicate skill line")
-            local entry={name=name,rank=rank,max_rank=maximum}
-            if questRewardInteger(row.skillLineCategoryID,1,4294967295) then entry.category_id=row.skillLineCategoryID end
-            if questRewardInteger(row.modifier,-2147483648,2147483647) then entry.modifier=row.modifier end
-            if questRewardInteger(row.tempPoints,-2147483648,2147483647) then entry.temporary_points=row.tempPoints end
-            entries[key]=entry
-        end
+    assert(questRewardAccessible(api) and type(api)=="table", "Skill API unavailable")
+    local getCount,getRow=api.GetNumSkillLines,api.GetSkillLineInfo
+    assert(questRewardAccessible(getCount) and type(getCount)=="function"
+        and questRewardAccessible(getRow) and type(getRow)=="function", "Skill getters unavailable")
+    local function unchanged()
+        local current=C_SkillInfo
+        assert(questRewardAccessible(current) and type(current)=="table" and current==api
+            and questRewardAccessible(current.GetNumSkillLines) and current.GetNumSkillLines==getCount
+            and questRewardAccessible(current.GetSkillLineInfo) and current.GetSkillLineInfo==getRow,
+            "Skill API changed")
     end
-    assert(questRewardInteger(api.GetNumSkillLines(),count,count), "Skill lines changed")
-    return entries
+    local count=getCount()
+    assert(questRewardInteger(count,1,512), "Skill lines unavailable")
+    local function read()
+        local entries,order={},{}
+        for index=1,count do
+            local row=getRow(index)
+            assert(questRewardAccessible(row) and type(row)=="table"
+                and questRewardAccessible(row.isHeader) and type(row.isHeader)=="boolean", "Invalid skill line")
+            if not row.isHeader then
+                local id,name,rank,maximum=row.skillID,row.name,row.rank,row.maxRank
+                assert(questRewardInteger(id,1,4294967295) and questRewardAccessible(name) and type(name)=="string"
+                    and #name>0 and #name<=256 and questRewardInteger(maximum,0,4294967295)
+                    and questRewardInteger(rank,0,maximum), "Invalid skill rank")
+                local key=tostring(id)
+                assert(not entries[key], "Duplicate skill line")
+                local entry={name=name,rank=rank,max_rank=maximum}
+                if questRewardInteger(row.skillLineCategoryID,1,4294967295) then entry.category_id=row.skillLineCategoryID end
+                if questRewardInteger(row.modifier,-2147483648,2147483647) then entry.modifier=row.modifier end
+                if questRewardInteger(row.tempPoints,-2147483648,2147483647) then entry.temporary_points=row.tempPoints end
+                entries[key]=entry
+                order[index]=key
+            else
+                order[index]=false
+            end
+        end
+        assert(questRewardInteger(getCount(),count,count), "Skill lines changed")
+        unchanged()
+        return entries,order
+    end
+    local first,firstOrder=read()
+    local second,secondOrder=read()
+    for index=1,count do
+        assert(firstOrder[index]==secondOrder[index], "Skill rows changed")
+    end
+    for id,row in pairs(first) do
+        local other=second[id]
+        assert(other, "Skill rows changed")
+        for field,value in pairs(row) do assert(other[field]==value, "Skill details changed") end
+        for field,value in pairs(other) do assert(row[field]==value, "Skill details changed") end
+    end
+    return first
 end
 
 local function petCarriedFood(api,bags)

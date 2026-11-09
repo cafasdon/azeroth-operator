@@ -2183,3 +2183,13 @@ to base rank. Missing sections and known empty sections stay distinct.
 Latest-per-character selection, when requested, precedes feature filtering.
 No complete coverage, learning state, training eligibility, simulator change or
 live action is inferred. Offline source only; installation/testing deferred.
+
+## Skill capture stability (2026-11-09)
+
+The source collector guards the skill API namespace and getters before use,
+then requires two matching bounded projections of reported rows. Changes to
+row order/header status, IDs, base ranks, caps or emitted optional metadata
+make the section unavailable. Required read errors remain section-local through
+Core. No skill headers are expanded, no training occurs, and agreement between
+two observations does not prove atomic state, complete skills or native support.
+Development addon 0.51.0-dev is packaged and verified offline, not installed.
