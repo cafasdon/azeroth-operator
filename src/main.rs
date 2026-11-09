@@ -156,6 +156,8 @@ struct Inspect {
     quest_item_catalogue: bool,
     /// Compare user-supplied quest item requirements with one saved storage section.
     quest_inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
+    /// Quote quest inventory shortfalls using this saved same-character merchant visit.
+    quest_inventory_merchant_snapshot_id: Option<String>,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2522,6 +2524,13 @@ impl Operator {
                 "Quest item catalogue requires a quest ID and the quests section",
             )]);
         }
+        if args.quest_inventory_merchant_snapshot_id.is_some()
+            && args.quest_inventory_requirements.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A quest merchant quote requires quest inventory requirements",
+            )]);
+        }
         if let Some(requirements) = &args.quest_inventory_requirements
             && (args.quest_id.is_none()
                 || args.section.as_deref() != Some("quests")
@@ -3435,6 +3444,36 @@ impl Operator {
                                 .zip(review_snapshot.as_ref())
                                 .map(|(_, snapshot)| requirements.review_observed_stock(snapshot))
                         );
+                    }
+                    if let Some(merchant_id) = &args.quest_inventory_merchant_snapshot_id {
+                        let snapshot = review_snapshot.as_ref().unwrap();
+                        let merchant = self.store.read(merchant_id).and_then(|merchant| {
+                            azeroth_operator::analysis::ensure_same_character_and_client(
+                                snapshot, &merchant,
+                            )?;
+                            Ok(merchant)
+                        });
+                        let Ok(merchant) = merchant else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Quest merchant quotes require a compatible saved merchant snapshot",
+                            )]);
+                        };
+                        let mut quote = value["quest_inventory_review"]["items"]
+                            .as_array()
+                            .map(|rows| {
+                                azeroth_operator::analysis::material_merchant_plan(
+                                    rows, &merchant, snapshot,
+                                )
+                            })
+                            .unwrap_or(serde_json::Value::Null);
+                        if quote.is_object() {
+                            quote["merchant_snapshot_id"] = serde_json::json!(merchant_id);
+                            quote["inventory_captured_at"] =
+                                serde_json::json!(snapshot.captured_at);
+                            quote["purchase_eligibility_verified"] = serde_json::json!(false);
+                            quote["quest_item_binding_verified"] = serde_json::json!(false);
+                        }
+                        value["quest_inventory_merchant_quote"] = quote;
                     }
                     if args.quest_item_catalogue {
                         let catalogue = self.forever_catalogue.as_deref().and_then(|path| {

@@ -1,5 +1,7 @@
 # Changelog
 
+- Quote saved merchant prices for user-supplied Forever quest item shortfalls.
+
 - Check user-supplied Forever quest item requirements against saved inventory.
 
 - Show saved objective progress totals by type when inspecting a Forever quest.

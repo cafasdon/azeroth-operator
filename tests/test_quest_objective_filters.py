@@ -42,12 +42,18 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             saved['sections']['quests']['7']['item_rewards'] = {'1': {'item_id': 858, 'quantity': 3}}
             saved['sections']['quests']['3']['timer'] = {'remaining_seconds':60,'total_seconds':120}
             saved['sections']['bags']={'0':{'1':{'item_id':118,'count':2},'2':{'item_id':118,'count':1}}}
+            saved['sections']['wallet']={'copper':7}
             key = store.ingest(saved)
             changed=deepcopy(saved)
             changed['sections']['quests']['9']['objectives']['2']=objective(required=1,fulfilled=2)
             changed['captured_at']='2025-01-01T00:00:30Z'
             changed['sections']['quests']['3']['timer']['remaining_seconds']=30
             changed_key=store.ingest(changed)
+            merchant=deepcopy(base)
+            merchant['sections']['merchant_stock']={
+                '1':{'item_id':118,'bundle_size':3,'price_copper':7,'available':-1,'extended_cost':False},
+                '2':{'item_id':858,'bundle_size':1,'price_copper':2,'available':-1,'extended_cost':False}}
+            merchant_key=store.ingest(merchant)
             retail = store.ingest(fixture())
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
@@ -117,6 +123,14 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         {'item_id':118,'required_quantity':5,'observed_quantity':3,'shortfall_vs_observed':2},
                         {'item_id':858,'required_quantity':1,'observed_quantity':0,'shortfall_vs_observed':1}])
                     self.assertIs(reviewed['quest_item_binding_verified'],False)
+                    quote=(await query(quest_id=3,quest_inventory_requirements=requirements,
+                        quest_inventory_merchant_snapshot_id=merchant_key))['quest_inventory_merchant_quote']
+                    self.assertEqual(quote['merchant_snapshot_id'],merchant_key)
+                    self.assertEqual(quote['copper_only_bundle_mix_total'],9)
+                    self.assertIs(quote['copper_only_bundle_mix_affordable'],False)
+                    await query(error=True,quest_id=3,quest_inventory_merchant_snapshot_id=merchant_key)
+                    await query(error=True,quest_id=3,quest_inventory_requirements=requirements,
+                                quest_inventory_merchant_snapshot_id=retail)
                     bank=(await query(quest_id=3,quest_inventory_requirements={
                         **requirements,'storage':'character_bank'}))['quest_inventory_review']
                     self.assertIs(bank['storage_observed'],False)

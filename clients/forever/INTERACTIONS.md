@@ -12,6 +12,9 @@ explicit storage and 1–64 distinct user-supplied item IDs with quantities.
 It checks observed stock and reports shortfalls against those quantities.
 Missing storage gives unknown quantities. The check leaves objective item
 binding and quest readiness unverified.
+Add `quest_inventory_merchant_snapshot_id` to price the shortfalls from a
+saved merchant visit for the same character and client. Quotes use the
+inventory capture's wallet and preserve unknown stock or incomplete prices.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.
