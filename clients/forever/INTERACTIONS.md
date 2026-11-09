@@ -3078,3 +3078,7 @@ wallet data leaves both amounts unknown.
 `bag_restock_wallet_reserve_copper` also works with split planning. The
 travel-adjusted result checks whether purchases and assumed visit costs
 fit after reserving copper. If no visit costs are supplied, it assumes zero.
+
+A complete travel-adjusted plan includes `merchant_visit_checklist`, grouped
+by selected saved visit in request order. Each group lists historical offer
+slots, bundle quantities, purchase subtotal and assumed visit cost.

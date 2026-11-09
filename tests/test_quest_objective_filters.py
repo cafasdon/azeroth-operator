@@ -264,6 +264,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(adjusted['purchase_copper'],purchases)
                         self.assertEqual(adjusted['complete_quote_copper'],total)
                         self.assertEqual(adjusted['assumed_visit_cost_copper'],visit_cost*count)
+                        checklist = adjusted['merchant_visit_checklist']
+                        self.assertEqual(len(checklist),count)
+                        self.assertEqual(sum(visit['purchase_copper'] for visit in checklist),purchases)
+                        self.assertEqual([visit['assumed_visit_cost_copper'] for visit in checklist],[visit_cost]*count)
+                        for visit in checklist:
+                            self.assertEqual(visit['items'],[
+                                {'item_id':row['item_id'],'bundles_by_slot':row['bundle_plan']['bundles_by_slot'],
+                                 'quoted_units':row['bundle_plan']['units'],
+                                 'purchase_copper':row['bundle_plan']['required_copper']}
+                                for row in adjusted['items'] if row['merchant_snapshot_id']==visit['merchant_snapshot_id']])
                         self.assertEqual(adjusted['inventory_wallet_copper'],7)
                         self.assertIsNone(adjusted['remaining_inventory_wallet_copper'])
                         self.assertEqual(adjusted['inventory_wallet_shortfall_copper'],total-7)
@@ -307,6 +317,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         bag_restock_compare_merchant_snapshot_ids=visit_ids,bag_restock_max_merchant_visits=0)
                     self.assertEqual(covered_plan['bag_restock_travel_adjusted_merchant_plan']['visit_count'],0)
                     covered_budget = covered_plan['bag_restock_travel_adjusted_merchant_plan']
+                    self.assertEqual(covered_budget['merchant_visit_checklist'],[])
                     self.assertEqual(covered_budget['remaining_inventory_wallet_copper'],7)
                     self.assertEqual(covered_budget['inventory_wallet_shortfall_copper'],0)
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,

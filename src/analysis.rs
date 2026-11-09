@@ -7352,11 +7352,27 @@ pub fn restock_travel_adjusted_plan(
         }
     }
     let ((total, count, _), purchases, assignments) = best?;
+    let mut by_visit = BTreeMap::<usize, (u64, Vec<Value>)>::new();
+    for &(item, (cost, index, plan)) in &assignments {
+        let (subtotal, lines) = by_visit.entry(index).or_default();
+        *subtotal = subtotal.checked_add(cost)?;
+        lines.push(
+            json!({"item_id":item,"bundles_by_slot":plan["bundles_by_slot"],
+            "quoted_units":plan["units"],"purchase_copper":cost}),
+        );
+    }
+    let checklist: Vec<_> = by_visit
+        .into_iter()
+        .map(|(index, (subtotal, items))| {
+            json!({"merchant_snapshot_id":visit_ids[index],"purchase_copper":subtotal,
+            "assumed_visit_cost_copper":visit_costs[index],"items":items})
+        })
+        .collect();
     Some(json!({
         "items":assignments.into_iter().map(|(item, (_, index, plan))| json!({
             "item_id":item,"merchant_snapshot_id":visit_ids[index],"bundle_plan":plan,
         })).collect::<Vec<_>>(),
-        "visit_count":count,
+        "visit_count":count,"merchant_visit_checklist":checklist,
         "purchase_copper":purchases,"assumed_visit_cost_copper":total-purchases,
         "complete_quote_copper":total,"affordable_from_inventory_wallet":wallet.map(|balance| total <= balance),
         "inventory_wallet_copper":wallet,
