@@ -5,6 +5,9 @@ loot windows. Readable item totals and raw currency totals are separate, and
 money and unreadable slot counts retain each capture's scope. Missing rows
 stay null even when an explicit zero is recorded on the other side. The
 comparison does not identify a shared source or credit inventory or balances.
+Use `list_snapshots` with `loot_observation: {"kind":"unreadable_or_non_item"}`
+to find captures with at least one such slot. Results identify the saved
+slot numbers without assigning items or quantities to them.
 
 Saved profession recipe-view comparisons report changes in the client-reported
 skill-up flag, count and relative difficulty for recipe IDs seen in both

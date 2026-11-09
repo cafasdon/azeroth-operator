@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever loot captures with unreadable or unclassified slots.
+
 - Compare saved Forever loot windows by displayed item quantities, reported currency and slot counts.
 
 - Compare saved Forever recipes by minimum base output per unit of a selected required reagent.

@@ -27,6 +27,8 @@ pub enum LootObservationFilter {
         maximum_quantity: Option<u64>,
     },
     Money {},
+    /// Find captures with at least one unreadable or unclassified loot slot.
+    UnreadableOrNonItem {},
 }
 
 impl LootObservationFilter {
@@ -47,7 +49,7 @@ impl LootObservationFilter {
                     "Loot quantity range reversed"
                 );
             }
-            Self::Money {} => {}
+            Self::Money {} | Self::UnreadableOrNonItem {} => {}
         }
         Ok(())
     }
@@ -93,6 +95,15 @@ impl LootObservationFilter {
                 0,
                 None,
                 "captured_money_slot_presence_only",
+            ),
+            Self::UnreadableOrNonItem {} => (
+                "unreadable_or_non_item",
+                "",
+                None,
+                "",
+                0,
+                None,
+                "captured_unreadable_or_non_item_slot_presence_only",
             ),
         };
         let mut total = 0_u64;

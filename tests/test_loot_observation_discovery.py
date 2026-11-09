@@ -65,6 +65,14 @@ class LootDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         self.assertNotIn(other_key,str(reply))
                         return None if error else json.loads(reply.content[0].text)
                     wanted={'kind':'item','item_id':10,'minimum_quantity':5}
+                    unreadable=await query({'kind':'unreadable_or_non_item'})
+                    self.assertEqual({r['snapshot_id'] for r in unreadable['snapshots']},{keys['mixed'],keys['zero']})
+                    for row in unreadable['snapshots']:
+                        match=row['loot_observation_match']
+                        self.assertIsNone(match['observed_quantity'])
+                        self.assertEqual(match['matching_slot_count'],1)
+                        self.assertTrue(match['additional_matching_rows_unknown'])
+                    await query({'kind':'unreadable_or_non_item','minimum_quantity':0},error=True)
                     history=await query(wanted)
                     self.assertEqual({row['snapshot_id'] for row in history['snapshots']},
                         {keys[name] for name in ['old_missing','old_short','mixed','maximum']})
