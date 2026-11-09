@@ -3,6 +3,9 @@
 Saved pet journal comparisons report how many species were visible in both
 captures and how many of those kept the same observed owned and unowned row
 counts. The overlap describes the saved views, whose filters may differ.
+Species discovery accepts `maximum_owned_rows` and `maximum_unowned_rows`
+alongside the existing minimums. Zero matches an observed zero count for
+that species, while an absent species does not match.
 
 Saved mail attachment comparisons show the unloaded message count on each
 side, separately from unreadable attachment slots in loaded messages.

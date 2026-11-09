@@ -752,8 +752,8 @@ ordering checks apply. See [comparison evidence](../../docs/pet-view-comparison-
 
 Search saved species observations with `list_snapshots.pet_species`, for example
 `{"family":"forever","pet_species":{"species_id":7,"minimum_owned_rows":1},"latest_per_character":true}`.
-Only `species_id` is required. Optional `minimum_owned_rows` and
-`minimum_unowned_rows` are inclusive and must match that same species. An
+Only `species_id` is required. Optional minimum and maximum bounds for
+`owned_rows` and `unowned_rows` are inclusive and must match that same species. An
 observed row is required even at zero thresholds. Bare species queries match
 either ownership state in the filtered view; missing species never match.
 Results include `pet_species_match` with the captured counts, public name and

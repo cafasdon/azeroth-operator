@@ -73,12 +73,22 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
                                 'coverage':'filtered_journal_species','displayed_rows':3,'species_id':species,
                                 **view['entries'][str(species)]})
                     args={'character':value['character'],'pet_species':{'species_id':7}}
+                    for filters,expected in [
+                        ({'species_id':7,'maximum_owned_rows':1},0),
+                        ({'species_id':7,'minimum_owned_rows':2,'maximum_owned_rows':2,'maximum_unowned_rows':0},1),
+                        ({'species_id':8,'maximum_owned_rows':0,'maximum_unowned_rows':1},1),
+                        ({'species_id':9,'maximum_owned_rows':0},0),
+                    ]:
+                        result=await search(character=value['character'],pet_species=filters)
+                        self.assertEqual(len(result['snapshots']),expected)
                     self.assertEqual(len((await search(**args))['snapshots']),1)
                     self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
                     self.assertEqual(len((await search(**args,latest_per_character=True,
                         captured_through='2025-01-01T00:00:00Z'))['snapshots']),1)
                     self.assertTrue(all('pet_species_match' not in row for row in (await search())['snapshots']))
-                    for bad in [{'species_id':0},{'species_id':True},{'species_id':2**32},
+                    for bad in [{'species_id':7,'minimum_owned_rows':2,'maximum_owned_rows':1},
+                        {'species_id':7,'minimum_unowned_rows':2,'maximum_unowned_rows':1},
+                        {'species_id':0},{'species_id':True},{'species_id':2**32},
                         {'species_id':7,'minimum_owned_rows':-1},{'species_id':7,'minimum_unowned_rows':True},
                         {'species_id':7,'minimum_owned_rows':2**32},{'species_id':7,'pet_guid':'private'},{}]:
                         response=await session.call_tool('list_snapshots',{'family':'forever','pet_species':bad})

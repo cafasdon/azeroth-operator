@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet journal species by inclusive ranges of observed owned and unowned rows.
+
 - Show shared species coverage in saved Forever pet journal comparisons.
 
 - Include unloaded inbox message counts in saved Forever crafting plans that show pending reagents.

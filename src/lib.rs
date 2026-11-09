@@ -461,6 +461,10 @@ pub struct PetSpeciesFilter {
     /// Minimum owned rows in the captured filtered view, not the whole account.
     pub minimum_owned_rows: Option<u32>,
     pub minimum_unowned_rows: Option<u32>,
+    /// Maximum owned rows in the captured filtered view.
+    pub maximum_owned_rows: Option<u32>,
+    /// Maximum unowned rows in the captured filtered view.
+    pub maximum_unowned_rows: Option<u32>,
 }
 
 #[derive(Deserialize, Serialize, schemars::JsonSchema)]
@@ -1720,6 +1724,17 @@ impl Store {
         let pet_species_key = pet_species
             .as_ref()
             .map(|filter| filter.species_id.to_string());
+        if let Some(filter) = &pet_species {
+            for (minimum, maximum) in [
+                (filter.minimum_owned_rows, filter.maximum_owned_rows),
+                (filter.minimum_unowned_rows, filter.maximum_unowned_rows),
+            ] {
+                ensure!(
+                    minimum.zip(maximum).is_none_or(|(min, max)| min <= max),
+                    "Pet species row bounds are reversed"
+                );
+            }
+        }
         ensure!(
             active_pet.is_none() || family == Family::Forever,
             "Active-pet filtering requires Forever"
@@ -2165,8 +2180,12 @@ impl Store {
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
                         let view=s.sections.get("pet_collection_view")?;
                         let row=view["entries"].get(key)?;
-                        (filter.minimum_owned_rows.is_none_or(|minimum|row["owned_rows"].as_u64().unwrap()>=u64::from(minimum))
-                            && filter.minimum_unowned_rows.is_none_or(|minimum|row["unowned_rows"].as_u64().unwrap()>=u64::from(minimum)))
+                        let owned = row["owned_rows"].as_u64().unwrap();
+                        let unowned = row["unowned_rows"].as_u64().unwrap();
+                        (filter.minimum_owned_rows.is_none_or(|min| owned >= u64::from(min))
+                            && filter.minimum_unowned_rows.is_none_or(|min| unowned >= u64::from(min))
+                            && filter.maximum_owned_rows.is_none_or(|max| owned <= u64::from(max))
+                            && filter.maximum_unowned_rows.is_none_or(|max| unowned <= u64::from(max)))
                             .then(||json!({"coverage":view["coverage"],"displayed_rows":view["displayed_rows"],
                                 "species_id":filter.species_id,"name":row["name"],
                                 "owned_rows":row["owned_rows"],"unowned_rows":row["unowned_rows"]}))
