@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `compare_snapshots.repair_quote_changes` to compare saved repair-all
+quotes and affordability. The report shows each capture's repair status
+and signed changes in quote, wallet shortfall and copper remaining after
+the quote. Each change requires two known values. A remaining balance
+requires an affordable quote in that capture. Repair events stay unverified.
+
 Use `list_snapshots.merchant_buyback` with an exact `item_id` to find
 saved buyback entries. Optional `minimum_quantity` and
 `maximum_price_copper` are inclusive and apply to the same entry.

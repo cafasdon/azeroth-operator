@@ -80,6 +80,21 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual({row['snapshot_id']:row['repair_quote_match']['wallet_remaining_copper']
                                           for row in listed['snapshots']},expected)
                     self.assertEqual(captured['data'],value['sections']['equipment_durability'])
+                    async def repair_change(before, after):
+                        return (await call('compare_snapshots',before_id=before,after_id=after,
+                            repair_quote_changes=True))['repair_quote_changes']
+                    short_to_funded = await repair_change(budgets[1],budgets[3])
+                    self.assertEqual(short_to_funded['quote_copper_delta'],0)
+                    self.assertEqual(short_to_funded['wallet_shortfall_copper_delta'],-10)
+                    self.assertIsNone(short_to_funded['wallet_remaining_copper_delta'])
+                    self.assertIs(short_to_funded['repair_event_verified'],False)
+                    self.assertEqual((await repair_change(budgets[2],budgets[3]))[
+                        'wallet_remaining_copper_delta'],3)
+                    self.assertIsNone((await repair_change(budgets[0],budgets[3]))[
+                        'wallet_shortfall_copper_delta'])
+                    self.assertIsNone((await repair_change(keys[0],budgets[3]))['quote_copper_delta'])
+                    self.assertNotIn('repair_quote_changes',await call(
+                        'compare_snapshots',before_id=budgets[2],after_id=budgets[3]))
                     for key, maximum, expected in [
                         (keys[0],0,[1]),(keys[0],33,[1]),(keys[0],34,[1,16]),
                         (keys[0],100,[1,5,16]),(keys[1],100,[]),(keys[2],100,None),

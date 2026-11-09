@@ -2823,6 +2823,7 @@ pub struct ComparisonSelectors {
     pub player_aura_changes: bool,
     pub weapon_enchant_changes: bool,
     pub merchant_buyback_changes: bool,
+    pub repair_quote_changes: bool,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
@@ -3230,6 +3231,27 @@ pub fn compare_observations(
             "Merchant buyback comparison requires Forever"
         );
         comparison["merchant_buyback_changes"] = compare_merchant_buyback(before, after);
+    }
+    if selectors.repair_quote_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Repair quote comparison requires Forever"
+        );
+        let old = repair_status(before);
+        let new = repair_status(after);
+        let delta = |field: &str| {
+            old[field]
+                .as_i64()
+                .zip(new[field].as_i64())
+                .map(|(a, b)| b - a)
+        };
+        comparison["repair_quote_changes"] = json!({
+            "before":old,"after":new,
+            "quote_copper_delta":delta("repair_all_quote_copper"),
+            "wallet_shortfall_copper_delta":delta("wallet_shortfall_copper"),
+            "wallet_remaining_copper_delta":delta("wallet_remaining_after_saved_repair_quote_copper"),
+            "repair_event_verified":false,"live":false
+        });
     }
     if selectors.selected_recipe_changes {
         ensure!(

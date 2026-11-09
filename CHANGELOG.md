@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever repair quotes and wallet shortfalls across captures.
+
 - Compare saved Forever merchant buyback entries independently of slot order.
 
 - Find saved Forever buyback quotes that fit the captured wallet after reserving copper.
