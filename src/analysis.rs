@@ -2623,6 +2623,13 @@ pub fn compare_observations(
                 };
                 let old = observed(before);
                 let new = observed(after);
+                let flag_changed = |field: &str| {
+                    old.as_ref()?
+                        .get(field)?
+                        .as_bool()
+                        .zip(new.as_ref()?.get(field)?.as_bool())
+                        .map(|(a, b)| a != b)
+                };
                 let delta = old.as_ref().zip(new.as_ref()).and_then(|(a, b)| {
                     Some(
                         b["reported_member_count"].as_i64()?
@@ -2631,7 +2638,10 @@ pub fn compare_observations(
                 });
                 (
                     category.to_string(),
-                    json!({"before":old,"after":new,"reported_member_count_delta":delta}),
+                    json!({"before":old,"after":new,"reported_member_count_delta":delta,
+                        "reported_in_group_changed":flag_changed("in_group"),
+                        "reported_in_raid_changed":flag_changed("in_raid"),
+                        "reported_player_is_leader_changed":flag_changed("player_is_leader")}),
                 )
             })
             .collect::<serde_json::Map<_, _>>();

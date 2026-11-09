@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever party, raid and own-player leadership flags by group category.
+
 - Show whether saved Forever trade shortfalls fit within the remaining snapshot slots and their quantity bounds.
 
 - Detect saved Forever trade mismatches when too few unreadable slots remain to cover distinct missing items.

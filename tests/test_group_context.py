@@ -104,9 +104,17 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(group['categories']['home'], {
                         'before':maximum['categories']['home'], 'after':inconsistent['categories']['home'],
                         'reported_member_count_delta':-4294967295,
+                        'reported_in_group_changed':True, 'reported_in_raid_changed':True,
+                        'reported_player_is_leader_changed':False,
                     })
                     self.assertIsNone(group['categories']['instance']['after'])
                     self.assertIsNone(group['categories']['instance']['reported_member_count_delta'])
+                    for field in ['in_group','in_raid','player_is_leader']:
+                        self.assertIsNone(group['categories']['instance'][f'reported_{field}_changed'])
+                    optional = await call('compare_snapshots',before_id=valid[3][0],after_id=earlier,
+                        group_context_changes=True)
+                    self.assertIsNone(optional['group_context_changes']['categories']['instance'][
+                        'reported_player_is_leader_changed'])
                     for flag in ['group_identity_verified','membership_events_verified','live']:
                         self.assertIs(group[flag],False)
                     for a,b in [(later,earlier), (other_id,later), (retail_id,retail_id), (retail_id,later)]:

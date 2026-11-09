@@ -2443,6 +2443,9 @@ categories remain unavailable, never solo; raw counts are not a full roster.
 Two stable projections do not establish the same group identity or current
 membership. No member names/GUIDs, roster, chat, invites, role changes, votes or
 social actions are captured or invoked. Native testing stays deferred.
+With `group_context_changes`, saved comparisons report whether the group,
+raid and own-player leadership flags differ for each category. A missing
+flag on either side gives null. Changes describe the two saved readings.
 See docs/ADR-072-personal-group-context.md.
 
 ## Larger owned candidate pools (2026-11-09)
