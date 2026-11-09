@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved captures by item quantity in a specific bag or bank tab.
+
 - Compare recorded item quantities by bag and bank container across saved captures.
 
 - Show saved bag and bank quantities by container in catalogue-free item searches.

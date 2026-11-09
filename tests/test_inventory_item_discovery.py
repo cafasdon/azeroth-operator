@@ -29,6 +29,7 @@ class InventoryItemDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             b_old=store.ingest(sample('B',1,bag(10))); b_new=store.ingest(sample('B',3))
             c=sample('C',4,bag(2)); c['sections']['bags']['0']['2']={'item_id':100,'count':4}
             c['sections']['bags']['0']['3']={'item_id':777,'count':7}
+            c['sections']['bags']['1']={}
             c['sections']['equipment']={'11':{'item_id':100}}
             c['sections']['character_bank']={'6':{'1':{'item_id':100,'count':9}}}
             c['sections']['account_bank']={'7':{'1':{'item_id':100,'count':100}}}; c_key=store.ingest(c)
@@ -70,10 +71,22 @@ class InventoryItemDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual({row['snapshot_id'] for row in (await query(zero,latest_per_character=True))['snapshots']},
                         {a_new,c_key,d_key,e_key})
                     self.assertNotIn(b_new,{row['snapshot_id'] for row in (await query(zero))['snapshots']})
+                    scoped=await query({**positive,'container_id':0,'minimum_quantity':6},latest_per_character=True)
+                    self.assertEqual([row['snapshot_id'] for row in scoped['snapshots']],[c_key])
+                    match=scoped['snapshots'][0]['inventory_item_match']
+                    self.assertEqual((match['basis'],match['container_id'],match['observed_quantity']),
+                        ('same_snapshot_single_container',0,6))
+                    empty=await query({**zero,'container_id':1},latest_per_character=True)
+                    self.assertEqual([row['snapshot_id'] for row in empty['snapshots']],[c_key])
+                    self.assertEqual((await query({**zero,'container_id':2}))['snapshots'],[])
                     equip={'item_id':100,'storage':'equipment','minimum_quantity':2}
                     self.assertEqual([row['snapshot_id'] for row in (await query(equip))['snapshots']],[d_key])
                     bank={'item_id':100,'storage':'character_bank','minimum_quantity':0}
                     self.assertEqual([row['snapshot_id'] for row in (await query(bank))['snapshots']],[c_key])
+                    self.assertEqual([row['snapshot_id'] for row in
+                        (await query({**bank,'container_id':6,'minimum_quantity':9}))['snapshots']],[c_key])
+                    await query({**equip,'container_id':0},error=True)
+                    await query({**positive,'container_id':65},error=True)
                     shared={'item_id':100,'storage':'account_bank','minimum_quantity':100}
                     shared_rows=(await query(shared))['snapshots']
                     self.assertEqual({row['snapshot_id'] for row in shared_rows},{c_key,e_key})

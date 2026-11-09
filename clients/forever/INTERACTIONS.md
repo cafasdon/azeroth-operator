@@ -3184,3 +3184,9 @@ Containers need recorded quantities on both sides for a signed delta.
 The report distinguishes missing storage from a captured section with no
 container rows. Quantity changes describe observations and do not establish
 that an item was moved between containers.
+
+Set `list_snapshots.inventory_item.container_id` to apply the quantity
+bounds to a single recorded bag or bank tab within the selected storage.
+An absent container cannot match a zero-quantity query. Use
+`latest_per_character` to check each character's latest capture in the
+requested time window.

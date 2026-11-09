@@ -758,6 +758,9 @@ impl InventoryStorage {
 pub struct InventoryItemFilter {
     pub item_id: std::num::NonZeroU32,
     pub storage: InventoryStorage,
+    /// Restrict quantities to one observed bag or bank container.
+    #[schemars(range(min = 0, max = 64))]
+    pub container_id: Option<u8>,
     pub minimum_quantity: u64,
     pub maximum_quantity: Option<u64>,
 }
@@ -775,6 +778,11 @@ impl InventoryItemFilter {
             self.maximum_quantity
                 .is_none_or(|maximum| self.minimum_quantity <= maximum),
             "Inventory minimum quantity exceeds maximum quantity"
+        );
+        ensure!(
+            self.container_id
+                .is_none_or(|id| id <= 64 && !matches!(self.storage, InventoryStorage::Equipment)),
+            "Container filtering requires a bag or bank container ID from 0 to 64"
         );
         Ok(())
     }
@@ -797,7 +805,14 @@ impl InventoryItemFilter {
                 }
             }
             _ => {
-                for container in section.values() {
+                let selected = self.container_id.map(|id| id.to_string());
+                if let Some(id) = &selected {
+                    section.get(id)?;
+                }
+                for (_, container) in section
+                    .iter()
+                    .filter(|(id, _)| selected.as_ref().is_none_or(|selected| *id == selected))
+                {
                     for item in container.as_object()?.values() {
                         if item["item_id"].as_u64()? == requested {
                             let count = item["count"].as_u64()?;
@@ -822,7 +837,7 @@ impl InventoryItemFilter {
         {
             return None;
         }
-        Some(json!({
+        let mut observation = json!({
             "item_id": self.item_id,
             "storage": self.storage,
             "observed_quantity": quantity,
@@ -832,7 +847,12 @@ impl InventoryItemFilter {
             "shared_storage_scope_verified": false,
             "cross_character_aggregation_performed": false,
             "game_execution": false,
-        }))
+        });
+        if let Some(id) = self.container_id {
+            observation["container_id"] = json!(id);
+            observation["basis"] = json!("same_snapshot_single_container");
+        }
+        Some(observation)
     }
 }
 
@@ -1022,6 +1042,7 @@ mod inventory_item_filter_tests {
         InventoryItemFilter {
             item_id: std::num::NonZeroU32::new(123).unwrap(),
             storage,
+            container_id: None,
             minimum_quantity: minimum,
             maximum_quantity: maximum,
         }
