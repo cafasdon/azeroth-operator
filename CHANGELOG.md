@@ -1,5 +1,9 @@
 # Changelog
 
+- Clarify MCP policy evidence: explicit false Blizzard authorisation, complete
+  applicable-terms review and absolute-guarantee flags, scoped review date and
+  per-source retrieval outcomes. Existing deny-by-default controls unchanged.
+
 - Add opt-in saved instance/world-boss reset timestamp projections from capture
   time and recorded duration. Keep negative/overflow durations unknown, raw data
   and cache age separate, and current availability/extension outcomes unverified.

@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+MCP policy reporting now distinguishes enforced offline restrictions from
+Blizzard authorisation. Published-source checks and unsuccessful full-EULA
+retrievals are explicit; approval and absolute compliance remain unverified.
+[Evidence boundary](docs/policy-evidence-verification-2026-11-09.md).
+
 Saved instance and world-boss inspection can now add historical reset-time
 projections with `saved_reset_projection: true`. Negative durations remain unknown;
 this does not establish current lockout or entry availability.

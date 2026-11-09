@@ -506,3 +506,13 @@ reported separately, without shifting the projected timestamp. Missing sections
 remain unknown; known empty sections yield an empty report. This is historical
 arithmetic, not a current lockout, extension outcome, entry or loot eligibility
 check. No game/API/addon change or installation is involved.
+
+## Policy evidence checkpoint (2026-11-09)
+
+The capabilities report now separates enforced offline controls from unverified
+Blizzard approval and incomplete applicable-terms evidence. Three official
+opening posts were rechecked; direct full EULA requests were refused. No action
+is enabled or installation changed. Fresh active-character selection, complete
+owned-pool/native/model proof and full owned-BiS remain open; no newest-snapshot
+fallback or partial-winner substitution closes them. See
+[dated evidence](policy-evidence-verification-2026-11-09.md).

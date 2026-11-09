@@ -12,6 +12,30 @@ Each stdio process binds one explicit, existing, absolute snapshot directory at 
 
 This is a conservative project control. It does not establish Blizzard approval or cover pre-existing installations of the standalone addon or older MCP binaries. The historical matrix below records implementation and qualification evidence, not which write-related routes the current MCP exposes.
 
+## Published-source recheck, 9 November 2026
+
+The MCP capability report now explicitly sets
+`blizzard_authorization_verified`, `complete_applicable_terms_review_verified`
+and `absolute_compliance_guaranteed` to false. `reviewed_on: 2026-11-09` means
+published-source checks and project controls only, as stated by `review_scope`.
+It is not a complete applicable-terms review or a fresh legal authorisation.
+`source_evidence` records each checked URL, date and retrieval outcome. Existing
+legacy `sources` and enforcement fields remain available for compatibility.
+No route, gameplay permission, installed addon or hosted deployment is changed.
+
+Only the official opening posts were read as policy evidence, not community
+replies. The [5 August 2025 third-party-software notice](https://us.forums.blizzard.com/en/wow/t/prohibitions-on-third-party-software/2142972/1)
+reiterates restrictions on modifying the client and bypassing security. The
+[UI addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534/1)
+and [May 2021 input-broadcasting update](https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613/1)
+were read directly again. These sources do not specifically approve this MCP.
+The direct [EU/UK EULA](https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement)
+and [US EULA](https://www.blizzard.com/en-us/legal/bfbbb648-bcc6-4b78-a5c7-e2fe20c135df/blizzard-end-user-license-agreement)
+requests returned HTTP 403. Indexed search text was not substituted for full
+current applicable regional/account terms. Controls remain conservative project
+restrictions; technical/API success and player participation do not establish
+permission. [Verification](policy-evidence-verification-2026-11-09.md).
+
 ## Published sources
 
 - [May 2021 input broadcasting update](https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613), official announcement extending the restriction to software and hardware that mirror commands or automate or streamline multiboxing.

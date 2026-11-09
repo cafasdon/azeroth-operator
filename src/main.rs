@@ -925,7 +925,17 @@ impl Operator {
             .map(|tool| tool.name)
             .collect();
         implemented.sort_unstable();
-        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-07","sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
+        serde_json::json!({"families":["retail","classic","forever"],"implemented":implemented,"game_execution":false,"live_client_qualified":[],"policy":{"mode":"offline_analysis","generated_game_imports":false,"default":"deny_unreviewed_tools","snapshot_scope":"configured_owner_store","reviewed_on":"2026-11-09",
+            "review_scope":"published_source_checks_and_project_controls_only",
+            "blizzard_authorization_verified":false,"complete_applicable_terms_review_verified":false,
+            "absolute_compliance_guaranteed":false,
+            "source_evidence":[
+                {"url":"https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534/1","checked_on":"2026-11-09","retrieval":"official_opening_post_read"},
+                {"url":"https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613/1","checked_on":"2026-11-09","retrieval":"official_opening_post_read"},
+                {"url":"https://us.forums.blizzard.com/en/wow/t/prohibitions-on-third-party-software/2142972/1","checked_on":"2026-11-09","retrieval":"official_opening_post_read"},
+                {"url":"https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","checked_on":"2026-11-09","retrieval":"direct_access_refused"},
+                {"url":"https://www.blizzard.com/en-us/legal/bfbbb648-bcc6-4b78-a5c7-e2fe20c135df/blizzard-end-user-license-agreement","checked_on":"2026-11-09","retrieval":"direct_access_refused"}
+            ],"sources":["https://www.blizzard.com/en-gb/legal/2c72a35c-bf1b-4ae6-99ec-80624e1b429c/blizzard-end-user-license-agreement","https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534","https://us.forums.blizzard.com/en/wow/t/policy-update-for-input-broadcasting-may-2021/956613"]}}).to_string()
     }
     #[tool(
         description = "Look up gear, consumables, world reference records and encounter presets in the local pinned WoWSims Forever catalogue. A saved snapshot can supply stock counts. Omit all filters for the section count. No network, live acquisition validation or simulation execution.",
