@@ -253,6 +253,9 @@ for those crafts. This estimate does not change the chain's material plan.
 The stock plan separately highlights the first step with a known charge
 shortfall. Earlier unknown charges or other failed requirements do not hide
 that entry. Null means no charge shortfall was observed in the saved plan.
+The stock plan also reports `observed_charges_cover_chain`. A known shortage
+makes it false even if other steps are unknown. True requires known charge
+coverage for every step, and otherwise the result is null.
 Bulk recipe reviews and chain steps use the selected recipe's saved crafting
 conditions when the exact recipe ID and compatible schematic are in the same
 capture. The chain reports condition checks per step and leaves unmatched

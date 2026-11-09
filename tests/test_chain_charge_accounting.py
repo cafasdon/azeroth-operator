@@ -52,6 +52,10 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                 'coverage':'player_tracked_recipes_only',
                 'crafts':{'102':{'learned':True}},'recrafts':{'103':{}}}
             conditional_key = store.ingest(conditional)
+            covered_capture = deepcopy(base)
+            for recipe in covered_capture['sections']['profession_recipe_materials']['entries'].values():
+                recipe['cooldown'] = {'charges':2,'max_charges':2}
+            covered_key = store.ingest(covered_capture)
             before = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}
             env.pop('AZEROTH_FOREVER_CATALOGUE',None)
@@ -67,6 +71,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                         return json.loads(reply.content[0].text)['reagent_chain']
                     # Red regression: both requests individually fit one charge, but the second reuses it.
                     one = await plan(keys[1])
+                    covered_chain = await plan(covered_key)
+                    self.assertIs(covered_chain['stock_plan']['nonmaterial_requirements'][
+                        'observed_charges_cover_chain'], True)
                     repeated = [row for row in one['steps'] if row['recipe_id']==102]
                     self.assertEqual(len(repeated),2)
                     self.assertTrue(repeated[0]['captured_nonmaterial_checks']['observed_charges_cover_request'])
@@ -103,6 +110,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                         failure = chain['stock_plan']['nonmaterial_requirements']['first_observed_shortfall']
                         charge_failure = chain['stock_plan']['nonmaterial_requirements'][
                             'first_observed_charge_shortfall']
+                        self.assertIs(chain['stock_plan']['nonmaterial_requirements'][
+                            'observed_charges_cover_chain'],
+                            False if charges is not None and charges < 2*crafts else None)
                         if charges is not None and charges < 2*crafts:
                             self.assertEqual(failure['recipe_number'],1 if charges < crafts else 2)
                             self.assertIn('observed_charges_cover_cumulative_crafts',failure['failed_checks'])

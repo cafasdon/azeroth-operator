@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise saved charge coverage across the full Forever reagent-chain plan.
+
 - Show saved cooldown state and timer estimates for Forever reagent-chain steps.
 
 - Show saved craft and recraft tracking membership for each Forever reagent-chain recipe.

@@ -1721,11 +1721,21 @@ fn ordered_recipe_requirements_with_charges<'a>(
     let mut result = json!({"first_observed_shortfall":first_shortfall,
         "recipes_with_unknown_checks":recipes_with_unknown_checks});
     if cumulative {
-        result["first_observed_charge_shortfall"] = json!(
-            charge_accounting
+        let first_charge_shortfall = charge_accounting
+            .iter()
+            .find(|row| row["covers_cumulative_crafts"] == false);
+        result["first_observed_charge_shortfall"] = json!(first_charge_shortfall);
+        result["observed_charges_cover_chain"] = json!(if first_charge_shortfall.is_some() {
+            Some(false)
+        } else if charge_accounting.is_empty()
+            || charge_accounting
                 .iter()
-                .find(|row| row["covers_cumulative_crafts"] == false)
-        );
+                .any(|row| row["covers_cumulative_crafts"].is_null())
+        {
+            None
+        } else {
+            Some(true)
+        });
         result["charge_accounting"] = json!(charge_accounting);
     }
     result
