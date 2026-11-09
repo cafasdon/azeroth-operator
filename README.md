@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Profession recipe search can now order a stock-based shortlist by independent
+observed item capacity before pagination. Combine it with saved skill-up and
+cooldown filters; it does not predict gains or allocate shared materials.
+[Ordering contract](docs/ADR-063-recipe-item-capacity-ordering.md).
+
 Saved dialogue discovery now searches exact display labels, option/spell IDs
 and raw status/flags on the same recorded choice. Missing metadata stays unknown;
 results identify historical captures, not current NPC services.

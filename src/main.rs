@@ -545,6 +545,18 @@ fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
         .map_err(|_| serde::de::Error::custom("Invalid gossip option filter"))
 }
 
+fn recipe_search_order<'de, D: serde::Deserializer<'de>>(
+    input: D,
+) -> Result<Option<azeroth_operator::analysis::RecipeSearchOrder>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() {
+        return Ok(None);
+    }
+    serde_json::from_value(value)
+        .map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid recipe search ordering"))
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct MerchantCartLine {
@@ -676,8 +688,11 @@ struct RecipeSearch {
     recipe_view_filter: Option<azeroth_operator::analysis::RecipeViewFilter>,
     /// Filter original bulk-row cooldown state, observed charges or recorded timer; no elapsed recharge/current eligibility.
     cooldown_filter: Option<azeroth_operator::analysis::RecipeCooldownFilter>,
+    /// Optional observed_item_capacity_desc requires material_filter; item-only independent capacities, not skill gain or craftability.
+    #[serde(default, deserialize_with = "recipe_search_order")]
+    order: Option<azeroth_operator::analysis::RecipeSearchOrder>,
     offset: Option<usize>,
-    /// Page size, 1 to 50; defaults to 20. Ordering is numeric recipe ID.
+    /// Page size, 1 to 50; defaults to 20. Default ordering is numeric recipe ID.
     limit: Option<usize>,
 }
 
@@ -1173,7 +1188,7 @@ impl Operator {
                 .as_deref()
                 .map(|id| self.store.read(id))
                 .transpose()?;
-            let mut found = azeroth_operator::analysis::search_recipe_materials_with_cooldowns(
+            let mut found = azeroth_operator::analysis::search_recipe_materials_ordered(
                 &snapshot,
                 args.recipe_id,
                 args.output_item_id,
@@ -1185,6 +1200,7 @@ impl Operator {
                 args.recipe_view_filter.as_ref(),
                 args.cooldown_filter.as_ref(),
                 inventory.as_ref(),
+                args.order.unwrap_or_default(),
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);
             if let Some(id) = args.inventory_snapshot_id {
@@ -1195,7 +1211,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe search requires owned valid Forever snapshots, exact positive IDs and a page size from 1 to 50. An inventory snapshot requires material filtering and the same character/client/build with no older capture time.",
+                "Recipe search requires owned valid Forever snapshots, exact positive IDs and a page size from 1 to 50. Observed capacity ordering requires material_filter. An inventory snapshot requires material filtering and the same character/client/build with no older capture time.",
             )]),
         }
     }

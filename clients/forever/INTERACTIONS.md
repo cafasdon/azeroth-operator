@@ -2067,3 +2067,18 @@ latest-per-character, when requested, selects newest valid captures before this
 predicate. A newer empty/missing/nonmatching view suppresses an older match.
 No current availability, NPC attribution or dialogue action is inferred. This
 query changes no addon/schema/package or deployed installation.
+
+## Recipe item-capacity shortlist (2026-11-09)
+
+`search_forever_recipes` accepts order observed_item_capacity_desc together with
+material_filter (explicit bags/all_observed_storage and minimum_crafts). Existing
+view filters such as learned/can_skill_up and original cooldown filters compose.
+All matching rows are sorted before paging by finite supported_crafts descending,
+then numeric recipe ID. No-required-item recipes have no finite item capacity
+and sort last; null is not treated as infinity or actual craftability. Each
+capacity independently reuses the observed stock, so capacities must not be
+summed or treated as an allocated progression plan. Charges, conditions, skill
+chance, yields and native eligibility do not change the ordering. An explicit
+newer inventory may change the order while recipe/view/cooldown provenance stays
+original. Omitted/null/recipe_id ordering preserves existing default output.
+No addon/schema/deployment or crafting action is introduced.

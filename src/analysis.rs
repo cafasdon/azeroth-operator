@@ -12,6 +12,16 @@ struct ObservedReagent {
 }
 
 #[derive(
+    Clone, Copy, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum RecipeSearchOrder {
+    #[default]
+    RecipeId,
+    ObservedItemCapacityDesc,
+}
+
+#[derive(
     Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
@@ -345,6 +355,40 @@ pub fn search_recipe_materials_with_cooldowns(
     cooldown_filter: Option<&RecipeCooldownFilter>,
     inventory: Option<&Snapshot>,
 ) -> Result<Value> {
+    search_recipe_materials_ordered(
+        snapshot,
+        recipe_id,
+        output_item_id,
+        reagent_item_id,
+        status,
+        offset,
+        limit,
+        material_filter,
+        recipe_view_filter,
+        cooldown_filter,
+        inventory,
+        RecipeSearchOrder::RecipeId,
+    )
+}
+
+pub fn search_recipe_materials_ordered(
+    snapshot: &Snapshot,
+    recipe_id: Option<std::num::NonZeroU32>,
+    output_item_id: Option<std::num::NonZeroU32>,
+    reagent_item_id: Option<std::num::NonZeroU32>,
+    status: Option<RecipeMaterialStatus>,
+    offset: usize,
+    limit: usize,
+    material_filter: Option<&RecipeMaterialFilter>,
+    recipe_view_filter: Option<&RecipeViewFilter>,
+    cooldown_filter: Option<&RecipeCooldownFilter>,
+    inventory: Option<&Snapshot>,
+    order: RecipeSearchOrder,
+) -> Result<Value> {
+    ensure!(
+        order == RecipeSearchOrder::RecipeId || material_filter.is_some(),
+        "Observed item capacity ordering requires material filtering"
+    );
     ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
@@ -455,7 +499,20 @@ pub fn search_recipe_materials_with_cooldowns(
             Some((id, row, support, observation))
         })
         .collect();
-    matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
+    if order == RecipeSearchOrder::ObservedItemCapacityDesc {
+        matches.sort_unstable_by_key(|(id, _, support, _)| {
+            let capacity = support
+                .as_ref()
+                .and_then(|value| value["supported_crafts"].as_u64());
+            (
+                capacity.is_none(),
+                std::cmp::Reverse(capacity.unwrap_or(0)),
+                id.parse::<u32>().unwrap(),
+            )
+        });
+    } else {
+        matches.sort_unstable_by_key(|(id, _, _, _)| id.parse::<u32>().unwrap());
+    }
     let records: Vec<_> = matches
         .iter()
         .skip(offset)
@@ -491,6 +548,12 @@ pub fn search_recipe_materials_with_cooldowns(
         "records":records,"next_offset":next,
         "filters":{"recipe_id":recipe_id,"output_item_id":output_item_id,"reagent_item_id":reagent_item_id,"status":status},
         "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false});
+    if order != RecipeSearchOrder::RecipeId {
+        result["order"] = json!(order);
+        result["ordering_basis"] = json!("independent_observed_required_item_capacity_only");
+        result["shared_material_allocation_performed"] = json!(false);
+        result["skill_gain_prediction_performed"] = json!(false);
+    }
     if let Some(inventory) = inventory {
         result["recipe_captured_at"] = json!(snapshot.captured_at);
         result["inventory_captured_at"] = json!(inventory.captured_at);

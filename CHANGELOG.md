@@ -1,5 +1,10 @@
 # Changelog
 
+- Add opt-in observed_item_capacity_desc recipe search ordering with explicit
+  material scope, finite item capacities first and numeric recipe-ID ties.
+  Preserve legacy default output and original recipe/cooldown provenance;
+  no shared-stock allocation, skill-gain prediction or craftability claim.
+
 - Add list_snapshots.gossip_option for same-row saved dialogue discovery by
   label, option/spell ID or raw status/flags. Preserve unknown fields, owner
   isolation, latest-before-predicate selection and bounded ordered results;
