@@ -1,5 +1,7 @@
 # Changelog
 
+- Shortlist saved Forever equipment slots by an exact durability threshold.
+
 - Compare saved Forever equipment durability by observed slot.
 
 - Apply saved capture time bounds when evaluating a named Forever character's owned gear.

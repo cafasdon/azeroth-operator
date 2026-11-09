@@ -51,6 +51,9 @@ struct ResolveCharacter {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
+    #[schemars(range(min = 0, max = 100))]
+    equipment_durability_max_percent: Option<u8>,
     /// Filter saved pet species by presence of an observed owned row.
     pet_has_owned_rows: Option<bool>,
     /// Filter saved pet species by presence of an observed unowned row.
@@ -2040,6 +2043,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if let Some(maximum) = args.equipment_durability_max_percent
+            && (maximum > 100 || args.section.as_deref() != Some("equipment_durability"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A durability threshold needs equipment_durability and a percentage from 0 to 100",
+            )]);
+        }
         let filter_pet_rows =
             args.pet_has_owned_rows.is_some() || args.pet_has_unowned_rows.is_some();
         if filter_pet_rows
@@ -2699,6 +2709,25 @@ impl Operator {
             .inspect(&args.snapshot_id, args.section.as_deref())
         {
             Ok(mut value) => {
+                if let Some(maximum) = args.equipment_durability_max_percent {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Durability shortlisting requires a saved Forever snapshot",
+                        )]);
+                    }
+                    let matches = value["data"]["entries"].as_object().map(|entries| {
+                        entries
+                            .iter()
+                            .filter_map(|(slot, row)| {
+                                let current = row["current"].as_u64().unwrap();
+                                let capacity = row["maximum"].as_u64().unwrap();
+                                (current * 100 <= capacity * u64::from(maximum))
+                                    .then(|| slot.parse::<u32>().unwrap())
+                            })
+                            .collect::<std::collections::BTreeSet<_>>()
+                    });
+                    value["equipment_durability_matching_slots"] = serde_json::json!(matches);
+                }
                 if let Some(spell_id) = args.profession_spell_id {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(

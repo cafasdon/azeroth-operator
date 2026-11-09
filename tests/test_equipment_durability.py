@@ -51,11 +51,28 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    inspect_tool=next(tool for tool in (await session.list_tools()).tools
+                                      if tool.name=='inspect_snapshot')
+                    self.assertEqual(inspect_tool.inputSchema['properties'][
+                        'equipment_durability_max_percent']['maximum'],100)
                     async def call(tool,**args):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
                     self.assertEqual(captured['data'],value['sections']['equipment_durability'])
+                    for key, maximum, expected in [
+                        (keys[0],0,[1]),(keys[0],33,[1]),(keys[0],34,[1,16]),
+                        (keys[0],100,[1,5,16]),(keys[1],100,[]),(keys[2],100,None),
+                        (keys[3],99,[]),
+                    ]:
+                        shortlist=await call('inspect_snapshot',snapshot_id=key,section='equipment_durability',
+                                             equipment_durability_max_percent=maximum)
+                        self.assertEqual(shortlist['equipment_durability_matching_slots'],expected)
+                    self.assertNotIn('equipment_durability_matching_slots',captured)
+                    for section, maximum in [('equipment',50),('equipment_durability',101)]:
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':keys[0],
+                            'section':section,'equipment_durability_max_percent':maximum})
+                        self.assertTrue(response.isError)
                     changes=(await call('compare_snapshots',before_id=keys[0],after_id=keys[5]))[
                         'equipment_durability_changes']
                     self.assertEqual(changes['changes'],[{'slot':1,'before':{'current':0,'maximum':100},
