@@ -1,5 +1,7 @@
 # Changelog
 
+- Reserve copper or pet training points when shortlisting affordable saved Forever trainer lessons.
+
 - Shortlist individually affordable saved Forever trainer lessons using the recorded wallet or pet points.
 
 - Shortlist saved Forever trainer lessons by recorded copper or pet training-point prices.

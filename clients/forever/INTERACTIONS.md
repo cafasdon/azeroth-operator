@@ -8,6 +8,10 @@ Use `trainer_affordable_only` to compare each known lesson price with the
 saved copper or pet training-point balance. A missing balance leaves the
 shortlist unknown. Apply the availability filter separately to select
 lessons reported available at capture.
+Set `trainer_balance_reserve` with the affordability filter to reserve
+copper for general trainers or training points for pet trainers. The reserve
+affects shortlist selection. Budget projections still report against the
+original recorded balance.
 
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes

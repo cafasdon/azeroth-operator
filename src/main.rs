@@ -99,6 +99,8 @@ struct Inspect {
     trainer_service_status: Option<String>,
     /// Select up to 32 distinct slots from the captured trainer list.
     trainer_service_slots: Option<Vec<std::num::NonZeroU32>>,
+    /// Reserve this many copper or pet training points before shortlisting affordable lessons.
+    trainer_balance_reserve: Option<u64>,
     /// Keep lessons whose individual recorded price fits the captured wallet or pet points.
     #[serde(default)]
     trainer_affordable_only: bool,
@@ -2000,6 +2002,11 @@ impl Operator {
                 args.trainer_max_price_points
                     .map(|amount| ("price_training_points", u64::from(amount)))
             });
+        if args.trainer_balance_reserve.is_some() && !args.trainer_affordable_only {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Trainer balance reserve requires the affordability filter",
+            )]);
+        }
         let filter_trainer = args.trainer_affordable_only
             || trainer_name.is_some()
             || trainer_status.is_some()
@@ -2707,6 +2714,12 @@ impl Operator {
                     value["trainer_balance_observed"] =
                         serde_json::json!(trainer_balance.is_some());
                 }
+                let trainer_spendable = trainer_balance.and_then(|balance| {
+                    balance.checked_sub(args.trainer_balance_reserve.unwrap_or_default())
+                });
+                if let Some(reserve) = args.trainer_balance_reserve {
+                    value["trainer_balance_reserve"] = serde_json::json!(reserve);
+                }
                 if filter_trainer {
                     if let Some(slots) = &args.trainer_service_slots {
                         value["trainer_missing_requested_slots"] = serde_json::json!(
@@ -2743,7 +2756,7 @@ impl Operator {
                                     && (!args.trainer_affordable_only
                                         || lesson[trainer_balance_field]
                                             .as_u64()
-                                            .zip(trainer_balance)
+                                            .zip(trainer_spendable)
                                             .is_some_and(|(price, balance)| price <= balance))
                             });
                             entries.len()

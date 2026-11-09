@@ -303,6 +303,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "trainer_max_price_copper":10,"trainer_max_price_points":10,
                         })
                         self.assertTrue(conflicting_price.isError)
+                        for spendable, expected in [(9,0),(10,1),(-1,0)]:
+                            reserve=forever["sections"]["wallet"]["copper"]-spendable
+                            reserved=await session.call_tool("inspect_snapshot",{
+                                "snapshot_id":forever_key,"section":"trainer_services",
+                                "trainer_service_name":"potion","trainer_service_status":"available",
+                                "trainer_affordable_only":True,"trainer_balance_reserve":reserve,
+                            })
+                            self.assertFalse(reserved.isError,reserved)
+                            budget=json.loads(reserved.content[0].text)
+                            self.assertEqual(budget["trainer_match_count"],expected)
+                            self.assertEqual(budget["trainer_balance_reserve"],reserve)
                         ordered_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 2], "trainer_wallet_projection": True,
