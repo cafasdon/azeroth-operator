@@ -1,5 +1,7 @@
 # Changelog
 
+- Show pet food quantities and stack counts by item in saved Forever bag summaries.
+
 - Show shared toy coverage in saved Forever journal comparisons.
 
 - Break down saved Forever pet journal species by observed owned and unowned row presence.

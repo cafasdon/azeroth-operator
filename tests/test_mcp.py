@@ -894,6 +894,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }
                         travel["sections"]["wallet"]["copper"] = 1
                         travel_before = SnapshotStore(Path(folder)).ingest(travel)
+                        food_summary = await session.call_tool("character_summary", {"snapshot_id":travel_before})
+                        self.assertFalse(food_summary.isError, food_summary)
+                        self.assertEqual(json.loads(food_summary.content[0].text)["pet_food_locations"]["quantity_by_item_id"], {
+                            "117":{"observed_bag_quantity":3,"matching_stacks":1},
+                        })
                         travel["captured_at"] = "2025-01-03T00:00:00Z"
                         travel["sections"]["experience"].update({
                             "current_xp": 150, "rested_xp": 0, "resting": False,

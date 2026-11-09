@@ -2299,10 +2299,15 @@ fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {
     let bags = snapshot.sections.get("bags")?.as_object()?;
     let mut locations = Vec::new();
     let mut matching_stacks = 0usize;
+    let mut bag_totals = BTreeMap::<String, (u64, usize)>::new();
     for (bag, slots) in bags {
         for (slot, item) in slots.as_object()? {
             let id = item["item_id"].as_u64()?;
-            if foods.contains_key(&id.to_string()) {
+            let key = id.to_string();
+            if foods.contains_key(&key) {
+                let (quantity, stacks) = bag_totals.entry(key).or_default();
+                *quantity = quantity.checked_add(item["count"].as_u64()?)?;
+                *stacks += 1;
                 matching_stacks += 1;
                 if locations.len() < 50 {
                     locations
@@ -2311,8 +2316,18 @@ fn pet_food_locations(snapshot: &Snapshot) -> Option<Value> {
             }
         }
     }
+    let quantities: BTreeMap<_, _> = bag_totals
+        .into_iter()
+        .map(|(id, (quantity, stacks))| {
+            (
+                id,
+                json!({"observed_bag_quantity":quantity,"matching_stacks":stacks}),
+            )
+        })
+        .collect();
     Some(json!({
         "matching_stacks":matching_stacks,
+        "quantity_by_item_id":quantities,
         "locations_truncated":matching_stacks>locations.len(),
         "locations":locations
     }))
