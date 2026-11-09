@@ -1,5 +1,7 @@
 # Changelog
 
+- Show observed bank restocking quantities in saved Forever bag shortfall searches.
+
 - Find saved inventory requirements with observed shortfalls in one storage.
 
 - Break down Forever simulator resolution counts by observed storage.

@@ -856,6 +856,19 @@ impl InventoryRequirementsFilter {
         snapshot: &Snapshot,
         bank_withdrawal_offset: Option<usize>,
     ) -> Value {
+        self.review_stock(
+            snapshot,
+            bank_withdrawal_offset.is_some(),
+            bank_withdrawal_offset,
+        )
+    }
+
+    fn review_stock(
+        &self,
+        snapshot: &Snapshot,
+        bank_plan: bool,
+        bank_withdrawal_offset: Option<usize>,
+    ) -> Value {
         let quantities = self.observed_quantities(snapshot);
         let items: Vec<_> = self.items.iter().map(|row| {
             let required = row.quantity.get();
@@ -873,7 +886,7 @@ impl InventoryRequirementsFilter {
             "short_item_count":short_item_count,
             "all_requirements_covered_by_observed_quantities":short_item_count.map(|count| count == 0),
             "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false});
-        if let Some(offset) = bank_withdrawal_offset {
+        if bank_plan {
             report["bank_withdrawal_plan"] = json!(quantities.as_ref().map(|bags| {
                 let bank_stock = |storage| Self { storage, items:self.items.clone() }
                     .observed_quantities(snapshot);
@@ -895,14 +908,17 @@ impl InventoryRequirementsFilter {
                     Some(json!({"item_id":id,"bag_shortfall":shortfall,
                         "suggested_withdrawals":withdrawals,"remaining_after_observed_withdrawals":remaining}))
                 }).collect();
-                let amounts: Vec<_> = rows.iter().map(|row| json!({
-                    "item_id":row["item_id"],
-                    "character_bank":row["suggested_withdrawals"]["character_bank"],
-                    "account_bank":row["suggested_withdrawals"]["account_bank"],
-                })).collect();
-                let locations = analysis::bank_withdrawal_locations(snapshot, &amounts, offset);
-                json!({"rows":rows,"suggested_locations":locations,"character_bank_observed":character.is_some(),
-                    "account_bank_observed":account.is_some(),"withdrawal_eligibility_verified":false})
+                let mut plan = json!({"rows":rows,"character_bank_observed":character.is_some(),
+                    "account_bank_observed":account.is_some(),"withdrawal_eligibility_verified":false});
+                if let Some(offset) = bank_withdrawal_offset {
+                    let amounts: Vec<_> = rows.iter().map(|row| json!({
+                        "item_id":row["item_id"],
+                        "character_bank":row["suggested_withdrawals"]["character_bank"],
+                        "account_bank":row["suggested_withdrawals"]["account_bank"],
+                    })).collect();
+                    plan["suggested_locations"] = analysis::bank_withdrawal_locations(snapshot, &amounts, offset);
+                }
+                plan
             }));
         }
         report
@@ -1824,6 +1840,7 @@ pub struct CaptureFilters<'a> {
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub inventory_requirements_shortfall_only: bool,
+    pub inventory_requirements_bank_plan: bool,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
@@ -2054,6 +2071,7 @@ impl Store {
             inventory_item,
             inventory_requirements,
             inventory_requirements_shortfall_only,
+            inventory_requirements_bank_plan,
             loot_observation,
             skill_line,
             gossip_option,
@@ -2150,6 +2168,15 @@ impl Store {
         ensure!(
             !inventory_requirements_shortfall_only || inventory_requirements.is_some(),
             "Inventory shortfall discovery requires inventory_requirements"
+        );
+        ensure!(
+            !inventory_requirements_bank_plan
+                || (family == Family::Forever
+                    && inventory_requirements_shortfall_only
+                    && inventory_requirements
+                        .as_ref()
+                        .is_some_and(|filter| matches!(filter.storage, InventoryStorage::Bags))),
+            "Inventory bank planning requires a Forever bag shortfall search"
         );
         if let Some(filter) = &inventory_requirements {
             filter.validate(&family)?;
@@ -2801,7 +2828,8 @@ impl Store {
                             if !inventory_requirements_shortfall_only {
                                 return filter.observation_match(&s);
                             }
-                            let review = filter.review_observed_stock(&s, None);
+                            let review =
+                                filter.review_stock(&s, inventory_requirements_bank_plan, None);
                             (review["all_requirements_covered_by_observed_quantities"] == false)
                                 .then_some(review)
                         });

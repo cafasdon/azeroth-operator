@@ -2969,3 +2969,8 @@ Set `list_snapshots.inventory_requirements_shortfall_only` with
 selected storage. Each match reports quantities and shortfalls per requested
 item. An observed empty section can match. A missing section has unknown
 quantities and is excluded. Results describe the saved observations.
+
+Set `inventory_requirements_bank_plan: true` on a Forever bag shortfall
+search to show suggested quantities from the character and account banks
+recorded in the same capture. The plan reports remaining shortfalls and
+whether each bank was observed. Withdrawal eligibility remains unverified.

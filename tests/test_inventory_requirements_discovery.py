@@ -79,6 +79,25 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(by_character['G']['all_requirements_covered_by_observed_quantities'], False)
                     self.assertEqual((await query(inventory_requirements_shortfall_only=False)), history)
                     await query(None,error=True,inventory_requirements_shortfall_only=True)
+                    restock = await query(inventory_requirements_shortfall_only=True,
+                                          inventory_requirements_bank_plan=True, latest_per_character=True)
+                    plans = {row['character']['name']:row['inventory_requirements_match']['bank_withdrawal_plan']
+                             for row in restock['snapshots']}
+                    self.assertTrue(plans['D']['character_bank_observed'])
+                    self.assertFalse(plans['D']['account_bank_observed'])
+                    self.assertEqual(plans['D']['rows'][0]['remaining_after_observed_withdrawals'], 0)
+                    self.assertEqual(plans['D']['rows'][0]['suggested_withdrawals']['character_bank'], 5)
+                    self.assertFalse(plans['D']['withdrawal_eligibility_verified'])
+                    self.assertNotIn('suggested_locations',plans['D'])
+                    self.assertEqual(plans['A']['rows'][0]['remaining_after_observed_withdrawals'], 5)
+                    self.assertTrue(plans['H']['account_bank_observed'])
+                    self.assertTrue(all(row['remaining_after_observed_withdrawals'] == 0
+                                        for row in plans['H']['rows']))
+                    await query(error=True,inventory_requirements_bank_plan=True)
+                    await query({**requirements,'storage':'equipment'},error=True,
+                                inventory_requirements_shortfall_only=True,inventory_requirements_bank_plan=True)
+                    await query(error=True,family='retail',inventory_requirements_shortfall_only=True,
+                                inventory_requirements_bank_plan=True)
                     for storage in ['bags','character_bank']:
                         self.assertEqual((await query({**requirements,'storage':storage},character={'name':'D','realm':'Test'}))['snapshots'],[])
                     self.assertEqual([row['snapshot_id'] for row in (await query(profession_skill_line=164,profession_min_rank=300))['snapshots']],[c_key])
