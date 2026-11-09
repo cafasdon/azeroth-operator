@@ -15,6 +15,9 @@ missing from either capture has no comparison. The result describes
 saved observations and leaves aura application or removal events unverified.
 Set `player_aura_spell_id` with the comparison to restrict both groups
 to an exact spell ID before the display limit is applied.
+The `selected_aura` report lists that ID's readings independently on
+each side, including unchanged readings. A missing group gives null and
+an observed group with no matching rows gives an empty list.
 
 Use `list_snapshots.player_resource` with `resource` set to `health` or
 `primary_power` and at least one predicate. Whole `minimum_percent` and

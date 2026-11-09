@@ -1,5 +1,7 @@
 # Changelog
 
+- Show exact saved Forever aura readings on each side of a comparison, even with partial coverage.
+
 - Compare a specific saved Forever aura even when the full changes list is truncated.
 
 - Compare saved Forever aura rows and application counts by group and spell ID.

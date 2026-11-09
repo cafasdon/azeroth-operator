@@ -4341,9 +4341,8 @@ fn compare_player_auras(before: &Snapshot, after: &Snapshot, spell_id: Option<u6
             }
             Some(by_id)
         };
-    let compare_group = |group| {
-        let old = applications(before, group)?;
-        let new = applications(after, group)?;
+    let compare_group = |old: &BTreeMap<u64, Vec<Option<u64>>>,
+                         new: &BTreeMap<u64, Vec<Option<u64>>>| {
         let ids: BTreeSet<_> = old.keys().chain(new.keys()).copied().collect();
         let mut changes = Vec::new();
         let mut changed_spell_count = 0;
@@ -4358,13 +4357,32 @@ fn compare_player_auras(before: &Snapshot, after: &Snapshot, spell_id: Option<u6
                 }
             }
         }
-        Some(
-            json!({"changed_spell_count":changed_spell_count,"truncated":changed_spell_count>changes.len(),
-            "changes":changes}),
-        )
+        json!({"changed_spell_count":changed_spell_count,"truncated":changed_spell_count>changes.len(),
+            "changes":changes})
     };
-    json!({"helpful":compare_group("helpful"),"harmful":compare_group("harmful"),
-        "aura_events_verified":false,"effectiveness_verified":false,"live":false})
+    let mut result =
+        json!({"aura_events_verified":false,"effectiveness_verified":false,"live":false});
+    for group in ["helpful", "harmful"] {
+        let old = applications(before, group);
+        let new = applications(after, group);
+        result[group] = json!(
+            old.as_ref()
+                .zip(new.as_ref())
+                .map(|(a, b)| compare_group(a, b))
+        );
+        if let Some(id) = spell_id {
+            let counts = |rows: Option<BTreeMap<u64, Vec<Option<u64>>>>| {
+                rows.map(|mut rows| rows.remove(&id).unwrap_or_default())
+            };
+            result["selected_aura"][group] = json!({
+                "before_applications":counts(old),"after_applications":counts(new)
+            });
+        }
+    }
+    if let Some(id) = spell_id {
+        result["selected_aura"]["spell_id"] = json!(id);
+    }
+    result
 }
 
 fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {

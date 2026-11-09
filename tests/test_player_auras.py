@@ -110,11 +110,23 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(bounded['changed_spell_count'], 258)
                     self.assertEqual(len(bounded['changes']), 50)
                     self.assertTrue(bounded['truncated'])
+                    self.assertNotIn('selected_aura', compared)
                     exact = await compare(valid[1][0], valid[3][0], player_aura_spell_id=4294967294)
                     self.assertEqual(exact['helpful'], {'changed_spell_count': 1, 'truncated': False,
                         'changes': [{'spell_id': 4294967294, 'before_applications': [],
                                      'after_applications': [4294967295]}]})
                     self.assertIsNone(exact['harmful'])
+                    self.assertEqual(exact['selected_aura'], {'spell_id':4294967294,
+                        'helpful':{'before_applications':[],'after_applications':[4294967295]},
+                        'harmful':{'before_applications':[],'after_applications':None}})
+                    partial = await compare(valid[0][0], valid[1][0], player_aura_spell_id=100)
+                    self.assertIsNone(partial['helpful'])
+                    self.assertEqual(partial['selected_aura']['helpful'],
+                        {'before_applications':None,'after_applications':[None,0]})
+                    same = await compare(valid[1][0], valid[1][0], player_aura_spell_id=100)
+                    self.assertEqual(same['helpful']['changes'],[])
+                    self.assertEqual(same['selected_aura']['helpful'],
+                        {'before_applications':[None,0],'after_applications':[None,0]})
                     unchanged = await compare(valid[1][0], valid[3][0], player_aura_spell_id=99)
                     self.assertEqual(unchanged['helpful']['changes'], [])
                     for options in [{'player_aura_spell_id': 100},
