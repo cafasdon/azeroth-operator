@@ -707,6 +707,12 @@ Use `observed_enchant_effect_id` to find captured items whose links encode
 that exact nonzero effect ID. The filter works before paging and includes
 items absent from the catalogue when the link agrees with the captured
 base ID. Missing or unreadable modifier data cannot match.
+Set `simulator_input_resolved` to `false` in `review_forever_owned_gear` to find
+locations that need more evidence, or to `true` to find locations with a usable
+simulator item input. The filter applies before pagination and combines with
+existing slot, storage and item filters. `inventory_evidence` still describes
+the whole capture. Item input availability is separate from equip eligibility.
+
 Use `observed_random_suffix_id` to match the exact signed suffix from the
 same link. Zero matches an explicit zero. Combine it with the enchant
 filter to find variants that match both fields.

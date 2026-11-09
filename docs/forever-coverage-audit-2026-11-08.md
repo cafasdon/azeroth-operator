@@ -93,6 +93,15 @@ availability, present craftability and complete profession coverage remain open.
 
 ## Evidence boundaries
 
+Owned-item review now accepts `simulator_input_resolved` to page through
+resolved inputs or investigate unresolved locations. Full-capture evidence stays
+separate from filtered totals. Offline build, caller tests and independent
+failure probes passed, including 54 pagination combinations and six rejected
+malformed boolean inputs. Jev 1.14.0 advisory
+`1e46afe077da10daff0981a115ccd9d811291b80e50404ee6c6a58137e1bcf8c`
+returned integrate .82 at confidence .73, with 407 input and 49 output tokens
+in .288 seconds.
+
 Owned-item review now exposes `simulator_item_resolution`. The fixed tags
 distinguish catalogue gaps, unreadable item links, unavailable modifier values,
 unresolved suffix or enchant references, and other simulator resolution gaps.

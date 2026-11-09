@@ -3308,6 +3308,7 @@ pub fn review_owned(
     required_levels: (Option<u32>, Option<u32>),
     observed_enchant_effect_id: Option<std::num::NonZeroU32>,
     observed_random_suffix_id: Option<i32>,
+    simulator_input_resolved: Option<bool>,
     exclude_observed_requirement_conflicts: bool,
     storage_filter: Option<GearStorage>,
 ) -> Result<Value> {
@@ -3414,6 +3415,7 @@ pub fn review_owned(
                 return;
             }
             let modifiers = (on_page
+                || simulator_input_resolved.is_some()
                 || observed_enchant_effect_id.is_some()
                 || observed_random_suffix_id.is_some())
             .then(|| link_modifiers(item))
@@ -3431,6 +3433,18 @@ pub fn review_owned(
             }) {
                 return;
             }
+            let candidates = modifiers
+                .as_ref()
+                .filter(|_| on_page || simulator_input_resolved.is_some())
+                .map(|fields| modifier_candidates(db, fields, reference.copied()));
+            if simulator_input_resolved.is_some_and(|expected| {
+                candidates
+                    .as_ref()
+                    .is_some_and(|review| !review["simulator_item_spec"].is_null())
+                    != expected
+            }) {
+                return;
+            }
             if on_page {
                 let draft_selection = target_slot
                     .and_then(|target| draft_selection(target, storage, container, slot, item_id?));
@@ -3445,9 +3459,6 @@ pub fn review_owned(
                 let native_slot_conflict = draft_selection.as_ref().and_then(|selection| {
                     native_slot_category_conflict(item, selection.target_slot)
                 });
-                let candidates = modifiers
-                    .as_ref()
-                    .map(|fields| modifier_candidates(db, fields, reference.copied()));
                 let simulator_item_resolution =
                     match (reference, modifiers.as_ref(), candidates.as_ref()) {
                         (None, _, _) => "catalogue_item_unavailable",

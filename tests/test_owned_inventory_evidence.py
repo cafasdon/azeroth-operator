@@ -38,6 +38,9 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             many['sections']['bags'] = {'0': {str(i + 1): {'item_id': 4294967200 + i, 'count': 1}
                                              for i in range(52)}}
             many_id = store.ingest(many)
+            mixed = deepcopy(base)
+            mixed['sections']['bags']['0']['3'] = {'item_id': 4549, 'count': 1, 'link': 'item:4549:0:0:0:0:0:0'}
+            mixed_id = store.ingest(mixed)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -48,6 +51,24 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
                     result = await review(partial)
+                    mixed_evidence = (await review(mixed_id))['inventory_evidence']
+                    resolved = await review(mixed_id, simulator_input_resolved=True, limit=1)
+                    self.assertEqual(resolved['filtered_item_locations'], 1)
+                    self.assertEqual(resolved['items'][0]['simulator_item_resolution'], 'resolved')
+                    self.assertFalse(resolved['has_more'])
+                    unresolved = await review(mixed_id, simulator_input_resolved=False, offset=1, limit=1)
+                    self.assertEqual(unresolved['filtered_item_locations'], 3)
+                    self.assertEqual(unresolved['items'][0]['simulator_item_resolution'], 'catalogue_item_unavailable')
+                    self.assertTrue(unresolved['has_more'])
+                    past_end = await review(mixed_id, simulator_input_resolved=False, offset=3, limit=1)
+                    self.assertEqual(past_end['filtered_item_locations'], 3)
+                    self.assertEqual(past_end['items'], [])
+                    self.assertFalse(past_end['has_more'])
+                    rings = await review(mixed_id, simulator_input_resolved=False, simulator_slot='finger1')
+                    self.assertEqual(rings['filtered_item_locations'], 1)
+                    self.assertEqual(rings['items'][0]['simulator_item_resolution'], 'item_link_unresolved')
+                    for filtered in [resolved, unresolved, past_end, rings]:
+                        self.assertEqual(filtered['inventory_evidence'], mixed_evidence)
                     evidence = result['inventory_evidence']
                     self.assertEqual(evidence['observed_storage_sections'], ['equipment', 'bags'])
                     self.assertEqual(evidence['unavailable_storage_sections'], ['character_bank', 'account_bank'])

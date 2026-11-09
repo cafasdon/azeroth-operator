@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter Forever owned-gear review by simulator input availability before paging.
+
 - Explain unresolved Forever gear candidates in owned-item reviews and plan
   exclusions, including unreadable links and unresolved enchant or suffix references.
 
