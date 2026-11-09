@@ -1,5 +1,7 @@
 # Changelog
 
+- Total hypothetical bag slot savings across all matching saved stack groups.
+
 - Estimate saved bag stack consolidation under a caller-supplied capacity.
 
 - Review saved carried stacks with identical item links without exposing links or producing operations.

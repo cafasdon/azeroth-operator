@@ -2589,28 +2589,47 @@ pub fn observed_bag_stack_groups(
         rows.sort_unstable();
     }
     groups.sort_unstable_by_key(|rows| rows[0]);
-    let shown: Vec<_> = groups.iter().take(20).map(|rows| {
-        let locations: Vec<_> = rows.iter().take(10).map(|&(bag, slot, count)| {
-            json!({"bag":bag,"slot":slot,"count":count})
-        }).collect();
+    let maximum = assumed_max_stack_size.map(|size| u64::from(size.get()));
+    let mut shown = Vec::new();
+    let mut estimated_groups = 0;
+    let mut maximum_slots_freed = 0;
+    for rows in &groups {
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
+        let minimum = maximum
+            .filter(|maximum| rows.iter().all(|row| row.2 <= *maximum))
+            .map(|maximum| quantity.div_ceil(maximum));
+        let freed = minimum.map(|count| rows.len() as u64 - count);
+        if let Some(freed) = freed {
+            estimated_groups += 1;
+            maximum_slots_freed += freed;
+        }
+        if shown.len() == 20 {
+            continue;
+        }
+        let locations: Vec<_> = rows
+            .iter()
+            .take(10)
+            .map(|&(bag, slot, count)| json!({"bag":bag,"slot":slot,"count":count}))
+            .collect();
         let mut group = json!({"stack_count":rows.len(),"total_quantity":quantity,
             "locations":locations,"locations_truncated":rows.len()>locations.len()});
-        if let Some(maximum) = assumed_max_stack_size {
-            let maximum = u64::from(maximum.get());
-            let consistent = rows.iter().all(|row| row.2 <= maximum);
-            let minimum = consistent.then(|| quantity.div_ceil(maximum));
-            group["capacity_projection"] = json!({"observed_counts_fit_assumption":consistent,
+        if maximum.is_some() {
+            group["capacity_projection"] = json!({"observed_counts_fit_assumption":minimum.is_some(),
                 "minimum_stacks_under_assumption":minimum,
-                "maximum_slots_freed_under_assumption":minimum.map(|count| rows.len() as u64 - count)});
+                "maximum_slots_freed_under_assumption":freed});
         }
-        group
-    }).collect();
+        shown.push(group);
+    }
     let mut report = json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
         "locations_without_link":locations_without_link,
         "stack_compatibility_verified":false,"game_execution":false});
-    if let Some(maximum) = assumed_max_stack_size {
-        report["assumed_max_stack_size"] = json!(maximum.get());
+    if let Some(maximum) = maximum {
+        report["assumed_max_stack_size"] = json!(maximum);
+        report["capacity_projection_summary"] = json!({
+            "estimated_group_count":estimated_groups,
+            "inconsistent_group_count":groups.len()-estimated_groups,
+            "maximum_slots_freed_across_estimated_groups":maximum_slots_freed
+        });
     }
     Some(report)
 }
