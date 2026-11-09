@@ -3134,3 +3134,8 @@ Use `list_snapshots.quest_reward_currency_id` to find saved fixed or choice
 currency rewards. When combined with an item reward filter, both rewards
 must be recorded on the same quest. Currency balances do not count as
 quest rewards, and reward eligibility remains unverified.
+
+Use `list_snapshots.quest_reward_renown_faction_id` to find quests with a
+recorded renown reward for that faction. This can be combined with item or
+currency reward filters on the same quest. Faction standing and paragon
+progress do not count as quest rewards.

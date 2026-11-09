@@ -89,6 +89,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied['sections']['quests']['10']['item_choices'] = {'1':{'item_id':118,'quantity':1}}
             tied['sections']['quests']['10']['currency_choices'] = {'1':{'currency_id':55,'quantity':2}}
             tied['sections']['quests']['7']['currency_rewards'] = {'1':{'currency_id':55,'quantity':1}}
+            tied['sections']['quests']['10']['renown_rewards'] = {'1':{'faction_id':55,'quantity':2}}
+            tied['sections']['quests']['3']['renown_rewards'] = {'1':{'faction_id':60,'quantity':1}}
             tied_key = store.ingest(tied)
             many_local = deepcopy(tied)
             many_local['character']['name'] = 'ManyLocal'
@@ -195,6 +197,18 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([row['quest_id'] for row in combined[0]['quest_match']['matching_quests']],[10])
                     self.assertEqual(await timed(quest_reward_currency_id=118),[])
                     await timed(error=True,family='retail',quest_reward_currency_id=55)
+                    renown = await timed(quest_reward_renown_faction_id=55,quest_reward_currency_id=55,
+                                         quest_reward_item_id=118)
+                    self.assertEqual([row['snapshot_id'] for row in renown],[tied_key])
+                    renown_match = renown[0]['quest_match']['matching_quests'][0]
+                    self.assertEqual(renown_match['quest_id'],10)
+                    self.assertEqual(renown_match['recorded_renown_reward_match'],
+                                     {'faction_id':55,'reward_eligibility_verified':False})
+                    self.assertEqual(await timed(quest_reward_renown_faction_id=60,
+                                                 quest_reward_currency_id=55),[])
+                    self.assertEqual(await timed(quest_reward_renown_faction_id=118),[])
+                    await timed(error=True,family='retail',quest_reward_renown_faction_id=55)
+                    await timed(error=True,quest_reward_renown_faction_id=0)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
                         quest_objective_finished=False,quest_objective_min_remaining=1,
                         quest_objective_max_remaining=1)

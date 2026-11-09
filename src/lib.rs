@@ -1895,6 +1895,7 @@ pub struct CaptureFilters<'a> {
     pub quest_title: Option<&'a str>,
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
     pub quest_reward_currency_id: Option<std::num::NonZeroU32>,
+    pub quest_reward_renown_faction_id: Option<std::num::NonZeroU32>,
     pub quest_objective_kind: Option<&'a str>,
     pub quest_objective_finished: Option<bool>,
     pub quest_objective_remaining: (Option<u32>, Option<u32>),
@@ -2136,6 +2137,7 @@ impl Store {
             quest_title,
             quest_reward_item_id,
             quest_reward_currency_id,
+            quest_reward_renown_faction_id,
             quest_objective_kind,
             quest_objective_finished,
             quest_objective_remaining,
@@ -2717,6 +2719,7 @@ impl Store {
                 && quest_title.is_none()
                 && quest_reward_item_id.is_none()
                 && quest_reward_currency_id.is_none()
+                && quest_reward_renown_faction_id.is_none()
                 && quest_readiness.is_none()
                 && quest_waypoint_map_id.is_none()
                 && !quest_on_captured_map
@@ -3389,6 +3392,9 @@ impl Store {
                                         id.get(),
                                     )
                             })
+                            && quest_reward_renown_faction_id.is_none_or(|id| {
+                                has_reward(quest, "renown_rewards", "faction_id", id.get())
+                            })
                             && (!filter_quest_objectives
                                 || analysis::quest_objective_matches(
                                     quest,
@@ -3415,6 +3421,7 @@ impl Store {
                         && (quest_title.is_some()
                             || quest_reward_item_id.is_some()
                             || quest_reward_currency_id.is_some()
+                            || quest_reward_renown_faction_id.is_some()
                             || quest_readiness.is_some()
                             || waypoint_map.is_some()
                             || filter_quest_timer
@@ -3827,6 +3834,7 @@ impl Store {
                         || filter_quest_objectives
                         || quest_reward_item_id.is_some()
                         || quest_reward_currency_id.is_some()
+                        || quest_reward_renown_faction_id.is_some()
                     {
                         let mut local: Vec<_> = s
                             .sections
@@ -3871,6 +3879,11 @@ impl Store {
                                         "fixed":has_reward(quest, "currency_rewards", "currency_id", currency.get()),
                                         "choice":has_reward(quest, "currency_choices", "currency_id", currency.get()),
                                         "reward_eligibility_verified":false});
+                                }
+                                if let Some(faction) = quest_reward_renown_faction_id {
+                                    row["recorded_renown_reward_match"] = json!({
+                                        "faction_id":faction,"reward_eligibility_verified":false,
+                                    });
                                 }
                                 if local_quest_soonest_first {
                                     row["remaining_seconds"] = json!(quest["timer"]["remaining_seconds"].as_u64());

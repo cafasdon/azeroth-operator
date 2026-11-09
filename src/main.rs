@@ -555,6 +555,8 @@ struct List {
     quest_reward_item_id: Option<std::num::NonZeroU32>,
     /// Match a currency ID in the same quest's recorded fixed or choice rewards.
     quest_reward_currency_id: Option<std::num::NonZeroU32>,
+    /// Match a faction ID in the same quest's recorded renown rewards.
+    quest_reward_renown_faction_id: Option<std::num::NonZeroU32>,
     /// Match an exact recorded objective kind on the same quest.
     quest_objective_kind: Option<String>,
     /// Match the reported finished state on the same objective.
@@ -2314,6 +2316,7 @@ impl Operator {
                 quest_title: args.quest_title.as_deref(),
                 quest_reward_item_id: args.quest_reward_item_id,
                 quest_reward_currency_id: args.quest_reward_currency_id,
+                quest_reward_renown_faction_id: args.quest_reward_renown_faction_id,
                 quest_objective_kind: args.quest_objective_kind.as_deref(),
                 quest_objective_finished: args.quest_objective_finished,
                 quest_objective_remaining: (
