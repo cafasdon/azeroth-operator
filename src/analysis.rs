@@ -5814,7 +5814,7 @@ pub fn trainer_points_projection(trainer: &Value, slots: Option<&[std::num::NonZ
     projection
 }
 
-pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
+pub fn merchant_quantity_plan(offers: &Value, quantity: u32, exact_product: bool) -> Value {
     let Some(offers) = offers.as_object() else {
         return Value::Null;
     };
@@ -5836,8 +5836,67 @@ pub fn merchant_quantity_plan(offers: &Value, quantity: u32) -> Value {
             ))
         })
         .min_by_key(|(cost, slot, _)| (*cost, *slot));
-    json!({"target_quantity":quantity,"offers_by_slot":rows,
-        "lowest_cost_copper_only_offer":lowest_cost.map(|(_, slot, plan)| json!({"slot":slot,"plan":plan}))})
+    let mut report = json!({"target_quantity":quantity,"offers_by_slot":rows,
+        "lowest_cost_copper_only_offer":lowest_cost.map(|(_, slot, plan)| json!({"slot":slot,"plan":plan}))});
+    if exact_product {
+        report["lowest_cost_copper_only_bundle_mix"] =
+            cheapest_merchant_bundle_mix(offers, quantity).unwrap_or(Value::Null);
+    }
+    report
+}
+
+fn cheapest_merchant_bundle_mix(
+    offers: &serde_json::Map<String, Value>,
+    quantity: u32,
+) -> Option<Value> {
+    if !(1..=1000).contains(&quantity) {
+        return None;
+    }
+    let mut bundles: Vec<_> = offers
+        .iter()
+        .filter_map(|(slot, offer)| {
+            if offer["available"] != -1 || offer["extended_cost"] != false {
+                return None;
+            }
+            Some((
+                slot.parse::<u32>().ok()?,
+                offer["bundle_size"].as_u64()?.max(1),
+                offer["price_copper"].as_u64()?,
+            ))
+        })
+        .collect();
+    bundles.sort_unstable_by_key(|(slot, _, _)| *slot);
+
+    // Each bundle strictly reduces remaining demand. Reusing a slot is valid for unlimited stock.
+    let mut best = vec![None; quantity as usize + 1];
+    best[0] = Some((0u64, 0u64, 0, 0));
+    for remaining in 1..=quantity {
+        best[remaining as usize] = bundles
+            .iter()
+            .filter_map(|&(slot, size, price)| {
+                let next = u64::from(remaining).saturating_sub(size) as usize;
+                let (cost, units, _, _) = best[next]?;
+                Some((
+                    cost.checked_add(price)?,
+                    units.checked_add(size)?,
+                    slot,
+                    next,
+                ))
+            })
+            .min();
+    }
+    let mut remaining = quantity as usize;
+    let (cost, units, _, _) = best[remaining]?;
+    let mut counts = BTreeMap::<u32, u32>::new();
+    while remaining > 0 {
+        let (_, _, slot, next) = best[remaining]?;
+        *counts.entry(slot).or_default() += 1;
+        remaining = next;
+    }
+    Some(
+        json!({"required_copper":cost,"units":units,"extra_units":units-u64::from(quantity),
+        "bundles_by_slot":counts}),
+    )
 }
 
 pub(crate) fn merchant_quantity_row(offer: &Value, quantity: u64) -> Option<Value> {

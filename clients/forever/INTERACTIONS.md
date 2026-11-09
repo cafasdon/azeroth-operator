@@ -11,6 +11,11 @@ stock because the count's unit semantics remain unverified.
 The inspection quantity plan identifies the cheapest retained single offer
 with unlimited captured stock and a copper-only price. It compares the total
 cost after rounding to whole bundles, with numeric slot order breaking ties.
+For an exact item or currency search, `lowest_cost_copper_only_bundle_mix`
+can combine whole bundles across eligible slots in the same visit. It
+minimises total copper, then total units, within the retained unlimited
+copper-only offers. Pet food searches can return different products and do
+not combine their quantities. All plans are historical quotes.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows

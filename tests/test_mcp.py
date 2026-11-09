@@ -1570,6 +1570,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "extended_cost": False, "available": -1,
                         }
                         merchant_key = SnapshotStore(Path(folder)).ingest(merchant)
+                        mixed_merchant = json.loads(json.dumps(merchant))
+                        mixed_merchant["sections"]["merchant_stock"] = {
+                            "1": {"item_id": 123456789, "bundle_size": 5, "price_copper": 5,
+                                  "extended_cost": False, "available": -1},
+                            "2": {"item_id": 123456789, "bundle_size": 3, "price_copper": 4,
+                                  "extended_cost": False, "available": -1},
+                            "3": {"item_id": 123456789, "bundle_size": 8, "price_copper": 1,
+                                  "extended_cost": False, "available": 1},
+                        }
+                        mixed_key = SnapshotStore(Path(folder)).ingest(mixed_merchant)
+                        mixed_quote = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": mixed_key, "section": "merchant_stock",
+                            "merchant_item_id": 123456789, "merchant_target_quantity": 8,
+                        })
+                        self.assertFalse(mixed_quote.isError, mixed_quote)
+                        mixed_plan = json.loads(mixed_quote.content[0].text)["merchant_quantity_plan"]
+                        self.assertEqual(mixed_plan["lowest_cost_copper_only_offer"]["plan"]["required_copper"], 10)
+                        self.assertEqual(mixed_plan["lowest_cost_copper_only_bundle_mix"], {
+                            "required_copper": 9, "units": 8, "extra_units": 0, "bundles_by_slot": {"1": 1, "2": 1},
+                        })
                         food_merchant = json.loads(json.dumps(merchant))
                         food_merchant["character"]["realm"] = "First"
                         food_merchant["sections"]["merchant_stock"] = {

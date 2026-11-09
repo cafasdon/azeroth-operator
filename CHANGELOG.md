@@ -1,5 +1,7 @@
 # Changelog
 
+- Optimise copper-only merchant bundle combinations for an exact item or currency in a saved Forever visit.
+
 - Identify the cheapest qualifying single copper-only offer in saved Forever merchant quantity plans.
 
 - Report whether captured merchant stock establishes quantity coverage for saved quotes.

@@ -2611,6 +2611,7 @@ impl Operator {
                         azeroth_operator::analysis::merchant_quantity_plan(
                             &value["data"],
                             quantity.get(),
+                            merchant_search.is_some(),
                         );
                 }
                 if let Some(slot) = args.merchant_offer_slot {
