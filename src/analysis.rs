@@ -3807,10 +3807,13 @@ pub fn action_bar_spellbook(
     include_reverse: bool,
 ) -> Value {
     let book = spellbook.and_then(|book| book["entries"].as_object());
-    let mut base_ids = BTreeSet::new();
+    let mut base_aliases = BTreeMap::<u64, BTreeSet<u64>>::new();
     let mut reported_ids = BTreeSet::new();
     for row in book.into_iter().flat_map(|rows| rows.values()) {
-        base_ids.extend(row["base_spell_id"].as_u64());
+        if let Some((base, reported)) = row["base_spell_id"].as_u64().zip(row["spell_id"].as_u64())
+        {
+            base_aliases.entry(base).or_default().insert(reported);
+        }
         reported_ids.extend(row["spell_id"].as_u64());
     }
     let action_slots = actions["slots"].as_object();
@@ -3824,7 +3827,7 @@ pub fn action_bar_spellbook(
                 (
                     slot,
                     json!({"action_spell_id":id,
-                "matches_base_spell_id":observed.map(|id| base_ids.contains(&id)),
+                "matches_base_spell_id":observed.map(|id| base_aliases.contains_key(&id)),
                 "matches_reported_spell_id":observed.map(|id| reported_ids.contains(&id))}),
                 )
             })
@@ -3839,7 +3842,23 @@ pub fn action_bar_spellbook(
             })
             .collect::<BTreeSet<_>>()
     });
+    let ambiguous_aliases = slots.as_ref().filter(|_| book.is_some()).map(|slots| {
+        slots
+            .values()
+            .filter_map(|row| {
+                let id = row["action_spell_id"].as_u64()?;
+                if reported_ids.contains(&id) {
+                    return None;
+                }
+                base_aliases
+                    .get(&id)
+                    .filter(|aliases| aliases.len() > 1)
+                    .map(|aliases| (id, aliases))
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
     let mut review = json!({"spellbook_available":book.is_some(),"spell_slots":slots,
+        "ambiguous_base_aliases_by_action_id":ambiguous_aliases,
         "observed_action_spell_slots_without_spellbook_match":unmatched_slots});
     let matches = book.zip(action_slots).map(|(book, actions)| {
         let mut matches: BTreeMap<u64, BTreeSet<_>> = actions.values()

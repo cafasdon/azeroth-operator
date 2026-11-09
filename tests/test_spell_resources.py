@@ -45,13 +45,15 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
             invalid.append(('cooldown_state',state))
         with tempfile.TemporaryDirectory() as folder:
             store = SnapshotStore(Path(folder)); good = []; bad = []
-            for mode in ['full','legacy','empty','missing','maximum']:
+            for mode in ['full','legacy','empty','missing','maximum','ambiguous']:
                 saved = deepcopy(base)
                 if mode=='legacy':
                     for row in saved['sections']['spellbook']['entries'].values():
                         for field in fields: row.pop(field,None)
                 if mode=='empty': saved['sections']['spellbook']['entries'] = {}
                 if mode=='missing': saved['sections'].pop('spellbook')
+                if mode=='ambiguous': saved['sections']['spellbook']['entries']['6']={
+                    'base_spell_id':100,'spell_id':102}
                 if mode=='maximum': saved['sections']['spellbook']['entries'] = {
                     str(i):{'base_spell_id':100,'spell_id':101,'charge_count':{'current':1,'maximum':2}}
                     for i in range(1,1025)}
@@ -74,6 +76,8 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                     for key,mode,book in good:
                         summary = (await call('character_summary',snapshot_id=key))['spellbook_resource_observations']
                         review = (await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',action_bar_spellbook=True))['action_bar_spellbook']
+                        self.assertEqual(review['ambiguous_base_aliases_by_action_id'],
+                                         None if book is None else {'100':[101,102]} if mode=='ambiguous' else {})
                         if mode in ('full','legacy'):
                             self.assertEqual(review['observed_action_spell_slots_without_spellbook_match'],[4])
                         elif mode == 'empty':

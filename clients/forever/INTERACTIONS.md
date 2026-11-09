@@ -4,6 +4,9 @@ The saved action-bar spellbook review lists observed spell slots whose
 action ID matched neither a captured base nor reported spell ID. Missing
 spellbook or action observations leave the list unknown. An unmatched slot
 can reflect incomplete capture and does not establish castability.
+The review also flags action IDs that match only a captured base spell ID
+with multiple distinct reported IDs. It lists those IDs without selecting
+an override or borrowing its resource readings.
 
 The timed quest checklist counts quests with recorded timers that were ready
 to turn in at capture and highlights the one with the shortest remaining
