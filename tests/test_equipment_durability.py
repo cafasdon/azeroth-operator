@@ -69,6 +69,9 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                     for key, covers, remaining, shortfall in zip(
                         budgets,[None,False,True,True],[None,None,0,3],[None,10,0,0],strict=True):
                         status=(await call('character_summary',snapshot_id=key))['repair_status']
+                        quote=await call('inspect_snapshot',snapshot_id=key,section='repair_quote')
+                        self.assertEqual(quote['data'],{'copper':10})
+                        self.assertEqual(quote['repair_status'],status)
                         self.assertIs(status['wallet_covers_saved_repair_quote'],covers)
                         self.assertEqual(status['wallet_remaining_after_saved_repair_quote_copper'],remaining)
                         self.assertEqual(status['wallet_shortfall_copper'],shortfall)

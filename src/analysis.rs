@@ -7461,6 +7461,31 @@ fn quest_waypoint_maps(quests: &serde_json::Map<String, Value>) -> Value {
     json!({"by_map_id":maps,"waypoint_map_unknown":unknown})
 }
 
+pub(crate) fn repair_status(s: &Snapshot) -> Value {
+    let alerts = s
+        .sections
+        .get("durability_alerts")
+        .and_then(Value::as_object);
+    let quote = s
+        .sections
+        .get("repair_quote")
+        .and_then(|quote| quote["copper"].as_u64());
+    let wallet = s
+        .sections
+        .get("wallet")
+        .and_then(|wallet| wallet["copper"].as_u64());
+    let budget = quote.zip(wallet);
+    json!({
+        "low_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("low")).count()),
+        "broken_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("broken")).count()),
+        "repair_all_quote_copper":quote,
+        "wallet_shortfall_copper":budget.map(|(cost, balance)| cost.saturating_sub(balance)),
+        "wallet_covers_saved_repair_quote":budget.map(|(cost, balance)| cost <= balance),
+        "wallet_remaining_after_saved_repair_quote_copper":budget
+            .and_then(|(cost, balance)| balance.checked_sub(cost)),
+    })
+}
+
 pub fn summary(s: &Snapshot) -> Value {
     let occupied = s
         .sections
@@ -7507,20 +7532,7 @@ pub fn summary(s: &Snapshot) -> Value {
         .sections
         .get("wallet")
         .and_then(|wallet| wallet["copper"].as_u64());
-    let repair_status = is_forever.then(|| {
-        let alerts = s.sections.get("durability_alerts").and_then(Value::as_object);
-        let quote = s.sections.get("repair_quote").and_then(|quote| quote["copper"].as_u64());
-        let budget = quote.zip(wallet);
-        json!({
-            "low_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("low")).count()),
-            "broken_slots":alerts.map(|slots| slots.values().filter(|status| status.as_str()==Some("broken")).count()),
-            "repair_all_quote_copper":quote,
-            "wallet_shortfall_copper":budget.map(|(cost, balance)| cost.saturating_sub(balance)),
-            "wallet_covers_saved_repair_quote":budget.map(|(cost, balance)| cost <= balance),
-            "wallet_remaining_after_saved_repair_quote_copper":budget
-                .and_then(|(cost, balance)| balance.checked_sub(cost)),
-        })
-    });
+    let repair_status = is_forever.then(|| repair_status(s));
     let waypoint_maps = quests.filter(|_| is_forever).map(quest_waypoint_maps);
     let captured_map = s
         .sections

@@ -3238,6 +3238,9 @@ impl Store {
             if name == "pet_care" && s.client.family == Family::Forever {
                 result["pet_food_locations"] = json!(analysis::pet_food_locations(&s));
             }
+            if name == "repair_quote" && s.client.family == Family::Forever {
+                result["repair_status"] = analysis::repair_status(&s);
+            }
             if name == "player_pvp_progression" && s.client.family == Family::Forever {
                 result["player_pvp_progression_observation"] = json!(
                     s.sections

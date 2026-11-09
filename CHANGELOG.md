@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved Forever repair affordability directly when inspecting a repair quote.
+
 - Find saved Forever repair visits that leave a requested amount of copper after repairs.
 
 - Show affordability and remaining copper after the saved Forever repair-all quote.
