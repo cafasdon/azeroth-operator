@@ -40,14 +40,33 @@ not imply learned status or usable yields. Null/empty lists in chain mode retain
 automatic defaults. Final remaining-item projections cover touched chain items,
 not all possessions. See [ADR 020](../../docs/ADR-020-explicit-reagent-producers.md).
 
+Combine `suggest_reagent_chain: true` with `merchant_reagent_plan: true` to
+price the complete draft's external material needs. The quote appears only at
+`reagent_chain.merchant_reagent_plan`, replacing a standalone top-level quote
+for this mode. Shared leaf demand is combined before bundle rounding; observed
+stock has already been deducted and is not deducted again. Intermediate items
+produced by the chain are not separately quoted.
+
+Offers come from the inventory capture unless `merchant_snapshot_id` selects
+an explicit same-character, exact-client/build capture. Affordability uses the
+inventory wallet, and both capture times are reported. Blocked chains or absent
+merchant observations yield null. If any required leaf lacks a usable unlimited
+copper-only quote, or summing the selected line costs overflows, the aggregate
+remains unknown. Limited, extended-cost or overflowing alternatives do not
+invalidate another usable quote. A missing wallet leaves affordability
+unknown. Zero external demand has zero cost
+when a merchant observation exists. Quotes are historical and do not verify
+purchase/craft eligibility or execute anything. See
+[ADR 021](../../docs/ADR-021-reagent-chain-merchant-quotes.md).
+
 Normal root recipe, request and inventory validation still runs first and can
 reject the whole review, including a root learning conflict. During expansion,
 multiple captured producers without an explicit choice, an uncovered cycle, unknown output/yield,
 producer learning conflicts, unobserved inventory or step/craft limits return a
 blocked chain with an explicit reason. Its prefix steps are incomplete; full external
 requirements and final stock projection are null. This mode requires an exact
-`recipe_id` and cannot combine with `additional_recipes`, dependency-order or
-merchant-plan modes. The default recipe review is unchanged. See
+`recipe_id` and cannot combine with `additional_recipes` or dependency-order
+mode. The default recipe review is unchanged. See
 [ADR 019](../../docs/ADR-019-captured-reagent-chains.md).
 
 To narrow discovery by saved recipe-view flags, add `recipe_view_filter`, for

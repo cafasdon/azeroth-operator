@@ -6,6 +6,10 @@ fixed intermediate producers, shares a modeled stock ledger and uses reported
 minimum output quantities. It never executes crafting or acquisitions. Detailed
 assumptions and bounds are in ADR 019.
 
+This records the original chain increment at `59bd59e`, including its then-
+prohibited merchant combination. The later supported composition is qualified
+separately in `reagent-chain-merchant-verification-2026-11-09.md` and ADR 021.
+
 ## Author evidence
 
 ```text

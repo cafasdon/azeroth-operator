@@ -4682,6 +4682,39 @@ pub fn material_merchant_plan(
     plan
 }
 
+/// Chain leaves are already net shortages: do not subtract the observed stock again.
+pub fn reagent_chain_merchant_plan(
+    chain: &Value,
+    merchant: &Snapshot,
+    inventory: &Snapshot,
+) -> Value {
+    if chain["draft_complete"] != true {
+        return Value::Null;
+    }
+    let Some(external) = chain["external_material_requirements"].as_array() else {
+        return Value::Null;
+    };
+    let mut seen = BTreeSet::new();
+    let materials: Option<Vec<_>> = external.iter().map(|row| {
+        let item = row["item_id"].as_u64().filter(|n|*n > 0 && *n <= u64::from(u32::MAX))?;
+        let quantity = row["quantity"].as_u64().filter(|n|*n > 0)?;
+        if !seen.insert(item) { return None; }
+        Some(json!({"item_id":item,"shortfall_vs_observed":quantity,"required_before_batch":quantity}))
+    }).collect();
+    let Some(materials) = materials else {
+        return Value::Null;
+    };
+    let mut plan = material_merchant_plan(&materials, merchant, inventory);
+    if plan.is_object() {
+        plan["basis"] = json!("chain_external_material_shortfalls");
+        plan["inventory_captured_at"] = json!(inventory.captured_at);
+        plan["purchase_eligibility_verified"] = json!(false);
+        plan["live"] = json!(false);
+        plan["game_execution"] = json!(false);
+    }
+    plan
+}
+
 fn merchant_reagent_budget(
     demands: impl Iterator<Item = (u64, Option<u64>)>,
     offers: &serde_json::Map<String, Value>,

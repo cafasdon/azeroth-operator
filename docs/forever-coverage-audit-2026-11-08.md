@@ -195,3 +195,9 @@ then let a caller resolve reagent-chain ambiguity without selecting recipes by
 guesswork. Same-output/capture validation, demand-driven usage and existing
 producer/context/budget guards remain. Conditional drafts still do not verify
 availability, craftability, ownership or optimality.
+
+[Captured chain-leaf merchant quotes](reagent-chain-merchant-verification-2026-11-09.md)
+then connect complete external material demand to saved bundle prices and the
+inventory wallet. Historical quote totals preserve missing/overflow unknowns,
+context guards and false purchase/craftability flags. Current availability,
+actual acquisition and whole-route optimisation remain unqualified.

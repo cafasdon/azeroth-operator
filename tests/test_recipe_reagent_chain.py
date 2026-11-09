@@ -124,7 +124,7 @@ class RecipeReagentChainTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(eight['steps']),8)
                     self.assertEqual(eight['external_material_requirements'][0]['item_id'],99999)
                     for bad in [{'recipe_id':None},{'additional_recipes':[{'snapshot_id':key,'recipe_id':102,'crafts':1}]},
-                        {'merchant_reagent_plan':True},{'suggest_dependency_order':True},{'suggest_reagent_chain':'true'}]:
+                        {'suggest_dependency_order':True},{'suggest_reagent_chain':'true'}]:
                         await plan(error=True,**bad)
                     no_chain = await plan(suggest_reagent_chain=False)
                     self.assertNotIn('reagent_chain',no_chain)

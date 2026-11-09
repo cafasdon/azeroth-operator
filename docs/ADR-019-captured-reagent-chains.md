@@ -36,12 +36,13 @@ captured or unknown; skill gains, cooldown availability and craftability are
 not inferred from material feasibility.
 
 This is deterministic bounded expansion, not a global optimisation or proof of
-the best crafting route. Explicit exact ID and standalone mode are required;
-batch, dependency-order and merchant-plan modes cannot be combined with this
-option. Their existing behaviour is preserved. Pricing external leaves and
-supporting caller-selected alternatives are future extensions. All gameplay
+the best crafting route. Explicit exact ID and standalone recipe mode are required;
+batch and dependency-order modes cannot be combined with this option. Their
+existing behaviour is preserved. Later ADRs below add explicit producer choices
+and historical external-leaf merchant quotes. All gameplay
 execution and verified ownership/craftability/optimisation flags remain false.
 
 Subsequent extension, 9 November 2026: ADR 020 implements caller-selected
-captured producers for ambiguity. Automatic selection remains unambiguous-only;
-external-leaf pricing is still future work.
+captured producers for ambiguity. Automatic selection remains unambiguous-only.
+ADR 021 subsequently allows captured merchant quotes for complete external
+material needs, superseding the initial merchant-mode prohibition.

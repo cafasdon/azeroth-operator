@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Complete reagent-chain drafts can opt into saved merchant quoting of their
+external leaves. Already-net quantities are priced once after shared stock
+allocation, with no separate intermediate/root quote. Offer captures retain
+character/client guards; affordability uses only the inventory wallet. Blocked
+chains and absent offers stay unknown, and no purchase eligibility or action
+is inferred. Ordinary non-chain quote behaviour is unchanged.
+[Offline evidence](../../docs/reagent-chain-merchant-verification-2026-11-09.md).
+
 Reagent-chain drafts accept up to eight explicit `reagent_producer_choices` to
 resolve captured producer ambiguity. Every unique positive item/recipe mapping
 must match a fixed output in the same bulk capture. Only uncovered demand

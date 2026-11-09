@@ -554,12 +554,12 @@ struct RecipeReview {
     /// Suggest a producer-before-consumer order for a batch with known fixed inputs and outputs.
     #[serde(default)]
     suggest_dependency_order: bool,
-    /// Draft up to eight automatic captured producer steps for one exact bulk recipe; no batch or merchant mode.
+    /// Draft up to eight captured producer steps for one exact bulk recipe; no batch or dependency-order mode.
     #[serde(default)]
     suggest_reagent_chain: bool,
     /// Up to eight explicit item/recipe producer choices within the same bulk capture; requires reagent-chain mode.
     reagent_producer_choices: Option<Vec<azeroth_operator::analysis::RecipeProducerChoice>>,
-    /// Match material shortfalls against saved merchant offers.
+    /// Price saved merchant offers for material shortfalls, or net external leaves in reagent-chain mode.
     #[serde(default)]
     merchant_reagent_plan: bool,
     /// Optional merchant capture for the same character and exact client/build.
@@ -1110,9 +1110,8 @@ impl Operator {
                 !args.suggest_reagent_chain
                     || (args.recipe_id.is_some()
                         && additional.is_empty()
-                        && !args.suggest_dependency_order
-                        && !args.merchant_reagent_plan),
-                "Reagent chains require one exact bulk recipe without batch or merchant mode"
+                        && !args.suggest_dependency_order),
+                "Reagent chains require one exact bulk recipe without batch or dependency-order mode"
             );
             anyhow::ensure!(additional.len() <= 7, "Too many recipes");
             anyhow::ensure!(
@@ -1213,8 +1212,17 @@ impl Operator {
                 }
                 let stock = inventory.as_ref().unwrap_or(&snapshot);
                 let offers = merchant.as_ref().unwrap_or(stock);
-                review["merchant_reagent_plan"] =
-                    azeroth_operator::analysis::recipe_merchant_plan(&review, offers, stock);
+                if args.suggest_reagent_chain {
+                    let quote = azeroth_operator::analysis::reagent_chain_merchant_plan(
+                        &review["reagent_chain"],
+                        offers,
+                        stock,
+                    );
+                    review["reagent_chain"]["merchant_reagent_plan"] = quote;
+                } else {
+                    review["merchant_reagent_plan"] =
+                        azeroth_operator::analysis::recipe_merchant_plan(&review, offers, stock);
+                }
                 if args.suggest_dependency_order {
                     let ordered = &review["dependency_order"];
                     let dependency_review = serde_json::json!({

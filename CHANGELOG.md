@@ -1,5 +1,9 @@
 # Changelog
 
+- Quote ingredient-chain external material needs against saved merchant offers,
+  rounding combined leaf demand once and using the inventory wallet; retain
+  unknown totals for blocked drafts, missing quotes or arithmetic overflow.
+
 - Resolve reagent-chain ambiguity with explicit same-capture item/recipe
   producer choices; validate every mapping, report requested/consulted choices
   and preserve existing evidence, stock, cycle and budget guards.
