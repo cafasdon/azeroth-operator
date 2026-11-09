@@ -1451,6 +1451,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(quest["timer_change"], {
                             "before_observed": True, "after_observed": True,
                             "remaining_seconds_delta": -74, "total_seconds_delta": 0,
+                            "before_projected_expiry_at": "2025-01-01T00:01:14Z",
+                            "after_projected_expiry_at": "2025-01-01T00:00:00Z",
+                            "projected_expiry_changed": True,
                         })
                         self.assertEqual(quest["objective_counts_by_kind"], {
                             "before": {"event": {"finished": 0, "unfinished": 1},
