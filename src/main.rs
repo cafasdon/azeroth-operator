@@ -206,7 +206,7 @@ struct Inspect {
     bag_restock_mail_snapshot_id: Option<String>,
     /// Compare residual bag shortfalls with readable loot from a compatible saved capture.
     bag_restock_loot_snapshot_id: Option<String>,
-    /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
+    /// Reserve copper from the saved inventory wallet for a merchant quote or split plan.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
     /// Use this compatible same-time or newer capture for quest inventory and wallet observations.
@@ -2842,11 +2842,13 @@ impl Operator {
         if args
             .bag_restock_wallet_reserve_copper
             .is_some_and(|reserve| {
-                reserve > 9_999_999_999_999 || args.bag_restock_merchant_snapshot_id.is_none()
+                reserve > 9_999_999_999_999
+                    || (args.bag_restock_merchant_snapshot_id.is_none()
+                        && !args.bag_restock_split_merchant_plan)
             })
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "A restocking wallet reserve requires a saved merchant quote and a valid copper amount",
+                "A restocking wallet reserve requires a saved merchant quote or split plan and a valid copper amount",
             )]);
         }
         if args.bag_restock_mail_snapshot_id.is_some() && !args.bag_restock_pending_mail {
@@ -3296,6 +3298,10 @@ impl Operator {
                             .or_else(|| {
                                 uniform_cost
                                     .or(args.bag_restock_max_merchant_visits.map(|_| 0))
+                                    .or(args
+                                        .bag_restock_wallet_reserve_copper
+                                        .filter(|_| args.bag_restock_split_merchant_plan)
+                                        .map(|_| 0))
                                     .map(|cost| vec![cost; ids.len()])
                             });
                         let mut visits = Vec::new();
@@ -3406,6 +3412,18 @@ impl Operator {
                                     }
                                     if let Some(cap) = args.bag_restock_max_merchant_visits {
                                         plan["maximum_merchant_visits"] = serde_json::json!(cap);
+                                    }
+                                    if let Some(reserve) = args.bag_restock_wallet_reserve_copper {
+                                        let total = plan["complete_quote_copper"].as_u64()?;
+                                        let spendable = wallet.map(|balance| balance.saturating_sub(reserve));
+                                        plan["after_wallet_reserve"] = serde_json::json!({
+                                            "wallet_reserve_copper":reserve,
+                                            "spendable_copper":spendable,
+                                            "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
+                                            "plan_shortfall_vs_spendable_copper":spendable.map(|balance| total.saturating_sub(balance)),
+                                            "affordable":wallet.map(|balance| balance.checked_sub(reserve)
+                                                .is_some_and(|spendable| total <= spendable)),
+                                        });
                                     }
                                     Some(plan)
                                 }));

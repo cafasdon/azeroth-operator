@@ -3074,3 +3074,7 @@ satisfied request. The unrestricted split plan remains available separately.
 Complete travel-adjusted plans report the captured inventory wallet and the
 copper remaining or short after purchases and assumed visit costs. Missing
 wallet data leaves both amounts unknown.
+
+`bag_restock_wallet_reserve_copper` also works with split planning. The
+travel-adjusted result checks whether purchases and assumed visit costs
+fit after reserving copper. If no visit costs are supplied, it assumes zero.

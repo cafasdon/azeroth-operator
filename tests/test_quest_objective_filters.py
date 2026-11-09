@@ -311,6 +311,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(covered_budget['inventory_wallet_shortfall_copper'],0)
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
                                 bag_restock_max_merchant_visits=5)
+                    for reserve, travel_cost, spendable, reserve_gap, plan_gap, affordable in [
+                        (5,0,2,0,0,True),(6,0,1,0,1,False),(8,0,0,1,2,False),
+                        (5,1,2,0,1,False),
+                    ]:
+                        travel_options = ({'bag_restock_cost_per_merchant_visit_copper':travel_cost}
+                                          if travel_cost else {})
+                        budgeted = await query(**{**split_args,'snapshot_id':bank_stock_key},
+                            bag_restock_compare_merchant_snapshot_ids=[merchant_key],
+                            bag_restock_wallet_reserve_copper=reserve,**travel_options)
+                        self.assertEqual(budgeted['bag_restock_travel_adjusted_merchant_plan']['after_wallet_reserve'],{
+                            'wallet_reserve_copper':reserve,'spendable_copper':spendable,
+                            'reserve_shortfall_copper':reserve_gap,'plan_shortfall_vs_spendable_copper':plan_gap,
+                            'affordable':affordable})
                     await query(error=True,**split_args)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},

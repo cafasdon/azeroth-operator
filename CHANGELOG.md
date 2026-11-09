@@ -1,5 +1,7 @@
 # Changelog
 
+- Check saved Forever split restocking plans against a wallet reserve.
+
 - Show the saved wallet remainder or shortfall for travel-adjusted Forever restocking.
 
 - Cap the number of visits in a saved Forever merchant restocking plan.
