@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever flight quotes that preserve a requested wallet reserve.
+
 - Compare saved Forever visible dialogue options while retaining duplicate counts.
 
 - Find saved Forever pet commands by exact token and recorded active state.

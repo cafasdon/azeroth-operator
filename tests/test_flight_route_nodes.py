@@ -91,6 +91,30 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(listed['snapshots']),2)
                     match=next(row for row in listed['snapshots'] if row['snapshot_id']==key)['flight_match']
                     self.assertEqual(match['observed_route_node_ids'],path)
+                    no_wallet = deepcopy(base)
+                    no_wallet['sections'].pop('wallet')
+                    no_fare = deepcopy(legacy)
+                    no_fare['sections']['flight_map']['entries']['2'].pop('fare_copper')
+                    poor = deepcopy(base)
+                    poor['sections']['wallet']['copper'] = 99
+                    for capture in [no_wallet, no_fare, poor]:
+                        store.ingest(capture)
+                    for reserve, expected in [(0, {key,old}), (100, {key,old}), (101, set())]:
+                        result = await call('list_snapshots', family='forever',
+                            flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)
+                        self.assertEqual({row['snapshot_id'] for row in result['snapshots']}, expected)
+                        for row in result['snapshots']:
+                            self.assertEqual(row['flight_match']['remaining_wallet_copper'], 100)
+                            self.assertEqual(row['flight_match']['required_wallet_reserve_copper'], reserve)
+                    limited = await call('list_snapshots', family='forever', flight_destination_node_id=20,
+                        flight_wallet_reserve_copper=100, flight_max_fare_copper=99)
+                    self.assertEqual(limited['snapshots'], [])
+                    for args in [
+                        {'family':'forever','flight_wallet_reserve_copper':0},
+                        {'family':'forever','flight_wallet_reserve_copper':10**13,'flight_destination_node_id':20},
+                        {'family':'classic','flight_wallet_reserve_copper':0,'flight_destination_node_id':20},
+                    ]:
+                        self.assertTrue((await session.call_tool('list_snapshots', args)).isError)
                     longest_data=await call('inspect_snapshot',snapshot_id=longest_key,section='flight_map',flight_node_id=65)
                     self.assertEqual(len(longest_data['data']['entries']['65']['observed_route_node_ids']),65)
                     for bad in bad_keys:

@@ -2134,6 +2134,12 @@ Use `flight_affordable_only` to keep reachable destinations with a recorded
 fare at or below the same capture's wallet. Unknown fares are excluded,
 and an unavailable wallet leaves the filtered result unknown.
 
+Set `flight_wallet_reserve_copper` on `list_snapshots` with a destination
+to keep quotes whose recorded fare leaves at least that amount in the same
+captured wallet. This implies affordability, including when the reserve is
+zero. The matching row reports the calculated remaining copper and requested
+reserve. Unknown fares or wallets cannot satisfy this historical filter.
+
 Set `flight_wallet_projection: true` with `section: "flight_map"` in
 `inspect_snapshot` for affordability and copper shortfall by captured
 slot. A missing fare or wallet leaves both values unknown. Each comparison

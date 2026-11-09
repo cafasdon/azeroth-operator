@@ -1882,6 +1882,7 @@ pub struct CaptureFilters<'a> {
     pub flight_max_fare_copper: Option<u64>,
     pub flight_departure_map_id: Option<std::num::NonZeroU32>,
     pub flight_affordable_only: bool,
+    pub flight_wallet_reserve_copper: Option<u64>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -2107,6 +2108,7 @@ impl Store {
             flight_max_fare_copper,
             flight_departure_map_id,
             flight_affordable_only,
+            flight_wallet_reserve_copper,
         } = query;
         for sections in [
             required_sections,
@@ -2390,6 +2392,12 @@ impl Store {
         ensure!(
             !flight_affordable_only || flight_destination_node_id.is_some(),
             "Flight affordability filtering requires a destination"
+        );
+        ensure!(
+            flight_wallet_reserve_copper.is_none_or(|reserve| {
+                flight_destination_node_id.is_some() && reserve <= 9_999_999_999_999
+            }),
+            "Flight wallet reserve requires a destination and a valid copper amount"
         );
         ensure!(
             flight_max_fare_copper.is_none_or(|fare| {
@@ -3498,27 +3506,34 @@ impl Store {
                         {
                             return None;
                         }
-                        analysis::captured_flight_route(s.sections.get("flight_map")?, node.get())
-                            .filter(|route| {
-                                let fare = route["fare_copper"].as_u64();
-                                flight_origin_node_id.is_none_or(|origin| {
-                                    route["origin_node_id"].as_u64()
-                                        == Some(u64::from(origin.get()))
-                                }) && flight_max_fare_copper
-                                    .is_none_or(|maximum| fare.is_some_and(|fare| fare <= maximum))
-                                    && (!flight_affordable_only
-                                        || s.sections
-                                            .get("wallet")
-                                            .and_then(|wallet| wallet["copper"].as_u64())
-                                            .zip(fare)
-                                            .is_some_and(|(balance, fare)| fare <= balance))
-                            })
-                            .map(|mut route| {
-                                if flight_departure_map_id.is_some() {
-                                    route["captured_departure_map_id"] = json!(player_map);
+                        let mut route = analysis::captured_flight_route(
+                            s.sections.get("flight_map")?,
+                            node.get(),
+                        )?;
+                        let fare = route["fare_copper"].as_u64();
+                        if flight_origin_node_id.is_some_and(|origin| {
+                            route["origin_node_id"].as_u64() != Some(u64::from(origin.get()))
+                        }) || flight_max_fare_copper
+                            .is_some_and(|maximum| fare.is_none_or(|fare| fare > maximum))
+                        {
+                            return None;
+                        }
+                        if flight_affordable_only || flight_wallet_reserve_copper.is_some() {
+                            let remaining = s.sections.get("wallet")?["copper"]
+                                .as_u64()?
+                                .checked_sub(fare?)?;
+                            if let Some(reserve) = flight_wallet_reserve_copper {
+                                if remaining < reserve {
+                                    return None;
                                 }
-                                route
-                            })
+                                route["remaining_wallet_copper"] = json!(remaining);
+                                route["required_wallet_reserve_copper"] = json!(reserve);
+                            }
+                        }
+                        if flight_departure_map_id.is_some() {
+                            route["captured_departure_map_id"] = json!(player_map);
+                        }
+                        Some(route)
                     });
                     if flight_destination_node_id.is_some() && flight_match.is_none() {
                         continue;

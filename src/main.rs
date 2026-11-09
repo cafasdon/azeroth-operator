@@ -547,6 +547,8 @@ struct List {
     /// Keep routes whose recorded fare fits the wallet in the same saved capture.
     #[serde(default)]
     flight_affordable_only: bool,
+    /// Keep saved fares that leave at least this much copper in the same captured wallet.
+    flight_wallet_reserve_copper: Option<u64>,
     offset: Option<usize>,
     limit: Option<usize>,
 }
@@ -2164,6 +2166,7 @@ impl Operator {
                 flight_max_fare_copper: args.flight_max_fare_copper,
                 flight_departure_map_id: args.flight_departure_map_id,
                 flight_affordable_only: args.flight_affordable_only,
+                flight_wallet_reserve_copper: args.flight_wallet_reserve_copper,
             },
             args.offset.unwrap_or(0),
             args.limit.unwrap_or(20),
