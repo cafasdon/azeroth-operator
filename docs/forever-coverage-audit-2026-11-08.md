@@ -443,3 +443,9 @@ It preserves native import unavailability, partial/unknown evidence and false
 full-allocation/model flags. No simulator or game runs through this query.
 [Contract](ADR-052-forever-talent-template-mcp.md) ·
 [Offline checks](forever-talent-mcp-verification-2026-11-09.md).
+
+Typed loot extension: raw reported currency IDs/quantities and money-slot
+presence can now be captured separately. No container reward conversion, money
+amount, owned balance or pickup right is inferred. Item requirement review
+separates known non-item rows from unreadable rows. Native qualification remains
+pending. [Contract](ADR-053-forever-typed-loot-observations.md).

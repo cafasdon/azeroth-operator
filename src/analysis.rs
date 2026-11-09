@@ -1593,10 +1593,15 @@ pub fn review_loot_requirements(
     let entries = section["entries"]
         .as_object()
         .ok_or_else(|| anyhow::anyhow!("Loot rows unavailable"))?;
-    let unknown = entries
+    let non_item = entries
         .values()
         .filter(|row| row["status"] != "item")
         .count();
+    let unknown = entries
+        .values()
+        .filter(|row| row["status"] == "unreadable_or_non_item")
+        .count();
+    let known_non_item = non_item - unknown;
     let mut all_covered = true;
     let mut rows = Vec::new();
     for requirement in requirements {
@@ -1628,14 +1633,17 @@ pub fn review_loot_requirements(
             "remaining_request_if_readable_items_acquired":requested.saturating_sub(readable),
             "readable_slots_cover_request":readable >= requested}));
     }
-    Ok(
-        json!({"basis":"captured_readable_loot_rows_only","grouping":"base_item_id_only",
+    let mut report = json!({"basis":"captured_readable_loot_rows_only","grouping":"base_item_id_only",
         "captured_at":snapshot.captured_at,"slot_count":section["slot_count"],
-        "unreadable_or_non_item_slots":unknown,"additional_matching_quantities_unknown":unknown > 0,
+        "unreadable_or_non_item_slots":non_item,"additional_matching_quantities_unknown":unknown > 0,
         "all_requests_covered_by_readable_slots":all_covered,"items":rows,
         "counts_toward_owned_inventory":false,"ownership_verified":false,"lootability_verified":false,
-        "game_execution":false,"live":false}),
-    )
+        "game_execution":false,"live":false});
+    if known_non_item > 0 {
+        report["known_non_item_slots"] = json!(known_non_item);
+        report["unreadable_slots"] = json!(unknown);
+    }
+    Ok(report)
 }
 
 #[derive(
@@ -6588,10 +6596,25 @@ pub fn summary(s: &Snapshot) -> Value {
                     .entry(row["item_id"].as_u64().unwrap() as u32)
                     .or_default() += row["quantity"].as_u64().unwrap();
             }
-            json!({"coverage":section["coverage"],"slot_count":section["slot_count"],
+            let mut report=json!({"coverage":section["coverage"],"slot_count":section["slot_count"],
             "item_slots":item_slots,"unreadable_or_non_item_slots":rows.len()-item_slots,
             "observed_item_quantities":quantities,"counts_toward_owned_inventory":false,
-            "ownership_verified":false,"lootability_verified":false,"game_execution":false})
+            "ownership_verified":false,"lootability_verified":false,"game_execution":false});
+            let currency_slots=rows.values().filter(|row| row["status"]=="reported_currency").count();
+            let money_slots=rows.values().filter(|row| row["status"]=="money").count();
+            if currency_slots+money_slots>0 {
+                let mut currencies=BTreeMap::<u32,u64>::new();
+                for row in rows.values().filter(|row| row["status"]=="reported_currency") {
+                    *currencies.entry(row["reported_currency_id"].as_u64().unwrap() as u32).or_default()
+                        +=row["reported_quantity"].as_u64().unwrap();
+                }
+                report["typed_non_item_observation"]=json!({"reported_currency_slots":currency_slots,
+                    "money_slots":money_slots,"unreadable_slots":rows.len()-item_slots-currency_slots-money_slots,
+                    "reported_currency_quantities":currencies,"currency_basis":"raw_slot_info_before_container_conversion",
+                    "currency_rewards_verified":false,"money_amounts_verified":false,
+                    "counts_toward_owned_balances":false});
+            }
+            report
         })
         .unwrap_or(Value::Null);
     summary["profession_recipe_view_counts"] = s.sections.get("profession_recipe_view").map(|view| {

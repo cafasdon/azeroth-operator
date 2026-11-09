@@ -1948,6 +1948,15 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         );
                     }
                     Some("unreadable_or_non_item") => object(row, &[("status", "text", true)])?,
+                    Some("money") => object(row, &[("status", "text", true)])?,
+                    Some("reported_currency") => object(
+                        row,
+                        &[
+                            ("status", "text", true),
+                            ("reported_currency_id", "positive", true),
+                            ("reported_quantity", "uint", true),
+                        ],
+                    )?,
                     _ => anyhow::bail!("Invalid loot slot status"),
                 }
             }

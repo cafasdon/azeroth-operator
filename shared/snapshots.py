@@ -801,7 +801,12 @@ def validate_snapshot(value):
                         or type(row["item_id"]) is not int or not 1<=row["item_id"]<=4_294_967_295
                         or type(row["quantity"]) is not int or not 0<=row["quantity"]<=4_294_967_295):
                     raise ValueError("Invalid loot item")
-            elif row!={"status":"unreadable_or_non_item"}:
+            elif row.get("status")=="reported_currency":
+                if (set(row)!={"status","reported_currency_id","reported_quantity"}
+                        or type(row["reported_currency_id"]) is not int or not 1<=row["reported_currency_id"]<=4_294_967_295
+                        or type(row["reported_quantity"]) is not int or not 0<=row["reported_quantity"]<=4_294_967_295):
+                    raise ValueError("Invalid reported loot currency")
+            elif row not in ({"status":"unreadable_or_non_item"},{"status":"money"}):
                 raise ValueError("Invalid loot slot status")
     if "merchant_buyback" in sections:
         buyback=sections["merchant_buyback"]

@@ -1,5 +1,10 @@
 # Changelog
 
+- Observe stable visible loot currency types with raw API IDs/quantities, plus
+  money-slot presence without inferred amounts. Add strict readers and separate
+  summary counts; retain unknown rows and exclude all displayed loot from stock
+  and balances. No looting, UI actions or native qualification.
+
 - Extend captured_talent_loadout with an optional saved-Forever simulator-string
   comparison using the embedded pinned map. Return numeric purchased-rank
   conflicts and explicit partial/staged/unknown evidence directly through MCP;

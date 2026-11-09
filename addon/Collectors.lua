@@ -2,12 +2,10 @@ local _, AO = ...
 AO.collectors = {}
 -- Observe only the already-open loot panel during a manual export.
 AO.collectors.loot_window = function()
-    assert(AO.family=="forever" and LootFrame and type(LootFrame.IsShown)=="function"
-        and type(GetNumLootItems)=="function" and type(GetLootSlotLink)=="function"
-        and type(GetLootSlotInfo)=="function", "Loot window unavailable")
-    local frame=LootFrame
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Loot restriction API unavailable")
     local function public(value)
-        assert(not issecretvalue or not issecretvalue(value), "Restricted loot observation")
+        assert(not secret or not secret(value), "Restricted loot observation")
         return value
     end
     local function integer(value,low,high)
@@ -16,21 +14,89 @@ AO.collectors.loot_window = function()
             "Invalid loot number")
         return value
     end
-    local function context()
-        local shown=public(frame:IsShown())
-        assert(LootFrame==frame and type(shown)=="boolean" and shown, "Loot window is not shown")
-        return integer(GetNumLootItems(),0,64)
+    assert(public(AO.family)=="forever", "Loot window unavailable")
+    local frame=public(LootFrame)
+    assert(type(frame)=="table", "Loot window unavailable")
+    local shown=public(frame.IsShown)
+    local countItems=public(GetNumLootItems)
+    local linkForSlot=public(GetLootSlotLink)
+    local infoForSlot=public(GetLootSlotInfo)
+    assert(type(shown)=="function" and type(countItems)=="function"
+        and type(linkForSlot)=="function" and type(infoForSlot)=="function", "Loot window unavailable")
+    -- Missing optional enums preserve legacy item reads. Partial or restricted
+    -- typed APIs do not grant permission to infer a row from its hyperlink.
+    local function typedSurface()
+        local enum=public(Enum)
+        if enum==nil then return {enum=enum} end
+        assert(type(enum)=="table", "Loot enum unavailable")
+        local kinds=public(enum.LootSlotType)
+        if kinds==nil then return {enum=enum} end
+        assert(type(kinds)=="table", "Loot enum unavailable")
+        local item=integer(kinds.Item,0,4294967295)
+        local currency=integer(kinds.Currency,0,4294967295)
+        local money=integer(kinds.Money,0,4294967295)
+        assert(item~=currency and item~=money and currency~=money, "Invalid loot enum")
+        local getter=public(GetLootSlotType)
+        assert(type(getter)=="function", "Loot type API unavailable")
+        return {enum=enum,kinds=kinds,item=item,currency=currency,money=money,getter=getter}
     end
-    local function read(slot)
-        local link=public(GetLootSlotLink(slot))
+    local typedOk,typed=pcall(typedSurface)
+    local function sameSurface()
+        assert(typedOk, "Loot type API unavailable")
+        local current=typedSurface()
+        assert(rawequal(current.enum,typed.enum) and rawequal(current.kinds,typed.kinds)
+            and current.item==typed.item and current.currency==typed.currency
+            and current.money==typed.money and current.getter==typed.getter, "Loot type API changed")
+    end
+    local function fixedApis()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret and rawequal(public(LootFrame),frame)
+            and public(frame.IsShown)==shown and public(GetNumLootItems)==countItems
+            and public(GetLootSlotLink)==linkForSlot and public(GetLootSlotInfo)==infoForSlot,
+            "Loot API changed")
+    end
+    local function context()
+        fixedApis()
+        if typedOk then sameSurface() end
+        local visible=public(shown(frame))
+        assert(type(visible)=="boolean" and visible, "Loot window is not shown")
+        local count=integer(countItems(),0,64)
+        fixedApis()
+        if typedOk then sameSurface() end
+        return count
+    end
+    local function item(slot)
+        local link=public(linkForSlot(slot))
         assert(type(link)=="string" and #link<=2048, "Unreadable loot link")
         -- Accept only a complete public item hyperlink, with an optional colour wrapper.
         local id=link:match("^|Hitem:([1-9]%d*):[^|]*|h[^|]*|h$")
             or link:match("^|c%x%x%x%x%x%x%x%x|Hitem:([1-9]%d*):[^|]*|h[^|]*|h|r$")
         assert(id and #id<=10, "Unreadable loot item")
         id=integer(tonumber(id),1,4294967295)
-        local _,_,quantity=GetLootSlotInfo(slot)
+        local _,_,quantity=infoForSlot(slot)
         return {status="item",item_id=id,quantity=integer(quantity,0,4294967295)}
+    end
+    local function read(slot)
+        fixedApis(); sameSurface()
+        local row
+        if not typed.getter then
+            row=item(slot)
+        else
+            local kind=public(typed.getter(slot))
+            if kind==typed.item then
+                row=item(slot)
+            elseif kind==typed.currency then
+                -- Raw public slot data, before CurrencyContainerUtil conversion.
+                local _,_,quantity,currencyID=infoForSlot(slot)
+                row={status="reported_currency",reported_currency_id=integer(currencyID,1,4294967295),
+                    reported_quantity=integer(quantity,0,4294967295)}
+            elseif kind==typed.money then
+                row={status="money"}
+            else
+                error("Unreadable loot type")
+            end
+        end
+        fixedApis(); sameSurface()
+        return row
     end
     local count=context()
     local first={}
@@ -44,8 +110,11 @@ AO.collectors.loot_window = function()
     for slot=1,count do
         local ok,row=pcall(read,slot)
         local prior=first[slot]
-        entries[tostring(slot)]=ok and prior and prior.item_id==row.item_id
-            and prior.quantity==row.quantity and row or {status="unreadable_or_non_item"}
+        entries[tostring(slot)]=ok and prior and prior.status==row.status
+            and prior.item_id==row.item_id and prior.quantity==row.quantity
+            and prior.reported_currency_id==row.reported_currency_id
+            and prior.reported_quantity==row.reported_quantity
+            and row or {status="unreadable_or_non_item"}
     end
     assert(context()==count, "Loot window changed")
     return {coverage="visible_loot_window_slots",slot_count=count,entries=entries}

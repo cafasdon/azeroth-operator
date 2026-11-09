@@ -49,9 +49,11 @@ These are hypothetical calculations using readable rows alone; they do not verif
 specific item variants, pickup rights or current availability. A false readable-
 coverage flag means known rows are insufficient, not that other loot cannot exist.
 
-The review retains the capture time and unreadable/non-item slot count; when such
-slots exist, `additional_matching_quantities_unknown` is true. It does not invent
-their IDs/quantities or claim a full-window item total. A missing loot section
+The review retains the capture time and unreadable/non-item slot count.
+`additional_matching_quantities_unknown` is true only when unreadable rows exist;
+known currency/money rows are separately counted as `known_non_item_slots` and
+do not imply unknown item quantities. It does not invent unreadable IDs/quantities
+or claim a full-window item total. A missing loot section
 returns null review, distinct from an observed empty window with zero readable
 items. Ownership, lootability and execution flags remain false. Item searches,
 recipe stock and owned-gear searches receive no credit until separate inventory
@@ -121,16 +123,19 @@ capture source. Native secret/API semantics and responsiveness remain unqualifie
 
 Manual `/aoexport` can include `loot_window` when the native LootFrame is already
 shown. It records at most 64 slots with coverage `visible_loot_window_slots`.
-Each slot is either a stable public `item_id` and `quantity` under `status: item`,
-or status-only `unreadable_or_non_item`. Currency/money rows, unreadable or
-restricted values and changed item/quantity readings are not guessed. A shown
+An item slot has stable public `item_id` and `quantity` under `status: item`.
+Stable typed currency rows use `status: reported_currency` with raw
+`reported_currency_id` and `reported_quantity`; money rows use status-only
+`money`, without an amount. Unreadable/restricted/changed rows use status-only
+`unreadable_or_non_item`. Container rewards and money amounts are not guessed. A shown
 empty window has zero slots; hidden/closed/oversized/changing context is unavailable.
 Both full reads and surrounding visibility/count checks must agree on the window
 size. They do not establish the loot's source or rights to take it.
 
 Use `inspect_snapshot` with `section: loot_window`, or the
 `character_summary.loot_window_observation` field for per-ID quantities, item-slot
-and unknown-slot counts. Missing data remains null, distinct from observed empty.
+and non-item counts. Typed non-item summaries additionally separate known currency,
+money and unreadable slots. Missing data remains null, distinct from observed empty.
 No names, raw links, GUIDs or source identities are retained. Displayed loot never
 contributes to `find_snapshot_item`, recipe stock or owned-gear optimisation.
 Ownership and lootability remain unverified; exports do not open/close windows,
@@ -2128,3 +2133,10 @@ proof or game action. Omit the option for existing behaviour. Unknown metadata
 and staging stay explicit; class comes only from that saved capture.
 [Contract](../../docs/ADR-052-forever-talent-template-mcp.md) ·
 [Offline checks](../../docs/forever-talent-mcp-verification-2026-11-09.md).
+
+Typed loot observations distinguish stable reported currency rows and money
+presence. Reported currency IDs/quantities are raw API values before container
+conversion; money amounts stay unknown. Neither becomes owned stock or funds.
+Item requirements distinguish known non-item slots from genuinely unreadable
+slots. [Contract](../../docs/ADR-053-forever-typed-loot-observations.md) ·
+[Offline evidence](../../docs/forever-typed-loot-verification-2026-11-09.md).

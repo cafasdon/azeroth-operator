@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Visible loot captures can distinguish raw reported currency rows and money-slot
+presence from item rows when stable public slot types are available. Currency
+container rewards and money amounts remain unverified; nothing is credited to
+inventory or balances. [Typed loot contract](docs/ADR-053-forever-typed-loot-observations.md).
+
 Forever talent captures can retain stable trait definition IDs, purchased ranks
 and native rank limits alongside active ranks, plus an observed staged-change
 flag when readable. A bundled nine-class simulator definition map now checks

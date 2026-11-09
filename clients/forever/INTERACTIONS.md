@@ -27,9 +27,11 @@ not inferred; all casting/targeting remains with the player. Native qualificatio
 is deferred. [Evidence](../../docs/spell-resources-verification-2026-11-09.md).
 
 Loot observation: manual export can inspect an already shown window and retain
-stable public item IDs/quantities, with explicit unreadable/non-item slots. Local
+stable public item IDs/quantities, raw reported currency IDs/quantities and
+money-slot presence, with explicit unreadable/non-item slots. Local
 inspection and summary keep displayed loot separate from owned inventory. No
-source/player identity, currency/money decoding, lootability inference, looting,
+source/player identity, currency-container reward conversion, money amounts,
+lootability inference, looting,
 rolling or panel action is added. Native qualification remains deferred.
 [Evidence](../../docs/loot-window-verification-2026-11-09.md).
 
@@ -1939,3 +1941,10 @@ proof or game action. Omit the option for existing behaviour. Unknown metadata
 and staging stay explicit; class comes only from that saved capture.
 [Contract](../../docs/ADR-052-forever-talent-template-mcp.md) ·
 [Offline checks](../../docs/forever-talent-mcp-verification-2026-11-09.md).
+
+Typed loot observations distinguish stable reported currency rows and money
+presence. Reported currency IDs/quantities are raw API values before container
+conversion; money amounts stay unknown. Neither becomes owned stock or funds.
+Item requirements distinguish known non-item slots from genuinely unreadable
+slots. [Contract](../../docs/ADR-053-forever-typed-loot-observations.md) ·
+[Offline evidence](../../docs/forever-typed-loot-verification-2026-11-09.md).
