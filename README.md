@@ -172,6 +172,13 @@ Native availability and responsiveness remain unqualified.
 [Offline evidence](docs/profession-recipe-materials-verification-2026-11-08.md).
 [Planning integration](docs/bulk-recipe-planning-verification-2026-11-08.md).
 
+Fixed bulk recipe rows can also retain a stable public reported craftable count.
+Exact recipe reviews show its capture time and shortfall against requested
+crafts separately from material capacity. This historical default-level API
+observation does not verify current craftability, cooldowns or charges; an
+inventory override does not refresh it.
+[Offline evidence](docs/reported-craftable-count-verification-2026-11-09.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

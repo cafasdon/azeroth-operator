@@ -7,6 +7,7 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
     let lua = Lua::new();
     lua.load(r#"
         AO={family='forever',variant='live'};SlashCmdList={};mode='normal';reads=0;schematics=0
+        craftableReads=0;craftableByID={}
         function InCombatLockdown() return false end
         function GetBuildInfo() return '1.60.1','70862','',16001 end
         function UnitName() return 'Fixture' end
@@ -45,9 +46,25 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
                 if mode=='unknown_kind' then result.recipeType=nil;Enum.TradeskillRecipeType.Enchant=nil end
                 return result
             end,
+            GetCraftableCount=function(id)
+                craftableReads=craftableReads+1;craftableByID[id]=(craftableByID[id] or 0)+1
+                if mode=='count_value' then return 7 end
+                if mode=='count_zero' then return 0 end
+                if mode=='count_max' then return 4294967295 end
+                if mode=='count_negative' then return -1 end
+                if mode=='count_fraction' then return 1.5 end
+                if mode=='count_large' then return 4294967296 end
+                if mode=='count_secret' then return 'PRIVATE' end
+                if mode=='count_bool' then return false end
+                if mode=='count_infinite' then return math.huge end
+                if mode=='count_nan' then return 0/0 end
+                if mode=='count_error' then error('PRIVATE') end
+                if mode=='count_changed' then return craftableReads end
+            end,
             CraftRecipe=function() error('no crafting') end,
             SetShowLearned=function() error('no filters') end,
             SetShowUnlearned=function() error('no filters') end}
+        countImpl=C_TradeSkillUI.GetCraftableCount
     "#).exec()?;
     let namespace: mlua::Table = lua.globals().get("AO")?;
     lua.load(include_str!("../addon/Collectors.lua"))
@@ -56,7 +73,7 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
         .call::<()>(("AzerothOperator", namespace))?;
     let capture = |mode: &str| -> Result<azeroth_operator::Snapshot, Box<dyn std::error::Error>> {
         lua.globals().set("mode", mode)?;
-        lua.load("reads=0;schematics=0;Enum.TradeskillRecipeType.Enchant=2;AO.Capture()")
+        lua.load("reads=0;schematics=0;craftableReads=0;craftableByID={};C_TradeSkillUI.GetCraftableCount=countImpl; if mode=='count_missing' then C_TradeSkillUI.GetCraftableCount=nil end;Enum.TradeskillRecipeType.Enchant=2;AO.Capture()")
             .exec()?;
         let value: String = lua.globals().get("AzerothOperatorExport")?;
         Ok(decode(
@@ -71,6 +88,40 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
         "3508":{"status":"unavailable"}})
     );
     assert!(!serde_json::to_string(&normal)?.contains("PRIVATE"));
+    for (mode, expected) in [
+        ("count_value", 7u64),
+        ("count_zero", 0),
+        ("count_max", u32::MAX as u64),
+    ] {
+        let captured = capture(mode)?;
+        assert_eq!(
+            captured.sections["profession_recipe_materials"]["entries"]["2675"]["reported_craftable_count"],
+            expected
+        );
+        assert_eq!(lua.globals().get::<u32>("craftableReads")?, 2);
+        let by_id: mlua::Table = lua.globals().get("craftableByID")?;
+        assert_eq!(by_id.get::<Option<u32>>(3508)?, None);
+    }
+    for mode in [
+        "count_missing",
+        "count_negative",
+        "count_fraction",
+        "count_large",
+        "count_secret",
+        "count_bool",
+        "count_infinite",
+        "count_nan",
+        "count_error",
+        "count_changed",
+    ] {
+        let captured = capture(mode)?;
+        assert_eq!(
+            captured.sections["profession_recipe_materials"]["entries"]["2675"],
+            normal.sections["profession_recipe_materials"]["entries"]["2675"],
+            "{mode}"
+        );
+        assert!(!serde_json::to_string(&captured)?.contains("PRIVATE"));
+    }
     for mode in ["unsupported", "variable", "currency"] {
         assert_eq!(
             capture(mode)?.sections["profession_recipe_materials"]["entries"]["2675"],
@@ -115,6 +166,8 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
     assert_eq!(entries.len(), 257);
     assert_eq!(entries["256"]["status"], "fixed_items");
     assert_eq!(entries["257"]["status"], "budget_exhausted");
+    let by_id: mlua::Table = lua.globals().get("craftableByID")?;
+    assert_eq!(by_id.get::<Option<u32>>(257)?, None);
     assert_eq!(
         azeroth_operator::analysis::summary(&budget)["profession_recipe_material_observations"]["fixed_item_recipe_count"],
         256

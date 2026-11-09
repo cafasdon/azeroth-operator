@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Fixed bulk recipe rows can retain `reported_craftable_count` from two stable
+public API reads during manual export. Exact-ID review exposes the count,
+recipe capture time and saturated requested-craft shortfall separately from
+material capacity. Missing or invalid counts are omitted. Inventory overrides
+do not refresh this historical default-level observation; counts do not alter
+chain, stock, quote or eligibility decisions. Native behaviour remains untested.
+[Offline evidence](../../docs/reported-craftable-count-verification-2026-11-09.md).
+
 Complete chain drafts can opt into `reagent_chain_stock_plan`, revalidating
 printed steps and reusing ordered-material accounting for starting needs,
 saved bank-withdrawal quantities, scoped coverage and nonmaterial unknowns.

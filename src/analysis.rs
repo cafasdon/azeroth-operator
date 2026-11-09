@@ -481,6 +481,12 @@ pub fn plan_recipe_by_id(
     review["recipe_observation_source"] = json!("profession_recipe_materials");
     review["recipe_profession_id"] = section["profession_id"].clone();
     review["recipe_material_status"] = row["status"].clone();
+    if let Some(reported) = row.get("reported_craftable_count").and_then(Value::as_u64) {
+        review["reported_craftable_count_observation"] = json!({"count":reported,
+            "captured_at":snapshot.captured_at,"basis":"recipe_capture_public_api_default_level",
+            "shortfall_vs_requested_crafts":u64::from(count).saturating_sub(reported),
+            "current_craftability_verified":false});
+    }
     if let Some(target) = target_output_quantity {
         review["target_output_quantity"] = json!(target.get());
     }

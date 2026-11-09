@@ -1297,6 +1297,17 @@ AO.collectors.profession_recipe_materials = function()
     for key in pairs(before.entries) do ids[#ids+1]=tonumber(key) end
     table.sort(ids)
     local entries,retained={},0
+    local function reportedCount(id)
+        if type(api.GetCraftableCount)~="function" then return end
+        local function readCount()
+            local value=api.GetCraftableCount(id)
+            if issecretvalue and issecretvalue(value) then return end
+            if type(value)=="number" and value%1==0 and value>=0 and value<=4294967295 then return value end
+        end
+        local ok,first=pcall(readCount)
+        local again,second=pcall(readCount)
+        if ok and again and first~=nil and first==second then return first end
+    end
     for _,id in ipairs(ids) do
         local ok,first=pcall(read,id)
         local secondOk,second=pcall(read,id)
@@ -1308,6 +1319,7 @@ AO.collectors.profession_recipe_materials = function()
             if retained+count>16384 then row={status="budget_exhausted"}
             else retained=retained+count end
         end
+        if row.status=="fixed_items" then row.reported_craftable_count=reportedCount(id) end
         entries[tostring(id)]=row
     end
     local after=AO.collectors.profession_spells()

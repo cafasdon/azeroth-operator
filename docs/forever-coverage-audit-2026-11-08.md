@@ -208,3 +208,10 @@ quantities, with separate bags/all-observed coverage and unknown nonmaterial
 checks. Future acquisitions are excluded from owned preparation stock. Native
 bank access, current readiness, actual transfers and global route quality remain
 unfinished.
+
+[Reported recipe craftable counts](reported-craftable-count-verification-2026-11-09.md)
+then add optional stable public count observations to retained fixed bulk rows.
+Exact reviews preserve recipe-capture provenance and requested-craft deltas,
+independently of material capacity. No bank scope, learning, charge, cooldown or
+current eligibility is inferred. Native availability, count accuracy and export
+responsiveness remain unqualified; broad profession progression stays open.

@@ -298,9 +298,16 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("reagents", "map", true),
                         ("output_item_id", "positive", false),
                         ("base_output_quantity", "map", false),
+                        ("reported_craftable_count", "uint", false),
                     ],
                 )?;
                 let reagents = row["reagents"].as_object().unwrap();
+                if let Some(count) = row.get("reported_craftable_count") {
+                    ensure!(
+                        count.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),
+                        "Invalid reported recipe craft count"
+                    );
+                }
                 ensure!(reagents.len() <= 64, "Too many recipe reagents");
                 retained += reagents.len();
                 ensure!(retained <= 16384, "Recipe material budget exceeded");

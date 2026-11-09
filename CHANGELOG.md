@@ -1,5 +1,9 @@
 # Changelog
 
+- Capture stable public reported craftable counts for fixed bulk recipes and
+  expose timestamped observations in exact recipe reviews; keep material
+  planning independent and omit unavailable, changing or secret counts.
+
 - Add optional ingredient-chain stock preparation: minimum starting materials
   for printed steps, saved bank-withdrawal suggestions, scoped coverage and
   nonmaterial unknowns; keep acquisitions and actual transfers unperformed.

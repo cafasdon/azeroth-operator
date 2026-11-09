@@ -555,12 +555,15 @@ def validate_snapshot(value):
                     raise ValueError("Invalid recipe material status")
                 continue
             if (not {"status", "reagents"} <= set(row)
-                    or set(row) - {"status", "reagents", "output_item_id", "base_output_quantity"}
+                    or set(row) - {"status", "reagents", "output_item_id", "base_output_quantity", "reported_craftable_count"}
                     or not isinstance(row["reagents"], dict) or len(row["reagents"]) > 64
                     or any(not material_id(item) or not material_uint(quantity)
                            for item, quantity in row["reagents"].items())
                     or ("output_item_id" in row and not material_uint(row["output_item_id"]))):
                 raise ValueError("Invalid recipe material details")
+            if ("reported_craftable_count" in row and (type(row["reported_craftable_count"]) is not int
+                    or not 0 <= row["reported_craftable_count"] <= 4_294_967_295)):
+                raise ValueError("Invalid reported recipe craft count")
             retained += len(row["reagents"])
             if retained > 16384:
                 raise ValueError("Recipe material budget exceeded")

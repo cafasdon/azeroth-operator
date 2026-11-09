@@ -30,6 +30,8 @@ class ProfessionRecipeMaterialsTests(unittest.IsolatedAsyncioTestCase):
             store = SnapshotStore(Path(folder))
             valid = []
             for observed in [None, section, {**section, 'entries': {}},
+                             {**section,'entries':{'1':{**fixed,'reported_craftable_count':0}}},
+                             {**section,'entries':{'1':{**fixed,'reported_craftable_count':4294967295}}},
                              {**section, 'entries': {'1': {'status': 'fixed_items', 'reagents': {}}}}]:
                 value = deepcopy(base)
                 if observed is not None:
@@ -53,6 +55,9 @@ class ProfessionRecipeMaterialsTests(unittest.IsolatedAsyncioTestCase):
                          'base_output_quantity': {'minimum': 1, 'maximum': 1}},
                         {**fixed, 'name': 'PRIVATE_SCHEMATIC'}]:
                 bad_sections.append({**section, 'entries': {'2675': row}})
+            for invalid in [None,True,-1,1.5,'PRIVATE',{},4294967296]:
+                bad_sections.append({**section,'entries':{'2675':{**fixed,'reported_craftable_count':invalid}}})
+            bad_sections.append({**section,'entries':{'2675':{'status':'unavailable','reported_craftable_count':0}}})
             reagents = {str(i): 1 for i in range(1, 65)}
             bad_sections.append({**section, 'entries': {str(i): {'status': 'fixed_items', 'reagents': reagents}
                                                         for i in range(1, 258)}})
