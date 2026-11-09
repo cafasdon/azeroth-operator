@@ -82,6 +82,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied = deepcopy(changed)
             tied['character']['name'] = 'Tied'
             tied['sections']['quests']['10']['timer'] = {'remaining_seconds':30,'total_seconds':120}
+            tied['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,
+                                         'client_version':'fixture','map_id':1414,'map_name':'Market'}
+            tied['sections']['quests']['3']['next_waypoint_map_id'] = 1414
+            tied['sections']['quests']['10']['next_waypoint_map_id'] = 1415
             tied_key = store.ingest(tied)
             original = {p.name: p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder}
@@ -117,6 +121,15 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     await timed(error=True, family='retail', quest_max_remaining_seconds=60)
                     await timed(error=True, quest_max_remaining_seconds=-1)
                     await timed(error=True, quest_projected_expiry_by='invalid')
+                    local = await timed(quest_on_captured_map=True,player_map_name='market',
+                                        quest_max_remaining_seconds=30)
+                    self.assertEqual([row['snapshot_id'] for row in local],[tied_key])
+                    self.assertEqual(local[0]['quest_match']['quest_count'],1)
+                    self.assertEqual(local[0]['quest_match']['waypoint_map_id'],1414)
+                    self.assertIs(local[0]['quest_match']['on_captured_player_map'],True)
+                    self.assertEqual(await timed(quest_on_captured_map=True,quest_id=10),[])
+                    await timed(error=True,quest_on_captured_map=True,quest_waypoint_map_id=1414)
+                    await timed(error=True,family='retail',quest_on_captured_map=True)
                     async def query(error=False, **options):
                         reply = await session.call_tool('inspect_snapshot', {'snapshot_id': key,
                             'section': 'quests', **options})

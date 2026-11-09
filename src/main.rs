@@ -553,6 +553,9 @@ struct List {
     quest_readiness: Option<azeroth_operator::analysis::QuestReadiness>,
     /// Match the next waypoint map recorded for the same quest.
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
+    /// Match quests whose next waypoint is on the player's map in the same capture.
+    #[serde(default)]
+    quest_on_captured_map: bool,
     /// Match quests with a recorded remaining duration at or below this many seconds.
     quest_max_remaining_seconds: Option<u32>,
     /// Match quests whose historical expiry projects at or before this timestamp.
@@ -2291,6 +2294,7 @@ impl Operator {
                 quest_id: args.quest_id,
                 quest_readiness: args.quest_readiness,
                 quest_waypoint_map_id: args.quest_waypoint_map_id,
+                quest_on_captured_map: args.quest_on_captured_map,
                 quest_max_remaining_seconds: args.quest_max_remaining_seconds,
                 quest_projected_expiry_by: args.quest_projected_expiry_by,
                 merchant_item_id: args.merchant_item_id,

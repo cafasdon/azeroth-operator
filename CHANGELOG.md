@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever quests whose next waypoint is on the captured player map.
+
 - Find saved Forever captures by the recorded player map name.
 
 - Show the captured player map for saved Forever merchant visits and shopping stops.

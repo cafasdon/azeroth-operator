@@ -1894,6 +1894,7 @@ pub struct CaptureFilters<'a> {
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_readiness: Option<analysis::QuestReadiness>,
     pub quest_waypoint_map_id: Option<std::num::NonZeroU32>,
+    pub quest_on_captured_map: bool,
     pub quest_max_remaining_seconds: Option<u32>,
     pub quest_projected_expiry_by: Option<chrono::DateTime<chrono::Utc>>,
     pub merchant_item_id: Option<std::num::NonZeroU32>,
@@ -2126,6 +2127,7 @@ impl Store {
             quest_id,
             quest_readiness,
             quest_waypoint_map_id,
+            quest_on_captured_map,
             quest_max_remaining_seconds,
             quest_projected_expiry_by,
             merchant_item_id,
@@ -2680,9 +2682,14 @@ impl Store {
             (quest_id.is_none()
                 && quest_readiness.is_none()
                 && quest_waypoint_map_id.is_none()
+                && !quest_on_captured_map
                 && !filter_quest_timer)
                 || family == Family::Forever,
             "Quest filtering requires Forever"
+        );
+        ensure!(
+            !quest_on_captured_map || quest_waypoint_map_id.is_none(),
+            "Choose either a waypoint map ID or the captured player map"
         );
         let quest_key = quest_id.map(|id| id.to_string());
         ensure!(
@@ -3294,11 +3301,23 @@ impl Store {
                     if currency_balance.is_some() && currency_match.is_none() {
                         continue;
                     }
+                    let waypoint_map = if quest_on_captured_map {
+                        let Some(map) = s
+                            .sections
+                            .get("stats")
+                            .and_then(|stats| stats["map_id"].as_u64())
+                        else {
+                            continue;
+                        };
+                        Some(map)
+                    } else {
+                        quest_waypoint_map_id.map(|id| u64::from(id.get()))
+                    };
                     let matches_quest = |quest: &Value| {
                         quest_readiness
                             .is_none_or(|expected| analysis::quest_readiness(quest) == expected)
-                            && quest_waypoint_map_id.is_none_or(|map| {
-                                quest["next_waypoint_map_id"].as_u64() == Some(u64::from(map.get()))
+                            && waypoint_map.is_none_or(|map| {
+                                quest["next_waypoint_map_id"].as_u64() == Some(map)
                             })
                             && quest_max_remaining_seconds.is_none_or(|maximum| {
                                 quest["timer"]["remaining_seconds"]
@@ -3321,7 +3340,7 @@ impl Store {
                     }
                     let quest_count = (quest_key.is_none()
                         && (quest_readiness.is_some()
-                            || quest_waypoint_map_id.is_some()
+                            || waypoint_map.is_some()
                             || filter_quest_timer))
                         .then(|| {
                             s.sections.get("quests").and_then(Value::as_object).map_or(
@@ -3723,8 +3742,11 @@ impl Store {
                         summary["quest_match"] =
                             json!({"readiness":quest_readiness,"quest_count":count});
                     }
-                    if let Some(map) = quest_waypoint_map_id {
+                    if let Some(map) = waypoint_map {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
+                    }
+                    if quest_on_captured_map {
+                        summary["quest_match"]["on_captured_player_map"] = json!(true);
                     }
                     if filter_quest_timer {
                         let shortest = s.sections.get("quests")

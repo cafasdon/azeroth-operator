@@ -3094,3 +3094,8 @@ describes the player's saved location during the visit.
 Use `list_snapshots.player_map_name` to match the saved player map label
 case-insensitively. This can be combined with merchant item searches or
 other saved capture filters. Missing map labels cannot match.
+
+Set `list_snapshots.quest_on_captured_map: true` to find saved quests whose
+next waypoint shares the player map recorded in that capture. You can also
+filter by the captured map name, quest readiness, or timer. Captures with a
+missing player map or no matching recorded waypoint are excluded.
