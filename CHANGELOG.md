@@ -1,5 +1,7 @@
 # Changelog
 
+- Look up saved Forever quest acquisition sources after suggested bank withdrawals.
+
 - Locate and page through saved bank slots for suggested Forever quest item withdrawals.
 
 - Quote saved Forever quest item shortages after suggested bank withdrawals.

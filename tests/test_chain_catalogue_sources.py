@@ -33,6 +33,8 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
             folder = Path(folder)
             store = SnapshotStore(folder/'captures')
             key = store.ingest(value)
+            bank=deepcopy(value); bank['sections']['character_bank']={'6':{'1':{'item_id':2505,'count':2}}}
+            bank_key=store.ingest(bank)
             empty = deepcopy(value)
             empty['sections']['profession_recipe_materials']['entries']['101']['reagents'] = {}
             empty_key = store.ingest(empty)
@@ -97,6 +99,13 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quest_sources['records'],[rows[2505],rows[2840]])
                     self.assertEqual(quest_sources['basis'],'user_supplied_quest_item_shortfalls')
                     self.assertIs(quest_sources['quest_item_binding_verified'],False)
+                    residual_reply=await session.call_tool('inspect_snapshot',{**quest_request,
+                        'quest_inventory_bank_withdrawals':True,'quest_inventory_snapshot_id':bank_key})
+                    self.assertFalse(residual_reply.isError,residual_reply)
+                    bank_sources=json.loads(residual_reply.content[0].text)['quest_inventory_catalogue_source_review']
+                    residual=bank_sources.pop('after_observed_bank_withdrawals')
+                    self.assertEqual(bank_sources,quest_sources)
+                    self.assertEqual(residual['records'],[rows[2840]])
                     bank_reply = await session.call_tool('inspect_snapshot',{**quest_request,
                         'quest_inventory_requirements':{**quest_request['quest_inventory_requirements'],
                                                         'storage':'character_bank'}})

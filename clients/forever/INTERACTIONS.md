@@ -18,11 +18,15 @@ remain unknown when that storage was unavailable.
 With bags selected, enable `quest_inventory_bank_withdrawals` to see which
 shortfalls could be covered by saved character-bank stock first and
 account-bank stock second. The guide shows remaining shortages and missing
-bank observations. Source lookups and the original merchant quote still use
+bank observations. Original source lookups and the original merchant quote still use
 bag shortfalls. When both withdrawals and merchant quotes are requested, the
 quote includes an `after_observed_bank_withdrawals` estimate for the remaining
 shortages. This estimate assumes the suggested withdrawals can be made and
 does not count unobserved bank stock.
+Catalogue and saved provider source reviews also include an
+`after_observed_bank_withdrawals` report when the bag withdrawal plan is
+available. It covers only remaining shortages, using the same source
+capture or catalogue as the original lookup.
 The withdrawal guide shows saved bank slots and suggested quantities in
 `suggested_locations`. It uses larger stacks first within each bank.
 Set `quest_inventory_bank_withdrawal_offset` to page through the locations

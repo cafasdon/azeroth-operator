@@ -37,6 +37,8 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
                 '30':{'status':'not_in_provider'},'40':{'status':'unavailable'},'50':{'status':'reported'}}}
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder)); key=store.ingest(base)
+            bank=deepcopy(base); bank['sections']['character_bank']={'6':{'1':{'item_id':2840,'count':2}}}
+            bank_key=store.ingest(bank)
             missing=deepcopy(base); del missing['sections']['recipe_item_sources']; missing_key=store.ingest(missing)
             empty=deepcopy(base); empty['sections']['profession_recipe_materials']['entries']['101']['reagents']={}
             empty_key=store.ingest(empty)
@@ -95,6 +97,13 @@ class ChainCapturedSourcesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(report['records'],[rows[2840]])
                     self.assertEqual(report['snapshot_id'],key)
                     self.assertIs(report['quest_item_binding_verified'],False)
+                    bank_reply=await session.call_tool('inspect_snapshot',{**quest_request,
+                        'quest_inventory_bank_withdrawals':True,'quest_inventory_snapshot_id':bank_key})
+                    self.assertFalse(bank_reply.isError,bank_reply)
+                    bank_sources=json.loads(bank_reply.content[0].text)['quest_inventory_captured_source_review']
+                    residual=bank_sources.pop('after_observed_bank_withdrawals')
+                    self.assertEqual(bank_sources,report)
+                    self.assertEqual(residual['records'],[{**rows[2840],'quantity':1}])
                     reply=await session.call_tool('inspect_snapshot',{**quest_request,
                         'quest_inventory_source_snapshot_id':older_key,'quest_inventory_snapshot_id':inventory_key})
                     self.assertFalse(reply.isError,reply)

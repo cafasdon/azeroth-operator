@@ -3505,14 +3505,34 @@ impl Operator {
                             );
                         }
                     }
-                    if let Some(id) = &args.quest_inventory_source_snapshot_id {
-                        let sources = self.store.read(id).and_then(|source| {
-                            azeroth_operator::analysis::quest_inventory_captured_sources(
-                                &value["quest_inventory_review"],
-                                review_snapshot.as_ref().unwrap(),
-                                &source,
-                            )
+                    let residual_review = value
+                        .pointer("/quest_inventory_review/bank_withdrawal_plan/rows")
+                        .and_then(serde_json::Value::as_array)
+                        .map(|rows| {
+                            serde_json::json!({"storage_observed":true,
+                            "items":rows.iter().map(|row| serde_json::json!({
+                                "item_id":row["item_id"],
+                                "shortfall_vs_observed":row["remaining_after_observed_withdrawals"],
+                            })).collect::<Vec<_>>() })
                         });
+                    if let Some(id) = &args.quest_inventory_source_snapshot_id {
+                        let sources =
+                            self.store.read(id).and_then(|source| {
+                                let quest_snapshot = review_snapshot.as_ref().unwrap();
+                                let mut report =
+                                    azeroth_operator::analysis::quest_inventory_captured_sources(
+                                        &value["quest_inventory_review"],
+                                        quest_snapshot,
+                                        &source,
+                                    )?;
+                                if let Some(residual) = &residual_review {
+                                    report["after_observed_bank_withdrawals"] =
+                                    azeroth_operator::analysis::quest_inventory_captured_sources(
+                                        residual, quest_snapshot, &source,
+                                    )?;
+                                }
+                                Ok(report)
+                            });
                         let Ok(mut sources) = sources else {
                             return CallToolResult::error(vec![ContentBlock::text(
                                 "Quest inventory sources require a compatible saved source capture",
@@ -3530,7 +3550,13 @@ impl Operator {
                             .ok_or_else(|| anyhow::anyhow!("Local catalogue unavailable"))
                             .and_then(azeroth_operator::forever_catalogue::EquipmentCatalogue::load)
                             .and_then(|catalogue| {
-                                catalogue.quest_inventory_sources(&value["quest_inventory_review"])
+                                let mut report = catalogue
+                                    .quest_inventory_sources(&value["quest_inventory_review"])?;
+                                if let Some(residual) = &residual_review {
+                                    report["after_observed_bank_withdrawals"] =
+                                        catalogue.quest_inventory_sources(residual)?;
+                                }
+                                Ok(report)
                             });
                         let Ok(sources) = sources else {
                             return CallToolResult::error(vec![ContentBlock::text(
@@ -3567,16 +3593,12 @@ impl Operator {
                             quote["purchase_eligibility_verified"] = serde_json::json!(false);
                             quote["quest_item_binding_verified"] = serde_json::json!(false);
                             if args.quest_inventory_bank_withdrawals {
-                                quote["after_observed_bank_withdrawals"] = value["quest_inventory_review"]
-                                    ["bank_withdrawal_plan"]["rows"]
-                                    .as_array()
+                                quote["after_observed_bank_withdrawals"] = residual_review
+                                    .as_ref()
+                                    .and_then(|review| review["items"].as_array())
                                     .map(|rows| {
-                                        let residuals: Vec<_> = rows.iter().map(|row| serde_json::json!({
-                                            "item_id":row["item_id"],
-                                            "shortfall_vs_observed":row["remaining_after_observed_withdrawals"],
-                                        })).collect();
                                         azeroth_operator::analysis::material_merchant_plan(
-                                            &residuals, &merchant, snapshot,
+                                            rows, &merchant, snapshot,
                                         )
                                     })
                                     .unwrap_or(serde_json::Value::Null);
