@@ -37,7 +37,10 @@ class SavedJournalTests(unittest.TestCase):
             if metric == 'death':
                 row['simulated_deaths'] = 3
                 row['simulated_death_fraction_wilson_95'] = {'lower': .01, 'upper': .1}
-            evidence = runner.encounter_evidence(row, {'request_sha256':'b'*64}, metric, 2)
+            evidence = runner.encounter_evidence(row, {'request_sha256':'b'*64,
+                runner.roles.FIELDS[metric]: .5, 'private_name':'PRIVATE', '_dps_samples':[99]}, metric, 2)
+            self.assertEqual(evidence['metric'], metric)
+            self.assertEqual(evidence['baseline_metric_value'], .5)
             for field, value in row.items():
                 if field not in ('_dps_samples','private_name'):
                     self.assertEqual(evidence[field], value)
@@ -76,6 +79,8 @@ class SavedJournalTests(unittest.TestCase):
             self.assertEqual(result['stop_reason'],'no_saved_work')
             self.assertFalse(result['all_saved_resolved_results_complete'])
             self.assertFalse(result['simulation_performed'])
+            self.assertEqual(result['encounter_contexts'], [])
+            self.assertEqual(result['unvisited_encounter_indices'], [1])
             self.assertEqual(result['ranked_gear_sets'],[])
             self.assertFalse((base/'must-not-create').exists())
             self.assertEqual(journal.read_bytes(),before)
@@ -167,6 +172,12 @@ class SavedJournalTests(unittest.TestCase):
                 argv[:]=original_argv
                 self.assertEqual(result['ranking_scope'],'all_saved_resolved_requests')
                 self.assertEqual(result['completed_window_count'],3)
+                contexts = result['encounter_contexts']
+                self.assertEqual([context['encounter_index'] for context in contexts], [1,2])
+                self.assertEqual([context['weight'] for context in contexts], [.25,.75])
+                self.assertEqual([context['encounter_settings']['duration_seconds'] for context in contexts], [45,90])
+                self.assertEqual([context['baseline']['mean_dps'] for context in contexts], [100,100])
+                self.assertEqual(result['unvisited_encounter_indices'], [])
                 self.assertEqual(len(result['ranked_gear_sets']),3)
                 for row,expected in zip(result['ranked_gear_sets'],[25,0,-2.5],strict=True):
                     self.assertAlmostEqual(row['weighted_dps_gain_pct'],expected)
@@ -176,6 +187,9 @@ class SavedJournalTests(unittest.TestCase):
                 evidence=winner['simulation_evidence_by_encounter']
                 self.assertEqual([row['encounter_index'] for row in evidence],[1,2])
                 self.assertEqual([row['mean_dps'] for row in evidence],[110,130])
+                self.assertEqual([row['baseline_metric_value'] for row in evidence], [100,100])
+                self.assertEqual([row['baseline_request_sha256'] for row in evidence],
+                    [context['baseline']['request_sha256'] for context in contexts])
                 self.assertTrue(all(row['iterations']==3 and row['dps_standard_deviation']==1 for row in evidence))
                 self.assertTrue(all('paired_dps_delta_interval_approx_95' not in row for row in evidence))
                 saved=winner['saved_loadout']
@@ -203,8 +217,11 @@ class SavedJournalTests(unittest.TestCase):
                 cached = launch(['--checkpoint-only'])
                 self.assertEqual((cached['new_runs'],cached['checkpoint_hits']),(0,8))
                 self.assertEqual(result['ranked_gear_sets'],cached['ranked_gear_sets'])
-                narrow = launch(['--checkpoint-only','--page-limit','1','--top','2'])
-                self.assertEqual(narrow['ranked_gear_sets'],cached['ranked_gear_sets'][:2])
+                self.assertEqual(result['encounter_contexts'],cached['encounter_contexts'])
+                narrow = launch(['--checkpoint-only','--page-limit','1','--top','1'])
+                self.assertEqual(narrow['ranked_gear_sets'],cached['ranked_gear_sets'][:1])
+                self.assertEqual(narrow['encounter_contexts'],cached['encounter_contexts'])
+                self.assertTrue(all(context['baseline']['mean_dps'] == 100 for context in narrow['encounter_contexts']))
                 partial = launch(['--checkpoint-only','--max-pages','1'])
                 self.assertFalse(partial['all_saved_resolved_results_complete'])
                 self.assertEqual(partial['ranking_scope'],'completed_pages_only')

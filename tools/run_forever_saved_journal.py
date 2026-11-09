@@ -27,6 +27,7 @@ def encounter_evidence(row, baseline, metric, index):
     if metric == 'death':
         fields.extend(['simulated_deaths', 'simulated_death_fraction_wilson_95'])
     return {'encounter_index': index, 'comparison_basis': 'equipped_baseline',
+        'metric': metric, 'baseline_metric_value': roles.value(baseline, metric),
         'baseline_request_sha256': baseline['request_sha256'],
         'interval_basis': ('marginal_death_fraction' if metric == 'death'
             and 'simulated_death_fraction_wilson_95' in row else
@@ -207,6 +208,11 @@ async def execute(args, *, deadline=None):
     require(current == source and monotonic() <= deadline + 5)
     complete = exhausted and completed == source['window_count'] and completed > 0
     report = {'mode': 'saved_journal_simulation', 'journal_coverage': source,
+        'encounter_contexts': [{'encounter_index':index, 'weight':weights[index-1],
+            'engine_sha256':context['engine'], 'simulation_profile_sha256':context['profile'],
+            'fingerprints':context['fingerprints'], 'encounter_settings':context['settings'],
+            'baseline':baselines.get(index)} for index,context in sorted(contexts.items())],
+        'unvisited_encounter_indices':[index for index in range(1,len(weights)+1) if index not in contexts],
         'all_saved_resolved_results_complete': complete, 'ranking_scope':
             'all_saved_resolved_requests' if complete else 'completed_pages_only',
         'ranking_objective':objective,

@@ -154,6 +154,9 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(reports[0]['status'],'collection_incomplete')
                 self.assertEqual(runs.call_count,4)
                 gains=[r['weighted_dps_gain_pct'] for r in report['simulation']['ranked_gear_sets']]
+                contexts = report['simulation']['encounter_contexts']
+                self.assertEqual([context['encounter_settings']['duration_seconds'] for context in contexts], [45,90])
+                self.assertEqual([context['baseline']['mean_dps'] for context in contexts], [100,100])
                 self.assertAlmostEqual(gains[0],25); self.assertEqual(gains[1],0)
                 before=journal.read_bytes()
                 calls=runs.call_count
@@ -161,6 +164,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(cached['collection']['windows_attempted'],0)
                 self.assertEqual(cached['simulation']['new_runs'],0)
                 self.assertEqual(cached['simulation']['ranked_gear_sets'],report['simulation']['ranked_gear_sets'])
+                self.assertEqual(cached['simulation']['encounter_contexts'],contexts)
                 self.assertEqual(runs.call_count,calls)
                 self.assertEqual(journal.read_bytes(),before)
                 original_argv = argv[:]

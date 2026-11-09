@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Final owned-gear rankings now retain each visited encounter’s engine/profile
+identity, numeric settings, weight and baseline result. Per-loadout evidence
+includes the baseline metric value, so gains remain auditable even with top=1.
+[Report contract](docs/ADR-059-ranked-encounter-context.md).
+
 MCP policy reporting now distinguishes enforced offline restrictions from
 Blizzard authorisation. Published-source checks and unsuccessful full-EULA
 retrievals are explicit; approval and absolute compliance remain unverified.

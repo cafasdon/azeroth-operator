@@ -2204,3 +2204,15 @@ reported separately, without shifting the projected timestamp. Missing sections
 remain unknown; known empty sections yield an empty report. This is historical
 arithmetic, not a current lockout, extension outcome, entry or loot eligibility
 check. No game/API/addon change or installation is involved.
+
+## Final gear encounter context (2026-11-09)
+
+Saved-journal rankings and the unified owned-gear evaluator now retain checked
+`encounter_contexts` for visited encounters: index, normalised weight, engine and
+simulation-profile digests, source fingerprints, numeric encounter settings and
+nullable baseline identity/metrics. `unvisited_encounter_indices` records missing
+contexts. Ranked-loadout evidence includes its metric and baseline metric value,
+even if top-N excludes the baseline loadout. No raw templates, names, file paths
+or private iteration samples are added. Ranking, work budgets and completeness
+flags are unchanged; no full BiS, native/model accuracy or statistical proof is
+implied. [Contract](../../docs/ADR-059-ranked-encounter-context.md).

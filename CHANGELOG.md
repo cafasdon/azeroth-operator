@@ -1,5 +1,10 @@
 # Changelog
 
+- Preserve checked encounter engine/profile/fingerprints/settings and baseline
+  identities in final saved-journal and unified gear-evaluation reports. Keep
+  unvisited encounters and absent baselines explicit; attach baseline metric
+  values to ranked-loadout evidence without exporting private samples or paths.
+
 - Clarify MCP policy evidence: explicit false Blizzard authorisation, complete
   applicable-terms review and absolute-guarantee flags, scoped review date and
   per-source retrieval outcomes. Existing deny-by-default controls unchanged.
