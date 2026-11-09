@@ -2593,12 +2593,28 @@ pub fn observed_bag_stack_groups(
     let mut shown = Vec::new();
     let mut estimated_groups = 0;
     let mut maximum_slots_freed = 0;
+    let mut disjoint_pairs = 0;
     for rows in &groups {
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
         let minimum = maximum
             .filter(|maximum| rows.iter().all(|row| row.2 <= *maximum))
             .map(|maximum| quantity.div_ceil(maximum));
         let freed = minimum.map(|count| rows.len() as u64 - count);
+        let pairs = maximum.filter(|_| minimum.is_some()).map(|maximum| {
+            let mut counts: Vec<_> = rows.iter().map(|row| row.2).collect();
+            counts.sort_unstable();
+            let (mut low, mut high) = (0, counts.len() - 1);
+            let mut pairs = 0;
+            while low < high {
+                if counts[low] + counts[high] <= maximum {
+                    pairs += 1;
+                    low += 1;
+                }
+                high -= 1;
+            }
+            pairs
+        });
+        disjoint_pairs += pairs.unwrap_or(0);
         if let Some(freed) = freed {
             estimated_groups += 1;
             maximum_slots_freed += freed;
@@ -2616,7 +2632,8 @@ pub fn observed_bag_stack_groups(
         if maximum.is_some() {
             group["capacity_projection"] = json!({"observed_counts_fit_assumption":minimum.is_some(),
                 "minimum_stacks_under_assumption":minimum,
-                "maximum_slots_freed_under_assumption":freed});
+                "maximum_slots_freed_under_assumption":freed,
+                "maximum_disjoint_whole_stack_pairs":pairs});
         }
         shown.push(group);
     }
@@ -2628,7 +2645,8 @@ pub fn observed_bag_stack_groups(
         report["capacity_projection_summary"] = json!({
             "estimated_group_count":estimated_groups,
             "inconsistent_group_count":groups.len()-estimated_groups,
-            "maximum_slots_freed_across_estimated_groups":maximum_slots_freed
+            "maximum_slots_freed_across_estimated_groups":maximum_slots_freed,
+            "maximum_disjoint_whole_stack_pairs_across_estimated_groups":disjoint_pairs
         });
     }
     Some(report)

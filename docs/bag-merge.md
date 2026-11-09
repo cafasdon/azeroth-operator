@@ -49,5 +49,9 @@ any specific merge.
 The `capacity_projection_summary` counts estimated and inconsistent
 groups across the full observation, including groups beyond the display
 limit. Its slot savings sum only groups that fit the assumption.
+The same projection counts the maximum number of disjoint pairs whose
+combined counts fit the assumption. It counts each saved stack at most
+once and sums eligible groups across the whole capture. This describes
+one round of whole-stack pairing, with native eligibility unverified.
 
 Review evidence: Jev1.14.0 advisory returned insufficient_evidence (probability0.89, confidence0.83), request b3ad4cbdedd82530f21d67d1c5fc58019053ecc850b9c01c6aa9c13a03ccb37f, 767 input/116 output tokens,0.321s. This is not a review pass or native verification. Required adversarial-review instruction file was unavailable at its configured path. Direct source review confirms two bounded writes and observation-only completion; native assumptions remain explicitly unqualified.

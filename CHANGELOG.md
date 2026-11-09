@@ -1,5 +1,7 @@
 # Changelog
 
+- Count disjoint whole-stack pairs that fit the assumed saved bag capacity.
+
 - Total hypothetical bag slot savings across all matching saved stack groups.
 
 - Estimate saved bag stack consolidation under a caller-supplied capacity.

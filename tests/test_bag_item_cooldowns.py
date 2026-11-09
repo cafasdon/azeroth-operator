@@ -60,7 +60,7 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         'stack_compatibility_verified':False,'game_execution':False,
                         'groups':[{'stack_count':2,'total_quantity':10,'locations_truncated':False,
                                    'locations':[{'bag':0,'slot':2,'count':7},{'bag':0,'slot':10,'count':3}]}]})
-                    for capacity, expected in [(6,(False,None,None)),(7,(True,2,0)),(10,(True,1,1))]:
+                    for capacity, expected in [(6,(False,None,None,None)),(7,(True,2,0,0)),(10,(True,1,1,1))]:
                         projected = await session.call_tool('find_snapshot_item', {
                             'snapshot_id':store.ingest(stacks),'item_id':1,'bag_stack_groups':True,
                             'assumed_max_stack_size':capacity})
@@ -69,11 +69,12 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(groups['assumed_max_stack_size'],capacity)
                         self.assertEqual(groups['groups'][0]['capacity_projection'],dict(zip((
                             'observed_counts_fit_assumption','minimum_stacks_under_assumption',
-                            'maximum_slots_freed_under_assumption'),expected)))
+                            'maximum_slots_freed_under_assumption','maximum_disjoint_whole_stack_pairs'),expected)))
                         self.assertEqual(groups['capacity_projection_summary'],{
                             'estimated_group_count':int(expected[0]),
                             'inconsistent_group_count':int(not expected[0]),
-                            'maximum_slots_freed_across_estimated_groups':expected[2] or 0})
+                            'maximum_slots_freed_across_estimated_groups':expected[2] or 0,
+                            'maximum_disjoint_whole_stack_pairs_across_estimated_groups':expected[3] or 0})
                     many = deepcopy(stacks)
                     many['sections']['bags'] = {'0': {str(i):{
                         'item_id':1,'count':1 if i <= 42 else 3,'link':f'group:{(i-1)//2}'}
@@ -86,7 +87,8 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(groups['groups']),20)
                     self.assertEqual(groups['capacity_projection_summary'],{
                         'estimated_group_count':21,'inconsistent_group_count':1,
-                        'maximum_slots_freed_across_estimated_groups':21})
+                        'maximum_slots_freed_across_estimated_groups':21,
+                        'maximum_disjoint_whole_stack_pairs_across_estimated_groups':21})
                     refused = await session.call_tool('find_snapshot_item', {
                         'snapshot_id':store.ingest(stacks),'item_id':1,'assumed_max_stack_size':10})
                     self.assertTrue(refused.isError)
