@@ -17,6 +17,10 @@ The Rust MCP `capabilities.snapshot_section_schema` lists recognised
 section names and the names whose captured payloads require Forever.
 These are reader rules. Capture availability still depends on the saved
 observation and native verification remains separate.
+For an explicitly named character, `resolve_character.required_sections`
+selects the newest capture containing all requested sections within any
+client or time bounds. An older matching capture can qualify. This is
+historical selection and does not verify the character currently in play.
 
 Use `list_snapshots.weapon_enchant` to search a saved `main_hand`,
 `off_hand` or `ranged` enchant list. Set an optional exact `enchant_id`,

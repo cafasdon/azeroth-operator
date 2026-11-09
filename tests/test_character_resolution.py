@@ -21,9 +21,11 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
             store = SnapshotStore(Path(folder))
             base = fixture()
             base['client'] = {'family': 'forever', 'variant': 'live', 'build': '70862', 'interface': 16001}
+            base['sections']['weapon_enchants'] = {'coverage':'public_weapon_enchant_lists','hands':{}}
             first = store.ingest(base)
             later = deepcopy(base)
             later['captured_at'] = '2025-01-02T00:00:00Z'
+            later['sections'].pop('weapon_enchants')
             expected = store.ingest(later)
             changed_build = deepcopy(later)
             changed_build['captured_at'] = '2025-01-02T12:00:00Z'
@@ -32,6 +34,7 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
             newest = deepcopy(later)
             newest['captured_at'] = '2025-01-03T00:00:00Z'
             newest['character']['name'] = 'Another'
+            newest['sections']['weapon_enchants'] = base['sections']['weapon_enchants']
             store.ingest(newest)
             foreign = deepcopy(newest)
             foreign['character']['name'] = 'PrivateOtherOwner'
@@ -55,6 +58,13 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(result['active_character_verified'])
                     self.assertFalse(result['live'])
                     target = {'family':'forever','character':{'name':'Example','realm':'Test'}}
+                    covered = await resolve({**target,'required_sections':['weapon_enchants','equipment']})
+                    self.assertEqual(covered['selection']['snapshot_id'],first)
+                    self.assertFalse(covered['active_character_verified'])
+                    for bounds in [{'exact_client':changed_build['client']},
+                                   {'captured_from':'2025-01-02T00:00:00Z'}]:
+                        no_coverage = await resolve({**target,**bounds,'required_sections':['weapon_enchants']})
+                        self.assertIsNone(no_coverage['selection'])
                     exact = await resolve({**target,'exact_client':base['client']})
                     self.assertEqual(exact['selection']['snapshot_id'],expected)
                     absent_client = {**base['client'],'variant':'different'}
@@ -67,6 +77,8 @@ class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
                     for args in [
                         {'family':'forever','captured_from':'2025-01-01T00:00:00Z'},
                         {'family':'forever','exact_client':base['client']},
+                        {'family':'forever','required_sections':['weapon_enchants']},
+                        {**target,'required_sections':['unknown']},
                         {**target,'exact_client':{**base['client'],'family':'retail'}},
                         {**target,'captured_from':'2025-01-03T00:00:00Z',
                          'captured_through':'2025-01-01T00:00:00Z'},

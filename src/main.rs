@@ -44,6 +44,8 @@ struct ResolveCharacter {
     captured_through: Option<String>,
     /// Require this exact client family, variant, build and interface for the explicit character.
     exact_client: Option<azeroth_operator::ClientIdentity>,
+    /// Require every named section in the same saved capture of the explicit character.
+    required_sections: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1985,9 +1987,10 @@ impl Operator {
             if args.captured_from.is_some()
                 || args.captured_through.is_some()
                 || args.exact_client.is_some()
+                || args.required_sections.is_some()
             {
                 return CallToolResult::error(vec![ContentBlock::text(
-                    "Capture time bounds and exact client selection require an explicit character",
+                    "Capture time, exact client and section filters require an explicit character",
                 )]);
             }
             return CallToolResult::success(vec![ContentBlock::text(
@@ -2003,6 +2006,7 @@ impl Operator {
                 exact_client: args.exact_client.as_ref(),
                 captured_from: args.captured_from.as_deref(),
                 captured_through: args.captured_through.as_deref(),
+                required_sections: args.required_sections.as_deref(),
                 ..Default::default()
             },
             0,

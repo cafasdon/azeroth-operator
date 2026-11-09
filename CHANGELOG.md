@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve an explicit saved character to the newest capture containing required sections.
+
 - Distinguish unavailable and unrecorded sections in saved snapshot comparisons.
 
 - Discover recognised snapshot section names and Forever-only section restrictions through MCP capabilities.
