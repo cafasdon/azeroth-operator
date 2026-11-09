@@ -41,6 +41,7 @@ async def selected_snapshot(args, deadline):
 
 async def execute(args):
     args = copy(args)
+    args.candidate_scan_limit = collection.ranker.validate_candidate_scan_limit(getattr(args, 'candidate_scan_limit', 256))
     objective = simulation.ranking_objective(args)
     floor = simulation.encounter_improvement_floor(args)
     metric = roles.rank_by(args)
@@ -108,6 +109,7 @@ async def execute(args):
         if progress and progress['window_count']:
             require(progress['collection_binding_sha256'] == binding and progress['snapshot_id'] == args.snapshot_id)
         collected = {'mode':'gear_window_collection','collection_binding_sha256':binding,
+            'candidate_scan_limit':args.candidate_scan_limit,
             'windows_attempted':None,'windows_inserted':None,'stop_reason':'time_budget',
             'progress':progress,'interrupted_stage_recovered':True,
             'best_in_slot_verified':False,'feasible_set_coverage_verified':False,
@@ -135,6 +137,7 @@ async def execute(args):
         'selection': selection, 'snapshot_id': args.snapshot_id,
         'requested_slots': args.slot, 'candidate_storage_scope': 'all_observed_storage',
         'candidate_filters': {}, 'maximum_simultaneous_swaps': len(args.slot),
+        'candidate_scan_limit': args.candidate_scan_limit,
         'equipment_layout':'azeroth_equipment_preserve_slots_v1' if getattr(args,'positional_equipment',False) else 'auto_place',
         'ranking_objective':objective,
         'minimum_encounter_improvement':floor,
@@ -174,6 +177,8 @@ def parser():
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')
+    cli.add_argument('--candidate-scan-limit', type=int, default=256,
+        help='Maximum locations scanned per slot (1–4096, default 256); never truncates a pool')
     for name, default in [('window-size', 64), ('max-windows', 4), ('max-pages', 64),
         ('page-limit', 8), ('top', 10), ('max-new-runs', 16), ('iteration-budget', 100000),
         ('time-budget-seconds', 180), ('collection-seconds', 45), ('max-payload-mib', 64),

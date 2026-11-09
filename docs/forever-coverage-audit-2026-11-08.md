@@ -697,3 +697,14 @@ Two stable projections do not establish the same group identity or current
 membership. No member names/GUIDs, roster, chat, invites, role changes, votes or
 social actions are captured or invoked. Native testing stays deferred.
 See docs/ADR-072-personal-group-context.md.
+
+## Larger owned candidate pools (2026-11-09)
+
+Ranker, window collector and full owned evaluator accept --candidate-scan-limit
+1..4096, default256. Pools over the selected budget reject before enumeration;
+no scanned prefix is treated as complete. Modifier-aware duplicate collapse,
+physical-copy legality and all other time/draft/payload limits remain. The reported
+candidate_scan_limit is operational, not a candidate filter. Within unchanged
+sources, changing only the budget preserves a successfully scanned pool's scope
+and collection binding. Existing source fingerprints still apply. This does not
+verify complete ownership, native legality or BiS. See docs/ADR-073-owned-candidate-scan-budget.md.

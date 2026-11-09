@@ -1,5 +1,9 @@
 # Changelog
 
+- Add an explicit 1–4096 per-slot candidate scan budget to ranker, saved-window
+  collection and full owned-gear evaluation. Default stays 256; preserve complete
+  scans, exact modifier variants, physical copies and same-version resume scope.
+
 - Add passive personal group context for explicit home/instance categories,
   strict local readers and MCP summaries. Keep category unknowns separate from
   solo state; omit roster identities and all social actions.

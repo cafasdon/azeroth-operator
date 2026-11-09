@@ -60,6 +60,7 @@ def request_binding(args, deadline, template_sha256):
 
 
 def validate(args):
+    args.candidate_scan_limit = ranker.validate_candidate_scan_limit(getattr(args, 'candidate_scan_limit', 256))
     require(type(getattr(args,'positional_equipment',False)) is bool)
     require(type(getattr(args,'include_empty_slots',False)) is bool
         and (not getattr(args,'include_empty_slots',False) or
@@ -137,7 +138,8 @@ async def collect_windows(args, *, deadline=None):
                 storage=args.storage, max_swaps=args.max_swaps, candidate_filters=filters,
                 combination_offset=offset, combination_limit=limit,
                 positional_equipment=getattr(args,'positional_equipment',False),
-                include_empty_slots=getattr(args,'include_empty_slots',False)), timeout=min(45, remaining))
+                include_empty_slots=getattr(args,'include_empty_slots',False),
+                candidate_scan_limit=args.candidate_scan_limit), timeout=min(45, remaining))
             drafts, skipped, coverage, stats, _, _, search = collected
             require(search['snapshot_id'] == args.snapshot_id and search['requested_slots'] == args.slot
                     and search['combination_window']['offset'] == offset
@@ -164,6 +166,7 @@ async def collect_windows(args, *, deadline=None):
         if status and status['reported_coordinate_coverage_complete']:
             stop = 'reported_coverage_complete'
     return {'mode': 'gear_window_collection', 'collection_binding_sha256': binding,
+            'candidate_scan_limit': args.candidate_scan_limit,
             'windows_attempted': attempted, 'windows_inserted': inserted, 'stop_reason': stop,
             'progress': status, 'best_in_slot_verified': False, 'feasible_set_coverage_verified': False,
             'simulation_performed': False, 'game_execution': False}
@@ -191,6 +194,8 @@ def parser():
         result.add_argument('--' + field, type=int)
     result.add_argument('--window-size', type=int, default=64)
     result.add_argument('--max-drafts', type=int, default=64)
+    result.add_argument('--candidate-scan-limit', type=int, default=256,
+                        help='Maximum locations scanned per slot (1–4096, default 256); never truncates a pool')
     result.add_argument('--max-windows', type=int, default=4)
     result.add_argument('--time-budget-seconds', type=int, default=180)
     result.add_argument('--max-payload-mib', type=int, default=64)

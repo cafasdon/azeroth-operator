@@ -42,6 +42,13 @@ class GearSearchLimit(ValueError):
     """A local search limit with a diagnostic safe to print."""
 
 
+def validate_candidate_scan_limit(value):
+    """Validate the operational location budget without coercing caller values."""
+    if type(value) is not int or not 1 <= value <= 4096:
+        raise ValueError("--candidate-scan-limit must be an integer from 1 to 4096")
+    return value
+
+
 def check_template_identity(template, stats, require_simulator_level=True):
     player = single_player(template["raid"])
     checks = check_character_identity(player, stats)
@@ -57,7 +64,9 @@ def check_template_identity(template, stats, require_simulator_level=True):
 
 
 async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, can_dual_wield=True,
-                          selected_slots=None, set_id=None, storage=None, candidate_filters=None):
+                          selected_slots=None, set_id=None, storage=None, candidate_filters=None,
+                          candidate_scan_limit=256):
+    validate_candidate_scan_limit(candidate_scan_limit)
     candidates = []
     skipped = []
     offset = 0
@@ -76,9 +85,10 @@ async def slot_candidates(call, slot, multi, collapse_identical, item_ids=None, 
             count = page["filtered_item_locations"]
             if count < 0:
                 raise ValueError("Invalid candidate count")
-            if count > 256:
+            if count > candidate_scan_limit:
                 raise GearSearchLimit(
-                    "A slot exceeds the 256-location scan limit. Narrow the search with --storage, --item-id or --set-id."
+                    "A slot exceeds the configured candidate scan limit. Increase --candidate-scan-limit (up to 4096) "
+                    "or narrow the search with --storage, --item-id or --set-id."
                 )
         rows = page["items"]
         next_offset = offset + len(rows)
@@ -202,7 +212,8 @@ def combination_window(options, max_swaps, offset, limit):
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
                   max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None,
-                  positional_equipment=False, include_empty_slots=False):
+                  positional_equipment=False, include_empty_slots=False, candidate_scan_limit=256):
+    validate_candidate_scan_limit(candidate_scan_limit)
     if type(positional_equipment) is not bool: raise ValueError('Invalid equipment layout')
     if type(include_empty_slots) is not bool or (include_empty_slots and not positional_equipment):
         raise ValueError('Empty choices require positional equipment')
@@ -276,6 +287,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             candidates, exclusions, coverage = await slot_candidates(
                 call, slot, multi, collapse_identical, item_ids, can_dual_wield,
                 simultaneous_slots, set_id, storage, candidate_filters,
+                candidate_scan_limit=candidate_scan_limit,
             )
             skipped.extend(exclusions)
             native_slot = next(native for native,index in PROJECTED_SLOT_INDEX.items() if SIMULATOR_SLOTS[index] == slot)
@@ -399,6 +411,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             "snapshot_id": snapshot_id,
             "inventory_evidence": inventory_evidence,
             "requested_slots": list(slots),
+            "candidate_scan_limit": candidate_scan_limit,
             "candidate_filters": {
                 **dict(candidate_filters or {}),
                 **({"item_ids": list(item_ids)} if item_ids else {}),
@@ -705,6 +718,8 @@ def main():
                             help="Compare up to this many selected replacements across the requested slots.")
     parser.add_argument("--max-drafts", type=int, default=64,
                         help="Maximum proposed changes (1–128, default 64).")
+    parser.add_argument("--candidate-scan-limit", type=int, default=256,
+                        help="Maximum locations scanned per slot (1–4096, default 256); never truncates a pool.")
     parser.add_argument("--combination-offset", type=int, default=0,
                         help="Start at this zero-based combination coordinate; requires --combination-limit.")
     parser.add_argument("--combination-limit", type=int,
@@ -768,6 +783,7 @@ def main():
     if args.simulation_journal and args.bulk_engine:
         parser.error("--simulation-journal supports fixed runs; staged bulk results use --cache")
     try:
+        validate_candidate_scan_limit(args.candidate_scan_limit)
         budget = 64 if args.simulation_journal_mib is None else args.simulation_journal_mib
         args.simulation_cache = (SimulationJournal(args.simulation_journal, max_payload_bytes=budget * 1024 * 1024) if args.simulation_journal else
                                  SimulationCache.for_current_user() if args.cache else None)
@@ -815,7 +831,8 @@ def main():
                 collect(args.mcp, args.snapshot_id, args.slot, errlog,
                         args.collapse_identical_items, args.item_id, can_dual_wield,
                         args.character, args.set_id, args.max_drafts, args.storage,
-                        args.max_swaps, candidate_filters, args.combination_offset, args.combination_limit), timeout=45,
+                        args.max_swaps, candidate_filters, args.combination_offset, args.combination_limit,
+                        candidate_scan_limit=args.candidate_scan_limit), timeout=45,
             ))
         identity = check_template_identity(template, stats, require_simulator_level=not args.plan_only)
         identity["hunter_pet"] = check_hunter_pet_level(

@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Owned-gear tools now accept `--candidate-scan-limit` (1–4096, default 256) for
+larger complete item pools. Scans never truncate silently; modifier-aware copy
+collapse and the existing execution limits remain in force.
+[Contract](docs/ADR-073-owned-candidate-scan-budget.md).
+
 Forever exports now support separate home/instance group context: reported member
 counts, group flags and your own leader flag when readable. No roster identities
 or social actions are added. [Contract](docs/ADR-072-personal-group-context.md).
