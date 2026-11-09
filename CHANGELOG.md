@@ -1,5 +1,7 @@
 # Changelog
 
+- Require a storage-wide bag review for quest bank withdrawal plans.
+
 - Optionally use recorded bank stack limits in saved restocking estimates.
 
 - Estimate saved restocking bag space using agreeing carried stack limits.

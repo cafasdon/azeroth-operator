@@ -2903,15 +2903,26 @@ impl Operator {
                 "Quest inventory, merchant and source options require quest inventory requirements",
             )]);
         }
+        if args.quest_inventory_bank_withdrawals
+            && args
+                .quest_inventory_requirements
+                .as_ref()
+                .is_some_and(|requirements| {
+                    requirements.container_id.is_some()
+                        || !matches!(
+                            requirements.storage,
+                            azeroth_operator::InventoryStorage::Bags
+                        )
+                })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest bank withdrawal planning requires a storage-wide bag review",
+            )]);
+        }
         if let Some(requirements) = &args.quest_inventory_requirements
             && (args.quest_id.is_none()
                 || args.section.as_deref() != Some("quests")
-                || requirements.validate(&Family::Forever).is_err()
-                || (args.quest_inventory_bank_withdrawals
-                    && !matches!(
-                        requirements.storage,
-                        azeroth_operator::InventoryStorage::Bags
-                    )))
+                || requirements.validate(&Family::Forever).is_err())
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest inventory review requires a quest ID, the quests section and valid item requirements",

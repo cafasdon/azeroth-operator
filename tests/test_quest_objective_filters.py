@@ -321,6 +321,17 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(reviewed['quest_item_binding_verified'],False)
                     self.assertEqual(reviewed['short_item_count'],2)
                     self.assertIs(reviewed['all_requirements_covered_by_observed_quantities'],False)
+                    scoped_requirements={**requirements,'container_id':0}
+                    scoped=(await query(quest_id=3,quest_inventory_requirements=scoped_requirements))[
+                        'quest_inventory_review']
+                    self.assertEqual(scoped['items'],reviewed['items'])
+                    self.assertEqual(scoped['container_id'],0)
+                    absent=(await query(quest_id=3,quest_inventory_requirements={
+                        **requirements,'container_id':64}))['quest_inventory_review']
+                    self.assertFalse(absent['storage_observed'])
+                    self.assertIsNone(absent['all_requirements_covered_by_observed_quantities'])
+                    await query(error=True,quest_id=3,quest_inventory_bank_withdrawals=True,
+                                quest_inventory_requirements=scoped_requirements)
                     bank_plan=(await query(quest_id=3,quest_inventory_requirements=requirements,
                         quest_inventory_snapshot_id=bank_stock_key,
                         quest_inventory_bank_withdrawals=True))['quest_inventory_review']['bank_withdrawal_plan']

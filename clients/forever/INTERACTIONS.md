@@ -3196,6 +3196,12 @@ list to one recorded bag or bank tab. Shortfall searches can use the same
 scope. Missing containers do not qualify for either search. Bank withdrawal
 plans require a storage-wide bag search.
 
+`inspect_snapshot.quest_inventory_requirements.container_id` can scope a
+quest materials checklist to a recorded bag or bank tab. Supply the item
+IDs and quantities explicitly, since the saved objective counts do not
+identify required items. Quest bank withdrawal plans require a
+storage-wide bag review.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
