@@ -155,6 +155,14 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
     Ok(
         json!({"format":"azeroth_operator.equipment_review.v1","captured_character_level":captured_level,
         "captured_professions":snapshot.sections.get("professions"),
+        "captured_equipped_bag_items":snapshot.sections.get("bag_capacity").map(|bags| {
+            let mut rows:Vec<_>=bags.as_object().unwrap().iter().filter_map(|(bag,row)| {
+                row.get("equipped_item").map(|item|json!({"bag":bag.parse::<u32>().unwrap(),
+                    "item_id":item["item_id"],"inventory_slot":item["inventory_slot"]}))
+            }).collect();
+            rows.sort_unstable_by_key(|row|row["bag"].as_u64().unwrap());
+            rows
+        }),
         "captured_talent_observation":snapshot.sections.get("talents")
             .filter(|talents| snapshot.client.family==crate::Family::Forever && talents.get("observed_tree_ids").is_some())
             .map(|talents| {

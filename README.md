@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+Gear simulation review now carries partial equipped-bag observations into quiver
+diagnostics and final encounter context. Unsupported numeric quiver selections
+are rejected before the workflow runs the engine; observed matches remain
+identity evidence, not verified native bonuses.
+[Contract](docs/ADR-065-quiver-observation-simulation-context.md).
+
 Saved bag-capacity observations can now include the equipped container’s item
 ID and reported inventory slot when stable public reads agree. These identities
 are inspectable but receive no material-stock or verified quiver-bonus credit.

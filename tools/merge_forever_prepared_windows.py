@@ -10,7 +10,7 @@ from tools.merge_forever_gear_windows import (
     MAX_REPORT_BYTES, MAX_TOTAL_BYTES, digest, integer, merge_reports, parse_report, require,
 )
 from tools.prepare_forever_gear_window import encoded
-from tools.run_forever_sim import single_player
+from tools.run_forever_sim import single_player, hunter_quiver_observation
 
 FINGERPRINTS = ('mcp_sha256', 'template_sha256', 'encounter_sha256',
                 'preparer_sha256', 'adapter_sha256', 'catalogue_sha256', 'layout_sha256',
@@ -24,6 +24,9 @@ def merge_prepared(path, artifacts):
     connection, deadline = journal.connect(path)
     reports, preparations, requests = [], [], {}
     fingerprints = context_bytes = None
+    bag_items = None
+    first_observation = True
+    quiver_observation = None
     instances = source_bytes = 0
     try:
         for index, artifact in enumerate(artifacts, 1):
@@ -58,6 +61,11 @@ def merge_prepared(path, artifacts):
                 request = prepared['request']
                 require(isinstance(request, dict) and set(request) == {'raid', 'encounter', 'simOptions', 'type'}
                         and request['type'] == 'SimTypeIndividual')
+                observed = artifact.get('captured_equipped_bag_items')
+                quiver_observation = hunter_quiver_observation(single_player(request['raid']), observed)
+                require(first_observation or observed == bag_items)
+                bag_items = observed
+                first_observation = False
                 data = encoded(request)
                 require(hashlib.sha256(data).hexdigest() == digest(prepared['request_sha256']))
                 context = deepcopy(request)
@@ -78,6 +86,7 @@ def merge_prepared(path, artifacts):
         jobs = [{**requests[draft['simulator_gear_sha256']], 'global_review': draft['global_review'],
                  'references': draft['references']} for draft in coverage.pop('drafts')]
         result = {'mode': 'prepared_gear_request_set', 'basis': 'journal_and_prepared_artifact_consistency',
+            'hunter_quiver_observation':quiver_observation,
             'fingerprints': fingerprints, 'context_sha256': hashlib.sha256(context_bytes).hexdigest(),
             'search_coverage': coverage, 'preparations': preparations,
             'request_instances': instances, 'distinct_requests': len(jobs),

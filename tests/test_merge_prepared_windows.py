@@ -61,10 +61,19 @@ class MergePreparedWindowTests(unittest.TestCase):
             self.assertEqual((merged['request_instances'], merged['distinct_requests'], merged['reused_request_instances']), (5, 2, 3))
             self.assertTrue(merged['search_coverage']['reported_coordinate_coverage_complete'])
             self.assertEqual([len(row['references']) for row in merged['requests']], [3, 2])
+            self.assertEqual(merged['hunter_quiver_observation']['comparison'],'capture_unavailable')
+            with_bags=deepcopy(artifacts)
+            for artifact in with_bags:
+                artifact['captured_equipped_bag_items']=[{'bag':1,'item_id':8217,'inventory_slot':20}]
+            diagnosed=merge_prepared(journal,with_bags)
+            self.assertEqual(diagnosed['hunter_quiver_observation']['observed_pinned_quiver_item_ids'],[8217])
+            self.assertIs(diagnosed['hunter_quiver_observation']['template_haste_below_observed_reference'],True)
+            self.assertEqual(diagnosed['requests'],merged['requests'])
             reverse = merge_prepared(journal, list(reversed(artifacts)))
             self.assertEqual([row['request_sha256'] for row in merged['requests']], [row['request_sha256'] for row in reverse['requests']])
             mutations = ['context', 'fingerprint', 'equipment', 'request_hash', 'source_hash', 'missing',
-                         'review', 'accounting', 'offset', 'flag']
+                         'review', 'accounting', 'offset', 'flag', 'bag_identity_type',
+                         'bag_identity_mismatch', 'quiver_enum']
             for mutation in mutations:
                 bad = deepcopy(artifacts)
                 target = bad[1]
@@ -83,6 +92,11 @@ class MergePreparedWindowTests(unittest.TestCase):
                 if mutation == 'accounting': target['resolution_accounting']['baseline_review_instances'] = True
                 if mutation == 'offset': target['window_offset_decimal'] = '04'
                 if mutation == 'flag': target['simulation_performed'] = True
+                if mutation == 'bag_identity_type': target['captured_equipped_bag_items']='PRIVATE'
+                if mutation == 'bag_identity_mismatch': target['captured_equipped_bag_items']=[{'bag':1,'item_id':8217,'inventory_slot':20}]
+                if mutation == 'quiver_enum':
+                    row['request']['raid']['parties'][0]['players'][0]['hunter']['options']={'classOptions':{'quiverBonus':999999}}
+                    row['request_sha256']=hashlib.sha256(encoded(row['request'])).hexdigest()
                 with self.assertRaises(ValueError, msg=mutation): merge_prepared(journal, bad)
                 self.assertEqual(journal.read_bytes(), before)
             with self.assertRaises(ValueError): merge_prepared(journal, artifacts * 2)

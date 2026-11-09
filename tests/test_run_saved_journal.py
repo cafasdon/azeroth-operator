@@ -101,6 +101,8 @@ class SavedJournalTests(unittest.TestCase):
             value = fixture()
             value['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
             value['sections']['stats'] = {'level':60,'class':'HUNTER','race':'Orc','client_version':'x'}
+            value['sections']['bag_capacity']={str(i):{'total_slots':16 if i==0 else 8 if i==1 else 0,'free_slots':0} for i in range(5)}
+            value['sections']['bag_capacity']['1']['equipped_item']={'item_id':8217,'inventory_slot':20}
             value['sections']['bags'] = {'0': {str(i): {'item_id':item,'count':1,
                 'link':f'item:{item}:0:0:0:0:0:0'} for i,item in enumerate([4549,4550],1)}}
             key = SnapshotStore(base).ingest(value)
@@ -177,6 +179,12 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertEqual([context['weight'] for context in contexts], [.25,.75])
                 self.assertEqual([context['encounter_settings']['duration_seconds'] for context in contexts], [45,90])
                 self.assertEqual([context['baseline']['mean_dps'] for context in contexts], [100,100])
+                for context in contexts:
+                    observation=context['hunter_quiver_observation']
+                    self.assertEqual(observation['observed_pinned_quiver_item_ids'],[8217])
+                    self.assertEqual(observation['comparison'],'none_selection_unverified')
+                    self.assertIs(observation['template_haste_below_observed_reference'],True)
+                    self.assertIs(observation['quiver_bonus_verified'],False)
                 self.assertEqual(result['unvisited_encounter_indices'], [])
                 self.assertEqual(len(result['ranked_gear_sets']),3)
                 for row,expected in zip(result['ranked_gear_sets'],[25,0,-2.5],strict=True):

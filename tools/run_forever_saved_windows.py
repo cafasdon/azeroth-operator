@@ -108,6 +108,7 @@ async def execute(args, *, deadline=None):
     result = {'mode': 'saved_window_simulation', 'work_set_sha256': work_key, 'engine_sha256': expected_hash,
         'simulation_profile_sha256': hashlib.sha256(preparer.encoded(profile)).hexdigest(),
         'fingerprints': work['fingerprints'], 'encounter_settings': adapter.encounter_summary(work['requests'][0]['request']),
+        'hunter_quiver_observation':work['hunter_quiver_observation'],
         'search_coverage': work['search_coverage'], 'requested_request_count': len(bindings),
         'completed_request_count': len(rows), 'uninspected_request_count': uninspected,
         'missing_request_count': len(pending), 'missing_reviews': pending[:128],

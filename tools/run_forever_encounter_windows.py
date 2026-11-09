@@ -105,6 +105,7 @@ async def execute(args, *, deadline=None):
         require(set(result['fingerprints']) == set(FINGERPRINTS))
         current = {'engine': digest(result['engine_sha256']), 'profile': digest(result['simulation_profile_sha256']),
             'fingerprints': {key: digest(value) for key, value in result['fingerprints'].items() if key != 'encounter_sha256'},
+            'hunter_quiver_observation':result.get('hunter_quiver_observation'),
             'coverage': result['search_coverage'], 'count': result['requested_request_count']}
         if identities is None: identities = current
         require(encoded(current) == encoded(identities))

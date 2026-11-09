@@ -2096,3 +2096,19 @@ credit, NPC data or gameplay actions. This is a prerequisite for future captured
 quiver checks; simulator quiver/ammunition options remain unverified and unchanged.
 Addon0.53.0-dev and compatible readers are required together for future rollout.
 The package remains uninstalled and native qualification stays deferred.
+
+## Captured quiver reference diagnostics (2026-11-09)
+
+Equipment reviews now project captured_equipped_bag_items as numeric bag/item/
+inventory-slot rows, null for missing capacity data and empty for no observed
+identities. Standalone simulation preflight and saved-window preparation validate
+these fragments and the pinned Hunter quiver enum. Unsupported numeric enum IDs
+reject rather than silently falling back to a zero reference effect. Supported
+selections and request bodies remain unchanged. Diagnostic comparison reports
+an observed item match, not-observed-in-partial-capture or unverified none, with
+pinned reference haste values and an explicit below-observed-reference indicator.
+These do not prove an applied native bonus or absence of another quiver. Raw
+unknown bag IDs are counted as unmapped, not classified as non-quivers. Numeric
+observations must agree across prepared groups; final encounter contexts retain
+the recomputed diagnostics. Full identity/bonus/ammunition proof remains false.
+No quiver optimisation, automatic template change, addon change or live action.

@@ -320,6 +320,52 @@ HUNTER_PET_TYPES = ("PetNone", "Bat", "Bear", "BirdOfPrey", "Boar", "CarrionBird
                     "Cat", "CoreHound", "Crab", "Crocilisk", "Fox", "Gorilla", "Hyena",
                     "Raptor", "Scorpid", "Spider", "Tallstrider", "Turtle", "WindSerpent", "Wolf")
 
+# Pinned 9dc32ac proto/hunter.proto and sim/hunter/ammo_auto_gen.go.
+# Values are reference effects, never proof of a native applied bonus.
+HUNTER_QUIVERS = {'QuiverNone':(0,0), 'HuntingQuiver':(3573,10),
+    'QuiverOfTheNightWatch':(3605,11), 'HeavyQuiver':(7371,12),
+    'QuickdrawQuiver':(8217,13), 'AncientSinewWrappedLamina':(18714,15)}
+
+
+def hunter_quiver_observation(player, observed):
+    if observed is not None:
+        if type(observed) is not list or len(observed)>5:
+            raise ValueError('Invalid captured bag identities')
+        bags,slots=set(),set()
+        for row in observed:
+            if (type(row) is not dict or set(row)!={'bag','item_id','inventory_slot'}
+                    or type(row['bag']) is not int or not 1<=row['bag']<=5
+                    or type(row['item_id']) is not int or not 1<=row['item_id']<=2**32-1
+                    or type(row['inventory_slot']) is not int or not 1<=row['inventory_slot']<=255
+                    or row['bag'] in bags or row['inventory_slot'] in slots):
+                raise ValueError('Invalid captured bag identities')
+            bags.add(row['bag']);slots.add(row['inventory_slot'])
+    report={'basis':'captured_bag_ids_and_pinned_quiver_reference','comparison':'not_applicable',
+        'reference_revision':'9dc32ac8ca0d8d1b76337861d38b93c0f884af11',
+        'complete_equipped_bag_identity_verified':False,'quiver_bonus_verified':False,
+        'ammo_identity_verified':False,'simulator_input_modified':False,'game_execution':False}
+    if player_spec(player)!='hunter': return report
+    options=player['hunter'].get('options')
+    options={} if options is None else options
+    declared=proto_option(proto_option(options,'classOptions','class_options',{}),'quiverBonus','quiver_bonus',0)
+    reference=(HUNTER_QUIVERS.get(declared) if type(declared) is str else
+               next((row for row in HUNTER_QUIVERS.values() if row[0]==declared),None) if type(declared) is int else None)
+    if reference is None: raise ValueError('Unsupported Hunter quiver selection')
+    item,haste=reference
+    known={item:haste for item,haste in HUNTER_QUIVERS.values() if item}
+    ids={row['item_id'] for row in observed} if observed is not None else set()
+    matched=sorted(ids & known.keys())
+    highest=max((known[item] for item in matched),default=None)
+    report.update(template_quiver_item_id=item,template_pinned_haste_percent=haste,
+        captured_identity_count=len(observed) if observed is not None else None,
+        observed_pinned_quiver_item_ids=matched,
+        unmapped_observed_item_count=sum(row['item_id'] not in known for row in observed) if observed is not None else None,
+        highest_observed_pinned_haste_percent=highest,
+        template_haste_below_observed_reference=haste<highest if highest is not None else None,
+        comparison=('capture_unavailable' if observed is None else 'none_selection_unverified' if not item
+            else 'observed_item_match' if item in ids else 'not_observed_in_partial_capture'))
+    return report
+
 
 def proto_option(value, camel, snake, default):
     """Read protobuf JSON spellings without allowing a duplicate-field bypass."""
@@ -385,6 +431,7 @@ def request_from(template, equipment_review, encounter_lookup):
         raise ValueError("Provide a single-player template with an explicit APL")
     spec = player_spec(player)
     check_hunter_pet_level(player, equipment_review.get("captured_active_pet"))
+    hunter_quiver_observation(player, equipment_review.get("captured_equipped_bag_items"))
     if (not isinstance(player.get("talentsString"), str)
             or not player.get("class") or player["class"] == "ClassUnknown"
             or not player.get("race") or player["race"] == "RaceUnknown"):
@@ -841,6 +888,8 @@ def main():
             single_player(template["raid"]), review.get("captured_character_identity")) for review in reviews]
         result["hunter_pet_assumptions"] = [check_hunter_pet_level(
             single_player(template["raid"]), review.get("captured_active_pet")) for review in reviews]
+        result["hunter_quiver_observations"] = [hunter_quiver_observation(
+            single_player(template["raid"]), review.get("captured_equipped_bag_items")) for review in reviews]
         print(json.dumps(result, allow_nan=False))
     except ConflictingConsumables:
         parser.exit(1, "Forever template selects multiple items in the same simulator buff group.\n")

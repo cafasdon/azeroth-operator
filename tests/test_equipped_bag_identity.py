@@ -17,6 +17,8 @@ class EquippedBagTests(unittest.IsolatedAsyncioTestCase):
         root=Path(__file__).resolve().parents[1]
         binary=root/'target/debug'/('azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator')
         value=fixture();value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+        value['sections']['equipment']={'16':{'item_id':123}}
+        selection=[{'source':{'kind':'equipment','slot':16},'target_slot':16,'expected_item_id':123}]
         bags={str(i):{'total_slots':16 if i==0 else 8 if i==1 else 0,'free_slots':0} for i in range(5)}
         bags['1']['equipped_item']={'item_id':8217,'inventory_slot':20}
         value['sections']['bag_capacity']=bags
@@ -59,12 +61,16 @@ class EquippedBagTests(unittest.IsolatedAsyncioTestCase):
                     observed=summary['equipped_bag_item_observations']
                     self.assertEqual(observed['entries'],[{'bag':1,'item_id':8217,'inventory_slot':20}])
                     self.assertEqual(observed['observed_identity_count'],1)
+                    review=await call('review_equipment_selection',snapshot_id=key,selections=selection)
+                    self.assertEqual(review['captured_equipped_bag_items'],observed['entries'])
                     for flag in ['complete_equipped_bag_identity_verified','quiver_bonus_verified','credited_as_material_stock','game_execution']:
                         self.assertIs(observed[flag],False)
                     found=await call('find_snapshot_item',snapshot_id=key,item_id=8217)
                     self.assertEqual(found['matched_locations'],0)
                     legacy=await call('inspect_snapshot',snapshot_id=old_key,section='bag_capacity')
                     self.assertNotIn('equipped_item',legacy['data']['1'])
+                    self.assertEqual((await call('review_equipment_selection',snapshot_id=old_key,selections=selection))['captured_equipped_bag_items'],[])
+                    self.assertIsNone((await call('review_equipment_selection',snapshot_id=missing_key,selections=selection))['captured_equipped_bag_items'])
                     self.assertEqual((await call('character_summary',snapshot_id=old_key))['equipped_bag_item_observations']['entries'],[])
                     self.assertIsNone((await call('character_summary',snapshot_id=missing_key))['equipped_bag_item_observations'])
                     self.assertEqual((await call('inspect_snapshot',snapshot_id=upper_key,section='bag_capacity'))['data']['1']['equipped_item']['inventory_slot'],255)

@@ -1,5 +1,10 @@
 # Changelog
 
+- Carry numeric equipped-bag observations from MCP equipment reviews through
+  prepared/merged requests to final encounter quiver diagnostics. Validate the
+  pinned quiver enum before simulation and retain partial/unavailable evidence.
+  Do not infer absence, apply bonuses, optimise quivers or claim native accuracy.
+
 - Add optional stable equipped-item identity to non-backpack bag-capacity
   observations, with guarded APIs, strict paired fields and duplicate-mapping
   suppression. Preserve base capacities on optional failures. Package0.53.0-dev

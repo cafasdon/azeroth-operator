@@ -142,7 +142,8 @@ async def execute(args, *, deadline=None):
             coverage = result['search_coverage']
             require(coverage['snapshot_id'] == source['snapshot_id'] and coverage['scope_sha256'] == source['scope_sha256'])
             signature = {'engine': result['engine_sha256'], 'profile': result['simulation_profile_sha256'],
-                'fingerprints': result['fingerprints'], 'settings': result['encounter_settings']}
+                'fingerprints': result['fingerprints'], 'settings': result['encounter_settings'],
+                'hunter_quiver_observation':result.get('hunter_quiver_observation')}
             require(index not in contexts or contexts[index] == signature)
             contexts[index] = signature
             baseline = next((row for row in result['results'] if row['review'] == 1), None)
@@ -220,6 +221,7 @@ async def execute(args, *, deadline=None):
         'encounter_contexts': [{'encounter_index':index, 'weight':weights[index-1],
             'engine_sha256':context['engine'], 'simulation_profile_sha256':context['profile'],
             'fingerprints':context['fingerprints'], 'encounter_settings':context['settings'],
+            'hunter_quiver_observation':context['hunter_quiver_observation'],
             'baseline':baselines.get(index)} for index,context in sorted(contexts.items())],
         'unvisited_encounter_indices':[index for index in range(1,len(weights)+1) if index not in contexts],
         'all_saved_resolved_results_complete': complete, 'ranking_scope':

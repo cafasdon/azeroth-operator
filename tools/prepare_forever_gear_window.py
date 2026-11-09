@@ -64,6 +64,8 @@ async def prepare(args):
         selections_for_review(draft['selections'])
         cleared_for_review(draft, report['gear_search'])
     requests, size = [], 0
+    bag_items = None
+    first_review = True
     with tempfile.TemporaryFile(mode='w+') as errlog:
         async with stdio_client(StdioServerParameters(command=str(args.mcp), env=dict(os.environ)), errlog=errlog) as (read, write):
             async with ClientSession(read, write) as session:
@@ -93,6 +95,11 @@ async def prepare(args):
                                               'simulator_gear_sha256': draft['simulator_gear_sha256']})
                     require(spec == draft['simulator_equipment_spec'])
                     request = adapter.request_from(template, review, encounter)
+                    observed = review.get('captured_equipped_bag_items')
+                    adapter.hunter_quiver_observation(adapter.single_player(template['raid']), observed)
+                    require(first_review or observed == bag_items)
+                    bag_items = observed
+                    first_review = False
                     data = encoded(request)
                     size += len(data)
                     require(size <= MAX_REPORT_BYTES)
@@ -106,6 +113,7 @@ async def prepare(args):
         'preparer_sha256': fingerprints[3], 'adapter_sha256': fingerprints[4], 'catalogue_sha256': fingerprints[5],
         'layout_sha256':fingerprints[6],
         'talent_identity_sha256':fingerprints[7], 'talent_map_sha256':fingerprints[8],
+        'captured_equipped_bag_items':bag_items,
         'requests': requests, 'simulation_performed': False, 'game_execution': False,
         'best_in_slot_verified': False, 'feasible_set_coverage_verified': False}
     require(len(encoded(result)) <= MAX_REPORT_BYTES)
