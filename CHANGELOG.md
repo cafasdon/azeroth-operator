@@ -1,5 +1,7 @@
 # Changelog
 
+- Show projected reset timestamps in time-bounded saved Forever lockout searches.
+
 - Search saved Forever instance and world boss resets within a historical time window.
 
 - Find saved Forever instance and world boss resets projected at or before a deadline.

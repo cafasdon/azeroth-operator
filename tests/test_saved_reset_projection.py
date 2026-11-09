@@ -61,7 +61,14 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                                 selector:{'name':name,'projected_reset_from':start,'projected_reset_by':end}})
                             self.assertEqual(bool(reply.isError),expected is None,reply)
                             if expected is not None:
-                                self.assertEqual([r['snapshot_id'] for r in json.loads(reply.content[0].text)['snapshots']],expected)
+                                matches=json.loads(reply.content[0].text)['snapshots']
+                                self.assertEqual([r['snapshot_id'] for r in matches],expected)
+                                if expected:
+                                    self.assertEqual(matches[0][f'{selector}_match']['entries'][0]['projected_reset_at'],reset)
+                        plain=await session.call_tool('list_snapshots',{'family':'forever',selector:{'name':name}})
+                        self.assertFalse(plain.isError,plain)
+                        entry=json.loads(plain.content[0].text)['snapshots'][0][f'{selector}_match']['entries'][0]
+                        self.assertNotIn('projected_reset_at',entry)
                     for selector,name,deadline in [
                         ('saved_world_boss','Fixture','2025-01-02T00:01:00Z'),
                         ('saved_world_boss','Unknown','2025-01-03T00:00:00Z'),

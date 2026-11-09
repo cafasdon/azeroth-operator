@@ -27,6 +27,35 @@ pub(crate) fn matches_projected_window(
             })
 }
 
+pub(crate) fn discovery_report(
+    mut matches: Vec<(&String, &Value)>,
+    saved: &Value,
+    captured_at: DateTime<Utc>,
+    include_projection: bool,
+) -> Option<Value> {
+    if matches.is_empty() {
+        return None;
+    }
+    matches.sort_unstable_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
+    let entries: Vec<_> = matches
+        .iter()
+        .take(20)
+        .map(|(slot, row)| {
+            let mut entry = json!({"slot":slot.parse::<u32>().unwrap(),"data":row});
+            if include_projection {
+                entry["projected_reset_at"] = json!(
+                    row["reset_seconds"]
+                        .as_i64()
+                        .and_then(|seconds| projected_reset_at(seconds, captured_at))
+                );
+            }
+            entry
+        })
+        .collect();
+    Some(json!({"update_age_seconds":saved["update_age_seconds"],
+        "matched_count":matches.len(),"truncated":matches.len()>20,"entries":entries}))
+}
+
 pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) -> Result<Value> {
     ensure!(
         matches!(section, "saved_instances" | "saved_world_bosses"),

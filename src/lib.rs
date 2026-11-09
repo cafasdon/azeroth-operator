@@ -2240,49 +2240,101 @@ impl Store {
                     if profession_recipe.is_some() && profession_recipe_match.is_none() {
                         continue;
                     }
-                    let saved_world_boss_match = saved_world_boss.as_ref().zip(saved_world_boss_name.as_ref()).and_then(|(filter, name)| {
-                        let saved = s.sections.get("saved_world_bosses")?;
-                        if !filter.maximum_update_age_seconds.is_none_or(|maximum|
-                            saved["update_age_seconds"].as_u64().is_some_and(|age| age <= u64::from(maximum))) {
-                            return None;
-                        }
-                        let mut matches: Vec<_> = saved["entries"].as_object()?.iter().filter(|(_, row)| {
-                            row["name"].as_str().is_some_and(|value| value.to_lowercase() == *name)
-                                && filter.maximum_reset_seconds.is_none_or(|maximum|
-                                    row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
-                                && saved_resets::matches_projected_window(row["reset_seconds"].as_i64(),
-                                    s.captured_at, filter.projected_reset_from, filter.projected_reset_by)
-                        }).collect();
-                        matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
-                        (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
-                            "matched_count":matches.len(),"truncated":matches.len()>20,
-                            "entries":matches.iter().take(20).map(|(slot,row)| json!({"slot":slot.parse::<u32>().unwrap(),"data":row})).collect::<Vec<_>>() }))
-                    });
+                    let saved_world_boss_match = saved_world_boss
+                        .as_ref()
+                        .zip(saved_world_boss_name.as_ref())
+                        .and_then(|(filter, name)| {
+                            let saved = s.sections.get("saved_world_bosses")?;
+                            if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
+                                saved["update_age_seconds"]
+                                    .as_u64()
+                                    .is_some_and(|age| age <= u64::from(maximum))
+                            }) {
+                                return None;
+                            }
+                            let matches = saved["entries"]
+                                .as_object()?
+                                .iter()
+                                .filter(|(_, row)| {
+                                    row["name"]
+                                        .as_str()
+                                        .is_some_and(|value| value.to_lowercase() == *name)
+                                        && filter.maximum_reset_seconds.is_none_or(|maximum| {
+                                            row["reset_seconds"].as_u64().is_some_and(|seconds| {
+                                                seconds <= u64::from(maximum)
+                                            })
+                                        })
+                                        && saved_resets::matches_projected_window(
+                                            row["reset_seconds"].as_i64(),
+                                            s.captured_at,
+                                            filter.projected_reset_from,
+                                            filter.projected_reset_by,
+                                        )
+                                })
+                                .collect();
+                            saved_resets::discovery_report(
+                                matches,
+                                saved,
+                                s.captured_at,
+                                filter.projected_reset_from.is_some()
+                                    || filter.projected_reset_by.is_some(),
+                            )
+                        });
                     if saved_world_boss.is_some() && saved_world_boss_match.is_none() {
                         continue;
                     }
-                    let saved_instance_match = saved_instance.as_ref().zip(saved_instance_name.as_ref()).and_then(|(filter, name)| {
-                        let saved = s.sections.get("saved_instances")?;
-                        if !filter.maximum_update_age_seconds.is_none_or(|maximum|
-                            saved["update_age_seconds"].as_u64().is_some_and(|age| age <= u64::from(maximum))) {
-                            return None;
-                        }
-                        let mut matches: Vec<_> = saved["entries"].as_object()?.iter().filter(|(_, row)| {
-                            row["name"].as_str().is_some_and(|value| value.to_lowercase() == *name)
-                                && filter.difficulty_id.is_none_or(|id| row["difficulty_id"].as_u64() == Some(u64::from(id)))
-                                && filter.locked.is_none_or(|flag| row["locked"].as_bool() == Some(flag))
-                                && filter.extended.is_none_or(|flag| row["extended"].as_bool() == Some(flag))
-                                && filter.is_raid.is_none_or(|flag| row["is_raid"].as_bool() == Some(flag))
-                                && filter.maximum_reset_seconds.is_none_or(|maximum|
-                                    row["reset_seconds"].as_u64().is_some_and(|seconds| seconds <= u64::from(maximum)))
-                                && saved_resets::matches_projected_window(row["reset_seconds"].as_i64(),
-                                    s.captured_at, filter.projected_reset_from, filter.projected_reset_by)
-                        }).collect();
-                        matches.sort_by_key(|(slot, _)| slot.parse::<u32>().unwrap());
-                        (!matches.is_empty()).then(|| json!({"update_age_seconds":saved["update_age_seconds"],
-                            "matched_count":matches.len(),"truncated":matches.len()>20,
-                            "entries":matches.iter().take(20).map(|(slot,row)| json!({"slot":slot.parse::<u32>().unwrap(),"data":row})).collect::<Vec<_>>() }))
-                    });
+                    let saved_instance_match = saved_instance
+                        .as_ref()
+                        .zip(saved_instance_name.as_ref())
+                        .and_then(|(filter, name)| {
+                            let saved = s.sections.get("saved_instances")?;
+                            if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
+                                saved["update_age_seconds"]
+                                    .as_u64()
+                                    .is_some_and(|age| age <= u64::from(maximum))
+                            }) {
+                                return None;
+                            }
+                            let matches = saved["entries"]
+                                .as_object()?
+                                .iter()
+                                .filter(|(_, row)| {
+                                    row["name"]
+                                        .as_str()
+                                        .is_some_and(|value| value.to_lowercase() == *name)
+                                        && filter.difficulty_id.is_none_or(|id| {
+                                            row["difficulty_id"].as_u64() == Some(u64::from(id))
+                                        })
+                                        && filter.locked.is_none_or(|flag| {
+                                            row["locked"].as_bool() == Some(flag)
+                                        })
+                                        && filter.extended.is_none_or(|flag| {
+                                            row["extended"].as_bool() == Some(flag)
+                                        })
+                                        && filter.is_raid.is_none_or(|flag| {
+                                            row["is_raid"].as_bool() == Some(flag)
+                                        })
+                                        && filter.maximum_reset_seconds.is_none_or(|maximum| {
+                                            row["reset_seconds"].as_u64().is_some_and(|seconds| {
+                                                seconds <= u64::from(maximum)
+                                            })
+                                        })
+                                        && saved_resets::matches_projected_window(
+                                            row["reset_seconds"].as_i64(),
+                                            s.captured_at,
+                                            filter.projected_reset_from,
+                                            filter.projected_reset_by,
+                                        )
+                                })
+                                .collect();
+                            saved_resets::discovery_report(
+                                matches,
+                                saved,
+                                s.captured_at,
+                                filter.projected_reset_from.is_some()
+                                    || filter.projected_reset_by.is_some(),
+                            )
+                        });
                     if saved_instance.is_some() && saved_instance_match.is_none() {
                         continue;
                     }

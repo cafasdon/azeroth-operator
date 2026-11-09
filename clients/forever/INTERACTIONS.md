@@ -6,6 +6,8 @@ the reported duration. Negative timers are unevaluable. A match describes
 a historical projection, with current lockout and loot eligibility unknown.
 Add `projected_reset_from` for an inclusive lower bound. Either bound can be
 used alone. Reversed windows are rejected.
+Matches from a time-bounded search include the historical
+`projected_reset_at` timestamp on each returned row.
 
 Use `compare_snapshots` with `loot_window_changes: true` to compare two saved
 loot windows. Readable item totals and raw currency totals are separate, and
