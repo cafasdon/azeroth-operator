@@ -260,6 +260,10 @@ recipes unknown. Each step lists the saved unmet condition rows under
 `unmet_crafting_conditions`. An observed list with no unmet rows is empty,
 and an unavailable list is null. A newer inventory snapshot does not supply
 conditions.
+Chain steps also show a captured default-level craftable count when available,
+including its shortfall against that step's requested crafts. This is a
+point-in-time observation. It stays separate from cumulative charge checks
+and material planning, where earlier steps can supply ingredients.
 Individual recipe reviews additionally report
 `base_output_for_charge_covered_crafts_if_completed`. This scales the base
 yield range by the smaller of requested crafts and captured charges. It is

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved craftable counts and per-step shortfalls in Forever reagent chains.
+
 - Identify the saved unmet crafting conditions for each Forever reagent-chain step.
 
 - Carry compatible same-capture selected recipe conditions into Forever bulk recipe reviews and reagent chains.

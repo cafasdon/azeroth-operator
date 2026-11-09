@@ -42,6 +42,8 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
             conditional = deepcopy(base)
             conditional['sections']['profession_recipe_materials']['entries']['102']['cooldown'] = {
                 'charges':1,'max_charges':1,'remaining_seconds':60}
+            conditional['sections']['profession_recipe_materials']['entries']['102'][
+                'reported_craftable_count'] = 0
             conditional['sections']['selected_recipe'] = {
                 'recipe_id':102,'name':'Fixture recipe','learned':True,
                 'requirements':'fixed_items','reagents':{'10':1},
@@ -113,6 +115,11 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     unmet = conditional['sections']['selected_recipe']['crafting_conditions']
                     self.assertEqual([step['unmet_crafting_conditions'] for step in conditioned['steps']],
                                      [unmet, unmet, None, None])
+                    craftable = {'count':0,'captured_at':conditional['captured_at'],
+                                 'basis':'recipe_capture_public_api_default_level',
+                                 'shortfall_vs_requested_crafts':1,'current_craftability_verified':False}
+                    self.assertEqual([step['reported_craftable_count_observation']
+                                      for step in conditioned['steps']], [craftable, craftable, None, None])
                     nonmaterial = conditioned['stock_plan']['nonmaterial_requirements']
                     self.assertEqual(nonmaterial['first_observed_shortfall']['recipe_number'],1)
                     self.assertEqual(nonmaterial['first_observed_shortfall']['failed_checks'],
