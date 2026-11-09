@@ -21,6 +21,9 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
         value = fixture()
         value['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
         value['sections']['bags'] = {'0':{'1':{'item_id':10,'count':5},'2':{'item_id':11,'count':3}}}
+        value['sections']['merchant_stock'] = {'1':{'item_id':10,'bundle_size':3,
+            'price_copper':7,'available':-1,'extended_cost':False}}
+        value['sections']['wallet'] = {'copper':6}
         rows = {'101':fixed(100,{'20':3,'30':1}), '102':fixed(20,{'10':2},2),
             '103':fixed(30,{'10':3}), '104':fixed(20,{'11':1}), '105':{'status':'unavailable'}}
         for i in range(5): rows[str(300+i)] = fixed(500+i,{})
@@ -91,6 +94,12 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([(row['recipe_id'], row['draft_complete'],
                                        sum(item['quantity'] for item in row['external_material_requirements']))
                                       for row in report['candidate_previews']], [(102,True,2),(104,True,0)])
+                    quotes = (await plan(preview_reagent_producer_choices=True,
+                                         merchant_reagent_plan=True))['reagent_chain'][
+                                             'producer_previews']['candidate_previews']
+                    self.assertEqual([(row['recipe_id'], row['merchant_quote_summary']['copper_only_bundle_mix_total'],
+                                       row['merchant_quote_summary']['copper_only_bundle_mix_affordable'])
+                                      for row in quotes], [(102,7,False),(104,0,True)])
                     with_stock = (await plan(preview_reagent_producer_choices=True,
                                              reagent_chain_stock_plan=True))['reagent_chain']
                     for row in with_stock['producer_previews']['candidate_previews']:

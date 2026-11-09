@@ -326,6 +326,10 @@ When `reagent_chain_stock_plan` is also enabled, each completed preview
 summarises its saved material and preparation checks, acquisition shortfalls
 and suggested bank withdrawals. A blocked preview has a null stock summary.
 Slot paging still applies to the original plan only.
+With `merchant_reagent_plan` enabled, alternative previews also summarise
+saved merchant bundle quotes for their external shortages. The summary
+distinguishes a complete quote from a partial subtotal and reports
+affordability against the saved inventory wallet when available.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

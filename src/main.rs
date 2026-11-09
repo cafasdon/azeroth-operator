@@ -1534,6 +1534,29 @@ impl Operator {
                         stock,
                     );
                     review["reagent_chain"]["merchant_reagent_plan"] = quote;
+                    if let Some(previews) =
+                        review["reagent_chain"]["producer_previews"]["candidate_previews"]
+                            .as_array_mut()
+                    {
+                        for preview in previews {
+                            let quote = azeroth_operator::analysis::reagent_chain_merchant_plan(
+                                preview, offers, stock,
+                            );
+                            preview["merchant_quote_summary"] = if quote.is_null() {
+                                serde_json::Value::Null
+                            } else {
+                                serde_json::json!({
+                                    "merchant_captured_at":quote["merchant_captured_at"],
+                                    "inventory_captured_at":quote["inventory_captured_at"],
+                                    "copper_only_bundle_mix_total":quote["copper_only_bundle_mix_total"],
+                                    "copper_only_bundle_mix_quoted_subtotal":quote["copper_only_bundle_mix_quoted_subtotal"],
+                                    "copper_only_bundle_mix_unquoted_item_ids":quote["copper_only_bundle_mix_unquoted_item_ids"],
+                                    "copper_only_bundle_mix_affordable":quote["copper_only_bundle_mix_affordable"],
+                                    "purchase_eligibility_verified":false,
+                                })
+                            };
+                        }
+                    }
                 } else {
                     review["merchant_reagent_plan"] =
                         azeroth_operator::analysis::recipe_merchant_plan(&review, offers, stock);
