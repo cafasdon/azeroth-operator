@@ -89,6 +89,27 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
                                      [valid[3][0]])
                     await search('helpful', 0, error=True)
                     await search('helpful', 100, family='retail', error=True)
+                    async def compare(before, after):
+                        result = await session.call_tool('compare_snapshots', {
+                            'before_id': before, 'after_id': after, 'player_aura_changes': True})
+                        self.assertFalse(result.isError, result)
+                        return json.loads(result.content[0].text)['player_aura_changes']
+                    changed = deepcopy(base)
+                    changed['sections']['player_auras'] = {'coverage': section['coverage'], 'groups': {
+                        'helpful': {'entries': {'1': {'spell_id': 100, 'applications': 2},
+                                                '2': {'spell_id': 100},
+                                                '3': {'spell_id': 10, 'applications': 0}}}}}
+                    compared = await compare(valid[1][0], store.ingest(changed))
+                    self.assertEqual(compared['helpful'], {'changed_spell_count': 3, 'truncated': False,
+                        'changes': [{'spell_id': 2, 'before_applications': [4], 'after_applications': []},
+                                    {'spell_id': 10, 'before_applications': [], 'after_applications': [0]},
+                                    {'spell_id': 100, 'before_applications': [None, 0], 'after_applications': [None, 2]}]})
+                    self.assertIsNone(compared['harmful'])
+                    self.assertFalse(compared['aura_events_verified'])
+                    bounded = (await compare(valid[1][0], valid[3][0]))['helpful']
+                    self.assertEqual(bounded['changed_spell_count'], 258)
+                    self.assertEqual(len(bounded['changes']), 50)
+                    self.assertTrue(bounded['truncated'])
                     for key, value in valid:
                         response = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(response.isError)

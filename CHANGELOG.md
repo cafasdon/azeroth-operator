@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever aura rows and application counts by group and spell ID.
+
 - Filter saved Forever aura matches by observed application count.
 
 - Find saved Forever captures containing an exact helpful or harmful player aura.

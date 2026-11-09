@@ -7,6 +7,12 @@ the aura's presence outside the saved observation unknown.
 Optional `minimum_applications` and `maximum_applications` bounds are
 inclusive and must match the same captured row as the spell ID. A missing
 count cannot satisfy either bound. A recorded zero remains searchable.
+Use `compare_snapshots.player_aura_changes` to compare saved rows by
+group and exact spell ID. Each observed group reports up to 50 changed
+IDs in numeric order and counts all changed IDs. Application lists
+retain duplicates and unknown counts and ignore row ordering. A group
+missing from either capture has no comparison. The result describes
+saved observations and leaves aura application or removal events unverified.
 
 Use `list_snapshots.player_resource` with `resource` set to `health` or
 `primary_power` and at least one predicate. Whole `minimum_percent` and

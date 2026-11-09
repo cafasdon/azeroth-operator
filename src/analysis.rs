@@ -2696,6 +2696,7 @@ pub fn compare_with_item(
 pub struct ComparisonSelectors {
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
+    pub player_aura_changes: bool,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
     pub player_trade_offer_changes: bool,
@@ -3069,6 +3070,13 @@ pub fn compare_observations(
                     "primary_power_type_changed":power.map(|(a,b)|a["power_type"]!=b["power_type"]),
                     "resource_events_verified":false,"readiness_verified":false})
             }).unwrap_or(Value::Null);
+    }
+    if selectors.player_aura_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Player aura comparison requires Forever"
+        );
+        comparison["player_aura_changes"] = compare_player_auras(before, after);
     }
     if selectors.selected_recipe_changes {
         ensure!(
@@ -4301,6 +4309,48 @@ fn compare_reported_spell_readings<T: Ord>(
             })
             .collect(),
     )
+}
+
+fn compare_player_auras(before: &Snapshot, after: &Snapshot) -> Value {
+    fn applications(snapshot: &Snapshot, group: &str) -> Option<BTreeMap<u64, Vec<Option<u64>>>> {
+        let rows =
+            snapshot.sections.get("player_auras")?["groups"][group]["entries"].as_object()?;
+        let mut by_id = BTreeMap::<_, Vec<_>>::new();
+        for row in rows.values() {
+            by_id
+                .entry(row["spell_id"].as_u64()?)
+                .or_default()
+                .push(row["applications"].as_u64());
+        }
+        for counts in by_id.values_mut() {
+            counts.sort_unstable();
+        }
+        Some(by_id)
+    }
+    let compare_group = |group| {
+        let old = applications(before, group)?;
+        let new = applications(after, group)?;
+        let ids: BTreeSet<_> = old.keys().chain(new.keys()).copied().collect();
+        let mut changes = Vec::new();
+        let mut changed_spell_count = 0;
+        for id in ids {
+            let before_counts = old.get(&id).map(Vec::as_slice).unwrap_or_default();
+            let after_counts = new.get(&id).map(Vec::as_slice).unwrap_or_default();
+            if before_counts != after_counts {
+                changed_spell_count += 1;
+                if changes.len() < 50 {
+                    changes.push(json!({"spell_id":id,"before_applications":before_counts,
+                        "after_applications":after_counts}));
+                }
+            }
+        }
+        Some(
+            json!({"changed_spell_count":changed_spell_count,"truncated":changed_spell_count>changes.len(),
+            "changes":changes}),
+        )
+    };
+    json!({"helpful":compare_group("helpful"),"harmful":compare_group("harmful"),
+        "aura_events_verified":false,"effectiveness_verified":false,"live":false})
 }
 
 fn tracked_recipe_membership(before: &Value, after: &Value) -> Option<Value> {
