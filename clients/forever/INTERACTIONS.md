@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Saved mount comparisons count reported usable mounts, favourites, and
+mounts with both flags in each capture. These counts describe the saved
+journal and do not establish current summoning eligibility.
+
 Saved pet journal comparisons report how many species were visible in both
 captures and how many of those kept the same observed owned and unowned row
 counts. The overlap describes the saved views, whose filters may differ.

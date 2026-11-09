@@ -108,6 +108,10 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(changes["observed_only_before"], [20])
                     self.assertEqual(changes["observed_only_after"], [3, 10])
                     self.assertEqual(changes["collected_count_delta"], 1)
+                    self.assertEqual(changes["before_observed_flag_counts"],
+                                     {"usable":2,"favorite":0,"usable_favorite":0})
+                    self.assertEqual(changes["after_observed_flag_counts"],
+                                     {"usable":2,"favorite":1,"usable_favorite":0})
                     self.assertEqual(changes["changes"], [{"mount_id": 2, "fields": {
                         "usable": {"before": True, "after": False},
                         "favorite": {"before": False, "after": True}}}])

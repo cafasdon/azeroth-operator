@@ -4084,6 +4084,19 @@ fn compare_toy_views(before: &Value, after: &Value) -> Value {
         "before_displayed_count":before["displayed_count"],"after_displayed_count":after["displayed_count"]})
 }
 
+fn mount_flag_counts(entries: &serde_json::Map<String, Value>) -> Value {
+    let usable = entries.values().filter(|row| row["usable"] == true).count();
+    let favorite = entries
+        .values()
+        .filter(|row| row["favorite"] == true)
+        .count();
+    let usable_favorite = entries
+        .values()
+        .filter(|row| row["usable"] == true && row["favorite"] == true)
+        .count();
+    json!({"usable":usable,"favorite":favorite,"usable_favorite":usable_favorite})
+}
+
 fn compare_mount_collection(before: &Value, after: &Value) -> Value {
     let old = before["entries"].as_object().unwrap();
     let new = after["entries"].as_object().unwrap();
@@ -4120,6 +4133,8 @@ fn compare_mount_collection(before: &Value, after: &Value) -> Value {
     json!({"observed_only_before":only_before,"observed_only_after":only_after,"changes":changes,
         "before_collected_count":old.len(),"after_collected_count":new.len(),
         "collected_count_delta":new.len() as i64 - old.len() as i64,
+        "before_observed_flag_counts":mount_flag_counts(old),
+        "after_observed_flag_counts":mount_flag_counts(new),
         "before_catalogue_count":before["catalogue_count"],"after_catalogue_count":after["catalogue_count"]})
 }
 
