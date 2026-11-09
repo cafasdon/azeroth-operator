@@ -2399,6 +2399,8 @@ Pass `trade_offer_requirements` to `inspect_snapshot` on
 distinct positive `{item_id, quantity}` rows. The review totals the readable
 slots by base item ID and reports observed shortfalls, excess and unexpected
 items. Excess or unexpected items prove a mismatch even with unreadable slots.
+So does having more distinct item IDs with shortfalls than unreadable slots,
+since each normal slot can account for at most one item ID.
 Otherwise exact match requires all six slots to be readable item rows. A
 partial capture can leave the match unknown. A missing offer gives a null
 review. These checks describe the saved outgoing quantities only.

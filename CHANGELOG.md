@@ -1,5 +1,7 @@
 # Changelog
 
+- Detect saved Forever trade mismatches when too few unreadable slots remain to cover distinct missing items.
+
 - Compare expected outgoing trade items with a saved Forever trade offer.
 
 - Show saved Forever PvP threshold and cap distances directly in PvP snapshot inspection.

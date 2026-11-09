@@ -82,6 +82,14 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(review['items'],[{'item_id':10,'expected_quantity':quantity,
                             'observed_quantity':observed,'observed_shortfall':max(0,quantity-observed),
                             'observed_excess':max(0,observed-quantity)}])
+                    expected=[{'item_id':10,'quantity':9}]+[
+                        {'item_id':i,'quantity':1} for i in range(11,16)]
+                    for size, match in [(5, None), (6, False)]:
+                        review=(await call('inspect_snapshot',snapshot_id=valid[2][0],
+                            section='player_trade_offer',trade_offer_requirements=expected[:size]))[
+                                'trade_offer_requirement_review']
+                        self.assertIs(review['captured_offer_matches_expected'],match)
+                        self.assertEqual(review['short_item_id_count'],size-1)
                     expected=[{'item_id':11,'quantity':1}]
                     review=(await call('inspect_snapshot',snapshot_id=valid[2][0],
                         section='player_trade_offer',trade_offer_requirements=expected))['trade_offer_requirement_review']

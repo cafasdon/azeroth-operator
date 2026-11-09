@@ -2442,27 +2442,30 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
         return Value::Null;
     }
     let (slots, mut quantities) = observed_trade_offer_quantities(section);
-    let mut exact = true;
+    let mut short_item_count = 0;
     let mut excess = false;
     let items: Vec<_> = requirements
         .iter()
         .map(|row| {
             let expected = row.quantity.get();
             let observed = quantities.remove(&row.item_id.get()).unwrap_or_default();
-            exact &= observed == expected;
+            short_item_count += usize::from(observed < expected);
             excess |= observed > expected;
             json!({"item_id":row.item_id,"expected_quantity":expected,
                 "observed_quantity":observed,"observed_shortfall":expected.saturating_sub(observed),
                 "observed_excess":observed.saturating_sub(expected)})
         })
         .collect();
-    let exact_match = if excess || !quantities.is_empty() {
+    let unreadable_slots = 6 - slots;
+    // Each unclassified normal slot can cover a shortfall for at most one item ID.
+    let exact_match = if excess || !quantities.is_empty() || short_item_count > unreadable_slots {
         Some(false)
     } else {
-        (slots == 6).then_some(exact)
+        (unreadable_slots == 0).then_some(true)
     };
     json!({"items":items,"unexpected_observed_quantities":quantities,
-        "unreadable_or_empty_slots":6-slots,"captured_offer_matches_expected":exact_match,
+        "unreadable_or_empty_slots":unreadable_slots,"short_item_id_count":short_item_count,
+        "captured_offer_matches_expected":exact_match,
         "current_offer_verified":false,"trade_completion_verified":false,"game_execution":false})
 }
 
