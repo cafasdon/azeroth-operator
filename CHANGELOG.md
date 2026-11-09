@@ -1,5 +1,7 @@
 # Changelog
 
+- Highlight the earliest saved material or nonmaterial checkpoint in a Forever reagent chain.
+
 - Combine saved material, charge and condition checks in Forever reagent-chain stock plans.
 
 - Summarise met, unmet and unknown saved crafting conditions across Forever reagent-chain steps.

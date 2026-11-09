@@ -271,6 +271,10 @@ The stock plan's `captured_chain_checks_pass` combines starting materials,
 charges and crafting conditions for bags alone and for all observed storage.
 A known failure makes that result false, all three passes make it true, and
 other cases remain null. These checks describe the saved plan only.
+The stock plan's `first_step_to_review` points to the earliest material
+checkpoint or observed nonmaterial shortfall, including both when they
+occur at the same step. It uses all observed storage for the material
+checkpoint. Null means neither checkpoint was reported.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

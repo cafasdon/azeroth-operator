@@ -1074,6 +1074,21 @@ pub fn reagent_chain_stock_plan(
     let (materials, checkpoint) = ordered_recipe_materials(reviews.iter(), &combined)?;
     let material_coverage = ordered_recipe_material_coverage(&materials);
     let nonmaterial = ordered_recipe_requirements_with_charges(reviews.iter(), true);
+    let checkpoints = [
+        ("materials", &checkpoint["first_uncovered_recipe"]),
+        ("nonmaterial", &nonmaterial["first_observed_shortfall"]),
+    ];
+    let first_review_step = checkpoints
+        .iter()
+        .filter_map(|(_, row)| row["recipe_number"].as_u64())
+        .min()
+        .map(|number| {
+            let reasons: BTreeMap<_, _> = checkpoints
+                .into_iter()
+                .filter(|(_, row)| row["recipe_number"].as_u64() == Some(number))
+                .collect();
+            json!({"recipe_number":number,"checkpoints":reasons})
+        });
     let captured_checks_pass = |storage: &str| {
         let checks = [
             material_coverage[storage].as_bool(),
@@ -1092,6 +1107,7 @@ pub fn reagent_chain_stock_plan(
         "captured_chain_checks_pass":{"bags":captured_checks_pass("bags"),
             "all_observed_storage":captured_checks_pass("all_observed_storage")},
         "starting_materials":materials,"material_checkpoint":checkpoint,
+        "first_step_to_review":first_review_step,
         "nonmaterial_requirements":nonmaterial,
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
         "withdrawal_eligibility_verified":false,"current_stock_verified":false,"minimum_yields_verified":false,

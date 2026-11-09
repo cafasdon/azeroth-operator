@@ -159,6 +159,9 @@ class ChainChargeAccountingTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(nonmaterial['first_observed_shortfall']['failed_checks'],
                                      ['observed_conditions_met'])
                     self.assertEqual(nonmaterial['first_observed_charge_shortfall']['recipe_number'],2)
+                    self.assertEqual(conditioned['stock_plan']['first_step_to_review'],
+                                     {'recipe_number':1,'checkpoints':{
+                                         'nonmaterial':nonmaterial['first_observed_shortfall']}})
                     self.assertNotIn('stock_plan',ordinary)
                     self.assertEqual(ordinary['steps'],one['steps'])
                     batch = await session.call_tool('review_forever_recipe',{
