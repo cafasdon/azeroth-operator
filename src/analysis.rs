@@ -3884,6 +3884,30 @@ pub fn action_bar_spellbook(
         }).collect::<BTreeMap<_, _>>()
     });
     review["matched_spellbook_flags_by_action_id"] = json!(matches);
+    let usability = book.zip(action_slots).map(|(book, actions)| {
+        let action_ids: BTreeSet<_> = actions
+            .values()
+            .filter(|row| row["kind"] == "spell")
+            .filter_map(|row| row["id"].as_u64())
+            .collect();
+        let mut by_id = BTreeMap::<u64, Vec<Value>>::new();
+        for (slot, row) in book {
+            if let Some((id, observed)) = row["spell_id"].as_u64().zip(row.get("usability"))
+                && action_ids.contains(&id)
+            {
+                by_id.entry(id).or_default().push(json!({
+                    "spellbook_slot":slot.parse::<u32>().unwrap(),
+                    "usable":observed["usable"],
+                    "insufficient_power":observed["insufficient_power"]
+                }));
+            }
+        }
+        for rows in by_id.values_mut() {
+            rows.sort_by_key(|row| row["spellbook_slot"].as_u64().unwrap());
+        }
+        by_id
+    });
+    review["matched_spellbook_usability_by_action_id"] = json!(usability);
     if book.is_some_and(|book| {
         book.values().any(|row| {
             ["charge_count", "reported_cast_count", "cooldown_state"]

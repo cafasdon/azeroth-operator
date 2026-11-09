@@ -11,6 +11,11 @@ When resource readings are present, `spellbook_resource_conflicts_by_action_id`
 lists fields with different known values across rows for the same exact action
 spell ID. Missing readings do not count as disagreements. The review retains
 each original reading and leaves current cast eligibility unknown.
+`matched_spellbook_usability_by_action_id` lists saved usability and
+insufficient-power flags by spellbook slot for exact reported IDs in the
+reviewed action slots. An absent ID has no retained exact reading. The map
+is null when either observation is missing. These flags describe the
+capture and leave current cast eligibility unverified.
 
 The timed quest checklist counts quests with recorded timers that were ready
 to turn in at capture and highlights the one with the shortest remaining

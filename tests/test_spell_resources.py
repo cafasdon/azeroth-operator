@@ -27,6 +27,9 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
         rows['3'].update(reported_cast_count=4294967295,cooldown_state={'enabled':False,'active':False})
         rows['4'].update(charge_count={'current':4294967295,'maximum':4294967295},
             cooldown_state={'enabled':True,'active':True})
+        rows['2']['usability'] = {'usable':True,'insufficient_power':False}
+        rows['10']['usability'] = {'usable':False,'insufficient_power':True}
+        rows['4']['usability'] = {'usable':False,'insufficient_power':False}
         base['sections']['spellbook'] = {'coverage':'visible_player_spell_slots','entries':rows}
         base['sections']['action_bar_observation'] = {'coverage':'loaded_builtin_buttons_only',
             'observed_buttons':5,'missing_buttons':0,'slots':{
@@ -78,6 +81,12 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                     for key,mode,book in good:
                         summary = (await call('character_summary',snapshot_id=key))['spellbook_resource_observations']
                         review = (await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',action_bar_spellbook=True))['action_bar_spellbook']
+                        usability = None if book is None else {}
+                        if mode in ('full','legacy','ambiguous','partial'):
+                            usability = {'101':[
+                                {'spellbook_slot':2,'usable':True,'insufficient_power':False},
+                                {'spellbook_slot':10,'usable':False,'insufficient_power':True}]}
+                        self.assertEqual(review['matched_spellbook_usability_by_action_id'], usability)
                         self.assertEqual(review['ambiguous_base_aliases_by_action_id'],
                                          None if book is None else {'100':[101,102]} if mode=='ambiguous' else {})
                         if mode in ('full','legacy'):

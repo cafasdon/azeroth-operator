@@ -1,5 +1,7 @@
 # Changelog
 
+- Show captured spellbook usability and power flags for exact Forever action spell IDs.
+
 - Flag conflicting saved spellbook resource readings for exact Forever action spell IDs.
 
 - Flag saved Forever action spells with multiple captured base-ID aliases.
