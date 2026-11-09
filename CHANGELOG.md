@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever buyback quotes that fit the captured wallet after reserving copper.
+
 - Search saved Forever buyback entries by item, quantity and whole-entry price.
 
 - Scope saved snapshot search and coverage totals to an exact client build and variant.

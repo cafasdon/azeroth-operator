@@ -5,6 +5,9 @@ saved buyback entries. Optional `minimum_quantity` and
 `maximum_price_copper` are inclusive and apply to the same entry.
 The price is for the whole entry. A missing price cannot meet a ceiling.
 Results leave ownership and current buyback eligibility unverified.
+Set `minimum_remaining_wallet_copper` to require that an individual quote
+fits the wallet captured in the same save and leaves that much copper.
+Zero still requires a known wallet and price. Entries are checked separately.
 
 Use `list_snapshots.required_sections` to find captures containing all
 named sections together. Observed empty sections count as present.

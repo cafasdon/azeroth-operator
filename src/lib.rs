@@ -1499,10 +1499,21 @@ pub struct MerchantBuybackFilter {
     item_id: std::num::NonZeroU32,
     minimum_quantity: Option<std::num::NonZeroU32>,
     maximum_price_copper: Option<u64>,
+    minimum_remaining_wallet_copper: Option<u64>,
 }
 
 impl MerchantBuybackFilter {
-    fn observation_match(&self, section: &Value) -> Option<Value> {
+    fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
+        let section = snapshot.sections.get("merchant_buyback")?;
+        let spendable = if let Some(reserve) = self.minimum_remaining_wallet_copper {
+            Some(
+                snapshot.sections.get("wallet")?["copper"]
+                    .as_u64()?
+                    .checked_sub(reserve)?,
+            )
+        } else {
+            None
+        };
         let mut matches: BTreeMap<u32, &Value> = BTreeMap::new();
         for (slot, row) in section["entries"].as_object()? {
             if row["item_id"].as_u64() == Some(u64::from(self.item_id.get()))
@@ -1515,6 +1526,11 @@ impl MerchantBuybackFilter {
                     row["buyback_price_copper"]
                         .as_u64()
                         .is_some_and(|n| n <= max)
+                })
+                && spendable.is_none_or(|available| {
+                    row["buyback_price_copper"]
+                        .as_u64()
+                        .is_some_and(|price| price <= available)
                 })
             {
                 matches.insert(slot.parse().ok()?, row);
@@ -2138,9 +2154,13 @@ impl Store {
         ensure!(
             merchant_buyback.as_ref().is_none_or(|filter| {
                 family == Family::Forever
-                    && filter
-                        .maximum_price_copper
-                        .is_none_or(|price| price <= 9_999_999_999_999)
+                    && [
+                        filter.maximum_price_copper,
+                        filter.minimum_remaining_wallet_copper,
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .all(|copper| copper <= 9_999_999_999_999)
             }),
             "Merchant buyback search requires Forever and a valid copper limit"
         );
@@ -2714,9 +2734,9 @@ impl Store {
                     if weapon_enchant.is_some() && weapon_enchant_match.is_none() {
                         continue;
                     }
-                    let buyback_match = merchant_buyback.as_ref().and_then(|filter| {
-                        filter.observation_match(s.sections.get("merchant_buyback")?)
-                    });
+                    let buyback_match = merchant_buyback
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
                     if merchant_buyback.is_some() && buyback_match.is_none() {
                         continue;
                     }

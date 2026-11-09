@@ -99,6 +99,16 @@ class MerchantBuybackTests(unittest.IsolatedAsyncioTestCase):
                     maximum = await search(4294967295,maximum_price_copper=9999999999999)
                     self.assertEqual([row['slot'] for row in maximum[0]['merchant_buyback_match']['matches']],
                                      list(range(1,13)))
+                    funded = deepcopy(base)
+                    funded['sections']['merchant_buyback'] = section
+                    funded['sections']['wallet'] = {'copper': 15}
+                    funded_key = store.ingest(funded)
+                    affordable = await search(4549,minimum_remaining_wallet_copper=5)
+                    self.assertEqual([row['snapshot_id'] for row in affordable],[funded_key])
+                    self.assertNotIn('wallet',affordable[0]['merchant_buyback_match'])
+                    self.assertEqual(await search(4549,minimum_remaining_wallet_copper=6),[])
+                    self.assertEqual(await search(118,minimum_remaining_wallet_copper=0),[])
+                    self.assertEqual(await search(4549,minimum_remaining_wallet_copper=5,maximum_price_copper=9),[])
                     for key, rows in valid:
                         summary = (await call('character_summary', snapshot_id=key))['merchant_buyback_observations']
                         if rows is None:
