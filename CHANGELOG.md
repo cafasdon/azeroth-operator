@@ -1,5 +1,7 @@
 # Changelog
 
+- Show hypothetical bag space if restocking items can merge into existing carried stacks.
+
 - Estimate bag slots for saved Forever restocking including quoted merchant bundle surplus.
 
 - Flag restocking stack assumptions contradicted by saved carried stacks.

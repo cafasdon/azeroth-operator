@@ -2707,7 +2707,7 @@ pub fn restock_new_stack_space(
     if review["storage_observed"] != true {
         return None;
     }
-    let mut largest_bag_stacks = BTreeMap::<u32, u64>::new();
+    let mut bag_stacks = BTreeMap::<u32, (u64, u64)>::new();
     if let Some(bags) = snapshot.sections.get("bags").and_then(Value::as_object) {
         for item in bags
             .values()
@@ -2718,10 +2718,11 @@ pub fn restock_new_stack_space(
                 .as_u64()
                 .and_then(|id| u32::try_from(id).ok())
                 .zip(item["count"].as_u64())
-                && stack_limits.contains_key(&id)
+                && let Some(limit) = stack_limits.get(&id)
             {
-                let largest = largest_bag_stacks.entry(id).or_default();
+                let (largest, headroom) = bag_stacks.entry(id).or_default();
                 *largest = (*largest).max(count);
+                *headroom += u64::from(limit.get()).saturating_sub(count);
             }
         }
     }
@@ -2748,6 +2749,7 @@ pub fn restock_new_stack_space(
         })
         .collect();
     let mut total = Some(0u64);
+    let mut merged_total = Some(0u64);
     let mut items = Vec::new();
     for row in review["items"].as_array()? {
         let shortfall = row["shortfall_vs_observed"].as_u64()?;
@@ -2756,7 +2758,8 @@ pub fn restock_new_stack_space(
         }
         let item_id = u32::try_from(row["item_id"].as_u64()?).ok()?;
         let limit = stack_limits.get(&item_id).copied();
-        let largest = largest_bag_stacks.get(&item_id).copied();
+        let stack = bag_stacks.get(&item_id).copied();
+        let largest = stack.map(|(largest, _)| largest);
         let contradicted = limit
             .zip(largest)
             .map(|(limit, largest)| largest > u64::from(limit.get()));
@@ -2775,9 +2778,25 @@ pub fn restock_new_stack_space(
         total = total
             .zip(slots)
             .and_then(|(sum, slots)| sum.checked_add(slots));
+        let headroom = limit
+            .filter(|_| contradicted != Some(true))
+            .map(|_| stack.map_or(0, |(_, headroom)| headroom));
+        let merged_slots =
+            limit
+                .zip(headroom)
+                .zip(incoming)
+                .map(|((limit, headroom), quantity)| {
+                    quantity
+                        .saturating_sub(headroom)
+                        .div_ceil(u64::from(limit.get()))
+                });
+        merged_total = merged_total
+            .zip(merged_slots)
+            .and_then(|(sum, slots)| sum.checked_add(slots));
         let mut item = json!({"item_id":item_id,"bag_shortfall":shortfall,
             "assumed_stack_limit":limit,"largest_observed_bag_stack":largest,
-            "assumption_below_observed_stack":contradicted,"new_stack_slots":slots});
+            "assumption_below_observed_stack":contradicted,"new_stack_slots":slots,
+            "assumed_same_item_stack_headroom":headroom,"new_stack_slots_if_same_item_stacks_merge":merged_slots});
         if merchant_quote.is_some() {
             item["incoming_quantity_with_quoted_bundles"] = json!(incoming);
         }
@@ -2791,6 +2810,10 @@ pub fn restock_new_stack_space(
         "items":items,"new_stack_slots":total,"observed_general_free_slots":general_free,
         "fits_observed_general_slots_under_assumptions":total.zip(general_free)
             .map(|(needed, free)| needed <= free),
+        "new_stack_slots_if_same_item_stacks_merge":merged_total,
+        "fits_observed_general_slots_if_same_item_stacks_merge":merged_total.zip(general_free)
+            .map(|(needed, free)| needed <= free),
+        "same_item_stack_merge_verified":false,
         "stack_limits_verified":false,"placement_verified":false,"live":false,
     }))
 }

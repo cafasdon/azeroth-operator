@@ -3026,3 +3026,8 @@ With both stack limits and a saved merchant quote requested,
 `bag_restock_quoted_bundle_stack_space` includes extra units from whole
 copper-only bundles. A bank-covered shortfall needs no quote. Unquoted
 positive residuals leave their slot estimate and the total unknown.
+
+Both estimates also show a separate scenario that assumes incoming items
+can merge into all recorded stacks of the same base ID. This uses supplied
+limits and observed counts. Item variants and native merge compatibility
+remain unverified. The original new-stack estimate is still reported.

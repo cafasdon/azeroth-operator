@@ -129,7 +129,10 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(estimate['observed_general_free_slots'],2)
                         self.assertIs(estimate['fits_observed_general_slots_under_assumptions'],fits)
                         self.assertIs(estimate['placement_verified'],False)
-                    for limit, contradicted, slots in [(9,True,None),(10,False,1),(11,False,1)]:
+                    for limit, contradicted, slots, headroom, merged in [
+                        (9,True,None,None,None),(10,False,1,0,1),
+                        (11,False,1,1,1),(19,False,1,9,0),
+                    ]:
                         estimate = await space(d_key,[{'item_id':100,'maximum_stack':limit}],
                                                [{'item_id':100,'quantity':19}])
                         row = estimate['items'][0]
@@ -137,6 +140,10 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(row['assumption_below_observed_stack'],contradicted)
                         self.assertEqual(row['new_stack_slots'],slots)
                         self.assertEqual(estimate['new_stack_slots'],slots)
+                        self.assertEqual(row['assumed_same_item_stack_headroom'],headroom)
+                        self.assertEqual(row['new_stack_slots_if_same_item_stacks_merge'],merged)
+                        self.assertEqual(estimate['new_stack_slots_if_same_item_stacks_merge'],merged)
+                        self.assertIs(estimate['same_item_stack_merge_verified'],False)
                     unknown = await space(d_key,[{'item_id':100,'maximum_stack':1}])
                     self.assertIsNone(unknown['new_stack_slots'])
                     self.assertIsNone((await space(h_key,[{'item_id':200,'maximum_stack':3}]))[
