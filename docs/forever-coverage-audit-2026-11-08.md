@@ -201,3 +201,10 @@ then connect complete external material demand to saved bundle prices and the
 inventory wallet. Historical quote totals preserve missing/overflow unknowns,
 context guards and false purchase/craftability flags. Current availability,
 actual acquisition and whole-route optimisation remain unqualified.
+
+[Chain stock preparation](reagent-chain-stock-verification-2026-11-09.md)
+then adds minimum starting needs for printed steps and historical bank withdrawal
+quantities, with separate bags/all-observed coverage and unknown nonmaterial
+checks. Future acquisitions are excluded from owned preparation stock. Native
+bank access, current readiness, actual transfers and global route quality remain
+unfinished.

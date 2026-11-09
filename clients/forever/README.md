@@ -40,6 +40,23 @@ not imply learned status or usable yields. Null/empty lists in chain mode retain
 automatic defaults. Final remaining-item projections cover touched chain items,
 not all possessions. See [ADR 020](../../docs/ADR-020-explicit-reagent-producers.md).
 
+Add `reagent_chain_stock_plan: true` in chain mode to receive
+`reagent_chain.stock_plan`. It estimates minimum starting materials for the
+printed step order using reported minimum yields, including repeated producers.
+`starting_materials[].required_before_batch` means required before the whole
+chain; zero can mean earlier conditional production covers that intermediate.
+Saved bag shortfalls and `suggested_bank_withdrawals` describe quantities only,
+with character bank first and account bank second. They do not move items or
+verify current bank access.
+
+Coverage distinguishes bags from all observed storage. The checkpoint's
+`recipe_number` and covered prefix refer to one-based printed chain steps and
+all observed storage, rather than current bag readiness. Missing captures stay
+unknown. Nonmaterial checks remain separate. Hypothetical purchases do not count
+as owned preparation stock, even when a saved quote is affordable. Blocked
+chains return a null stock plan; omission leaves the existing response unchanged.
+See [ADR 022](../../docs/ADR-022-reagent-chain-stock-preparation.md).
+
 Combine `suggest_reagent_chain: true` with `merchant_reagent_plan: true` to
 price the complete draft's external material needs. The quote appears only at
 `reagent_chain.merchant_reagent_plan`, replacing a standalone top-level quote

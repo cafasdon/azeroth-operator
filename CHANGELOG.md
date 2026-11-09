@@ -1,5 +1,9 @@
 # Changelog
 
+- Add optional ingredient-chain stock preparation: minimum starting materials
+  for printed steps, saved bank-withdrawal suggestions, scoped coverage and
+  nonmaterial unknowns; keep acquisitions and actual transfers unperformed.
+
 - Quote ingredient-chain external material needs against saved merchant offers,
   rounding combined leaf demand once and using the inventory wallet; retain
   unknown totals for blocked drafts, missing quotes or arithmetic overflow.

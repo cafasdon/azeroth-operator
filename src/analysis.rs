@@ -644,6 +644,61 @@ struct RecipeChainDraft<'a> {
     relevant: BTreeSet<u64>,
 }
 
+/// Reuse ordered-batch accounting for the exact printed chain steps, without external acquisitions.
+pub fn reagent_chain_stock_plan(
+    chain: &Value,
+    snapshot: &Snapshot,
+    inventory: Option<&Snapshot>,
+) -> Result<Value> {
+    if chain["draft_complete"] != true {
+        return Ok(Value::Null);
+    }
+    let steps = chain["steps"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Missing chain steps"))?;
+    ensure!((1..=8).contains(&steps.len()), "Invalid chain step count");
+    let mut reviews = Vec::new();
+    for step in steps {
+        let id = step["recipe_id"]
+            .as_u64()
+            .and_then(|n| u32::try_from(n).ok())
+            .and_then(std::num::NonZeroU32::new)
+            .ok_or_else(|| anyhow::anyhow!("Invalid chain recipe ID"))?;
+        let crafts = step["crafts"]
+            .as_u64()
+            .and_then(|n| u32::try_from(n).ok())
+            .ok_or_else(|| anyhow::anyhow!("Invalid chain craft count"))?;
+        let review = plan_recipe_by_id(snapshot, Some(id), Some(crafts), None, inventory)?;
+        let required: Vec<_> = review["materials"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|row| json!({"item_id":row["item_id"],"quantity":row["required"]}))
+            .collect();
+        ensure!(
+            review["recipe"]["requirements"] == "fixed_items"
+                && review["base_output_if_completed"]["item_id"] == step["output_item_id"]
+                && review["base_output_if_completed"]["minimum"]
+                    == step["minimum_output_if_completed"]
+                && json!(required) == step["required_reagents"],
+            "Chain step changed"
+        );
+        reviews.push(review);
+    }
+    let combined = combine_recipe_materials(reviews.iter())?;
+    ensure!(combined.is_array(), "Unsupported chain materials");
+    let (materials, checkpoint) = ordered_recipe_materials(reviews.iter(), &combined)?;
+    Ok(
+        json!({"basis":"minimum_starting_items_for_printed_chain_order_and_reported_minimum_yields",
+        "material_coverage":ordered_recipe_material_coverage(&materials),
+        "starting_materials":materials,"material_checkpoint":checkpoint,
+        "nonmaterial_requirements":ordered_recipe_requirements(reviews.iter()),
+        "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
+        "withdrawal_eligibility_verified":false,"current_stock_verified":false,"minimum_yields_verified":false,
+        "craftability_verified":false,"live":false,"game_execution":false}),
+    )
+}
+
 impl RecipeChainDraft<'_> {
     fn craft(&mut self, id: std::num::NonZeroU32, crafts: u32) -> std::result::Result<(), Value> {
         if self.active.contains(&id.get()) {

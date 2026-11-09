@@ -1,5 +1,14 @@
 # Forever interaction map
 
+Complete chain drafts can opt into `reagent_chain_stock_plan`, revalidating
+printed steps and reusing ordered-material accounting for starting needs,
+saved bank-withdrawal quantities, scoped coverage and nonmaterial unknowns.
+Conditional intermediate output reduces initial needs; future acquisitions do
+not become owned stock. Checkpoints use all observed storage, with separate bag
+readiness. Blocked chains return null. No transfer, current access or crafting
+eligibility is verified or executed.
+[Offline evidence](../../docs/reagent-chain-stock-verification-2026-11-09.md).
+
 Complete reagent-chain drafts can opt into saved merchant quoting of their
 external leaves. Already-net quantities are priced once after shared stock
 allocation, with no separate intermediate/root quote. Offer captures retain

@@ -559,6 +559,9 @@ struct RecipeReview {
     suggest_reagent_chain: bool,
     /// Up to eight explicit item/recipe producer choices within the same bulk capture; requires reagent-chain mode.
     reagent_producer_choices: Option<Vec<azeroth_operator::analysis::RecipeProducerChoice>>,
+    /// Estimate initial carried material needs and bank withdrawals for the printed reagent-chain order.
+    #[serde(default)]
+    reagent_chain_stock_plan: bool,
     /// Price saved merchant offers for material shortfalls, or net external leaves in reagent-chain mode.
     #[serde(default)]
     merchant_reagent_plan: bool,
@@ -1097,6 +1100,10 @@ impl Operator {
             );
             let additional = args.additional_recipes.unwrap_or_default();
             anyhow::ensure!(
+                !args.reagent_chain_stock_plan || args.suggest_reagent_chain,
+                "Chain stock planning requires reagent-chain mode"
+            );
+            anyhow::ensure!(
                 args.reagent_producer_choices.is_none() || args.suggest_reagent_chain,
                 "Producer choices require reagent-chain mode"
             );
@@ -1140,6 +1147,14 @@ impl Operator {
                         inventory.as_ref(),
                         args.reagent_producer_choices.as_deref().unwrap_or(&[]),
                     )?;
+                if args.reagent_chain_stock_plan {
+                    let plan = azeroth_operator::analysis::reagent_chain_stock_plan(
+                        &review["reagent_chain"],
+                        &snapshot,
+                        inventory.as_ref(),
+                    )?;
+                    review["reagent_chain"]["stock_plan"] = plan;
+                }
             }
             if let Some(id) = args.inventory_snapshot_id {
                 review["inventory_snapshot_id"] = serde_json::json!(id);
