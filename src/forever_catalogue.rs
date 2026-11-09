@@ -3317,7 +3317,17 @@ impl GearStorage {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    serde::Deserialize,
+    serde::Serialize,
+    schemars::JsonSchema,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum SimulatorItemResolution {
     CatalogueItemUnavailable,
@@ -3380,6 +3390,7 @@ pub fn review_owned(
     simulator_input_resolved: Option<bool>,
     catalogue_matched: Option<bool>,
     resolution_filter: Option<SimulatorItemResolution>,
+    include_resolution_counts: bool,
     exclude_observed_requirement_conflicts: bool,
     storage_filter: Option<GearStorage>,
 ) -> Result<Value> {
@@ -3420,6 +3431,7 @@ pub fn review_owned(
     let mut observed_storage = Vec::new();
     let mut unavailable_storage = Vec::new();
     let mut included = 0usize;
+    let mut resolution_counts = BTreeMap::<SimulatorItemResolution, usize>::new();
     let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
     let target_slot = simulator_slot.and_then(|target| {
         (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
@@ -3489,6 +3501,7 @@ pub fn review_owned(
             let modifiers = (on_page
                 || simulator_input_resolved.is_some()
                 || resolution_filter.is_some()
+                || include_resolution_counts
                 || observed_enchant_effect_id.is_some()
                 || observed_random_suffix_id.is_some())
             .then(|| link_modifiers(item))
@@ -3509,7 +3522,10 @@ pub fn review_owned(
             let candidates = modifiers
                 .as_ref()
                 .filter(|_| {
-                    on_page || simulator_input_resolved.is_some() || resolution_filter.is_some()
+                    on_page
+                        || simulator_input_resolved.is_some()
+                        || resolution_filter.is_some()
+                        || include_resolution_counts
                 })
                 .map(|fields| modifier_candidates(db, fields, reference.copied()));
             if simulator_input_resolved.is_some_and(|expected| {
@@ -3520,11 +3536,17 @@ pub fn review_owned(
             }) {
                 return;
             }
-            let simulator_item_resolution = (on_page || resolution_filter.is_some())
-                .then(|| item_resolution(reference, modifiers.as_ref(), candidates.as_ref()));
+            let simulator_item_resolution =
+                (on_page || resolution_filter.is_some() || include_resolution_counts)
+                    .then(|| item_resolution(reference, modifiers.as_ref(), candidates.as_ref()));
             if resolution_filter.is_some_and(|expected| simulator_item_resolution != Some(expected))
             {
                 return;
+            }
+            if include_resolution_counts {
+                *resolution_counts
+                    .entry(simulator_item_resolution.unwrap())
+                    .or_default() += 1;
             }
             if on_page {
                 let draft_selection = target_slot
@@ -3585,6 +3607,9 @@ pub fn review_owned(
         "coverage":coverage,"observed_item_locations":total,"base_item_matches":matched,
         "items":entries,"filtered_item_locations":included,"has_more":included.saturating_sub(offset)>limit,
         "live":false,"ranked":false,"equip_legality_verified":false});
+    if include_resolution_counts {
+        result["simulator_item_resolution_counts"] = json!(resolution_counts);
+    }
     result["inventory_evidence"] = json!({
         "scope":"all_observed_storage_before_filters",
         "observed_storage_sections":observed_storage,

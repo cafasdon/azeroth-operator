@@ -1,5 +1,7 @@
 # Changelog
 
+- Count matching Forever owned-item locations by simulator resolution before paging.
+
 - Filter saved Forever owned items by their exact simulator resolution status.
 
 - Page observed owned-item locations by whether their base ID matches the pinned Forever catalogue.

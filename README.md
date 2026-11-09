@@ -496,6 +496,9 @@ filter, and the inventory evidence still describes all observed storage.
 Use `simulator_item_resolution` on the same tool to page by a specific
 status such as `item_link_unresolved` or `enchant_reference_unresolved`.
 These statuses describe local simulator input resolution.
+Set `include_simulator_item_resolution_counts: true` to count matching
+locations by resolution status across all pages. The counts follow the
+requested filters and omit statuses with zero matches.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
