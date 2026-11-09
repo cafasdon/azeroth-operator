@@ -25,6 +25,17 @@ profiles with existing numeric checkpoints. No item/set/storage/swap restriction
 is silently added; identical inputs can still collapse under existing rules.
 An explicit `--snapshot-id` is required. This does not detect who is in play.
 
+Each `ranked_gear_sets` entry includes `saved_loadout` with its exact 17-slot
+simulator spec, source selections (`target_slot`, saved storage/slot and expected
+item ID), cleared slots and source snapshot/report hash. This applies to saved
+journal rankings and the unified evaluator, including checkpoint-only results.
+The join checks the referenced saved row and winning gear hash. These are
+historical locations; `current_locations_verified` and
+`native_equip_eligibility_verified` remain false. No equip action is generated.
+Preparation also requires saved cleared slots to match the MCP's actual review;
+older prepared artifacts must be regenerated after this preparer change.
+[Offline evidence](../../docs/ranked-loadout-verification-2026-11-09.md).
+
 Required arguments are `--mcp`, `--snapshot-id`, `--template`, `--journal`,
 `--engine`, `--engine-sha256`, `--simulation-journal` and one or more
 `--encounter-lookup` files. MCP/engine must be absolute trusted local executable

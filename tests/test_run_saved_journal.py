@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+from time import monotonic
 import subprocess
 import sys
 import tempfile
@@ -118,6 +119,29 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertAlmostEqual(row['weighted_dps_gain_pct'],expected)
                 self.assertEqual([row['source_window_offset_decimal'] for row in result['ranked_gear_sets']],['1','0','2'])
                 self.assertEqual(len({row['simulator_gear_sha256'] for row in result['ranked_gear_sets']}),3)
+                winner=result['ranked_gear_sets'][0]
+                saved=winner['saved_loadout']
+                self.assertEqual(saved['snapshot_id'],key)
+                self.assertEqual(saved['basis'],'validated_saved_plan')
+                self.assertEqual(saved['selections'],[{'target_slot':11,
+                    'source':{'kind':'bag','bag':0,'slot':1},'expected_item_id':4549}])
+                self.assertEqual(saved['simulator_equipment_spec']['items'][10]['id'],4549)
+                self.assertEqual(saved['cleared_equipment_slots'],[])
+                self.assertEqual(hashlib.sha256(journal_tools.encoded(saved['simulator_equipment_spec'])).hexdigest(),
+                    winner['simulator_gear_sha256'])
+                self.assertEqual(result['ranked_gear_sets'][1]['saved_loadout']['selections'],[])
+                for flag in ['current_locations_verified','native_equip_eligibility_verified','game_execution']:
+                    self.assertFalse(saved[flag])
+                for field,bad in [('source_window_offset_decimal','999'),('source_window_offset_decimal','01'),
+                    ('source_window_review',999),('source_window_review',True),('simulator_gear_sha256','0'*64)]:
+                    broken=deepcopy(winner); broken[field]=bad
+                    with self.assertRaises(ValueError): runner.attach_saved_loadouts(journal,
+                        {winner['simulator_gear_sha256']:broken},result['journal_coverage'],monotonic()+10)
+                for field in ['snapshot_id','scope_sha256','collection_binding_sha256']:
+                    badsource=deepcopy(result['journal_coverage']); badsource[field]='0'*64
+                    with self.assertRaises(ValueError): runner.attach_saved_loadouts(journal,
+                        {winner['simulator_gear_sha256']:deepcopy(winner)},badsource,monotonic()+10)
+                self.assertEqual(journal.read_bytes(),before)
                 cached = launch(['--checkpoint-only'])
                 self.assertEqual((cached['new_runs'],cached['checkpoint_hits']),(0,8))
                 self.assertEqual(result['ranked_gear_sets'],cached['ranked_gear_sets'])

@@ -1,5 +1,9 @@
 # Changelog
 
+- Include exact saved equipment and physical-source selections in ranked
+  journal/owned-gear results, with checked snapshot/report provenance and
+  explicit historical-location/native-eligibility limits.
+
 - Connect opt-in exact positional equipment through MCP review, retained plans
   and owned-gear evaluation, gating execution and cached results on the qualified
   engine hash/capability. Preserve legacy defaults and other legality guards;

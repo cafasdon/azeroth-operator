@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Saved-journal and unified owned-gear rankings now return the retained loadout
+and saved physical source selections alongside each ranked gear hash. A checked
+journal reference binds the snapshot, search scope and numeric equipment.
+Current locations and native equip eligibility remain unverified; players apply
+any gear changes themselves. [Evidence](../../docs/ranked-loadout-verification-2026-11-09.md).
+
 MCP equipment review and offline owned-gear evaluation support explicit
 positional equipment input. The opt-in preserves paired-slot gaps while keeping
 other catalogue/native-category/level/legality guards. Execution requires the

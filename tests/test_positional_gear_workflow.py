@@ -152,6 +152,12 @@ class PositionalExecutionTests(unittest.TestCase):
                 self.assertEqual(warm['simulation']['new_runs'],0)
                 self.assertEqual(cold['simulation']['ranked_gear_sets'],warm['simulation']['ranked_gear_sets'])
                 self.assertEqual(len(cold['simulation']['ranked_gear_sets']),3)
+                for gear in cold['simulation']['ranked_gear_sets']:
+                    saved=gear['saved_loadout']
+                    self.assertEqual(saved['snapshot_id'],key)
+                    self.assertIs(saved['simulator_equipment_spec']['preserveSlots'],True)
+                    self.assertEqual(hashlib.sha256(json.dumps(saved['simulator_equipment_spec'],
+                        sort_keys=True,separators=(',',':')).encode()).hexdigest(),gear['simulator_gear_sha256'])
                 # Layout selection belongs to the collection binding: no mixed resume.
                 with self.assertRaises(Exception):
                     asyncio.run(workflow.execute(workflow.parser().parse_args([x for x in argv if x!='--positional-equipment'])))

@@ -259,3 +259,8 @@ execution and checkpoint reuse; legacy placement remains the default. The
 synthetic second-ring case resolves all four reported coordinates and ranks
 three resolved gear inputs across two encounters. Complete ownership, native
 legality, model accuracy and statistical optimality remain unverified.
+
+[Ranked saved loadouts](ranked-loadout-verification-2026-11-09.md) then attach
+exact retained equipment and saved physical-source selections to ranked journal
+results. This makes the recommendation inspectable beyond a hash/reference;
+current locations, native equip eligibility and full owned BiS remain open.

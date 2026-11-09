@@ -10,6 +10,44 @@ from tools import journal_forever_gear_windows as journal
 from tools import run_forever_journal_page as pages
 from tools.merge_forever_gear_windows import MAX_TOTAL_BYTES, digest, integer, require
 from tools.prepare_forever_gear_window import encoded
+from tools.prepare_forever_gear_window import selections_for_review, cleared_for_review
+from tools.merge_forever_gear_windows import retained_equipment
+
+
+def attach_saved_loadouts(path, leaders, source, deadline):
+    """Join bounded ranking references to checked historical plans, never equip."""
+    require(isinstance(leaders, dict) and len(leaders) <= 20)
+    if not leaders:
+        return
+    connection, deadline = journal.connect(path, deadline=deadline)
+    try:
+        for gear, leader in leaders.items():
+            require(monotonic() < deadline)
+            require(digest(gear) == leader['simulator_gear_sha256'])
+            offset = leader['source_window_offset_decimal']
+            require(isinstance(offset,str) and 1 <= len(offset) <= 64 and offset.isascii()
+                and offset.isdecimal() and str(int(offset)) == offset)
+            row = connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows WHERE start_key=?',
+                (journal.coordinate(int(offset)),)).fetchone()
+            require(row is not None)
+            report, summary = journal.checked_row(row)
+            require(all(summary.get(field) == source.get(field) for field in
+                ['snapshot_id','scope_sha256','collection_binding_sha256']))
+            review = integer(leader['source_window_review'],1,len(report['resolved_drafts']))
+            draft = report['resolved_drafts'][review-1]
+            require(draft['review'] == review and draft['simulator_gear_sha256'] == gear)
+            spec = retained_equipment(draft)
+            require(spec is not None)
+            selections = selections_for_review(draft['selections'])
+            cleared = cleared_for_review(draft)
+            leader['saved_loadout'] = {'basis':'validated_saved_plan',
+                'snapshot_id':summary['snapshot_id'],'source_report_sha256':row[3],
+                'simulator_equipment_spec':spec,'selections':selections,
+                'cleared_equipment_slots':cleared,
+                'current_locations_verified':False,'native_equip_eligibility_verified':False,
+                'game_execution':False}
+    finally:
+        connection.close()
 
 
 async def execute(args, *, deadline=None):
@@ -113,6 +151,7 @@ async def execute(args, *, deadline=None):
         next_cursor = int(next_cursor)
         require(cursor is None or next_cursor > cursor)
         cursor = next_cursor
+    attach_saved_loadouts(args.journal, leaders, source, deadline + 5)
     current = journal.journal_status(args.journal, deadline=deadline + 5)
     require(current == source and monotonic() <= deadline + 5)
     complete = exhausted and completed == source['window_count'] and completed > 0

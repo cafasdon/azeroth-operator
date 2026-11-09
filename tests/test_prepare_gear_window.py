@@ -97,11 +97,33 @@ class PrepareGearWindowTests(unittest.TestCase):
             wrong_journal = Path(folder) / 'wrong.sqlite'
             append_report(wrong_journal, mismatched)
             launch(['--journal', str(wrong_journal)], 1)
+            for index,cleared in enumerate([[17],[17.0],None]):
+                wrong=deepcopy(artifact)
+                wrong['resolved_drafts'][0]['cleared_equipment_slots']=cleared
+                wrong_path=Path(folder)/f'cleared-{index}.sqlite'
+                append_report(wrong_path,wrong)
+                launch(['--journal',str(wrong_path)],1)
             legacy = deepcopy(artifact)
             for row in legacy['resolved_drafts']: del row['simulator_equipment_spec']
             legacy_journal = Path(folder) / 'legacy.sqlite'
             append_report(legacy_journal, legacy)
             launch(['--journal', str(legacy_journal)], 1)
+            armed=deepcopy(saved)
+            armed['sections']['equipment']={str(slot):{'item_id':754,'link':'item:754:0:0:0:0:0:0'} for slot in [16,17]}
+            armed['sections']['bags']={'0':{'1':{'item_id':2042,'count':1,'link':'item:2042:0:0:0:0:0:0'}}}
+            armed_key=store.ingest(armed)
+            with patch.dict(os.environ,env):
+                drafts,skipped,coverage,_,_,_,search=asyncio.run(collect(binary,armed_key,['main_hand'],errlog,
+                    combination_limit=4,collapse_identical=True))
+            clear_report=plan_report(drafts,True,True)
+            clear_report.update(gear_search=search,skipped=skipped,storage_coverage=coverage,best_in_slot_verified=False)
+            clearing=[row for row in clear_report['resolved_drafts'] if row['cleared_equipment_slots']]
+            self.assertEqual(len(clearing),1)
+            clear_path=Path(folder)/'clear-valid.sqlite'; append_report(clear_path,clear_report)
+            launch(['--journal',str(clear_path)])
+            clearing[0]['cleared_equipment_slots']=[]
+            omitted_path=Path(folder)/'clear-omitted.sqlite'; append_report(omitted_path,clear_report)
+            launch(['--journal',str(omitted_path)],1)
 
     def test_saved_selection_shapes_reject_extra_fields_and_booleans(self):
         valid = {'target_slot': 11, 'source': {'kind': 'bag', 'bag': 0, 'slot': 1}, 'expected_item_id': 4549}

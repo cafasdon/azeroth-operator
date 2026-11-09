@@ -208,6 +208,11 @@ completion flags. Missing ownership/model/native proof still prevents a BiS
 claim. See the [workflow](docs/ADR-027-owned-gear-evaluation-workflow.md) and
 [offline evidence](docs/owned-gear-evaluation-verification-2026-11-09.md).
 
+Ranked saved-journal gear results include `saved_loadout`: the exact retained
+equipment, selected source locations and cleared slots, tied to the snapshot
+and source report hash. Locations describe the saved plan; refresh observations
+before relying on them in game. [Evidence](docs/ranked-loadout-verification-2026-11-09.md).
+
 The positional engine extension now connects MCP review, retained plans and
 offline evaluation. Opt in with `positional_simulator_equipment: true` on
 `review_equipment_selection`, or `--positional-equipment` on collection/evaluation.

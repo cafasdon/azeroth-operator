@@ -44,6 +44,17 @@ def selections_for_review(rows):
     return rows
 
 
+def cleared_for_review(draft):
+    cleared = draft.get('cleared_equipment_slots', [])
+    require(isinstance(cleared,list) and (not cleared or
+        (len(cleared)==1 and type(cleared[0]) is int and cleared[0]==17)))
+    if cleared:
+        targets={row['target_slot'] for row in selections_for_review(draft['selections'])}
+        spec=retained_equipment(draft)
+        require(16 in targets and 17 not in targets and spec is not None and spec['items'][15]=={})
+    return cleared
+
+
 async def prepare(args):
     integer(args.window_offset)
     integer(args.time_budget_seconds, 1, 45)
@@ -76,6 +87,7 @@ async def prepare(args):
     require(summary['equipment_specs_retained'])
     for draft in report['resolved_drafts']:
         selections_for_review(draft['selections'])
+        cleared_for_review(draft)
     requests, size = [], 0
     with tempfile.TemporaryFile(mode='w+') as errlog:
         async with stdio_client(StdioServerParameters(command=str(args.mcp), env=dict(os.environ)), errlog=errlog) as (read, write):
@@ -96,6 +108,7 @@ async def prepare(args):
                     require(review.get('snapshot_id') == summary['snapshot_id']
                             and review.get('game_execution') is False and review.get('live') is False)
                     checks = review['checks']
+                    require(cleared_for_review(draft) == checks.get('simulator_cleared_equipment_slots', []))
                     require(all(checks.get(key) is True for key in ['selected_locations_observed',
                         'item_ids_match_snapshot', 'unique_sources_and_targets']))
                     spec = retained_equipment({'simulator_equipment_spec': checks.get('simulator_equipment_spec'),
