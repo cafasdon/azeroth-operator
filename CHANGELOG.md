@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever merchant visits by the cost of a whole-bundle combination.
+
 - Optimise copper-only merchant bundle combinations for an exact item or currency in a saved Forever visit.
 
 - Identify the cheapest qualifying single copper-only offer in saved Forever merchant quantity plans.

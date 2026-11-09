@@ -5840,20 +5840,19 @@ pub fn merchant_quantity_plan(offers: &Value, quantity: u32, exact_product: bool
         "lowest_cost_copper_only_offer":lowest_cost.map(|(_, slot, plan)| json!({"slot":slot,"plan":plan}))});
     if exact_product {
         report["lowest_cost_copper_only_bundle_mix"] =
-            cheapest_merchant_bundle_mix(offers, quantity).unwrap_or(Value::Null);
+            cheapest_merchant_bundle_mix(offers.iter(), quantity).unwrap_or(Value::Null);
     }
     report
 }
 
-fn cheapest_merchant_bundle_mix(
-    offers: &serde_json::Map<String, Value>,
+pub(crate) fn cheapest_merchant_bundle_mix<'a>(
+    offers: impl Iterator<Item = (&'a String, &'a Value)>,
     quantity: u32,
 ) -> Option<Value> {
     if !(1..=1000).contains(&quantity) {
         return None;
     }
     let mut bundles: Vec<_> = offers
-        .iter()
         .filter_map(|(slot, offer)| {
             if offer["available"] != -1 || offer["extended_cost"] != false {
                 return None;

@@ -1590,6 +1590,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(mixed_plan["lowest_cost_copper_only_bundle_mix"], {
                             "required_copper": 9, "units": 8, "extra_units": 0, "bundles_by_slot": {"1": 1, "2": 1},
                         })
+                        mix_search = {"family":"forever","merchant_item_id":123456789,
+                                      "merchant_target_quantity":8,"merchant_max_total_copper":9}
+                        for combine in (False, True):
+                            found = await session.call_tool("list_snapshots", {
+                                **mix_search, "merchant_combine_bundles":combine,
+                            })
+                            self.assertFalse(found.isError, found)
+                            rows = json.loads(found.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows], [mixed_key] if combine else [])
+                            if combine:
+                                self.assertEqual(rows[0]["merchant_match"]["lowest_cost_copper_only_bundle_mix"],
+                                                 mixed_plan["lowest_cost_copper_only_bundle_mix"])
+                        invalid_mix = await session.call_tool("list_snapshots", {
+                            "family":"forever","merchant_item_id":123456789,"merchant_combine_bundles":True,
+                        })
+                        self.assertTrue(invalid_mix.isError)
                         food_merchant = json.loads(json.dumps(merchant))
                         food_merchant["character"]["realm"] = "First"
                         food_merchant["sections"]["merchant_stock"] = {

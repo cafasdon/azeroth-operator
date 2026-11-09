@@ -1380,6 +1380,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
     pub merchant_target_quantity: Option<std::num::NonZeroU32>,
     pub merchant_cheapest_first: bool,
+    pub merchant_combine_bundles: bool,
     pub merchant_max_total_copper: Option<u64>,
     pub merchant_max_price_copper: Option<u64>,
     pub merchant_in_stock_only: bool,
@@ -1588,6 +1589,7 @@ impl Store {
             merchant_pet_food_snapshot_id,
             merchant_target_quantity,
             merchant_cheapest_first,
+            merchant_combine_bundles,
             merchant_max_total_copper,
             merchant_max_price_copper,
             merchant_in_stock_only,
@@ -1819,6 +1821,11 @@ impl Store {
             .map(|id| ("item_id", id.get()))
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
         let filter_merchant = merchant_product.is_some() || merchant_pet_food_snapshot_id.is_some();
+        ensure!(
+            !merchant_combine_bundles
+                || (merchant_product.is_some() && merchant_target_quantity.is_some()),
+            "Merchant bundle combinations require an exact item or currency and target quantity"
+        );
         ensure!(
             merchant_target_quantity
                 .is_none_or(|quantity| filter_merchant && quantity.get() <= 1000),
@@ -2640,7 +2647,7 @@ impl Store {
                         s.sections
                             .get("merchant_stock")
                             .and_then(Value::as_object)
-                            .map_or((0, None), |offers| {
+                            .map_or((0, None, None), |offers| {
                                 let matching = offers
                                     .iter()
                                     .filter(|(_, offer)| {
@@ -2674,8 +2681,19 @@ impl Store {
                                             })
                                     });
                                 let Some(quantity) = merchant_target_quantity else {
-                                    return (matching.count(), None);
+                                    return (matching.count(), None, None);
                                 };
+                                if merchant_combine_bundles {
+                                    let eligible = matching.filter(|(_, offer)| {
+                                        offer["available"] == -1 && offer["extended_cost"] == false
+                                    });
+                                    let count = eligible.clone().count();
+                                    let mix = analysis::cheapest_merchant_bundle_mix(eligible, quantity.get())
+                                        .filter(|plan| plan["required_copper"].as_u64().is_some_and(|cost|
+                                            merchant_max_total_copper.is_none_or(|maximum| cost <= maximum)
+                                            && (!merchant_affordable_only || wallet.is_some_and(|balance| cost <= balance))));
+                                    return (if mix.is_some() { count } else { 0 }, None, mix);
+                                }
                                 let mut count = 0;
                                 let mut best = None;
                                 for (slot, offer) in matching {
@@ -2703,10 +2721,10 @@ impl Store {
                                             "plan":plan})));
                                     }
                                 }
-                                (count, best.map(|(_, plan)| plan))
+                                (count, best.map(|(_, plan)| plan), None)
                             })
                     });
-                    if matches!(merchant_matches, Some((0, _))) {
+                    if matches!(merchant_matches, Some((0, _, _))) {
                         continue;
                     }
                     let trainer_match = filter_trainer.then(|| {
@@ -2917,7 +2935,7 @@ impl Store {
                     if let Some(route) = flight_match {
                         summary["flight_match"] = route;
                     }
-                    if let Some((count, quantity_plan)) = merchant_matches {
+                    if let Some((count, quantity_plan, bundle_mix)) = merchant_matches {
                         let stats = s.sections.get("stats");
                         summary["merchant_match"] = json!({
                             "offer_count":count,
@@ -2932,6 +2950,9 @@ impl Store {
                         }
                         if let Some(plan) = quantity_plan {
                             summary["merchant_match"]["lowest_cost_quantity_plan"] = plan;
+                        }
+                        if let Some(mix) = bundle_mix {
+                            summary["merchant_match"]["lowest_cost_copper_only_bundle_mix"] = mix;
                         }
                     }
                     if filter_instance {
@@ -2969,6 +2990,7 @@ impl Store {
         let purchase_cost = |summary: &Value| {
             summary["merchant_match"]["lowest_cost_quantity_plan"]["plan"]["required_copper"]
                 .as_u64()
+                .or_else(|| summary["merchant_match"]["lowest_cost_copper_only_bundle_mix"]["required_copper"].as_u64())
                 .unwrap_or(u64::MAX)
         };
         rows.sort_by(|a, b| {

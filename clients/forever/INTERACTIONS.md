@@ -16,6 +16,10 @@ can combine whole bundles across eligible slots in the same visit. It
 minimises total copper, then total units, within the retained unlimited
 copper-only offers. Pet food searches can return different products and do
 not combine their quantities. All plans are historical quotes.
+Set `merchant_combine_bundles: true` on `list_snapshots` with an exact item
+or currency and a target quantity. The total copper ceiling, affordability
+filter and cheapest-first order then use the combination cost. Offer counts
+describe eligible slots, and each plan uses one visit.
 
 Comparing a saved quest by ID reports fulfilled, required and remaining
 quantities by objective kind for each capture. The report counts rows
