@@ -1264,10 +1264,25 @@ impl RecipeChainDraft<'_> {
                                             .collect::<BTreeMap<_, _>>()
                                     })
                                 });
+                            let direct_shortfalls = direct_reagents.as_ref().map(|reagents| {
+                                reagents
+                                    .iter()
+                                    .filter_map(|(item_id, required)| {
+                                        let available = self
+                                            .balance
+                                            .get(&item_id.parse::<u64>().unwrap())
+                                            .copied()
+                                            .unwrap_or_default();
+                                        let shortfall = required.saturating_sub(available);
+                                        (shortfall > 0).then_some((*item_id, shortfall))
+                                    })
+                                    .collect::<BTreeMap<_, _>>()
+                            });
                             json!({"recipe_id":id,"reported_minimum_output_per_craft":minimum,
                             "crafts_for_current_deficit":crafts,
                             "fits_step_craft_limit":crafts.map(|count| count <= 1000),
                             "direct_reagents_for_current_deficit":direct_reagents,
+                            "direct_reagent_shortfalls_vs_chain_balance":direct_shortfalls,
                             "captured_charges":charges,
                             "captured_charges_cover_current_deficit":crafts.zip(charges)
                                 .map(|(count, available)| count <= available)})

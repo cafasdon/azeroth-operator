@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare alternative Forever recipe ingredient shortfalls against the modeled chain balance.
+
 - Compare direct reagent requirements for alternative saved Forever recipe producers.
 
 - Compare saved yield and charge evidence when a Forever reagent has multiple captured producers.

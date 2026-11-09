@@ -302,8 +302,12 @@ shows crafts needed at the captured minimum yield, whether that fits the
 step limit, and whether the raw saved charge count covers that request.
 Candidates within the step limit also show gross direct reagent quantities.
 Those quantities exclude nested recipes and do not deduct stock. They are
-null when the craft count is unknown or exceeds the step limit. Charge
-estimates do not deduct earlier usage. An explicit producer choice is
+null when the craft count is unknown or exceeds the step limit.
+The separate `direct_reagent_shortfalls_vs_chain_balance` map deducts the
+modeled balance at the point where the chain stopped. That balance includes
+observed stock and any output already modeled by earlier steps. The map
+contains only positive shortfalls and excludes nested producer plans.
+Charge estimates do not deduct earlier usage. An explicit producer choice is
 still required.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a

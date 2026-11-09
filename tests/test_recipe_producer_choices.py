@@ -30,7 +30,7 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
             store = SnapshotStore(Path(folder))
             key = store.ingest(value)
             variants = {}
-            for name in ['owned','unlearned','cycle','unknown_yield','unsupported','many_producers','craft_limit']:
+            for name in ['owned','unlearned','cycle','unknown_yield','unsupported','many_producers','craft_limit','partial_stock']:
                 saved = deepcopy(value)
                 bulk = saved['sections']['profession_recipe_materials']['entries']
                 if name=='owned': saved['sections']['bags']['0']['3'] = {'item_id':20,'count':3}
@@ -40,6 +40,7 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                 if name=='unknown_yield': bulk['104'].pop('base_output_quantity')
                 if name=='unsupported': bulk['104'] = {'status':'unsupported_required_slots'}
                 if name=='craft_limit': bulk['101']['reagents'] = {'20':4294967295}
+                if name=='partial_stock': saved['sections']['bags']['0']['1']['count'] = 2
                 if name=='many_producers':
                     for i in range(32): bulk[str(200+i)] = fixed(20,{'10':1})
                 variants[name] = store.ingest(saved)
@@ -62,8 +63,13 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                         {'recipe_id':id,'reported_minimum_output_per_craft':minimum,
                          'crafts_for_current_deficit':crafts,'fits_step_craft_limit':True,
                          'direct_reagents_for_current_deficit':reagents,
+                         'direct_reagent_shortfalls_vs_chain_balance':{},
                          'captured_charges':None,'captured_charges_cover_current_deficit':None}
                         for id,minimum,crafts,reagents in [(102,2,2,{'10':4}),(104,1,3,{'11':3})]])
+                    partial = (await plan(snapshot_id=variants['partial_stock']))['reagent_chain']
+                    self.assertEqual([row['direct_reagent_shortfalls_vs_chain_balance']
+                                      for row in partial['blocked_reason']['candidate_estimates']],
+                                     [{'10':2},{}])
                     self.assertEqual(default,(await plan(reagent_producer_choices=[]))['reagent_chain'])
                     self.assertEqual(default,(await plan(reagent_producer_choices=None))['reagent_chain'])
                     for chosen,external,crafts in [(102,2,2),(104,0,3)]:
