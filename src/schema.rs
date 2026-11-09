@@ -379,9 +379,44 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("output_item_id", "positive", false),
                         ("base_output_quantity", "map", false),
                         ("reported_craftable_count", "uint", false),
+                        ("cooldown", "map", false),
                     ],
                 )?;
                 let reagents = row["reagents"].as_object().unwrap();
+                if let Some(cooldown) = row.get("cooldown") {
+                    object(
+                        cooldown,
+                        &[
+                            ("remaining_seconds", "uint", false),
+                            ("daily", "bool", false),
+                            ("charges", "uint", false),
+                            ("max_charges", "positive", false),
+                        ],
+                    )?;
+                    ensure!(
+                        cooldown
+                            .as_object()
+                            .unwrap()
+                            .values()
+                            .all(|value| !value.is_null()),
+                        "Invalid bulk recipe cooldown"
+                    );
+                    let seconds = cooldown["remaining_seconds"].as_u64();
+                    let charges = cooldown["charges"].as_u64();
+                    let maximum = cooldown["max_charges"].as_u64();
+                    ensure!(
+                        (seconds.is_some() || charges.is_some())
+                            && (!cooldown.as_object().unwrap().contains_key("daily")
+                                || seconds.is_some())
+                            && charges.is_some() == maximum.is_some()
+                            && charges <= maximum
+                            && [seconds, charges, maximum]
+                                .into_iter()
+                                .flatten()
+                                .all(|value| value <= u64::from(u32::MAX)),
+                        "Invalid bulk recipe cooldown"
+                    );
+                }
                 if let Some(count) = row.get("reported_craftable_count") {
                     ensure!(
                         count.as_u64().is_some_and(|n| n <= u64::from(u32::MAX)),

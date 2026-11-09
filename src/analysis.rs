@@ -458,7 +458,7 @@ pub fn plan_recipe_by_id(
     };
     let mut recipe = json!({"recipe_id":id.get(),"learned":true,"requirements":requirements,
         "reagents":if fixed {row["reagents"].clone()} else {json!({})}});
-    for field in ["output_item_id", "base_output_quantity"] {
+    for field in ["output_item_id", "base_output_quantity", "cooldown"] {
         if let Some(value) = row.get(field) {
             recipe[field] = value.clone();
         }

@@ -297,3 +297,9 @@ Native-unit role improvements handle zero baselines and preserve objective/
 checkpoint boundaries. A limited actual offline Warrior baseline qualifies
 metric plumbing; broader healer/tank/class/encounter accuracy and full BiS remain
 open, including upstream healer presets that provide stats without a rotation.
+
+[Bulk recipe cooldowns](bulk-recipe-cooldown-verification-2026-11-09.md) extend
+known fixed-recipe material captures with optional stable public timers/charges.
+These reach search, charge coverage and batch nonmaterial checks without moving
+their provenance to newer stock captures. Native API responsiveness/completeness,
+current craftability and full profession progression qualification remain open.

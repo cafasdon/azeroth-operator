@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Bulk fixed-recipe observations now carry optional stable public cooldown/charge
+evidence into search, individual/batch reviews and existing nonmaterial planning.
+Recipe and stock provenance remain separate. API absence, restrictions, changing
+tuples and failures preserve unknown cooldown evidence without discarding valid
+materials. This is passive capture and offline planning; crafting stays with the
+player. [Evidence](../../docs/bulk-recipe-cooldown-verification-2026-11-09.md).
+
 Offline saved gear evaluation can optimise DPS, DTPS, threat, death fraction,
 healing or time out of mana across supplied encounters. It preserves native
 improvement units, correct increase/decrease direction, shared budgets, selected-

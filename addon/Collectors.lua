@@ -1305,6 +1305,32 @@ AO.collectors.tracked_recipes = function()
     return {coverage="player_tracked_recipes_only",crafts=read(false),recrafts=read(true)}
 end
 
+local function recipeCooldown(api,id)
+    local function read()
+        local getter=api.GetRecipeCooldown
+        if (issecretvalue and issecretvalue(getter)) or type(getter)~="function" then return end
+        -- Forever's schematic UI consumes seconds, daily, charges, maximum in this order.
+        local seconds,daily,charges,maximum=getter(id)
+        local function public(value) return not issecretvalue or not issecretvalue(value) end
+        local result={}
+        if public(seconds) and type(seconds)=="number" and seconds>=0 and seconds<=4294967295 then
+            result.remaining_seconds=math.ceil(seconds)
+            if public(daily) and type(daily)=="boolean" then result.daily=daily end
+        end
+        if public(charges) and public(maximum) and type(charges)=="number" and type(maximum)=="number"
+            and charges%1==0 and maximum%1==0 and charges>=0 and charges<=maximum
+            and maximum>=1 and maximum<=4294967295 then
+            result.charges=charges;result.max_charges=maximum
+        end
+        if next(result) then return result end
+    end
+    local ok,first=pcall(read)
+    local again,second=pcall(read)
+    if ok and again and first and second
+        and first.remaining_seconds==second.remaining_seconds and first.daily==second.daily
+        and first.charges==second.charges and first.max_charges==second.max_charges then return first end
+end
+
 AO.collectors.profession_recipe_materials = function()
     local api=C_TradeSkillUI
     assert(api and api.GetRecipeInfo and api.GetRecipeSchematic and Enum and Enum.TradeskillRecipeType,
@@ -1405,7 +1431,10 @@ AO.collectors.profession_recipe_materials = function()
             if retained+count>16384 then row={status="budget_exhausted"}
             else retained=retained+count end
         end
-        if row.status=="fixed_items" then row.reported_craftable_count=reportedCount(id) end
+        if row.status=="fixed_items" then
+            row.reported_craftable_count=reportedCount(id)
+            row.cooldown=recipeCooldown(api,id)
+        end
         entries[tostring(id)]=row
     end
     local after=AO.collectors.profession_spells()
@@ -1471,23 +1500,7 @@ AO.collectors.selected_recipe = function()
             result.profession={profession_id=id,name=name,rank=rank,max_rank=cap}
         end
     end
-    if info.learned then
-        local ok,cooldown=pcall(function()
-            local seconds,daily,charges,maximum=C_TradeSkillUI.GetRecipeCooldown(info.recipeID)
-            local result={}
-            if accessible(seconds) and type(seconds)=="number" and seconds>=0 and seconds<=4294967295 then
-                result.remaining_seconds=math.ceil(seconds)
-                if accessible(daily) and type(daily)=="boolean" then result.daily=daily end
-            end
-            if accessible(charges) and accessible(maximum) and positive(maximum)
-                and (charges==0 or positive(charges)) and charges<=maximum then
-                result.charges=charges
-                result.max_charges=maximum
-            end
-            if next(result) then return result end
-        end)
-        if ok then result.cooldown=cooldown end
-    end
+    if info.learned then result.cooldown=recipeCooldown(C_TradeSkillUI,info.recipeID) end
     local observed,conditions=pcall(function()
         local rows=C_TradeSkillUI.GetRecipeRequirements(info.recipeID)
         if not accessible(rows) or type(rows)~="table" or #rows>32 then return end

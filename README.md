@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Bulk recipe captures can now retain stable public cooldown and charge observations.
+Search and recipe/batch reviews carry them into charge checks, capacity and timer
+estimates while keeping recipe and inventory capture times separate.
+[Evidence](docs/bulk-recipe-cooldown-verification-2026-11-09.md).
+
 Multi-encounter and owned-gear evaluation now accept `--rank-by` for DPS,
 damage taken, threat, death fraction, healing and time out of mana. Role scores
 use explicit units and retain weighted/worst-encounter objectives and private

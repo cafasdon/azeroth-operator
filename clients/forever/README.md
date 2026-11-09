@@ -1,5 +1,21 @@
 # Forever
 
+Fixed-item bulk recipe rows can include `cooldown` with observed remaining seconds,
+daily flag and/or a charge/max-charge pair. Capture keeps independently readable
+public timer and charge components only when two normalised reads agree. Missing,
+restricted, malformed, throwing or changing observations stay unknown; materials
+remain available. Selected-recipe capture uses the same guarded helper.
+
+`search_forever_recipes` returns the saved field. An exact bulk recipe review
+uses that recipe capture's cooldown for charge coverage, material-and-charge
+capacity, shortfall and estimated cooldown end. Batch nonmaterial checks consume
+the same observations. Newer inventory changes stock only; selected-schematic
+cooldown and newer recipe rows do not overwrite explicit bulk evidence. No elapsed
+recharge or present craftability is inferred. Update importer/MCP readers before
+syncing this new field. Capture-only package `0.42.0-dev` passed offline byte/Lua
+checks; installation and native capture remain deferred.
+[Evidence](../../docs/bulk-recipe-cooldown-verification-2026-11-09.md).
+
 The encounter-window, journal-page, saved-journal and unified owned-gear CLIs
 accept `--rank-by dps|dtps|tps|death|hps|oom`. DPS retains percentage gain and
 existing output fields. Other metrics expose `weighted_improvement`,

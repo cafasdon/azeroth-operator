@@ -7,7 +7,7 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
     let lua = Lua::new();
     lua.load(r#"
         AO={family='forever',variant='live'};SlashCmdList={};mode='normal';reads=0;schematics=0
-        craftableReads=0;craftableByID={}
+        craftableReads=0;craftableByID={};cooldownReads=0;cooldownByID={}
         function InCombatLockdown() return false end
         function GetBuildInfo() return '1.60.1','70862','',16001 end
         function UnitName() return 'Fixture' end
@@ -61,6 +61,12 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
                 if mode=='count_error' then error('PRIVATE') end
                 if mode=='count_changed' then return craftableReads end
             end,
+            GetRecipeCooldown=function(id)
+                cooldownReads=cooldownReads+1;cooldownByID[id]=(cooldownByID[id] or 0)+1
+                if mode=='cooldown_value' then return 12.1,false,1,3 end
+                if mode=='cooldown_zero' then return 0,false,0,3 end
+                if mode=='cooldown_charges' then return nil,false,2,3 end
+            end,
             CraftRecipe=function() error('no crafting') end,
             SetShowLearned=function() error('no filters') end,
             SetShowUnlearned=function() error('no filters') end}
@@ -73,7 +79,7 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
         .call::<()>(("AzerothOperator", namespace))?;
     let capture = |mode: &str| -> Result<azeroth_operator::Snapshot, Box<dyn std::error::Error>> {
         lua.globals().set("mode", mode)?;
-        lua.load("reads=0;schematics=0;craftableReads=0;craftableByID={};C_TradeSkillUI.GetCraftableCount=countImpl; if mode=='count_missing' then C_TradeSkillUI.GetCraftableCount=nil end;Enum.TradeskillRecipeType.Enchant=2;AO.Capture()")
+        lua.load("reads=0;schematics=0;craftableReads=0;craftableByID={};cooldownReads=0;cooldownByID={};C_TradeSkillUI.GetCraftableCount=countImpl; if mode=='count_missing' then C_TradeSkillUI.GetCraftableCount=nil end;Enum.TradeskillRecipeType.Enchant=2;AO.Capture()")
             .exec()?;
         let value: String = lua.globals().get("AzerothOperatorExport")?;
         Ok(decode(
@@ -88,6 +94,29 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
         "3508":{"status":"unavailable"}})
     );
     assert!(!serde_json::to_string(&normal)?.contains("PRIVATE"));
+    for (mode, expected) in [
+        (
+            "cooldown_value",
+            serde_json::json!({"remaining_seconds":13,"daily":false,"charges":1,"max_charges":3}),
+        ),
+        (
+            "cooldown_zero",
+            serde_json::json!({"remaining_seconds":0,"daily":false,"charges":0,"max_charges":3}),
+        ),
+        (
+            "cooldown_charges",
+            serde_json::json!({"charges":2,"max_charges":3}),
+        ),
+    ] {
+        let captured = capture(mode)?;
+        assert_eq!(
+            captured.sections["profession_recipe_materials"]["entries"]["2675"]["cooldown"],
+            expected
+        );
+        assert_eq!(lua.globals().get::<u32>("cooldownReads")?, 2);
+        let by_id: mlua::Table = lua.globals().get("cooldownByID")?;
+        assert_eq!(by_id.get::<Option<u32>>(3508)?, None);
+    }
     for (mode, expected) in [
         ("count_value", 7u64),
         ("count_zero", 0),
@@ -127,6 +156,7 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
             capture(mode)?.sections["profession_recipe_materials"]["entries"]["2675"],
             serde_json::json!({"status":"unsupported_required_slots"})
         );
+        assert_eq!(lua.globals().get::<u32>("cooldownReads")?, 0);
     }
     for mode in [
         "secret",
@@ -168,6 +198,8 @@ fn bulk_materials_preserve_partial_failures_and_local_context()
     assert_eq!(entries["257"]["status"], "budget_exhausted");
     let by_id: mlua::Table = lua.globals().get("craftableByID")?;
     assert_eq!(by_id.get::<Option<u32>>(257)?, None);
+    let cooldown_by_id: mlua::Table = lua.globals().get("cooldownByID")?;
+    assert_eq!(cooldown_by_id.get::<Option<u32>>(257)?, None);
     assert_eq!(
         azeroth_operator::analysis::summary(&budget)["profession_recipe_material_observations"]["fixed_item_recipe_count"],
         256

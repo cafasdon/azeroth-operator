@@ -586,7 +586,7 @@ def validate_snapshot(value):
                     raise ValueError("Invalid recipe material status")
                 continue
             if (not {"status", "reagents"} <= set(row)
-                    or set(row) - {"status", "reagents", "output_item_id", "base_output_quantity", "reported_craftable_count"}
+                    or set(row) - {"status", "reagents", "output_item_id", "base_output_quantity", "reported_craftable_count", "cooldown"}
                     or not isinstance(row["reagents"], dict) or len(row["reagents"]) > 64
                     or any(not material_id(item) or not material_uint(quantity)
                            for item, quantity in row["reagents"].items())
@@ -595,6 +595,18 @@ def validate_snapshot(value):
             if ("reported_craftable_count" in row and (type(row["reported_craftable_count"]) is not int
                     or not 0 <= row["reported_craftable_count"] <= 4_294_967_295)):
                 raise ValueError("Invalid reported recipe craft count")
+            if "cooldown" in row:
+                cooldown=row["cooldown"]
+                allowed={"remaining_seconds","daily","charges","max_charges"}
+                if (not isinstance(cooldown,dict) or not cooldown or set(cooldown)-allowed
+                        or any(type(cooldown[field]) is not int or not 0<=cooldown[field]<=4_294_967_295
+                            for field in ["remaining_seconds","charges","max_charges"] if field in cooldown)
+                        or ("daily" in cooldown and (type(cooldown["daily"]) is not bool or "remaining_seconds" not in cooldown))
+                        or (("charges" in cooldown)!=("max_charges" in cooldown))
+                        or ("charges" in cooldown and not 0<=cooldown["charges"]<=cooldown["max_charges"]
+                            or "max_charges" in cooldown and cooldown["max_charges"]==0)
+                        or not {"remaining_seconds","charges"}.intersection(cooldown)):
+                    raise ValueError("Invalid bulk recipe cooldown")
             retained += len(row["reagents"])
             if retained > 16384:
                 raise ValueError("Recipe material budget exceeded")

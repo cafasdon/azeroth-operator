@@ -1,5 +1,10 @@
 # Changelog
 
+- Capture optional stable public bulk-recipe cooldowns/charges, preserve strict
+  Python/Rust reader parity and feed original-capture evidence into search and
+  recipe/batch planning. Share guarded selected-recipe capture; qualify the
+  capture-only 0.42.0-dev package offline without installing it.
+
 - Propagate all six simulator ranking metrics through encounter, page, journal
   and unified owned-gear workflows, with role-specific improvement units, zero-
   baseline handling, weighted/worst objectives and isolated role checkpoints.
