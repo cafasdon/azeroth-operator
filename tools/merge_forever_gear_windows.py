@@ -5,7 +5,7 @@ import json
 from math import isfinite
 from pathlib import Path
 
-from tools.rank_forever_slot import SIMULATOR_SLOTS
+from tools.rank_forever_slot import SIMULATOR_SLOTS, validate_candidate_scan_limit
 from tools import positional_equipment as layout
 
 MAX_REPORT_BYTES = 4 * 1024 * 1024
@@ -218,10 +218,11 @@ def merge_reports(reports):
             require('empty_choices_by_slot' not in search)
         counts = search.get('candidate_locations_by_slot')
         require(isinstance(counts, dict) and set(counts) == set(slots))
+        scan_limit = validate_candidate_scan_limit(search.get('candidate_scan_limit', 256))
         swaps = integer(search.get('maximum_simultaneous_swaps'), 1, 17)
         coefficients = [1] + [0] * min(swaps, len(slots))
         for slot in slots:
-            count = integer(counts[slot], 0, 256)
+            count = integer(counts[slot], 0, scan_limit)
             if include_empty:
                 count += int(empty_choices[slot])
             for size in range(len(coefficients) - 1, 0, -1):

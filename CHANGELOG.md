@@ -1,5 +1,8 @@
 # Changelog
 
+- Allow gear-window merges and journals to use each report's explicit candidate
+  scan budget. Older reports retain the 256-location default.
+
 - Reuse owned-gear pages within one checked collection invocation using bounded
   serialized copies. Preserve fresh baseline/source validation, ordinary page
   checks and cache-full fallback; report numeric cache statistics only.

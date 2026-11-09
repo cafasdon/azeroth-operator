@@ -35,6 +35,35 @@ def report(offset, keys, limit=4):
 
 
 class MergeGearWindowTests(unittest.TestCase):
+    def test_large_window_pool_requires_matching_explicit_scan_budget(self):
+        first = report(0, ['b' * 64])
+        search = first['gear_search']
+        search['candidate_locations_by_slot']['finger1'] = 257
+        search['combinations_including_baseline'] = 774
+        search['combination_window']['total_combinations_decimal'] = '774'
+        for budget in [None, True, 256, 4097]:
+            bad = deepcopy(first)
+            if budget is not None:
+                bad['gear_search']['candidate_scan_limit'] = budget
+            with self.assertRaises(ValueError):
+                merge_reports([bad])
+        search['candidate_scan_limit'] = 257
+        second = deepcopy(first)
+        second['gear_search']['candidate_scan_limit'] = 4096
+        second['gear_search']['combination_window'].update(offset=4, next_offset=8)
+        result = merge_reports([first, second])
+        self.assertEqual(result['total_combinations_decimal'], '774')
+        self.assertEqual(result['covered_coordinate_count'], 8)
+        self.assertFalse(result['best_in_slot_verified'])
+        from tools.journal_forever_gear_windows import append_report, journal_status
+        with tempfile.TemporaryDirectory() as folder:
+            journal = Path(folder) / 'plans.sqlite'
+            append_report(journal, first)
+            append_report(journal, second)
+            progress = journal_status(journal)
+            self.assertEqual(progress['covered_coordinate_count'], 8)
+            self.assertEqual(progress['next_uncovered_offset_decimal'], '8')
+
     def test_module_rejects_numeric_overflow(self):
         root = Path(__file__).resolve().parents[1]
         valid = report(0, ['b' * 64], 64)

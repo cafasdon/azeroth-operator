@@ -26,3 +26,16 @@ Larger admission is not complete ownership, native eligibility, engine accuracy
 or best-in-slot proof. Distinct large pools can still exceed other budgets. Fail
 or remain explicitly incomplete rather than replace full-set search with a
 shortlist. This change adds no game access or addon deployment.
+
+The window reader validates each report's retained candidate counts against its
+declared scan budget, with 256 as the default for legacy reports. A regression
+fixture with 257 retained candidates reproduces the previous rejection and
+verifies merge, journal append and resume with budgets of 257 and 4,096.
+The reader is part of the collector source fingerprint. Continuing collection
+from a journal bound to an earlier source revision requires a fresh journal.
+Existing valid reports remain readable.
+
+Offline verification passed four merger tests and the journal rollback test.
+Independent Callers and Failure reviews checked legacy defaults, malformed
+budgets, the 4,096 ceiling, compatible mixed budgets and scope mismatches.
+Neither review found a defect.
