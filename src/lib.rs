@@ -1887,6 +1887,7 @@ pub struct CaptureFilters<'a> {
     pub profession_recipe: Option<ProfessionRecipeFilter>,
     pub mail_attachment: Option<MailAttachmentFilter>,
     pub pet_species: Option<PetSpeciesFilter>,
+    pub pet_species_name: Option<&'a str>,
     pub active_pet: Option<ActivePetCaptureFilter>,
     pub spellbook_spell: Option<SpellbookSpellFilter>,
     pub minimum_rested_xp: Option<u32>,
@@ -2135,6 +2136,7 @@ impl Store {
             profession_recipe,
             mail_attachment,
             pet_species,
+            pet_species_name,
             active_pet,
             spellbook_spell,
             minimum_rested_xp,
@@ -2428,6 +2430,14 @@ impl Store {
             pet_species.is_none() || family == Family::Forever,
             "Pet species view filtering requires Forever"
         );
+        let pet_species_name = pet_species_name.map(str::trim);
+        ensure!(
+            pet_species_name.is_none_or(|name| family == Family::Forever
+                && !name.is_empty()
+                && name.len() <= 256),
+            "Pet species name filtering requires Forever and a valid name"
+        );
+        let pet_species_name = pet_species_name.map(str::to_lowercase);
         if let Some(filter) = &pet_species {
             filter.validate()?;
         }
@@ -3069,6 +3079,26 @@ impl Store {
                         filter.match_view(s.sections.get("pet_collection_view")?)
                     });
                     if pet_species.is_some() && pet_species_match.is_none() {
+                        continue;
+                    }
+                    let pet_name_match = pet_species_name.as_ref().and_then(|name| {
+                        let view = s.sections.get("pet_collection_view")?;
+                        let mut matches: Vec<_> = view["entries"].as_object()?.iter().filter_map(|(id, row)| {
+                            let id = id.parse::<u32>().ok()?;
+                            (pet_species.as_ref().is_none_or(|filter| filter.species_id.get() == id)
+                                && row["name"].as_str().is_some_and(|observed| observed.trim().to_lowercase() == *name))
+                                .then_some((id, row))
+                        }).collect();
+                        matches.sort_unstable_by_key(|(id, _)| *id);
+                        (!matches.is_empty()).then(|| json!({
+                            "coverage":view["coverage"],"matched_count":matches.len(),"truncated":matches.len()>20,
+                            "species":matches.into_iter().take(20).map(|(id,row)| json!({
+                                "species_id":id,"name":row["name"],"owned_rows":row["owned_rows"],
+                                "unowned_rows":row["unowned_rows"],
+                            })).collect::<Vec<_>>(),
+                        }))
+                    });
+                    if pet_species_name.is_some() && pet_name_match.is_none() {
                         continue;
                     }
                     let active_pet_match = active_pet
@@ -4001,6 +4031,9 @@ impl Store {
                     }
                     if let Some(observation) = mail_attachment_match {
                         summary["mail_attachment_match"] = observation;
+                    }
+                    if let Some(observation) = pet_name_match {
+                        summary["pet_species_name_match"] = observation;
                     }
                     if let Some(observation) = pet_species_match {
                         summary["pet_species_match"] = observation;

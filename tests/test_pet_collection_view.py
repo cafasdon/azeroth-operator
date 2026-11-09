@@ -30,6 +30,13 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
             empty['character']['name']='Empty'
             empty['sections']['pet_collection_view'].update(displayed_rows=0,entries={})
             empty_key=store.ingest(empty)
+            repeated = copy.deepcopy(value)
+            repeated['character']['name'] = 'Repeated'
+            repeated['sections']['pet_collection_view'].update(displayed_rows=21, entries={
+                str(species_id): {'name': 'Shared Label', 'owned_rows': 1, 'unowned_rows': 0}
+                for species_id in range(21, 0, -1)
+            })
+            repeated_key = store.ingest(repeated)
             missing=copy.deepcopy(value);missing['character']['name']='Missing';missing['sections'].pop('pet_collection_view')
             missing_key=store.ingest(missing)
             later=copy.deepcopy(value)
@@ -73,6 +80,30 @@ class PetCollectionViewTests(unittest.IsolatedAsyncioTestCase):
                                 'coverage':'filtered_journal_species','displayed_rows':3,'species_id':species,
                                 **view['entries'][str(species)]})
                     args={'character':value['character'],'pet_species':{'species_id':7}}
+                    named = (await search(pet_species_name='  sPeCiEs 7  '))['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in named], [key])
+                    self.assertEqual(named[0]['pet_species_name_match'], {
+                        'coverage': 'filtered_journal_species',
+                        'matched_count': 1,
+                        'truncated': False,
+                        'species': [{'species_id': 7, **view['entries']['7']}],
+                    })
+                    self.assertEqual((await search(pet_species_name='Species'))['snapshots'], [])
+                    duplicate_matches = (await search(pet_species_name='Shared Label'))['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in duplicate_matches], [repeated_key])
+                    shortlist = duplicate_matches[0]['pet_species_name_match']
+                    self.assertEqual(shortlist['matched_count'], 21)
+                    self.assertTrue(shortlist['truncated'])
+                    self.assertEqual([row['species_id'] for row in shortlist['species']], list(range(1, 21)))
+                    self.assertEqual((await search(pet_species_name='Species 8', **args))['snapshots'], [])
+                    self.assertEqual(len((await search(pet_species_name='Species 7', **args))['snapshots']), 1)
+                    self.assertEqual((await search(pet_species_name='Species 7',
+                        pet_species={'species_id':7,'minimum_owned_rows':3}))['snapshots'], [])
+                    for family, name in [('retail', 'Species 7'), ('forever', ' '), ('forever', 'é' * 129)]:
+                        response = await session.call_tool('list_snapshots', {
+                            'family': family, 'pet_species_name': name,
+                        })
+                        self.assertTrue(response.isError)
                     for flags,expected in [
                         ({'pet_has_owned_rows':True},['7']),
                         ({'pet_has_owned_rows':False,'pet_has_unowned_rows':True},['8']),

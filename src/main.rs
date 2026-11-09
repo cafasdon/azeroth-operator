@@ -522,6 +522,8 @@ struct List {
     mail_attachment: Option<azeroth_operator::MailAttachmentFilter>,
     /// Match a species observed in the saved filtered pet journal, not full account ownership.
     pet_species: Option<azeroth_operator::PetSpeciesFilter>,
+    /// Find saved pet journal species by exact case-insensitive public species name.
+    pet_species_name: Option<String>,
     /// Match saved active-pet presence, family, level and signed training-point balance.
     active_pet: Option<azeroth_operator::ActivePetCaptureFilter>,
     /// Match a saved visible player spellbook row by base/reported ID and optional metadata.
@@ -2306,6 +2308,7 @@ impl Operator {
                 profession_recipe: args.profession_recipe,
                 mail_attachment: args.mail_attachment,
                 pet_species: args.pet_species,
+                pet_species_name: args.pet_species_name.as_deref(),
                 active_pet: args.active_pet,
                 spellbook_spell: args.spellbook_spell,
                 minimum_rested_xp: args.minimum_rested_xp,

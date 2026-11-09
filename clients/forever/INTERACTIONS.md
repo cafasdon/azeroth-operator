@@ -3153,3 +3153,9 @@ against the same capture's wallet and does not budget multiple quests.
 Set `local_quest_highest_xp_first: true` to order each local shortlist by
 recorded XP before paging. Unknown rewards appear last and ties use numeric
 quest ID. This option is mutually exclusive with timer ordering.
+
+Use `list_snapshots.pet_species_name` to find exact public species labels
+ignoring case and surrounding whitespace. The result includes up to 20
+matching species IDs with their observed owned and unowned row counts.
+Combining this with `pet_species` requires the name and row bounds to
+match the same species. Results describe the saved filtered view.

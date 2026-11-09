@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet journal species by public species name.
+
 - Sort saved Forever local quest shortlists by highest recorded XP reward.
 
 - Find saved Forever quests by recorded XP reward, copper cost and wallet affordability.
