@@ -1,5 +1,7 @@
 # Changelog
 
+- Show observed pet food item coverage in saved Forever pet-care comparisons.
+
 - Include saved bag locations and counts when inspecting Forever pet care.
 
 - Show pet food quantities and stack counts by item in saved Forever bag summaries.

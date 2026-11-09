@@ -1115,8 +1115,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(travel_changes["pet_care_change"], {
                             "before": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
                             "after": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
+                            "before_accepted_carried_food_item_count":1,
+                            "after_accepted_carried_food_item_count":1,
                             "accepted_carried_food_changes": {
-                                "117": {"before_quantity": 3, "after_quantity": 1, "quantity_delta": -2},
+                                "117": {"before_quantity": 3, "after_quantity": 1, "quantity_delta": -2,
+                                        "observed_before":True,"observed_after":True},
                             },
                         })
                         self.assertEqual(travel_changes["flight_map_changes"]["changes"], [])

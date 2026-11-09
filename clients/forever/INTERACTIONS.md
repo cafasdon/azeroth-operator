@@ -5,6 +5,9 @@ accepted food item ID. Totals include matching stacks beyond the displayed
 location limit and describe the saved bags.
 Inspecting the saved `pet_care` section includes the same
 `pet_food_locations` report. Missing food observations remain null.
+Pet-care comparisons count food IDs in each saved observation and label
+whether each changed ID appeared on either side. A one-sided observation
+does not establish why a food disappeared from the accepted-food list.
 
 Use `list_snapshots` with `toy_in_view` to find an exact toy item ID in a
 saved filtered journal. Optional `collected` and `favorite` flags must

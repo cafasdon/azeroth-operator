@@ -4255,10 +4255,11 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
             observed
         })
     };
+    let old_food = before["carried_food"].as_object();
+    let new_food = after["carried_food"].as_object();
     let food_changes =
-        before["carried_food"]
-            .as_object()
-            .zip(after["carried_food"].as_object())
+        old_food
+            .zip(new_food)
             .map(|(before, after)| {
                 before
                     .keys()
@@ -4270,12 +4271,15 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
                         let new = after.get(id).and_then(Value::as_i64).unwrap_or(0);
                         (old != new).then(|| (id, json!({
                         "before_quantity":old,"after_quantity":new,"quantity_delta":new-old,
+                        "observed_before":before.contains_key(id),"observed_after":after.contains_key(id),
                     })))
                     })
                     .collect::<BTreeMap<_, _>>()
             });
     json!({
         "before":observation(before),"after":observation(after),
+        "before_accepted_carried_food_item_count":old_food.map(|foods| foods.len()),
+        "after_accepted_carried_food_item_count":new_food.map(|foods| foods.len()),
         "accepted_carried_food_changes":food_changes,
     })
 }
