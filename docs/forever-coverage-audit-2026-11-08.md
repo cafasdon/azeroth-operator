@@ -229,3 +229,10 @@ public API. This can preserve source IDs beyond the simulator cache, but only
 the bounded fixed-reagent subset queried during export; the provider database is
 not bundled and its revision/completeness is unverified. Inspection is supported;
 chain integration, source/route resolution and native acceptance remain open.
+
+[Captured chain acquisition references](chain-captured-sources-verification-2026-11-09.md)
+then join complete net external demand to an explicitly scoped owner capture,
+with independent source timestamps, partial/truncated categories and missing
+data statuses. This closes the preceding capture-to-chain join gap, without
+filling source entities/coordinates, world coverage, optimal routing, current
+availability or native qualification. Full acquisition planning remains open.

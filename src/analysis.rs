@@ -4743,6 +4743,117 @@ pub fn material_merchant_plan(
     plan
 }
 
+/// Join historical owner-local provider references to already-net chain leaves.
+pub fn reagent_chain_captured_sources(
+    chain: &Value,
+    recipe: &Snapshot,
+    source: &Snapshot,
+) -> Result<Value> {
+    ensure!(
+        recipe.client.family == crate::Family::Forever,
+        "Expected Forever"
+    );
+    ensure_same_character_and_client(recipe, source)?;
+    if chain["draft_complete"] != true {
+        return Ok(Value::Null);
+    }
+    let leaves = chain["external_material_requirements"]
+        .as_array()
+        .ok_or_else(|| anyhow::anyhow!("Missing chain external materials"))?;
+    ensure!(leaves.len() <= 512, "Too many chain external materials");
+    let mut needs = BTreeMap::new();
+    for leaf in leaves {
+        let id = leaf["item_id"]
+            .as_u64()
+            .filter(|n| *n > 0 && *n <= u64::from(u32::MAX))
+            .ok_or_else(|| anyhow::anyhow!("Invalid chain material ID"))?;
+        let quantity = leaf["quantity"]
+            .as_u64()
+            .filter(|n| *n > 0)
+            .ok_or_else(|| anyhow::anyhow!("Invalid chain material quantity"))?;
+        ensure!(
+            needs.insert(id, quantity).is_none(),
+            "Duplicate chain material"
+        );
+    }
+    let section = source.sections.get("recipe_item_sources");
+    let fields = [
+        "npc_drops",
+        "object_drops",
+        "container_drops",
+        "quest_rewards",
+        "vendors",
+    ];
+    let mut captured = 0;
+    let mut reported = 0;
+    let mut with_sources = 0;
+    let records = needs
+        .into_iter()
+        .map(|(id, quantity)| {
+            let row = section.and_then(|section| section["entries"].get(id.to_string()));
+            if row.is_some() {
+                captured += 1;
+            }
+            let status =
+                row.and_then(|row| row["status"].as_str())
+                    .unwrap_or(if section.is_some() {
+                        "item_not_captured"
+                    } else {
+                        "capture_unavailable"
+                    });
+            let references = (status == "reported").then(|| {
+                reported += 1;
+                fields
+                    .iter()
+                    .filter_map(|field| {
+                        row.unwrap().get(field).map(|value| (*field, value.clone()))
+                    })
+                    .collect::<BTreeMap<_, _>>()
+            });
+            let unknown = fields
+                .iter()
+                .filter(|field| references.as_ref().is_none_or(|r| !r.contains_key(**field)))
+                .copied()
+                .collect::<Vec<_>>();
+            let truncated = fields
+                .iter()
+                .filter(|field| {
+                    references.as_ref().is_some_and(|r| {
+                        r.get(**field)
+                            .is_some_and(|value| value["truncated"] == true)
+                    })
+                })
+                .copied()
+                .collect::<Vec<_>>();
+            if references.as_ref().is_some_and(|refs| {
+                refs.values().any(|value| {
+                    value["entries"]
+                        .as_object()
+                        .is_some_and(|entries| !entries.is_empty())
+                })
+            }) {
+                with_sources += 1;
+            }
+            json!({"item_id":id,"quantity":quantity,"status":status,"references":references,
+            "unknown_reference_categories":unknown,"truncated_reference_categories":truncated})
+        })
+        .collect::<Vec<_>>();
+    let coverage = section.map(|section| json!({"coverage":section["coverage"],"provider":section["provider"],
+        "provider_mode":section["provider_mode"],"provider_contract_version":section["provider_contract_version"],
+        "profession_id":section["profession_id"],"reported_item_count":section["reported_item_count"],
+        "retained_item_count":section["entries"].as_object().map(|rows| rows.len())}));
+    Ok(
+        json!({"basis":"chain_external_material_shortfalls","captured_at":source.captured_at,
+        "section_available":section.is_some(),"source_capture_coverage":coverage,
+        "external_item_count":records.len(),"captured_item_count":captured,
+        "uncaptured_item_count":records.len()-captured,"items_reported_by_provider":reported,
+        "items_with_retained_sources":with_sources,"records":records,
+        "dataset_revision_verified":false,"complete_world_sources_verified":false,
+        "current_availability_verified":false,"acquisition_eligibility_verified":false,
+        "ownership_verified":false,"live":false,"game_execution":false}),
+    )
+}
+
 /// Chain leaves are already net shortages: do not subtract the observed stock again.
 pub fn reagent_chain_merchant_plan(
     chain: &Value,

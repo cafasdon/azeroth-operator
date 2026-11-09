@@ -565,6 +565,11 @@ struct RecipeReview {
     /// Annotate chain external shortages with bounded public sources from the verified local catalogue.
     #[serde(default)]
     reagent_chain_catalogue_sources: bool,
+    /// Annotate chain external shortages using owner-captured provider source IDs; no local catalogue required.
+    #[serde(default)]
+    reagent_chain_captured_sources: bool,
+    /// Optional same-character, exact-client/build reference capture; defaults to the recipe capture, not inventory.
+    reagent_source_snapshot_id: Option<String>,
     /// Price saved merchant offers for material shortfalls, or net external leaves in reagent-chain mode.
     #[serde(default)]
     merchant_reagent_plan: bool,
@@ -1088,7 +1093,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. An exact standalone bulk recipe can suggest a bounded reagent chain with explicit producer choices and optional external-material source references from the verified local catalogue. Modeled stock is shared; unsupported evidence still blocks. Offline drafts only, no crafting actions.",
+        description = "Compare saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. An exact standalone bulk recipe can suggest a bounded reagent chain with explicit producer choices and optional external-material references from the local catalogue or owner-captured provider data. Modeled stock is shared; unsupported evidence still blocks. Offline drafts only, no crafting actions.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1102,6 +1107,14 @@ impl Operator {
                 "Merchant snapshot requires a merchant reagent plan"
             );
             let additional = args.additional_recipes.unwrap_or_default();
+            anyhow::ensure!(
+                !args.reagent_chain_captured_sources || args.suggest_reagent_chain,
+                "Captured chain sources require reagent-chain mode"
+            );
+            anyhow::ensure!(
+                args.reagent_source_snapshot_id.is_none() || args.reagent_chain_captured_sources,
+                "Reference capture requires captured chain sources"
+            );
             anyhow::ensure!(
                 !args.reagent_chain_catalogue_sources || args.suggest_reagent_chain,
                 "Chain catalogue sources require reagent-chain mode"
@@ -1170,6 +1183,26 @@ impl Operator {
                         azeroth_operator::forever_catalogue::EquipmentCatalogue::load(path)?;
                     let sources = catalogue.reagent_chain_sources(&review["reagent_chain"])?;
                     review["reagent_chain"]["catalogue_sources"] = sources;
+                }
+                if args.reagent_chain_captured_sources {
+                    let source_capture = args
+                        .reagent_source_snapshot_id
+                        .as_deref()
+                        .map(|id| self.store.read(id))
+                        .transpose()?;
+                    let mut sources = azeroth_operator::analysis::reagent_chain_captured_sources(
+                        &review["reagent_chain"],
+                        &snapshot,
+                        source_capture.as_ref().unwrap_or(&snapshot),
+                    )?;
+                    if sources.is_object() {
+                        sources["snapshot_id"] = serde_json::json!(
+                            args.reagent_source_snapshot_id
+                                .as_ref()
+                                .unwrap_or(&args.snapshot_id)
+                        );
+                    }
+                    review["reagent_chain"]["captured_sources"] = sources;
                 }
             }
             if let Some(id) = args.inventory_snapshot_id {
@@ -1276,7 +1309,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe review requires up to eight distinct saved Forever recipes and compatible captures. Supply crafts or a supported target output quantity per recipe, within 1 to 1000 crafts. A merchant snapshot requires a merchant reagent plan and the same character and client/build. Chain catalogue sources require chain mode and a configured verified local catalogue.",
+                "Recipe review requires up to eight distinct saved Forever recipes and compatible captures. Supply crafts or a supported target output quantity per recipe, within 1 to 1000 crafts. A merchant snapshot requires a merchant reagent plan and the same character and client/build. Chain source options require chain mode; catalogue sources require a verified local catalogue, and an explicit reference capture requires captured sources and the same character/client/build.",
             )]),
         }
     }

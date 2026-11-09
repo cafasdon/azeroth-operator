@@ -8,8 +8,22 @@ missing, secret, invalid or unstable evidence stays unavailable or omitted.
 Inspect this owner-local section with `inspect_snapshot`. No provider dataset,
 network refresh, installation, game action or private name/coordinate capture
 is added. Dataset revision, native behaviour, completeness and availability
-remain unqualified; chain joins and routing remain unfinished.
+remain unqualified. Chain joins are available through the opt-in below; source
+entity resolution and routing remain unfinished.
 [Offline evidence](../../docs/recipe-item-sources-verification-2026-11-09.md).
+
+`reagent_chain_captured_sources: true` adds `reagent_chain.captured_sources` to
+an exact standalone chain review. It joins net external shortages by exact item
+ID to the recipe capture's saved provider references. An explicit
+`reagent_source_snapshot_id` can select another same-character, exact-client/
+build capture, even older or from another profession. Its timestamp/coverage
+remain separate from inventory and recipe provenance. Missing capture, absent
+item, provider miss and unavailable read are distinct; missing/truncated source
+categories remain visible. No catalogue/provider/network is needed at query
+time. Blocked drafts return null after explicit-reference identity checks.
+These annotations do not alter stock, quotes, catalogue annotations or verified
+eligibility, and do not execute an acquisition route.
+[Offline evidence](../../docs/chain-captured-sources-verification-2026-11-09.md).
 
 `review_forever_recipe` can add `reagent_chain_catalogue_sources: true` in exact
 standalone chain mode. This requires a configured verified local catalogue and

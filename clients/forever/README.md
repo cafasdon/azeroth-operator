@@ -26,10 +26,47 @@ These are historical provider references, not live NPC sightings, available
 stock, reachable routes or eligibility. No names, coordinates or free-form
 provider errors enter this section. Contract/mode do not establish dataset
 revision or accuracy. The provider and its database are not bundled; no automatic
-download or installation is added. These captures do not yet join into chain
-source annotations, stock/quote planning or routing. Native acceptance and full
-world/acquisition data remain open.
+download or installation is added. Chain source annotations can use them as
+described below; they do not change stock/quote planning or provide routing.
+Native acceptance and full world/acquisition data remain open.
 See [ADR 025](../../docs/ADR-025-optional-local-recipe-item-sources.md).
+
+For an exact standalone chain review, add `reagent_chain_captured_sources: true`
+to join its net external item shortages to saved provider references. This adds
+`reagent_chain.captured_sources` without requiring a configured public catalogue
+or a running provider. Omitted/false leaves output unchanged. Optionally supply
+`reagent_source_snapshot_id` for another owner-store capture with the exact same
+character name/realm and client family/variant/build/interface. Without that
+selector, use the recipe capture even if a newer inventory has references.
+Explicit older or different-profession reference captures are accepted: source
+IDs are joined by item ID, and no current validity or recipe knowledge is inferred.
+The selector requires the opt-in; both require exact standalone chain mode.
+
+Reference timestamp, snapshot ID and `source_capture_coverage` identify the
+chosen saved section. Chain recipe/inventory timestamps remain independent.
+`captured_item_count` includes any matched row, even a failed/provider-miss row;
+`items_reported_by_provider` counts `reported` rows, including those with no
+retained categories; `items_with_retained_sources` counts only rows with a
+nonempty retained source-ID map. These counters do not prove complete sources.
+
+Record statuses distinguish `capture_unavailable`, `item_not_captured`,
+`not_in_provider`, `unavailable` and `reported`. Missing item rows may reflect
+the original capture budget or a different observed reagent subset, not absence
+from the world. A reported row has `references` containing only its observed
+categories, plus `unknown_reference_categories` and
+`truncated_reference_categories`. An observed zero-count category is distinct
+from an omitted category. All already-net quantities are retained without
+subtracting inventory again. Blocked chains return null annotations, while
+complete empty-demand chains return empty records; explicit bad selectors still
+reject when blocked.
+
+Combine with stock preparation, producer choices, merchant quotes or
+`reagent_chain_catalogue_sources` independently. Captured and public catalogue
+references remain separate; neither replaces or automatically resolves conflicts
+with the other. Dataset revision, complete sources, availability, eligibility
+and ownership stay unverified. No names, coordinates or other private snapshot
+sections are added to the source projection, and no game action is performed.
+See [ADR 026](../../docs/ADR-026-chain-captured-sources.md).
 
 For one exact bulk recipe, `review_forever_recipe` can take
 `suggest_reagent_chain: true` with its normal `crafts` or

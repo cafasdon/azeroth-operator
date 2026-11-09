@@ -193,6 +193,13 @@ truncation and unavailable providers remain explicit; no provider database is
 bundled, and native behaviour and dataset completeness remain unqualified.
 [Offline evidence](docs/recipe-item-sources-verification-2026-11-09.md).
 
+Chain reviews can add `reagent_chain_captured_sources: true` to join net external
+shortages to those saved references without a catalogue or installed provider
+at query time. An explicit `reagent_source_snapshot_id` must match character and
+client/build; otherwise references come from the recipe capture. Inventory never
+silently replaces their provenance. Missing and truncated evidence stays explicit.
+[Offline evidence](docs/chain-captured-sources-verification-2026-11-09.md).
+
 `inspect_snapshot` can review selected saved buyback entry quotes against the
 same captured wallet, with a copper reserve. Missing quotes and wallet data stay
 explicit. This is a cost comparison, not a repurchase plan or eligibility check.

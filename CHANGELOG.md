@@ -1,5 +1,9 @@
 # Changelog
 
+- Join recipe-chain external shortages to saved owner-local provider references,
+  preserving capture provenance, partial/truncated categories and identity
+  guards independently of stock, quotes and catalogue annotations.
+
 - Add optional source-only capture of bounded recipe reagent source IDs through
   a separately installed compatible local provider, with strict owner-store
   inspection, context guards and explicit missing/truncated evidence.
