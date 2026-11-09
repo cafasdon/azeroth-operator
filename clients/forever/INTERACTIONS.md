@@ -2401,6 +2401,10 @@ slots by base item ID and reports observed shortfalls, excess and unexpected
 items. Excess or unexpected items prove a mismatch even with unreadable slots.
 So does having more distinct item IDs with shortfalls than unreadable slots,
 since each normal slot can account for at most one item ID.
+The review also reports `minimum_additional_snapshot_slots` and
+`snapshot_slots_can_fit_shortfalls` using the snapshot format's u32 quantity
+ceiling per slot. These describe whether the shortfalls fit in the saved
+format. They leave the match verdict and native stack limits independent.
 Otherwise exact match requires all six slots to be readable item rows. A
 partial capture can leave the match unknown. A missing offer gives a null
 review. These checks describe the saved outgoing quantities only.

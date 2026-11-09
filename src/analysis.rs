@@ -2443,16 +2443,19 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
     }
     let (slots, mut quantities) = observed_trade_offer_quantities(section);
     let mut short_item_count = 0;
+    let mut minimum_additional_snapshot_slots = 0;
     let mut excess = false;
     let items: Vec<_> = requirements
         .iter()
         .map(|row| {
             let expected = row.quantity.get();
             let observed = quantities.remove(&row.item_id.get()).unwrap_or_default();
-            short_item_count += usize::from(observed < expected);
+            let shortfall = expected.saturating_sub(observed);
+            short_item_count += usize::from(shortfall > 0);
+            minimum_additional_snapshot_slots += shortfall.div_ceil(u64::from(u32::MAX));
             excess |= observed > expected;
             json!({"item_id":row.item_id,"expected_quantity":expected,
-                "observed_quantity":observed,"observed_shortfall":expected.saturating_sub(observed),
+                "observed_quantity":observed,"observed_shortfall":shortfall,
                 "observed_excess":observed.saturating_sub(expected)})
         })
         .collect();
@@ -2465,6 +2468,8 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
     };
     json!({"items":items,"unexpected_observed_quantities":quantities,
         "unreadable_or_empty_slots":unreadable_slots,"short_item_id_count":short_item_count,
+        "minimum_additional_snapshot_slots":minimum_additional_snapshot_slots,
+        "snapshot_slots_can_fit_shortfalls":minimum_additional_snapshot_slots <= unreadable_slots as u64,
         "captured_offer_matches_expected":exact_match,
         "current_offer_verified":false,"trade_completion_verified":false,"game_execution":false})
 }
