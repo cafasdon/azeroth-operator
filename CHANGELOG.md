@@ -1,5 +1,7 @@
 # Changelog
 
+- Explain saved Forever bag space changes by numeric bag slot.
+
 - Compare saved Forever repair quotes and wallet shortfalls across captures.
 
 - Compare saved Forever merchant buyback entries independently of slot order.

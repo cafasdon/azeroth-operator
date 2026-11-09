@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Saved carried bag space comparisons list changed bag slots in numeric
+order, with before and after readings and signed capacity changes.
+One-sided slots retain their known reading and leave deltas unknown.
+A missing bag-capacity section leaves the slot comparison unknown.
+The comparison does not establish bag item continuity.
+
 Use `compare_snapshots.repair_quote_changes` to compare saved repair-all
 quotes and affordability. The report shows each capture's repair status
 and signed changes in quote, wallet shortfall and copper remaining after

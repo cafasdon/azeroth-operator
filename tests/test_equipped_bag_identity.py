@@ -28,6 +28,11 @@ class EquippedBagTests(unittest.IsolatedAsyncioTestCase):
             missing=deepcopy(value);del missing['sections']['bag_capacity'];missing_key=store.ingest(missing)
             upper=deepcopy(value);upper['sections']['bag_capacity']['1']['equipped_item']={'item_id':4294967295,'inventory_slot':255}
             upper_key=store.ingest(upper)
+            changed=deepcopy(value)
+            changed['sections']['bag_capacity']['0']['free_slots']=2
+            changed['sections']['bag_capacity']['1'].update(total_slots=12,free_slots=4)
+            changed['sections']['bag_capacity']['5']={'total_slots':4,'free_slots':3}
+            changed_key=store.ingest(changed)
             other=deepcopy(value);other['character']['name']='PRIVATE_OTHER'
             other_key=SnapshotStore(Path(foreign)).ingest(other)
             bad_keys=[]
@@ -74,6 +79,18 @@ class EquippedBagTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await call('character_summary',snapshot_id=old_key))['equipped_bag_item_observations']['entries'],[])
                     self.assertIsNone((await call('character_summary',snapshot_id=missing_key))['equipped_bag_item_observations'])
                     self.assertEqual((await call('inspect_snapshot',snapshot_id=upper_key,section='bag_capacity'))['data']['1']['equipped_item']['inventory_slot'],255)
+                    async def changes(after):
+                        result=await call('compare_snapshots',before_id=key,after_id=after)
+                        return result['carried_bag_space_change']['bag_slot_changes']
+                    rows=await changes(changed_key)
+                    self.assertEqual([row['bag'] for row in rows],[0,1,5])
+                    self.assertEqual([(row['total_slots_delta'],row['free_slots_delta']) for row in rows],
+                                     [(0,2),(4,4),(None,None)])
+                    self.assertIsNone(rows[2]['before'])
+                    self.assertTrue(all(row['same_bag_item_verified'] is False for row in rows))
+                    self.assertEqual((await changes(upper_key))[0]['free_slots_delta'],0)
+                    self.assertEqual(await changes(key),[])
+                    self.assertIsNone(await changes(missing_key))
                     for bad in [*bad_keys,other_key]:
                         await call('inspect_snapshot',True,snapshot_id=bad,section='bag_capacity')
             self.assertEqual(before,{p:p.read_bytes() for p in before})

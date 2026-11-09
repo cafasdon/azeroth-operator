@@ -3531,6 +3531,7 @@ pub fn compare_observations(
             "free_slots_delta":delta("free_slots"),
             "unknown_family_free_slots_delta":delta("unknown_family_free_slots"),
             "family_space_changes":family_changes,
+            "bag_slot_changes":compare_bag_capacity_slots(before, after),
             "before":previous_space,
             "after":current_space,
         });
@@ -4480,6 +4481,32 @@ fn compare_reported_spell_readings<T: Ord>(
                     json!({"spell_id":id,
                         "before_readings":old.iter().map(&describe).collect::<Vec<_>>(),
                         "after_readings":new.iter().map(&describe).collect::<Vec<_>>()})
+                })
+            })
+            .collect(),
+    )
+}
+
+fn compare_bag_capacity_slots(before: &Snapshot, after: &Snapshot) -> Option<Vec<Value>> {
+    let previous = before.sections.get("bag_capacity")?.as_object()?;
+    let current = after.sections.get("bag_capacity")?.as_object()?;
+    let bags: BTreeSet<u32> = previous
+        .keys()
+        .chain(current.keys())
+        .map(|key| key.parse())
+        .collect::<Result<_, _>>()
+        .ok()?;
+    Some(
+        bags.into_iter()
+            .filter_map(|bag| {
+                let key = bag.to_string();
+                let old = previous.get(&key);
+                let new = current.get(&key);
+                let delta = |field: &str| Some(new?[field].as_i64()? - old?[field].as_i64()?);
+                (old != new).then(|| {
+                    json!({"bag":bag,"before":old,"after":new,
+            "total_slots_delta":delta("total_slots"),"free_slots_delta":delta("free_slots"),
+            "same_bag_item_verified":false})
                 })
             })
             .collect(),
