@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise section coverage across all matching saves independently of snapshot paging.
+
 - Inspect selected snapshot section coverage without returning payloads or unavailability reason text.
 
 - Resolve an explicit saved character to the newest capture containing required sections.

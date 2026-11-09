@@ -77,6 +77,19 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     unavailable['captured_at']='2025-01-03T00:00:00Z'
                     unavailable['unavailable']={'weapon_enchants':'PRIVATE_REASON'}
                     unavailable_id=store.ingest(unavailable)
+                    for offset in (0,1,99):
+                        coverage=await call('list_snapshots',family='forever',limit=1,offset=offset,
+                            coverage_summary_sections=['weapon_enchants','player_resources'])
+                        self.assertEqual(coverage['section_coverage_summary'],{
+                            'matching_snapshot_count':6,'sections':{
+                                'weapon_enchants':{'observed':3,'reported_unavailable':1,'not_recorded':2},
+                                'player_resources':{'observed':0,'reported_unavailable':0,'not_recorded':6}}})
+                        self.assertNotIn('PRIVATE_REASON',json.dumps(coverage))
+                    latest_coverage=await call('list_snapshots',family='forever',latest_per_character=True,
+                        coverage_summary_sections=['weapon_enchants'])
+                    self.assertEqual(latest_coverage['section_coverage_summary'],{
+                        'matching_snapshot_count':1,'sections':{
+                            'weapon_enchants':{'observed':0,'reported_unavailable':1,'not_recorded':0}}})
                     view=await call('inspect_snapshot',snapshot_id=unavailable_id,
                         coverage_sections=['weapon_enchants','equipment','player_resources'])
                     self.assertEqual(view['section_coverage'],{

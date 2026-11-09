@@ -1677,6 +1677,7 @@ pub struct CaptureFilters<'a> {
     pub latest_per_character: bool,
     pub required_sections: Option<&'a [String]>,
     pub any_missing_sections: Option<&'a [String]>,
+    pub coverage_summary_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
@@ -1898,6 +1899,7 @@ impl Store {
             latest_per_character,
             required_sections,
             any_missing_sections,
+            coverage_summary_sections,
             inventory_item,
             inventory_requirements,
             loot_observation,
@@ -1972,9 +1974,13 @@ impl Store {
             flight_departure_map_id,
             flight_affordable_only,
         } = query;
-        for sections in [required_sections, any_missing_sections]
-            .into_iter()
-            .flatten()
+        for sections in [
+            required_sections,
+            any_missing_sections,
+            coverage_summary_sections,
+        ]
+        .into_iter()
+        .flatten()
         {
             validate_section_names(sections)?;
         }
@@ -2444,8 +2450,21 @@ impl Store {
                 "Invalid character identity"
             );
         }
+        let coverage_summary = |observed: &[[usize; 3]], matching_count| {
+            coverage_summary_sections.map(|names| {
+                let sections: BTreeMap<_, _> = names.iter().enumerate().map(|(index, name)| {
+                    let [observed, unavailable, missing] = observed.get(index).copied().unwrap_or_default();
+                    (name, json!({"observed":observed,"reported_unavailable":unavailable,"not_recorded":missing}))
+                }).collect();
+                json!({"matching_snapshot_count":matching_count,"sections":sections})
+            })
+        };
         if !self.root.exists() {
-            return Ok(json!({"snapshots":[],"has_more":false,"invalid_count":0}));
+            let mut result = json!({"snapshots":[],"has_more":false,"invalid_count":0});
+            if let Some(summary) = coverage_summary(&[], 0) {
+                result["section_coverage_summary"] = summary;
+            }
+            return Ok(result);
         }
         // Resolve once per scan; every file still gets containment/hash/schema checks.
         let root = self.root.canonicalize()?;
@@ -3541,7 +3560,12 @@ impl Store {
                             summary["selected_recipe"]["cooldown"] = recipe["cooldown"].clone();
                         }
                     }
-                    rows.push((s.captured_at, id.to_owned(), summary));
+                    let coverage: Vec<_> = coverage_summary_sections
+                        .into_iter()
+                        .flatten()
+                        .map(|name| s.section_capture_status(name))
+                        .collect();
+                    rows.push((s.captured_at, id.to_owned(), summary, coverage));
                 }
                 Ok(_) => (),
                 Err(_) => invalid += 1,
@@ -3550,8 +3574,23 @@ impl Store {
         if latest_per_character {
             let ids: std::collections::BTreeSet<_> =
                 latest.values().map(|(_, id)| id.as_str()).collect();
-            rows.retain(|(_, id, _)| ids.contains(id.as_str()));
+            rows.retain(|(_, id, _, _)| ids.contains(id.as_str()));
         }
+        let coverage = coverage_summary_sections.map(|names| {
+            let mut counts = vec![[0; 3]; names.len()];
+            for (_, _, _, statuses) in &rows {
+                for (count, status) in counts.iter_mut().zip(statuses) {
+                    let index = match *status {
+                        "observed" => 0,
+                        "reported_unavailable" => 1,
+                        _ => 2,
+                    };
+                    count[index] += 1;
+                }
+            }
+            counts
+        });
+        let coverage = coverage_summary(coverage.as_deref().unwrap_or_default(), rows.len());
         let purchase_cost = |summary: &Value| {
             summary["merchant_match"]["lowest_cost_quantity_plan"]["plan"]["required_copper"]
                 .as_u64()
@@ -3573,9 +3612,13 @@ impl Store {
             .into_iter()
             .skip(offset)
             .take(limit)
-            .map(|(_, _, summary)| summary)
+            .map(|(_, _, summary, _)| summary)
             .collect();
-        Ok(json!({"snapshots":snapshots,"has_more":has_more,"invalid_count":invalid}))
+        let mut result = json!({"snapshots":snapshots,"has_more":has_more,"invalid_count":invalid});
+        if let Some(summary) = coverage {
+            result["section_coverage_summary"] = summary;
+        }
+        Ok(result)
     }
     pub fn ingest(&self, snapshot: &Snapshot) -> Result<String> {
         snapshot.validate()?;

@@ -17,6 +17,10 @@ Use `inspect_snapshot.coverage_sections` with distinct recognised names
 to check those statuses in one saved capture. This view returns snapshot
 metadata and the requested statuses. It omits section payloads and
 reason text and cannot be combined with a section data request.
+Set `list_snapshots.coverage_summary_sections` to count those statuses
+across all matching saves. The summary applies the same filters and
+newest-per-character selection as the list, then counts before paging.
+It omits section contents and unavailability reasons.
 The Rust MCP `capabilities.snapshot_section_schema` lists recognised
 section names and the names whose captured payloads require Forever.
 These are reader rules. Capture availability still depends on the saved
