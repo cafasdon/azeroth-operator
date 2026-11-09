@@ -2697,6 +2697,7 @@ pub struct ComparisonSelectors {
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
     pub player_aura_changes: bool,
+    pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
     pub player_trade_offer_changes: bool,
@@ -3071,12 +3072,20 @@ pub fn compare_observations(
                     "resource_events_verified":false,"readiness_verified":false})
             }).unwrap_or(Value::Null);
     }
+    ensure!(
+        selectors.player_aura_spell_id.is_none() || selectors.player_aura_changes,
+        "Player aura spell ID requires the aura comparison"
+    );
     if selectors.player_aura_changes {
         ensure!(
             before.client.family == crate::Family::Forever,
             "Player aura comparison requires Forever"
         );
-        comparison["player_aura_changes"] = compare_player_auras(before, after);
+        comparison["player_aura_changes"] = compare_player_auras(
+            before,
+            after,
+            selectors.player_aura_spell_id.map(|id| u64::from(id.get())),
+        );
     }
     if selectors.selected_recipe_changes {
         ensure!(
@@ -4311,22 +4320,27 @@ fn compare_reported_spell_readings<T: Ord>(
     )
 }
 
-fn compare_player_auras(before: &Snapshot, after: &Snapshot) -> Value {
-    fn applications(snapshot: &Snapshot, group: &str) -> Option<BTreeMap<u64, Vec<Option<u64>>>> {
-        let rows =
-            snapshot.sections.get("player_auras")?["groups"][group]["entries"].as_object()?;
-        let mut by_id = BTreeMap::<_, Vec<_>>::new();
-        for row in rows.values() {
-            by_id
-                .entry(row["spell_id"].as_u64()?)
-                .or_default()
-                .push(row["applications"].as_u64());
-        }
-        for counts in by_id.values_mut() {
-            counts.sort_unstable();
-        }
-        Some(by_id)
-    }
+fn compare_player_auras(before: &Snapshot, after: &Snapshot, spell_id: Option<u64>) -> Value {
+    let applications =
+        |snapshot: &Snapshot, group: &str| -> Option<BTreeMap<u64, Vec<Option<u64>>>> {
+            let rows =
+                snapshot.sections.get("player_auras")?["groups"][group]["entries"].as_object()?;
+            let mut by_id = BTreeMap::<_, Vec<_>>::new();
+            for row in rows.values() {
+                let id = row["spell_id"].as_u64()?;
+                if spell_id.is_some_and(|requested| requested != id) {
+                    continue;
+                }
+                by_id
+                    .entry(id)
+                    .or_default()
+                    .push(row["applications"].as_u64());
+            }
+            for counts in by_id.values_mut() {
+                counts.sort_unstable();
+            }
+            Some(by_id)
+        };
     let compare_group = |group| {
         let old = applications(before, group)?;
         let new = applications(after, group)?;

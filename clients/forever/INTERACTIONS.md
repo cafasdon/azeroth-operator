@@ -13,6 +13,8 @@ IDs in numeric order and counts all changed IDs. Application lists
 retain duplicates and unknown counts and ignore row ordering. A group
 missing from either capture has no comparison. The result describes
 saved observations and leaves aura application or removal events unverified.
+Set `player_aura_spell_id` with the comparison to restrict both groups
+to an exact spell ID before the display limit is applied.
 
 Use `list_snapshots.player_resource` with `resource` set to `health` or
 `primary_power` and at least one predicate. Whole `minimum_percent` and

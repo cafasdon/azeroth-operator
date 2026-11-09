@@ -544,6 +544,8 @@ struct Compare {
     /// Compare saved Forever aura observations without inferring application or removal events.
     #[serde(default)]
     player_aura_changes: bool,
+    /// Restrict the saved aura comparison to this exact spell ID.
+    player_aura_spell_id: Option<std::num::NonZeroU32>,
     /// Compare reported group categories across two saved Forever captures.
     #[serde(default)]
     group_context_changes: bool,
@@ -1844,6 +1846,7 @@ impl Operator {
                     profession_spell_changes: args.profession_spell_changes,
                     player_resource_changes: args.player_resource_changes,
                     player_aura_changes: args.player_aura_changes,
+                    player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
                     player_trade_offer_changes: args.player_trade_offer_changes,

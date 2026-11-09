@@ -89,9 +89,9 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
                                      [valid[3][0]])
                     await search('helpful', 0, error=True)
                     await search('helpful', 100, family='retail', error=True)
-                    async def compare(before, after):
+                    async def compare(before, after, **options):
                         result = await session.call_tool('compare_snapshots', {
-                            'before_id': before, 'after_id': after, 'player_aura_changes': True})
+                            'before_id': before, 'after_id': after, 'player_aura_changes': True, **options})
                         self.assertFalse(result.isError, result)
                         return json.loads(result.content[0].text)['player_aura_changes']
                     changed = deepcopy(base)
@@ -110,6 +110,18 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(bounded['changed_spell_count'], 258)
                     self.assertEqual(len(bounded['changes']), 50)
                     self.assertTrue(bounded['truncated'])
+                    exact = await compare(valid[1][0], valid[3][0], player_aura_spell_id=4294967294)
+                    self.assertEqual(exact['helpful'], {'changed_spell_count': 1, 'truncated': False,
+                        'changes': [{'spell_id': 4294967294, 'before_applications': [],
+                                     'after_applications': [4294967295]}]})
+                    self.assertIsNone(exact['harmful'])
+                    unchanged = await compare(valid[1][0], valid[3][0], player_aura_spell_id=99)
+                    self.assertEqual(unchanged['helpful']['changes'], [])
+                    for options in [{'player_aura_spell_id': 100},
+                                    {'player_aura_changes': True, 'player_aura_spell_id': 0}]:
+                        reply = await session.call_tool('compare_snapshots', {
+                            'before_id': valid[1][0], 'after_id': valid[3][0], **options})
+                        self.assertTrue(reply.isError)
                     for key, value in valid:
                         response = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(response.isError)

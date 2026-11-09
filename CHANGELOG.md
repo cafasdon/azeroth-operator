@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare a specific saved Forever aura even when the full changes list is truncated.
+
 - Compare saved Forever aura rows and application counts by group and spell ID.
 
 - Filter saved Forever aura matches by observed application count.
