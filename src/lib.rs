@@ -3746,6 +3746,29 @@ impl Store {
                         summary["quest_match"]["waypoint_map_id"] = json!(map);
                     }
                     if quest_on_captured_map {
+                        let mut local: Vec<_> = s
+                            .sections
+                            .get("quests")
+                            .and_then(Value::as_object)
+                            .into_iter()
+                            .flatten()
+                            .filter(|(key, quest)| {
+                                quest_key.as_ref().is_none_or(|wanted| wanted == *key)
+                                    && matches_quest(quest)
+                            })
+                            .filter_map(|(key, quest)| Some((key.parse::<u32>().ok()?, quest)))
+                            .collect();
+                        local.sort_unstable_by_key(|(id, _)| *id);
+                        summary["quest_match"]["matching_quests_truncated"] =
+                            json!(local.len() > 20);
+                        summary["quest_match"]["matching_quests"] = json!(
+                            local
+                                .into_iter()
+                                .take(20)
+                                .map(|(id, quest)| json!({"quest_id":id,"title":quest["title"].as_str().filter(|title| title.len() <= 256),
+                                "readiness":analysis::quest_readiness(quest)}))
+                                .collect::<Vec<_>>()
+                        );
                         summary["quest_match"]["on_captured_player_map"] = json!(true);
                     }
                     if filter_quest_timer {

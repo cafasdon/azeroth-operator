@@ -127,6 +127,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(local[0]['quest_match']['quest_count'],1)
                     self.assertEqual(local[0]['quest_match']['waypoint_map_id'],1414)
                     self.assertIs(local[0]['quest_match']['on_captured_player_map'],True)
+                    self.assertEqual(local[0]['quest_match']['matching_quests'],
+                                     [{'quest_id':3,'title':'Quest 3','readiness':'ready'}])
+                    self.assertFalse(local[0]['quest_match']['matching_quests_truncated'])
                     self.assertEqual(await timed(quest_on_captured_map=True,quest_id=10),[])
                     await timed(error=True,quest_on_captured_map=True,quest_waypoint_map_id=1414)
                     await timed(error=True,family='retail',quest_on_captured_map=True)

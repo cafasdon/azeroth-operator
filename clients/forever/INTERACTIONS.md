@@ -3099,3 +3099,8 @@ Set `list_snapshots.quest_on_captured_map: true` to find saved quests whose
 next waypoint shares the player map recorded in that capture. You can also
 filter by the captured map name, quest readiness, or timer. Captures with a
 missing player map or no matching recorded waypoint are excluded.
+
+Local-map results also show up to 20 matching quest IDs, titles, and
+recorded readiness states in numeric quest ID order. The match count covers
+all matching quests. The response marks a shortened shortlist and omits
+labels over 256 bytes.
