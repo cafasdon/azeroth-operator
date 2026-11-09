@@ -64,6 +64,19 @@ class PetActionBarTests(unittest.IsolatedAsyncioTestCase):
                     async def call(tool,**args):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
+                    async def search(spell_id, **flags):
+                        return (await call('list_snapshots',family='forever',
+                            pet_action_spell={'spell_id':spell_id,**flags}))['snapshots']
+                    active=await search(101,is_active=True,autocast_allowed=True,autocast_enabled=True,in_range=True)
+                    self.assertEqual([row['snapshot_id'] for row in active],[keys[0]])
+                    self.assertEqual(active[0]['pet_action_spell_match'],{
+                        'matches':[{'slot':2,'observation':value['sections']['pet_action_bar']['entries']['2']}],
+                        'cast_eligibility_verified':False,'live':False})
+                    self.assertEqual(await search(102,autocast_enabled=False),[])
+                    self.assertEqual([row['snapshot_id'] for row in await search(102,in_range=False)],[keys[0]])
+                    maximum_matches=await search(2**32-1,autocast_enabled=False)
+                    self.assertEqual([row['slot'] for row in maximum_matches[0]['pet_action_spell_match']['matches']],
+                                     list(range(1,11)))
                     self.assertEqual((await call('inspect_snapshot',snapshot_id=keys[0],section='pet_action_bar'))['data'],value['sections']['pet_action_bar'])
                     summary=(await call('character_summary',snapshot_id=keys[0]))['pet_action_bar_observations']
                     self.assertEqual(summary['observed_slots'],3);self.assertEqual(summary['unobserved_slots'],7)

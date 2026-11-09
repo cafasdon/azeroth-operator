@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet action spells by exact ID and captured flags.
+
 - Verify saved buyback search and partial quotes through the packaged Forever fixture.
 
 - Explain saved Forever bag space changes by numeric bag slot.

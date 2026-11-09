@@ -449,6 +449,8 @@ struct List {
     weapon_enchant: Option<azeroth_operator::WeaponEnchantFilter>,
     /// Find an exact item in a saved Forever buyback list, optionally by quantity and whole-entry price.
     merchant_buyback: Option<azeroth_operator::MerchantBuybackFilter>,
+    /// Find a saved Forever pet action spell by exact ID and optional observed flags.
+    pet_action_spell: Option<azeroth_operator::PetActionSpellFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
@@ -2107,6 +2109,7 @@ impl Operator {
                 player_aura: args.player_aura,
                 weapon_enchant: args.weapon_enchant,
                 merchant_buyback: args.merchant_buyback,
+                pet_action_spell: args.pet_action_spell,
                 group_context: args.group_context,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,

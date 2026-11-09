@@ -1502,6 +1502,46 @@ pub struct MerchantBuybackFilter {
     minimum_remaining_wallet_copper: Option<u64>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PetActionSpellFilter {
+    spell_id: std::num::NonZeroU32,
+    is_active: Option<bool>,
+    autocast_allowed: Option<bool>,
+    autocast_enabled: Option<bool>,
+    in_range: Option<bool>,
+}
+
+impl PetActionSpellFilter {
+    fn observation_match(&self, section: &Value) -> Option<Value> {
+        let mut matches: BTreeMap<u32, &Value> = BTreeMap::new();
+        for (slot, row) in section["entries"].as_object()? {
+            if row["kind"] == "spell"
+                && row["spell_id"].as_u64() == Some(u64::from(self.spell_id.get()))
+                && [
+                    ("is_active", self.is_active),
+                    ("autocast_allowed", self.autocast_allowed),
+                    ("autocast_enabled", self.autocast_enabled),
+                    ("in_range", self.in_range),
+                ]
+                .into_iter()
+                .all(|(field, expected)| {
+                    expected.is_none_or(|flag| row[field].as_bool() == Some(flag))
+                })
+            {
+                matches.insert(slot.parse().ok()?, row);
+            }
+        }
+        (!matches.is_empty()).then(|| {
+            let rows: Vec<_> = matches
+                .into_iter()
+                .map(|(slot, row)| json!({"slot":slot,"observation":row}))
+                .collect();
+            json!({"matches":rows,"cast_eligibility_verified":false,"live":false})
+        })
+    }
+}
+
 impl MerchantBuybackFilter {
     fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
         let section = snapshot.sections.get("merchant_buyback")?;
@@ -1746,6 +1786,7 @@ pub struct CaptureFilters<'a> {
     pub player_aura: Option<PlayerAuraFilter>,
     pub weapon_enchant: Option<WeaponEnchantFilter>,
     pub merchant_buyback: Option<MerchantBuybackFilter>,
+    pub pet_action_spell: Option<PetActionSpellFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
@@ -1969,6 +2010,7 @@ impl Store {
             player_aura,
             weapon_enchant,
             merchant_buyback,
+            pet_action_spell,
             group_context,
             profession_spell_id,
             recipe: filters,
@@ -2163,6 +2205,10 @@ impl Store {
                     .all(|copper| copper <= 9_999_999_999_999)
             }),
             "Merchant buyback search requires Forever and a valid copper limit"
+        );
+        ensure!(
+            pet_action_spell.is_none() || family == Family::Forever,
+            "Pet action spell search requires Forever"
         );
         if let Some(filter) = &player_resource {
             ensure!(
@@ -2738,6 +2784,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if merchant_buyback.is_some() && buyback_match.is_none() {
+                        continue;
+                    }
+                    let pet_action_match = pet_action_spell.as_ref().and_then(|filter| {
+                        filter.observation_match(s.sections.get("pet_action_bar")?)
+                    });
+                    if pet_action_spell.is_some() && pet_action_match.is_none() {
                         continue;
                     }
                     let pvp_rank_match = if filter_pvp {
@@ -3533,6 +3585,9 @@ impl Store {
                     }
                     if let Some(observation) = buyback_match {
                         summary["merchant_buyback_match"] = observation;
+                    }
+                    if let Some(observation) = pet_action_match {
+                        summary["pet_action_spell_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

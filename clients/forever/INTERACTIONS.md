@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `list_snapshots.pet_action_spell` with an exact `spell_id` to find
+saved pet bar slots. Optional `is_active`, `autocast_allowed`,
+`autocast_enabled` and `in_range` flags must match on the same row.
+A missing flag cannot satisfy a predicate, including false. Results
+describe the saved action bar and leave current cast eligibility unverified.
+
 Saved carried bag space comparisons list changed bag slots in numeric
 order, with before and after readings and signed capacity changes.
 One-sided slots retain their known reading and leave deltas unknown.
