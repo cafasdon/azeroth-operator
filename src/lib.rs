@@ -867,6 +867,9 @@ pub struct InventoryRequirement {
 #[serde(deny_unknown_fields)]
 pub struct InventoryRequirementsFilter {
     pub storage: InventoryStorage,
+    /// Require all quantities in one recorded bag or bank container.
+    #[schemars(range(min = 0, max = 64))]
+    pub container_id: Option<u8>,
     pub items: Vec<InventoryRequirement>,
 }
 
@@ -906,9 +909,12 @@ impl InventoryRequirementsFilter {
             "short_item_count":short_item_count,
             "all_requirements_covered_by_observed_quantities":short_item_count.map(|count| count == 0),
             "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false});
-        if bank_plan {
+        if let Some(id) = self.container_id {
+            report["container_id"] = json!(id);
+        }
+        if bank_plan && self.container_id.is_none() {
             report["bank_withdrawal_plan"] = json!(quantities.as_ref().map(|bags| {
-                let bank_stock = |storage| Self { storage, items:self.items.clone() }
+                let bank_stock = |storage| Self { storage, container_id:None, items:self.items.clone() }
                     .observed_quantities(snapshot);
                 let character = bank_stock(InventoryStorage::CharacterBank);
                 let account = bank_stock(InventoryStorage::AccountBank);
@@ -961,6 +967,11 @@ impl InventoryRequirementsFilter {
             self.items.iter().all(|item| ids.insert(item.item_id)),
             "Inventory requirements contain duplicate item IDs"
         );
+        ensure!(
+            self.container_id
+                .is_none_or(|id| id <= 64 && !matches!(self.storage, InventoryStorage::Equipment)),
+            "Container filtering requires a bag or bank container ID from 0 to 64"
+        );
         Ok(())
     }
 
@@ -984,7 +995,14 @@ impl InventoryRequirementsFilter {
                 }
             }
             _ => {
-                for container in section.values() {
+                let selected = self.container_id.map(|id| id.to_string());
+                if let Some(id) = &selected {
+                    section.get(id)?;
+                }
+                for (_, container) in section
+                    .iter()
+                    .filter(|(id, _)| selected.as_ref().is_none_or(|selected| *id == selected))
+                {
                     for item in container.as_object()?.values() {
                         if let Some(quantity) = quantities.get_mut(&item["item_id"].as_u64()?) {
                             let count = item["count"].as_u64()?;
@@ -1014,7 +1032,7 @@ impl InventoryRequirementsFilter {
                 "observed_quantity": observed,
             }));
         }
-        Some(json!({
+        let mut observation = json!({
             "storage": self.storage,
             "basis": "same_snapshot_single_storage",
             "items": items,
@@ -1026,7 +1044,12 @@ impl InventoryRequirementsFilter {
             "craftability_verified": false,
             "transferability_verified": false,
             "game_execution": false,
-        }))
+        });
+        if let Some(id) = self.container_id {
+            observation["container_id"] = json!(id);
+            observation["basis"] = json!("same_snapshot_single_container");
+        }
+        Some(observation)
     }
 }
 
@@ -1220,6 +1243,7 @@ mod inventory_requirements_filter_tests {
     fn filter(storage: InventoryStorage, items: &[(u32, u64)]) -> InventoryRequirementsFilter {
         InventoryRequirementsFilter {
             storage,
+            container_id: None,
             items: items
                 .iter()
                 .map(|&(id, quantity)| InventoryRequirement {
@@ -2232,7 +2256,8 @@ impl Store {
                     && inventory_requirements_shortfall_only
                     && inventory_requirements
                         .as_ref()
-                        .is_some_and(|filter| matches!(filter.storage, InventoryStorage::Bags))),
+                        .is_some_and(|filter| matches!(filter.storage, InventoryStorage::Bags)
+                            && filter.container_id.is_none())),
             "Inventory bank planning requires a Forever bag shortfall search"
         );
         if let Some(filter) = &inventory_requirements {

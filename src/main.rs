@@ -2970,6 +2970,7 @@ impl Operator {
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
+                container_id: None,
                 items,
             }
         });

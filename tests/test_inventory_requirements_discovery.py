@@ -29,6 +29,7 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             store.ingest(sample('A',1,[(100,10)])); store.ingest(sample('B',2,[(200,5)]))
             complete=[(100,3),(100,7),(200,2),(200,3),(777,999)]
             c=sample('C',3,complete)
+            c['sections']['bags']['1']={}
             c['sections']['professions']={'1':{'name':'Synthetic','rank':300,'max_rank':300,'skill_line':164}}
             shared={'7':{'1':{'item_id':100,'count':10},'2':{'item_id':200,'count':5}}}
             c['sections']['account_bank']=deepcopy(shared); c_key=store.ingest(c)
@@ -66,6 +67,23 @@ class InventoryRequirementsDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                         {'item_id':100,'required_quantity':10,'observed_quantity':10}])
                     self.assertTrue(match['all_requirements_covered_by_observed_quantities'])
                     self.assertEqual(match['basis'],'same_snapshot_single_storage')
+                    scoped=await query({**requirements,'container_id':0},latest_per_character=True)
+                    self.assertEqual([row['snapshot_id'] for row in scoped['snapshots']],[c_key])
+                    scoped_match=scoped['snapshots'][0]['inventory_requirements_match']
+                    self.assertEqual(scoped_match['items'],match['items'])
+                    self.assertEqual((scoped_match['basis'],scoped_match['container_id']),
+                                     ('same_snapshot_single_container',0))
+                    empty_tab=await query({**requirements,'container_id':1},inventory_requirements_shortfall_only=True)
+                    self.assertEqual([row['snapshot_id'] for row in empty_tab['snapshots']],[c_key])
+                    self.assertEqual(empty_tab['snapshots'][0]['inventory_requirements_match']['short_item_count'],2)
+                    self.assertEqual((await query({**requirements,'container_id':2},
+                        inventory_requirements_shortfall_only=True))['snapshots'],[])
+                    bank_tab=await query({**requirements,'storage':'account_bank','container_id':7})
+                    self.assertEqual({row['snapshot_id'] for row in bank_tab['snapshots']},{c_key,h_key})
+                    await query({**requirements,'container_id':1},error=True,
+                                inventory_requirements_shortfall_only=True,inventory_requirements_bank_plan=True)
+                    await query({**requirements,'container_id':65},error=True)
+                    await query({**requirements,'storage':'equipment','container_id':0},error=True)
                     for field in ['complete_ownership_verified','current_access_verified','shared_storage_scope_verified',
                             'cross_character_aggregation_performed','craftability_verified','transferability_verified','game_execution']:
                         self.assertFalse(match[field])

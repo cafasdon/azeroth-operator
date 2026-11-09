@@ -3190,3 +3190,8 @@ bounds to a single recorded bag or bank tab within the selected storage.
 An absent container cannot match a zero-quantity query. Use
 `latest_per_character` to check each character's latest capture in the
 requested time window.
+
+`list_snapshots.inventory_requirements.container_id` scopes a full material
+list to one recorded bag or bank tab. Shortfall searches can use the same
+scope. Missing containers do not qualify for either search. Bank withdrawal
+plans require a storage-wide bag search.
