@@ -288,6 +288,23 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
                                 bag_restock_merchant_visit_costs_copper=[0,0,0],
                                 bag_restock_cost_per_merchant_visit_copper=0)
+                    for cap, total in [(0,None),(1,11),(2,9),(4,9)]:
+                        capped = await query(**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
+                                             bag_restock_max_merchant_visits=cap)
+                        self.assertEqual(capped['bag_restock_split_merchant_plan'],plan)
+                        adjusted = capped['bag_restock_travel_adjusted_merchant_plan']
+                        if total is None:
+                            self.assertIsNone(adjusted)
+                        else:
+                            self.assertEqual(adjusted['complete_quote_copper'],total)
+                            self.assertEqual(adjusted['maximum_merchant_visits'],cap)
+                            self.assertLessEqual(adjusted['visit_count'],cap)
+                    covered_plan = await query(**{**split_args,
+                        'bag_restock_requirements':[{'item_id':118,'quantity':1}]},
+                        bag_restock_compare_merchant_snapshot_ids=visit_ids,bag_restock_max_merchant_visits=0)
+                    self.assertEqual(covered_plan['bag_restock_travel_adjusted_merchant_plan']['visit_count'],0)
+                    await query(error=True,**split_args,bag_restock_compare_merchant_snapshot_ids=visit_ids,
+                                bag_restock_max_merchant_visits=5)
                     await query(error=True,**split_args)
                     with_limits = {**restock,
                         'bag_restock_stack_limits':[{'item_id':118,'maximum_stack':2},

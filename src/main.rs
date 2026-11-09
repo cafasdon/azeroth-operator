@@ -191,6 +191,9 @@ struct Inspect {
     bag_restock_cost_per_merchant_visit_copper: Option<u64>,
     /// Assumed costs in the same order as the selected merchant snapshot IDs.
     bag_restock_merchant_visit_costs_copper: Option<Vec<u64>>,
+    /// Cap the number of distinct visits used by the travel-adjusted split plan.
+    #[schemars(range(min = 0, max = 4))]
+    bag_restock_max_merchant_visits: Option<u8>,
     /// Look up captured item source references for the residual bag shortfall.
     bag_restock_source_snapshot_id: Option<String>,
     /// Look up pinned local catalogue sources for the residual bag shortfall.
@@ -2895,6 +2898,14 @@ impl Operator {
                 "Supply one valid cost per compared visit with split planning, without a uniform cost",
             )]);
         }
+        if args
+            .bag_restock_max_merchant_visits
+            .is_some_and(|cap| cap > 4 || !args.bag_restock_split_merchant_plan)
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A merchant visit cap requires split restocking and a limit from zero to four",
+            )]);
+        }
         let bag_restock = args.bag_restock_requirements.map(|items| {
             azeroth_operator::InventoryRequirementsFilter {
                 storage: azeroth_operator::InventoryStorage::Bags,
@@ -3282,7 +3293,11 @@ impl Operator {
                         let visit_costs = args
                             .bag_restock_merchant_visit_costs_copper
                             .clone()
-                            .or_else(|| uniform_cost.map(|cost| vec![cost; ids.len()]));
+                            .or_else(|| {
+                                uniform_cost
+                                    .or(args.bag_restock_max_merchant_visits.map(|_| 0))
+                                    .map(|cost| vec![cost; ids.len()])
+                            });
                         let mut visits = Vec::new();
                         let mut best_by_item = std::collections::BTreeMap::new();
                         let mut travel_quotes = Vec::new();
@@ -3380,6 +3395,7 @@ impl Operator {
                                             ids,
                                             &travel_quotes,
                                             costs,
+                                            args.bag_restock_max_merchant_visits.unwrap_or(4),
                                             wallet,
                                         )?;
                                     if let Some(cost) = uniform_cost {
@@ -3387,6 +3403,9 @@ impl Operator {
                                     } else {
                                         plan["assumed_visit_costs_copper"] =
                                             serde_json::json!(costs);
+                                    }
+                                    if let Some(cap) = args.bag_restock_max_merchant_visits {
+                                        plan["maximum_merchant_visits"] = serde_json::json!(cap);
                                     }
                                     Some(plan)
                                 }));

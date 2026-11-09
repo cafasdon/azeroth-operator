@@ -7298,6 +7298,7 @@ pub fn restock_travel_adjusted_plan(
     visit_ids: &[String],
     quotes: &[BTreeMap<u64, (u64, Value)>],
     visit_costs: &[u64],
+    max_visits: u8,
     wallet: Option<u64>,
 ) -> Option<Value> {
     if visit_ids.len() != quotes.len() || visit_costs.len() != quotes.len() || quotes.len() > 4 {
@@ -7310,6 +7311,10 @@ pub fn restock_travel_adjusted_plan(
         .collect::<Option<_>>()?;
     let mut best = None;
     for subset in 0..(1u8 << quotes.len()) {
+        let count = subset.count_ones();
+        if count > u32::from(max_visits) {
+            continue;
+        }
         let assignments = items
             .iter()
             .map(|item| {
@@ -7327,7 +7332,6 @@ pub fn restock_travel_adjusted_plan(
         let Some(assignments) = assignments else {
             continue;
         };
-        let count = subset.count_ones();
         let Some(purchases) = assignments
             .iter()
             .try_fold(0u64, |sum, (_, (cost, _, _))| sum.checked_add(*cost))

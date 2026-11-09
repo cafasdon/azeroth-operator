@@ -3065,3 +3065,8 @@ Use `bag_restock_merchant_visit_costs_copper` for different assumed visit
 costs. Supply one cost per merchant snapshot ID in the same order. This
 option requires split planning and is mutually exclusive with the uniform
 visit cost.
+
+Set `bag_restock_max_merchant_visits` from zero to four with split planning
+to limit the travel-adjusted plan. If no visit costs are supplied, the
+planner assumes zero travel cost. A cap of zero can cover an already
+satisfied request. The unrestricted split plan remains available separately.
