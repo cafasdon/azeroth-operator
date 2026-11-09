@@ -392,6 +392,7 @@ pub fn search_recipe_materials_with_cooldowns(
         cooldown_filter,
         inventory,
         RecipeSearchOrder::RecipeId,
+        None,
     )
 }
 
@@ -408,6 +409,7 @@ pub fn search_recipe_materials_ordered(
     cooldown_filter: Option<&RecipeCooldownFilter>,
     inventory: Option<&Snapshot>,
     order: RecipeSearchOrder,
+    minimum_base_output: Option<std::num::NonZeroU32>,
 ) -> Result<Value> {
     ensure!(
         order != RecipeSearchOrder::ObservedItemCapacityDesc || material_filter.is_some(),
@@ -471,6 +473,11 @@ pub fn search_recipe_materials_ordered(
             recipe_id.is_none_or(|value| id.as_str() == value.to_string())
                 && output_item_id.is_none_or(|value| {
                     row["output_item_id"].as_u64() == Some(u64::from(value.get()))
+                })
+                && minimum_base_output.is_none_or(|value| {
+                    row["base_output_quantity"]["minimum"]
+                        .as_u64()
+                        .is_some_and(|minimum| minimum >= u64::from(value.get()))
                 })
                 && reagent_item_id
                     .is_none_or(|value| row["reagents"].get(value.to_string()).is_some())
@@ -597,6 +604,9 @@ pub fn search_recipe_materials_ordered(
         "records":records,"next_offset":next,
         "filters":{"recipe_id":recipe_id,"output_item_id":output_item_id,"reagent_item_id":reagent_item_id,"status":status},
         "complete_recipe_knowledge_verified":false,"craftability_verified":false,"live":false,"game_execution":false});
+    if let Some(minimum) = minimum_base_output {
+        result["filters"]["minimum_base_output"] = json!(minimum);
+    }
     if order != RecipeSearchOrder::RecipeId {
         result["order"] = json!(order);
         result["ordering_basis"] = json!(match order {

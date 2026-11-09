@@ -701,6 +701,8 @@ struct RecipeSearch {
     inventory_snapshot_id: Option<String>,
     recipe_id: Option<std::num::NonZeroU32>,
     output_item_id: Option<std::num::NonZeroU32>,
+    /// Require at least this many units at the low end of the captured base output per craft. Missing ranges are excluded.
+    minimum_base_output: Option<std::num::NonZeroU32>,
     reagent_item_id: Option<std::num::NonZeroU32>,
     status: Option<azeroth_operator::analysis::RecipeMaterialStatus>,
     /// Filter fixed reagent support in observed items, not actual craftability.
@@ -1223,6 +1225,7 @@ impl Operator {
                 args.cooldown_filter.as_ref(),
                 inventory.as_ref(),
                 args.order.unwrap_or_default(),
+                args.minimum_base_output,
             )?;
             found["snapshot_id"] = serde_json::json!(args.snapshot_id);
             if let Some(id) = args.inventory_snapshot_id {

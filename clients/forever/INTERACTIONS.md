@@ -72,6 +72,8 @@ to compare per-craft base yields for that item. Missing quantities sort last,
 and recipe IDs break ties. Material and cooldown filters still apply before
 paging. The ordering uses the saved schematic's base range and excludes
 bonus output and total craftable quantity.
+Use `minimum_base_output` to require a positive lower bound per craft.
+Missing yield ranges are excluded when this filter is supplied.
 [Evidence](../../docs/recipe-cooldown-search-verification-2026-11-09.md).
 
 Bulk fixed-recipe observations now carry optional stable public cooldown/charge
