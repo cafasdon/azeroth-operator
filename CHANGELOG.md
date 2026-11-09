@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever quests offering a recorded fixed or choice currency reward.
+
 - Find saved Forever quests offering a recorded fixed or choice item reward.
 
 - Find saved Forever quests by objective kind, completion and known remaining quantity.

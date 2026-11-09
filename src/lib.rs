@@ -1894,6 +1894,7 @@ pub struct CaptureFilters<'a> {
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
+    pub quest_reward_currency_id: Option<std::num::NonZeroU32>,
     pub quest_objective_kind: Option<&'a str>,
     pub quest_objective_finished: Option<bool>,
     pub quest_objective_remaining: (Option<u32>, Option<u32>),
@@ -2134,6 +2135,7 @@ impl Store {
             quest_id,
             quest_title,
             quest_reward_item_id,
+            quest_reward_currency_id,
             quest_objective_kind,
             quest_objective_finished,
             quest_objective_remaining,
@@ -2714,6 +2716,7 @@ impl Store {
             (quest_id.is_none()
                 && quest_title.is_none()
                 && quest_reward_item_id.is_none()
+                && quest_reward_currency_id.is_none()
                 && quest_readiness.is_none()
                 && quest_waypoint_map_id.is_none()
                 && !quest_on_captured_map
@@ -3352,10 +3355,10 @@ impl Store {
                     } else {
                         quest_waypoint_map_id.map(|id| u64::from(id.get()))
                     };
-                    let has_reward = |quest: &Value, field: &str, item_id: u32| {
+                    let has_reward = |quest: &Value, field: &str, key: &str, id: u32| {
                         quest[field].as_object().is_some_and(|rows| {
                             rows.values()
-                                .any(|row| row["item_id"].as_u64() == Some(u64::from(item_id)))
+                                .any(|row| row[key].as_u64() == Some(u64::from(id)))
                         })
                     };
                     let matches_quest = |quest: &Value| {
@@ -3374,8 +3377,17 @@ impl Store {
                                     .is_some_and(|seconds| seconds <= u64::from(maximum))
                             })
                             && quest_reward_item_id.is_none_or(|id| {
-                                has_reward(quest, "item_rewards", id.get())
-                                    || has_reward(quest, "item_choices", id.get())
+                                has_reward(quest, "item_rewards", "item_id", id.get())
+                                    || has_reward(quest, "item_choices", "item_id", id.get())
+                            })
+                            && quest_reward_currency_id.is_none_or(|id| {
+                                has_reward(quest, "currency_rewards", "currency_id", id.get())
+                                    || has_reward(
+                                        quest,
+                                        "currency_choices",
+                                        "currency_id",
+                                        id.get(),
+                                    )
                             })
                             && (!filter_quest_objectives
                                 || analysis::quest_objective_matches(
@@ -3402,6 +3414,7 @@ impl Store {
                     let quest_count = (quest_key.is_none()
                         && (quest_title.is_some()
                             || quest_reward_item_id.is_some()
+                            || quest_reward_currency_id.is_some()
                             || quest_readiness.is_some()
                             || waypoint_map.is_some()
                             || filter_quest_timer
@@ -3813,6 +3826,7 @@ impl Store {
                         || quest_title.is_some()
                         || filter_quest_objectives
                         || quest_reward_item_id.is_some()
+                        || quest_reward_currency_id.is_some()
                     {
                         let mut local: Vec<_> = s
                             .sections
@@ -3848,8 +3862,14 @@ impl Store {
                                     "readiness":analysis::quest_readiness(quest)});
                                 if let Some(item) = quest_reward_item_id {
                                     row["recorded_reward_match"] = json!({"item_id":item,
-                                        "fixed":has_reward(quest, "item_rewards", item.get()),
-                                        "choice":has_reward(quest, "item_choices", item.get()),
+                                        "fixed":has_reward(quest, "item_rewards", "item_id", item.get()),
+                                        "choice":has_reward(quest, "item_choices", "item_id", item.get()),
+                                        "reward_eligibility_verified":false});
+                                }
+                                if let Some(currency) = quest_reward_currency_id {
+                                    row["recorded_currency_reward_match"] = json!({"currency_id":currency,
+                                        "fixed":has_reward(quest, "currency_rewards", "currency_id", currency.get()),
+                                        "choice":has_reward(quest, "currency_choices", "currency_id", currency.get()),
                                         "reward_eligibility_verified":false});
                                 }
                                 if local_quest_soonest_first {

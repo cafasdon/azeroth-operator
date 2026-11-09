@@ -3129,3 +3129,8 @@ Use `list_snapshots.quest_reward_item_id` to find quests with the requested
 item in recorded fixed rewards or choices. The shortlist identifies which
 kind matched. Other quest criteria apply to the same quest. Reward
 eligibility remains unverified.
+
+Use `list_snapshots.quest_reward_currency_id` to find saved fixed or choice
+currency rewards. When combined with an item reward filter, both rewards
+must be recorded on the same quest. Currency balances do not count as
+quest rewards, and reward eligibility remains unverified.
