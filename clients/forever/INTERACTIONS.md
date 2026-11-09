@@ -2112,3 +2112,18 @@ unknown bag IDs are counted as unmapped, not classified as non-quivers. Numeric
 observations must agree across prepared groups; final encounter contexts retain
 the recomputed diagnostics. Full identity/bonus/ammunition proof remains false.
 No quiver optimisation, automatic template change, addon change or live action.
+
+## Hunter ammunition model boundary (2026-11-09)
+
+Hunter review/preparation workflows now accept only the pinned engine's nine
+arrow enum names/integer IDs or AmmoNone. Unknown numeric values reject before
+engine/cache use instead of falling through a missing reference to zero damage.
+Supported requests stay unchanged, and protobuf null/missing follows the existing
+none default without proving an unequipped slot. The existing historically named
+hunter_quiver_observation context now includes template_ammo_reference with item
+ID, bonus_ranged_dps and pinned_template_selection_only basis. This DPS is the
+engine's ranged-weapon parameter, not predicted player DPS gain. Identity,
+availability and native-effect flags stay false even if a captured item ID
+coincides. Standalone CLI and final saved-journal/evaluator context retain the
+report. No ammo capture, bag-stock/consumption claim, template correction,
+optimisation, addon change or live action is introduced.

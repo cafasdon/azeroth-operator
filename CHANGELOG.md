@@ -1,5 +1,10 @@
 # Changelog
 
+- Reject unsupported Hunter ammunition enum selections before review/prepared
+  simulation execution. Carry pinned template ammo ID/ranged-DPS reference into
+  final context, with identity, availability and native-effect proof false.
+  Preserve supported/default/null request values; no capture or stock inference.
+
 - Carry numeric equipped-bag observations from MCP equipment reviews through
   prepared/merged requests to final encounter quiver diagnostics. Validate the
   pinned quiver enum before simulation and retain partial/unavailable evidence.

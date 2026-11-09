@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+Hunter simulation preflight now validates ammunition against the pinned engine’s
+reference choices. Unknown numeric selections are rejected instead of silently
+modeling zero ammunition damage. Reports retain explicit template-only ammo
+references without claiming equipped ammo or available stock.
+[Contract](docs/ADR-066-hunter-ammunition-selection.md).
+
 Gear simulation review now carries partial equipped-bag observations into quiver
 diagnostics and final encounter context. Unsupported numeric quiver selections
 are rejected before the workflow runs the engine; observed matches remain

@@ -325,6 +325,10 @@ HUNTER_PET_TYPES = ("PetNone", "Bat", "Bear", "BirdOfPrey", "Boar", "CarrionBird
 HUNTER_QUIVERS = {'QuiverNone':(0,0), 'HuntingQuiver':(3573,10),
     'QuiverOfTheNightWatch':(3605,11), 'HeavyQuiver':(7371,12),
     'QuickdrawQuiver':(8217,13), 'AncientSinewWrappedLamina':(18714,15)}
+HUNTER_AMMO = {'AmmoNone':(0,0), 'RoughArrow':(2512,1.5), 'SharpArrow':(2515,3.5),
+    'RazorArrow':(3030,7.5), 'FeatheredArrow':(3464,9.5), 'JaggedArrow':(11285,13),
+    'ExplosiveArrow':(10579,14.5), 'IceThreadedArrow':(19316,16.5),
+    'ThoriumHeadedArrow':(18042,17.5), 'SwiftfeatherArrow':(274387,24.5)}
 
 
 def hunter_quiver_observation(player, observed):
@@ -347,10 +351,19 @@ def hunter_quiver_observation(player, observed):
     if player_spec(player)!='hunter': return report
     options=player['hunter'].get('options')
     options={} if options is None else options
-    declared=proto_option(proto_option(options,'classOptions','class_options',{}),'quiverBonus','quiver_bonus',0)
+    class_options=proto_option(options,'classOptions','class_options',{})
+    declared=proto_option(class_options,'quiverBonus','quiver_bonus',0)
     reference=(HUNTER_QUIVERS.get(declared) if type(declared) is str else
                next((row for row in HUNTER_QUIVERS.values() if row[0]==declared),None) if type(declared) is int else None)
     if reference is None: raise ValueError('Unsupported Hunter quiver selection')
+    ammo=class_options.get('ammo')
+    ammo=0 if ammo is None else ammo
+    ammo_reference=(HUNTER_AMMO.get(ammo) if type(ammo) is str else
+        next((row for row in HUNTER_AMMO.values() if row[0]==ammo),None) if type(ammo) is int else None)
+    if ammo_reference is None: raise ValueError('Unsupported Hunter ammunition selection')
+    report['template_ammo_reference']={'basis':'pinned_template_selection_only',
+        'item_id':ammo_reference[0],'bonus_ranged_dps':ammo_reference[1],
+        'identity_verified':False,'availability_verified':False,'native_effect_verified':False}
     item,haste=reference
     known={item:haste for item,haste in HUNTER_QUIVERS.values() if item}
     ids={row['item_id'] for row in observed} if observed is not None else set()

@@ -73,7 +73,7 @@ class MergePreparedWindowTests(unittest.TestCase):
             self.assertEqual([row['request_sha256'] for row in merged['requests']], [row['request_sha256'] for row in reverse['requests']])
             mutations = ['context', 'fingerprint', 'equipment', 'request_hash', 'source_hash', 'missing',
                          'review', 'accounting', 'offset', 'flag', 'bag_identity_type',
-                         'bag_identity_mismatch', 'quiver_enum']
+                         'bag_identity_mismatch', 'quiver_enum', 'ammo_enum']
             for mutation in mutations:
                 bad = deepcopy(artifacts)
                 target = bad[1]
@@ -97,7 +97,14 @@ class MergePreparedWindowTests(unittest.TestCase):
                 if mutation == 'quiver_enum':
                     row['request']['raid']['parties'][0]['players'][0]['hunter']['options']={'classOptions':{'quiverBonus':999999}}
                     row['request_sha256']=hashlib.sha256(encoded(row['request'])).hexdigest()
-                with self.assertRaises(ValueError, msg=mutation): merge_prepared(journal, bad)
+                if mutation == 'ammo_enum':
+                    row['request']['raid']['parties'][0]['players'][0]['hunter']['options']={'classOptions':{'ammo':999999}}
+                    row['request_sha256']=hashlib.sha256(encoded(row['request'])).hexdigest()
+                if mutation == 'ammo_enum':
+                    with self.assertRaisesRegex(ValueError,'Unsupported Hunter ammunition selection'):
+                        merge_prepared(journal,bad)
+                else:
+                    with self.assertRaises(ValueError, msg=mutation): merge_prepared(journal, bad)
                 self.assertEqual(journal.read_bytes(), before)
             with self.assertRaises(ValueError): merge_prepared(journal, artifacts * 2)
             partial = merge_prepared(journal, artifacts[:1])
