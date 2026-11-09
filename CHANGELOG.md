@@ -1,5 +1,7 @@
 # Changelog
 
+- Review saved carried stacks with identical item links without exposing links or producing operations.
+
 - Show exact saved Forever aura readings on each side of a comparison, even with partial coverage.
 
 - Compare a specific saved Forever aura even when the full changes list is truncated.

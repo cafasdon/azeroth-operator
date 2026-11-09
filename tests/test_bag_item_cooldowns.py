@@ -41,6 +41,25 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    stacks = sample()
+                    stacks['sections'].pop('bag_item_cooldowns')
+                    stacks['sections']['bags'] = {'0': {
+                        '10': {'item_id':1,'count':3,'link':'PRIVATE_LINK','guid':'Item-Private'},
+                        '2': {'item_id':1,'count':7,'link':'PRIVATE_LINK'},
+                        '1': {'item_id':1,'count':1,'link':'OTHER_LINK'},
+                        '3': {'item_id':1,'count':1},
+                        '4': {'item_id':2,'count':1,'link':'PRIVATE_LINK'}}}
+                    reply = await session.call_tool('find_snapshot_item', {
+                        'snapshot_id':store.ingest(stacks),'item_id':1,'limit':1,'offset':99,'bag_stack_groups':True})
+                    self.assertFalse(reply.isError,reply)
+                    self.assertNotIn('PRIVATE',reply.content[0].text)
+                    report = json.loads(reply.content[0].text)
+                    self.assertEqual(report['locations'],[])
+                    self.assertEqual(report['bag_stack_groups'], {
+                        'group_count':1,'groups_truncated':False,'locations_without_link':1,
+                        'stack_compatibility_verified':False,'game_execution':False,
+                        'groups':[{'stack_count':2,'total_quantity':10,'locations_truncated':False,
+                                   'locations':[{'bag':0,'slot':2,'count':7},{'bag':0,'slot':10,'count':3}]}]})
                     inspected = await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'bag_item_cooldowns'})
                     self.assertFalse(inspected.isError,inspected)
                     self.assertEqual(json.loads(inspected.content[0].text)['data'],value['sections']['bag_item_cooldowns'])

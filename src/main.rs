@@ -851,6 +851,9 @@ struct FindItem {
     limit: Option<usize>,
     /// Up to seven additional snapshot IDs with the exact same client/build.
     additional_snapshot_ids: Option<Vec<String>>,
+    /// Review carried stacks with identical saved item links, without generating operations.
+    #[serde(default)]
+    bag_stack_groups: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1291,6 +1294,13 @@ impl Operator {
                     args.limit.unwrap_or(20),
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
+                if args.bag_stack_groups {
+                    found["bag_stack_groups"] =
+                        serde_json::json!(azeroth_operator::analysis::observed_bag_stack_groups(
+                            snapshot,
+                            args.item_id.get()
+                        ));
+                }
                 Ok::<_, anyhow::Error>(found)
             };
             let primary = self.store.read(&args.snapshot_id)?;

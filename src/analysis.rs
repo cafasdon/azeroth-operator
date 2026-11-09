@@ -2556,6 +2556,49 @@ pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize)
     Ok(result)
 }
 
+pub fn observed_bag_stack_groups(snapshot: &Snapshot, item_id: u32) -> Option<Value> {
+    let bags = snapshot.sections.get("bags")?.as_object()?;
+    let mut by_link = BTreeMap::<&str, Vec<(u32, u32, u64)>>::new();
+    let mut locations_without_link = 0;
+    for (bag, slots) in bags {
+        let bag = bag.parse().ok()?;
+        for (slot, item) in slots.as_object()? {
+            if item["item_id"].as_u64() != Some(u64::from(item_id)) {
+                continue;
+            }
+            if let Some(link) = item["link"].as_str().filter(|link| !link.trim().is_empty()) {
+                by_link.entry(link).or_default().push((
+                    bag,
+                    slot.parse().ok()?,
+                    item["count"].as_u64()?,
+                ));
+            } else {
+                locations_without_link += 1;
+            }
+        }
+    }
+    let mut groups: Vec<_> = by_link
+        .into_values()
+        .filter(|rows| rows.len() > 1)
+        .collect();
+    for rows in &mut groups {
+        rows.sort_unstable();
+    }
+    groups.sort_unstable_by_key(|rows| rows[0]);
+    let shown: Vec<_> = groups.iter().take(20).map(|rows| {
+        let locations: Vec<_> = rows.iter().take(10).map(|&(bag, slot, count)| {
+            json!({"bag":bag,"slot":slot,"count":count})
+        }).collect();
+        json!({"stack_count":rows.len(),"total_quantity":rows.iter().map(|row|row.2).sum::<u64>(),
+            "locations":locations,"locations_truncated":rows.len()>locations.len()})
+    }).collect();
+    Some(
+        json!({"group_count":groups.len(),"groups":shown,"groups_truncated":groups.len()>shown.len(),
+        "locations_without_link":locations_without_link,
+        "stack_compatibility_verified":false,"game_execution":false}),
+    )
+}
+
 fn compare_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Result<Value> {
     let before = find_item(before, item_id, 0, 1)?;
     let after = find_item(after, item_id, 0, 1)?;
