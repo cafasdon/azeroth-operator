@@ -19,16 +19,25 @@ async def selected_snapshot(args, deadline):
     snapshot = getattr(args, 'snapshot_id', None)
     name, realm = getattr(args, 'character_name', None), getattr(args, 'character_realm', None)
     client = getattr(args, 'character_client', None)
+    unique_latest = getattr(args, 'require_unique_latest', False)
+    latest_sections = getattr(args, 'require_latest_section', None)
+    require(type(unique_latest) is bool)
     capture_bounds = {
         field: value
         for field in ('captured_from', 'captured_through')
         if (value := getattr(args, field, None)) is not None
     }
     if snapshot is not None:
-        require(name is None and realm is None and client is None and not capture_bounds)
+        require(name is None and realm is None and client is None and not capture_bounds
+                and not unique_latest and latest_sections is None)
         return digest(snapshot), 'explicit_saved_snapshot'
     require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
     request = {'family':'forever', 'character':{'name':name, 'realm':realm}, **capture_bounds}
+    if unique_latest:
+        request['require_unique_latest'] = True
+    if latest_sections is not None:
+        request['required_sections'] = latest_sections
+        request['require_latest_coverage'] = True
     if client is not None:
         variant, build, interface = client
         require(interface.isascii() and interface.isdecimal() and len(interface) <= 10)
@@ -47,6 +56,9 @@ async def selected_snapshot(args, deadline):
                     result = parse_report(reply.content[0].text.encode())
                     require(result['status'] == 'explicit_saved_character'
                         and result['live'] is False and result['active_character_verified'] is False)
+                    if latest_sections is not None:
+                        require(result['latest_section_coverage'] ==
+                                {section: 'observed' for section in latest_sections})
                     if client is not None:
                         require(result['selection']['client'] == request['exact_client'])
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
@@ -183,6 +195,10 @@ def parser():
                      help='Require an exact saved Forever client with --character-name')
     cli.add_argument('--captured-from', help='Inclusive earliest RFC 3339 capture time with --character-name')
     cli.add_argument('--captured-through', help='Inclusive latest RFC 3339 capture time with --character-name')
+    cli.add_argument('--require-unique-latest', action='store_true',
+                     help='Reject tied newest captures with --character-name')
+    cli.add_argument('--require-latest-section', action='append', metavar='SECTION',
+                     help='Require this section on the newest capture with --character-name; repeat for multiple sections')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

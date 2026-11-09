@@ -179,6 +179,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 changed_build = deepcopy(value)
                 changed_build['captured_at'] = '2025-02-01T00:00:00Z'
                 changed_build['client']['build'] = '70863'
+                changed_build['sections'].pop('equipment')
                 SnapshotStore(base).ingest(changed_build)
                 exact = launch(['--checkpoint-only','--character-client','live','70862','16001'])
                 self.assertEqual(exact['snapshot_id'],key)
@@ -188,6 +189,19 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                                   '--captured-through',value['captured_at']])
                 self.assertEqual(bounded['snapshot_id'],key)
                 self.assertEqual(bounded['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
+                self.assertEqual(runs.call_count,calls)
+                strict = ['--require-unique-latest','--require-latest-section','equipment',
+                          '--require-latest-section','bags']
+                launch(['--checkpoint-only','--journal',str(base/'must-not-create.sqlite'),*strict],fails=True)
+                self.assertFalse((base/'must-not-create.sqlite').exists())
+                safe = launch(['--checkpoint-only','--character-client','live','70862','16001',*strict])
+                self.assertEqual(safe['snapshot_id'],key)
+                tied = deepcopy(changed_build)
+                tied['client']['build'] = '70864'
+                tied['sections']['equipment'] = value['sections']['equipment']
+                SnapshotStore(base).ingest(tied)
+                launch(['--checkpoint-only','--journal',str(base/'must-not-create.sqlite'),*strict],fails=True)
+                self.assertFalse((base/'must-not-create.sqlite').exists())
                 self.assertEqual(runs.call_count,calls)
                 argv[:] = original_argv
                 for first,second_stage in zip(captured[::2],captured[1::2],strict=True):
@@ -200,7 +214,8 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 # All invalid/alias inputs stop before creating a new plan journal.
                 for extra in [['--max-pages','0'],['--collection-seconds','181'],['--engine-sha256','0'*64],
                     ['--encounter-weight','0'],['--journal',str(engine)],['--simulation-journal',str(base)],
-                    ['--simulation-journal',str(journal)],['--captured-through',value['captured_at']]]:
+                    ['--simulation-journal',str(journal)],['--captured-through',value['captured_at']],
+                    ['--require-unique-latest'],['--require-latest-section','equipment']]:
                     launch(['--journal',str(base/'must-not-create.sqlite'),*extra],fails=True)
                     self.assertFalse((base/'must-not-create.sqlite').exists())
                     self.assertEqual(runs.call_count,calls)

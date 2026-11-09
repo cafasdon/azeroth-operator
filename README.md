@@ -480,6 +480,9 @@ Forever capture through the owner's MCP store, then pins its snapshot ID for
 the run. Missing targets fail before journal writes. Resolution shares the
 total time budget and has a 15-second ceiling. Neither selector identifies
 the character currently in play.
+Use `--require-unique-latest` to reject tied newest captures. Repeat
+`--require-latest-section SECTION` to require coverage on the newest capture.
+A missing section stops the run before journal writes.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained

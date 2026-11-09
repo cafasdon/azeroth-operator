@@ -1,5 +1,7 @@
 # Changelog
 
+- Apply optional latest-capture uniqueness and coverage checks in the Forever owned-gear evaluator.
+
 - Allow explicit character resolution to require section coverage on the newest capture.
 
 - Allow explicit character resolution to report tied latest saved captures.
