@@ -97,8 +97,7 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
         let mut elapsed = Vec::new();
         let mut upcoming = Vec::new();
         let mut unknown = Vec::new();
-        let mut next_at = None;
-        let mut next_slots = Vec::new();
+        let mut by_time = BTreeMap::<DateTime<Utc>, Vec<u64>>::new();
         for row in rows {
             let bucket = match row["projected_reset_at"]
                 .as_str()
@@ -106,21 +105,22 @@ pub fn classify_at(projection: &mut Value, reference: DateTime<Utc>) {
             {
                 Some(reset) if reset <= reference => &mut elapsed,
                 Some(reset) => {
-                    if next_at.is_none_or(|next| reset < next) {
-                        next_at = Some(reset);
-                        next_slots.clear();
-                    }
-                    if next_at == Some(reset) {
-                        next_slots.push(row["slot"].clone());
-                    }
+                    by_time
+                        .entry(reset)
+                        .or_default()
+                        .push(row["slot"].as_u64().unwrap());
                     &mut upcoming
                 }
                 None => &mut unknown,
             };
             bucket.push(row["slot"].clone());
         }
+        let schedule: Vec<_> = by_time
+            .into_iter()
+            .map(|(at, slots)| json!({"at":at,"slots":slots}))
+            .collect();
         json!({"at_or_before_slots":elapsed,"after_slots":upcoming,"unknown_slots":unknown,
-            "next_projected_reset":next_at.map(|at| json!({"at":at,"slots":next_slots}))})
+            "next_projected_reset":schedule.first(),"upcoming_projected_resets":schedule})
     });
     projection["reference_at"] = json!(reference);
     projection["relative_to_reference"] = json!(classification);

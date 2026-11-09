@@ -1,5 +1,7 @@
 # Changelog
 
+- Show a chronological schedule of saved Forever resets after the reference time.
+
 - Highlight the next saved Forever reset and all slots sharing its projected time.
 
 - Compare saved Forever dungeon, raid and world boss reset projections with an explicit reference time.

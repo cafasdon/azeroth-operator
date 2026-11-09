@@ -103,10 +103,17 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     relative = (await inspect(**reference))['saved_reset_projection']
                     self.assertEqual(relative['relative_to_reference'], {
                         'at_or_before_slots':[3],'after_slots':[1],'unknown_slots':[2],
-                        'next_projected_reset':{'at':'2025-01-02T00:01:00Z','slots':[1]}})
+                        'next_projected_reset':{'at':'2025-01-02T00:01:00Z','slots':[1]},
+                        'upcoming_projected_resets':[{'at':'2025-01-02T00:01:00Z','slots':[1]}]})
+                    early = (await inspect(saved_reset_reference_at='2025-01-01T23:58:00Z'))[
+                        'saved_reset_projection']['relative_to_reference']
+                    self.assertEqual(early['upcoming_projected_resets'], [
+                        {'at':'2025-01-01T23:59:00Z','slots':[3]},
+                        {'at':'2025-01-02T00:01:00Z','slots':[1]}])
                     at_reset = (await inspect(saved_reset_reference_at='2025-01-02T00:01:00Z'))[
                         'saved_reset_projection']['relative_to_reference']
                     self.assertIsNone(at_reset['next_projected_reset'])
+                    self.assertEqual(at_reset['upcoming_projected_resets'], [])
                     self.assertEqual(relative['rows'],projected['rows'])
                     self.assertIsNone((await inspect(missing_key,**reference))[
                         'saved_reset_projection']['relative_to_reference'])

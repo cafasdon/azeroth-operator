@@ -2350,6 +2350,8 @@ sections return a null classification.
 The classification highlights the earliest projected reset strictly after
 the reference and lists every slot with that timestamp. The next reset is
 null when no later projection exists.
+`upcoming_projected_resets` lists every later timestamp in chronological
+order, with slots sharing a timestamp grouped together.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the
