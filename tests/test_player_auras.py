@@ -69,9 +69,9 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
-                    async def search(group, spell_id, family='forever', error=False):
+                    async def search(group, spell_id, family='forever', error=False, **bounds):
                         result = await session.call_tool('list_snapshots', {'family': family,
-                            'player_aura': {'group': group, 'spell_id': spell_id}})
+                            'player_aura': {'group': group, 'spell_id': spell_id, **bounds}})
                         self.assertEqual(bool(result.isError), error, result)
                         return None if error else json.loads(result.content[0].text)['snapshots']
                     matches = await search('helpful', 100)
@@ -79,6 +79,12 @@ class PlayerAuraTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(matches[0]['player_aura_match'], {'group': 'helpful',
                         'spell_id': 100, 'matching_observed_rows': 2, 'effectiveness_verified': False})
                     self.assertEqual(await search('harmful', 100), [])
+                    zero = await search('helpful', 100, maximum_applications=0)
+                    self.assertEqual(zero[0]['player_aura_match']['matching_observed_rows'],1)
+                    self.assertEqual(await search('helpful', 100, minimum_applications=1),[])
+                    self.assertEqual(await search('helpful', 100, minimum_applications=0),zero)
+                    self.assertEqual(len(await search('helpful', 4294967294, minimum_applications=4294967295)),1)
+                    await search('helpful', 100, minimum_applications=2, maximum_applications=1, error=True)
                     self.assertEqual([row['snapshot_id'] for row in await search('helpful', 4294967294)],
                                      [valid[3][0]])
                     await search('helpful', 0, error=True)

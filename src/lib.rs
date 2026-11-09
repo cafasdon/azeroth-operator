@@ -1455,6 +1455,8 @@ enum PlayerAuraGroup {
 pub struct PlayerAuraFilter {
     group: PlayerAuraGroup,
     spell_id: std::num::NonZeroU32,
+    minimum_applications: Option<u32>,
+    maximum_applications: Option<u32>,
 }
 
 impl PlayerAuraFilter {
@@ -1468,6 +1470,14 @@ impl PlayerAuraFilter {
             .as_object()?
             .values()
             .filter(|row| row["spell_id"].as_u64() == Some(spell_id))
+            .filter(|row| {
+                let applications = row["applications"].as_u64();
+                self.minimum_applications
+                    .is_none_or(|min| applications.is_some_and(|n| n >= u64::from(min)))
+                    && self
+                        .maximum_applications
+                        .is_none_or(|max| applications.is_some_and(|n| n <= u64::from(max)))
+            })
             .count();
         (count > 0).then(|| {
             json!({"group":group,"spell_id":spell_id,
@@ -1965,6 +1975,13 @@ impl Store {
         ensure!(
             player_aura.is_none() || family == Family::Forever,
             "Player aura search requires Forever"
+        );
+        ensure!(
+            player_aura
+                .as_ref()
+                .and_then(|filter| filter.minimum_applications.zip(filter.maximum_applications))
+                .is_none_or(|(min, max)| min <= max),
+            "Invalid player aura application range"
         );
         if let Some(filter) = &player_resource {
             ensure!(

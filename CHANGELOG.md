@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever aura matches by observed application count.
+
 - Find saved Forever captures containing an exact helpful or harmful player aura.
 
 - Compare saved Forever health and power by missing units and percentage-point change.
