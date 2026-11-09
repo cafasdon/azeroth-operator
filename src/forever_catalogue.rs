@@ -2786,6 +2786,15 @@ impl EquipmentCatalogue {
     }
 
     pub fn quest_inventory_sources(&self, review: &Value) -> Result<Value> {
+        let mut report =
+            self.inventory_shortfall_sources(review, "user_supplied_quest_item_shortfalls")?;
+        if report.is_object() {
+            report["quest_item_binding_verified"] = json!(false);
+        }
+        Ok(report)
+    }
+
+    pub fn inventory_shortfall_sources(&self, review: &Value, basis: &str) -> Result<Value> {
         if review["storage_observed"] != true {
             return Ok(Value::Null);
         }
@@ -2798,10 +2807,7 @@ impl EquipmentCatalogue {
                 Some((row["item_id"].as_u64()?, quantity))
             })
             .collect();
-        let mut report =
-            self.material_source_records(needs, "user_supplied_quest_item_shortfalls")?;
-        report["quest_item_binding_verified"] = json!(false);
-        Ok(report)
+        self.material_source_records(needs, basis)
     }
 
     fn material_source_records(&self, seen: BTreeMap<u64, u64>, basis: &str) -> Result<Value> {

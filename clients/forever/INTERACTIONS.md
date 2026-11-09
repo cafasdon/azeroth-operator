@@ -2996,3 +2996,8 @@ recorded drop, vendor and quest reward references for quantities still short
 after observed bank withdrawals. This is independent of merchant quoting.
 Missing source observations remain unknown, and references describe saved
 data without verifying current acquisition eligibility.
+
+Set `bag_restock_catalogue_sources: true` to look up the same residual
+shortfalls in the verified local catalogue. The result has separate source
+provenance and distinguishes missing catalogue items from missing source
+metadata. The lookup works offline.

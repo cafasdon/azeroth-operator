@@ -106,6 +106,20 @@ class ChainCatalogueSourcesTests(unittest.IsolatedAsyncioTestCase):
                     residual=bank_sources.pop('after_observed_bank_withdrawals')
                     self.assertEqual(bank_sources,quest_sources)
                     self.assertEqual(residual['records'],[rows[2840]])
+                    restock = {'snapshot_id':bank_key,'section':'bags',
+                        'bag_restock_requirements':quest_request['quest_inventory_requirements']['items'],
+                        'bag_restock_catalogue_sources':True}
+                    restock_reply = await session.call_tool('inspect_snapshot',restock)
+                    self.assertFalse(restock_reply.isError,restock_reply)
+                    bag_sources = json.loads(restock_reply.content[0].text)['bag_restock_catalogue_source_review']
+                    self.assertEqual(bag_sources['records'],residual['records'])
+                    self.assertEqual(bag_sources['catalogue_source'],residual['catalogue_source'])
+                    self.assertEqual(bag_sources['basis'],'user_supplied_bag_shortfalls_after_observed_bank_withdrawals')
+                    self.assertNotIn('quest_item_binding_verified',bag_sources)
+                    self.assertIs(bag_sources['current_availability_verified'],False)
+                    self.assertTrue((await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':bank_key,'section':'bags','bag_restock_catalogue_sources':True})).isError)
+
                     bank_reply = await session.call_tool('inspect_snapshot',{**quest_request,
                         'quest_inventory_requirements':{**quest_request['quest_inventory_requirements'],
                                                         'storage':'character_bank'}})

@@ -174,6 +174,9 @@ struct Inspect {
     bag_restock_merchant_snapshot_id: Option<String>,
     /// Look up captured item source references for the residual bag shortfall.
     bag_restock_source_snapshot_id: Option<String>,
+    /// Look up pinned local catalogue sources for the residual bag shortfall.
+    #[serde(default)]
+    bag_restock_catalogue_sources: bool,
     /// Reserve copper from the saved inventory wallet when reviewing a restocking merchant quote.
     #[schemars(range(max = 9999999999999_u64))]
     bag_restock_wallet_reserve_copper: Option<u64>,
@@ -2825,7 +2828,8 @@ impl Operator {
         });
         if ((args.bag_restock_location_offset.is_some()
             || args.bag_restock_merchant_snapshot_id.is_some()
-            || args.bag_restock_source_snapshot_id.is_some())
+            || args.bag_restock_source_snapshot_id.is_some()
+            || args.bag_restock_catalogue_sources)
             && bag_restock.is_none())
             || bag_restock.as_ref().is_some_and(|requirements| {
                 args.section.as_deref() != Some("bags")
@@ -3050,6 +3054,26 @@ impl Operator {
                         &snapshot,
                         Some(args.bag_restock_location_offset.unwrap_or_default()),
                     );
+                    if args.bag_restock_catalogue_sources {
+                        let result = self
+                            .forever_catalogue
+                            .as_deref()
+                            .ok_or_else(|| anyhow::anyhow!("Local catalogue unavailable"))
+                            .and_then(azeroth_operator::forever_catalogue::EquipmentCatalogue::load)
+                            .and_then(|catalogue| {
+                                catalogue.inventory_shortfall_sources(
+                                    &bank_restock_residual(&value["bag_restock_review"])
+                                        .unwrap_or_default(),
+                                    "user_supplied_bag_shortfalls_after_observed_bank_withdrawals",
+                                )
+                            });
+                        let Ok(sources) = result else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Bag restocking catalogue sources require a verified local catalogue",
+                            )]);
+                        };
+                        value["bag_restock_catalogue_source_review"] = sources;
+                    }
                     if let Some(id) = args.bag_restock_source_snapshot_id.as_deref() {
                         let result = self.store.read(id).and_then(|source| {
                             azeroth_operator::analysis::inventory_shortfall_captured_sources(
