@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever repair visits that leave a requested amount of copper after repairs.
+
 - Show affordability and remaining copper after the saved Forever repair-all quote.
 
 - Find saved Forever captures with equipped slots at or below a durability threshold.

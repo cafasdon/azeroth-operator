@@ -372,6 +372,9 @@ struct List {
     player_parent_map_id: Option<std::num::NonZeroU32>,
     /// Find saved Forever visits with a repair-all quote at or below this amount.
     repair_max_quote_copper: Option<u64>,
+    /// Require at least this much saved wallet copper to remain after paying the repair quote.
+    #[schemars(range(max = 9999999999999_u64))]
+    repair_min_remaining_copper: Option<u64>,
     /// Find saved Forever captures with a slot at or below this whole durability percentage.
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
@@ -1971,6 +1974,7 @@ impl Operator {
                 player_map_id: args.player_map_id,
                 player_parent_map_id: args.player_parent_map_id,
                 repair_max_quote_copper: args.repair_max_quote_copper,
+                repair_min_remaining_copper: args.repair_min_remaining_copper,
                 equipment_durability_max_percent: args.equipment_durability_max_percent,
                 repair_affordable_only: args.repair_affordable_only,
                 minimum_free_bag_slots: args.minimum_free_bag_slots,

@@ -1436,6 +1436,7 @@ pub struct CaptureFilters<'a> {
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub repair_max_quote_copper: Option<u64>,
+    pub repair_min_remaining_copper: Option<u64>,
     pub equipment_durability_max_percent: Option<u8>,
     pub repair_affordable_only: bool,
     pub minimum_free_bag_slots: Option<u32>,
@@ -1649,6 +1650,7 @@ impl Store {
             player_map_id,
             player_parent_map_id,
             repair_max_quote_copper,
+            repair_min_remaining_copper,
             equipment_durability_max_percent,
             repair_affordable_only,
             minimum_free_bag_slots,
@@ -2011,7 +2013,9 @@ impl Store {
         );
         let instance_name = instance.name.map(str::to_lowercase);
         let filter_player_map = player_map_id.is_some() || player_parent_map_id.is_some();
-        let filter_repair = repair_max_quote_copper.is_some() || repair_affordable_only;
+        let filter_repair = repair_max_quote_copper.is_some()
+            || repair_affordable_only
+            || repair_min_remaining_copper.is_some();
         ensure!(
             equipment_durability_max_percent
                 .is_none_or(|maximum| family == Family::Forever && maximum <= 100),
@@ -2083,7 +2087,8 @@ impl Store {
         );
         ensure!(
             (!filter_repair || family == Family::Forever)
-                && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999),
+                && repair_max_quote_copper.is_none_or(|price| price <= 9_999_999_999_999)
+                && repair_min_remaining_copper.is_none_or(|reserve| reserve <= 9_999_999_999_999),
             "Repair quote filtering requires Forever and a valid copper amount"
         );
         ensure!(
@@ -2712,15 +2717,22 @@ impl Store {
                             .and_then(|row| row["copper"].as_u64());
                         let Some(quote) = quote.filter(|quote| {
                             repair_max_quote_copper.is_none_or(|maximum| *quote <= maximum)
-                                && (!repair_affordable_only
-                                    || s.sections
-                                        .get("wallet")
-                                        .and_then(|wallet| wallet["copper"].as_u64())
-                                        .is_some_and(|balance| *quote <= balance))
                         }) else {
                             continue;
                         };
-                        Some(quote)
+                        let remaining = s
+                            .sections
+                            .get("wallet")
+                            .and_then(|wallet| wallet["copper"].as_u64())
+                            .and_then(|balance| balance.checked_sub(quote));
+                        if (repair_affordable_only || repair_min_remaining_copper.is_some())
+                            && !remaining.is_some_and(|balance| {
+                                balance >= repair_min_remaining_copper.unwrap_or(0)
+                            })
+                        {
+                            continue;
+                        }
+                        Some((quote, remaining))
                     } else {
                         None
                     };
@@ -3042,8 +3054,12 @@ impl Store {
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;
                     }
-                    if let Some(quote) = repair_quote {
+                    if let Some((quote, remaining)) = repair_quote {
                         summary["repair_quote_match"] = json!({"copper":quote});
+                        if repair_min_remaining_copper.is_some() {
+                            summary["repair_quote_match"]["wallet_remaining_copper"] =
+                                json!(remaining);
+                        }
                     }
                     if let Some(slots) = durability_matches {
                         summary["equipment_durability_matching_slots"] = json!(slots);

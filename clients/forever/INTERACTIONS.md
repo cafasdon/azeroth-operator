@@ -14,6 +14,9 @@ empty observations do not match.
 The character summary's `repair_status` shows whether the saved wallet
 covers the repair-all quote and how much copper would remain if paid. The
 remainder is null when the wallet is short or either input is missing.
+Use `repair_min_remaining_copper` with `list_snapshots` to find saved
+Forever repair quotes that leave at least that much copper. A reserve of
+zero still requires a quote and enough saved copper to pay it.
 
 For an explicit saved character, `resolve_character` accepts inclusive
 `captured_from` and `captured_through` timestamps. It selects the newest

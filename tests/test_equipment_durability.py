@@ -72,6 +72,10 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(status['wallet_covers_saved_repair_quote'],covers)
                         self.assertEqual(status['wallet_remaining_after_saved_repair_quote_copper'],remaining)
                         self.assertEqual(status['wallet_shortfall_copper'],shortfall)
+                    for reserve, expected in [(0,{budgets[2]:0,budgets[3]:3}),(3,{budgets[3]:3}),(4,{})]:
+                        listed=await call('list_snapshots',family='forever',repair_min_remaining_copper=reserve)
+                        self.assertEqual({row['snapshot_id']:row['repair_quote_match']['wallet_remaining_copper']
+                                          for row in listed['snapshots']},expected)
                     self.assertEqual(captured['data'],value['sections']['equipment_durability'])
                     for key, maximum, expected in [
                         (keys[0],0,[1]),(keys[0],33,[1]),(keys[0],34,[1,16]),
