@@ -82,6 +82,20 @@ class RecipeProducerChoiceTests(unittest.IsolatedAsyncioTestCase):
                                      [{'10':2},{}])
                     self.assertEqual(default,(await plan(reagent_producer_choices=[]))['reagent_chain'])
                     self.assertEqual(default,(await plan(reagent_producer_choices=None))['reagent_chain'])
+                    self.assertNotIn('producer_previews', default)
+                    preview = (await plan(preview_reagent_producer_choices=True))['reagent_chain']
+                    report = preview.pop('producer_previews')
+                    self.assertEqual(preview, default)
+                    self.assertEqual(report['item_id'], 20)
+                    self.assertIs(report['truncated'], False)
+                    self.assertEqual([(row['recipe_id'], row['draft_complete'],
+                                       sum(item['quantity'] for item in row['external_material_requirements']))
+                                      for row in report['candidate_previews']], [(102,True,2),(104,True,0)])
+                    cyclic_preview = (await plan(snapshot_id=variants['active_producer'],
+                                                preview_reagent_producer_choices=True))['reagent_chain']
+                    self.assertEqual(cyclic_preview['producer_previews']['candidate_previews'][0]['blocked_reason'],
+                                     'cyclic_uncovered_demand')
+                    await plan(error=True,suggest_reagent_chain=False,preview_reagent_producer_choices=True)
                     for chosen,external,crafts in [(102,2,2),(104,0,3)]:
                         requested = [{'item_id':20,'recipe_id':chosen}]
                         chain = (await plan(reagent_producer_choices=requested))['reagent_chain']

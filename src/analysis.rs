@@ -972,6 +972,51 @@ pub fn recipe_reagent_chain_with_choices(
     Ok(result)
 }
 
+/// Replan the first unresolved producer choice with a bounded set of explicit alternatives.
+pub fn preview_reagent_producers(
+    chain: &Value,
+    snapshot: &Snapshot,
+    recipe_id: std::num::NonZeroU32,
+    crafts: u32,
+    inventory: Option<&Snapshot>,
+    choices: &[RecipeProducerChoice],
+) -> Result<Value> {
+    let blocked = &chain["blocked_reason"];
+    if blocked["reason"] != "ambiguous_captured_producer" {
+        return Ok(Value::Null);
+    }
+    let item_id = serde_json::from_value(blocked["item_id"].clone())?;
+    let ids: Vec<std::num::NonZeroU32> =
+        serde_json::from_value(blocked["candidate_recipe_ids"].clone())?;
+    let mut previews = Vec::new();
+    for candidate in ids.into_iter().take(4) {
+        let mut selections = choices.to_vec();
+        selections.push(RecipeProducerChoice {
+            item_id,
+            recipe_id: candidate,
+        });
+        let preview =
+            recipe_reagent_chain_with_choices(snapshot, recipe_id, crafts, inventory, &selections)?;
+        let reason = &preview["blocked_reason"];
+        let steps: Vec<_> = preview["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|step| json!({"recipe_id":step["recipe_id"],"crafts":step["crafts"]}))
+            .collect();
+        previews.push(
+            json!({"recipe_id":candidate,"draft_complete":preview["draft_complete"],
+            "blocked_reason":reason["reason"],"blocked_item_id":reason["item_id"],
+            "blocked_recipe_id":reason["recipe_id"],"steps":steps,
+            "external_material_requirements":preview["external_material_requirements"]}),
+        );
+    }
+    Ok(
+        json!({"item_id":item_id,"truncated":blocked["candidate_count"].as_u64().unwrap() > previews.len() as u64,
+        "candidate_previews":previews,"craftability_verified":false}),
+    )
+}
+
 struct RecipeChainDraft<'a> {
     snapshot: &'a Snapshot,
     inventory: Option<&'a Snapshot>,

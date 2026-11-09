@@ -312,6 +312,12 @@ still required.
 Candidates marked `already_active_in_chain` are on the current dependency
 path. Choosing one at that point creates a cycle. Other candidates can
 still lead to a cycle deeper in their dependencies.
+Set `preview_reagent_producer_choices` in chain mode to rerun the plan
+independently for up to four candidates at the first ambiguous reagent.
+Each preview adds one explicit choice to those supplied and shows the
+resulting steps, external material requirements or next blocker. It returns
+null if the original plan does not stop on ambiguity. Further ambiguous
+choices remain unresolved. The original draft and player choice stay separate.
 Chain steps also show a captured default-level craftable count when available,
 including its shortfall against that step's requested crafts. This is a
 point-in-time observation. It stays separate from cumulative charge checks

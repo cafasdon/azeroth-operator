@@ -727,6 +727,9 @@ struct RecipeReview {
     suggest_reagent_chain: bool,
     /// Up to eight explicit item/recipe producer choices within the same bulk capture; requires reagent-chain mode.
     reagent_producer_choices: Option<Vec<azeroth_operator::analysis::RecipeProducerChoice>>,
+    /// Preview up to four alternatives at the first unresolved chain producer choice.
+    #[serde(default)]
+    preview_reagent_producer_choices: bool,
     /// Estimate initial carried material needs and bank withdrawals for the printed reagent-chain order.
     #[serde(default)]
     reagent_chain_stock_plan: bool,
@@ -1346,6 +1349,15 @@ impl Operator {
                 "Producer choices require reagent-chain mode"
             );
             anyhow::ensure!(
+                !args.preview_reagent_producer_choices
+                    || (args.suggest_reagent_chain
+                        && args
+                            .reagent_producer_choices
+                            .as_ref()
+                            .is_none_or(|choices| choices.len() < 8)),
+                "Producer previews require reagent-chain mode and room for one additional choice"
+            );
+            anyhow::ensure!(
                 args.reagent_producer_choices
                     .as_ref()
                     .is_none_or(|choices| choices.len() <= 8),
@@ -1385,6 +1397,17 @@ impl Operator {
                         inventory.as_ref(),
                         args.reagent_producer_choices.as_deref().unwrap_or(&[]),
                     )?;
+                if args.preview_reagent_producer_choices {
+                    let previews = azeroth_operator::analysis::preview_reagent_producers(
+                        &review["reagent_chain"],
+                        &snapshot,
+                        args.recipe_id.unwrap(),
+                        review["requested_crafts"].as_u64().unwrap() as u32,
+                        inventory.as_ref(),
+                        args.reagent_producer_choices.as_deref().unwrap_or(&[]),
+                    )?;
+                    review["reagent_chain"]["producer_previews"] = previews;
+                }
                 if args.reagent_chain_stock_plan {
                     let plan = azeroth_operator::analysis::reagent_chain_stock_plan(
                         &review["reagent_chain"],
