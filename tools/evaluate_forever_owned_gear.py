@@ -19,11 +19,16 @@ async def selected_snapshot(args, deadline):
     snapshot = getattr(args, 'snapshot_id', None)
     name, realm = getattr(args, 'character_name', None), getattr(args, 'character_realm', None)
     client = getattr(args, 'character_client', None)
+    capture_bounds = {
+        field: value
+        for field in ('captured_from', 'captured_through')
+        if (value := getattr(args, field, None)) is not None
+    }
     if snapshot is not None:
-        require(name is None and realm is None and client is None)
+        require(name is None and realm is None and client is None and not capture_bounds)
         return digest(snapshot), 'explicit_saved_snapshot'
     require(isinstance(name, str) and isinstance(realm, str) and name.strip() and realm.strip())
-    request = {'family':'forever', 'character':{'name':name, 'realm':realm}}
+    request = {'family':'forever', 'character':{'name':name, 'realm':realm}, **capture_bounds}
     if client is not None:
         variant, build, interface = client
         require(interface.isascii() and interface.isdecimal() and len(interface) <= 10)
@@ -176,6 +181,8 @@ def parser():
     cli.add_argument('--character-realm', help='Required with --character-name; selects historical owner-store data')
     cli.add_argument('--character-client', nargs=3, metavar=('VARIANT', 'BUILD', 'INTERFACE'),
                      help='Require an exact saved Forever client with --character-name')
+    cli.add_argument('--captured-from', help='Inclusive earliest RFC 3339 capture time with --character-name')
+    cli.add_argument('--captured-through', help='Inclusive latest RFC 3339 capture time with --character-name')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

@@ -8,6 +8,9 @@ The optional `exact_client` requires the capture to match the supplied
 family, variant, build and interface. It also requires an explicit character.
 The owned-gear evaluator accepts `--character-client VARIANT BUILD INTERFACE`
 with a named character to apply that exact constraint before collecting gear.
+With a named character it also accepts inclusive RFC 3339
+`--captured-from` and `--captured-through` bounds, optionally combined
+with the exact client constraint.
 
 Inspect `trainer_services` with either `trainer_max_price_copper` or
 `trainer_max_price_points` to apply an inclusive ceiling to known lesson

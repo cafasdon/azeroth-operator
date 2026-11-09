@@ -184,6 +184,11 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(exact['snapshot_id'],key)
                 self.assertEqual(exact['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
                 self.assertEqual(runs.call_count,calls)
+                bounded = launch(['--checkpoint-only','--captured-from',value['captured_at'],
+                                  '--captured-through',value['captured_at']])
+                self.assertEqual(bounded['snapshot_id'],key)
+                self.assertEqual(bounded['simulation']['ranked_gear_sets'],cached['simulation']['ranked_gear_sets'])
+                self.assertEqual(runs.call_count,calls)
                 argv[:] = original_argv
                 for first,second_stage in zip(captured[::2],captured[1::2],strict=True):
                     self.assertEqual((first[0],second_stage[0]),('collection','simulation'))
@@ -195,7 +200,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 # All invalid/alias inputs stop before creating a new plan journal.
                 for extra in [['--max-pages','0'],['--collection-seconds','181'],['--engine-sha256','0'*64],
                     ['--encounter-weight','0'],['--journal',str(engine)],['--simulation-journal',str(base)],
-                    ['--simulation-journal',str(journal)]]:
+                    ['--simulation-journal',str(journal)],['--captured-through',value['captured_at']]]:
                     launch(['--journal',str(base/'must-not-create.sqlite'),*extra],fails=True)
                     self.assertFalse((base/'must-not-create.sqlite').exists())
                     self.assertEqual(runs.call_count,calls)
