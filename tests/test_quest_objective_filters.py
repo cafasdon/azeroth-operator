@@ -150,6 +150,14 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quote['merchant_snapshot_id'],merchant_key)
                     self.assertEqual(quote['copper_only_bundle_mix_total'],9)
                     self.assertIs(quote['copper_only_bundle_mix_affordable'],False)
+                    bank_quote=(await query(quest_id=3,quest_inventory_requirements=requirements,
+                        quest_inventory_snapshot_id=bank_stock_key,quest_inventory_bank_withdrawals=True,
+                        quest_inventory_merchant_snapshot_id=merchant_key))['quest_inventory_merchant_quote']
+                    self.assertEqual(bank_quote['copper_only_bundle_mix_total'],9)
+                    residual=bank_quote['after_observed_bank_withdrawals']
+                    self.assertEqual(residual['copper_only_bundle_mix_total'],2)
+                    self.assertIs(residual['copper_only_bundle_mix_affordable'],True)
+                    self.assertEqual([row['item_id'] for row in residual['reagents']],[858])
                     newer=await query(quest_id=3,quest_inventory_requirements=requirements,
                         quest_inventory_snapshot_id=changed_key,quest_inventory_merchant_snapshot_id=merchant_key)
                     self.assertEqual(newer['data'],exact['data'])

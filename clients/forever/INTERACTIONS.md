@@ -18,7 +18,11 @@ remain unknown when that storage was unavailable.
 With bags selected, enable `quest_inventory_bank_withdrawals` to see which
 shortfalls could be covered by saved character-bank stock first and
 account-bank stock second. The guide shows remaining shortages and missing
-bank observations. Merchant quotes and source lookups still use bag shortfalls.
+bank observations. Source lookups and the original merchant quote still use
+bag shortfalls. When both withdrawals and merchant quotes are requested, the
+quote includes an `after_observed_bank_withdrawals` estimate for the remaining
+shortages. This estimate assumes the suggested withdrawals can be made and
+does not count unobserved bank stock.
 Add `quest_inventory_merchant_snapshot_id` to price the shortfalls from a
 saved merchant visit for the same character and client. Quotes use the
 inventory capture's wallet and preserve unknown stock or incomplete prices.

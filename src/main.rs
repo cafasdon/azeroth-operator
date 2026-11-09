@@ -3554,6 +3554,21 @@ impl Operator {
                                 serde_json::json!(snapshot.captured_at);
                             quote["purchase_eligibility_verified"] = serde_json::json!(false);
                             quote["quest_item_binding_verified"] = serde_json::json!(false);
+                            if args.quest_inventory_bank_withdrawals {
+                                quote["after_observed_bank_withdrawals"] = value["quest_inventory_review"]
+                                    ["bank_withdrawal_plan"]["rows"]
+                                    .as_array()
+                                    .map(|rows| {
+                                        let residuals: Vec<_> = rows.iter().map(|row| serde_json::json!({
+                                            "item_id":row["item_id"],
+                                            "shortfall_vs_observed":row["remaining_after_observed_withdrawals"],
+                                        })).collect();
+                                        azeroth_operator::analysis::material_merchant_plan(
+                                            &residuals, &merchant, snapshot,
+                                        )
+                                    })
+                                    .unwrap_or(serde_json::Value::Null);
+                            }
                         }
                         value["quest_inventory_merchant_quote"] = quote;
                     }
