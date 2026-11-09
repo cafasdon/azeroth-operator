@@ -10,6 +10,24 @@ Execution performs one source pickup and one target placement. Rejected placemen
 
 Offline test `tests/bag_merge.rs` covers quantity conservation, capacity overflow/missing/changing metadata, changed links, locked stacks, duplicate preimages, rejected placement and later read-only completion. Native functions are mocked. This does not qualify native protection, timing or stack restrictions.
 
-Next: compiler/wire decoder, review/receipt lifecycle, packaging and compatible deployment. Partial merges, sorting and family-specific adapters remain outstanding. No in-game testing is requested while deferred by the user.
+## Branch and policy status
+
+The separate Retail branch `feat/bag-merge-transport` contains the
+compiler, wire decoder and player review/receipt implementation at
+`72e9ab9`. Its branch documentation records offline transport evidence.
+The current source retains the executor and its fixtures. The branch
+transport commit is outside the current history, and the packaged addon
+manifests omit the merge executor and decoder.
+
+The [current MCP policy](operation-policy.md#mcp-enforcement-7-november-2026)
+blocks the legacy bag preparation route used by that branch. Forever has
+no qualified merge adapter. Native compatibility and placement remain
+unverified.
+
+On the current source baseline `fae8fa2`, the offline bag merge executor
+fixture passed. The Rust MCP stdio test separately confirmed that the
+tool catalogue omits bag preparation and a direct call is rejected.
+This verifies the separation between source-only execution fixtures and
+the current MCP surface.
 
 Review evidence: Jev1.14.0 advisory returned insufficient_evidence (probability0.89, confidence0.83), request b3ad4cbdedd82530f21d67d1c5fc58019053ecc850b9c01c6aa9c13a03ccb37f, 767 input/116 output tokens,0.321s. This is not a review pass or native verification. Required adversarial-review instruction file was unavailable at its configured path. Direct source review confirms two bounded writes and observation-only completion; native assumptions remain explicitly unqualified.
