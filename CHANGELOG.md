@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved objective progress totals by type when inspecting a Forever quest.
+
 - Highlight the earliest saved timed quest that was ready to turn in.
 
 - Show saved Forever repair affordability directly when inspecting a repair quote.

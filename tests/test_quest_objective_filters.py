@@ -107,6 +107,12 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone((await query(snapshot_id=missing,
                         quest_list_timed_checklist=True))['timed_quest_checklist'])
                     self.assertNotIn('timed_quest_checklist',default)
+                    exact = await query(quest_id=3)
+                    self.assertEqual(list(exact['objective_quantities_by_kind'].values()), [
+                        {'fulfilled':4,'required':5,'remaining':1,
+                         'counted_objectives':1,'unknown_objectives':0}])
+                    self.assertEqual((await query(quest_id=2))['objective_quantities_by_kind'],{})
+                    self.assertIsNone((await query(quest_id=1))['objective_quantities_by_kind'])
                     await query(error=True,quest_list_timed_checklist=True,quest_id=3)
                     await query(error=True,quest_list_timed_checklist=True,snapshot_id=retail)
                     deadline=await query(quest_projected_expiry_by='2025-01-01T00:01:00Z')

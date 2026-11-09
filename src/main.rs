@@ -3388,6 +3388,13 @@ impl Operator {
                         serde_json::json!(quests.as_object().map(|_| quest.is_some()));
                     value["unfinished_objectives"] =
                         azeroth_operator::analysis::unfinished_quest_objectives(quest);
+                    if value["client"]["family"] == "forever" {
+                        value["objective_quantities_by_kind"] = serde_json::json!(
+                            quest
+                                .and_then(|row| row["objectives"].as_object())
+                                .map(azeroth_operator::analysis::quest_objective_quantities)
+                        );
+                    }
                     let review_snapshot = if args.quest_item_catalogue
                         || args.quest_currency_projection
                         || args.quest_wallet_projection

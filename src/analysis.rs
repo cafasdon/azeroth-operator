@@ -7246,7 +7246,7 @@ fn quest_objective_counts(objectives: &serde_json::Map<String, Value>) -> Value 
     )
 }
 
-fn quest_objective_quantities(objectives: &serde_json::Map<String, Value>) -> Value {
+pub fn quest_objective_quantities(objectives: &serde_json::Map<String, Value>) -> Value {
     let mut counts = BTreeMap::<&str, (u64, u64, u64, usize, usize)>::new();
     for row in objectives.values() {
         let Some(kind) = row["kind"].as_str() else {

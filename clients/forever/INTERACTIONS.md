@@ -4,6 +4,9 @@ The timed quest checklist counts quests with recorded timers that were ready
 to turn in at capture and highlights the one with the shortest remaining
 timer, breaking ties by quest ID. It checks all retained timed quests,
 including those beyond the 20-entry display limit. Failed quests do not count.
+Inspecting a saved Forever quest by ID also reports captured fulfilled,
+required and remaining quantities by objective type, with separate counts
+for objectives whose quantities were unavailable.
 
 Saved equipment comparisons report current and maximum durability changes
 for slots observed in both captures, and list slots seen on only one side.
