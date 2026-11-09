@@ -67,14 +67,22 @@ class BagItemCooldownTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(projected.isError,projected)
                         groups = json.loads(projected.content[0].text)['bag_stack_groups']
                         self.assertEqual(groups['assumed_max_stack_size'],capacity)
-                        self.assertEqual(groups['groups'][0]['capacity_projection'],dict(zip((
+                        projection = groups['groups'][0]['capacity_projection']
+                        fields = (
                             'observed_counts_fit_assumption','minimum_stacks_under_assumption',
-                            'maximum_slots_freed_under_assumption','maximum_disjoint_whole_stack_pairs'),expected)))
+                            'maximum_slots_freed_under_assumption','maximum_disjoint_whole_stack_pairs')
+                        self.assertEqual(tuple(projection[field] for field in fields),expected)
                         self.assertEqual(groups['capacity_projection_summary'],{
                             'estimated_group_count':int(expected[0]),
                             'inconsistent_group_count':int(not expected[0]),
                             'maximum_slots_freed_across_estimated_groups':expected[2] or 0,
                             'maximum_disjoint_whole_stack_pairs_across_estimated_groups':expected[3] or 0})
+                        self.assertEqual(projection['whole_stack_pair_examples'],
+                            None if capacity == 6 else [] if capacity == 7 else [{
+                                'stacks':[{'bag':0,'slot':10,'count':3},{'bag':0,'slot':2,'count':7}],
+                                'combined_count':10}])
+                        self.assertEqual(projection['whole_stack_pair_examples_truncated'],
+                            None if capacity == 6 else False)
                     many = deepcopy(stacks)
                     many['sections']['bags'] = {'0': {str(i):{
                         'item_id':1,'count':1 if i <= 42 else 3,'link':f'group:{(i-1)//2}'}

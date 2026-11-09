@@ -2594,19 +2594,26 @@ pub fn observed_bag_stack_groups(
     let mut estimated_groups = 0;
     let mut maximum_slots_freed = 0;
     let mut disjoint_pairs = 0;
+    let stack_location = |(bag, slot, count)| json!({"bag":bag,"slot":slot,"count":count});
     for rows in &groups {
         let quantity = rows.iter().map(|row| row.2).sum::<u64>();
         let minimum = maximum
             .filter(|maximum| rows.iter().all(|row| row.2 <= *maximum))
             .map(|maximum| quantity.div_ceil(maximum));
         let freed = minimum.map(|count| rows.len() as u64 - count);
+        let mut pair_examples = Vec::new();
         let pairs = maximum.filter(|_| minimum.is_some()).map(|maximum| {
-            let mut counts: Vec<_> = rows.iter().map(|row| row.2).collect();
-            counts.sort_unstable();
-            let (mut low, mut high) = (0, counts.len() - 1);
+            let mut by_count = rows.clone();
+            by_count.sort_unstable_by_key(|&(bag, slot, count)| (count, bag, slot));
+            let (mut low, mut high) = (0, by_count.len() - 1);
             let mut pairs = 0;
             while low < high {
-                if counts[low] + counts[high] <= maximum {
+                let combined = by_count[low].2 + by_count[high].2;
+                if combined <= maximum {
+                    if shown.len() < 20 && pair_examples.len() < 5 {
+                        pair_examples.push(json!({"stacks":[stack_location(by_count[low]),
+                            stack_location(by_count[high])],"combined_count":combined}));
+                    }
                     pairs += 1;
                     low += 1;
                 }
@@ -2622,18 +2629,16 @@ pub fn observed_bag_stack_groups(
         if shown.len() == 20 {
             continue;
         }
-        let locations: Vec<_> = rows
-            .iter()
-            .take(10)
-            .map(|&(bag, slot, count)| json!({"bag":bag,"slot":slot,"count":count}))
-            .collect();
+        let locations: Vec<_> = rows.iter().take(10).copied().map(stack_location).collect();
         let mut group = json!({"stack_count":rows.len(),"total_quantity":quantity,
             "locations":locations,"locations_truncated":rows.len()>locations.len()});
         if maximum.is_some() {
             group["capacity_projection"] = json!({"observed_counts_fit_assumption":minimum.is_some(),
                 "minimum_stacks_under_assumption":minimum,
                 "maximum_slots_freed_under_assumption":freed,
-                "maximum_disjoint_whole_stack_pairs":pairs});
+                "maximum_disjoint_whole_stack_pairs":pairs,
+                "whole_stack_pair_examples_truncated":pairs.map(|count| count>pair_examples.len()),
+                "whole_stack_pair_examples":pairs.map(|_| pair_examples)});
         }
         shown.push(group);
     }

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved bag locations for hypothetical disjoint whole-stack pairs.
+
 - Count disjoint whole-stack pairs that fit the assumed saved bag capacity.
 
 - Total hypothetical bag slot savings across all matching saved stack groups.
