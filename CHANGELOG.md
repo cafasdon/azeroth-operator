@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever instance and world boss resets projected at or before a deadline.
+
 - Find saved Forever loot captures with unreadable or unclassified slots.
 
 - Compare saved Forever loot windows by displayed item quantities, reported currency and slot counts.

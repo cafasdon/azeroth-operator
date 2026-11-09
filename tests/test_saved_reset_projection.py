@@ -48,6 +48,18 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
+                    for selector,name,deadline in [
+                        ('saved_world_boss','Fixture','2025-01-02T00:01:00Z'),
+                        ('saved_world_boss','Unknown','2025-01-03T00:00:00Z'),
+                        ('saved_world_boss','Zero','2025-01-01T23:59:00Z'),
+                        ('saved_instance','Fixture raid','2025-01-02T00:58:59Z'),
+                        ('saved_instance','Fixture raid','2025-01-01T19:59:00-05:00'),
+                    ]:
+                        reply=await session.call_tool('list_snapshots',{'family':'forever',
+                            selector:{'name':name,'projected_reset_by':deadline}})
+                        self.assertFalse(reply.isError,reply)
+                        self.assertEqual([r['snapshot_id'] for r in json.loads(reply.content[0].text)['snapshots']],
+                            [] if name=='Unknown' or deadline.endswith('58:59Z') else [key])
                     async def inspect(snapshot_id=key, section='saved_world_bosses', flag=True, error=False, **extra):
                         args = {'snapshot_id':snapshot_id, 'saved_reset_projection':flag, **extra}
                         if section is not None:

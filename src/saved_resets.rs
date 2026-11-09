@@ -3,6 +3,15 @@ use anyhow::{Result, ensure};
 use chrono::{DateTime, TimeDelta, Utc};
 use serde_json::{Value, json};
 
+pub(crate) fn projected_reset_at(
+    seconds: i64,
+    captured_at: DateTime<Utc>,
+) -> Option<DateTime<Utc>> {
+    TimeDelta::try_seconds(seconds)
+        .filter(|_| seconds >= 0)
+        .and_then(|delta| captured_at.checked_add_signed(delta))
+}
+
 pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) -> Result<Value> {
     ensure!(
         matches!(section, "saved_instances" | "saved_world_bosses"),
@@ -20,10 +29,7 @@ pub fn project(section: &str, data: Option<&Value>, captured_at: DateTime<Utc>) 
     let mut projected = 0;
     for (slot, observation) in entries {
         let seconds = observation["reset_seconds"].as_i64().unwrap();
-        let reset = (seconds >= 0)
-            .then(|| TimeDelta::try_seconds(seconds))
-            .flatten()
-            .and_then(|delta| captured_at.checked_add_signed(delta));
+        let reset = projected_reset_at(seconds, captured_at);
         if reset.is_some() {
             projected += 1;
         }
