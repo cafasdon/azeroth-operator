@@ -62,10 +62,6 @@ fn fixture(setup: &str) -> mlua::Result<Lua> {
         .call::<()>(("AzerothOperator", namespace.clone()))?;
     lua.load(include_str!("../addon/Core.lua"))
         .call::<()>(("AzerothOperator", namespace))?;
-    // The unrelated spellbook collector dereferences Enum before checking its
-    // own API. Keep its access out of this loot-only secret-value fixture while
-    // retaining the real manual capture, serializer, decoder and equipment row.
-    lua.load("AO.collectors.spellbook=nil").exec()?;
     lua.globals().set("fixture_setup", setup)?;
     lua.load(setup).exec()?;
     Ok(lua)

@@ -2140,3 +2140,9 @@ conversion; money amounts stay unknown. Neither becomes owned stock or funds.
 Item requirements distinguish known non-item slots from genuinely unreadable
 slots. [Contract](../../docs/ADR-053-forever-typed-loot-observations.md) ·
 [Offline evidence](../../docs/forever-typed-loot-verification-2026-11-09.md).
+
+Spellbook namespace/getter guards now reject restricted required surfaces before
+lookup/call and omit unreadable optional level/usability metadata independently.
+The typed-loot manual capture fixture again includes spellbook. No schema or
+behavioural action is added; uninstalled addon 0.49.0-dev is verified offline only.
+[Evidence](../../docs/spellbook-guards-verification-2026-11-09.md).

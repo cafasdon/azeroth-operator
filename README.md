@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Spellbook capture now checks required API/enum/getter values before use and
+isolates unreadable optional spell metadata, preserving readable base spell
+entries. The previous loot-fixture spellbook exclusion is removed.
+[Offline guard evidence](docs/spellbook-guards-verification-2026-11-09.md).
+
 Visible loot captures can distinguish raw reported currency rows and money-slot
 presence from item rows when stable public slot types are available. Currency
 container rewards and money amounts remain unverified; nothing is credited to

@@ -1,5 +1,10 @@
 # Changelog
 
+- Guard spellbook API namespaces, nested enums and getter functions before use.
+  Keep required failures unavailable and optional level/usability failures local
+  to those fields. Restore spellbook to typed-loot whole-capture fixtures;
+  verify source-only addon 0.49.0-dev without installation or live testing.
+
 - Observe stable visible loot currency types with raw API IDs/quantities, plus
   money-slot presence without inferred amounts. Add strict readers and separate
   summary counts; retain unknown rows and exclude all displayed loot from stock

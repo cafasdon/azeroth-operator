@@ -449,3 +449,9 @@ presence can now be captured separately. No container reward conversion, money
 amount, owned balance or pickup right is inferred. Item requirement review
 separates known non-item rows from unreadable rows. Native qualification remains
 pending. [Contract](ADR-053-forever-typed-loot-observations.md).
+
+The spellbook restricted-enum/getter gap found during typed-loot verification is
+now fixed in source, and its earlier fixture exclusion is removed. Optional spell
+metadata failures preserve base rows. Offline guards/package checks do not prove
+native availability or all-collector secret-state completeness.
+[Evidence](spellbook-guards-verification-2026-11-09.md).

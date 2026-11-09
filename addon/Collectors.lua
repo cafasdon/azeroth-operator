@@ -2882,17 +2882,32 @@ end
 
 AO.collectors.spellbook = function()
     local api=C_SpellBook
-    local bank,spellType=Enum.SpellBookSpellBank.Player,Enum.SpellBookItemType.Spell
+    assert(questRewardAccessible(api) and type(api)=="table", "Spellbook API unavailable")
+    local enums=Enum
+    assert(questRewardAccessible(enums) and type(enums)=="table", "Spellbook enum unavailable")
+    local banks,kinds=enums.SpellBookSpellBank,enums.SpellBookItemType
+    assert(questRewardAccessible(banks) and type(banks)=="table"
+        and questRewardAccessible(kinds) and type(kinds)=="table", "Spellbook enum unavailable")
+    local bank,spellType=banks.Player,kinds.Spell
     assert(questRewardInteger(bank,0,4294967295) and questRewardInteger(spellType,0,4294967295), "Spellbook API unavailable")
-    local count=api.GetNumSpellBookSkillLines()
+    local function bookGetter(name)
+        assert(questRewardAccessible(C_SpellBook) and rawequal(C_SpellBook,api), "Spellbook API changed")
+        local getter=api[name]
+        assert(questRewardAccessible(getter) and type(getter)=="function", "Spellbook getter unavailable")
+        return getter
+    end
+    local count=bookGetter("GetNumSpellBookSkillLines")()
     assert(questRewardInteger(count,0,64), "Invalid spellbook skill line count")
     -- Project only public primitive observations; timers and GCD state are not read.
-    local function resourceGetter(name,id)
+    local function spellGetter(name)
         local spells=C_Spell
         assert(questRewardAccessible(spells) and type(spells)=="table", "Spell resource API unavailable")
         local getter=spells[name]
         assert(questRewardAccessible(getter) and type(getter)=="function", "Spell resource getter unavailable")
-        local value=getter(id)
+        return getter
+    end
+    local function resourceGetter(name,id)
+        local value=spellGetter(name)(id)
         assert(questRewardAccessible(value), "Restricted spell resource")
         return value
     end
@@ -2925,8 +2940,7 @@ AO.collectors.spellbook = function()
         local cooldownOk,cooldown=pcall(readCooldown,row.spell_id)
         local cooldownAgain,cooldownNext=pcall(readCooldown,row.spell_id)
         local identityOk,unchanged=pcall(function()
-            local getter=api.GetSpellBookItemInfo
-            assert(questRewardAccessible(getter) and type(getter)=="function", "Spellbook recheck unavailable")
+            local getter=bookGetter("GetSpellBookItemInfo")
             local item=getter(slot,bank)
             assert(questRewardAccessible(item) and type(item)=="table", "Spellbook recheck unavailable")
             local kind,action,id=item.itemType,item.actionID,item.spellID
@@ -2943,7 +2957,7 @@ AO.collectors.spellbook = function()
     end
     local entries,visited,total={},{},0
     for line=1,count do
-        local skill=api.GetSpellBookSkillLineInfo(line)
+        local skill=bookGetter("GetSpellBookSkillLineInfo")(line)
         assert(questRewardAccessible(skill) and type(skill)=="table", "Spellbook skill line unavailable")
         local hidden,guild=skill.shouldHide,skill.isGuild
         assert(questRewardAccessible(hidden) and type(hidden)=="boolean"
@@ -2956,7 +2970,7 @@ AO.collectors.spellbook = function()
             for slot=offset+1,offset+length do
                 assert(not visited[slot], "Overlapping spellbook ranges")
                 visited[slot]=true
-                local item=api.GetSpellBookItemInfo(slot,bank)
+                local item=bookGetter("GetSpellBookItemInfo")(slot,bank)
                 assert(questRewardAccessible(item) and type(item)=="table"
                     and questRewardInteger(item.itemType,0,4294967295), "Spellbook entry unavailable")
                 if item.itemType==spellType then
@@ -2967,18 +2981,18 @@ AO.collectors.spellbook = function()
                     if questRewardAccessible(name) and type(name)=="string" and #name>0 and #name<=256 then row.name=name end
                     if questRewardAccessible(passive) and type(passive)=="boolean" then row.passive=passive end
                     if questRewardAccessible(offSpec) and type(offSpec)=="boolean" then row.off_spec=offSpec end
-                    if C_Spell then
-                        local ok,first=pcall(C_Spell.GetSpellLevelLearned,row.spell_id)
+                    do
+                        local ok,first=pcall(resourceGetter,"GetSpellLevelLearned",row.spell_id)
                         if ok and questRewardInteger(first,0,4294967295) then
-                            local read,second=pcall(C_Spell.GetSpellLevelLearned,row.spell_id)
+                            local read,second=pcall(resourceGetter,"GetSpellLevelLearned",row.spell_id)
                             if read and questRewardInteger(second,0,4294967295) and first==second then
                                 row.level_learned=first
                             end
                         end
                     end
-                    if C_Spell and type(C_Spell.IsSpellUsable)=="function" then
+                    do
                         local function readUsability()
-                            local usable,power=C_Spell.IsSpellUsable(row.spell_id)
+                            local usable,power=spellGetter("IsSpellUsable")(row.spell_id)
                             if questRewardAccessible(usable) and type(usable)=="boolean"
                                 and questRewardAccessible(power) and type(power)=="boolean" then
                                 return {usable=usable,insufficient_power=power}
