@@ -168,6 +168,8 @@ struct Inspect {
     /// Suggest saved bank withdrawals for quest item shortfalls in bags.
     #[serde(default)]
     quest_inventory_bank_withdrawals: bool,
+    /// Zero-based page offset for the quest bank withdrawal locations.
+    quest_inventory_bank_withdrawal_offset: Option<usize>,
     /// Compare a saved quest's coin cost and reward with the optional captured wallet.
     #[serde(default)]
     quest_wallet_projection: bool,
@@ -2534,6 +2536,13 @@ impl Operator {
                 "Quest item catalogue requires a quest ID and the quests section",
             )]);
         }
+        if args.quest_inventory_bank_withdrawal_offset.is_some()
+            && !args.quest_inventory_bank_withdrawals
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest withdrawal location paging requires bank withdrawals",
+            )]);
+        }
         if (args.quest_inventory_catalogue_sources
             || args.quest_inventory_bank_withdrawals
             || args.quest_inventory_source_snapshot_id.is_some()
@@ -3480,7 +3489,10 @@ impl Operator {
                             serde_json::json!(quest.zip(quest_stock).map(|(_, snapshot)| {
                                 requirements.review_observed_stock(
                                     snapshot,
-                                    args.quest_inventory_bank_withdrawals,
+                                    args.quest_inventory_bank_withdrawals.then_some(
+                                        args.quest_inventory_bank_withdrawal_offset
+                                            .unwrap_or_default(),
+                                    ),
                                 )
                             }));
                         if let Some(id) = &args.quest_inventory_snapshot_id

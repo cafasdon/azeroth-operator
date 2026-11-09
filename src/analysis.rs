@@ -1182,7 +1182,7 @@ pub fn reagent_chain_stock_plan(
             }))
         })
         .collect();
-    let bank_locations = chain_withdrawal_locations(
+    let bank_locations = bank_withdrawal_locations(
         inventory.unwrap_or(snapshot),
         &bank_withdrawals,
         withdrawal_offset,
@@ -1232,7 +1232,11 @@ pub fn reagent_chain_stock_plan(
     )
 }
 
-fn chain_withdrawal_locations(stock: &Snapshot, withdrawals: &[Value], offset: usize) -> Value {
+pub(crate) fn bank_withdrawal_locations(
+    stock: &Snapshot,
+    withdrawals: &[Value],
+    offset: usize,
+) -> Value {
     let mut locations = Vec::new();
     let mut total_locations = 0;
     for storage in ["character_bank", "account_bank"] {

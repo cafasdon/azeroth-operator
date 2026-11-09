@@ -139,6 +139,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                          'remaining_after_observed_withdrawals':0},
                         {'item_id':858,'bag_shortfall':1,'suggested_withdrawals':{'character_bank':0,'account_bank':0},
                          'remaining_after_observed_withdrawals':1}])
+                    self.assertEqual([row['storage'] for row in bank_plan['suggested_locations']['locations']],
+                                     ['character_bank','account_bank'])
+                    page=(await query(quest_id=3,quest_inventory_requirements=requirements,
+                        quest_inventory_snapshot_id=bank_stock_key,quest_inventory_bank_withdrawals=True,
+                        quest_inventory_bank_withdrawal_offset=1))['quest_inventory_review']['bank_withdrawal_plan']
+                    self.assertEqual(page['rows'],bank_plan['rows'])
+                    self.assertEqual(page['suggested_locations']['locations'],bank_plan['suggested_locations']['locations'][1:])
+                    self.assertEqual(page['suggested_locations']['total_locations'],2)
+                    await query(error=True,quest_id=3,quest_inventory_requirements=requirements,
+                                quest_inventory_bank_withdrawal_offset=0)
                     await query(error=True,quest_id=3,quest_inventory_bank_withdrawals=True,
                                 quest_inventory_requirements={**requirements,'storage':'character_bank'})
                     covered=(await query(quest_id=3,quest_inventory_requirements={

@@ -837,7 +837,7 @@ impl InventoryRequirementsFilter {
     pub fn review_observed_stock(
         &self,
         snapshot: &Snapshot,
-        include_bank_withdrawals: bool,
+        bank_withdrawal_offset: Option<usize>,
     ) -> Value {
         let quantities = self.observed_quantities(snapshot);
         let items: Vec<_> = self.items.iter().map(|row| {
@@ -856,7 +856,7 @@ impl InventoryRequirementsFilter {
             "short_item_count":short_item_count,
             "all_requirements_covered_by_observed_quantities":short_item_count.map(|count| count == 0),
             "quest_item_binding_verified":false,"quest_readiness_verified":false,"live":false});
-        if include_bank_withdrawals {
+        if let Some(offset) = bank_withdrawal_offset {
             report["bank_withdrawal_plan"] = json!(quantities.as_ref().map(|bags| {
                 let bank_stock = |storage| Self { storage, items:self.items.clone() }
                     .observed_quantities(snapshot);
@@ -878,7 +878,13 @@ impl InventoryRequirementsFilter {
                     Some(json!({"item_id":id,"bag_shortfall":shortfall,
                         "suggested_withdrawals":withdrawals,"remaining_after_observed_withdrawals":remaining}))
                 }).collect();
-                json!({"rows":rows,"character_bank_observed":character.is_some(),
+                let amounts: Vec<_> = rows.iter().map(|row| json!({
+                    "item_id":row["item_id"],
+                    "character_bank":row["suggested_withdrawals"]["character_bank"],
+                    "account_bank":row["suggested_withdrawals"]["account_bank"],
+                })).collect();
+                let locations = analysis::bank_withdrawal_locations(snapshot, &amounts, offset);
+                json!({"rows":rows,"suggested_locations":locations,"character_bank_observed":character.is_some(),
                     "account_bank_observed":account.is_some(),"withdrawal_eligibility_verified":false})
             }));
         }

@@ -23,6 +23,10 @@ bag shortfalls. When both withdrawals and merchant quotes are requested, the
 quote includes an `after_observed_bank_withdrawals` estimate for the remaining
 shortages. This estimate assumes the suggested withdrawals can be made and
 does not count unobserved bank stock.
+The withdrawal guide shows saved bank slots and suggested quantities in
+`suggested_locations`. It uses larger stacks first within each bank.
+Set `quest_inventory_bank_withdrawal_offset` to page through the locations
+in groups of 50. Per-item withdrawal quantities remain available on every page.
 Add `quest_inventory_merchant_snapshot_id` to price the shortfalls from a
 saved merchant visit for the same character and client. Quotes use the
 inventory capture's wallet and preserve unknown stock or incomplete prices.
