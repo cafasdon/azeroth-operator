@@ -127,6 +127,14 @@ class RunEncounterWindowTests(unittest.TestCase):
                     if invocation < 3:
                         self.assertFalse(result['requested_results_complete'])
                         self.assertIsNone(result['weighted_ranking'])
+                        partial = result['completed_candidate_ranking']
+                        if invocation == 2:
+                            self.assertIsNotNone(partial)
+                            self.assertEqual(partial['completed_candidate_count'],1)
+                            self.assertEqual(partial['omitted_candidate_count'],1)
+                            self.assertEqual([row['review'] for row in partial['results']],[1])
+                        else:
+                            self.assertIsNone(partial)
                 self.assertTrue(result['requested_results_complete'])
                 self.assertEqual(execute.call_count, 4)
                 weighted = result['weighted_ranking']['results']

@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+Interrupted gear searches can now retain a ranking of loadouts tested in every
+requested encounter. Missing results receive no score or replacement weight;
+unfinished pages stay incomplete and resumable.
+[Partial-result contract](docs/ADR-060-completed-candidate-ranking.md).
+
 Final owned-gear rankings now retain each visited encounter’s engine/profile
 identity, numeric settings, weight and baseline result. Per-loadout evidence
 includes the baseline metric value, so gains remain auditable even with top=1.

@@ -528,3 +528,17 @@ even if top-N excludes the baseline loadout. No raw templates, names, file paths
 or private iteration samples are added. Ranking, work budgets and completeness
 flags are unchanged; no full BiS, native/model accuracy or statistical proof is
 implied. [Contract](ADR-059-ranked-encounter-context.md).
+
+## Useful interrupted gear rankings (2026-11-09)
+
+An incomplete encounter page may expose `completed_candidate_ranking` only when
+all requested encounters were visited and each has its equipped baseline.
+Only review IDs with results in every encounter are ranked, with original
+weights and the selected weighted/worst-encounter objective. DPS requires positive
+baseline DPS; native role metrics retain valid zero baselines. Counts include
+the equipped baseline, and top-N truncation is explicit. Missing results are
+never zero-filled or reweighted. The final saved-journal/evaluator ranking can
+include these saved loadouts under the explicit completed-candidate scope while
+stopping at the same incomplete page. Completed-window counts and full-coverage,
+statistical/global/BiS flags remain unverified. No extra simulation or game action
+is introduced; checkpoints remain resumable.

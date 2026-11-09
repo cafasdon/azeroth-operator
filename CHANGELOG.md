@@ -1,5 +1,10 @@
 # Changelog
 
+- Rank the completed-candidate intersection of an unfinished encounter page,
+  requiring every requested encounter and its baseline. Retain bounded saved
+  loadouts in final partial rankings without advancing the unfinished page or
+  claiming full coverage, statistical optimality or owned BiS.
+
 - Preserve checked encounter engine/profile/fingerprints/settings and baseline
   identities in final saved-journal and unified gear-evaluation reports. Keep
   unvisited encounters and absent baselines explicit; attach baseline metric

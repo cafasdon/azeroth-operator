@@ -113,6 +113,7 @@ async def execute(args, *, deadline=None):
     progress = []
     stop = 'no_saved_work' if source['window_count'] == 0 else 'page_budget'
     exhausted = False
+    incomplete_page_candidates = None
     for _ in range(args.max_pages if source['window_count'] else 0):
         if monotonic() >= deadline:
             stop = 'time_budget'
@@ -157,16 +158,22 @@ async def execute(args, *, deadline=None):
             progress.append({'after_window_offset_decimal': str(cursor) if cursor is not None else None,
                 'selected_window_count': count, 'page_status': page['page_status'],
                 'weighted_status': comparison['weighted_status']})
-        if not selected['page_results_complete']:
+        page_complete = selected['page_results_complete']
+        if not page_complete:
             stop = 'incomplete_page'
-            break
-        completed += count
-        if comparison['weighted_status'] != 'complete_for_selected_resolved_requests':
-            stop = comparison['weighted_status']
-            break
+            ranking = comparison.get('completed_candidate_ranking')
+            if ranking is None:
+                break
+            require(ranking['ranking_objective'] == objective and ranking['rank_by'] == metric)
+            incomplete_page_candidates = ranking['completed_candidate_count']
+        else:
+            completed += count
+            if comparison['weighted_status'] != 'complete_for_selected_resolved_requests':
+                stop = comparison['weighted_status']
+                break
+            ranking = comparison['weighted_ranking'] if metric=='dps' else comparison['metric_ranking']
         first = {row['review']: row for row in profiles[0]['result']['results']}
         metrics = [{row['review']: row for row in profile['result']['results']} for profile in profiles]
-        ranking = comparison['weighted_ranking'] if metric=='dps' else comparison['metric_ranking']
         for weighted in ranking['results']:
             review = weighted['review']
             gear = digest(weighted['simulator_gear_sha256'])
@@ -195,6 +202,8 @@ async def execute(args, *, deadline=None):
             leaders = dict(sorted(leaders.items(), key=lambda item:
                 (-item[1]['ranking_score'], item[0]) if objective == 'weighted_gain' else
                 (-item[1]['ranking_score'], -item[1][weighted_field], item[0]))[:args.top])
+        if not page_complete:
+            break
         next_cursor = selected['resume_after_window_offset_decimal']
         if next_cursor is None:
             exhausted = True
@@ -214,7 +223,10 @@ async def execute(args, *, deadline=None):
             'baseline':baselines.get(index)} for index,context in sorted(contexts.items())],
         'unvisited_encounter_indices':[index for index in range(1,len(weights)+1) if index not in contexts],
         'all_saved_resolved_results_complete': complete, 'ranking_scope':
-            'all_saved_resolved_requests' if complete else 'completed_pages_only',
+            'all_saved_resolved_requests' if complete else
+            'completed_candidates_across_all_requested_encounters' if incomplete_page_candidates is not None
+            else 'completed_pages_only',
+        'incomplete_page_completed_candidate_count':incomplete_page_candidates,
         'ranking_objective':objective,
         'rank_by':metric,'ranking_score_unit':roles.UNITS[metric],
         'ranking_basis': ('role_metric_point_estimates_not_statistical_optimality' if metric!='dps' else

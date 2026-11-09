@@ -25,8 +25,59 @@ def normalise_weights(weights, count):
     return result
 
 
+def completed_candidate_ranking(results, weights, metric, requested_count, gear,
+                                objective='weighted_gain', top=20):
+    """Rank only the intersection observed against a baseline in every encounter."""
+    require(objective in ('weighted_gain', 'worst_encounter_gain'))
+    integer(top, 1, 20)
+    integer(requested_count, 1)
+    if len(results) != len(weights) or not results:
+        return None
+    profiles = []
+    for result in results:
+        rows = {}
+        for row in result['results']:
+            review = integer(row['review'], 1, requested_count)
+            require(review not in rows)
+            rows[review] = row
+        if 1 not in rows or metric == 'dps' and roles.value(rows[1], metric) <= 0:
+            return None
+        profiles.append(rows)
+    common = set.intersection(*(set(rows) for rows in profiles))
+    subset = [{'baseline_review':1, 'results':[rows[review] for review in sorted(common)]}
+              for rows in profiles]
+    ranking = (weighted_ranking(subset, weights) if metric == 'dps'
+               else roles.weighted_ranking(subset, weights, metric))
+    score_field = 'weighted_dps_gain_pct' if metric == 'dps' else 'weighted_improvement'
+    gain_field = 'gain_pct_by_encounter' if metric == 'dps' else 'improvement_by_encounter'
+    value_field = 'mean_dps_by_encounter' if metric == 'dps' else 'metric_values_by_encounter'
+    rows = []
+    for ranked in ranking['results']:
+        review = ranked['review']
+        gains = ([100 * profile[review]['mean_dps_delta_from_baseline'] / profile[1]['mean_dps']
+                  for profile in profiles] if metric == 'dps' else ranked[gain_field])
+        values = [roles.value(profile[review], metric) for profile in profiles]
+        score = ranked[score_field]
+        require(all(type(value) in (int,float) and isfinite(value) for value in [score,*gains,*values]))
+        rows.append({'review':review, 'simulator_gear_sha256':digest(gear[review]),
+            score_field:score, gain_field:gains, value_field:values,
+            'ranking_score':score if objective == 'weighted_gain' else min(gains)})
+    rows.sort(key=lambda row:(-row['ranking_score'], -row[score_field], row['simulator_gear_sha256']))
+    return {'basis':'completed_candidates_across_all_requested_encounters',
+        'rank_by':metric, 'ranking_objective':objective, 'score_unit':roles.UNITS[metric],
+        'requested_candidate_count':requested_count, 'completed_candidate_count':len(common),
+        'omitted_candidate_count':requested_count-len(common), 'top_limit':top,
+        'results_truncated':len(rows)>top, 'results':rows[:top],
+        'requested_results_complete':False, 'global_ranking_verified':False,
+        'best_in_slot_verified':False, 'feasible_set_coverage_verified':False,
+        'aggregate_ranking_uncertainty_verified':False, 'game_execution':False}
+
+
 async def execute(args, *, deadline=None):
     metric = roles.rank_by(args)
+    objective = getattr(args, 'ranking_objective', 'weighted_gain')
+    require(objective in ('weighted_gain', 'worst_encounter_gain'))
+    top = integer(getattr(args, 'top', 20), 1, 20)
     count = len(args.encounter_lookup)
     require(1 <= count <= 8)
     weights = normalise_weights(args.encounter_weight, count)
@@ -93,7 +144,10 @@ async def execute(args, *, deadline=None):
             status = 'complete_for_selected_resolved_requests'
         else:
             status = 'nonpositive_baseline'
+    partial = (completed_candidate_ranking(results, weights, metric, identities['count'], gear, objective, top)
+               if not complete and identities is not None else None)
     report = {'mode': 'saved_window_encounter_comparison', 'encounter_weights': weights,
+        'completed_candidate_ranking':partial,
         'rank_by':metric,'metric_ranking':metric_ranking,
         'requested_encounter_count': count, 'visited_encounter_count': len(profiles),
         'unvisited_encounters': list(range(len(profiles) + 1, count + 1)),
@@ -117,6 +171,8 @@ def main(argv=None):
     cli.add_argument('--window-offset', type=int, action='append', required=True)
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--rank-by',choices=roles.FIELDS,default='dps')
+    cli.add_argument('--ranking-objective', choices=['weighted_gain', 'worst_encounter_gain'], default='weighted_gain',
+        help='Objective for the explicitly incomplete completed-candidate ranking')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)

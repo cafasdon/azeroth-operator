@@ -218,6 +218,31 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertEqual((cached['new_runs'],cached['checkpoint_hits']),(0,8))
                 self.assertEqual(result['ranked_gear_sets'],cached['ranked_gear_sets'])
                 self.assertEqual(result['encounter_contexts'],cached['encounter_contexts'])
+                # Real cached requests, but one alternative lacks its second encounter.
+                # Retain the fully compared alternative without treating this page as done.
+                from tools.simulation_journal import SimulationJournal
+                original_key, original_get = SimulationJournal.key, SimulationJournal.get
+                hidden = set()
+                def request_key(instance, engine, request, *flags):
+                    key = original_key(instance, engine, request, *flags)
+                    ids = {item.get('id') for item in request['raid']['parties'][0]['players'][0]['equipment']['items']}
+                    if 4550 in ids and request['encounter']['duration'] == 90:
+                        hidden.add(key)
+                    return key
+                def available(instance, key):
+                    return None if key in hidden else original_get(instance, key)
+                with patch.object(SimulationJournal, 'key', request_key), patch.object(SimulationJournal, 'get', available):
+                    subset = launch(['--checkpoint-only','--page-limit','3'])
+                self.assertEqual(subset['ranking_scope'],'completed_candidates_across_all_requested_encounters')
+                self.assertEqual(subset['incomplete_page_completed_candidate_count'],2)
+                self.assertFalse(subset['all_saved_resolved_results_complete'])
+                self.assertEqual(subset['completed_window_count'],0)
+                self.assertEqual(subset['stop_reason'],'incomplete_page')
+                self.assertAlmostEqual(subset['ranked_gear_sets'][0]['weighted_dps_gain_pct'],25)
+                self.assertEqual(subset['ranked_gear_sets'][1]['weighted_dps_gain_pct'],0)
+                self.assertEqual(subset['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4549)
+                self.assertEqual(subset['ranked_gear_sets'][0]['simulation_evidence_by_encounter'][1]['mean_dps'],130)
+                self.assertEqual(subset['new_runs'],0)
                 narrow = launch(['--checkpoint-only','--page-limit','1','--top','1'])
                 self.assertEqual(narrow['ranked_gear_sets'],cached['ranked_gear_sets'][:1])
                 self.assertEqual(narrow['encounter_contexts'],cached['encounter_contexts'])
