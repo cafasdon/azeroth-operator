@@ -1,5 +1,7 @@
 # Changelog
 
+- Show captured dungeon and raid lockout details in the combined Forever reset schedule.
+
 - Limit combined saved Forever reset schedules to a requested play window.
 
 - Merge saved Forever instance and world boss reset schedules in character summary.

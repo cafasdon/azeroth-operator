@@ -107,7 +107,9 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         {'at':'2025-01-02T00:01:00Z','entries':[
                             {'section':'saved_world_bosses','slot':1,'name':'Fixture'}]},
                         {'at':'2025-01-02T00:59:00Z','entries':[
-                            {'section':'saved_instances','slot':1,'name':'Fixture raid'}]}])
+                            {'section':'saved_instances','slot':1,'name':'Fixture raid',
+                             'saved_instance_details':{'difficulty_id':1,'locked':True,
+                                'extended':True,'is_raid':True,'max_players':40}}]}])
                     self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
                     self.assertIs(schedule['current_lockout_verified'],False)
                     window = await session.call_tool('character_summary', {

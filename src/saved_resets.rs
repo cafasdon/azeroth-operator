@@ -157,11 +157,17 @@ pub fn combined_schedule(
             if let Some(reset) =
                 reset.filter(|reset| *reset > reference && through.is_none_or(|end| *reset <= end))
             {
-                by_time
-                    .entry(reset)
-                    .or_default()
-                    .push(json!({"section":section,"slot":row["slot"],
-                    "name":row["observation"]["name"]}));
+                let observation = &row["observation"];
+                let mut entry =
+                    json!({"section":section,"slot":row["slot"],"name":observation["name"]});
+                if section == "saved_instances" {
+                    entry["saved_instance_details"] = json!({
+                        "difficulty_id":observation["difficulty_id"],
+                        "locked":observation["locked"],"extended":observation["extended"],
+                        "is_raid":observation["is_raid"],"max_players":observation["max_players"],
+                    });
+                }
+                by_time.entry(reset).or_default().push(entry);
             }
         }
     }
