@@ -783,7 +783,7 @@ struct OwnedGearReview {
     catalogue_matched: Option<bool>,
     /// Filter owned locations by the exact simulator-input resolution status before paging.
     simulator_item_resolution: Option<azeroth_operator::forever_catalogue::SimulatorItemResolution>,
-    /// Count all matching locations by simulator-input status before paging.
+    /// Count all matching locations by simulator-input status and storage before paging.
     #[serde(default)]
     include_simulator_item_resolution_counts: bool,
     /// Exclude known catalogue conflicts against the saved character. Unknown eligibility can still match.

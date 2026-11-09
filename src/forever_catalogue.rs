@@ -3432,6 +3432,8 @@ pub fn review_owned(
     let mut unavailable_storage = Vec::new();
     let mut included = 0usize;
     let mut resolution_counts = BTreeMap::<SimulatorItemResolution, usize>::new();
+    let mut resolution_counts_by_storage =
+        BTreeMap::<&str, BTreeMap<SimulatorItemResolution, usize>>::new();
     let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
     let target_slot = simulator_slot.and_then(|target| {
         (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
@@ -3543,9 +3545,12 @@ pub fn review_owned(
             {
                 return;
             }
-            if include_resolution_counts {
-                *resolution_counts
-                    .entry(simulator_item_resolution.unwrap())
+            if include_resolution_counts && let Some(status) = simulator_item_resolution {
+                *resolution_counts.entry(status).or_default() += 1;
+                *resolution_counts_by_storage
+                    .entry(storage)
+                    .or_default()
+                    .entry(status)
                     .or_default() += 1;
             }
             if on_page {
@@ -3609,6 +3614,7 @@ pub fn review_owned(
         "live":false,"ranked":false,"equip_legality_verified":false});
     if include_resolution_counts {
         result["simulator_item_resolution_counts"] = json!(resolution_counts);
+        result["simulator_item_resolution_counts_by_storage"] = json!(resolution_counts_by_storage);
     }
     result["inventory_evidence"] = json!({
         "scope":"all_observed_storage_before_filters",

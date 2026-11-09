@@ -105,16 +105,23 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue((await session.call_tool('review_forever_owned_gear', {
                         'snapshot_id':mixed_id,'simulator_item_resolution':'unknown'})).isError)
                     counts_field = 'simulator_item_resolution_counts'
+                    storage_counts_field = 'simulator_item_resolution_counts_by_storage'
                     self.assertNotIn(counts_field, await review(mixed_id))
+                    self.assertNotIn(storage_counts_field, await review(mixed_id))
                     expected_counts = {status:count for status,count in by_status.items() if count}
                     for offset in [0,1,4,99]:
                         counted = await review(mixed_id, include_simulator_item_resolution_counts=True,
                                                offset=offset, limit=1)
                         self.assertEqual(counted.pop(counts_field), expected_counts)
+                        self.assertEqual(counted.pop(storage_counts_field), {
+                            'equipment':{'item_link_unresolved':1},
+                            'bags':{'catalogue_item_unavailable':2,'resolved':1},
+                        })
                         self.assertEqual(counted, await review(mixed_id, offset=offset, limit=1))
                     filtered_counts = await review(mixed_id, include_simulator_item_resolution_counts=True,
                                                    simulator_input_resolved=False, catalogue_matched=True)
                     self.assertEqual(filtered_counts[counts_field], {'item_link_unresolved':1})
+                    self.assertEqual(filtered_counts[storage_counts_field], {'equipment':{'item_link_unresolved':1}})
                     self.assertEqual((await review(empty_id,
                         include_simulator_item_resolution_counts=True))[counts_field], {})
                     evidence = result['inventory_evidence']

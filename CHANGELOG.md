@@ -1,5 +1,7 @@
 # Changelog
 
+- Break down Forever simulator resolution counts by observed storage.
+
 - Count matching Forever owned-item locations by simulator resolution before paging.
 
 - Filter saved Forever owned items by their exact simulator resolution status.
