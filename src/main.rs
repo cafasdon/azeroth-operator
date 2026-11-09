@@ -557,6 +557,8 @@ struct RecipeReview {
     /// Draft up to eight automatic captured producer steps for one exact bulk recipe; no batch or merchant mode.
     #[serde(default)]
     suggest_reagent_chain: bool,
+    /// Up to eight explicit item/recipe producer choices within the same bulk capture; requires reagent-chain mode.
+    reagent_producer_choices: Option<Vec<azeroth_operator::analysis::RecipeProducerChoice>>,
     /// Match material shortfalls against saved merchant offers.
     #[serde(default)]
     merchant_reagent_plan: bool,
@@ -1080,7 +1082,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Compare one to eight saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. Exact recipe_id selects bulk observations. A standalone exact recipe can suggest a bounded reagent producer chain, sharing modeled stock and listing external needs; ambiguous or unsupported evidence blocks expansion. Offline drafts only, no crafting actions.",
+        description = "Compare saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. An exact standalone bulk recipe can suggest a bounded reagent chain with explicit captured producer choices for ambiguous reagents. Modeled stock is shared; unsupported evidence still blocks. Offline drafts only, no crafting actions.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -1094,6 +1096,16 @@ impl Operator {
                 "Merchant snapshot requires a merchant reagent plan"
             );
             let additional = args.additional_recipes.unwrap_or_default();
+            anyhow::ensure!(
+                args.reagent_producer_choices.is_none() || args.suggest_reagent_chain,
+                "Producer choices require reagent-chain mode"
+            );
+            anyhow::ensure!(
+                args.reagent_producer_choices
+                    .as_ref()
+                    .is_none_or(|choices| choices.len() <= 8),
+                "Too many reagent producer choices"
+            );
             anyhow::ensure!(
                 !args.suggest_reagent_chain
                     || (args.recipe_id.is_some()
@@ -1121,12 +1133,14 @@ impl Operator {
                 inventory.as_ref(),
             )?;
             if args.suggest_reagent_chain {
-                review["reagent_chain"] = azeroth_operator::analysis::recipe_reagent_chain(
-                    &snapshot,
-                    args.recipe_id.unwrap(),
-                    review["requested_crafts"].as_u64().unwrap() as u32,
-                    inventory.as_ref(),
-                )?;
+                review["reagent_chain"] =
+                    azeroth_operator::analysis::recipe_reagent_chain_with_choices(
+                        &snapshot,
+                        args.recipe_id.unwrap(),
+                        review["requested_crafts"].as_u64().unwrap() as u32,
+                        inventory.as_ref(),
+                        args.reagent_producer_choices.as_deref().unwrap_or(&[]),
+                    )?;
             }
             if let Some(id) = args.inventory_snapshot_id {
                 review["inventory_snapshot_id"] = serde_json::json!(id);

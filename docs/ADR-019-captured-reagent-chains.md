@@ -41,3 +41,7 @@ batch, dependency-order and merchant-plan modes cannot be combined with this
 option. Their existing behaviour is preserved. Pricing external leaves and
 supporting caller-selected alternatives are future extensions. All gameplay
 execution and verified ownership/craftability/optimisation flags remain false.
+
+Subsequent extension, 9 November 2026: ADR 020 implements caller-selected
+captured producers for ambiguity. Automatic selection remains unambiguous-only;
+external-leaf pricing is still future work.

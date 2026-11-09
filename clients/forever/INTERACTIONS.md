@@ -1,5 +1,14 @@
 # Forever interaction map
 
+Reagent-chain drafts accept up to eight explicit `reagent_producer_choices` to
+resolve captured producer ambiguity. Every unique positive item/recipe mapping
+must match a fixed output in the same bulk capture. Only uncovered demand
+consults a choice; unused valid mappings do not force production. Requested and
+consulted choices are reported without claiming completed crafting. Existing
+conflict, inventory, yield, cycle and budget guards remain; no fallback or action
+is introduced.
+[Offline evidence](../../docs/reagent-producer-choices-verification-2026-11-09.md).
+
 An exact bulk recipe review can opt into `suggest_reagent_chain`. The bounded
 producer draft reuses observed stock and conditional minimum-yield leftovers,
 chooses only unambiguous captured fixed producers, and lists external material

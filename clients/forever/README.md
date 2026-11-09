@@ -23,9 +23,26 @@ outputs and external acquisitions never become observed inventory. Unknown
 nonmaterial checks remain unknown, and all ownership, yield, optimisation and
 craftability verification flags stay false.
 
+To resolve an ambiguous intermediate, supply `reagent_producer_choices`, for
+example `[{"item_id":20,"recipe_id":104}]`. At most eight unique item mappings
+are allowed. Each positive item/recipe pair must match a fixed output in the
+same bulk recipe capture, even if it is not needed; a producer found only in
+the inventory capture does not qualify. This option requires chain mode.
+Without a choice, multiple producers still block. A choice never bypasses
+learning conflicts, unknown yields, cycles, inventory context or step/craft
+budgets, and a blocked chosen recipe does not fall back to another producer.
+
+Nonempty lists add `requested_producer_choices` and `used_producer_choices` to
+the chain. Used means consulted for uncovered demand, including a later blocked
+attempt; it does not mean crafted. Sufficient intermediate stock avoids
+production and leaves its choice unused. Structurally valid unused choices do
+not imply learned status or usable yields. Null/empty lists in chain mode retain
+automatic defaults. Final remaining-item projections cover touched chain items,
+not all possessions. See [ADR 020](../../docs/ADR-020-explicit-reagent-producers.md).
+
 Normal root recipe, request and inventory validation still runs first and can
 reject the whole review, including a root learning conflict. During expansion,
-multiple captured producers, an uncovered cycle, unknown output/yield,
+multiple captured producers without an explicit choice, an uncovered cycle, unknown output/yield,
 producer learning conflicts, unobserved inventory or step/craft limits return a
 blocked chain with an explicit reason. Its prefix steps are incomplete; full external
 requirements and final stock projection are null. This mode requires an exact

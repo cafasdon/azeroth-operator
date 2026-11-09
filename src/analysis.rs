@@ -511,6 +511,24 @@ pub fn recipe_reagent_chain(
     crafts: u32,
     inventory: Option<&Snapshot>,
 ) -> Result<Value> {
+    recipe_reagent_chain_with_choices(snapshot, recipe_id, crafts, inventory, &[])
+}
+
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeProducerChoice {
+    pub item_id: std::num::NonZeroU32,
+    pub recipe_id: std::num::NonZeroU32,
+}
+
+pub fn recipe_reagent_chain_with_choices(
+    snapshot: &Snapshot,
+    recipe_id: std::num::NonZeroU32,
+    crafts: u32,
+    inventory: Option<&Snapshot>,
+    choices: &[RecipeProducerChoice],
+) -> Result<Value> {
+    ensure!(choices.len() <= 8, "Too many reagent producer choices");
     ensure!(
         snapshot.client.family == crate::Family::Forever && (1..=1000).contains(&crafts),
         "Invalid recipe chain request"
@@ -543,10 +561,26 @@ pub fn recipe_reagent_chain(
     for choices in producers.values_mut() {
         choices.sort_unstable();
     }
+    let mut selected = BTreeMap::new();
+    for choice in choices {
+        let item = u64::from(choice.item_id.get());
+        ensure!(
+            selected.insert(item, choice.recipe_id).is_none(),
+            "Duplicate reagent producer choice"
+        );
+        ensure!(
+            producers
+                .get(&item)
+                .is_some_and(|candidates| candidates.contains(&choice.recipe_id)),
+            "Producer choice must match a captured fixed recipe output"
+        );
+    }
     let mut chain = RecipeChainDraft {
         snapshot,
         inventory,
         producers,
+        choices: selected,
+        used_choices: BTreeSet::new(),
         balance: stock.quantities,
         inventory_observed: !stock.observed.is_empty(),
         active: BTreeSet::new(),
@@ -572,8 +606,7 @@ pub fn recipe_reagent_chain(
         "quantity":chain.balance.get(id).copied().unwrap_or(0)})
         })
         .collect();
-    Ok(
-        json!({"basis":"captured_fixed_recipes_observed_stock_and_reported_minimum_yields",
+    let mut result = json!({"basis":"captured_fixed_recipes_observed_stock_and_reported_minimum_yields",
         "root_recipe_id":recipe_id,"root_crafts":crafts,"maximum_steps":8,
         "status":if complete {"draft_complete"} else {"blocked"},"draft_complete":complete,"blocked_reason":blocked,
         "steps":chain.steps,"external_material_requirements":complete.then_some(external),
@@ -582,14 +615,27 @@ pub fn recipe_reagent_chain(
         "observed_storage":stock.observed,"unobserved_storage":stock.missing,
         "recipe_captured_at":snapshot.captured_at,"inventory_captured_at":inventory.unwrap_or(snapshot).captured_at,
         "complete_ownership_verified":false,"minimum_yields_verified":false,"optimisation_verified":false,
-        "craftability_verified":false,"live":false,"game_execution":false}),
-    )
+        "craftability_verified":false,"live":false,"game_execution":false});
+    if !choices.is_empty() {
+        result["requested_producer_choices"] = json!(choices);
+        result["used_producer_choices"] = json!(
+            chain
+                .used_choices
+                .iter()
+                .map(|item| json!({
+            "item_id":item,"recipe_id":chain.choices[item]}))
+                .collect::<Vec<_>>()
+        );
+    }
+    Ok(result)
 }
 
 struct RecipeChainDraft<'a> {
     snapshot: &'a Snapshot,
     inventory: Option<&'a Snapshot>,
     producers: BTreeMap<u64, Vec<std::num::NonZeroU32>>,
+    choices: BTreeMap<u64, std::num::NonZeroU32>,
+    used_choices: BTreeSet<u64>,
     balance: BTreeMap<u64, u64>,
     inventory_observed: bool,
     active: BTreeSet<u32>,
@@ -637,14 +683,18 @@ impl RecipeChainDraft<'_> {
             if available < demand {
                 let deficit = demand - available;
                 let choices = self.producers.get(&item).map(Vec::as_slice).unwrap_or(&[]);
-                if choices.len() > 1 {
+                let explicit = self.choices.get(&item).copied();
+                if explicit.is_none() && choices.len() > 1 {
                     return Err(
                         json!({"reason":"ambiguous_captured_producer","item_id":item,
                     "candidate_recipe_ids":choices.iter().take(20).collect::<Vec<_>>(),"candidate_count":choices.len(),
                     "candidates_truncated":choices.len()>20}),
                     );
                 }
-                if let Some(producer) = choices.first().copied() {
+                if let Some(producer) = explicit.or_else(|| choices.first().copied()) {
+                    if explicit.is_some() {
+                        self.used_choices.insert(item);
+                    }
                     let row = &self.snapshot.sections["profession_recipe_materials"]["entries"]
                         [producer.to_string()];
                     let minimum = row["base_output_quantity"]["minimum"].as_u64().filter(|n|*n > 0)

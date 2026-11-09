@@ -1,5 +1,9 @@
 # Changelog
 
+- Resolve reagent-chain ambiguity with explicit same-capture item/recipe
+  producer choices; validate every mapping, report requested/consulted choices
+  and preserve existing evidence, stock, cycle and budget guards.
+
 - Draft bounded ingredient producer chains from captured recipes, sharing
   observed stock and minimum-yield leftovers across steps and listing external
   needs; stop on ambiguous producers, cycles, missing evidence or budgets.

@@ -189,3 +189,9 @@ producers and external material needs, with a shared stock ledger and explicit
 blockers. The model does not execute actions, establish acquisition availability,
 verify yields/ownership or optimise the full crafting route. These and native
 profession qualification remain unfinished.
+
+[Explicit captured producer choices](reagent-producer-choices-verification-2026-11-09.md)
+then let a caller resolve reagent-chain ambiguity without selecting recipes by
+guesswork. Same-output/capture validation, demand-driven usage and existing
+producer/context/budget guards remain. Conditional drafts still do not verify
+availability, craftability, ownership or optimality.
