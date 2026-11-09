@@ -572,6 +572,8 @@ struct Compare {
     /// Compare saved Forever pet action bar contexts and slot readings.
     #[serde(default)]
     pet_action_bar_changes: bool,
+    /// Compare saved bag cooldown readings for an exact Forever item ID.
+    bag_cooldown_item_id: Option<std::num::NonZeroU32>,
     /// Compare saved Forever buyback entries without attributing transactions.
     #[serde(default)]
     merchant_buyback_changes: bool,
@@ -1937,6 +1939,7 @@ impl Operator {
                     player_aura_changes: args.player_aura_changes,
                     weapon_enchant_changes: args.weapon_enchant_changes,
                     pet_action_bar_changes: args.pet_action_bar_changes,
+                    bag_cooldown_item_id: args.bag_cooldown_item_id,
                     merchant_buyback_changes: args.merchant_buyback_changes,
                     repair_quote_changes: args.repair_quote_changes,
                     player_aura_spell_id: args.player_aura_spell_id,

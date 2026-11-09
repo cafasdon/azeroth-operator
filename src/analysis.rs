@@ -2823,6 +2823,7 @@ pub struct ComparisonSelectors {
     pub player_aura_changes: bool,
     pub weapon_enchant_changes: bool,
     pub pet_action_bar_changes: bool,
+    pub bag_cooldown_item_id: Option<std::num::NonZeroU32>,
     pub merchant_buyback_changes: bool,
     pub repair_quote_changes: bool,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3220,6 +3221,14 @@ pub fn compare_observations(
             after,
             selectors.player_aura_spell_id.map(|id| u64::from(id.get())),
         );
+    }
+    if let Some(item_id) = selectors.bag_cooldown_item_id {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Bag item cooldown comparison requires Forever"
+        );
+        comparison["bag_cooldown_item_observations"] =
+            compare_bag_cooldown_item(before, after, item_id.get());
     }
     if selectors.pet_action_bar_changes {
         ensure!(
@@ -4539,6 +4548,46 @@ fn compare_bag_capacity_slots(before: &Snapshot, after: &Snapshot) -> Option<Vec
             })
             .collect(),
     )
+}
+
+fn compare_bag_cooldown_item(before: &Snapshot, after: &Snapshot, item_id: u32) -> Value {
+    let observe = |snapshot: &Snapshot| {
+        let entries = snapshot.sections.get("bag_item_cooldowns")?["entries"].as_object()?;
+        let mut reported = 0;
+        let mut unavailable = 0;
+        let mut enabled = 0;
+        let mut zero_enabled = 0;
+        let mut minimum_enabled_seconds = None::<u64>;
+        for row in entries
+            .values()
+            .filter_map(Value::as_object)
+            .flat_map(|slots| slots.values())
+        {
+            if row["item_id"].as_u64() != Some(u64::from(item_id)) {
+                continue;
+            }
+            if row["status"] == "reported" {
+                reported += 1;
+                if row["enabled"] == true {
+                    let remaining = row["remaining_seconds"].as_u64()?;
+                    enabled += 1;
+                    zero_enabled += usize::from(remaining == 0);
+                    minimum_enabled_seconds =
+                        Some(minimum_enabled_seconds.map_or(remaining, |min| min.min(remaining)));
+                }
+            } else {
+                unavailable += 1;
+            }
+        }
+        Some(json!({
+            "matching_item_locations":reported + unavailable,
+            "reported_item_locations":reported,"unavailable_item_locations":unavailable,
+            "enabled_item_locations":enabled,"zero_timer_enabled_item_locations":zero_enabled,
+            "minimum_enabled_remaining_seconds":minimum_enabled_seconds,
+        }))
+    };
+    json!({"item_id":item_id,"before":observe(before),"after":observe(after),
+        "same_physical_item_verified":false,"current_usability_verified":false,"live":false})
 }
 
 fn compare_pet_action_bars(before: &Snapshot, after: &Snapshot) -> Value {

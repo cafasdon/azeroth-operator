@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved carried-item cooldown observations for an exact Forever item ID.
+
 - Compare saved Forever crafting preparation for a requested selected-recipe batch.
 
 - Find saved Forever flight quotes that preserve a requested wallet reserve.

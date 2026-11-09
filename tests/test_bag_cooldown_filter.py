@@ -90,6 +90,27 @@ class BagCooldownFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(large_result['matched_item_locations'],4096)
                     self.assertEqual(len(large_result['rows']),50)
                     self.assertEqual(large_result['rows'][-1]['slot'],50)
+                    async def compare(after, item_id, before=key, error=False):
+                        reply = await session.call_tool('compare_snapshots', {
+                            'before_id':before,'after_id':after,'bag_cooldown_item_id':item_id})
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['bag_cooldown_item_observations']
+
+                    compared = await compare(empty_key, 100)
+                    self.assertEqual(compared['before'], {
+                        'matching_item_locations':3,'reported_item_locations':2,
+                        'unavailable_item_locations':1,'enabled_item_locations':2,
+                        'zero_timer_enabled_item_locations':1,'minimum_enabled_remaining_seconds':0})
+                    self.assertEqual(compared['after']['matching_item_locations'], 0)
+                    self.assertIsNone(compared['after']['minimum_enabled_remaining_seconds'])
+                    self.assertIs(compared['same_physical_item_verified'], False)
+                    self.assertIs(compared['current_usability_verified'], False)
+                    self.assertIsNone((await compare(legacy_key, 100))['after'])
+                    self.assertIsNone((await compare(key, 101))['before']['minimum_enabled_remaining_seconds'])
+                    self.assertEqual((await compare(large_key, 100))['after']['unavailable_item_locations'], 4096)
+                    await compare(key, 0, error=True)
+                    await compare(retail_key, 100, before=retail_key, error=True)
                     invalid=[{}, {'item_ids':[]},{'item_ids':[100,100]},{'item_ids':[0]},
                         {'item_ids':[True]},{'item_ids':list(range(1,66))},{'status':'ready'},
                         {'enabled':1},{'minimum_remaining_seconds':True},{'minimum_remaining_seconds':-1},

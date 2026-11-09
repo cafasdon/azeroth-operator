@@ -2889,3 +2889,13 @@ Only numeric candidate_page_cache statistics are reported. Full caches fall back
 to fresh MCP requests, and a new invocation starts empty. No page cache files,
 new public cache input, lower simulation precision or broader BiS claim. See
 docs/ADR-074-invocation-owned-page-reuse.md.
+
+
+## Saved carried-item cooldown comparison
+
+Use `compare_snapshots.bag_cooldown_item_id` to compare two saved readings for
+one base item ID. Each side counts reported, unavailable and enabled locations
+and shows the minimum enabled timer, including explicit zero readings. Missing
+cooldown coverage gives a null side. An observed section with no match gives
+zero matching locations. This does not establish physical item continuity or
+current item usability.
