@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
+destinations with known fares at or below the ceiling. The filter excludes
+map transitions and can be combined with captured wallet affordability.
+
 Saved pet food location summaries group bag quantities and stack counts by
 accepted food item ID. Totals include matching stacks beyond the displayed
 location limit and describe the saved bags.

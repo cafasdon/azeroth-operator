@@ -70,6 +70,8 @@ struct Inspect {
     flight_wallet_projection: bool,
     /// Select a captured flight-map node by its exact ID.
     flight_node_id: Option<std::num::NonZeroU32>,
+    /// Keep reachable non-transition destinations at or below this saved fare.
+    flight_max_fare_copper: Option<u64>,
     /// Check up to seven onward flight legs using explicit saved captures.
     flight_onward_legs: Option<Vec<FlightLeg>>,
     /// Find a route across this saved flight panel and optional onward panels.
@@ -2073,14 +2075,22 @@ impl Operator {
         }
         let filter_flight = args.flight_node_id.is_some()
             || args.flight_reachable_only
-            || args.flight_affordable_only;
+            || args.flight_affordable_only
+            || args.flight_max_fare_copper.is_some();
+        if args
+            .flight_max_fare_copper
+            .is_some_and(|fare| fare > 9_999_999_999_999)
+        {
+            return CallToolResult::error(vec![ContentBlock::text("Invalid flight fare ceiling")]);
+        }
         if args.flight_onward_legs.as_ref().is_some_and(|legs| {
             args.flight_node_id.is_none()
                 || !(1..=7).contains(&legs.len())
                 || args.flight_affordable_only
+                || args.flight_max_fare_copper.is_some()
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Flight itinerary requires a destination and one to seven onward legs, without the affordability filter",
+                "Flight itinerary requires a destination and one to seven onward legs, without affordability or fare filters",
             )]);
         }
         if args.flight_wallet_reserve_copper.is_some_and(|reserve| {
@@ -2893,9 +2903,14 @@ impl Operator {
                             entries.retain(|_, node| {
                                 args.flight_node_id.is_none_or(|id| {
                                     node["node_id"].as_u64() == Some(u64::from(id.get()))
-                                }) && (!(args.flight_reachable_only || args.flight_affordable_only)
+                                }) && (!(args.flight_reachable_only
+                                    || args.flight_affordable_only
+                                    || args.flight_max_fare_copper.is_some())
                                     || (node["state"] == "reachable"
                                         && node["map_transition"] == false))
+                                    && args.flight_max_fare_copper.is_none_or(|max| {
+                                        node["fare_copper"].as_u64().is_some_and(|fare| fare <= max)
+                                    })
                                     && (!args.flight_affordable_only
                                         || node["fare_copper"]
                                             .as_u64()
@@ -2905,6 +2920,9 @@ impl Operator {
                             entries.len()
                         });
                     value["flight_match_count"] = serde_json::json!(count);
+                    if let Some(max) = args.flight_max_fare_copper {
+                        value["flight_max_fare_copper"] = serde_json::json!(max);
+                    }
                 }
                 if args.flight_wallet_projection {
                     value["flight_wallet_projection"] =

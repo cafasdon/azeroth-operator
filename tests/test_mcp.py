@@ -364,6 +364,14 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "family": "forever", "flight_max_fare_copper": 0,
                         })).isError)
                         self.assertFalse(filtered_data["has_more"])
+                        fare_view=await session.call_tool("inspect_snapshot",{
+                            "snapshot_id":forever_key,"section":"flight_map","flight_max_fare_copper":0,
+                        })
+                        self.assertFalse(fare_view.isError,fare_view)
+                        fares=json.loads(fare_view.content[0].text)
+                        self.assertEqual(fares["flight_match_count"],1)
+                        self.assertEqual(fares["data"]["entries"]["2"]["node_id"],14)
+                        self.assertEqual(fares["flight_max_fare_copper"],0)
                         affordable_capture = json.loads(json.dumps(forever))
                         affordable_capture["sections"]["flight_map"]["entries"]["2"]["node_id"] = 15
                         affordable_capture["sections"].pop("wallet", None)

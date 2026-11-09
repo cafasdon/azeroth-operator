@@ -1,5 +1,7 @@
 # Changelog
 
+- Shortlist saved Forever flight destinations by a recorded fare ceiling.
+
 - Show observed pet food item coverage in saved Forever pet-care comparisons.
 
 - Include saved bag locations and counts when inspecting Forever pet care.
