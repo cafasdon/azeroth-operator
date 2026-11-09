@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+Saved-loot discovery can find captures that displayed an item, a raw reported
+currency ID or a money slot. Quantity bounds apply only to matching readable
+rows in one capture; money amounts remain unknown. With `latest_per_character`,
+newest valid selection precedes feature filtering, and displayed loot receives no owned-stock
+or balance credit. [Query contract](docs/ADR-054-saved-loot-discovery.md).
+
 Spellbook capture now checks required API/enum/getter values before use and
 isolates unreadable optional spell metadata, preserving readable base spell
 entries. The previous loot-fixture spellbook exclusion is removed.

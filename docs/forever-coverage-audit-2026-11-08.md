@@ -455,3 +455,9 @@ now fixed in source, and its earlier fixture exclusion is removed. Optional spel
 metadata failures preserve base rows. Offline guards/package checks do not prove
 native availability or all-collector secret-state completeness.
 [Evidence](spellbook-guards-verification-2026-11-09.md).
+
+Saved-loot discovery now finds item/raw-currency quantities or money presence in
+one historical owner capture, retaining unreadable rows and false ownership,
+reward, balance and live flags. Latest-valid selection remains before feature
+predicates; no character pooling or game action. Native/hosted qualification
+remains pending. [Contract](ADR-054-saved-loot-discovery.md).

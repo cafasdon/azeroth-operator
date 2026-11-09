@@ -8,6 +8,7 @@ pub mod equipment_set_operation;
 pub mod forever_catalogue;
 pub mod forever_talent_identity;
 pub mod import;
+pub mod loot_observation;
 pub mod macro_operation;
 pub mod planning;
 mod schema;
@@ -1249,6 +1250,7 @@ pub struct CaptureFilters<'a> {
     pub latest_per_character: bool,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
+    pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
     pub tracked_recipe_kind: Option<TrackedRecipeKind>,
@@ -1449,6 +1451,7 @@ impl Store {
             latest_per_character,
             inventory_item,
             inventory_requirements,
+            loot_observation,
             recipe: filters,
             tracked_recipe_id,
             tracked_recipe_kind,
@@ -1549,6 +1552,13 @@ impl Store {
         let profession_recipe_key = profession_recipe
             .as_ref()
             .map(|filter| filter.recipe_id.to_string());
+        ensure!(
+            loot_observation.is_none() || family == Family::Forever,
+            "Loot observation filtering requires Forever"
+        );
+        if let Some(filter) = &loot_observation {
+            filter.validate()?;
+        }
         ensure!(
             mail_attachment.is_none() || family == Family::Forever,
             "Pending mail attachment filtering requires Forever"
@@ -1934,6 +1944,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if inventory_requirements.is_some() && inventory_requirements_match.is_none() {
+                        continue;
+                    }
+                    let loot_observation_match = loot_observation
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if loot_observation.is_some() && loot_observation_match.is_none() {
                         continue;
                     }
                     let pet_species_match=pet_species.as_ref().zip(pet_species_key.as_ref()).and_then(|(filter,key)| {
@@ -2573,6 +2589,9 @@ impl Store {
                     }
                     if let Some(observation) = inventory_requirements_match {
                         summary["inventory_requirements_match"] = observation;
+                    }
+                    if let Some(observation) = loot_observation_match {
+                        summary["loot_observation_match"] = observation;
                     }
                     if let Some(observation) = active_pet_match {
                         summary["active_pet_match"] = observation;

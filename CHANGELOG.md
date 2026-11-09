@@ -1,5 +1,10 @@
 # Changelog
 
+- Add list_snapshots.loot_observation to discover historical item/raw-currency
+  observations by same-capture readable quantity, or money-slot presence.
+  Require an actual matching row even for zero; preserve latest/unknown/owner
+  boundaries and keep loot separate from inventory, funds and pickup rights.
+
 - Guard spellbook API namespaces, nested enums and getter functions before use.
   Keep required failures unavailable and optional level/usability failures local
   to those fields. Restore spellbook to typed-loot whole-capture fixtures;

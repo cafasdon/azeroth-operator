@@ -2146,3 +2146,11 @@ lookup/call and omit unreadable optional level/usability metadata independently.
 The typed-loot manual capture fixture again includes spellbook. No schema or
 behavioural action is added; uninstalled addon 0.49.0-dev is verified offline only.
 [Evidence](../../docs/spellbook-guards-verification-2026-11-09.md).
+
+Saved-loot discovery: `list_snapshots.loot_observation` accepts item ID/readable
+quantity bounds, raw reported currency ID/readable quantity bounds, or money
+presence with no amount fields. It requires at least one matching displayed
+row, respects latest-valid captures before feature predicates, and composes with
+character/date/profession/inventory filters. It never credits owned stock or
+balances. [Contract](../../docs/ADR-054-saved-loot-discovery.md) ·
+[Offline evidence](../../docs/loot-discovery-verification-2026-11-09.md).

@@ -326,6 +326,8 @@ struct List {
     inventory_item: Option<azeroth_operator::InventoryItemFilter>,
     /// Find one capture whose explicit storage covers every item requirement; never pool characters or imply craftability.
     inventory_requirements: Option<azeroth_operator::InventoryRequirementsFilter>,
+    /// Find historical displayed loot; raw currency/money observations never imply ownership, rewards or balances.
+    loot_observation: Option<azeroth_operator::loot_observation::LootObservationFilter>,
     /// Find a recorded currency balance at or above the requested quantity.
     currency_balance: Option<azeroth_operator::CurrencyBalanceFilter>,
     /// Find an observed standard faction rank at or above the requested reaction.
@@ -1622,6 +1624,7 @@ impl Operator {
                 pet_food: args.pet_food,
                 inventory_item: args.inventory_item,
                 inventory_requirements: args.inventory_requirements,
+                loot_observation: args.loot_observation,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
                 renown: args.renown,
