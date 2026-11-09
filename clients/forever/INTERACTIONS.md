@@ -2701,6 +2701,15 @@ an explicit reported order index remains part of the observed row. A missing
 panel leaves changes unknown. This compares captured descriptions without
 establishing the same NPC, dialogue, or current availability.
 
+## Saved selected-recipe batch preparation
+
+Use `compare_snapshots.selected_recipe_preparation_crafts` with 1 to 1,000
+crafts to review the saved preparation on each side. The review uses each
+capture's own selected recipe, bags, visible banks, observed charges and
+crafting conditions. It reports missing storage and identifies when the
+selected recipe IDs differ. An absent recipe gives a null side. The result
+describes captured evidence and leaves crafting eligibility unverified.
+
 ## Recipe item-capacity shortlist (2026-11-09)
 
 Set `order: reported_cooldown_remaining_asc` on `search_forever_recipes` to put

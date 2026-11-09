@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever crafting preparation for a requested selected-recipe batch.
+
 - Find saved Forever flight quotes that preserve a requested wallet reserve.
 
 - Compare saved Forever visible dialogue options while retaining duplicate counts.

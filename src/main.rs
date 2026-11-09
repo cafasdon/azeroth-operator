@@ -609,6 +609,8 @@ struct Compare {
     /// Compare observations for the selected recipe, only deriving changes when recipe IDs agree.
     #[serde(default)]
     selected_recipe_changes: bool,
+    /// Compare saved preparation for this many crafts of the selected Forever recipe (1 to 1000).
+    selected_recipe_preparation_crafts: Option<u32>,
     /// Compare recorded collected mount IDs and flags, without inferring gains or losses.
     #[serde(default)]
     mount_collection_changes: bool,
@@ -1921,6 +1923,7 @@ impl Operator {
                     quest_readiness_changes: args.quest_readiness_changes,
                     achievement_status_changes: args.achievement_status_changes,
                     selected_recipe_changes: args.selected_recipe_changes,
+                    selected_recipe_preparation_crafts: args.selected_recipe_preparation_crafts,
                     mount_collection_changes: args.mount_collection_changes,
                     toy_view_changes: args.toy_view_changes,
                     saved_instance_changes: args.saved_instance_changes,

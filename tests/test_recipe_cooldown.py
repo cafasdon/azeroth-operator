@@ -27,6 +27,7 @@ class RecipeCooldownTests(unittest.IsolatedAsyncioTestCase):
                 "requirements": "fixed_items", "reagents": {"744": 1},
                 "cooldown": {"remaining_seconds": 30, "charges": 0, "max_charges": 2},
             }
+            before["sections"]["bags"] = {"0":{"1":{"item_id":744,"count":1}}}
             before_id = store.ingest(before)
             after = copy.deepcopy(before)
             after["captured_at"] = "2025-01-02T00:00:00Z"
@@ -34,6 +35,7 @@ class RecipeCooldownTests(unittest.IsolatedAsyncioTestCase):
             recipe["learned"] = True
             recipe["reagents"]["744"] = 2
             recipe["cooldown"].update(remaining_seconds=20, charges=2)
+            after["sections"]["bags"]["0"]["1"]["count"] = 4
             after_id = store.ingest(after)
             renamed = copy.deepcopy(after)
             renamed["sections"]["selected_recipe"]["name"] = "Localised recipe"
@@ -80,6 +82,30 @@ class RecipeCooldownTests(unittest.IsolatedAsyncioTestCase):
                         absent = (await compare(old, new))["selected_recipe_changes"]
                         self.assertIsNone(absent["same_recipe"])
                         self.assertIsNone(absent["changed_observations"])
+                    async def preparation(new, crafts=2, error=False):
+                        response = await session.call_tool("compare_snapshots", {
+                            "before_id":before_id, "after_id":new,
+                            "selected_recipe_preparation_crafts":crafts,
+                        })
+                        self.assertEqual(bool(response.isError), error, response)
+                        if not error:
+                            return json.loads(response.content[0].text)["selected_recipe_preparation"]
+
+                    prep = await preparation(after_id)
+                    self.assertEqual(prep["requested_crafts"], 2)
+                    self.assertIs(prep["same_recipe"], True)
+                    for side, available in [("before", False), ("after", True)]:
+                        checks = prep[side]["checks"]
+                        self.assertIs(checks["bags_cover_fixed_reagents"], available)
+                        self.assertIs(checks["observed_charges_cover_request"], available)
+                        self.assertIsNone(checks["observed_conditions_met"])
+                        self.assertEqual(prep[side]["unobserved_storage"], ["character_bank","account_bank"])
+                    self.assertIs(prep["craftability_verified"], False)
+                    self.assertIs((await preparation(changed_id))["same_recipe"], False)
+                    self.assertIsNone((await preparation(missing_id))["after"])
+                    self.assertNotIn("selected_recipe_preparation", await compare(before_id, after_id))
+                    await preparation(missing_id, 0, error=True)
+                    await preparation(after_id, 1001, error=True)
                     rejected = await session.call_tool("compare_snapshots", {
                         "before_id": retail_id, "after_id": retail_id, "selected_recipe_changes": True})
                     self.assertTrue(rejected.isError)

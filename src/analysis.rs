@@ -2837,6 +2837,7 @@ pub struct ComparisonSelectors {
     pub quest_readiness_changes: bool,
     pub achievement_status_changes: bool,
     pub selected_recipe_changes: bool,
+    pub selected_recipe_preparation_crafts: Option<u32>,
     pub mount_collection_changes: bool,
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
@@ -3271,6 +3272,14 @@ pub fn compare_observations(
             before.sections.get("selected_recipe"),
             after.sections.get("selected_recipe"),
         );
+    }
+    if let Some(crafts) = selectors.selected_recipe_preparation_crafts {
+        ensure!(
+            before.client.family == crate::Family::Forever && (1..=1000).contains(&crafts),
+            "Selected recipe preparation comparison requires Forever and 1 to 1000 crafts"
+        );
+        comparison["selected_recipe_preparation"] =
+            compare_selected_recipe_preparation(before, after, crafts)?;
     }
     if selectors.mount_collection_changes {
         ensure!(
@@ -5151,6 +5160,38 @@ fn compare_mount_collection(before: &Value, after: &Value) -> Value {
         "before_observed_flag_counts":mount_flag_counts(old),
         "after_observed_flag_counts":mount_flag_counts(new),
         "before_catalogue_count":before["catalogue_count"],"after_catalogue_count":after["catalogue_count"]})
+}
+
+fn compare_selected_recipe_preparation(
+    before: &Snapshot,
+    after: &Snapshot,
+    crafts: u32,
+) -> Result<Value> {
+    let observe = |snapshot: &Snapshot| -> Result<Option<Value>> {
+        let Some(recipe) = snapshot.sections.get("selected_recipe") else {
+            return Ok(None);
+        };
+        let review = review_recipe_observation(snapshot, recipe, crafts, None)?;
+        Ok(Some(json!({
+            "recipe_id":recipe["recipe_id"],
+            "checks":review["captured_preparation"],
+            "cooldown_state":review["captured_cooldown_state"],
+            "material_capacity":review["material_capacity"],
+            "material_capacity_basis":review["material_capacity_basis"],
+            "unobserved_storage":review["unobserved_storage"],
+            "shortfall_vs_observed_recipe_charges":review["shortfall_vs_observed_recipe_charges"],
+        })))
+    };
+    let old = observe(before)?;
+    let new = observe(after)?;
+    let same_recipe = old
+        .as_ref()
+        .zip(new.as_ref())
+        .map(|(old, new)| old["recipe_id"] == new["recipe_id"]);
+    Ok(json!({
+        "requested_crafts":crafts,"before":old,"after":new,"same_recipe":same_recipe,
+        "craftability_verified":false,"game_execution":false,"live":false,
+    }))
 }
 
 fn compare_selected_recipe(before: Option<&Value>, after: Option<&Value>) -> Value {
