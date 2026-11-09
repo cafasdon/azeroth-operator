@@ -1175,6 +1175,7 @@ impl RecipeChainDraft<'_> {
         self.steps.push(json!({"recipe_id":id,"crafts":crafts,"output_item_id":output,
             "minimum_output_if_completed":quantity,"required_reagents":required,
             "captured_charge_accounting":charges,
+            "unmet_crafting_conditions":review["unmet_crafting_conditions"],
             "captured_nonmaterial_checks":{"recipe_learned":review["captured_preparation"]["recipe_learned"],
                 "observed_conditions_met":review["captured_preparation"]["observed_conditions_met"],
                 "observed_charges_cover_cumulative_crafts":charges["covers_cumulative_crafts"],
