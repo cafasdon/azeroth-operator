@@ -2779,6 +2779,14 @@ impl Operator {
                         );
                 }
                 if let Some(reserve) = args.trainer_balance_reserve {
+                    let ordered_budget = args.trainer_service_slots.as_deref().map(|slots| {
+                        azeroth_operator::analysis::trainer_order_budget(
+                            &value["data"],
+                            slots,
+                            trainer_balance_field,
+                            trainer_spendable,
+                        )
+                    });
                     let (projection_key, total_key) =
                         if trainer_balance_field == "price_training_points" {
                             ("trainer_points_projection", "total_price_points")
@@ -2801,6 +2809,9 @@ impl Operator {
                                 else { budget.map(|(cost, balance)| cost <= balance) },
                             "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance))
                         }));
+                        if let Some(ordered_budget) = ordered_budget {
+                            projection["after_reserve"]["ordered_lesson_budget"] = ordered_budget;
+                        }
                     }
                 }
                 if args.trainer_requirements_review {
@@ -2819,11 +2830,13 @@ impl Operator {
                         snapshot.sections.get("skill_lines"),
                         snapshot.sections.get("spellbook"),
                     );
-                    for projection in ["trainer_wallet_projection", "trainer_points_projection"] {
-                        if let Some(blocked) = value
-                            .get_mut(projection)
-                            .and_then(|value| value.get_mut("ordered_lesson_budget"))
-                            .and_then(|value| value.get_mut("first_uncovered_lesson"))
+                    for pointer in [
+                        "/trainer_wallet_projection/ordered_lesson_budget/first_uncovered_lesson",
+                        "/trainer_points_projection/ordered_lesson_budget/first_uncovered_lesson",
+                        "/trainer_wallet_projection/after_reserve/ordered_lesson_budget/first_uncovered_lesson",
+                        "/trainer_points_projection/after_reserve/ordered_lesson_budget/first_uncovered_lesson",
+                    ] {
+                        if let Some(blocked) = value.pointer_mut(pointer)
                             && let Some(slot) = blocked["slot"].as_u64()
                             && let Some(requirements) =
                                 requirements["unavailable_lessons_by_slot"].get(slot.to_string())

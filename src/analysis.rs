@@ -5773,7 +5773,7 @@ fn trainer_cheapest_affordable(
     Some(json!({"lesson_slots":slots,"lesson_count":slots.len(),"total_price":subtotal}))
 }
 
-fn trainer_order_budget(
+pub fn trainer_order_budget(
     trainer: &Value,
     slots: &[std::num::NonZeroU32],
     price_field: &str,

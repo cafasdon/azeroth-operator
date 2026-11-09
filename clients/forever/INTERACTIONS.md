@@ -14,6 +14,10 @@ affects shortlist selection. Budget projections still report against the
 original recorded balance and add an `after_reserve` breakdown when a
 reserve is supplied. This checks whether all retained available lessons
 fit together after the reserve.
+With `trainer_service_slots`, the after-reserve breakdown also reports how
+many lessons fit in the requested order and identifies the first blocker.
+A slot excluded by the shortlist is reported as `lesson_not_retained`.
+The ordered result is null if the captured balance cannot cover the reserve.
 
 Inspect `flight_map` with `flight_max_fare_copper` to shortlist reachable
 destinations with known fares at or below the ceiling. The filter excludes

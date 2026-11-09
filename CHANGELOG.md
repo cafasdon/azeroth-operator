@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how far an ordered Forever trainer lesson plan gets after reserving part of the saved balance.
+
 - Show a separate after-reserve budget in saved Forever trainer projections.
 
 - Reserve copper or pet training points when shortlisting affordable saved Forever trainer lessons.
