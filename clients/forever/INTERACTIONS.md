@@ -20,6 +20,8 @@ together with the deadline. Reversed windows are rejected.
 `character_summary` lists up to 20 saved timed quests, shortest reported
 timer first, with historical expiry and turn-in readiness. Quests without
 reported timers are counted separately.
+Use `quest_list_timed_checklist: true` when inspecting the `quests` section
+to build the same checklist from quests retained by your filters.
 
 `compare_snapshots` accepts `saved_world_boss_changes: true` to compare
 reported reset durations by unique case-insensitive boss names. Duplicate

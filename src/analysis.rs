@@ -6868,7 +6868,7 @@ pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     json!({"ready_for_turn_in":ready,"turn_in_not_ready":not_ready,"failed":failed,"turn_in_unknown":unknown})
 }
 
-fn timed_quest_checklist(
+pub fn timed_quest_checklist(
     quests: &serde_json::Map<String, Value>,
     captured_at: chrono::DateTime<chrono::Utc>,
 ) -> Value {

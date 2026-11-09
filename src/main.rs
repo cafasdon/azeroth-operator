@@ -140,6 +140,9 @@ struct Inspect {
     /// Total fixed item rewards and identify item choices across retained Forever quests.
     #[serde(default)]
     quest_list_item_rewards: bool,
+    /// Show the shortest saved quest timers after applying all quest filters.
+    #[serde(default)]
+    quest_list_timed_checklist: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -2193,6 +2196,7 @@ impl Operator {
                 || args.quest_list_currency_projection
                 || args.quest_list_renown_projection
                 || args.quest_list_item_rewards
+                || args.quest_list_timed_checklist
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -2250,6 +2254,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Quest timer selection requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_list_timed_checklist
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Timed quest checklist requires the quests section without a quest ID",
             )]);
         }
         if (args.quest_max_required_copper.is_some() || args.quest_within_captured_wallet)
@@ -2876,6 +2887,7 @@ impl Operator {
                     || args.quest_list_currency_projection
                     || args.quest_list_renown_projection
                     || args.quest_list_item_rewards
+                    || args.quest_list_timed_checklist
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -3178,6 +3190,20 @@ impl Operator {
                                 projected_expiries.retain(|id, _| quests.contains_key(id));
                                 projected_expiries
                             }));
+                    }
+                    if args.quest_list_timed_checklist {
+                        value["timed_quest_checklist"] = serde_json::json!(
+                            data.as_object()
+                                .zip(value["captured_at"].as_str().and_then(|text| {
+                                    text.parse::<chrono::DateTime<chrono::Utc>>().ok()
+                                }))
+                                .map(|(quests, captured_at)| {
+                                    azeroth_operator::analysis::timed_quest_checklist(
+                                        quests,
+                                        captured_at,
+                                    )
+                                })
+                        );
                     }
                     value["data"] = data;
                 }
