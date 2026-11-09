@@ -105,6 +105,17 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn('pvp_rank_match',plain['snapshots'][0])
                     await call('list_snapshots',error=True,family='forever',minimum_pvp_rank=4,maximum_pvp_rank=3)
                     await call('list_snapshots',error=True,family='retail',maximum_pvp_rank=0)
+                    season = await call('list_snapshots',family='forever',pvp_season_id=7,minimum_pvp_rank=3,maximum_pvp_rank=3)
+                    self.assertEqual({row['snapshot_id'] for row in season['snapshots']}, {valid[11][0],valid[12][0]})
+                    self.assertTrue(all(row['pvp_rank_match']['reported_season_id']==7 for row in season['snapshots']))
+                    second_page = await call('list_snapshots',family='forever',pvp_season_id=7,limit=1,offset=1)
+                    self.assertEqual([row['snapshot_id'] for row in second_page['snapshots']], [season['snapshots'][1]['snapshot_id']])
+                    for filters in [{'pvp_season_id':7,'minimum_pvp_rank':4}, {'pvp_season_id':9},
+                                    {'pvp_season_id':7,'latest_per_character':True}]:
+                        self.assertEqual((await call('list_snapshots',family='forever',**filters))['snapshots'],[])
+                    for bad_season in [0,True,-1,1.5,'7',4294967296]:
+                        await call('list_snapshots',error=True,family='forever',pvp_season_id=bad_season)
+                    await call('list_snapshots',error=True,family='retail',pvp_season_id=7)
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:

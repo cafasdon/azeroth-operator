@@ -39,6 +39,18 @@ If both captures report a season ID, `reported_season_ids_match` says whether
 the numbers agree. Older captures or unavailable season reads produce null.
 Season continuity and earned points remain unknown even when the IDs match.
 
+Use `pvp_season_id` on `list_snapshots` with `family: forever` to find captures
+reporting that positive season ID. Rank bounds apply to the same observation.
+Captures without the ID are excluded. With `latest_per_character`, the latest
+capture in the requested date range must match. Results include the reported
+season ID in `pvp_rank_match` when available.
+
+The offline build and three MCP tests passed. The season fixture covered rank
+intersection, paging, missing observations, latest selection and malformed IDs.
+Jev 1.14.0 advisory `4b4627018d90cf65bfd5b3c5c34e9d1e8445afd2229ab78dd8afa05a27ebdddc`
+favoured integration at .24 confidence, with 395 input and 49 output tokens in
+.300 seconds.
+
 The offline build and three scoped MCP tests passed. The PvP fixture verified
 that both comparison projections match their character summaries and that a
 missing side stays null. Jev 1.14.0 advisory

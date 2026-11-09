@@ -1314,6 +1314,7 @@ pub struct CaptureFilters<'a> {
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
     pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     pub pvp_rank_range: (Option<u32>, Option<u32>),
+    pub pvp_season_id: Option<std::num::NonZeroU32>,
     pub group_context: Option<GroupContextFilter>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
@@ -1520,6 +1521,7 @@ impl Store {
             gossip_option,
             outgoing_trade_item_id,
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
+            pvp_season_id,
             group_context,
             recipe: filters,
             tracked_recipe_id,
@@ -1643,10 +1645,11 @@ impl Store {
             outgoing_trade_item_id.is_none() || family == Family::Forever,
             "Outgoing trade filtering requires Forever"
         );
-        let filter_pvp_rank = minimum_pvp_rank.is_some() || maximum_pvp_rank.is_some();
+        let filter_pvp =
+            minimum_pvp_rank.is_some() || maximum_pvp_rank.is_some() || pvp_season_id.is_some();
         ensure!(
-            !filter_pvp_rank || family == Family::Forever,
-            "PvP rank filtering requires Forever"
+            !filter_pvp || family == Family::Forever,
+            "PvP filtering requires Forever"
         );
         ensure!(
             minimum_pvp_rank
@@ -2083,18 +2086,26 @@ impl Store {
                     if group_context.is_some() && group_context_match.is_none() {
                         continue;
                     }
-                    let pvp_rank_match = if filter_pvp_rank {
+                    let pvp_rank_match = if filter_pvp {
                         let Some(progression) = s.sections.get("player_pvp_progression") else {
                             continue;
                         };
                         let rank = progression["rank"].as_u64().unwrap();
                         if minimum_pvp_rank.is_some_and(|min| rank < u64::from(min))
                             || maximum_pvp_rank.is_some_and(|max| rank > u64::from(max))
+                            || pvp_season_id.is_some_and(|id| {
+                                progression["reported_season_id"].as_u64()
+                                    != Some(u64::from(id.get()))
+                            })
                         {
                             continue;
                         }
-                        Some(json!({"rank":rank,"faction_id":progression["faction_id"],
-                            "coverage":progression["coverage"],"current_progression_verified":false}))
+                        let mut observation = json!({"rank":rank,"faction_id":progression["faction_id"],
+                            "coverage":progression["coverage"],"current_progression_verified":false});
+                        if let Some(season) = progression.get("reported_season_id") {
+                            observation["reported_season_id"] = season.clone();
+                        }
+                        Some(observation)
                     } else {
                         None
                     };

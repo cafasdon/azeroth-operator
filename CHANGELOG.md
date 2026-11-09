@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by exact reported PvP season ID.
+
 - Capture a stable reported Forever PvP season ID and compare saved IDs.
 
 - Find saved Forever captures by reported home or instance group context.
