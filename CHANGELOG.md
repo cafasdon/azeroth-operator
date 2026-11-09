@@ -1,5 +1,7 @@
 # Changelog
 
+- Flag conflicting saved spellbook resource readings for exact Forever action spell IDs.
+
 - Flag saved Forever action spells with multiple captured base-ID aliases.
 
 - Highlight saved Forever action-bar spell slots without a captured spellbook match.

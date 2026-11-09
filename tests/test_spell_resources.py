@@ -45,13 +45,15 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
             invalid.append(('cooldown_state',state))
         with tempfile.TemporaryDirectory() as folder:
             store = SnapshotStore(Path(folder)); good = []; bad = []
-            for mode in ['full','legacy','empty','missing','maximum','ambiguous']:
+            for mode in ['full','legacy','empty','missing','maximum','ambiguous','partial']:
                 saved = deepcopy(base)
                 if mode=='legacy':
                     for row in saved['sections']['spellbook']['entries'].values():
                         for field in fields: row.pop(field,None)
                 if mode=='empty': saved['sections']['spellbook']['entries'] = {}
                 if mode=='missing': saved['sections'].pop('spellbook')
+                if mode=='partial':
+                    for field in fields: saved['sections']['spellbook']['entries']['2'].pop(field)
                 if mode=='ambiguous': saved['sections']['spellbook']['entries']['6']={
                     'base_spell_id':100,'spell_id':102}
                 if mode=='maximum': saved['sections']['spellbook']['entries'] = {
@@ -86,6 +88,7 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                             self.assertIsNone(summary)
                             self.assertIsNone(review['observed_action_spell_slots_without_spellbook_match'])
                             self.assertNotIn('matched_spellbook_resources_by_action_id',review)
+                            self.assertNotIn('spellbook_resource_conflicts_by_action_id',review)
                             continue
                         values = list(book['entries'].values())
                         self.assertEqual(summary['observed_rows'],len(values))
@@ -103,7 +106,10 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(summary['cast_eligibility_verified']); self.assertFalse(summary['live'])
                         if mode in ['legacy','empty']:
                             self.assertNotIn('matched_spellbook_resources_by_action_id',review)
+                            self.assertNotIn('spellbook_resource_conflicts_by_action_id',review)
                             continue
+                        conflicts = {'101':fields} if mode in ('full','ambiguous') else {}
+                        self.assertEqual(review['spellbook_resource_conflicts_by_action_id'], conflicts)
                         resources = review['matched_spellbook_resources_by_action_id']
                         self.assertEqual(resources['100'],[])  # Base alias alone never carries reported-ID resources.
                         self.assertEqual(resources['999'],[])

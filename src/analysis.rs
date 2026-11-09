@@ -3911,6 +3911,25 @@ pub fn action_bar_spellbook(
             }
             by_id
         });
+        let conflicts = resources.as_ref().map(|by_id| {
+            by_id
+                .iter()
+                .filter_map(|(id, rows)| {
+                    let fields: Vec<_> = ["charge_count", "reported_cast_count", "cooldown_state"]
+                        .into_iter()
+                        .filter(|field| {
+                            let mut known =
+                                rows.iter().map(|row| &row[*field]).filter(|v| !v.is_null());
+                            known
+                                .next()
+                                .is_some_and(|first| known.any(|value| value != first))
+                        })
+                        .collect();
+                    (!fields.is_empty()).then_some((id, fields))
+                })
+                .collect::<BTreeMap<_, _>>()
+        });
+        review["spellbook_resource_conflicts_by_action_id"] = json!(conflicts);
         review["matched_spellbook_resources_by_action_id"] = json!(resources);
     }
     if !include_reverse {

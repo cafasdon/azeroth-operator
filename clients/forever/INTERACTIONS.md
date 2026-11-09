@@ -7,6 +7,10 @@ can reflect incomplete capture and does not establish castability.
 The review also flags action IDs that match only a captured base spell ID
 with multiple distinct reported IDs. It lists those IDs without selecting
 an override or borrowing its resource readings.
+When resource readings are present, `spellbook_resource_conflicts_by_action_id`
+lists fields with different known values across rows for the same exact action
+spell ID. Missing readings do not count as disagreements. The review retains
+each original reading and leaves current cast eligibility unknown.
 
 The timed quest checklist counts quests with recorded timers that were ready
 to turn in at capture and highlights the one with the shortest remaining
