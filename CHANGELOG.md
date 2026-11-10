@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate shared carried bag space for combined profession batch outputs.
+
 - Estimate carried bag space for captured profession recipe output ranges.
 
 - Estimate bag space for quest item rewards from affordable turn-ins.

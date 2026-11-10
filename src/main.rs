@@ -1935,6 +1935,13 @@ impl Operator {
                     azeroth_operator::analysis::combine_recipe_outputs(
                         std::iter::once(&review).chain(&extra_reviews),
                     );
+                if args.estimate_output_bag_space {
+                    review["combined_output_bag_space_projection"] =
+                        azeroth_operator::analysis::combined_recipe_output_bag_space(
+                            stock,
+                            &review["combined_base_output_if_completed"],
+                        );
+                }
                 if args.suggest_dependency_order {
                     review["dependency_order"] =
                         azeroth_operator::analysis::recipe_dependency_order(

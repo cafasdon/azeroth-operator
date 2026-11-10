@@ -31,6 +31,7 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
                                    'output_item_id': output, 'base_output_quantity': {'minimum': 1, 'maximum': 2}}
         rows.update({'104': {'status': 'unsupported_required_slots'}, '105': {'status': 'unavailable'},
                      '106': {'status': 'budget_exhausted'}, '107': {'status': 'fixed_items', 'reagents': {}}})
+        rows['109'] = deepcopy(rows['103'])
         base['sections']['profession_recipe_materials'] = {
             'coverage': 'reported_known_spell_schematics', 'profession_id': 164, 'entries': rows}
         base['sections']['selected_recipe'] = {'recipe_id': 999, 'name': 'PRIVATE_SELECTED_NAME', 'learned': True,
@@ -56,6 +57,8 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
             later['sections']['bags']['0']['1']['count'] = 1
             later['sections']['bags']['0']['2'] = {
                 'item_id': 10, 'count': 2, 'link': 'item:10:0', 'reported_stack_limit': 4}
+            later['sections']['bags']['0']['3'] = {
+                'item_id': 30, 'count': 1, 'link': 'item:30:0', 'reported_stack_limit': 4}
             later['sections']['bag_capacity'] = {
                 '0': {'total_slots': 16, 'free_slots': 1, 'family_mask': 0},
                 **{str(bag): {'total_slots': 0, 'free_slots': 0} for bag in range(1, 5)},
@@ -170,6 +173,21 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
                             {'snapshot_id': key, 'recipe_id': 103, 'crafts': 3}])
                     self.assertEqual(batch_space['additional_recipe_reviews'][0]['output_bag_space_projection'],
                                      output_space)
+                    combined = batch_space['combined_output_bag_space_projection']
+                    self.assertEqual(combined['minimum_output']['estimated_new_stack_slots'], 2)
+                    self.assertFalse(combined['minimum_output']['fits_recorded_general_slots'])
+                    self.assertEqual(combined['maximum_output']['estimated_new_stack_slots'], 3)
+                    self.assertTrue(combined['maximum_output']['fits_recorded_general_slots_if_same_item_stacks_merge'])
+                    shared = await call(inventory_snapshot_id=later_id, estimate_output_bag_space=True,
+                        additional_recipes=[{'snapshot_id': key, 'recipe_id': 109, 'crafts': 1}])
+                    combined = shared['combined_output_bag_space_projection']
+                    self.assertEqual(combined['maximum_output']['estimated_new_stack_slots'], 1)
+                    self.assertEqual(combined['minimum_output']['estimated_new_stack_slots_if_same_item_stacks_merge'], 0)
+                    unknown = await call(inventory_snapshot_id=later_id, estimate_output_bag_space=True,
+                        additional_recipes=[{'snapshot_id': key, 'recipe_id': 107, 'crafts': 1}])
+                    combined = unknown['combined_output_bag_space_projection']
+                    self.assertEqual(combined['recipes_without_observed_output_item'], 1)
+                    self.assertIsNone(combined['maximum_output']['estimated_new_stack_slots'])
                     quoted = await call(recipe_id=101, inventory_snapshot_id=later_id,
                         merchant_reagent_plan=True, suggest_dependency_order=True, additional_recipes=[
                             {'snapshot_id': key, 'recipe_id': 102, 'crafts': 1},

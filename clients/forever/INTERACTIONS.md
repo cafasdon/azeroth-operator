@@ -2711,6 +2711,12 @@ independently against those bags before crafting. The estimate excludes
 bonus output and slots freed by consuming reagents. Hypothetical merges
 and actual placement remain unverified. Missing output ranges give null.
 
+Batch reviews also report `combined_output_bag_space_projection`. The
+MCP combines quantities for the same item before estimating stacks and
+uses the captured free slots once for the whole batch. An unobserved
+output item, range or required stack limit leaves the total unknown.
+This assumes the outputs remain in the bags together after crafting.
+
 Use `compare_snapshots.selected_recipe_preparation_crafts` with 1 to 1,000
 crafts to review the saved preparation on each side. The review uses each
 capture's own selected recipe, bags, visible banks, observed charges and

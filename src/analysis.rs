@@ -7133,6 +7133,40 @@ pub fn recipe_output_bag_space(snapshot: &Snapshot, output: &Value) -> Option<Va
     }))
 }
 
+pub fn combined_recipe_output_bag_space(snapshot: &Snapshot, outputs: &Value) -> Value {
+    let items = outputs["items"].as_array().into_iter().flatten();
+    let projections: Vec<_> = items
+        .map(|output| recipe_output_bag_space(snapshot, output))
+        .collect();
+    let missing_outputs = outputs["recipes_without_observed_output_item"].as_u64();
+    let free_slots =
+        carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
+    let summarize = |bound: &str| {
+        let total = |field: &str| {
+            if missing_outputs != Some(0) || projections.is_empty() {
+                return None;
+            }
+            projections.iter().try_fold(0u64, |sum, projection| {
+                sum.checked_add(projection.as_ref()?[bound][field].as_u64()?)
+            })
+        };
+        let slots = total("estimated_new_stack_slots");
+        let with_merges = total("estimated_new_stack_slots_if_same_item_stacks_merge");
+        json!({"estimated_new_stack_slots":slots,
+            "fits_recorded_general_slots":slots.zip(free_slots).map(|(needed, free)| needed <= free),
+            "estimated_new_stack_slots_if_same_item_stacks_merge":with_merges,
+            "fits_recorded_general_slots_if_same_item_stacks_merge":with_merges.zip(free_slots)
+                .map(|(needed, free)| needed <= free)})
+    };
+    json!({"scope":"combined_base_output_against_captured_bags_before_crafting",
+        "recorded_general_free_slots":free_slots,
+        "recipes_without_observed_output_item":missing_outputs,
+        "output_items_without_observed_range":projections.iter().filter(|row| row.is_none()).count(),
+        "minimum_output":summarize("minimum_output"),"maximum_output":summarize("maximum_output"),
+        "reagent_slots_freed_included":false,"bonus_output_included":false,
+        "same_item_stack_merge_verified":false,"placement_verified":false,"live":false})
+}
+
 fn carried_item_quantity_bag_space(snapshot: &Snapshot, item_id: u32, quantity: u64) -> Value {
     let limit = reported_inventory_stack_limits(snapshot, false)
         .get(&item_id)
