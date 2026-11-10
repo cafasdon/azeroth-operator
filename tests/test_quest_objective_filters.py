@@ -752,6 +752,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     progressed['sections']['quests']['6']['objectives']['1'].update(required=None, fulfilled=None)
                     progressed['sections']['quests']['7']['objectives']['1']['finished'] = True
                     progressed['sections']['quests']['4']['objectives']['1']['finished'] = False
+                    progressed['sections']['quests']['3']['ready_for_turn_in'] = False
+                    progressed['sections']['quests']['5']['failed'] = True
+                    progressed['sections']['quests']['6'].pop('ready_for_turn_in')
                     progress_key = store.ingest(progressed)
                     original[progress_key+'.json'] = (Path(folder)/(progress_key+'.json')).read_bytes()
                     progress = await session.call_tool('compare_snapshots',{
@@ -769,8 +772,14 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                                      ['quest_change']['objective_index_changes']['changes'], [])
                     summary = await session.call_tool('compare_snapshots',{
                         'before_id':changed_key,'after_id':progress_key,'quest_objective_changes':True,
+                        'quest_readiness_changes':True,
                     })
                     self.assertFalse(summary.isError,summary)
+                    readiness = json.loads(summary.content[0].text)['quest_readiness_changes']
+                    self.assertEqual(readiness['quest_ids_ready_to_not_ready'],[3])
+                    self.assertEqual(readiness['quest_ids_ready_or_not_ready_to_failed'],[5])
+                    self.assertEqual(readiness['quest_ids_not_ready_to_ready'],[])
+                    self.assertIn({'quest_id':6,'before':'not_ready','after':'unknown'},readiness['changes'])
                     self.assertEqual(json.loads(summary.content[0].text)['quest_objective_changes'], {
                         'compared_quest_count':9,'changed_quest_ids':[4,7,9],
                         'quest_ids_with_newly_finished_objectives':[7],

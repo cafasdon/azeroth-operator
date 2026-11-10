@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `quest_readiness_changes` on `compare_snapshots` to see which shared
+quests switched between explicitly not ready and ready, or switched from
+either state to failed. Changes involving unknown observations remain in
+the detailed list. These are saved status changes.
+
 With `quest_objective_changes`, saved quest comparisons list quest IDs
 whose remaining objective counts increased or decreased. Counts require
 the same objective index, kind and recorded requirement in both captures.

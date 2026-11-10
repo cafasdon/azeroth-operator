@@ -1824,6 +1824,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             })).isError)
                         self.assertEqual(progress_data["quest_readiness_changes"], {
                             "changes": [{"quest_id": 42, "before": "not_ready", "after": "ready"}],
+                            "quest_ids_not_ready_to_ready": [42],
+                            "quest_ids_ready_to_not_ready": [],
+                            "quest_ids_ready_or_not_ready_to_failed": [],
                             "quest_ids_observed_only_before": [43],
                             "quest_ids_observed_only_after": [999],
                         })
@@ -2046,6 +2049,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(json.loads(missing_reward.content[0].text)["snapshots"], [])
                         for quest_log, expected in [
                             ({}, {"changes": [], "quest_ids_observed_only_before": [2, 10, 42, 44, 999],
+                                  "quest_ids_not_ready_to_ready": [],"quest_ids_ready_to_not_ready": [],
+                                  "quest_ids_ready_or_not_ready_to_failed": [],
                                   "quest_ids_observed_only_after": []}),
                             (None, None),
                         ]:

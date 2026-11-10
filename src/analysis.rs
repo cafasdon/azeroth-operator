@@ -4975,12 +4975,21 @@ pub fn compare_observations(
             let mut changes = BTreeMap::new();
             let mut only_before = BTreeSet::new();
             let mut only_after = BTreeSet::new();
+            let mut became_ready = BTreeSet::new();
+            let mut became_not_ready = BTreeSet::new();
+            let mut became_failed = BTreeSet::new();
             for key in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
                 let Ok(id) = key.parse::<u32>() else { continue };
                 match (before.get(key), after.get(key)) {
                     (Some(old), Some(new)) => {
                         let previous = quest_readiness(old);
                         let current = quest_readiness(new);
+                        match (previous, current) {
+                            (QuestReadiness::NotReady, QuestReadiness::Ready) => { became_ready.insert(id); }
+                            (QuestReadiness::Ready, QuestReadiness::NotReady) => { became_not_ready.insert(id); }
+                            (QuestReadiness::Ready | QuestReadiness::NotReady, QuestReadiness::Failed) => { became_failed.insert(id); }
+                            _ => {}
+                        }
                         if previous != current {
                             changes.insert(id, json!({"quest_id":id,"before":previous,"after":current}));
                         }
@@ -4991,6 +5000,9 @@ pub fn compare_observations(
                 }
             }
             json!({"changes":changes.into_values().collect::<Vec<_>>(),
+                "quest_ids_not_ready_to_ready":became_ready,
+                "quest_ids_ready_to_not_ready":became_not_ready,
+                "quest_ids_ready_or_not_ready_to_failed":became_failed,
                 "quest_ids_observed_only_before":only_before,"quest_ids_observed_only_after":only_after})
         }));
     }
