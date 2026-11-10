@@ -1,5 +1,7 @@
 # Changelog
 
+- Show same-capture equipped durability in item lookup without a catalogue.
+
 - Show recorded equipped-slot durability in Forever owned-gear reviews.
 
 - Find saved Forever equipment at or below a durability threshold in a specific slot.

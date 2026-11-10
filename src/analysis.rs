@@ -2735,6 +2735,10 @@ fn find_item_page(
     let mut quantities = BTreeMap::new();
     let mut container_quantities = BTreeMap::new();
     let cooldowns = snapshot.sections.get("bag_item_cooldowns");
+    let durability = snapshot
+        .sections
+        .get("equipment_durability")
+        .and_then(|section| section["entries"].as_object());
     ensure!(
         cooldown_reference.is_none() || snapshot.client.family == crate::Family::Forever,
         "Item cooldown projections require Forever"
@@ -2815,6 +2819,11 @@ fn find_item_page(
                     }
                     if let Some(row) = cooldown {
                         location["captured_cooldown"] = row.clone();
+                    }
+                    if storage == "equipment"
+                        && let Some(condition) = durability.and_then(|slots| slots.get(slot))
+                    {
+                        location["observed_equipped_durability"] = condition.clone();
                     }
                     if let Some((end, ended_by_reference)) = projection {
                         location["projected_cooldown_end_at"] = json!(end);

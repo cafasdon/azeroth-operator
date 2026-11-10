@@ -19,6 +19,7 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         value=fixture();value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
         value['sections']['equipment']={'1':{'item_id':101,'guid':'PRIVATE_EQUIPPED'},'10':{'item_id':102}}
+        value['sections']['bags']={'0':{'1':{'item_id':101,'count':1}}}
         value['sections']['equipment_durability']={'coverage':'readable_equipped_slots_only','entries':{
             '16':{'current':1,'maximum':3},'1':{'current':0,'maximum':100},'5':{'current':100,'maximum':100}}}
         empty=deepcopy(value);empty['sections']['equipment_durability']['entries']={}
@@ -69,6 +70,16 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
+                    item=await call('find_snapshot_item',snapshot_id=keys[0],item_id=101)
+                    self.assertEqual(item['locations'],[
+                        {'storage':'equipment','container':None,'slot':'1','count':1,
+                         'observed_equipped_durability':{'current':0,'maximum':100}},
+                        {'storage':'bags','container':'0','slot':'1','count':1},
+                    ])
+                    for key, item_id in ((keys[0],102),(keys[1],101),(keys[2],101)):
+                        item=await call('find_snapshot_item',snapshot_id=key,item_id=item_id)
+                        self.assertTrue(item['locations'])
+                        self.assertTrue(all('observed_equipped_durability' not in row for row in item['locations']))
                     for key,observed,damaged,missing in [(keys[0],3,2,102),(keys[1],0,0,0),(keys[2],None,None,None)]:
                         report=await call('inspect_snapshot',snapshot_id=key,section='repair_quote',
                                           repair_include_equipment_condition=True)

@@ -6,6 +6,8 @@ specific slot meets the threshold. Missing readings do not match.
 Owned gear reviews include `observed_equipped_durability` when a readable
 condition was recorded for that equipped slot in the same capture. The
 reading describes the saved equipped location.
+`find_snapshot_item` shows the same field on equipped matches and works
+without a catalogue. Each selected snapshot uses its own slot readings.
 
 Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
 characters within an inclusive XP budget. Matching rows report their saved
