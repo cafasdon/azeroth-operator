@@ -5,6 +5,9 @@ list to group quests marked ready by their next waypoint map. Ready
 quests without a recorded map are listed separately. Use
 `quest_on_captured_map` to narrow the list to the saved player map.
 The next waypoint is a map hint and does not verify the turn-in location.
+Combine it with `quest_list_wallet_projection` for saved coin costs,
+rewards and wallet projections per map and for the unmapped group.
+Each group starts from the same saved wallet balance.
 
 Use `quest_readiness_changes` on `compare_snapshots` to see which shared
 quests switched between explicitly not ready and ready, or switched from

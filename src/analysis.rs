@@ -10427,11 +10427,18 @@ pub fn quest_list_wallet_projection(
     quests: &serde_json::Map<String, Value>,
     wallet: Option<&Value>,
 ) -> Value {
+    quest_rows_wallet_projection(quests.iter(), wallet)
+}
+
+fn quest_rows_wallet_projection<'a>(
+    quests: impl Iterator<Item = (&'a String, &'a Value)> + Clone,
+    wallet: Option<&Value>,
+) -> Value {
     let mut known_cost = 0u128;
     let mut known_reward = 0u128;
     let mut unknown_cost = 0;
     let mut unknown_reward = 0;
-    for quest in quests.values() {
+    for (_, quest) in quests.clone() {
         match quest["required_copper"].as_u64() {
             Some(copper) => known_cost += u128::from(copper),
             None => unknown_cost += 1,
@@ -10447,7 +10454,7 @@ pub fn quest_list_wallet_projection(
     json!({
         "known_required_copper":known_cost,"unknown_cost_count":unknown_cost,
         "known_reward_copper":u64::try_from(known_reward).ok(),"unknown_reward_count":unknown_reward,
-        "ready_turn_in_order":quest_wallet_turn_in_order(quests.iter(), balance),
+        "ready_turn_in_order":quest_wallet_turn_in_order(quests, balance),
         "wallet_observed":balance.is_some(),
         "known_cost_shortfall_without_rewards_copper":estimate.map(|(cost,balance)| cost.saturating_sub(balance)),
         "all_costs_fit_wallet_without_rewards":estimate.and_then(|(cost,balance)| {
@@ -11219,22 +11226,46 @@ pub fn quest_objective_matches(
     if unknown { None } else { Some(false) }
 }
 
-pub fn quest_ready_waypoint_groups(quests: &serde_json::Map<String, Value>) -> Value {
+pub fn quest_ready_waypoint_groups(
+    quests: &serde_json::Map<String, Value>,
+    include_wallet_projection: bool,
+    wallet: Option<&Value>,
+) -> Value {
     let mut by_map = BTreeMap::<u64, BTreeSet<u32>>::new();
     let mut without_map = BTreeSet::new();
+    let mut wallet_rows = BTreeMap::<Option<u64>, Vec<_>>::new();
     for (key, quest) in quests {
         if quest_readiness(quest) != QuestReadiness::Ready {
             continue;
         }
         let Ok(id) = key.parse::<u32>() else { continue };
-        if let Some(map) = quest["next_waypoint_map_id"].as_u64() {
+        let map = quest["next_waypoint_map_id"].as_u64();
+        if include_wallet_projection {
+            wallet_rows.entry(map).or_default().push((key, quest));
+        }
+        if let Some(map) = map {
             by_map.entry(map).or_default().insert(id);
         } else {
             without_map.insert(id);
         }
     }
-    json!({"quest_ids_by_waypoint_map":by_map,"quest_ids_without_waypoint_map":without_map,
-        "turn_in_location_verified":false})
+    let mut result = json!({"quest_ids_by_waypoint_map":by_map,"quest_ids_without_waypoint_map":without_map,
+        "turn_in_location_verified":false});
+    if include_wallet_projection {
+        let without_map = wallet_rows.remove(&None);
+        let by_map: BTreeMap<_, _> = wallet_rows
+            .into_iter()
+            .filter_map(|(map, rows)| {
+                Some((map?, quest_rows_wallet_projection(rows.into_iter(), wallet)))
+            })
+            .collect();
+        result["wallet_projection"] = json!({
+            "by_waypoint_map":by_map,
+            "without_waypoint_map":without_map.map(|rows| quest_rows_wallet_projection(rows.into_iter(), wallet)),
+            "groups_evaluated_independently":true
+        });
+    }
+    result
 }
 
 pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {

@@ -353,9 +353,22 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'quest_ids_without_waypoint_map':[], 'turn_in_location_verified':False})
                     self.assertEqual((await query(snapshot_id=tied_key,quest_on_captured_map=True,
                         quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups'],groups)
+                    grouped_budget = (await query(snapshot_id=tied_key,quest_list_ready_waypoint_groups=True,
+                        quest_list_wallet_projection=True))['quest_ready_waypoint_groups']['wallet_projection']
+                    self.assertTrue(grouped_budget['groups_evaluated_independently'])
+                    self.assertIsNone(grouped_budget['without_waypoint_map'])
+                    self.assertEqual(set(grouped_budget['by_waypoint_map']),{'1414'})
+                    map_budget = grouped_budget['by_waypoint_map']['1414']
+                    self.assertEqual(map_budget['known_required_copper'],2)
+                    self.assertTrue(map_budget['all_costs_fit_wallet_without_rewards'])
+                    self.assertEqual(map_budget['unknown_reward_count'],1)
                     unmapped = (await query(quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups']
                     self.assertEqual(unmapped['quest_ids_without_waypoint_map'],[3])
                     self.assertEqual(unmapped['quest_ids_by_waypoint_map'],{})
+                    unmapped_budget = (await query(quest_list_ready_waypoint_groups=True,
+                        quest_list_wallet_projection=True))['quest_ready_waypoint_groups']['wallet_projection']
+                    self.assertEqual(unmapped_budget['by_waypoint_map'],{})
+                    self.assertEqual(unmapped_budget['without_waypoint_map']['unknown_cost_count'],1)
                     self.assertIsNone((await query(snapshot_id=missing,
                         quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups'])
                     await query(error=True,quest_list_ready_waypoint_groups=True,quest_id=3)

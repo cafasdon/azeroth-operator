@@ -5865,10 +5865,17 @@ impl Operator {
                         );
                     }
                     if args.quest_list_ready_waypoint_groups {
-                        value["quest_ready_waypoint_groups"] = serde_json::json!(
-                            data.as_object()
-                                .map(azeroth_operator::analysis::quest_ready_waypoint_groups)
-                        );
+                        value["quest_ready_waypoint_groups"] =
+                            serde_json::json!(data.as_object().map(|quests| {
+                                let wallet = context
+                                    .as_ref()
+                                    .and_then(|snapshot| snapshot.sections.get("wallet"));
+                                azeroth_operator::analysis::quest_ready_waypoint_groups(
+                                    quests,
+                                    args.quest_list_wallet_projection,
+                                    wallet,
+                                )
+                            }));
                     }
                     value["data"] = data;
                 }

@@ -1,5 +1,7 @@
 # Changelog
 
+- Project saved ready-quest coin costs and rewards separately for each waypoint map.
+
 - Group ready quests by their captured next waypoint map.
 
 - Summarise explicit turn-in readiness and failure transitions across saved quest logs.
