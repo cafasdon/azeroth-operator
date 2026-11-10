@@ -1,5 +1,7 @@
 # Changelog
 
+- Distinguish unknown timers and out-of-window rows in saved reset schedules.
+
 - Filter saved reset schedules by captured instance difficulty, lock, extension and group size.
 
 - Compare a selected PvP rank with saved thresholds and rank caps.

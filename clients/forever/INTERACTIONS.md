@@ -2697,6 +2697,10 @@ match recorded `difficulty_id`, `locked`, `extended` or `max_players` on
 the same row. An empty filter includes both dungeons and raids. Combine
 it with an instance kind or time window. Coverage still describes the
 whole capture, and a match leaves current lockout status unverified.
+`matching_reset_window_counts` counts rows after activity filters by
+section. It separates resets at or before the reference, inside the
+window, after the window, and unknown. A missing section gives null,
+while a captured section with no matching rows gives zero counts.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the

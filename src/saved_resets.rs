@@ -157,6 +157,7 @@ pub fn combined_schedule(
     );
     let mut by_time = BTreeMap::<DateTime<Utc>, Vec<Value>>::new();
     let mut coverage = BTreeMap::new();
+    let mut matching_reset_window_counts = BTreeMap::new();
     for section in ["saved_instances", "saved_world_bosses"] {
         let projected = project(
             section,
@@ -169,7 +170,12 @@ pub fn combined_schedule(
             "unknown_count":projected["unknown_count"],
             "cache_update_age_seconds":projected["cache_update_age_seconds"]}),
         );
-        for row in projected["rows"].as_array().into_iter().flatten() {
+        let Some(rows) = projected["rows"].as_array() else {
+            matching_reset_window_counts.insert(section, Value::Null);
+            continue;
+        };
+        let (mut elapsed, mut within_window, mut after_window, mut unknown) = (0, 0, 0, 0);
+        for row in rows {
             let observation = &row["observation"];
             let is_instance = section == "saved_instances";
             if instance_filter.is_some_and(|filter| {
@@ -199,27 +205,37 @@ pub fn combined_schedule(
             let reset = row["projected_reset_at"]
                 .as_str()
                 .and_then(|value| value.parse::<DateTime<Utc>>().ok());
-            if let Some(reset) =
-                reset.filter(|reset| *reset > reference && through.is_none_or(|end| *reset <= end))
-            {
-                let mut entry =
-                    json!({"section":section,"slot":row["slot"],"name":observation["name"]});
-                if is_instance {
-                    entry["saved_instance_details"] = json!({
-                        "difficulty_id":observation["difficulty_id"],
-                        "locked":observation["locked"],"extended":observation["extended"],
-                        "is_raid":observation["is_raid"],"max_players":observation["max_players"],
-                    });
+            match reset {
+                None => unknown += 1,
+                Some(reset) if reset <= reference => elapsed += 1,
+                Some(reset) if through.is_some_and(|end| reset > end) => after_window += 1,
+                Some(reset) => {
+                    within_window += 1;
+                    let mut entry =
+                        json!({"section":section,"slot":row["slot"],"name":observation["name"]});
+                    if is_instance {
+                        entry["saved_instance_details"] = json!({
+                            "difficulty_id":observation["difficulty_id"],
+                            "locked":observation["locked"],"extended":observation["extended"],
+                            "is_raid":observation["is_raid"],"max_players":observation["max_players"],
+                        });
+                    }
+                    by_time.entry(reset).or_default().push(entry);
                 }
-                by_time.entry(reset).or_default().push(entry);
             }
         }
+        matching_reset_window_counts.insert(
+            section,
+            json!({"at_or_before_reference":elapsed,
+            "within_window":within_window,"after_window":after_window,"unknown_reset":unknown}),
+        );
     }
     let schedule: Vec<_> = by_time
         .into_iter()
         .map(|(at, entries)| json!({"at":at,"entries":entries}))
         .collect();
     let mut result = json!({"captured_at":snapshot.captured_at,"reference_at":reference,"coverage":coverage,
+        "matching_reset_window_counts":matching_reset_window_counts,
         "next_projected_reset":schedule.first(),"upcoming_projected_resets":schedule,
         "current_lockout_verified":false,"current_availability_verified":false,"live":false});
     if let Some(end) = through {

@@ -111,6 +111,8 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                              'saved_instance_details':{'difficulty_id':1,'locked':True,
                                 'extended':True,'is_raid':True,'max_players':40}}]}])
                     self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
+                    self.assertEqual(schedule['matching_reset_window_counts']['saved_world_bosses'],{
+                        'at_or_before_reference':1,'within_window':1,'after_window':0,'unknown_reset':1})
                     for kind, expected in [('world_boss',schedule['upcoming_projected_resets'][:1]),
                                            ('raid',schedule['upcoming_projected_resets'][1:]),('dungeon',[])]:
                         reply = await session.call_tool('character_summary', {
@@ -122,6 +124,9 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(filtered['next_projected_reset'],expected[0] if expected else None)
                         self.assertEqual(filtered['coverage'],schedule['coverage'])
                         self.assertEqual(filtered['kind'],kind)
+                        if kind == 'raid':
+                            self.assertEqual(filtered['matching_reset_window_counts']['saved_world_bosses'],{
+                                'at_or_before_reference':0,'within_window':0,'after_window':0,'unknown_reset':0})
                     self.assertIs(schedule['current_lockout_verified'],False)
                     for filters, expected in [
                         ({},schedule['upcoming_projected_resets'][1:]),
@@ -155,6 +160,15 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     bounded = json.loads(window.content[0].text)['saved_reset_schedule']
                     self.assertEqual(bounded['upcoming_projected_resets'],schedule['upcoming_projected_resets'][:1])
                     self.assertEqual(bounded['coverage'],schedule['coverage'])
+                    self.assertEqual(bounded['matching_reset_window_counts']['saved_instances'],{
+                        'at_or_before_reference':0,'within_window':0,'after_window':1,'unknown_reset':0})
+                    for capture_id, counts in [(missing_key,None),(empty_key,{
+                            'at_or_before_reference':0,'within_window':0,'after_window':0,'unknown_reset':0})]:
+                        reply=await session.call_tool('character_summary',{
+                            'snapshot_id':capture_id,'saved_reset_reference_at':'2025-01-01T23:59:00Z'})
+                        self.assertFalse(reply.isError,reply)
+                        observed=json.loads(reply.content[0].text)['saved_reset_schedule']['matching_reset_window_counts']
+                        self.assertEqual(observed,{'saved_instances':counts,'saved_world_bosses':counts})
                     self.assertEqual(bounded['through_at'],'2025-01-02T00:01:00Z')
                     reversed_window = await session.call_tool('character_summary', {
                         'snapshot_id':key,'saved_reset_reference_at':'2025-01-02T00:01:00Z',
