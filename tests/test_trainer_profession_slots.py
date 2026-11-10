@@ -35,7 +35,8 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
             for lesson in legacy['sections']['trainer_services']['entries'].values():lesson.pop('is_profession',None)
             keys['legacy']=store.ingest(legacy)
             pet=deepcopy(base);pet['sections']['trainer_services']={'kind':'pet','entries':{
-                '1':{'name':'Pet lesson','status':'available','price_training_points':5}}}
+                '1':{'name':'Pet lesson','status':'available','price_training_points':5},
+                '2':{'name':'Advanced pet lesson','status':'unavailable','required_level':22}}}
             pet_key=store.ingest(pet)
             point_cases=[]
             for total,used,trainer_points,pet_level,agree in [(10,3,7,20,True),(3,10,0,19,True),
@@ -84,12 +85,21 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(all(budget==budgets[0] for budget in budgets))
                     selected=await inspect(keys['full'],trainer_service_slots=[1])
                     self.assertEqual(set(selected['trainer_requirements_review']['profession_slot_checks']['lessons_by_slot']),{'1'})
-                    self.assertIsNone((await inspect(pet_key))['trainer_requirements_review']['profession_slot_checks'])
+                    legacy_requirements=(await inspect(pet_key))['trainer_requirements_review']
+                    self.assertIsNone(legacy_requirements['profession_slot_checks'])
+                    self.assertIsNone(legacy_requirements['unavailable_lessons_by_slot']['2'][
+                        'level_shortfall_vs_active_pet_observation'])
                     legacy_points=(await inspect(pet_key,trainer_points_projection=True))['trainer_points_projection']
                     self.assertIsNone(legacy_points['active_pet_capture_context']['spendable_points_observations_agree'])
                     for key,signed,points,level,agree in point_cases:
-                        projection=(await inspect(key,trainer_points_projection=True))['trainer_points_projection']
+                        report=await inspect(key,trainer_points_projection=True)
+                        projection=report['trainer_points_projection']
                         context=projection['active_pet_capture_context']
+                        requirements=report['trainer_requirements_review']
+                        self.assertEqual(requirements['active_pet_capture_context'],context)
+                        lesson=requirements['unavailable_lessons_by_slot']['2']
+                        self.assertEqual(lesson['level_shortfall'],2)
+                        self.assertEqual(lesson['level_shortfall_vs_active_pet_observation'],22-level)
                         self.assertEqual(context['active_pet_signed_training_point_balance'],signed)
                         self.assertEqual(context['trainer_training_points_available'],points)
                         self.assertIs(context['levels_agree'],level==20)

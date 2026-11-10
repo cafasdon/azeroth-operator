@@ -4305,6 +4305,7 @@ impl Operator {
                         level,
                         snapshot.sections.get("skill_lines"),
                         snapshot.sections.get("spellbook"),
+                        snapshot.sections.get("pet_care"),
                     );
                     for pointer in [
                         "/trainer_wallet_projection/ordered_lesson_budget/first_uncovered_lesson",

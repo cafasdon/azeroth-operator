@@ -1424,6 +1424,10 @@ counters, the comparison floors total minus used at zero to match the
 trainer reading. The signed balance remains visible separately. Missing
 or incompatible counters leave agreement unknown. Lesson budgets still
 use the trainer observation, and pet identity remains unverified.
+With `trainer_requirements_review`, pet lessons also report a separate
+level shortfall against the active-pet observation when available. The
+trainer-panel shortfall retains its own level basis, including when the
+two readings disagree.
 Both projections include `individual_lesson_affordability` keyed by
 captured slot. Each available lesson is compared independently with the
 recorded balance, in copper or training points respectively. Missing

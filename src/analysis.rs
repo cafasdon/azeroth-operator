@@ -8154,11 +8154,13 @@ pub fn trainer_requirements_review(
     level: Option<u64>,
     skills: Option<&Value>,
     spellbook: Option<&Value>,
+    active_pet: Option<&Value>,
 ) -> Value {
     let Some(entries) = trainer["entries"].as_object() else {
         return Value::Null;
     };
     let pet_level = trainer["pet_level"].as_u64();
+    let active_pet_level = active_pet.and_then(|pet| pet["level"].as_u64());
     let requirement_level = if trainer["kind"] == "pet" {
         pet_level
     } else {
@@ -8243,23 +8245,30 @@ pub fn trainer_requirements_review(
                     })
                     .collect::<BTreeMap<_, _>>()
             });
-            (
-                slot,
-                json!({
-                    "level_shortfall":level_shortfall,
-                    "skill_requirement_unmet":unmet_skill,
-                    "captured_skill_rank_comparison":skill_comparison,
-                    "unmet_ability_names":unmet_abilities,
-                    "unmet_ability_names_observed_in_spellbook":observed_unmet_abilities,
-                    "available_lesson_slots_by_unmet_ability_name":candidate_lessons
-                }),
-            )
+            let mut requirements = json!({
+                "level_shortfall":level_shortfall,
+                "skill_requirement_unmet":unmet_skill,
+                "captured_skill_rank_comparison":skill_comparison,
+                "unmet_ability_names":unmet_abilities,
+                "unmet_ability_names_observed_in_spellbook":observed_unmet_abilities,
+                "available_lesson_slots_by_unmet_ability_name":candidate_lessons
+            });
+            if trainer["kind"] == "pet" {
+                requirements["level_shortfall_vs_active_pet_observation"] = json!(
+                    lesson["required_level"]
+                        .as_u64()
+                        .zip(active_pet_level)
+                        .map(|(required, observed)| required.saturating_sub(observed))
+                );
+            }
+            (slot, requirements)
         })
         .collect();
     let mut review =
         json!({"captured_character_level":level,"unavailable_lessons_by_slot":lessons});
     if trainer["kind"] == "pet" {
         review["captured_pet_level"] = json!(pet_level);
+        review["active_pet_capture_context"] = pet_trainer_capture_context(trainer, active_pet);
     }
     review["profession_slot_checks"] = if trainer["kind"] == "pet" {
         Value::Null
