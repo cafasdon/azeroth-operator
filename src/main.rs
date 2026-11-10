@@ -388,6 +388,8 @@ struct Inspect {
     reputation_turn_in_item_costs: Option<Vec<ItemCost>>,
     /// Include saved bank withdrawal suggestions, starting at this location offset.
     reputation_turn_in_bank_withdrawal_offset: Option<usize>,
+    /// Check an assumed copper cost per reputation turn-in against the captured wallet.
+    reputation_turn_in_copper_cost: Option<ReputationTurnInCopperCost>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
     reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
@@ -489,6 +491,14 @@ struct CurrencyCost {
 struct ItemCost {
     item_id: std::num::NonZeroU32,
     quantity: std::num::NonZeroU64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct ReputationTurnInCopperCost {
+    copper_per_turn_in: std::num::NonZeroU64,
+    #[serde(default)]
+    wallet_reserve_copper: u64,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -3442,6 +3452,18 @@ impl Operator {
                 "Reputation turn-in estimates require an exact faction",
             )]);
         }
+        if args
+            .reputation_turn_in_copper_cost
+            .as_ref()
+            .is_some_and(|cost| {
+                args.reputation_points_per_turn_in.is_none()
+                    || cost.wallet_reserve_copper > 9_999_999_999_999
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation copper costs require a points-per-turn-in estimate and a valid reserve",
+            )]);
+        }
         let reputation_item_costs = args
             .reputation_turn_in_item_costs
             .as_deref()
@@ -6109,12 +6131,39 @@ impl Operator {
                                 "turn_ins_to_next_rank":turn_ins,
                                 "capped":standard[&key]["capped"].as_bool()
                             });
-                            if !reputation_item_costs.is_empty() {
+                            let context = if !reputation_item_costs.is_empty()
+                                || args.reputation_turn_in_copper_cost.is_some()
+                            {
                                 let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                                     return CallToolResult::error(vec![ContentBlock::text(
-                                        "Could not read the captured reputation turn-in inventory",
+                                        "Could not read the captured reputation turn-in resources",
                                     )]);
                                 };
+                                Some(snapshot)
+                            } else {
+                                None
+                            };
+                            if let Some((cost, snapshot)) = args
+                                .reputation_turn_in_copper_cost
+                                .as_ref()
+                                .zip(context.as_ref())
+                            {
+                                let balance = snapshot
+                                    .sections
+                                    .get("wallet")
+                                    .and_then(|wallet| wallet["copper"].as_u64());
+                                value["reputation_turn_in_wallet_plan"] =
+                                    azeroth_operator::analysis::reputation_turn_in_wallet_plan(
+                                        turn_ins,
+                                        cost.copper_per_turn_in,
+                                        balance,
+                                        cost.wallet_reserve_copper,
+                                    );
+                            }
+                            if let Some(snapshot) = context
+                                .as_ref()
+                                .filter(|_| !reputation_item_costs.is_empty())
+                            {
                                 let stock = azeroth_operator::InventoryRequirementsFilter {
                                     storage: azeroth_operator::InventoryStorage::Bags,
                                     container_id: None,
@@ -6126,7 +6175,7 @@ impl Operator {
                                         })
                                         .collect(),
                                 }
-                                .review_observed_stock(&snapshot, None);
+                                .review_observed_stock(snapshot, None);
                                 let observed = stock["items"]
                                     .as_array()
                                     .expect("inventory review always returns item rows");
@@ -6162,7 +6211,7 @@ impl Operator {
                                                 })
                                             }).collect(),
                                         };
-                                        requirements.review_observed_stock(&snapshot, Some(offset))["bank_withdrawal_plan"].clone()
+                                        requirements.review_observed_stock(snapshot, Some(offset))["bank_withdrawal_plan"].clone()
                                     }));
                                 }
                                 if args.reputation_turn_in_item_cost.is_some() {

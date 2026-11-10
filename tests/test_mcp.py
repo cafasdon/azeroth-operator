@@ -1086,6 +1086,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         request = {"snapshot_id":turn_in_key,"section":"reputation","faction_id":10,
                                    "reputation_points_per_turn_in":20}
                         result = await session.call_tool("inspect_snapshot", {
+                            **request,"reputation_turn_in_copper_cost":{
+                                "copper_per_turn_in":2_000_000_000,"wallet_reserve_copper":1,
+                            },
+                        })
+                        self.assertFalse(result.isError,result)
+                        self.assertEqual(json.loads(result.content[0].text)["reputation_turn_in_wallet_plan"], {
+                            "assumed_copper_per_turn_in":2_000_000_000,"required_wallet_reserve_copper":1,
+                            "captured_wallet_copper":5_000_000_001,"required_copper":6_000_000_000,
+                            "required_copper_overflow":False,"wallet_shortfall_copper":1_000_000_000,
+                            "supported_turn_ins":2,"turn_ins_shortfall_to_next_rank":1,
+                        })
+                        result = await session.call_tool("inspect_snapshot", {
                             **request,"reputation_turn_in_item_costs":costs,
                         })
                         self.assertFalse(result.isError,result)
@@ -1161,6 +1173,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             {"section":"reputation","faction_id":10,"reputation_points_per_turn_in":0},
                             {"section":"reputation","faction_id":10,
                              "reputation_turn_in_item_cost":{"item_id":744,"quantity":1}},
+                            {"section":"reputation","faction_id":10,
+                             "reputation_turn_in_copper_cost":{"copper_per_turn_in":1}},
                         ]:
                             self.assertTrue((await session.call_tool("inspect_snapshot", {
                                 "snapshot_id":more_key,**options,

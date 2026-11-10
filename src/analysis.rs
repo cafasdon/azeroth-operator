@@ -8743,6 +8743,29 @@ pub fn reserved_balance_shortfall(cost: u64, balance: u64, reserve: u64) -> Opti
     }
 }
 
+pub fn reputation_turn_in_wallet_plan(
+    turn_ins: Option<u64>,
+    per_turn_in: std::num::NonZeroU64,
+    balance: Option<u64>,
+    reserve: u64,
+) -> Value {
+    let cost = per_turn_in.get();
+    let required = turn_ins.and_then(|count| count.checked_mul(cost));
+    let capacity = balance.map(|balance| balance.saturating_sub(reserve) / cost);
+    json!({
+        "assumed_copper_per_turn_in":cost,
+        "required_wallet_reserve_copper":reserve,
+        "captured_wallet_copper":balance,
+        "required_copper":required,
+        "required_copper_overflow":turn_ins.is_some() && required.is_none(),
+        "wallet_shortfall_copper":required.zip(balance)
+            .and_then(|(required, balance)| reserved_balance_shortfall(required, balance, reserve)),
+        "supported_turn_ins":capacity,
+        "turn_ins_shortfall_to_next_rank":turn_ins.zip(capacity)
+            .map(|(needed, capacity)| needed.saturating_sub(capacity))
+    })
+}
+
 pub fn trainer_lesson_affordability(
     trainer: &Value,
     price_field: &str,
