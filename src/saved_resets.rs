@@ -16,6 +16,7 @@ pub(crate) fn projected_reset_at(
 pub fn instance_lock_encounter_review(
     context: &Value,
     captured_at: DateTime<Utc>,
+    reference: Option<DateTime<Utc>>,
 ) -> Option<Value> {
     let warning = &context["lock_warning"];
     let total = warning["encounters_total"].as_u64()?;
@@ -40,12 +41,16 @@ pub fn instance_lock_encounter_review(
     let expiry = i64::try_from(seconds)
         .ok()
         .and_then(|seconds| projected_reset_at(seconds, captured_at));
-    Some(
-        json!({"encounters_total":total,"encounters_completed":completed,
+    let mut report = json!({"encounters_total":total,"encounters_completed":completed,
         "encounters_remaining":total.checked_sub(completed),"encounter_details":details,
         "reported_warning_remaining_seconds":seconds,"projected_warning_expiry_at":expiry,
-        "current_warning_verified":false,"saved_lockout_identity_verified":false,"live":false}),
-    )
+        "current_warning_verified":false,"saved_lockout_identity_verified":false,"live":false});
+    if let Some(reference) = reference {
+        report["warning_reference_at"] = json!(reference);
+        report["warning_expiry_at_or_before_reference"] =
+            json!(expiry.map(|expiry| expiry <= reference));
+    }
+    Some(report)
 }
 
 pub(crate) fn matches_projected_window(

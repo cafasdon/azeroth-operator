@@ -121,6 +121,20 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(review['encounters_remaining'],2)
                             self.assertEqual(review['projected_warning_expiry_at'],'2025-01-02T00:00:00Z')
                             self.assertFalse(review['saved_lockout_identity_verified'])
+                            self.assertNotIn('warning_reference_at',review)
+                    for timestamp, elapsed in [('2025-01-01T23:59:59.999Z',False),
+                                               ('2025-01-02T01:00:00+01:00',True),
+                                               ('2025-01-02T00:00:01Z',True)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':encounters_id,'section':'instance_context',
+                            'instance_lock_encounter_review':True,'instance_lock_warning_reference_at':timestamp})
+                        self.assertFalse(reply.isError,reply)
+                        review=json.loads(reply.content[0].text)['instance_lock_encounter_review']
+                        self.assertIs(review['warning_expiry_at_or_before_reference'],elapsed)
+                        self.assertFalse(review['current_warning_verified'])
+                    self.assertTrue((await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':encounters_id,'section':'instance_context',
+                        'instance_lock_warning_reference_at':'2025-01-02T00:00:00Z'})).isError)
                     for capture_id, section in [(key,'saved_instances'),(retail_key,'instance_context')]:
                         reply=await session.call_tool('inspect_snapshot',{
                             'snapshot_id':capture_id,'section':section,'instance_lock_encounter_review':True})

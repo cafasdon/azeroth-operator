@@ -114,6 +114,8 @@ struct Inspect {
     /// Review historical encounter progress and expiry for the saved instance lock warning.
     #[serde(default)]
     instance_lock_encounter_review: bool,
+    /// Compare the projected saved lock warning expiry with this timestamp. Requires encounter review.
+    instance_lock_warning_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Compare projected temporary enchant expiries with this explicit reference timestamp.
     weapon_enchant_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
@@ -2942,6 +2944,12 @@ impl Operator {
                 "Instance lock review requires instance_context",
             )]);
         }
+        if args.instance_lock_warning_reference_at.is_some() && !args.instance_lock_encounter_review
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Instance lock warning reference requires encounter review",
+            )]);
+        }
         if args.pvp_target_rank.is_some()
             && args.section.as_deref() != Some("player_pvp_progression")
         {
@@ -4568,6 +4576,7 @@ impl Operator {
                                 azeroth_operator::saved_resets::instance_lock_encounter_review(
                                     &value["data"],
                                     captured_at,
+                                    args.instance_lock_warning_reference_at,
                                 )
                             })
                     );
