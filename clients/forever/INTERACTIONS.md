@@ -2198,6 +2198,13 @@ the saved budget. Without this option, budget checks describe the selected
 route without constraining the search.
 `no_fully_priced_route` describes the supplied captures. Routes are
 historical observations and may have different capture times.
+When search evidence shows a reachable path despite no qualifying route,
+`saved_path_witness` lists its saved legs and their capture times. It
+shows the cheapest fully quoted path if one exists outside the budget
+or fare ceiling. Otherwise it shows a shortest observed path and leaves
+the total fare unknown. Missing leg fares remain visible in the witness.
+Budget checks that stop the search before route discovery return without
+path evidence or a witness.
 
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability

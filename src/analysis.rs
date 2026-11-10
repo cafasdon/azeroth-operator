@@ -7723,6 +7723,21 @@ pub fn plan_saved_flights(
             "status":status,"origin_node_id":start,"destination_node_id":destination,
         })
     };
+    let render_legs = |path: Vec<(usize, u64)>| {
+        path.into_iter()
+            .map(|(index, target)| {
+                let (id, capture) = &captures[index];
+                let mut route = capture
+                    .sections
+                    .get("flight_map")
+                    .and_then(|map| captured_flight_route(map, target as u32))
+                    .ok_or_else(|| anyhow::anyhow!("Missing selected leg"))?;
+                route["snapshot_id"] = json!(id);
+                route["captured_at"] = json!(capture.captured_at);
+                Ok(route)
+            })
+            .collect::<Result<Vec<_>>>()
+    };
     let max_fare = if require_affordable {
         let required_repair = if include_repair_quote {
             repair
@@ -7787,26 +7802,37 @@ pub fn plan_saved_flights(
         } else {
             "no_fully_priced_route"
         });
-        let mut reachable = false;
-        let mut minimum_fare = None::<u64>;
-        let mut frontier = BTreeMap::from([(start, Some(0u64))]);
+        // Prefer quoted paths, then cheaper fares. For unquoted paths, prefer fewer legs.
+        let mut witness = None;
+        let mut frontier = BTreeMap::from([(start, (false, 0u64, Vec::new()))]);
         for depth in 0..max_legs {
             let mut next = BTreeMap::new();
-            for (node, fare_so_far) in frontier {
+            for (node, (unquoted, cost, path)) in frontier {
                 for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
                     if target == start || (depth == 0 && index != 0) {
                         continue;
                     }
-                    let total = fare_so_far.zip(fare).map(|(a, b)| a + b);
+                    let unquoted = unquoted || fare.is_none();
+                    let cost = if unquoted {
+                        0
+                    } else {
+                        cost + fare.unwrap_or_default()
+                    };
+                    let mut path = path.clone();
+                    path.push((index, target));
                     if target == destination {
-                        reachable = true;
-                        if let Some(total) = total {
-                            minimum_fare = Some(minimum_fare.map_or(total, |best| best.min(total)));
+                        let candidate = (unquoted, cost, depth + 1, path);
+                        if witness
+                            .as_ref()
+                            .is_none_or(|previous| &candidate < previous)
+                        {
+                            witness = Some(candidate);
                         }
                     } else {
-                        let previous = next.entry(target).or_insert(total);
-                        if let Some(total) = total {
-                            *previous = Some(previous.map_or(total, |best| best.min(total)));
+                        let candidate = (unquoted, cost, path);
+                        let previous = next.entry(target).or_insert_with(|| candidate.clone());
+                        if candidate < *previous {
+                            *previous = candidate;
                         }
                     }
                 }
@@ -7816,8 +7842,11 @@ pub fn plan_saved_flights(
             }
             frontier = next;
         }
+        let minimum_fare = witness
+            .as_ref()
+            .and_then(|(unquoted, cost, _, _)| (!unquoted).then_some(*cost));
         report["saved_path_evidence"] = json!({
-            "reachable_path_observed":reachable,
+            "reachable_path_observed":witness.is_some(),
             "fully_priced_path_observed_without_budget":minimum_fare.is_some(),
             "maximum_legs":max_legs,
             "minimum_fully_priced_fare_copper":minimum_fare,
@@ -7825,22 +7854,13 @@ pub fn plan_saved_flights(
             "shortfall_vs_effective_ceiling_copper":minimum_fare.zip(max_fare)
                 .map(|(fare,ceiling)| fare.saturating_sub(ceiling))
         });
+        if let Some((_, _, _, path)) = witness {
+            report["saved_path_witness"] =
+                json!({"legs":render_legs(path)?,"total_fare_copper":minimum_fare});
+        }
         return Ok(report);
     };
-    let legs = path
-        .into_iter()
-        .map(|(index, target)| {
-            let (id, capture) = &captures[index];
-            let mut route = capture
-                .sections
-                .get("flight_map")
-                .and_then(|map| captured_flight_route(map, target as u32))
-                .ok_or_else(|| anyhow::anyhow!("Missing selected leg"))?;
-            route["snapshot_id"] = json!(id);
-            route["captured_at"] = json!(capture.captured_at);
-            Ok(route)
-        })
-        .collect::<Result<Vec<_>>>()?;
+    let legs = render_legs(path)?;
     let mut plan = json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
         "legs":legs,"total_fare_copper":fare,
         "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)});

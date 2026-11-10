@@ -136,6 +136,15 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         'fully_priced_path_observed_without_budget':False,'maximum_legs':8,
                         'minimum_fully_priced_fare_copper':None,'effective_fare_ceiling_copper':None,
                         'shortfall_vs_effective_ceiling_copper':None})
+                    witness=unknown_fare['saved_path_witness']
+                    self.assertIsNone(witness['total_fare_copper'])
+                    self.assertEqual([leg['destination_node_id'] for leg in witness['legs']],[20])
+                    self.assertIsNone(witness['legs'][0]['fare_copper'])
+                    over_budget=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={'destination_node_id':20,'maximum_total_fare_copper':99}))['flight_route_search']
+                    self.assertEqual(over_budget['status'],'no_route_within_fare_ceiling')
+                    self.assertEqual(over_budget['saved_path_witness']['total_fare_copper'],100)
+                    self.assertEqual(over_budget['saved_path_witness']['legs'][0]['snapshot_id'],key)
                     capped_path=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
                         flight_route_search={'destination_name':'Further','onward_snapshot_ids':[next_key],
                                              'max_legs':1}))['flight_route_search']
@@ -144,6 +153,7 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         'fully_priced_path_observed_without_budget':False,'maximum_legs':1,
                         'minimum_fully_priced_fare_copper':None,'effective_fare_ceiling_copper':None,
                         'shortfall_vs_effective_ceiling_copper':None})
+                    self.assertNotIn('saved_path_witness',capped_path)
                     for reserve, expected in [(0, {key,old}), (100, {key,old}), (101, set())]:
                         result = await call('list_snapshots', family='forever',
                             flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)

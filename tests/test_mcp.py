@@ -610,6 +610,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(len(capped_plan["legs"]),2)
                             else:
                                 self.assertEqual(capped_plan["status"],"no_route_within_fare_ceiling")
+                                witness = capped_plan["saved_path_witness"]
+                                self.assertEqual(witness["total_fare_copper"], 3)
+                                self.assertEqual([leg["destination_node_id"] for leg in witness["legs"]], [14, 15])
                         constrained_request = {
                             **fewest_request, "flight_wallet_reserve_copper": 4_999_999_996,
                             "flight_route_search": {

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the saved flight legs behind unsuccessful route searches when a connection was observed.
+
 - Include the saved starting repair quote in manual flight itinerary budgets.
 
 - Check a starting-wallet reserve for manually selected saved flight itineraries.
