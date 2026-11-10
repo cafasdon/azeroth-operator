@@ -18,6 +18,7 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
         binary=Path(os.environ.get('AZEROTH_TEST_BINARY',root/'target/debug'/(
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         value=fixture();value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+        value['sections']['equipment']={'1':{'item_id':101,'guid':'PRIVATE_EQUIPPED'},'10':{'item_id':102}}
         value['sections']['equipment_durability']={'coverage':'readable_equipped_slots_only','entries':{
             '16':{'current':1,'maximum':3},'1':{'current':0,'maximum':100},'5':{'current':100,'maximum':100}}}
         empty=deepcopy(value);empty['sections']['equipment_durability']['entries']={}
@@ -78,6 +79,10 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(condition['total_missing_observed_durability_points'],missing)
                             self.assertFalse(condition['quote_item_scope_verified'])
                             self.assertEqual([row['slot'] for row in condition['damaged_slots']],[1,16] if damaged else [])
+                            self.assertEqual([row['observed_equipped_item_id'] for row in condition['damaged_slots']],
+                                             [101,None] if damaged else [])
+                            self.assertEqual(condition['equipped_slots_without_durability_reading'],[10] if damaged else [1,10])
+                            self.assertNotIn('PRIVATE_EQUIPPED',json.dumps(condition))
                     combined=await call('inspect_snapshot',snapshot_id=budgets[3],section='repair_quote',
                                         repair_include_equipment_condition=True,repair_wallet_reserve_copper=3)
                     self.assertTrue(combined['repair_reserve_projection']['affordable_with_reserve'])

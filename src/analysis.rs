@@ -10052,6 +10052,17 @@ pub fn repair_reserve_projection(snapshot: &Snapshot, reserve: u64) -> Value {
 
 pub fn repair_equipment_condition(snapshot: &Snapshot) -> Option<Value> {
     let entries = snapshot.sections.get("equipment_durability")?["entries"].as_object()?;
+    let equipment = snapshot
+        .sections
+        .get("equipment")
+        .and_then(Value::as_object);
+    let equipped_slots_without_durability_reading = equipment.map(|slots| {
+        slots
+            .keys()
+            .filter(|slot| !entries.contains_key(*slot))
+            .filter_map(|slot| slot.parse::<u32>().ok())
+            .collect::<BTreeSet<_>>()
+    });
     let mut damaged = BTreeMap::new();
     let mut missing_points = 0;
     for (slot, row) in entries {
@@ -10060,11 +10071,15 @@ pub fn repair_equipment_condition(snapshot: &Snapshot) -> Option<Value> {
         let missing = maximum.checked_sub(current)?;
         missing_points += missing;
         if missing > 0 {
+            let item_id = equipment
+                .and_then(|slots| slots.get(slot))
+                .and_then(|item| item["item_id"].as_u64());
             let slot = slot.parse::<u32>().ok()?;
             damaged.insert(
                 slot,
                 json!({"slot":slot,"current":current,"maximum":maximum,
-                "missing_durability_points":missing,"broken":current == 0}),
+                "missing_durability_points":missing,"broken":current == 0,
+                "observed_equipped_item_id":item_id}),
             );
         }
     }
@@ -10072,6 +10087,7 @@ pub fn repair_equipment_condition(snapshot: &Snapshot) -> Option<Value> {
         json!({"scope":"readable_equipped_slots_only","observed_slot_count":entries.len(),
         "damaged_slot_count":damaged.len(),"damaged_slots":damaged.into_values().collect::<Vec<_>>(),
         "total_missing_observed_durability_points":missing_points,
+        "equipped_slots_without_durability_reading":equipped_slots_without_durability_reading,
         "quote_item_scope_verified":false,"per_slot_repair_price_verified":false,"live":false}),
     )
 }

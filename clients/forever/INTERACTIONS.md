@@ -35,6 +35,9 @@ slots and missing durability points observed in the same capture. The
 condition report remains available if the quote is missing. It covers
 readable equipped slots and leaves the quote's item scope and per-slot
 prices unverified.
+Damaged rows include the item ID from the same captured equipment slot
+when available. The report also lists observed equipped slots without a
+durability reading. These slots may contain items without durability.
 
 Use `list_snapshots.merchant_buyback` with an exact `item_id` to find
 saved buyback entries. Optional `minimum_quantity` and
