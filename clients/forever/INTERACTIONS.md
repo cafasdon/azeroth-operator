@@ -3321,6 +3321,11 @@ account-scope checks still apply to balance and cap differences.
 currency names. It resolves a unique matching ID in each capture before
 applying quantity or cap filters. Add `currency_id` to disambiguate.
 
+`list_snapshots.renown.faction_name` and `list_snapshots.paragon.faction_name`
+find an exact saved name within the corresponding reputation kind. Names
+must resolve before level, cap or reward filters are applied. Add
+`faction_id` to disambiguate.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

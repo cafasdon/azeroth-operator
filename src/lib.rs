@@ -2053,7 +2053,9 @@ fn select_named_entry<'a>(
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RenownFilter {
-    pub faction_id: std::num::NonZeroU32,
+    pub faction_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved faction name.
+    pub faction_name: Option<String>,
     pub minimum_level: u32,
     pub capped: Option<bool>,
 }
@@ -2061,7 +2063,9 @@ pub struct RenownFilter {
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ParagonFilter {
-    pub faction_id: std::num::NonZeroU32,
+    pub faction_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved faction name.
+    pub faction_name: Option<String>,
     pub reward_pending: Option<bool>,
     pub level_too_low: Option<bool>,
     /// Match the linked reward quest's readiness in the same capture.
@@ -2840,16 +2844,26 @@ impl Store {
             .and_then(|filter| filter.faction_name.as_deref())
             .map(str::trim)
             .map(str::to_lowercase);
-        ensure!(
-            renown.is_none() || family == Family::Forever,
-            "Renown filtering requires Forever"
-        );
-        let renown_key = renown.as_ref().map(|filter| filter.faction_id.to_string());
-        ensure!(
-            paragon.is_none() || family == Family::Forever,
-            "Paragon filtering requires Forever"
-        );
-        let paragon_key = paragon.as_ref().map(|filter| filter.faction_id.to_string());
+        let special_faction = |id: Option<std::num::NonZeroU32>, name: Option<&str>| {
+            let name = name.map(str::trim);
+            ensure!(
+                family == Family::Forever
+                    && (id.is_some() || name.is_some())
+                    && name.is_none_or(|name| !name.is_empty() && name.len() <= 256),
+                "Renown and paragon filtering require Forever and a faction ID or valid name"
+            );
+            Ok((id.map(|id| id.to_string()), name.map(str::to_lowercase)))
+        };
+        let (renown_key, renown_name) = renown
+            .as_ref()
+            .map(|filter| special_faction(filter.faction_id, filter.faction_name.as_deref()))
+            .transpose()?
+            .unwrap_or_default();
+        let (paragon_key, paragon_name) = paragon
+            .as_ref()
+            .map(|filter| special_faction(filter.faction_id, filter.faction_name.as_deref()))
+            .transpose()?
+            .unwrap_or_default();
         ensure!(
             tracked_achievement.is_none() || family == Family::Forever,
             "Tracked achievement filtering requires Forever"
@@ -3516,47 +3530,48 @@ impl Store {
                     if tracked_achievement.is_some() && achievement_match.is_none() {
                         continue;
                     }
-                    let paragon_match =
-                        paragon
-                            .as_ref()
-                            .zip(paragon_key.as_ref())
-                            .and_then(|(filter, key)| {
-                                let row = s.sections.get("reputation")?["entries"].get(key)?;
-                                let detail = row["paragon"].as_object()?;
-                                let readiness = detail
-                                    .get("reward_quest_id")
-                                    .and_then(Value::as_u64)
-                                    .and_then(|id| s.sections.get("quests")?.get(id.to_string()))
-                                    .map(analysis::quest_readiness);
-                                (row["kind"] == "paragon"
-                                    && filter.reward_pending.is_none_or(|flag| {
-                                        detail["reward_pending"].as_bool() == Some(flag)
-                                    })
-                                    && filter.level_too_low.is_none_or(|flag| {
-                                        detail["level_too_low"].as_bool() == Some(flag)
-                                    })
-                                    && filter
-                                        .reward_quest_readiness
-                                        .is_none_or(|expected| readiness == Some(expected)))
-                                .then_some((row, readiness))
-                            });
+                    let paragon_match = paragon.as_ref().and_then(|filter| {
+                        let entries = s.sections.get("reputation")?["entries"].as_object()?;
+                        let (id, row) = select_named_entry(
+                            entries,
+                            paragon_key.as_deref(),
+                            paragon_name.as_deref(),
+                            |row| row["kind"] == "paragon",
+                        )?;
+                        let detail = row["paragon"].as_object()?;
+                        let readiness = detail
+                            .get("reward_quest_id")
+                            .and_then(Value::as_u64)
+                            .and_then(|id| s.sections.get("quests")?.get(id.to_string()))
+                            .map(analysis::quest_readiness);
+                        (filter
+                            .reward_pending
+                            .is_none_or(|flag| detail["reward_pending"].as_bool() == Some(flag))
+                            && filter
+                                .level_too_low
+                                .is_none_or(|flag| detail["level_too_low"].as_bool() == Some(flag))
+                            && filter
+                                .reward_quest_readiness
+                                .is_none_or(|expected| readiness == Some(expected)))
+                        .then_some((id, row, readiness))
+                    });
                     if paragon.is_some() && paragon_match.is_none() {
                         continue;
                     }
-                    let renown_match =
-                        renown
-                            .as_ref()
-                            .zip(renown_key.as_ref())
-                            .and_then(|(filter, key)| {
-                                let row = s.sections.get("reputation")?["entries"].get(key)?;
-                                (row["kind"] == "renown"
-                                    && row["renown"]["level"].as_u64()?
-                                        >= u64::from(filter.minimum_level)
-                                    && filter.capped.is_none_or(|capped| {
-                                        row["renown"]["capped"].as_bool() == Some(capped)
-                                    }))
-                                .then_some(row)
-                            });
+                    let renown_match = renown.as_ref().and_then(|filter| {
+                        let entries = s.sections.get("reputation")?["entries"].as_object()?;
+                        let (id, row) = select_named_entry(
+                            entries,
+                            renown_key.as_deref(),
+                            renown_name.as_deref(),
+                            |row| row["kind"] == "renown",
+                        )?;
+                        (row["renown"]["level"].as_u64()? >= u64::from(filter.minimum_level)
+                            && filter.capped.is_none_or(|capped| {
+                                row["renown"]["capped"].as_bool() == Some(capped)
+                            }))
+                        .then_some((id, row))
+                    });
                     if renown.is_some() && renown_match.is_none() {
                         continue;
                     }
@@ -4078,15 +4093,17 @@ impl Store {
                             "earned_by_character":row["earned_by_character"],"account_wide":row["account_wide"],
                         });
                     }
-                    if let Some((filter, row)) = renown.as_ref().zip(renown_match) {
+                    if let Some((id, row)) = renown_match {
                         summary["renown_match"] = json!({
-                            "faction_id":filter.faction_id,"level":row["renown"]["level"],
+                            "faction_id":id,"level":row["renown"]["level"],
                             "capped":row["renown"]["capped"],"account_wide":row["account_wide"],
                         });
                     }
-                    if let Some((filter, (row, readiness))) = paragon.as_ref().zip(paragon_match) {
+                    if let Some((filter, (id, row, readiness))) =
+                        paragon.as_ref().zip(paragon_match)
+                    {
                         summary["paragon_match"] = json!({
-                            "faction_id":filter.faction_id,"reward_pending":row["paragon"]["reward_pending"],
+                            "faction_id":id,"reward_pending":row["paragon"]["reward_pending"],
                             "level_too_low":row["paragon"]["level_too_low"],
                             "reward_quest_id":row["paragon"]["reward_quest_id"],
                             "account_wide":row["account_wide"],

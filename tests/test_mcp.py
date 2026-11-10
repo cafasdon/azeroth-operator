@@ -1531,6 +1531,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertTrue(invalid.isError)
                         for selection, expected_ids in [
                             ({"faction_id": 20, "minimum_level": 5, "capped": False}, [new_freshness_id]),
+                            ({"faction_name":"  FiXTure ReNoWn ","minimum_level":5,"capped":False},[new_freshness_id]),
+                            ({"faction_name":"Fixture renown","faction_id":20,"minimum_level":5},[new_freshness_id]),
+                            ({"faction_name":"Fixture renown","faction_id":30,"minimum_level":0},[]),
+                            ({"faction_name":"Fixture renown","minimum_level":6},[]),
                             ({"faction_id": 20, "minimum_level": 6}, []),
                             ({"faction_id": 20, "minimum_level": 0, "capped": True}, []),
                             ({"faction_id": 10, "minimum_level": 0}, []),
@@ -1564,6 +1568,9 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 })
                         for selection, expected_ids in [
                             ({"faction_id": 30, "reward_pending": True}, [new_freshness_id]),
+                            ({"faction_name":"  fIXture PARAGON ","reward_pending":True},[new_freshness_id]),
+                            ({"faction_name":"Fixture paragon","faction_id":20},[]),
+                            ({"faction_name":"Fixture paragon","level_too_low":False},[]),
                             ({"faction_id": 30, "reward_pending": True, "level_too_low": False}, []),
                             ({"faction_id": 10}, []),
                         ]:
