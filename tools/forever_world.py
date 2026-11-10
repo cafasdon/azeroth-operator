@@ -258,16 +258,21 @@ class World:
 
     def quest_links(self, fields, *, kind='quest'):
         links = {}
+        scalar_fields = {
+            'item': ('startQuest',),
+            'quest': ('nextQuestInChain', 'parentQuest', 'breadcrumbForQuestId',
+                      'availableUntilCompleted', 'availableStartingWith', 'disabledByQuest'),
+        }.get(kind, ())
         if kind == 'item':
             relationship_fields = ('startQuest', 'relatedQuests')
         elif kind == 'quest':
             relationship_fields = ('preQuestGroup', 'preQuestSingle', 'childQuests',
-                                   'inGroupWith', 'exclusiveTo')
+                                   'inGroupWith', 'exclusiveTo', 'breadcrumbs') + scalar_fields
         else:
             relationship_fields = ('questStarts', 'questEnds')
         for field in relationship_fields:
             entries = fields.get(field)
-            if field == 'startQuest' and field in fields:
+            if field in scalar_fields and field in fields:
                 entries = {'1': entries}
             if not isinstance(entries, dict):
                 continue

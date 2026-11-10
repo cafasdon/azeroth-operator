@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve cached quest chain, parent, breadcrumb and availability references.
+
 - List cached container contents alongside item acquisition sources.
 
 - List cached item rewards from quest lookup.

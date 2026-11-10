@@ -100,3 +100,7 @@ references the quest. The page uses the same item ID order and offset.
 
 For items, `sourced_items.itemDrops` lists cached items that name the selected
 item as their container. The same offset also pages forward acquisition sources.
+
+Quest links also resolve `breadcrumbs`, `nextQuestInChain`, `parentQuest`,
+`breadcrumbForQuestId`, `availableUntilCompleted`, `availableStartingWith`
+and `disabledByQuest`. Scalar references appear at position `1`.
