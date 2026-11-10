@@ -2039,6 +2039,11 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_pvp_flags" => {
+            object(value, &[("coverage", "text", true), ("is_pvp", "bool", true),
+                ("is_free_for_all", "bool", true), ("is_sanctuary", "bool", true)])?;
+            ensure!(value["coverage"] == "reported_player_pvp_flags", "Invalid player PvP flags coverage");
+        }
         "player_life_state" => {
             object(value, &[("coverage", "text", true), ("is_dead", "bool", true), ("is_ghost", "bool", true),
                 ("is_dead_or_ghost", "bool", true), ("is_feigning_death", "bool", true)])?;

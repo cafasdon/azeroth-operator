@@ -1,5 +1,50 @@
 local _, AO = ...
 AO.collectors = {}
+-- Player-only raw PvP flags, without combat eligibility or zone-safety inference.
+AO.collectors.player_pvp_flags = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "PvP flag restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted PvP flag")
+        return value
+    end
+    assert(public(AO.family)=="forever", "PvP flags unavailable")
+    local names={"UnitIsPVP","UnitIsPVPFreeForAll","UnitIsPVPSanctuary"}
+    local fields={"is_pvp","is_free_for_all","is_sanctuary"}
+    local getters={}
+    for index,name in ipairs(names) do
+        getters[index]=public(_G[name])
+        assert(type(getters[index])=="function", "PvP flag getter unavailable")
+    end
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret, "PvP flag context changed")
+        for index,name in ipairs(names) do
+            assert(public(_G[name])==getters[index], "PvP flag getter changed")
+        end
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret),
+            "PvP flag context changed")
+        for index,name in ipairs(names) do
+            assert(rawequal(rawget(_G,name),getters[index]), "PvP flag getter changed")
+        end
+    end
+    local function projection()
+        local flags={}
+        for index,getter in ipairs(getters) do
+            fixed()
+            local value=public(getter("player"))
+            assert(type(value)=="boolean", "PvP flag unreadable")
+            flags[fields[index]]=value
+            fixed()
+        end
+        return flags
+    end
+    local first=projection()
+    local second=projection()
+    for _,field in ipairs(fields) do assert(first[field]==second[field], "PvP flags changed") end
+    fixed()
+    second.coverage="reported_player_pvp_flags"
+    return second
+end
 -- Player-only saved life flags, without interpreting action eligibility.
 AO.collectors.player_life_state = function()
     local secret=issecretvalue

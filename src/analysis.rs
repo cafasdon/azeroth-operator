@@ -3517,6 +3517,7 @@ pub struct ComparisonSelectors<'a> {
     pub owned_auction_changes: bool,
     pub battlefield_queue_changes: bool,
     pub player_life_state_changes: bool,
+    pub player_pvp_flag_changes: bool,
     pub instance_group_size_reference: bool,
     pub instance_group_size_max_cache_age_seconds: Option<u32>,
     pub group_member_target: Option<std::num::NonZeroU32>,
@@ -4195,6 +4196,11 @@ pub fn compare_observations(
         ensure!(before.client.family == crate::Family::Forever, "Player life-state comparison requires Forever");
         comparison["player_life_state_changes"] = crate::player_life_state::compare(
             before.sections.get("player_life_state"), after.sections.get("player_life_state"))?;
+    }
+    if selectors.player_pvp_flag_changes {
+        ensure!(before.client.family == crate::Family::Forever, "Player PvP flags comparison requires Forever");
+        comparison["player_pvp_flag_changes"] = crate::player_pvp_flags::compare(
+            before.sections.get("player_pvp_flags"), after.sections.get("player_pvp_flags"))?;
     }
     if selectors.battlefield_queue_changes {
         ensure!(before.client.family == crate::Family::Forever, "Battlefield queue comparison requires Forever");
@@ -12057,6 +12063,8 @@ pub fn summary(s: &Snapshot) -> Value {
     }).unwrap_or(Value::Null);
     summary["player_life_state_observation"] = s.sections.get("player_life_state")
         .map(crate::player_life_state::observation).unwrap_or(Value::Null);
+    summary["player_pvp_flag_observation"] = s.sections.get("player_pvp_flags")
+        .map(crate::player_pvp_flags::observation).unwrap_or(Value::Null);
     summary["quest_giver_reference_observation"] = s.sections.get("quest_giver_references")
         .map(crate::quest_references::observation).unwrap_or(Value::Null);
     summary["battlefield_queue_observation"] = s.sections.get("battlefield_queue_slots").map(|section| {

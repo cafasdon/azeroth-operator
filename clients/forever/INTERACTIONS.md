@@ -1,5 +1,26 @@
 # Forever interaction map
 
+## Raw player PvP flags (10 November 2026)
+
+Manual Forever export may record `player_pvp_flags` with raw `is_pvp`,
+`is_free_for_all` and `is_sanctuary`. Two matching readable projections and
+stable context are required. Unknown/restricted/changing/non-Boolean reads
+remain unavailable, never false. Combat export stays refused. Only player
+getters are called; no toggle, target/other-unit query, zone classification,
+queue or combat action is introduced. All eight Boolean combinations remain
+uninterpreted. See ADR083.
+
+Inspect the section or use `character_summary.player_pvp_flag_observation`.
+Find saved matches with `list_snapshots.player_pvp_flags`, requiring at least
+one exact Boolean predicate. False matches only recorded false, not missing;
+null/omitted predicates are ignored. Latest selection precedes filtering.
+Set `compare_snapshots.player_pvp_flag_changes: true` for raw before/after
+differences. Missing sides leave differences/count unknown; equal flags give
+zero. Current PvP state, continuity, safety, eligibility and event inference
+remain unverified. Owner/time/client gates and default behavior remain in place.
+Update readers before exporter installation; live testing/deployment remain
+deferred. Data never enters the public vector index.
+
 ## Saved quest-giver references (10 November 2026)
 
 With an independently installed compatible QuestieDB provider, manual export

@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture, inspect, search and compare raw player PvP flags without toggles, safety or combat-eligibility inference.
+
 - Review saved quest-group rewards and budgets with deduplicated totals across alternative finishers.
 
 - Group saved quests by retained finisher NPC/object references, with ready/unknown states, filters and paging.

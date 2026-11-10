@@ -15,6 +15,7 @@ pub mod macro_operation;
 pub mod owned_auction_filter;
 pub mod planning;
 pub mod player_life_state;
+pub mod player_pvp_flags;
 pub mod quest_references;
 pub mod quest_turn_in;
 pub mod saved_resets;
@@ -82,6 +83,7 @@ pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "owned_auctions",
     "battlefield_queue_slots",
     "player_life_state",
+    "player_pvp_flags",
     "bag_item_cooldowns",
     "gossip_quests",
     "gossip_options",
@@ -143,6 +145,7 @@ pub const FOREVER_ONLY_OBSERVATIONS: &[&str] = &[
     "owned_auctions",
     "battlefield_queue_slots",
     "player_life_state",
+    "player_pvp_flags",
     "bag_item_cooldowns",
     "gossip_quests",
     "gossip_options",
@@ -2055,6 +2058,7 @@ pub struct CaptureFilters<'a> {
     pub owned_auction: Option<owned_auction_filter::OwnedAuctionFilter>,
     pub battlefield_queue: Option<battlefield_queue_filter::BattlefieldQueueFilter>,
     pub player_life_state: Option<player_life_state::PlayerLifeStateFilter>,
+    pub player_pvp_flags: Option<player_pvp_flags::PlayerPvpFlagFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
@@ -2374,6 +2378,7 @@ impl Store {
             owned_auction,
             battlefield_queue,
             player_life_state,
+            player_pvp_flags,
             profession_spell_id,
             recipe: filters,
             tracked_recipe_id,
@@ -2763,6 +2768,10 @@ impl Store {
         );
         if let Some(filter) = &player_life_state {
             ensure!(family == Family::Forever, "Player life-state search requires Forever");
+            filter.validate()?;
+        }
+        if let Some(filter) = &player_pvp_flags {
+            ensure!(family == Family::Forever, "Player PvP flags search requires Forever");
             filter.validate()?;
         }
         if let Some(filter) = &battlefield_queue {
@@ -3535,7 +3544,9 @@ impl Store {
                         continue;
                     }
                     let player_life_state_match = player_life_state.as_ref().and_then(|filter| filter.observation_match(&s));
+                    let player_pvp_flags_match = player_pvp_flags.as_ref().and_then(|filter| filter.observation_match(&s));
                     if player_life_state.is_some() && player_life_state_match.is_none() { continue; }
+                    if player_pvp_flags.is_some() && player_pvp_flags_match.is_none() { continue; }
                     let battlefield_queue_match = battlefield_queue.as_ref().and_then(|filter| filter.observation_match(&s));
                     if battlefield_queue.is_some() && battlefield_queue_match.is_none() { continue; }
                     let owned_auction_match = owned_auction.as_ref().and_then(|filter| filter.observation_match(&s));
@@ -4996,6 +5007,9 @@ impl Store {
                     }
                     if let Some(observation) = player_life_state_match {
                         summary["player_life_state_match"] = observation;
+                    }
+                    if let Some(observation) = player_pvp_flags_match {
+                        summary["player_pvp_flags_match"] = observation;
                     }
                     if let Some(observation) = battlefield_queue_match {
                         summary["battlefield_queue_match"] = observation;

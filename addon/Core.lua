@@ -55,6 +55,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="owned_auctions"
         sectionNames[#sectionNames+1]="battlefield_queue_slots"
         sectionNames[#sectionNames+1]="player_life_state"
+        sectionNames[#sectionNames+1]="player_pvp_flags"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"
