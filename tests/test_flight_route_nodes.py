@@ -303,6 +303,23 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         flight_route_search={'destination_node_id':20,'excluded_landing_node_ids':[30]}
                         ))['flight_route_search']
                     self.assertEqual(flyover['legs'][0]['observed_route_node_ids'],path)
+                    preview_search={'destination_name':'Target','excluded_flyover_node_ids':[30]}
+                    for capture in [key,old]:
+                        avoided=(await call('inspect_snapshot',snapshot_id=capture,section='flight_map',
+                            flight_route_search=preview_search))['flight_route_search']
+                        self.assertEqual(avoided['excluded_flyover_node_ids'],[30])
+                        self.assertFalse(avoided['saved_path_evidence']['reachable_path_observed'])
+                        self.assertNotIn('saved_path_witness',avoided)
+                    permitted=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={**preview_search,'excluded_flyover_node_ids':[20,10],
+                            'maximum_total_fare_copper':99}))['flight_route_search']
+                    self.assertEqual(permitted['excluded_flyover_node_ids'],[10,20])
+                    self.assertEqual(permitted['saved_path_witness']['total_fare_copper'],100)
+                    for ids in [[30,30],[0],list(range(100,133))]:
+                        self.assertTrue((await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':'flight_map',
+                            'flight_route_search':{**preview_search,'excluded_flyover_node_ids':ids},
+                        })).isError)
                     for ids in [[10],[40],[20,20],[0],list(range(100,133))]:
                         self.assertTrue((await session.call_tool('inspect_snapshot',{
                             'snapshot_id':key,'section':'flight_map',

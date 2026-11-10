@@ -8653,20 +8653,17 @@ pub fn plan_saved_flights(
     require_affordable: bool,
     maximum_total_fare_copper: Option<u64>,
     excluded_landing_node_ids: &[std::num::NonZeroU32],
+    excluded_flyover_node_ids: &[std::num::NonZeroU32],
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
-    ensure!(
-        excluded_landing_node_ids.len() <= 32,
-        "Too many excluded flight landings"
-    );
-    let excluded: BTreeSet<_> = excluded_landing_node_ids
-        .iter()
-        .map(|id| u64::from(id.get()))
-        .collect();
-    ensure!(
-        excluded.len() == excluded_landing_node_ids.len(),
-        "Duplicate excluded flight landing"
-    );
+    let exclusions = |ids: &[std::num::NonZeroU32]| -> Result<BTreeSet<u64>> {
+        ensure!(ids.len() <= 32, "Too many excluded flight nodes");
+        let set: BTreeSet<_> = ids.iter().map(|id| u64::from(id.get())).collect();
+        ensure!(set.len() == ids.len(), "Duplicate excluded flight node");
+        Ok(set)
+    };
+    let excluded = exclusions(excluded_landing_node_ids)?;
+    let excluded_flyovers = exclusions(excluded_flyover_node_ids)?;
     let destination_name = destination_name.map(str::trim);
     ensure!(
         (destination.is_some() || destination_name.is_some())
@@ -8708,6 +8705,16 @@ pub fn plan_saved_flights(
             if excluded.contains(&node) {
                 return None;
             }
+            if !excluded_flyovers.is_empty() {
+                let preview = row["observed_route_node_ids"].as_object()?;
+                if preview
+                    .values()
+                    .filter_map(Value::as_u64)
+                    .any(|id| id != origin && id != node && excluded_flyovers.contains(&id))
+                {
+                    return None;
+                }
+            }
             Some((index, node, row["fare_copper"].as_u64()))
         }));
     }
@@ -8743,6 +8750,9 @@ pub fn plan_saved_flights(
         });
         if !excluded.is_empty() {
             report["excluded_landing_node_ids"] = json!(excluded);
+        }
+        if !excluded_flyovers.is_empty() {
+            report["excluded_flyover_node_ids"] = json!(excluded_flyovers);
         }
         report
     };

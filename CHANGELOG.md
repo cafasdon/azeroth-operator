@@ -1,5 +1,7 @@
 # Changelog
 
+- Avoid selected flyover nodes when planning flights with saved route previews.
+
 - Avoid selected landing nodes when planning routes across saved Forever flight panels.
 
 - Limit the capture time span across saved Forever flight panels used for route planning.
