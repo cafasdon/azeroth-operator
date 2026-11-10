@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `mail_attachment_item_id` on `compare_snapshots` to compare one
+item's saved loaded inbox quantities and attachment counts. A missing
+inbox is unknown, and an item absent from the loaded rows has no known
+quantity. The delta requires known quantities in both captures and
+does not establish delivery or retrieval.
+
 Set `quest_list_objective_checklist` in saved quest-list inspection to
 see explicitly unfinished objectives and remaining counts for matching
 quests. It skips failed quests, preserves the captured readiness flag,

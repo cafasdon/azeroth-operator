@@ -3382,6 +3382,7 @@ pub struct ComparisonSelectors<'a> {
     pub gossip_option_changes: bool,
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
+    pub mail_attachment_item_id: Option<std::num::NonZeroU32>,
     pub achievement_id: Option<u32>,
     pub achievement_name: Option<&'a str>,
     pub profession_skill_line: Option<u32>,
@@ -4036,6 +4037,17 @@ pub fn compare_observations(
             .zip(after.sections.get("pet_collection_view"))
             .map(|(old, new)| compare_pet_views(old, new))
             .unwrap_or(Value::Null);
+    }
+    if let Some(item_id) = selectors.mail_attachment_item_id {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Mail attachment comparison requires Forever"
+        );
+        comparison["mail_attachment_item_comparison"] = compare_mail_attachment_item(
+            before.sections.get("mail_attachments"),
+            after.sections.get("mail_attachments"),
+            item_id.get(),
+        );
     }
     if selectors.mail_attachment_changes {
         ensure!(
@@ -5990,6 +6002,34 @@ fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
 
 pub(crate) fn unloaded_mail_messages(mail: &Value) -> u64 {
     mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
+}
+
+fn compare_mail_attachment_item(
+    before: Option<&Value>,
+    after: Option<&Value>,
+    item_id: u32,
+) -> Value {
+    let observe = |mail: &Value| {
+        let (totals, unknown_slots) = mail_attachment_totals(mail);
+        let found = totals.get(&("item", u64::from(item_id)));
+        json!({"known_quantity":found.map(|(quantity, _)| quantity),
+            "known_attachment_slots":found.map(|(_, slots)| slots),
+            "unloaded_messages":unloaded_mail_messages(mail),"unknown_attachment_slots":unknown_slots})
+    };
+    let before = before.map(observe);
+    let after = after.map(observe);
+    let delta = before
+        .as_ref()
+        .zip(after.as_ref())
+        .and_then(|(before, after)| {
+            Some(
+                i128::from(after["known_quantity"].as_u64()?)
+                    - i128::from(before["known_quantity"].as_u64()?),
+            )
+        });
+    json!({"item_id":item_id,"coverage":"loaded_inbox_attachments",
+        "before":before,"after":after,"known_quantity_delta":delta,
+        "deliveries_or_retrievals_verified":false,"live":false})
 }
 
 fn compare_mail_attachments(before: &Value, after: &Value) -> Value {

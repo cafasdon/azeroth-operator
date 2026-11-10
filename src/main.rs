@@ -900,6 +900,8 @@ struct Compare {
     /// Compare known loaded mail attachment totals; never infer deliveries or inventory transfers.
     #[serde(default)]
     mail_attachment_changes: bool,
+    /// Compare loaded saved mail quantities for this exact item without listing other attachments.
+    mail_attachment_item_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Resolve one tracked achievement by exact saved name before comparing progress.
@@ -2334,6 +2336,7 @@ impl Operator {
                     player_trade_offer_changes: args.player_trade_offer_changes,
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
+                    mail_attachment_item_id: args.mail_attachment_item_id,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     achievement_name: args.achievement_name.as_deref(),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),

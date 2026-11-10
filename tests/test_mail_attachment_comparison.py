@@ -54,6 +54,24 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError)
                         return json.loads(response.content[0].text)
                     delta=(await compare(before,after))['mail_attachment_changes']
+                    for a,b,expected_before,expected_after,expected_delta in [
+                        (before,after,7,6,-1),(before,empty,7,None,None),
+                        (missing,after,None,6,None),(after,after,6,6,0),
+                    ]:
+                        reply = await session.call_tool('compare_snapshots',{
+                            'before_id':a,'after_id':b,'mail_attachment_item_id':720,
+                        })
+                        self.assertFalse(reply.isError,reply)
+                        focused = json.loads(reply.content[0].text)
+                        self.assertNotIn('mail_attachment_changes',focused)
+                        item_comparison = focused['mail_attachment_item_comparison']
+                        self.assertEqual(item_comparison['item_id'],720)
+                        self.assertEqual((item_comparison['before'] or {}).get('known_quantity'),expected_before)
+                        self.assertEqual((item_comparison['after'] or {}).get('known_quantity'),expected_after)
+                        self.assertEqual(item_comparison['known_quantity_delta'],expected_delta)
+                        self.assertFalse(item_comparison['deliveries_or_retrievals_verified'])
+                        if a == missing:
+                            self.assertIsNone(item_comparison['before'])
                     self.assertEqual(delta,{'coverage':'loaded_inbox_attachments','message_identity':'unverified',
                         'inventory_transfers':'unverified','deliveries_or_retrievals':'unverified',
                         'before_loaded_messages':2,'after_loaded_messages':2,'before_total_messages':4,'after_total_messages':5,
