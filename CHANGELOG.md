@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures with an exact spell shortcut and matching recorded resources.
+
 - Distinguish matching, nonmatching and unknown saved spellbook rows for matched shortcuts.
 
 - Show saved hotkeys on action-bar spell resource matches.

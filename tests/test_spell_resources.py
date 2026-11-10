@@ -105,6 +105,31 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         self.assertNotIn('PRIVATE',str(reply))
                         return None if error else json.loads(reply.content[0].text)
+                    shortcut = {'spell_id':101,'resources':{'minimum_charges':1}}
+                    listed = await call('list_snapshots',family='forever',limit=100,
+                        action_bar_spell_resources=shortcut)
+                    matches = {row['snapshot_id']:row['action_bar_spell_resource_match']
+                               for row in listed['snapshots']}
+                    for key,mode,_ in good:
+                        if mode in ('full','ambiguous','maximum'):
+                            self.assertEqual(matches[key],{
+                                'spell_id':101,'action_slots':[2],
+                                'matching_spellbook_slots':list(range(1,1025)) if mode=='maximum' else [2],
+                                'nonmatching_spellbook_slots':[] if mode=='maximum' else [10],
+                                'unknown_spellbook_slots':[],
+                                'cast_eligibility_verified':False})
+                        else:
+                            self.assertNotIn(key,matches)
+                    self.assertNotIn(missing_bar_key,matches)
+                    alias = await call('list_snapshots',family='forever',
+                        action_bar_spell_resources={**shortcut,'spell_id':100})
+                    self.assertEqual(alias['snapshots'],[])
+                    for invalid in [{'spell_id':0},{'resources':{}},
+                                    {'resources':{'minimum_charges':2,'maximum_charges':1}}]:
+                        await call('list_snapshots',error=True,family='forever',
+                            action_bar_spell_resources={**shortcut,**invalid})
+                    await call('list_snapshots',error=True,family='retail',
+                        action_bar_spell_resources=shortcut)
                     conflict=await call('inspect_snapshot',snapshot_id=conflicting_key,
                         section='action_bar_observation',action_bar_spell_name='private_spell')
                     self.assertEqual(list(conflict['data']['slots']),['3','5'])

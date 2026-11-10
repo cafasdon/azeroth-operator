@@ -5450,13 +5450,18 @@ pub fn action_bar_spell_resource_matches(
     actions: &Value,
     spellbook: Option<&Value>,
     filter: &crate::SpellResourceFilter,
+    exact_spell_id: Option<u64>,
 ) -> Option<Value> {
     let action_slots = action_slots_by_id(actions, "spell")?;
     let entries = spellbook?["entries"].as_object()?;
-    let hotkeys = observed_action_hotkeys_by_slot(actions);
+    let hotkeys = exact_spell_id
+        .is_none()
+        .then(|| observed_action_hotkeys_by_slot(actions))
+        .flatten();
     let mut spellbook_slots = BTreeMap::<u64, (BTreeSet<u32>, BTreeSet<u32>, BTreeSet<u32>)>::new();
     for (slot, row) in entries {
         if let (Ok(slot), Some(id)) = (slot.parse(), row["spell_id"].as_u64())
+            && exact_spell_id.is_none_or(|wanted| wanted == id)
             && action_slots.contains_key(&id)
         {
             let (matched, nonmatching, unknown) = spellbook_slots.entry(id).or_default();

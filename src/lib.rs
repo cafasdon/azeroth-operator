@@ -649,6 +649,15 @@ pub struct SpellbookSpellFilter {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct ActionBarSpellResourceFilter {
+    /// Exact reported spell ID shared by the action slot and spellbook row.
+    pub spell_id: std::num::NonZeroU32,
+    /// All predicates must match the same saved spellbook row.
+    pub resources: SpellResourceFilter,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ActivePetCaptureFilter {
     /// Recorded pet presence, not current game state.
     pub present: Option<bool>,
@@ -1971,6 +1980,7 @@ pub struct CaptureFilters<'a> {
     pub pet_species_name: Option<&'a str>,
     pub active_pet: Option<ActivePetCaptureFilter>,
     pub spellbook_spell: Option<SpellbookSpellFilter>,
+    pub action_bar_spell_resources: Option<ActionBarSpellResourceFilter>,
     pub minimum_rested_xp: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
@@ -2266,6 +2276,7 @@ impl Store {
             pet_species_name,
             active_pet,
             spellbook_spell,
+            action_bar_spell_resources,
             minimum_rested_xp,
             xp_gain_enabled_only,
             quest_id,
@@ -2607,6 +2618,13 @@ impl Store {
             spellbook_spell.is_none() || family == Family::Forever,
             "Spellbook filtering requires Forever"
         );
+        if let Some(filter) = &action_bar_spell_resources {
+            ensure!(
+                family == Family::Forever,
+                "Action-bar spell resource filtering requires Forever"
+            );
+            filter.resources.validate()?;
+        }
         if let Some(filter) = &spellbook_spell {
             ensure!(
                 filter.spell_id.is_some() || filter.resources.is_some() || filter.name.is_some(),
@@ -3336,6 +3354,27 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(s.sections.get("pet_care")?));
                     if active_pet.is_some() && active_pet_match.is_none() {
+                        continue;
+                    }
+                    let action_bar_spell_resource_match = action_bar_spell_resources.as_ref().and_then(|filter| {
+                        let actions = s.sections.get("action_bar_observation")?;
+                        let report = analysis::action_bar_spell_resource_matches(
+                            actions, s.sections.get("spellbook"), &filter.resources,
+                            Some(u64::from(filter.spell_id.get())),
+                        )?;
+                        let matched = report["matches"].get(filter.spell_id.to_string())?;
+                        Some(serde_json::json!({
+                            "spell_id": filter.spell_id,
+                            "action_slots": matched["action_slots"],
+                            "matching_spellbook_slots": matched["matching_spellbook_slots"],
+                            "nonmatching_spellbook_slots": matched["nonmatching_spellbook_slots"],
+                            "unknown_spellbook_slots": matched["unknown_spellbook_slots"],
+                            "cast_eligibility_verified": false
+                        }))
+                    });
+                    if action_bar_spell_resources.is_some()
+                        && action_bar_spell_resource_match.is_none()
+                    {
                         continue;
                     }
                     let spellbook_match=spellbook_spell.as_ref().and_then(|filter| {
@@ -4428,6 +4467,9 @@ impl Store {
                     }
                     if let Some(observation) = spellbook_match {
                         summary["spellbook_spell_match"] = observation;
+                    }
+                    if let Some(observation) = action_bar_spell_resource_match {
+                        summary["action_bar_spell_resource_match"] = observation;
                     }
                     if let Some(observation) = mount_match {
                         summary["collected_mount_match"] = observation;

@@ -677,6 +677,8 @@ struct List {
     active_pet: Option<azeroth_operator::ActivePetCaptureFilter>,
     /// Match a saved visible player spellbook row by ID, exact name or recorded resources.
     spellbook_spell: Option<azeroth_operator::SpellbookSpellFilter>,
+    /// Find saved Forever captures with this exact shortcut and matching recorded resources.
+    action_bar_spell_resources: Option<azeroth_operator::ActionBarSpellResourceFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
@@ -2660,6 +2662,7 @@ impl Operator {
                 pet_species_name: args.pet_species_name.as_deref(),
                 active_pet: args.active_pet,
                 spellbook_spell: args.spellbook_spell,
+                action_bar_spell_resources: args.action_bar_spell_resources,
                 minimum_rested_xp: args.minimum_rested_xp,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
@@ -6086,7 +6089,8 @@ impl Operator {
                             azeroth_operator::analysis::action_bar_spell_resource_matches(
                                 &value["data"],
                                 snapshot.sections.get("spellbook"),
-                                filter
+                                filter,
+                                None
                             )
                         );
                     }

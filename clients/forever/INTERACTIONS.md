@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `action_bar_spell_resources` on `list_snapshots` with a positive
+`spell_id` and a `resources` predicate to find saved captures with a
+matching shortcut. The exact reported spell ID must appear in both
+sections and all predicates must match one spellbook row. The result
+shows action and spellbook slots. It leaves cast eligibility unverified.
+
 Use `action_bar_spell_resource_filter` with saved action-bar inspection
 to find retained spell shortcuts matching recorded charge, cast-count or
 cooldown predicates. All predicates must match one spellbook row with the
