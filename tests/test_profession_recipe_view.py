@@ -118,7 +118,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     changed=copy.deepcopy(value)
                     changed['captured_at']='2025-01-02T00:00:00Z'
                     changed_view=changed['sections']['profession_recipe_view']
-                    changed_view['rank_observation']={'rank':110,'max_rank':175}
+                    changed_view['rank_observation']={'rank':110,'max_rank':175,'skill_modifier':0}
                     changed_view['entries']['7']['learned']=False
                     changed_view['entries']['9']['learned']=True
                     changed_view['entries']['9'].update(can_skill_up=False,skill_ups_reported=0)
@@ -135,6 +135,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                         'before':{'rank':100,'max_rank':150,'rank_points_to_observed_cap':50},
                         'after':{'rank':110,'max_rank':175,'rank_points_to_observed_cap':65},
                         'rank_delta':10,'max_rank_delta':25,'rank_points_to_observed_cap_delta':15,
+                        'skill_modifier_change':{'before':-5,'after':0,'delta':5},
                     })
                     self.assertEqual(delta['learning_observation_changes'],[
                         {'recipe_id':7,'before_learned':True,'after_learned':False},
@@ -160,6 +161,12 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta['learning_observation_changes'],[])
                     self.assertEqual(delta['skill_up_observation_changes'],[])
                     self.assertEqual(delta['rank_observation_change']['rank_delta'],0)
+                    self.assertEqual(delta['rank_observation_change']['skill_modifier_change']['delta'],0)
+                    base_only=copy.deepcopy(changed)
+                    base_only['sections']['profession_recipe_view']['rank_observation'].pop('skill_modifier')
+                    delta=(await compare(key,store.ingest(base_only),profession_recipe_changes=True))['profession_recipe_changes']
+                    self.assertEqual(delta['rank_observation_change']['rank_delta'],10)
+                    self.assertNotIn('skill_modifier_change',delta['rank_observation_change'])
                     legacy=copy.deepcopy(changed)
                     legacy['sections']['profession_recipe_view'].pop('rank_observation')
                     delta=(await compare(key,store.ingest(legacy),profession_recipe_changes=True))['profession_recipe_changes']

@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reported profession skill modifiers independently of base ranks.
+
 - Retain the visible profession recipe view's separate reported skill modifier.
 
 - Compare saved recipe-view rank, cap and remaining points for the same profession.

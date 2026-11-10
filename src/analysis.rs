@@ -6801,6 +6801,14 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
             "rank_delta":new_rank-old_rank,"max_rank_delta":new_cap-old_cap,
             "rank_points_to_observed_cap_delta":new_remaining-old_remaining,
         });
+        if let Some((old_modifier, new_modifier)) = before["rank_observation"]["skill_modifier"]
+            .as_i64()
+            .zip(after["rank_observation"]["skill_modifier"].as_i64())
+        {
+            result["rank_observation_change"]["skill_modifier_change"] = json!({
+                "before":old_modifier,"after":new_modifier,"delta":new_modifier-old_modifier,
+            });
+        }
     }
     let ids: BTreeSet<u32> = old
         .keys()

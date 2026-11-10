@@ -14,6 +14,8 @@ when the view and saved material schematics have the same profession ID.
 With `profession_recipe_changes` on `compare_snapshots`, rank, cap and
 remaining points are compared only when both views report a rank pair for
 the same profession. The differences describe saved observations.
+When both views also report `skill_modifier`, the comparison shows its
+signed change separately from the base rank and cap.
 [Forever profession rank bar](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ProfessionsTemplates/Blizzard_ProfessionsRankBar.lua)
 
 Use `order: "reported_skill_ups_per_reagent_desc"` with a
