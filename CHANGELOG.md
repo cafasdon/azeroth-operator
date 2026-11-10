@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan up to twenty distinct item costs for a saved reputation turn-in.
+
 - Estimate carried item shortfalls for saved reputation turn-in plans.
 
 - Estimate repeat turn-ins to the next captured standard reputation threshold.

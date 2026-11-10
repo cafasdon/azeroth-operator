@@ -384,6 +384,8 @@ struct Inspect {
     reputation_points_per_turn_in: Option<std::num::NonZeroU32>,
     /// One assumed item cost per reputation turn-in, checked against the same saved bags.
     reputation_turn_in_item_cost: Option<ItemCost>,
+    /// Distinct assumed item costs per turn-in. Supply 1 to 20, without the singular cost.
+    reputation_turn_in_item_costs: Option<Vec<ItemCost>>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
     reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
@@ -3438,11 +3440,26 @@ impl Operator {
                 "Reputation turn-in estimates require an exact faction",
             )]);
         }
-        if args.reputation_turn_in_item_cost.is_some()
-            && args.reputation_points_per_turn_in.is_none()
+        let reputation_item_costs = args
+            .reputation_turn_in_item_costs
+            .as_deref()
+            .unwrap_or_else(|| args.reputation_turn_in_item_cost.as_slice());
+        if (args.reputation_turn_in_item_cost.is_some()
+            || args.reputation_turn_in_item_costs.is_some())
+            && (args.reputation_points_per_turn_in.is_none()
+                || reputation_item_costs.is_empty()
+                || reputation_item_costs.len() > 20
+                || (args.reputation_turn_in_item_cost.is_some()
+                    && args.reputation_turn_in_item_costs.is_some())
+                || reputation_item_costs
+                    .iter()
+                    .map(|cost| cost.item_id)
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+                    != reputation_item_costs.len())
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Reputation item costs require a points-per-turn-in estimate",
+                "Reputation item costs require a points-per-turn-in estimate and one to twenty distinct items",
             )]);
         }
         if let Some(budget) = args.spending_budget {
@@ -6083,32 +6100,46 @@ impl Operator {
                                 "turn_ins_to_next_rank":turn_ins,
                                 "capped":standard[&key]["capped"].as_bool()
                             });
-                            if let Some(cost) = args.reputation_turn_in_item_cost.as_ref() {
-                                let stock =
-                                    self.store.read(&args.snapshot_id).and_then(|snapshot| {
-                                        azeroth_operator::analysis::find_item(
-                                            &snapshot,
-                                            cost.item_id.get(),
-                                            0,
-                                            1,
-                                        )
-                                    });
-                                let Ok(stock) = stock else {
+                            if !reputation_item_costs.is_empty() {
+                                let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                                     return CallToolResult::error(vec![ContentBlock::text(
                                         "Could not read the captured reputation turn-in inventory",
                                     )]);
                                 };
-                                let carried = stock["quantity_by_storage"]["bags"].as_u64();
-                                let required = turn_ins
-                                    .and_then(|count| count.checked_mul(cost.quantity.get()));
-                                value["reputation_turn_in_item_plan"] = serde_json::json!({
+                                let stock = azeroth_operator::InventoryRequirementsFilter {
+                                    storage: azeroth_operator::InventoryStorage::Bags,
+                                    container_id: None,
+                                    items: reputation_item_costs
+                                        .iter()
+                                        .map(|cost| azeroth_operator::InventoryRequirement {
+                                            item_id: cost.item_id,
+                                            quantity: cost.quantity,
+                                        })
+                                        .collect(),
+                                }
+                                .review_observed_stock(&snapshot, None);
+                                let observed = stock["items"]
+                                    .as_array()
+                                    .expect("inventory review always returns item rows");
+                                let plans: Vec<_> = reputation_item_costs.iter().zip(observed).map(|(cost, row)| {
+                                    let carried = row["observed_quantity"].as_u64();
+                                    let required = turn_ins.and_then(|count| count.checked_mul(cost.quantity.get()));
+                                    serde_json::json!({
                                     "item_id":cost.item_id,
                                     "assumed_quantity_per_turn_in":cost.quantity,
                                     "required_quantity":required,
                                     "required_quantity_overflow":turn_ins.is_some() && required.is_none(),
                                     "observed_carried_quantity":carried,
                                     "shortfall_quantity":required.zip(carried).map(|(required, carried)| required.saturating_sub(carried))
-                                });
+                                    })
+                                }).collect();
+                                if args.reputation_turn_in_item_cost.is_some() {
+                                    value["reputation_turn_in_item_plan"] =
+                                        serde_json::json!(plans.into_iter().next());
+                                } else {
+                                    value["reputation_turn_in_item_plans"] =
+                                        serde_json::json!(plans);
+                                }
                             }
                         }
                     } else {

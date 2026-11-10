@@ -1082,6 +1082,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         turn_in_capture = json.loads(json.dumps(more_factions))
                         turn_in_capture["sections"]["bags"] = {"0":{"1":{"item_id":744,"count":4}}}
                         turn_in_key = SnapshotStore(Path(folder)).ingest(turn_in_capture)
+                        costs = [{"item_id":744,"quantity":2},{"item_id":745,"quantity":1}]
+                        request = {"snapshot_id":turn_in_key,"section":"reputation","faction_id":10,
+                                   "reputation_points_per_turn_in":20}
+                        result = await session.call_tool("inspect_snapshot", {
+                            **request,"reputation_turn_in_item_costs":costs,
+                        })
+                        self.assertFalse(result.isError,result)
+                        data = json.loads(result.content[0].text)
+                        self.assertNotIn("reputation_turn_in_item_plan", data)
+                        self.assertEqual([
+                            (row["item_id"],row["required_quantity"],row["observed_carried_quantity"],
+                             row["shortfall_quantity"]) for row in data["reputation_turn_in_item_plans"]
+                        ], [(744,6,4,2),(745,3,0,3)])
+                        for options in [
+                            {"reputation_turn_in_item_costs":[]},
+                            {"reputation_turn_in_item_costs":[costs[0],costs[0]]},
+                            {"reputation_turn_in_item_costs":costs,"reputation_turn_in_item_cost":costs[0]},
+                        ]:
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                **request,**options,
+                            })).isError)
                         for quantity, required, overflow, shortfall in [
                             (2, 6, False, 2), (1, 3, False, 0), (2**64-1, None, True, None),
                         ]:

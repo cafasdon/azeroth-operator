@@ -9,6 +9,9 @@ With that estimate, `reputation_turn_in_item_cost` accepts an exact item ID
 and assumed quantity per repetition. It shows the total needed and
 shortfall against the same capture's bags. Missing bags or an unknown
 total leave the shortfall unknown. An overflowing total is flagged.
+For a turn-in requiring several items, use `reputation_turn_in_item_costs`
+with one to twenty distinct item IDs and quantities. The response reports
+each shortfall separately in request order. Use one cost form per request.
 
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside
