@@ -112,6 +112,9 @@ struct Inspect {
     equipment_durability_max_percent: Option<u8>,
     /// Copper to preserve after paying the captured repair-all quote.
     repair_wallet_reserve_copper: Option<u64>,
+    /// Show damaged equipped slots observed alongside the saved repair quote.
+    #[serde(default)]
+    repair_include_equipment_condition: bool,
     /// Filter saved pet species by presence of an observed owned row.
     pet_has_owned_rows: Option<bool>,
     /// Filter saved pet species by presence of an observed unowned row.
@@ -2588,6 +2591,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.repair_include_equipment_condition
+            && args.section.as_deref() != Some("repair_quote")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Repair equipment condition requires repair_quote",
+            )]);
+        }
         if args.repair_wallet_reserve_copper.is_some_and(|reserve| {
             reserve > 9_999_999_999_999 || args.section.as_deref() != Some("repair_quote")
         }) {
@@ -3930,7 +3940,9 @@ impl Operator {
                         value["bag_restock_merchant_quote"] = quote;
                     }
                 }
-                if let Some(reserve) = args.repair_wallet_reserve_copper {
+                if args.repair_wallet_reserve_copper.is_some()
+                    || args.repair_include_equipment_condition
+                {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Could not read saved repair budget",
@@ -3938,11 +3950,20 @@ impl Operator {
                     };
                     if snapshot.client.family != Family::Forever {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Repair reserve requires a saved Forever snapshot",
+                            "Repair review requires a saved Forever snapshot",
                         )]);
                     }
-                    value["repair_reserve_projection"] =
-                        azeroth_operator::analysis::repair_reserve_projection(&snapshot, reserve);
+                    if let Some(reserve) = args.repair_wallet_reserve_copper {
+                        value["repair_reserve_projection"] =
+                            azeroth_operator::analysis::repair_reserve_projection(
+                                &snapshot, reserve,
+                            );
+                    }
+                    if args.repair_include_equipment_condition {
+                        value["repair_equipment_condition"] = serde_json::json!(
+                            azeroth_operator::analysis::repair_equipment_condition(&snapshot)
+                        );
+                    }
                 }
                 if let Some(maximum) = args.equipment_durability_max_percent {
                     if value["client"]["family"] != "forever" {

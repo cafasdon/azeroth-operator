@@ -10050,6 +10050,32 @@ pub fn repair_reserve_projection(snapshot: &Snapshot, reserve: u64) -> Value {
         "repair_eligibility_verified":false,"live":false})
 }
 
+pub fn repair_equipment_condition(snapshot: &Snapshot) -> Option<Value> {
+    let entries = snapshot.sections.get("equipment_durability")?["entries"].as_object()?;
+    let mut damaged = BTreeMap::new();
+    let mut missing_points = 0;
+    for (slot, row) in entries {
+        let current = row["current"].as_u64()?;
+        let maximum = row["maximum"].as_u64()?;
+        let missing = maximum.checked_sub(current)?;
+        missing_points += missing;
+        if missing > 0 {
+            let slot = slot.parse::<u32>().ok()?;
+            damaged.insert(
+                slot,
+                json!({"slot":slot,"current":current,"maximum":maximum,
+                "missing_durability_points":missing,"broken":current == 0}),
+            );
+        }
+    }
+    Some(
+        json!({"scope":"readable_equipped_slots_only","observed_slot_count":entries.len(),
+        "damaged_slot_count":damaged.len(),"damaged_slots":damaged.into_values().collect::<Vec<_>>(),
+        "total_missing_observed_durability_points":missing_points,
+        "quote_item_scope_verified":false,"per_slot_repair_price_verified":false,"live":false}),
+    )
+}
+
 pub fn summary(s: &Snapshot) -> Value {
     let occupied = s
         .sections

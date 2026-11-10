@@ -30,6 +30,11 @@ Use `repair_wallet_reserve_copper` with `inspect_snapshot` on `repair_quote`
 to check the quote and reserve against the same saved wallet. The report
 shows affordability, the combined shortfall and any copper left after
 both. A missing quote leaves the combined shortfall unknown.
+Set `repair_include_equipment_condition: true` to list damaged equipped
+slots and missing durability points observed in the same capture. The
+condition report remains available if the quote is missing. It covers
+readable equipped slots and leaves the quote's item scope and per-slot
+prices unverified.
 
 Use `list_snapshots.merchant_buyback` with an exact `item_id` to find
 saved buyback entries. Optional `minimum_quantity` and

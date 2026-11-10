@@ -1,5 +1,7 @@
 # Changelog
 
+- Show observed damaged equipment alongside saved repair quotes.
+
 - Budget a copper reserve alongside a saved repair-all quote.
 
 - Compare encounter progress across compatible saved instance lock warnings.

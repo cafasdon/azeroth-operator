@@ -66,6 +66,25 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
+                    for key,observed,damaged,missing in [(keys[0],3,2,102),(keys[1],0,0,0),(keys[2],None,None,None)]:
+                        report=await call('inspect_snapshot',snapshot_id=key,section='repair_quote',
+                                          repair_include_equipment_condition=True)
+                        condition=report['repair_equipment_condition']
+                        if observed is None:
+                            self.assertIsNone(condition)
+                        else:
+                            self.assertEqual(condition['observed_slot_count'],observed)
+                            self.assertEqual(condition['damaged_slot_count'],damaged)
+                            self.assertEqual(condition['total_missing_observed_durability_points'],missing)
+                            self.assertFalse(condition['quote_item_scope_verified'])
+                            self.assertEqual([row['slot'] for row in condition['damaged_slots']],[1,16] if damaged else [])
+                    combined=await call('inspect_snapshot',snapshot_id=budgets[3],section='repair_quote',
+                                        repair_include_equipment_condition=True,repair_wallet_reserve_copper=3)
+                    self.assertTrue(combined['repair_reserve_projection']['affordable_with_reserve'])
+                    self.assertIsNone(combined['repair_equipment_condition'])
+                    result=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':keys[0],'section':'equipment_durability','repair_include_equipment_condition':True})
+                    self.assertTrue(result.isError,result)
                     for key,reserve,affordable,shortfall,remaining in [
                             (budgets[3],3,True,0,0),(budgets[3],4,False,1,None),
                             (budgets[1],1,False,11,None),(budgets[0],1,None,None,None),
