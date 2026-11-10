@@ -241,7 +241,7 @@ struct Inspect {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find saved merchant offers that sell this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
-    /// Match merchant items classified as accepted pet food in this compatible Forever capture.
+    /// Match merchant items classified as accepted pet food in this compatible Forever capture. May be combined with merchant_item_id.
     merchant_pet_food_snapshot_id: Option<String>,
     /// Calculate whole bundles needed for this quantity in each matching merchant offer.
     merchant_target_quantity: Option<std::num::NonZeroU32>,
@@ -3152,12 +3152,12 @@ impl Operator {
         }
         if args.merchant_pet_food_snapshot_id.is_some()
             && (args.section.as_deref() != Some("merchant_stock")
-                || merchant_search.is_some()
+                || args.merchant_currency_id.is_some()
                 || args.merchant_offer_slot.is_some()
                 || args.merchant_cart.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Merchant pet food search requires merchant_stock without another offer selector or cart",
+                "Merchant pet food search requires merchant_stock and excludes currency, slot and cart selectors",
             )]);
         }
         if (args.merchant_offer_slot.is_some() && args.section.as_deref() != Some("merchant_stock"))

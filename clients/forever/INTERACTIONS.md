@@ -1728,6 +1728,10 @@ the same character. This returns saved offers for item IDs previously
 classified as accepted carried food. An unavailable classification gives
 an unknown match count, and an observed empty classification matches
 no offers. `merchant_target_quantity` can estimate bundles per offer.
+For one specific food, combine `merchant_item_id` with the pet food capture
+and target quantity. The quote can mix whole bundles of that item across
+the saved offers. The selected item must appear in the saved accepted-food
+classification.
 Use this for historical sourcing. Pet acceptance can change between captures.
 
 Use the same `merchant_pet_food_snapshot_id` in `list_snapshots` to
