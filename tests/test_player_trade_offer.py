@@ -59,6 +59,10 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(ValueError):validate_snapshot(saved)
                 raw=json.dumps(saved,sort_keys=True,separators=(',',':')).encode()
                 key=hashlib.sha256(raw).hexdigest();(Path(folder)/(key+'.json')).write_bytes(raw);bad.append(key)
+            no_bags=deepcopy(base)
+            del no_bags['sections']['bags']
+            no_bags['sections']['player_trade_offer']=unknown
+            no_bags_id=store.ingest(no_bags)
             before={p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -69,6 +73,18 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(result.isError),error,result)
                         self.assertNotIn('PRIVATE',str(result))
                         return None if error else json.loads(result.content[0].text)
+                    carried_requirements=[{'item_id':10,'quantity':9},{'item_id':11,'quantity':1}]
+                    for key, carried in [(valid[2][0],[2,0]),(no_bags_id,[None,None])]:
+                        review=(await call('inspect_snapshot',snapshot_id=key,section='player_trade_offer',
+                            trade_offer_requirements=carried_requirements,trade_offer_compare_carried=True))[
+                                'trade_offer_requirement_review']
+                        self.assertEqual(review['items'][0]['observed_quantity'],9 if carried[0] is not None else 0)
+                        comparison=review['carried_comparison']
+                        self.assertEqual([row['observed_carried_quantity'] for row in comparison['items']],carried)
+                        self.assertEqual([row['shortfall_vs_observed_carried'] for row in comparison['items']],
+                                         [7,1] if carried[0] is not None else [None,None])
+                    await call('inspect_snapshot',error=True,snapshot_id=valid[2][0],
+                        section='player_trade_offer',trade_offer_compare_carried=True)
                     for index, quantity, match, unreadable in [
                         (1, 1, None, 6), (2, 10, None, 4), (2, 9, None, 4),
                         (2, 8, False, 4), (4, 6, True, 0), (4, 7, False, 0),
@@ -77,6 +93,7 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                             section='player_trade_offer',trade_offer_requirements=[
                                 {'item_id':10,'quantity':quantity}]))['trade_offer_requirement_review']
                         self.assertIs(review['captured_offer_matches_expected'],match)
+                        self.assertNotIn('carried_comparison',review)
                         self.assertEqual(review['unreadable_or_empty_slots'],unreadable)
                         observed={1:0,2:9,4:6}[index]
                         self.assertEqual(review['items'],[{'item_id':10,'expected_quantity':quantity,

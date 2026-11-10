@@ -129,6 +129,9 @@ struct Inspect {
     mail_attachment_bag_space_item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
+    /// Compare the expected outgoing items with carried stock from the same saved capture.
+    #[serde(default)]
+    trade_offer_compare_carried: bool,
     /// Check one exact spell ID against the saved Forever profession_spells observation.
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
@@ -2668,6 +2671,11 @@ impl Operator {
                 )]);
             }
         }
+        if args.trade_offer_compare_carried && args.trade_offer_requirements.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Trade carried comparison requires trade offer requirements",
+            )]);
+        }
         if let Some(requirements) = args.trade_offer_requirements.as_ref()
             && (args.section.as_deref() != Some("player_trade_offer")
                 || azeroth_operator::analysis::validate_loot_requirements(requirements).is_err())
@@ -3897,6 +3905,22 @@ impl Operator {
                             &value["data"],
                             requirements,
                         );
+                    if args.trade_offer_compare_carried
+                        && value["trade_offer_requirement_review"].is_object()
+                    {
+                        let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                            azeroth_operator::analysis::trade_offer_carried_comparison(
+                                &snapshot,
+                                requirements,
+                            )
+                        });
+                        let Ok(comparison) = result else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Could not read saved trade carried stock",
+                            )]);
+                        };
+                        value["trade_offer_requirement_review"]["carried_comparison"] = comparison;
+                    }
                 }
                 if filter_pet_rows {
                     if value["client"]["family"] != "forever" {

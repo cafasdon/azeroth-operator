@@ -2885,6 +2885,10 @@ format. They leave the match verdict and native stack limits independent.
 Otherwise exact match requires all six slots to be readable item rows. A
 partial capture can leave the match unknown. A missing offer gives a null
 review. These checks describe the saved outgoing quantities only.
+Set `trade_offer_compare_carried: true` with those requirements to report
+the same capture's carried quantity and shortfall for each expected item.
+The comparison keeps offered quantities and bag quantities separate because
+their overlap is unknown. Missing bags leave the carried comparison unknown.
 
 ## Personal PvP progression (2026-11-09)
 

@@ -3250,6 +3250,23 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
         "current_offer_verified":false,"trade_completion_verified":false,"game_execution":false})
 }
 
+pub fn trade_offer_carried_comparison(
+    snapshot: &Snapshot,
+    requirements: &[LootRequirement],
+) -> Result<Value> {
+    let mut rows = Vec::with_capacity(requirements.len());
+    for requirement in requirements {
+        let id = requirement.item_id.get();
+        let expected = requirement.quantity.get();
+        let found = find_item(snapshot, id, 0, 1)?;
+        let carried = found["quantity_by_storage"]["bags"].as_u64();
+        rows.push(json!({"item_id":id,"expected_quantity":expected,"observed_carried_quantity":carried,
+            "shortfall_vs_observed_carried":carried.map(|quantity| expected.saturating_sub(quantity))}));
+    }
+    Ok(json!({"scope":"carried_stock_only","items":rows,
+        "offer_and_carried_overlap_verified":false,"trade_eligibility_verified":false,"live":false}))
+}
+
 pub(crate) fn remaining_pvp_points_to_next_threshold(section: &Value) -> Option<u64> {
     let points = section["rank_points"].as_u64()?;
     let threshold = section["next_rank_threshold"].as_u64()?;
