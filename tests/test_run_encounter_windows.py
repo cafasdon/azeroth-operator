@@ -39,6 +39,32 @@ class InheritedEncounterDeadlineTests(unittest.TestCase):
 
 
 class RunEncounterWindowTests(unittest.TestCase):
+    def test_partial_encounter_leaders_survive_aggregate_top_limit_for_every_role(self):
+        for metric,field in runner.roles.FIELDS.items():
+            baseline = .5 if metric == 'death' else 100
+            scale = .005 if metric == 'death' else 1
+            direction = -1 if metric in ('dtps','death','oom') else 1
+            profiles = []
+            for gains in [(0,20,10),(0,-10,30)]:
+                rows = []
+                for review,gain in enumerate(gains,1):
+                    value = baseline + direction*scale*gain
+                    rows.append({'review':review,field:value,'mean_dps_delta_from_baseline':value-baseline})
+                profiles.append({'results':rows})
+            before = deepcopy(profiles)
+            gear={i:str(i)*64 for i in range(1,5)}
+            report=runner.completed_candidate_ranking(profiles,[.25,.75],metric,4,gear,
+                top=1,include_encounter_leaders=True)
+            self.assertEqual([row['review'] for row in report['results']],[3])
+            self.assertTrue(report['results_truncated'])
+            self.assertEqual([row['review'] for row in report['encounter_leader_candidates']],[2,3])
+            self.assertEqual(report['omitted_candidate_count'],1)
+            self.assertFalse(report['requested_results_complete'])
+            filtered=runner.completed_candidate_ranking(profiles,[.25,.75],metric,4,gear,
+                top=1,minimum_improvement=0,include_encounter_leaders=True)
+            self.assertEqual([row['review'] for row in filtered['encounter_leader_candidates']],[3])
+            self.assertEqual(profiles,before)
+
     def test_shared_finalization_rejects_late_weighted_result(self):
         args = SimpleNamespace(encounter_lookup=['fixture'], encounter_weight=[1], max_new_runs=1,
             iteration_budget=3, time_budget_seconds=1, checkpoint_only=False)

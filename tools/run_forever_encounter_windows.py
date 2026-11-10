@@ -39,9 +39,11 @@ def encounter_improvement_floor(args):
 
 
 def completed_candidate_ranking(results, weights, metric, requested_count, gear,
-                                objective='weighted_gain', top=20, minimum_improvement=None):
+                                objective='weighted_gain', top=20, minimum_improvement=None,
+                                include_encounter_leaders=False):
     """Rank only the intersection observed against a baseline in every encounter."""
     require(objective in ('weighted_gain', 'worst_encounter_gain'))
+    require(type(include_encounter_leaders) is bool)
     minimum_improvement = validate_improvement_floor(minimum_improvement)
     integer(top, 1, 20)
     integer(requested_count, 1)
@@ -81,7 +83,7 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
             score_field:score, gain_field:gains, value_field:values,
             'ranking_score':score if objective == 'weighted_gain' else min(gains)})
     rows.sort(key=lambda row:(-row['ranking_score'], -row[score_field], row['simulator_gear_sha256']))
-    return {'basis':'completed_candidates_across_all_requested_encounters',
+    report = {'basis':'completed_candidates_across_all_requested_encounters',
         'rank_by':metric, 'ranking_objective':objective, 'score_unit':roles.UNITS[metric],
         'requested_candidate_count':requested_count, 'completed_candidate_count':len(common),
         'minimum_encounter_improvement':minimum_improvement,
@@ -91,6 +93,14 @@ def completed_candidate_ranking(results, weights, metric, requested_count, gear,
         'requested_results_complete':False, 'global_ranking_verified':False,
         'best_in_slot_verified':False, 'feasible_set_coverage_verified':False,
         'aggregate_ranking_uncertainty_verified':False, 'game_execution':False}
+    if include_encounter_leaders:
+        leaders = {}
+        for index in range(len(weights)):
+            if rows:
+                best = min(rows,key=lambda row:(-row[gain_field][index],row['simulator_gear_sha256']))
+                leaders[best['review']] = best
+        report['encounter_leader_candidates'] = [leaders[review] for review in sorted(leaders)]
+    return report
 
 
 async def execute(args, *, deadline=None):
@@ -166,7 +176,8 @@ async def execute(args, *, deadline=None):
             status = 'complete_for_selected_resolved_requests'
         else:
             status = 'nonpositive_baseline'
-    partial = (completed_candidate_ranking(results, weights, metric, identities['count'], gear, objective, top, floor)
+    partial = (completed_candidate_ranking(results, weights, metric, identities['count'], gear, objective, top, floor,
+                getattr(args,'include_encounter_leaders',False))
                if not complete and identities is not None else None)
     report = {'mode': 'saved_window_encounter_comparison', 'encounter_weights': weights,
         'completed_candidate_ranking':partial,

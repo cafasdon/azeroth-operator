@@ -1,5 +1,7 @@
 # Changelog
 
+- Retain optional encounter-specific gear leaders across completed saved results, independently of the aggregate shortlist and without extra simulations.
+
 - Add an opt-in saved-input report for 24 Forever workflows, with missing/unavailable inputs and explicit unchecked conditions.
 
 - Capture numeric pending mail funds/COD quotes and review selected quotes against the saved wallet without crediting mail money.

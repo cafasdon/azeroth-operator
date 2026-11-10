@@ -123,7 +123,20 @@ def encounter_improvement_floor(args):
     return pages.encounters.encounter_improvement_floor(args)
 
 
+def retain_encounter_leaders(leaders, row, gain_field):
+    """Keep one point-estimate maximum per encounter; gains already use role direction."""
+    gear = row['simulator_gear_sha256']
+    for index, gain in enumerate(row[gain_field], 1):
+        previous = leaders.get(index)
+        if previous is None or (-gain, gear) < (
+                -previous[gain_field][index-1], previous['simulator_gear_sha256']):
+            leaders[index] = row
+
+
 async def execute(args, *, deadline=None):
+    include_encounter_leaders = getattr(args, 'include_encounter_leaders', False)
+    require(type(include_encounter_leaders) is bool)
+    encounter_leaders = {}
     objective = ranking_objective(args)
     floor = encounter_improvement_floor(args)
     metric = roles.rank_by(args)
@@ -220,7 +233,10 @@ async def execute(args, *, deadline=None):
             ranking = comparison['weighted_ranking'] if metric=='dps' else comparison['metric_ranking']
         first = {row['review']: row for row in profiles[0]['result']['results']}
         metrics = [{row['review']: row for row in profile['result']['results']} for profile in profiles]
-        for weighted in ranking['results']:
+        candidates = {row['review']: row for row in ranking['results']}
+        if include_encounter_leaders and not page_complete:
+            candidates.update({row['review']: row for row in ranking['encounter_leader_candidates']})
+        for weighted in candidates.values():
             review = weighted['review']
             gear = digest(weighted['simulator_gear_sha256'])
             score = weighted[weighted_field]
@@ -243,6 +259,8 @@ async def execute(args, *, deadline=None):
                 floor_excluded += 1
                 continue
             row['ranking_score'] = score if objective == 'weighted_gain' else row[minimum_field]
+            if include_encounter_leaders:
+                retain_encounter_leaders(encounter_leaders, row, gain_field)
             if gear in leaders:
                 require(all(leaders[gear][field] == row[field] for field in
                     [weighted_field,value_field,gain_field]))
@@ -262,6 +280,10 @@ async def execute(args, *, deadline=None):
         require(cursor is None or next_cursor > cursor)
         cursor = next_cursor
     attach_saved_loadouts(args.journal, leaders, source, deadline + 5)
+    if include_encounter_leaders:
+        # At most eight distinct sets; preserve the existing bounded join.
+        attach_saved_loadouts(args.journal,
+            {row['simulator_gear_sha256']: row for row in encounter_leaders.values()}, source, deadline + 5)
     current = journal.journal_status(args.journal, deadline=deadline + 5)
     require(current == source and monotonic() <= deadline + 5)
     complete = exhausted and completed == source['window_count'] and completed > 0
@@ -293,6 +315,18 @@ async def execute(args, *, deadline=None):
         'new_runs': new_runs, 'new_iterations': new_iterations, 'checkpoint_hits': hits,
         'simulation_performed': new_runs > 0, 'global_ranking_verified': False,
         'best_in_slot_verified': False, 'feasible_set_coverage_verified': False, 'game_execution': False}
+    if include_encounter_leaders:
+        report['encounter_leaders'] = {
+            'basis': 'completed_candidate_point_estimates_after_encounter_floor',
+            'ranking_scope': report['ranking_scope'],
+            'all_saved_resolved_results_complete': complete,
+            'tie_break': 'simulator_gear_sha256_ascending',
+            'statistical_superiority_verified': False,
+            'leaders': [{'encounter_index': index,
+                'improvement': encounter_leaders[index][gain_field][index-1],
+                'gear_set': encounter_leaders[index]} for index in sorted(encounter_leaders)],
+            'encounters_without_candidate': [index for index in range(1,len(weights)+1)
+                if index not in encounter_leaders]}
     require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
     return report
 
@@ -313,6 +347,8 @@ def main(argv=None):
     cli.add_argument('--minimum-encounter-improvement',type=float,
         help='Require at least this improvement in every requested encounter before top selection; uses ranking_score_unit, including the baseline')
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--include-encounter-leaders', action='store_true',
+        help='Retain the best completed point-estimate set per encounter after the same improvement floor, without extra simulations')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)

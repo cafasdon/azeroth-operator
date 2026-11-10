@@ -4502,3 +4502,14 @@ or live readiness. Observed empty sections do not prove ownership or eligibility
 Read entrypoints can need more arguments; owned-gear review also needs a local
 catalogue. The report neither selects the active character nor executes actions.
 See [ADR-085](../../docs/ADR-085-workflow-input-report.md).
+
+## Encounter-specific gear leaders (offline)
+
+Add `--include-encounter-leaders` to `python -m tools.run_forever_saved_journal`
+or `python -m tools.evaluate_forever_owned_gear` with their existing required
+arguments. The optional simulation report retains one completed point-estimate
+leader per encounter, even outside aggregate top-1. It applies the same minimum
+improvement floor and keeps the existing partial/full saved-result scope.
+Saved numeric loadouts retain source locations and bank retrievals; they do not
+prove current locations or native eligibility. No extra simulation runs or game
+actions occur. See ADR-086 and the dated encounter-gear-leaders evidence record.

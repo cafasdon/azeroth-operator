@@ -25,11 +25,30 @@ from tools import journal_forever_gear_windows as journal_tools
 
 
 class SavedJournalTests(unittest.TestCase):
+    def test_encounter_leaders_maxima_and_ties_ignore_input_order(self):
+        from itertools import permutations
+        for metric in runner.roles.FIELDS:
+            gain_field = 'gain_pct_by_encounter' if metric == 'dps' else 'improvement_by_encounter'
+            rows = [{'simulator_gear_sha256': char*64,gain_field: gains}
+                for char,gains in [('c',[-2,4,0]),('b',[-1,3,0]),('a',[-1,1,0])]]
+            before = deepcopy(rows)
+            for order in permutations(rows):
+                leaders = {}
+                for row in order: runner.retain_encounter_leaders(leaders,row,gain_field)
+                self.assertEqual([leaders[i]['simulator_gear_sha256'][0] for i in [1,2,3]],['a','c','a'])
+            self.assertEqual(rows,before)
     def test_encounter_floor_validation_precedes_journal_access(self):
         for value in [True,False,'0',[],{},float('nan'),float('inf'),-float('inf'),10**400]:
             with patch.object(runner.journal,'journal_status') as read:
                 with self.assertRaises(ValueError):
                     asyncio.run(runner.execute(SimpleNamespace(minimum_encounter_improvement=value)))
+                read.assert_not_called()
+
+    def test_encounter_leaders_flag_is_strict_before_journal_access(self):
+        for value in [None, 0, 1, 'true', [], {}]:
+            with patch.object(runner.journal,'journal_status') as read:
+                with self.assertRaises(ValueError):
+                    asyncio.run(runner.execute(SimpleNamespace(include_encounter_leaders=value)))
                 read.assert_not_called()
 
     def test_evidence_preserves_native_fields_without_samples_or_metadata(self):
@@ -105,6 +124,14 @@ class SavedJournalTests(unittest.TestCase):
             self.assertEqual(result['encounter_contexts'], [])
             self.assertEqual(result['unvisited_encounter_indices'], [1])
             self.assertEqual(result['ranked_gear_sets'],[])
+            self.assertNotIn('encounter_leaders',result)
+            extra = subprocess.run([*args,'--include-encounter-leaders'],cwd=root,
+                capture_output=True,text=True,timeout=20)
+            self.assertEqual(extra.returncode,0,extra.stderr)
+            empty = json.loads(extra.stdout)['encounter_leaders']
+            self.assertEqual(empty['leaders'],[])
+            self.assertEqual(empty['encounters_without_candidate'],[1])
+            self.assertFalse(empty['all_saved_resolved_results_complete'])
             self.assertFalse((base/'must-not-create').exists())
             self.assertEqual(journal.read_bytes(),before)
             for option,value in [('--top','0'),('--max-pages','0'),('--page-limit','65'),('--iteration-budget','0'),
@@ -180,6 +207,18 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertEqual((result['new_runs'],result['new_iterations']),(1,3))
                     self.assertEqual(result['all_saved_resolved_results_complete'],index == 5)
                 self.assertEqual(calls.call_count,6)
+                per_encounter=launch(['--checkpoint-only','--top','1','--include-encounter-leaders'])
+                self.assertEqual(calls.call_count,6)
+                self.assertEqual(len(per_encounter['ranked_gear_sets']),1)
+                detail=per_encounter['encounter_leaders']
+                self.assertTrue(detail['all_saved_resolved_results_complete'])
+                self.assertFalse(detail['statistical_superiority_verified'])
+                self.assertEqual(detail['encounters_without_candidate'],[])
+                self.assertEqual([row['encounter_index'] for row in detail['leaders']],[1,2])
+                self.assertEqual([row['improvement'] for row in detail['leaders']],[20,30])
+                self.assertEqual([row['gear_set']['saved_loadout']['selections'][0]['expected_item_id']
+                    for row in detail['leaders']],[4550,4549])
+                self.assertEqual(detail['leaders'][0]['gear_set']['saved_loadout']['bank_retrievals'][0]['expected_item_id'],4550)
                 original_argv=argv[:]
                 weight_indices=[i+1 for i,value in enumerate(argv) if value=='--encounter-weight']
                 argv[weight_indices[0]]='9'; argv[weight_indices[1]]='1'
@@ -188,6 +227,13 @@ class SavedJournalTests(unittest.TestCase):
                 protected=launch(['--checkpoint-only','--top','1','--minimum-encounter-improvement','0'])
                 boundary=launch(['--checkpoint-only','--minimum-encounter-improvement','10'])
                 none=launch(['--checkpoint-only','--minimum-encounter-improvement','31'])
+                filtered=launch(['--checkpoint-only','--top','1','--minimum-encounter-improvement','0',
+                    '--include-encounter-leaders'])
+                self.assertEqual([row['gear_set']['saved_loadout']['selections'][0]['expected_item_id']
+                    for row in filtered['encounter_leaders']['leaders']],[4549,4549])
+                excluded=launch(['--checkpoint-only','--minimum-encounter-improvement','31','--include-encounter-leaders'])
+                self.assertEqual(excluded['encounter_leaders']['leaders'],[])
+                self.assertEqual(excluded['encounter_leaders']['encounters_without_candidate'],[1,2])
                 self.assertEqual(protected['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4549)
                 self.assertEqual(len(boundary['ranked_gear_sets']),1)
                 self.assertEqual(boundary['minimum_encounter_improvement'],10)
@@ -292,7 +338,7 @@ class SavedJournalTests(unittest.TestCase):
                 def available(instance, key):
                     return None if key in hidden else original_get(instance, key)
                 with patch.object(SimulationJournal, 'key', request_key), patch.object(SimulationJournal, 'get', available):
-                    subset = launch(['--checkpoint-only','--page-limit','3'])
+                    subset = launch(['--checkpoint-only','--page-limit','3','--include-encounter-leaders'])
                 self.assertEqual(subset['ranking_scope'],'completed_candidates_across_all_requested_encounters')
                 self.assertEqual(subset['incomplete_page_completed_candidate_count'],2)
                 self.assertFalse(subset['all_saved_resolved_results_complete'])
@@ -303,6 +349,10 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertEqual(subset['ranked_gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'],4549)
                 self.assertEqual(subset['ranked_gear_sets'][0]['simulation_evidence_by_encounter'][1]['mean_dps'],130)
                 self.assertEqual(subset['new_runs'],0)
+                self.assertFalse(subset['encounter_leaders']['all_saved_resolved_results_complete'])
+                self.assertEqual(subset['encounter_leaders']['ranking_scope'],subset['ranking_scope'])
+                self.assertEqual([row['gear_set']['saved_loadout']['selections'][0]['expected_item_id']
+                    for row in subset['encounter_leaders']['leaders']],[4549,4549])
                 narrow = launch(['--checkpoint-only','--page-limit','1','--top','1'])
                 self.assertEqual(narrow['ranked_gear_sets'],cached['ranked_gear_sets'][:1])
                 self.assertEqual(narrow['encounter_contexts'],cached['encounter_contexts'])

@@ -948,3 +948,12 @@ absent sections from reported-unavailable sections, names read entrypoints and
 retains unchecked conditions. Active identity, complete ownership, simulator
 acceptance and native eligibility remain unproven. See ADR-085 and the dated
 workflow-input-report verification record. Installation and live tests are deferred.
+
+## Encounter-specific gear leaders (10 November)
+
+Optional saved-journal and all-owned evaluation reports retain point-estimate
+leaders per encounter independently of the aggregate top limit. Only candidates
+complete in every supplied encounter enter this view, after the same improvement
+floor. Partial scope stays explicit; saved loadouts retain historical source
+locations. No extra simulations, equip actions or statistical/BiS proof is added.
+See ADR-086 and encounter-gear-leaders-verification-2026-11-10.md. Offline only.

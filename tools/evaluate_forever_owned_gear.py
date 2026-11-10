@@ -376,6 +376,8 @@ def parser():
     cli.add_argument('--minimum-encounter-improvement',type=float,
         help='Require this improvement in every encounter before ranking; uses ranking_score_unit, including the baseline')
     cli.add_argument('--paired', action='store_true')
+    cli.add_argument('--include-encounter-leaders', action='store_true',
+        help='Include encounter-specific point-estimate leaders from the saved-journal evaluation')
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')
