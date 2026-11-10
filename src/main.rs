@@ -766,6 +766,8 @@ struct Compare {
     /// Compare loaded built-in action bar observations in two Forever captures.
     #[serde(default)]
     action_bar_slots: bool,
+    /// Compare placement of this exact reported spell ID across saved action bars.
+    action_bar_spell_id: Option<std::num::NonZeroU32>,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -2113,6 +2115,7 @@ impl Operator {
                     experience: args.experience,
                     spellbook: args.spellbook,
                     action_bar_slots: args.action_bar_slots,
+                    action_bar_spell_id: args.action_bar_spell_id,
                 },
             )
         })();

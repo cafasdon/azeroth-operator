@@ -3137,6 +3137,7 @@ pub struct ComparisonSelectors {
     pub experience: bool,
     pub spellbook: bool,
     pub action_bar_slots: bool,
+    pub action_bar_spell_id: Option<std::num::NonZeroU32>,
 }
 
 pub(crate) fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeMap<u32, u64>) {
@@ -4206,6 +4207,14 @@ pub fn compare_observations(
         );
         comparison["action_bar_slot_changes"] = compare_action_bar_slots(before, after);
     }
+    if let Some(id) = selectors.action_bar_spell_id {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Action bar spell placement comparisons require Forever snapshots"
+        );
+        comparison["action_bar_spell_placement_change"] =
+            compare_action_bar_spell_placement(before, after, id.get());
+    }
     if selectors.spellbook {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -4279,16 +4288,65 @@ pub fn compare_observations(
     Ok(comparison)
 }
 
-fn compare_action_bar_slots(before: &Snapshot, after: &Snapshot) -> Value {
-    fn slots(snapshot: &Snapshot) -> Option<BTreeMap<u32, &Value>> {
-        snapshot.sections.get("action_bar_observation")?["slots"]
-            .as_object()?
+fn observed_action_bar_slots(snapshot: &Snapshot) -> Option<BTreeMap<u32, &Value>> {
+    snapshot.sections.get("action_bar_observation")?["slots"]
+        .as_object()?
+        .iter()
+        .map(|(slot, row)| Some((slot.parse().ok()?, row)))
+        .collect()
+}
+
+fn compare_action_bar_spell_placement(before: &Snapshot, after: &Snapshot, id: u32) -> Value {
+    let previous = observed_action_bar_slots(before);
+    let current = observed_action_bar_slots(after);
+    let matches = |row: &Value| {
+        if row["kind"] == "spell" {
+            row["id"].as_u64().map(|value| value == u64::from(id))
+        } else {
+            Some(false)
+        }
+    };
+    let matched_slots = |slots: &BTreeMap<u32, &Value>| -> Vec<u32> {
+        slots
             .iter()
-            .map(|(slot, row)| Some((slot.parse().ok()?, row)))
+            .filter_map(|(&slot, row)| (matches(row) == Some(true)).then_some(slot))
             .collect()
-    }
-    let previous = slots(before);
-    let current = slots(after);
+    };
+    let before_matches = previous.as_ref().map(matched_slots);
+    let after_matches = current.as_ref().map(matched_slots);
+    let placement_change = previous
+        .as_ref()
+        .zip(current.as_ref())
+        .map(|(before, after)| {
+            let mut gained = Vec::new();
+            let mut lost = Vec::new();
+            let mut unknown_before = Vec::new();
+            let mut unknown_after = Vec::new();
+            for &slot in after_matches.as_ref().unwrap() {
+                match before.get(&slot).and_then(|row| matches(row)) {
+                    Some(false) => gained.push(slot),
+                    None => unknown_before.push(slot),
+                    Some(true) => {}
+                }
+            }
+            for &slot in before_matches.as_ref().unwrap() {
+                match after.get(&slot).and_then(|row| matches(row)) {
+                    Some(false) => lost.push(slot),
+                    None => unknown_after.push(slot),
+                    Some(true) => {}
+                }
+            }
+            json!({"gained_slots":gained,"lost_slots":lost,
+            "matching_after_with_unknown_before_slots":unknown_before,
+            "matching_before_with_unknown_after_slots":unknown_after})
+        });
+    json!({"spell_id":id,"before_matching_slots":before_matches,
+        "after_matching_slots":after_matches,"changes":placement_change,"live":false})
+}
+
+fn compare_action_bar_slots(before: &Snapshot, after: &Snapshot) -> Value {
+    let previous = observed_action_bar_slots(before);
+    let current = observed_action_bar_slots(after);
     let changes = previous.as_ref().zip(current.as_ref()).map(|(a, b)| {
         let shared_changes = a
             .iter()

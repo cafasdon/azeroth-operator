@@ -71,6 +71,24 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
             conflicting=deepcopy(base)
             conflicting['sections']['spellbook']['entries']['10']['name']='Other label'
             conflicting_key=store.ingest(conflicting)
+            placement_before=deepcopy(base)
+            previous_bar=placement_before['sections']['action_bar_observation']
+            previous_bar['observed_buttons']=7
+            previous_bar['slots'].update({
+                str(slot):{'empty':False,'kind':'spell','id':101} for slot in [6,7]})
+            placement_after=deepcopy(placement_before)
+            placement_after['captured_at']='2025-01-02T00:00:00Z'
+            after_slots=placement_after['sections']['action_bar_observation']['slots']
+            after_slots['2']={'empty':True}
+            after_slots['3']['id']=101
+            del after_slots['6']
+            del after_slots['7']['id']
+            after_slots['8']={'empty':False,'kind':'spell','id':101}
+            placement_query={'before_id':store.ingest(placement_before),
+                             'after_id':store.ingest(placement_after),'action_bar_spell_id':101}
+            missing_bar=deepcopy(placement_after)
+            del missing_bar['sections']['action_bar_observation']
+            missing_bar_key=store.ingest(missing_bar)
             before = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}; env.pop('AZEROTH_FOREVER_CATALOGUE',None)
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -88,6 +106,18 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                         section='action_bar_observation',action_bar_spell_name='private_spell',
                         action_bar_spell_id=201,action_bar_slot=3)
                     self.assertEqual(list(narrowed['data']['slots']),['3'])
+                    placement=(await call('compare_snapshots',**placement_query))[
+                        'action_bar_spell_placement_change']
+                    self.assertEqual(placement['before_matching_slots'],[2,6,7])
+                    self.assertEqual(placement['after_matching_slots'],[3,8])
+                    self.assertEqual(placement['changes'],{
+                        'gained_slots':[3],'lost_slots':[2],
+                        'matching_after_with_unknown_before_slots':[8],
+                        'matching_before_with_unknown_after_slots':[6,7]})
+                    unavailable=(await call('compare_snapshots',**{
+                        **placement_query,'after_id':missing_bar_key}))['action_bar_spell_placement_change']
+                    self.assertIsNone(unavailable['after_matching_slots'])
+                    self.assertIsNone(unavailable['changes'])
                     for invalid in [
                         {'action_bar_item_id':101}, {'section':'spellbook'}, {'action_bar_spell_name':' '},
                     ]:

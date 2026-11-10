@@ -3230,6 +3230,12 @@ IDs from the same capture's spellbook. All rows for a reported ID must
 agree with the name. Base-ID aliases alone do not qualify. Combine it
 with a slot, spell ID or hotkey to narrow the results.
 
+`compare_snapshots.action_bar_spell_id` compares placement of one exact
+reported spell ID across compatible saved Forever action bars. A gain or
+loss requires comparable observations of the same slot. Missing slots and
+spell rows with unreadable IDs stay unknown. These differences describe
+saved placement and do not establish that a shortcut was moved.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
