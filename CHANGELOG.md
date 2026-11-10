@@ -1,5 +1,7 @@
 # Changelog
 
+- Show captured source and target slot conditions in Forever equipment selection reviews.
+
 - Show recorded weapon-hand enchant observations in Forever owned gear and item lookup.
 
 - Show same-capture equipped durability in item lookup without a catalogue.

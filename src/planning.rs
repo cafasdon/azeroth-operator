@@ -162,6 +162,16 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
         .get("equipment")
         .and_then(Value::as_object)
         .ok_or_else(|| anyhow::anyhow!("Equipment observation unavailable"))?;
+    let durability = snapshot
+        .sections
+        .get("equipment_durability")
+        .and_then(|section| section["entries"].as_object());
+    let slot_condition = |slot: &str| {
+        let condition = durability.and_then(|entries| entries.get(slot));
+        let enchants = crate::analysis::equipped_weapon_hand_enchants(snapshot, slot);
+        (condition.is_some() || enchants.is_some())
+            .then(|| json!({"durability":condition,"weapon_hand_enchants":enchants}))
+    };
     let mut targets = BTreeSet::new();
     let mut sources = BTreeSet::new();
     let mut moved_equipment = BTreeSet::new();
@@ -190,7 +200,8 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             item["item_id"].as_u64() == Some(selection.expected_item_id as u64),
             "Source item mismatch"
         );
-        let previous = equipment.get(&selection.target_slot.to_string());
+        let target_slot = selection.target_slot.to_string();
+        let previous = equipment.get(&target_slot);
         let same_location = selection.source
             == (ItemLocation::Equipment {
                 slot: selection.target_slot,
@@ -206,13 +217,22 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
                 "observed_only_after":new.iter().filter(|(key,_)|!old.contains_key(*key)).collect::<std::collections::BTreeMap<_,_>>(),
                 "effect_on_performance":"unverified"})
         });
-        changes.push(
-            json!({"target_slot":selection.target_slot,"source":selection.source,
+        let mut change = json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"selected_item_observed":item,
             "previous_item_observed":previous,"native_stat_comparison":native_stat_comparison,
             "native_slot_category":if snapshot.client.family==crate::Family::Forever {native_slot_category(item,selection.target_slot)} else {Value::Null},
-            "status":if same_location {"already_selected"} else {"requested_change"}}),
-        );
+            "status":if same_location {"already_selected"} else {"requested_change"}});
+        if let ItemLocation::Equipment { slot } = selection.source
+            && let Some(condition) = slot_condition(&slot.to_string())
+        {
+            change["captured_source_slot_condition"] = condition;
+        }
+        if previous.is_some()
+            && let Some(condition) = slot_condition(&target_slot)
+        {
+            change["captured_target_slot_condition"] = condition;
+        }
+        changes.push(change);
     }
     changes.sort_by_key(|row| row["target_slot"].as_u64().unwrap());
     let vacated: Vec<_> = moved_equipment.difference(&targets).copied().collect();

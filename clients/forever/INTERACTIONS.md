@@ -12,6 +12,9 @@ Both tools also show `observed_weapon_hand_enchants` on equipped main-hand,
 off-hand and ranged rows when that hand has a saved observation. An observed
 empty list is retained. These lists describe the captured hand and do not
 verify enchant identity on an item outside that location or current duration.
+Equipment selection reviews show saved durability and enchant observations
+for the equipped source and occupied target slots when available. Both
+describe the capture before the proposed change.
 
 Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
 characters within an inclusive XP budget. Matching rows report their saved

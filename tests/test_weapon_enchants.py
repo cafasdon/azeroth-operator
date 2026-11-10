@@ -20,6 +20,8 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
         value=fixture();value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
         value['sections']['equipment']={str(slot):{'item_id':123} for slot in (15,16,17,18)}
         value['sections']['bags']={'0':{'16':{'item_id':123,'count':1}}}
+        value['sections']['equipment_durability']={'coverage':'readable_equipped_slots_only',
+                                                   'entries':{'16':{'current':0,'maximum':40}}}
         rows={str(i):{'has_enchant':False,'enchant_type':'none'} for i in range(1,11)}
         rows['1']={'has_enchant':True,'enchant_type':'permanent','enchant_id':42,'charges':0,'remaining_milliseconds':0}
         rows['2']={'has_enchant':True,'enchant_type':'imbue'}
@@ -77,6 +79,18 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     })
                     no_enchants=await call('find_snapshot_item',snapshot_id=keys[1],item_id=123)
                     self.assertTrue(all('observed_weapon_hand_enchants' not in row for row in no_enchants['locations']))
+                    draft=await call('review_equipment_selection',snapshot_id=keys[0],selections=[
+                        {'target_slot':17,'source':{'kind':'equipment','slot':16},'expected_item_id':123},
+                        {'target_slot':16,'source':{'kind':'bag','bag':0,'slot':16},'expected_item_id':123},
+                    ])
+                    bag_change,equipped_change=draft['changes']
+                    main_hand={'durability':{'current':0,'maximum':40},
+                               'weapon_hand_enchants':{'hand':'main_hand','entries':rows}}
+                    self.assertNotIn('captured_source_slot_condition',bag_change)
+                    self.assertEqual(bag_change['captured_target_slot_condition'],main_hand)
+                    self.assertEqual(equipped_change['captured_source_slot_condition'],main_hand)
+                    self.assertEqual(equipped_change['captured_target_slot_condition'],
+                                     {'durability':None,'weapon_hand_enchants':{'hand':'off_hand','entries':{}}})
                     covered=await call('list_snapshots',family='forever',required_sections=['weapon_enchants'])
                     self.assertEqual({row['snapshot_id'] for row in covered['snapshots']},
                         {keys[0],keys[2],keys[3]})
