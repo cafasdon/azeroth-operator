@@ -3383,6 +3383,7 @@ pub struct ComparisonSelectors<'a> {
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub mail_attachment_item_id: Option<std::num::NonZeroU32>,
+    pub mail_attachment_compare_carried_item: bool,
     pub mail_attachment_currency_id: Option<std::num::NonZeroU32>,
     pub achievement_id: Option<u32>,
     pub achievement_name: Option<&'a str>,
@@ -4039,6 +4040,11 @@ pub fn compare_observations(
             .map(|(old, new)| compare_pet_views(old, new))
             .unwrap_or(Value::Null);
     }
+    ensure!(
+        !selectors.mail_attachment_compare_carried_item
+            || selectors.mail_attachment_item_id.is_some(),
+        "Carried item comparison requires an exact mail item"
+    );
     for (kind, id) in [
         ("item", selectors.mail_attachment_item_id),
         ("currency", selectors.mail_attachment_currency_id),
@@ -4048,12 +4054,22 @@ pub fn compare_observations(
             before.client.family == crate::Family::Forever,
             "Mail attachment comparison requires Forever"
         );
-        comparison[format!("mail_attachment_{kind}_comparison")] = compare_mail_attachment_id(
+        let mut attachment = compare_mail_attachment_id(
             before.sections.get("mail_attachments"),
             after.sections.get("mail_attachments"),
             kind,
             id.get(),
         );
+        if kind == "item" && selectors.mail_attachment_compare_carried_item {
+            let old = find_item(before, id.get(), 0, 1)?["quantity_by_storage"]["bags"].as_u64();
+            let new = find_item(after, id.get(), 0, 1)?["quantity_by_storage"]["bags"].as_u64();
+            attachment["carried_comparison"] = json!({
+                "before_quantity":old,"after_quantity":new,
+                "quantity_delta":old.zip(new).map(|(old, new)| i128::from(new) - i128::from(old)),
+                "mail_counts_toward_carried_stock":false,"inventory_transfers_verified":false
+            });
+        }
+        comparison[format!("mail_attachment_{kind}_comparison")] = attachment;
     }
     if selectors.mail_attachment_changes {
         ensure!(

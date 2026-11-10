@@ -43,6 +43,8 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
             huge=capture({str(message):{str(slot):item(2**32-1,2**32-1) for slot in range(1,17)}
                           for message in range(1,101)})
             tiny=capture({'1':{'1':item(2**32-1,1)}})
+            carried_before=capture(old,sections={'bags':{'0':{'1':{'item_id':720,'count':1}}}})
+            carried_after=capture(new,sections={'bags':{'0':{'1':{'item_id':720,'count':3}}}})
             env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
@@ -54,6 +56,22 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError)
                         return json.loads(response.content[0].text)
                     delta=(await compare(before,after))['mail_attachment_changes']
+                    reply = await session.call_tool('compare_snapshots',{
+                        'before_id':carried_before,'after_id':carried_after,
+                        'mail_attachment_item_id':720,'mail_attachment_compare_carried_item':True,
+                    })
+                    self.assertFalse(reply.isError,reply)
+                    focused = json.loads(reply.content[0].text)['mail_attachment_item_comparison']
+                    self.assertEqual(focused['known_quantity_delta'],-1)
+                    self.assertEqual(focused['carried_comparison'],{
+                        'before_quantity':1,'after_quantity':3,'quantity_delta':2,
+                        'mail_counts_toward_carried_stock':False,'inventory_transfers_verified':False,
+                    })
+                    rejected = await session.call_tool('compare_snapshots',{
+                        'before_id':before,'after_id':after,'mail_attachment_currency_id':720,
+                        'mail_attachment_compare_carried_item':True,
+                    })
+                    self.assertTrue(rejected.isError,rejected)
                     reply = await session.call_tool('compare_snapshots',{
                         'before_id':before,'after_id':after,
                         'mail_attachment_item_id':720,'mail_attachment_currency_id':720,

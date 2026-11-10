@@ -8,6 +8,9 @@ does not establish delivery or retrieval.
 Use `mail_attachment_currency_id` for the corresponding currency
 comparison. It can be combined with the item selector, and the two
 identifier namespaces remain separate.
+With the item selector, set `mail_attachment_compare_carried_item` to
+compare the same captures' bag quantities separately. Pending mail
+does not count toward carried stock and changes do not prove transfers.
 
 Set `quest_list_objective_checklist` in saved quest-list inspection to
 see explicitly unfinished objectives and remaining counts for matching
