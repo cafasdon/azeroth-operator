@@ -4302,6 +4302,7 @@ impl Operator {
                         .and_then(|stats| stats["level"].as_u64());
                     let requirements = azeroth_operator::analysis::trainer_requirements_review(
                         &value["data"],
+                        snapshot.sections.get("trainer_services"),
                         level,
                         snapshot.sections.get("skill_lines"),
                         snapshot.sections.get("spellbook"),

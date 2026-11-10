@@ -397,6 +397,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "captured_skill_rank_comparison": {"skill_line_id": 171,
                                     "captured_rank": 35, "required_rank": 50, "rank_shortfall": 15}},
                         })
+                        filtered_requirements = await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": forever_key, "section": "trainer_services",
+                            "trainer_service_slots": [4], "trainer_service_status": "unavailable",
+                            "trainer_requirements_review": True, "trainer_wallet_projection": True,
+                        })
+                        self.assertFalse(filtered_requirements.isError, filtered_requirements)
+                        report = json.loads(filtered_requirements.content[0].text)
+                        self.assertEqual(set(report["data"]["entries"]), {"4"})
+                        self.assertEqual(report["trainer_wallet_projection"]["available_lessons"], 0)
+                        self.assertEqual(report["trainer_requirements_review"]["unavailable_lessons_by_slot"],
+                                         {"4": blocked["observed_requirements"]})
                         short_trainer = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 3], "trainer_wallet_projection": True,

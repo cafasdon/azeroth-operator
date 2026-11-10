@@ -1,5 +1,7 @@
 # Changelog
 
+- Preserve saved trainer prerequisite candidates when lesson filters hide them.
+
 - Show pet lesson level gaps against the separately observed active pet.
 
 - Compare pet trainer point and level observations with active-pet data from the same save.

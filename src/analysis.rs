@@ -8151,6 +8151,7 @@ fn compare_flight_maps(before: &Value, after: &Value, wallets: Option<(u64, u64)
 
 pub fn trainer_requirements_review(
     trainer: &Value,
+    captured_trainer: Option<&Value>,
     level: Option<u64>,
     skills: Option<&Value>,
     spellbook: Option<&Value>,
@@ -8168,7 +8169,10 @@ pub fn trainer_requirements_review(
     };
     let mut ranks_by_name = BTreeMap::new();
     let mut available_slots_by_name = BTreeMap::<&str, BTreeSet<u32>>::new();
-    for (slot, lesson) in entries
+    let candidate_entries = captured_trainer
+        .and_then(|section| section["entries"].as_object())
+        .unwrap_or(entries);
+    for (slot, lesson) in candidate_entries
         .iter()
         .filter(|(_, lesson)| lesson["status"] == "available")
     {

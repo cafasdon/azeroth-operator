@@ -1401,10 +1401,11 @@ Missing or ambiguous matches and pet lessons leave this comparison unknown.
 between unmet prerequisites and captured character spellbook rows.
 A match preserves the trainer's unmet flag. Missing ability data,
 missing spellbook data and pet lessons leave the cross-reference unknown.
-The review also lists retained available trainer slots whose lesson names
+The review also lists available slots from the saved panel whose lesson names
 exactly match an unmet prerequisite. These are name matches within the
 captured panel and do not establish that training a lesson clears the
-prerequisite. Slot, name and status filters limit the candidates.
+prerequisite. Filters limit the lessons being reviewed and leave the
+saved prerequisite candidates visible in the review.
 
 Set `trainer_wallet_projection: true` with `section: "trainer_services"`
 in `inspect_snapshot` to budget lessons the trainer marked available.
