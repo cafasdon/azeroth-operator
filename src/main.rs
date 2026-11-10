@@ -594,6 +594,8 @@ struct List {
     hearthstone_bind_name: Option<String>,
     /// Match a recorded Hearthstone cooldown at or below this many seconds at capture.
     hearthstone_max_cooldown_seconds: Option<u32>,
+    /// Inclusive RFC 3339 deadline for capture time plus recorded Hearthstone cooldown.
+    hearthstone_projected_ready_by: Option<chrono::DateTime<chrono::Utc>>,
     /// Find saved Forever visits with a repair-all quote at or below this amount.
     repair_max_quote_copper: Option<u64>,
     /// Require at least this much saved wallet copper to remain after paying the repair quote.
@@ -2643,6 +2645,7 @@ impl Operator {
                 player_parent_map_id: args.player_parent_map_id,
                 hearthstone_bind_name: args.hearthstone_bind_name.as_deref(),
                 hearthstone_max_cooldown_seconds: args.hearthstone_max_cooldown_seconds,
+                hearthstone_projected_ready_by: args.hearthstone_projected_ready_by,
                 repair_max_quote_copper: args.repair_max_quote_copper,
                 repair_min_remaining_copper: args.repair_min_remaining_copper,
                 equipment_durability_max_percent: args.equipment_durability_max_percent,

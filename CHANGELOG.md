@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever Hearthstone cooldowns by projected ready deadline.
+
 - Find saved Forever captures by Hearthstone bind name and recorded cooldown.
 
 - Capture, search and compare Forever's reported saved-instance extension flag.

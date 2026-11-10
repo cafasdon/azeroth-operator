@@ -1535,8 +1535,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         for invalid_hearthstone in (
                             {"family": "retail", "hearthstone_max_cooldown_seconds": 0},
                             {"family": "forever", "hearthstone_bind_name": " "},
+                            {"family": "forever", "hearthstone_projected_ready_by": "2025-01-02"},
+                            {"family": "retail", "hearthstone_projected_ready_by": "2025-01-02T00:00:30Z"},
                         ):
                             self.assertTrue((await session.call_tool("list_snapshots", invalid_hearthstone)).isError)
+                        for deadline, expected in (
+                            ("2025-01-01T00:00:29Z", []),
+                            ("2025-01-01T01:00:30+01:00", [(travel_before, "2025-01-01T00:00:30Z")]),
+                            ("2025-01-03T00:00:00Z", [(travel_after, "2025-01-03T00:00:00Z"),
+                                                      (travel_before, "2025-01-01T00:00:30Z")]),
+                        ):
+                            result = await session.call_tool("list_snapshots", {
+                                "family": "forever", "hearthstone_projected_ready_by": deadline,
+                            })
+                            self.assertFalse(result.isError)
+                            rows = json.loads(result.content[0].text)["snapshots"]
+                            self.assertEqual([(row["snapshot_id"], row["hearthstone_projected_ready_at"])
+                                              for row in rows], expected)
                         for bad_map in [" ", "x"*257]:
                             self.assertTrue((await session.call_tool("list_snapshots", {
                                 **map_query,"player_map_name":bad_map,
