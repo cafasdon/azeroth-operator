@@ -140,6 +140,9 @@ struct Inspect {
     flight_max_fare_copper: Option<u64>,
     /// Check up to seven onward flight legs using explicit saved captures.
     flight_onward_legs: Option<Vec<FlightLeg>>,
+    /// Include the starting capture's repair-all quote in the manual itinerary budget.
+    #[serde(default)]
+    flight_itinerary_include_repair_quote: bool,
     /// Find a route across this saved flight panel and optional onward panels.
     flight_route_search: Option<FlightRouteSearch>,
     /// Keep captured reachable flight destinations and exclude map-transition nodes.
@@ -2829,6 +2832,11 @@ impl Operator {
                 "Flight itinerary requires a destination and one to seven onward legs, without affordability or fare filters",
             )]);
         }
+        if args.flight_itinerary_include_repair_quote && args.flight_onward_legs.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Flight itinerary repair budgeting requires explicit onward legs",
+            )]);
+        }
         if args.flight_wallet_reserve_copper.is_some_and(|reserve| {
             reserve > 9_999_999_999_999
                 || !(args.flight_wallet_projection
@@ -4440,6 +4448,7 @@ impl Operator {
                         azeroth_operator::analysis::review_flight_itinerary(
                             &legs,
                             args.flight_wallet_reserve_copper,
+                            args.flight_itinerary_include_repair_quote,
                         )
                     })();
                     match result {

@@ -1,5 +1,7 @@
 # Changelog
 
+- Include the saved starting repair quote in manual flight itinerary budgets.
+
 - Check a starting-wallet reserve for manually selected saved flight itineraries.
 
 - Estimate shared carried bag space for combined profession batch outputs.

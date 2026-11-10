@@ -544,6 +544,36 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         route_request = {"snapshot_id": route_start_id, "section": "flight_map",
                                          "flight_route_search": {"destination_node_id": 15,
                                                                  "onward_snapshot_ids": [route_onward_id]}}
+                        repair_request = {**itinerary_request, "flight_itinerary_include_repair_quote": True,
+                                          "flight_wallet_reserve_copper": wallet_copper - 3}
+                        reply = await session.call_tool("inspect_snapshot", repair_request)
+                        self.assertFalse(reply.isError, reply)
+                        itinerary = json.loads(reply.content[0].text)["flight_itinerary"]
+                        self.assertTrue(itinerary["wallet_reserve_projection"]["affordable_with_reserve"])
+                        self.assertEqual(itinerary["repair_budget_projection"], {
+                            "reserve_copper": wallet_copper - 3, "repair_quote_copper": 2,
+                            "affordable_with_repairs_and_reserve": False,
+                            "shortfall_copper": 2, "affordable_prefix_legs": 1})
+                        reply = await session.call_tool("inspect_snapshot", {
+                            **itinerary_request, "flight_itinerary_include_repair_quote": True})
+                        self.assertFalse(reply.isError, reply)
+                        itinerary = json.loads(reply.content[0].text)["flight_itinerary"]
+                        self.assertNotIn("wallet_reserve_projection", itinerary)
+                        self.assertEqual(itinerary["repair_budget_projection"], {
+                            "reserve_copper": 0, "repair_quote_copper": 2,
+                            "affordable_with_repairs_and_reserve": True,
+                            "shortfall_copper": 0, "affordable_prefix_legs": 2})
+                        no_quote = json.loads(json.dumps(route_start))
+                        del no_quote["sections"]["repair_quote"]
+                        no_quote_id = SnapshotStore(Path(folder)).ingest(no_quote)
+                        reply = await session.call_tool("inspect_snapshot", {**repair_request, "snapshot_id": no_quote_id})
+                        self.assertFalse(reply.isError, reply)
+                        self.assertEqual(json.loads(reply.content[0].text)["flight_itinerary"]["repair_budget_projection"], {
+                            "reserve_copper": wallet_copper - 3, "repair_quote_copper": None,
+                            "affordable_with_repairs_and_reserve": None,
+                            "shortfall_copper": None, "affordable_prefix_legs": None})
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            **route_request, "flight_itinerary_include_repair_quote": True})).isError)
                         planned = await session.call_tool("inspect_snapshot", route_request)
                         self.assertFalse(planned.isError)
                         plan = json.loads(planned.content[0].text)["flight_route_search"]

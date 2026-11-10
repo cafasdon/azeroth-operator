@@ -2125,6 +2125,10 @@ Set `flight_wallet_reserve_copper` on the itinerary to check full-route
 affordability, copper shortfall and consecutive affordable legs while
 preserving that amount in the starting wallet. The fare-only checks
 remain available separately.
+Set `flight_itinerary_include_repair_quote: true` to report a separate
+budget that includes the starting capture's repair-all quote and any
+explicit reserve. Onward quotes do not contribute. A missing starting
+quote leaves the repair-adjusted affordability and prefix unknown.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an

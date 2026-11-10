@@ -7547,6 +7547,7 @@ pub(crate) fn named_flight_destination(map: &Value, name: &str) -> Option<u32> {
 pub fn review_flight_itinerary(
     legs: &[(&str, Snapshot, u32)],
     reserve: Option<u64>,
+    include_repair_quote: bool,
 ) -> Result<Value> {
     let (_, first, _) = legs
         .first()
@@ -7606,16 +7607,30 @@ pub fn review_flight_itinerary(
         "starting_wallet_shortfall_copper":budget.map(|(fare, balance)| fare.saturating_sub(balance)),
         "starting_wallet_affordable_prefix_legs":affordable_prefix,
         "starting_wallet_first_uncovered_leg":first_uncovered_leg});
-    if let Some(reserve) = reserve {
-        let budget_with_reserve = total
-            .and_then(|fare| fare.checked_add(reserve))
+    let project_budget = |extra_cost: Option<u64>, affordability_field: &str| {
+        let budget = total
+            .zip(extra_cost)
+            .and_then(|(fare, extra)| fare.checked_add(extra))
             .zip(starting_wallet);
-        itinerary["wallet_reserve_projection"] = json!({"reserve_copper":reserve,
-        "affordable_with_reserve":budget_with_reserve.map(|(cost, wallet)| cost <= wallet),
-        "shortfall_copper":budget_with_reserve.map(|(cost, wallet)| cost.saturating_sub(wallet)),
-        "affordable_prefix_legs":starting_wallet.map(|balance| {
-            balance.checked_sub(reserve).map_or(0, count_affordable_legs)
-        })});
+        json!({"reserve_copper":reserve.unwrap_or_default(),
+        (affordability_field):budget.map(|(cost, wallet)| cost <= wallet),
+        "shortfall_copper":budget.map(|(cost, wallet)| cost.saturating_sub(wallet)),
+        "affordable_prefix_legs":starting_wallet.zip(extra_cost).map(|(balance, extra)| {
+            balance.checked_sub(extra).map_or(0, count_affordable_legs)
+        })})
+    };
+    if reserve.is_some() {
+        itinerary["wallet_reserve_projection"] = project_budget(reserve, "affordable_with_reserve");
+    }
+    if include_repair_quote {
+        let repair = first
+            .sections
+            .get("repair_quote")
+            .and_then(|row| row["copper"].as_u64());
+        let extra_cost = repair.and_then(|quote| quote.checked_add(reserve.unwrap_or_default()));
+        let mut projection = project_budget(extra_cost, "affordable_with_repairs_and_reserve");
+        projection["repair_quote_copper"] = json!(repair);
+        itinerary["repair_budget_projection"] = projection;
     }
     Ok(itinerary)
 }
