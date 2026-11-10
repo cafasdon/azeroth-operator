@@ -88,7 +88,11 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(prerequisite['quest_id'],6383)
                     self.assertEqual(prerequisite['record']['record_sha256'],exact['record']['record_sha256'])
                     self.assertNotIn('quest_links',exact)
-                    await call(get,error=True,kind='npc',entity_id=240,include_quest_links=True)
+                    npc = await call(get,kind='npc',entity_id=240,include_quest_links=True)
+                    self.assertTrue(any(link.get('quest_id') == 176 for link in npc['quest_links']['questEnds'].values()))
+                    obj = await call(get,kind='object',entity_id=31,include_quest_links=True)
+                    self.assertTrue(obj['quest_links']['questStarts'])
+                    await call(get,error=True,kind='item',entity_id=1931,include_quest_links=True)
                     result = await call(get,kind='quest',entity_id=176)
                     record = result['record']
                     targets = (await call(get,kind='quest',entity_id=176,include_quest_links=True))['quest_objective_targets']

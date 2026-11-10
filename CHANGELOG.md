@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve quest starters and finishers in reverse from cached NPC and object records.
+
 - Page cached item drop, vendor and quest reward references.
 
 - Resolve cached creature, object and item quest objective targets.

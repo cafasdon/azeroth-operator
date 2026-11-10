@@ -82,3 +82,6 @@ For items, `include_item_sources=true` resolves NPC drops, object drops,
 container items, quest rewards and vendors. Each group has up to 32 entries
 in numeric source-position order. Advance `item_source_offset` by 32 while
 any group reports `has_more`. Each group reports its total count.
+
+For NPCs and objects, `include_quest_links=true` resolves the cached
+`questStarts` and `questEnds` fields to quest summaries with source positions.

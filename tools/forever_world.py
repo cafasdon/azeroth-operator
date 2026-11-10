@@ -172,11 +172,14 @@ class World:
             **self.summary(key), 'fields': deepcopy(self.records[key][0]['fields'])}
         result = {**self.metadata(), 'found': row is not None, 'record': row}
         if include_quest_links:
-            if kind != 'quest':
-                raise ValueError('Quest links require a quest record')
-            result['quest_links'] = None if row is None else self.quest_links(row['fields'])
-            result['quest_contacts'] = None if row is None else self.quest_contacts(row['fields'])
-            result['quest_objective_targets'] = None if row is None else self.quest_objective_targets(row['fields'])
+            if kind == 'item':
+                raise ValueError('Quest links require a quest, NPC or object record')
+            fields = None if row is None else row['fields']
+            result['quest_links'] = None if fields is None else self.quest_links(
+                fields, contact=kind != 'quest')
+            if kind == 'quest':
+                result['quest_contacts'] = None if fields is None else self.quest_contacts(fields)
+                result['quest_objective_targets'] = None if fields is None else self.quest_objective_targets(fields)
         if (type(item_source_offset) is not int or not 0 <= item_source_offset <= 2**32-1
                 or item_source_offset and not include_item_sources):
             raise ValueError('Invalid item source offset')
@@ -232,9 +235,11 @@ class World:
             targets[position] = {'kind': kind, 'references': references}
         return targets
 
-    def quest_links(self, fields):
+    def quest_links(self, fields, *, contact=False):
         links = {}
-        for field in ('preQuestGroup', 'preQuestSingle', 'childQuests', 'inGroupWith', 'exclusiveTo'):
+        relationship_fields = ('questStarts', 'questEnds') if contact else (
+            'preQuestGroup', 'preQuestSingle', 'childQuests', 'inGroupWith', 'exclusiveTo')
+        for field in relationship_fields:
             entries = fields.get(field)
             if not isinstance(entries, dict):
                 continue
