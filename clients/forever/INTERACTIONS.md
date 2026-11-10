@@ -1,5 +1,11 @@
 # Forever interaction map
 
+In `review_forever_owned_gear`, a `set_id` review reports distinct
+catalogue-matched set pieces separately for equipment, bags, character
+bank and account bank. Duplicate copies within one storage count once.
+The counts use the whole saved capture before other filters or pagination.
+Unavailable storage is null and observed storage with no matches is zero.
+
 Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `available` or `active`. Optional `is_complete`, `repeatable`,
 `is_trivial` and `is_ignored` flags must match the same recorded row.

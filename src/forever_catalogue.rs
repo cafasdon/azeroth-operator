@@ -3665,6 +3665,19 @@ pub fn review_owned(
         "best_in_slot_verified":false
     });
     if let Some(set_id) = set_id {
+        let distinct_pieces_by_storage: BTreeMap<_, _> =
+            ["equipment", "bags", "character_bank", "account_bank"]
+                .into_iter()
+                .map(|storage| {
+                    let count = snapshot.sections.contains_key(storage).then(|| {
+                        set_locations
+                            .values()
+                            .filter(|locations| locations.contains_key(storage))
+                            .count()
+                    });
+                    (storage, count)
+                })
+                .collect();
         let pieces: Vec<_> = catalogue
             .iter()
             .filter(|(_, item)| item["setId"].as_u64() == Some(u64::from(set_id.get())))
@@ -3674,7 +3687,8 @@ pub fn review_owned(
             })
             .collect();
         result["set_observation"] = json!({"set_id":set_id.get(),"catalogue_pieces":pieces,
-            "observed_distinct_pieces":set_locations.len()});
+            "observed_distinct_pieces":set_locations.len(),
+            "observed_distinct_pieces_by_storage":distinct_pieces_by_storage});
     }
     Ok(result)
 }

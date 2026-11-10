@@ -56,6 +56,15 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 'hands': {'main_hand': {'entries': enchant_rows}},
             }
             enchanted_id = store.ingest(enchanted)
+            set_capture = deepcopy(base)
+            set_capture['sections']['equipment'] = {'16': {'item_id': 7950}}
+            set_capture['sections']['bags'] = {'0': {
+                '1': {'item_id': 7950, 'count': 1},
+                '2': {'item_id': 7953, 'count': 1},
+                '3': {'item_id': 7953, 'count': 1},
+            }}
+            set_capture['sections']['character_bank'] = {'6': {}}
+            set_capture_id = store.ingest(set_capture)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -66,6 +75,11 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
                     result = await review(partial)
+                    set_review = await review(set_capture_id, set_id=221, storage='account_bank', offset=99)
+                    self.assertEqual(set_review['items'], [])
+                    self.assertEqual(set_review['set_observation']['observed_distinct_pieces'], 2)
+                    self.assertEqual(set_review['set_observation']['observed_distinct_pieces_by_storage'],
+                                     {'equipment': 1, 'bags': 2, 'character_bank': 0, 'account_bank': None})
                     self.assertNotIn('observed_equipped_durability', result['items'][0])
                     same_item = (await review(mixed_id, item_id=4549))['items']
                     self.assertEqual([(row['storage'], row['slot']) for row in same_item],
