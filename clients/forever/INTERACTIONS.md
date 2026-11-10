@@ -5,6 +5,9 @@ see explicitly unfinished objectives and remaining counts for matching
 quests. It skips failed quests, preserves the captured readiness flag,
 and lists quests whose objective section was absent separately. Unknown
 remaining counts stay unknown.
+The checklist also lists quests with a nonempty set of objectives all
+marked finished and captured readiness of `not_ready` or `unknown`.
+Completing the observed objectives alone does not establish turn-in readiness.
 
 In `inspect_snapshot`, select a Forever `faction_id` in the reputation
 section and pass `reputation_points_per_turn_in` to estimate repetitions

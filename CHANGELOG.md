@@ -1,5 +1,7 @@
 # Changelog
 
+- Flag saved quests with all observed objectives finished and no confirmed turn-in readiness.
+
 - List unfinished objectives and missing observations across filtered saved quests.
 
 - Show combined saved wallet and bag capacity for reputation turn-ins.
