@@ -1747,6 +1747,11 @@ empty classification returns no matches.
 With an exact item ID and a target quantity, use `merchant_combine_bundles`
 to find qualifying whole-bundle mixes within each saved visit. Currency
 selectors are separate from pet food searches.
+In `list_snapshots`, a `merchant_pet_food_target_carried_quantity` can
+replace the purchase quantity too. Matching visits report the recorded
+carried units and positive shortfall under `merchant_match.pet_food_restock`.
+An already covered target or an item missing from the saved classification
+returns no visits.
 
 Add `merchant_target_quantity` (1–1,000 units) to a merchant listing
 with a pet food, item or currency selector. Each matching offer must

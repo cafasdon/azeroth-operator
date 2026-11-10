@@ -2030,6 +2030,7 @@ pub struct CaptureFilters<'a> {
     pub merchant_currency_id: Option<std::num::NonZeroU32>,
     pub merchant_pet_food_snapshot_id: Option<&'a str>,
     pub merchant_target_quantity: Option<std::num::NonZeroU32>,
+    pub merchant_pet_food_target_carried_quantity: Option<std::num::NonZeroU32>,
     pub merchant_cheapest_first: bool,
     pub merchant_combine_bundles: bool,
     pub merchant_max_total_copper: Option<u64>,
@@ -2335,6 +2336,7 @@ impl Store {
             merchant_currency_id,
             merchant_pet_food_snapshot_id,
             merchant_target_quantity,
+            merchant_pet_food_target_carried_quantity,
             merchant_cheapest_first,
             merchant_combine_bundles,
             merchant_max_total_copper,
@@ -2789,8 +2791,18 @@ impl Store {
             .or_else(|| merchant_currency_id.map(|id| ("currency_id", id.get())));
         let filter_merchant = merchant_product.is_some() || merchant_pet_food_snapshot_id.is_some();
         ensure!(
-            !merchant_combine_bundles
-                || (merchant_product.is_some() && merchant_target_quantity.is_some()),
+            merchant_pet_food_target_carried_quantity.is_none_or(|target| {
+                target.get() <= 1000
+                    && merchant_target_quantity.is_none()
+                    && merchant_item_id.is_some()
+                    && merchant_pet_food_snapshot_id.is_some()
+            }),
+            "Pet food carried targets require an exact item, a pet food capture and 1 to 1000 units without a separate purchase quantity"
+        );
+        let has_merchant_quantity = merchant_target_quantity.is_some()
+            || merchant_pet_food_target_carried_quantity.is_some();
+        ensure!(
+            !merchant_combine_bundles || (merchant_product.is_some() && has_merchant_quantity),
             "Merchant bundle combinations require an exact item or currency and target quantity"
         );
         ensure!(
@@ -2800,7 +2812,7 @@ impl Store {
         );
         ensure!(
             !(merchant_cheapest_first || merchant_max_total_copper.is_some())
-                || merchant_target_quantity.is_some(),
+                || has_merchant_quantity,
             "Merchant cost ordering and total cost limits require a target quantity"
         );
         ensure!(
@@ -2837,6 +2849,15 @@ impl Store {
                     .ok_or_else(|| anyhow::anyhow!("Missing food classification"))
             })
             .transpose()?;
+        let pet_food_restock = merchant_pet_food_target_carried_quantity.and_then(|target| {
+            let item = merchant_item_id?;
+            let carried = accepted_food?.get(&item.get().to_string())?.as_u64()?;
+            let shortfall = u64::from(target.get()).saturating_sub(carried);
+            let quantity = std::num::NonZeroU32::new(u32::try_from(shortfall).ok()?)?;
+            Some((target, carried, quantity))
+        });
+        let merchant_target_quantity =
+            merchant_target_quantity.or(pet_food_restock.map(|(_, _, quantity)| quantity));
         let filter_recipes = filters.recipe_id.is_some()
             || filters.output_item_id.is_some()
             || filters.profession_id.is_some()
@@ -4036,9 +4057,12 @@ impl Store {
                     } else {
                         None
                     };
-                    if food_capture.as_ref().is_some_and(|food| {
-                        analysis::ensure_same_character_and_client(food, &s).is_err()
-                    }) {
+                    if (merchant_pet_food_target_carried_quantity.is_some()
+                        && pet_food_restock.is_none())
+                        || food_capture.as_ref().is_some_and(|food| {
+                            analysis::ensure_same_character_and_client(food, &s).is_err()
+                        })
+                    {
                         continue;
                     }
                     let pet_food_match = if let Some(filter) = &pet_food {
@@ -4741,6 +4765,13 @@ impl Store {
                         }
                         if let Some(food_id) = merchant_pet_food_snapshot_id {
                             summary["merchant_match"]["pet_food_snapshot_id"] = json!(food_id);
+                        }
+                        if let Some((target, carried, shortfall)) = pet_food_restock {
+                            summary["merchant_match"]["pet_food_restock"] = json!({
+                                "target_carried_quantity":target,
+                                "accepted_carried_quantity":carried,
+                                "shortfall_quantity":shortfall,
+                            });
                         }
                         if let Some(plan) = quantity_plan {
                             summary["merchant_match"]["lowest_cost_quantity_plan"] = plan;

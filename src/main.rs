@@ -768,7 +768,9 @@ struct List {
     merchant_pet_food_snapshot_id: Option<String>,
     /// Require one unlimited copper-only offer to cover this quantity, up to 1000 units.
     merchant_target_quantity: Option<std::num::NonZeroU32>,
-    /// Sort matching merchant visits by the full bundle cost. Requires merchant_target_quantity.
+    /// Find visits that cover the shortfall to this carried target for an exact accepted pet food.
+    merchant_pet_food_target_carried_quantity: Option<std::num::NonZeroU32>,
+    /// Sort matching merchant visits by full bundle cost. Requires a purchase or carried target quantity.
     #[serde(default)]
     merchant_cheapest_first: bool,
     /// Combine eligible bundles for an exact item or currency and target quantity in each saved visit.
@@ -2731,6 +2733,8 @@ impl Operator {
                 merchant_currency_id: args.merchant_currency_id,
                 merchant_pet_food_snapshot_id: args.merchant_pet_food_snapshot_id.as_deref(),
                 merchant_target_quantity: args.merchant_target_quantity,
+                merchant_pet_food_target_carried_quantity: args
+                    .merchant_pet_food_target_carried_quantity,
                 merchant_cheapest_first: args.merchant_cheapest_first,
                 merchant_combine_bundles: args.merchant_combine_bundles,
                 merchant_max_total_copper: args.merchant_max_total_copper,
