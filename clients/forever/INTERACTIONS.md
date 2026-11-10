@@ -4657,3 +4657,16 @@ unverified merge scenario. Unknown fixed lists keep whole-fixed-reward estimates
 unknown; known-subset figures remain visible. Choices and consumed quest items
 are excluded. No stacking, placement, turn-in eligibility or current state is
 verified. See ADR-099. Offline/source only.
+
+## Explicit standard reputation standing goal
+
+Use `inspect_snapshot` with section `reputation`, an exact `faction_id`,
+`reputation_points_per_turn_in` and `reputation_target_standing` to model a saved
+counter goal beyond or within the next rank. The target is a signed standing
+counter, not a rank number. Existing item/copper cost inputs also supply a
+separate target budget from captured bags and wallet. Old next-rank views remain
+unchanged. Banks/mail do not fund the target plan. Unknown resources, arithmetic
+overflow and other reputation units remain explicit. Gains/costs, repeatability
+and cross-rank reachability are unverified; caps are not applied. The model does
+not claim a higher target is reachable from a capped reaction. See ADR-100.
+No payment or game action; source/offline only.

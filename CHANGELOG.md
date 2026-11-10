@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan explicit standard-reputation standing targets with constant assumed gains, joint captured item/copper budgets, signed bounds and explicit cap/rate uncertainty.
+
 - Estimate combined bag space for grouped fixed quest rewards, deduplicating alternative finishers and preserving unknown reward lists, stack limits and capacity.
 
 - Page non-dominated saved gear across requested encounters, retaining tied sets and exact point-estimate membership without extra simulations; incomplete or over-budget analysis stays unknown.

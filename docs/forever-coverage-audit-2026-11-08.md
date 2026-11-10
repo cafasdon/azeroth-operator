@@ -1079,3 +1079,12 @@ subsets stay distinct from unknown whole reward lists. General slots, unanimous
 carried stack limits and hypothetical merge headroom retain their existing
 unknown/native limits. Choices, consumed quest items and actual delivery remain
 excluded. See ADR-099 and its dated offline evidence. Live work stays deferred.
+
+## Explicit standard reputation targets (10 November)
+
+Saved exact-faction inspection can now model an explicit signed standing target
+and supplied constant-gain/resource assumptions, independently of next-rank
+reports. Joint bag/wallet capacities retain unknowns and checked arithmetic.
+Special progression units, actual reward rates/costs, repeatability, caps and
+native target eligibility remain outside the estimate. No reward or payment is
+executed. See ADR-100 and its dated offline evidence. Live work remains deferred.

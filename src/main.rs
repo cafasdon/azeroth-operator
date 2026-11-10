@@ -423,6 +423,10 @@ struct Inspect {
     faction_id: Option<std::num::NonZeroU32>,
     /// Estimate repetitions to the observed next standard reputation threshold at this many points each.
     reputation_points_per_turn_in: Option<std::num::NonZeroU32>,
+    /// Explicit signed standing target under constant assumed gains, before caps/restrictions. Requires exact faction and points per turn-in; standard reputation only.
+    #[serde(default, deserialize_with = "azeroth_operator::reputation_target::argument")]
+    #[schemars(range(min = -2147483648i64, max = 2147483647i64))]
+    reputation_target_standing: Option<i32>,
     /// One assumed item cost per reputation turn-in, checked against the same saved bags.
     reputation_turn_in_item_cost: Option<ItemCost>,
     /// Distinct assumed item costs per turn-in. Supply 1 to 20, without the singular cost.
@@ -4222,6 +4226,13 @@ impl Operator {
                 "A profession trainer reserve requires lesson review and a valid copper amount",
             )]);
         }
+        if args.reputation_target_standing.is_some() && (args.section.as_deref()!=Some("reputation")
+            || args.coverage_sections.is_some() || args.faction_id.is_none()
+            || args.reputation_points_per_turn_in.is_none()) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A reputation standing target requires reputation, an exact faction and points per turn-in without coverage inspection",
+            )]);
+        }
         if args.reputation_points_per_turn_in.is_some() && args.faction_id.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Reputation turn-in estimates require an exact faction",
@@ -7117,6 +7128,19 @@ impl Operator {
                             standard.get(&key).cloned().unwrap_or_default();
                         value["special_reputation_progress"] =
                             special.get(&key).cloned().unwrap_or_default();
+                        if let (Some(target),Some(points))=(args.reputation_target_standing,args.reputation_points_per_turn_in) {
+                            let report = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                                let costs: Vec<_> = reputation_item_costs.iter().map(|cost|azeroth_operator::InventoryRequirement {
+                                    item_id:cost.item_id,quantity:cost.quantity,
+                                }).collect();
+                                azeroth_operator::reputation_target::review(&snapshot,id.get(),target,points,&costs,
+                                    args.reputation_turn_in_copper_cost.as_ref().map(|cost|(cost.copper_per_turn_in,cost.wallet_reserve_copper)))
+                            });
+                            match report {
+                                Ok(report)=>value["reputation_target_plan"]=report,
+                                Err(_)=>return CallToolResult::error(vec![ContentBlock::text("Saved reputation target context unavailable or invalid")]),
+                            }
+                        }
                         if let Some(points) = args.reputation_points_per_turn_in {
                             let points = u64::from(points.get());
                             let remaining = standard[&key]["remaining_to_next_rank"].as_u64();
