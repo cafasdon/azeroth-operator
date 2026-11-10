@@ -134,12 +134,22 @@ pub enum SavedResetKind {
     WorldBoss,
 }
 
+#[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SavedResetInstanceFilter {
+    pub difficulty_id: Option<u32>,
+    pub locked: Option<bool>,
+    pub extended: Option<bool>,
+    pub max_players: Option<std::num::NonZeroU32>,
+}
+
 /// Merge historical reset timestamps from both validated sections of one capture.
 pub fn combined_schedule(
     snapshot: &crate::Snapshot,
     reference: DateTime<Utc>,
     through: Option<DateTime<Utc>>,
     kind: Option<SavedResetKind>,
+    instance_filter: Option<SavedResetInstanceFilter>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
@@ -162,6 +172,23 @@ pub fn combined_schedule(
         for row in projected["rows"].as_array().into_iter().flatten() {
             let observation = &row["observation"];
             let is_instance = section == "saved_instances";
+            if instance_filter.is_some_and(|filter| {
+                !is_instance
+                    || filter.difficulty_id.is_some_and(|id| {
+                        observation["difficulty_id"].as_u64() != Some(u64::from(id))
+                    })
+                    || filter
+                        .locked
+                        .is_some_and(|locked| observation["locked"].as_bool() != Some(locked))
+                    || filter
+                        .extended
+                        .is_some_and(|extended| observation["extended"].as_bool() != Some(extended))
+                    || filter.max_players.is_some_and(|size| {
+                        observation["max_players"].as_u64() != Some(u64::from(size.get()))
+                    })
+            }) {
+                continue;
+            }
             if !kind.is_none_or(|kind| match kind {
                 SavedResetKind::Dungeon => is_instance && observation["is_raid"] == false,
                 SavedResetKind::Raid => is_instance && observation["is_raid"] == true,
@@ -200,6 +227,9 @@ pub fn combined_schedule(
     }
     if let Some(kind) = kind {
         result["kind"] = json!(kind);
+    }
+    if let Some(filter) = instance_filter {
+        result["instance_filter"] = json!(filter);
     }
     Ok(result)
 }

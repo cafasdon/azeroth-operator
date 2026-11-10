@@ -123,6 +123,31 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(filtered['coverage'],schedule['coverage'])
                         self.assertEqual(filtered['kind'],kind)
                     self.assertIs(schedule['current_lockout_verified'],False)
+                    for filters, expected in [
+                        ({},schedule['upcoming_projected_resets'][1:]),
+                        ({'difficulty_id':1,'locked':True,'extended':True,'max_players':40},schedule['upcoming_projected_resets'][1:]),
+                        ({'difficulty_id':2},[]),({'locked':False},[]),({'extended':False},[]),({'max_players':10},[]),
+                    ]:
+                        reply=await session.call_tool('character_summary',{
+                            'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                            'saved_reset_instance_filter':filters})
+                        self.assertFalse(reply.isError,reply)
+                        filtered=json.loads(reply.content[0].text)['saved_reset_schedule']
+                        self.assertEqual(filtered['upcoming_projected_resets'],expected)
+                        self.assertEqual(filtered['coverage'],schedule['coverage'])
+                    for end, expected in [('2025-01-02T00:58:59Z',[]),
+                                          ('2025-01-02T00:59:00Z',schedule['upcoming_projected_resets'][1:])]:
+                        reply=await session.call_tool('character_summary',{
+                            'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                            'saved_reset_through':end,'saved_reset_kind':'raid',
+                            'saved_reset_instance_filter':{'locked':True}})
+                        self.assertFalse(reply.isError,reply)
+                        self.assertEqual(json.loads(reply.content[0].text)['saved_reset_schedule'][
+                            'upcoming_projected_resets'],expected)
+                    for extras in [{},{'saved_reset_kind':'world_boss','saved_reset_reference_at':'2025-01-01T23:59:00Z'}]:
+                        reply=await session.call_tool('character_summary',{
+                            'snapshot_id':key,'saved_reset_instance_filter':{'locked':True},**extras})
+                        self.assertTrue(reply.isError,reply)
                     window = await session.call_tool('character_summary', {
                         'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
                         'saved_reset_through':'2025-01-02T00:01:00Z'})

@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved reset schedules by captured instance difficulty, lock, extension and group size.
+
 - Compare a selected PvP rank with saved thresholds and rank caps.
 
 - Show the combined trainer reserve and lesson shortfall, including when some prices are unknown.

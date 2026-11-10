@@ -864,6 +864,8 @@ struct Summary {
     saved_reset_through: Option<chrono::DateTime<chrono::Utc>>,
     /// Limit the saved reset schedule to one activity kind. Requires saved_reset_reference_at.
     saved_reset_kind: Option<azeroth_operator::saved_resets::SavedResetKind>,
+    /// Limit the reset schedule to saved instances matching these recorded details.
+    saved_reset_instance_filter: Option<azeroth_operator::saved_resets::SavedResetInstanceFilter>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2256,6 +2258,17 @@ impl Operator {
         )
     )]
     fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        if args.saved_reset_instance_filter.is_some()
+            && (args.saved_reset_reference_at.is_none()
+                || matches!(
+                    args.saved_reset_kind,
+                    Some(azeroth_operator::saved_resets::SavedResetKind::WorldBoss)
+                ))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A saved reset instance filter requires a reference time and excludes world boss schedules",
+            )]);
+        }
         if args.saved_reset_kind.is_some() && args.saved_reset_reference_at.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "A saved reset kind requires a reference time",
@@ -2279,6 +2292,7 @@ impl Operator {
                         reference,
                         args.saved_reset_through,
                         args.saved_reset_kind,
+                        args.saved_reset_instance_filter,
                     ) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Saved reset schedules require a valid Forever snapshot",

@@ -2692,6 +2692,11 @@ even when the requested window contains no projected resets.
 With a reference time, `saved_reset_kind` limits the schedule to `dungeon`,
 `raid` or `world_boss`. Instance types use the captured raid flag, and
 coverage still describes both captured sections.
+Use `saved_reset_instance_filter` to limit a schedule to instances and
+match recorded `difficulty_id`, `locked`, `extended` or `max_players` on
+the same row. An empty filter includes both dungeons and raids. Combine
+it with an instance kind or time window. Coverage still describes the
+whole capture, and a match leaves current lockout status unverified.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the
