@@ -1,5 +1,7 @@
 # Changelog
 
+- Report an incomplete owned-gear search when its collection budget expires before the first journal is created. New collection uses a new source fingerprint.
+
 - Find saved Forever captures with an exact spell shortcut and matching recorded resources.
 
 - Distinguish matching, nonmatching and unknown saved spellbook rows for matched shortcuts.

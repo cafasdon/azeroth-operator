@@ -33,10 +33,16 @@ def encoded(report):
     return data
 
 
+class GearDeadlineExceeded(ValueError):
+    pass
+
+
 def connect(path, write=False, deadline=None):
     now = monotonic()
     if deadline is not None:
-        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > now)
+        require(type(deadline) in (int, float) and isfinite(deadline))
+        if deadline <= now:
+            raise GearDeadlineExceeded("Gear journal deadline expired")
     deadline = min(now + 45, deadline) if deadline is not None else now + 45
     path = Path(path)
     require(path.parent.resolve(strict=True).is_dir())
@@ -63,7 +69,8 @@ def connect(path, write=False, deadline=None):
         require(write)
     uri = path.resolve(strict=True).as_uri() + ('?mode=rw' if write else '?mode=ro')
     remaining = deadline - monotonic()
-    require(remaining > 0)
+    if remaining <= 0:
+        raise GearDeadlineExceeded("Gear journal deadline expired")
     connection = sqlite3.connect(uri, uri=True, timeout=min(5, remaining), isolation_level=None)
     try:
         connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_REPORT_BYTES + 4096)

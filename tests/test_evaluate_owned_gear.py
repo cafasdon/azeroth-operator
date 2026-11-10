@@ -22,6 +22,61 @@ from tools import journal_forever_gear_windows as plans
 
 
 class OwnedGearEvaluationTests(unittest.TestCase):
+    def test_collection_timeout_before_first_journal_reports_no_saved_windows(self):
+        root = Path(__file__).resolve().parents[1]
+        binary = Path(os.environ.get('AZEROTH_TEST_BINARY') or root/'target/debug'/
+            ('azeroth-operator.exe' if os.name == 'nt' else 'azeroth-operator')).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder:
+            base = Path(folder)
+            template, _, encounter = inputs()
+            (base/'template.json').write_text(json.dumps(template))
+            (base/'encounter.json').write_text(json.dumps(encounter))
+            engine = base/'engine.exe'
+            engine.write_bytes(b'synthetic')
+            journal = base/'plans.sqlite'
+            args = workflow.parser().parse_args([
+                '--mcp', str(binary), '--snapshot-id', 'a'*64,
+                '--template', str(base/'template.json'), '--journal', str(journal),
+                '--engine', str(engine), '--engine-sha256', hashlib.sha256(b'synthetic').hexdigest(),
+                '--simulation-journal', str(base/'results'), '--encounter-lookup', str(base/'encounter.json'),
+                '--time-budget-seconds', '20', '--collection-seconds', '2'])
+            clock = monotonic()
+
+            collect_windows = workflow.collection.collect_windows
+
+            async def expire_before_open(collect_args, *, deadline):
+                nonlocal clock
+                clock = deadline
+                return await collect_windows(collect_args, deadline=deadline)
+
+            async def fail_at_deadline(_args, *, deadline):
+                nonlocal clock
+                clock = deadline
+                raise PermissionError('journal unavailable')
+
+            with patch.dict(os.environ, clear=False):
+                os.environ.pop('AZEROTH_DATA_DIR', None)
+                os.environ.pop('AZEROTH_FOREVER_CATALOGUE', None)
+                with patch.object(workflow, 'monotonic', side_effect=lambda: clock), \
+                     patch.object(workflow.collection, 'monotonic', side_effect=lambda: clock), \
+                     patch.object(workflow.collection, 'collect_windows', side_effect=expire_before_open), \
+                     patch.object(workflow.simulation, 'execute') as simulation:
+                    report = asyncio.run(workflow.execute(args))
+                    simulation.assert_not_called()
+                with patch.object(workflow, 'monotonic', side_effect=lambda: clock), \
+                     patch.object(workflow.collection, 'collect_windows', side_effect=fail_at_deadline):
+                    with self.assertRaises(PermissionError):
+                        asyncio.run(workflow.execute(args))
+            self.assertEqual(report['collection']['stop_reason'], 'time_budget')
+            self.assertTrue(report['collection']['interrupted_stage_recovered'])
+            self.assertIsNone(report['collection']['progress'])
+            self.assertEqual(report['simulation_stop_reason'], 'no_saved_windows')
+            self.assertFalse(journal.exists())
+            self.assertFalse((base/'results').exists())
+            with self.assertRaises(plans.GearDeadlineExceeded):
+                plans.connect(journal, write=True, deadline=monotonic())
+            self.assertFalse(journal.exists())
+
     def test_collection_ceiling_hands_committed_prefix_to_simulation(self):
         root=Path(__file__).resolve().parents[1]
         catalogue=root/'local-data/forever/catalogue.json'

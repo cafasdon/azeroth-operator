@@ -23,7 +23,8 @@ def file_digest(path, deadline):
     consumed = 0
     with path.open('rb') as handle:
         while data := handle.read(1024 * 1024):
-            require(monotonic() < deadline)
+            if monotonic() >= deadline:
+                raise journal.GearDeadlineExceeded("Gear source fingerprint deadline expired")
             consumed += len(data)
             require(consumed <= info.st_size)
             result.update(data)
@@ -96,7 +97,9 @@ def validate(args):
 async def collect_windows(args, *, deadline=None):
     validate(args)
     if deadline is not None:
-        require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
+        require(type(deadline) in (int, float) and isfinite(deadline))
+        if deadline <= monotonic():
+            raise journal.GearDeadlineExceeded("Gear collection deadline expired")
     deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     with args.template.open('rb') as handle:
         template_data = handle.read(4 * 1024 * 1024 + 1)
@@ -106,6 +109,8 @@ async def collect_windows(args, *, deadline=None):
     ranker.check_consumable_groups(template)
     binding = request_binding(args, deadline, template_sha256)
     candidate_page_cache = ranker.OwnedGearPageCache(binding)
+    if monotonic() >= deadline:
+        raise journal.GearDeadlineExceeded("Gear collection deadline expired")
     connection, _ = journal.connect(args.journal, write=True, deadline=deadline)
     connection.rollback()
     connection.close()

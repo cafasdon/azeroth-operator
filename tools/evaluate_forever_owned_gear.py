@@ -148,12 +148,18 @@ async def execute(args):
     collection_deadline = min(deadline, monotonic() + args.collection_seconds)
     try:
         collected = await collection.collect_windows(copy(args), deadline=collection_deadline)
-    except Exception:
+    except Exception as failure:
         # Stdio cancellation can surface as an ExceptionGroup, not TimeoutError.
         # Only expiry of this stage permits recovery; early failures still reject.
         require(monotonic() >= collection_deadline and monotonic() < deadline)
         binding = collection.request_binding(args, deadline, collection.file_digest(args.template, deadline))
-        progress = collection.journal.journal_status(args.journal, deadline=deadline) if args.journal.stat().st_size else None
+        try:
+            journal_size = args.journal.stat().st_size
+        except FileNotFoundError:
+            if not isinstance(failure, collection.journal.GearDeadlineExceeded):
+                raise failure from None
+            journal_size = 0
+        progress = collection.journal.journal_status(args.journal, deadline=deadline) if journal_size else None
         if progress and progress['window_count']:
             require(progress['collection_binding_sha256'] == binding and progress['snapshot_id'] == args.snapshot_id)
         collected = {'mode':'gear_window_collection','collection_binding_sha256':binding,
