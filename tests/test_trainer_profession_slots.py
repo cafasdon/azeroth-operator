@@ -37,6 +37,14 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
             pet=deepcopy(base);pet['sections']['trainer_services']={'kind':'pet','entries':{
                 '1':{'name':'Pet lesson','status':'available','price_training_points':5}}}
             pet_key=store.ingest(pet)
+            point_cases=[]
+            for total,used,trainer_points,pet_level,agree in [(10,3,7,20,True),(3,10,0,19,True),
+                                                            (10,3,6,20,False),(-1,3,0,20,None)]:
+                capture=deepcopy(pet)
+                capture['sections']['trainer_services'].update(pet_level=20,pet_training_points_available=trainer_points)
+                capture['sections']['pet_care']={'present':True,'level':pet_level,
+                    'training_points':{'total':total,'used':used}}
+                point_cases.append((store.ingest(capture),total-used,trainer_points,pet_level,agree))
             bad_values=[]
             for invalid in [None,0,'true']:
                 bad=deepcopy(base);bad['sections']['trainer_services']['primary_profession_slots_full']=invalid;bad_values.append(bad)
@@ -77,6 +85,17 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                     selected=await inspect(keys['full'],trainer_service_slots=[1])
                     self.assertEqual(set(selected['trainer_requirements_review']['profession_slot_checks']['lessons_by_slot']),{'1'})
                     self.assertIsNone((await inspect(pet_key))['trainer_requirements_review']['profession_slot_checks'])
+                    legacy_points=(await inspect(pet_key,trainer_points_projection=True))['trainer_points_projection']
+                    self.assertIsNone(legacy_points['active_pet_capture_context']['spendable_points_observations_agree'])
+                    for key,signed,points,level,agree in point_cases:
+                        projection=(await inspect(key,trainer_points_projection=True))['trainer_points_projection']
+                        context=projection['active_pet_capture_context']
+                        self.assertEqual(context['active_pet_signed_training_point_balance'],signed)
+                        self.assertEqual(context['trainer_training_points_available'],points)
+                        self.assertIs(context['levels_agree'],level==20)
+                        self.assertIs(context['spendable_points_observations_agree'],agree)
+                        self.assertFalse(context['same_pet_verified'])
+                        self.assertEqual(projection['training_point_shortfall'],max(0,5-points))
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
                                                                           'trainer_requirements_review':True})

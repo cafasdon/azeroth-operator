@@ -8421,6 +8421,26 @@ pub fn trainer_points_projection(trainer: &Value, slots: Option<&[std::num::NonZ
     projection
 }
 
+pub fn pet_trainer_capture_context(trainer: &Value, pet: Option<&Value>) -> Value {
+    let trainer_level = trainer["pet_level"].as_u64();
+    let trainer_points = trainer["pet_training_points_available"].as_u64();
+    let pet_level = pet.and_then(|row| row["level"].as_u64());
+    let pet_balance = pet.and_then(pet_training_points_balance);
+    let comparable_balance = pet.and_then(|row| {
+        let points = &row["training_points"];
+        Some(
+            points["total"]
+                .as_u64()?
+                .saturating_sub(points["used"].as_u64()?),
+        )
+    });
+    json!({"trainer_pet_level":trainer_level,"active_pet_level":pet_level,
+        "levels_agree":trainer_level.zip(pet_level).map(|(a,b)| a == b),
+        "trainer_training_points_available":trainer_points,"active_pet_signed_training_point_balance":pet_balance,
+        "spendable_points_observations_agree":trainer_points.zip(comparable_balance).map(|(a,b)| a == b),
+        "same_pet_verified":false,"eligibility_verified":false,"live":false})
+}
+
 pub fn merchant_quantity_plan(offers: &Value, quantity: u32, exact_product: bool) -> Value {
     let Some(offers) = offers.as_object() else {
         return Value::Null;

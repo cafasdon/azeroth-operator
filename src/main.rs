@@ -4241,6 +4241,18 @@ impl Operator {
                             &value["data"],
                             args.trainer_service_slots.as_deref(),
                         );
+                    if value["trainer_points_projection"].is_object() {
+                        let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                            return CallToolResult::error(vec![ContentBlock::text(
+                                "Could not read the saved pet trainer context",
+                            )]);
+                        };
+                        value["trainer_points_projection"]["active_pet_capture_context"] =
+                            azeroth_operator::analysis::pet_trainer_capture_context(
+                                &value["data"],
+                                snapshot.sections.get("pet_care"),
+                            );
+                    }
                 }
                 if let Some(reserve) = args.trainer_balance_reserve {
                     let ordered_budget = args.trainer_service_slots.as_deref().map(|slots| {

@@ -1418,6 +1418,12 @@ Set `trainer_points_projection: true` for pet trainer captures. It budgets
 matching lessons marked available, with a training-point shortfall when
 all their costs and the active pet's balance were observed. The projection
 uses the saved pet and leaves training to the player.
+The projection also shows whether the trainer and active-pet observations
+agree on level and spendable training points. For nonnegative raw pet
+counters, the comparison floors total minus used at zero to match the
+trainer reading. The signed balance remains visible separately. Missing
+or incompatible counters leave agreement unknown. Lesson budgets still
+use the trainer observation, and pet identity remains unverified.
 Both projections include `individual_lesson_affordability` keyed by
 captured slot. Each available lesson is compared independently with the
 recorded balance, in copper or training points respectively. Missing

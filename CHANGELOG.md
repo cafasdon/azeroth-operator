@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare pet trainer point and level observations with active-pet data from the same save.
+
 - Compare expected outgoing trade items with separately observed carried stock.
 
 - Estimate carried bag space for selected saved buyback entries.
