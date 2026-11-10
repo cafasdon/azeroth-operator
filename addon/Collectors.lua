@@ -1,5 +1,78 @@
 local _, AO = ...
 AO.collectors = {}
+-- Only read the player's already-loaded owned-auction cache in an open panel.
+AO.collectors.owned_auctions = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Auction restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted auction observation")
+        return value
+    end
+    local function integer(value,minimum,maximum)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=minimum and value<=maximum,
+            "Invalid auction number")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Owned auctions unavailable")
+    local frame=public(AuctionHouseFrame)
+    local api=public(C_AuctionHouse)
+    assert(type(frame)=="table" and type(api)=="table", "Owned auctions unavailable")
+    local shown=public(frame.IsShown)
+    local count=public(api.GetNumOwnedAuctions)
+    local info=public(api.GetOwnedAuctionInfo)
+    assert(type(shown)=="function" and type(count)=="function" and type(info)=="function",
+        "Owned auction cache unavailable")
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and rawequal(public(AuctionHouseFrame),frame) and public(frame.IsShown)==shown
+            and rawequal(public(C_AuctionHouse),api) and public(api.GetNumOwnedAuctions)==count
+            and public(api.GetOwnedAuctionInfo)==info, "Auction context changed")
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret)
+            and rawequal(rawget(_G,"AuctionHouseFrame"),frame) and rawequal(rawget(_G,"C_AuctionHouse"),api)
+            and rawequal(rawget(api,"GetNumOwnedAuctions"),count)
+            and rawequal(rawget(api,"GetOwnedAuctionInfo"),info), "Auction API changed")
+    end
+    local function context()
+        fixed()
+        local visible=public(shown(frame))
+        assert(type(visible)=="boolean" and visible, "Auction panel is not shown")
+        fixed()
+    end
+    local function projection()
+        context()
+        local total=integer(count(),0,256)
+        fixed()
+        local entries,seen={},{}
+        for slot=1,total do
+            local source=public(info(slot))
+            assert(type(source)=="table", "Owned auction row unavailable")
+            local key=public(rawget(source,"itemKey"))
+            assert(type(key)=="table", "Owned auction item unavailable")
+            local id=integer(rawget(source,"auctionID"),1,9007199254740991)
+            assert(not seen[id], "Duplicate owned auction")
+            seen[id]=true
+            entries[tostring(slot)]={auction_id=id,item_id=integer(rawget(key,"itemID"),1,4294967295),
+                quantity=integer(rawget(source,"quantity"),1,4294967295),
+                reported_status=integer(rawget(source,"status"),0,4294967295)}
+            fixed()
+        end
+        assert(integer(count(),0,256)==total, "Owned auction count changed")
+        context()
+        return entries,total
+    end
+    local first,total=projection()
+    local second,again=projection()
+    assert(total==again, "Owned auction count changed")
+    for slot,row in pairs(first) do
+        local other=second[slot]
+        for field,value in pairs(row) do
+            assert(other[field]==value, "Owned auction row changed")
+        end
+    end
+    context()
+    return {coverage="loaded_player_owned_auction_cache",entries=second}
+end
 -- Passive category-specific player group state; never enumerate group members.
 AO.collectors.group_context = function()
     local secret=issecretvalue

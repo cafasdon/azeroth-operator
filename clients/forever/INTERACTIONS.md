@@ -4295,3 +4295,20 @@ unchanged. Zero gaps, including already reached targets, come first. The
 default `skill_line_id` preserves the existing order and response shape.
 This is a distance-based planning order, not a recommendation of training
 cost, craft feasibility or useful weapon choices.
+
+## Passive owned-auction observations (2026-11-10)
+
+Manual Forever exports can observe the already-loaded owned-auction cache
+while AuctionHouseFrame is already open. Inspect section owned_auctions or
+find it using the existing capture-status filters. Coverage is
+loaded_player_owned_auction_cache: a saved cache, not a complete/current
+auction inventory. Up to 256 contiguous rows retain only numeric auction ID,
+base item ID, quantity and reported status. Status is not interpreted as a
+sale, expiry, delivery or eligibility fact. Two matching bounded projections
+are required; hidden/restricted/changing/invalid data stays unavailable.
+An observed empty cache does not prove no auctions exist. Bidder identities,
+links and money values are excluded. No market query, refresh, bid, posting or
+cancellation is invoked; no auction item or money is credited to inventory or
+wallet. Data remains in the owner-local snapshot store, outside public search.
+Update readers before installing the exporter. Native testing stays deferred.
+See docs/ADR-077-passive-owned-auctions.md.

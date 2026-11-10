@@ -106,3 +106,16 @@ adds no route to the offline MCP allowlist. Labels remain untrusted owner-local
 data. This captures a partial observation and supplies no NPC identity, action
 eligibility or Blizzard approval. Compatible readers must accompany any later
 addon rollout; no installation or native qualification occurred in this unit.
+
+## Passive owned-auction cache (2026-11-10)
+
+Forever source can observe the loaded player-owned auction cache during a manual
+export with the auction panel already open. It reads two cache getters only;
+no query, refresh, bid, post, cancellation, automatic polling or UI loading is
+introduced. Exported rows contain numeric auction/item IDs, quantities and raw
+status only. Third-party names, links, bids and prices are excluded. The section
+is owner-local, excluded from public indexing and gives no inventory/wallet
+credit. Repeated agreement does not establish freshness, complete ownership or
+current transaction eligibility. This is conservative source support, not
+Blizzard approval or native qualification. Auction transaction routes remain
+disabled. See ADR-077-passive-owned-auctions.md.

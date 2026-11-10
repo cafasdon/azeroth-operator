@@ -16,6 +16,10 @@ local function json(value, encoded)
     if kind == "string" then return escape(value) end
     if kind == "number" then
         assert(value == value and value ~= math.huge and value ~= -math.huge, "Invalid number")
+        -- Lua 5.1 tostring rounds large integers and may emit an exponent.
+        if value%1==0 and math.abs(value)<=9007199254740991 then
+            return string.format('%.0f', value)
+        end
         return tostring(value)
     end
     if kind == "boolean" then return tostring(value) end
@@ -48,6 +52,7 @@ function AO.Capture(includeWallet)
         sectionNames[#sectionNames+1]="player_trade_offer"
         sectionNames[#sectionNames+1]="player_pvp_progression"
         sectionNames[#sectionNames+1]="group_context"
+        sectionNames[#sectionNames+1]="owned_auctions"
         sectionNames[#sectionNames+1]="character_bank"
         sectionNames[#sectionNames+1]="account_bank"
         sectionNames[#sectionNames+1]="selected_recipe"

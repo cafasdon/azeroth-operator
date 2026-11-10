@@ -31,6 +31,7 @@ SECTIONS = SECTIONS | {"loot_window"}
 SECTIONS = SECTIONS | {"player_trade_offer"}
 SECTIONS = SECTIONS | {"player_pvp_progression"}
 SECTIONS = SECTIONS | {"group_context"}
+SECTIONS = SECTIONS | {"owned_auctions"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -854,6 +855,27 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "owned_auctions" in sections:
+        auctions=sections['owned_auctions']
+        if (c['family']!='forever' or not isinstance(auctions,dict)
+                or set(auctions)!={'coverage','entries'}
+                or auctions['coverage']!='loaded_player_owned_auction_cache'
+                or not isinstance(auctions['entries'],dict) or len(auctions['entries'])>256):
+            raise ValueError('Invalid owned auction observation')
+        entries=auctions['entries']
+        if set(entries)!={str(i) for i in range(1,len(entries)+1)}:
+            raise ValueError('Invalid owned auction slots')
+        seen=set()
+        for row in entries.values():
+            if not isinstance(row,dict) or set(row)!={'auction_id','item_id','quantity','reported_status'}:
+                raise ValueError('Invalid owned auction row')
+            for field,minimum,maximum in [('auction_id',1,9_007_199_254_740_991),
+                    ('item_id',1,4_294_967_295),('quantity',1,4_294_967_295),('reported_status',0,4_294_967_295)]:
+                if type(row[field]) is not int or not minimum<=row[field]<=maximum:
+                    raise ValueError('Invalid owned auction number')
+            if row['auction_id'] in seen:
+                raise ValueError('Duplicate owned auction')
+            seen.add(row['auction_id'])
     if "group_context" in sections:
         group=sections['group_context']
         if (c['family']!='forever' or not isinstance(group,dict) or set(group)!={'coverage','categories'}

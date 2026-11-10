@@ -1,5 +1,8 @@
 # Changelog
 
+- Capture the player's loaded auction cache passively, with numeric-only rows and strict owner-local inspection.
+- Preserve JSON-safe integer precision in manual Lua exports.
+
 - Order saved skill plans by distance to the captured cap or an explicit target before paging.
 
 - Plan base skill-rank targets from saved profession and weapon-skill observations.

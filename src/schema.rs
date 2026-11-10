@@ -149,6 +149,7 @@ fn object(value: &Value, fields: &[(&str, &str, bool)]) -> Result<()> {
         let valid = match *kind {
             "text" => v.as_str().is_some_and(|s| s.len() <= 16384),
             "uint" => v.as_u64().is_some_and(|n| n <= u32::MAX as u64),
+            "safe_uint" => v.as_u64().is_some_and(|n| n <= 9_007_199_254_740_991),
             "unit_interval" => v
                 .as_f64()
                 .is_some_and(|n| n.is_finite() && (0.0..=1.0).contains(&n)),
@@ -2035,6 +2036,25 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         );
                     }
                 }
+            }
+        }
+        "owned_auctions" => {
+            object(value, &[("coverage", "text", true), ("entries", "map", true)])?;
+            ensure!(value["coverage"] == "loaded_player_owned_auction_cache", "Invalid auction coverage");
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(entries.len() <= 256, "Too many owned auctions");
+            let mut seen = std::collections::BTreeSet::new();
+            for (slot, row) in entries {
+                index(slot, 1, entries.len() as u32)?;
+                object(row, &[("auction_id", "safe_uint", true), ("item_id", "uint", true),
+                    ("quantity", "uint", true), ("reported_status", "uint", true)])?;
+                for (field, minimum, maximum) in [("auction_id", 1, 9_007_199_254_740_991u64),
+                    ("item_id", 1, u64::from(u32::MAX)), ("quantity", 1, u64::from(u32::MAX)),
+                    ("reported_status", 0, u64::from(u32::MAX))] {
+                    ensure!(row[field].as_u64().is_some_and(|n| n >= minimum && n <= maximum),
+                        "Invalid owned auction number");
+                }
+                ensure!(seen.insert(row["auction_id"].as_u64().unwrap()), "Duplicate owned auction");
             }
         }
         "group_context" => {

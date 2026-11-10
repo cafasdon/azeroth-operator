@@ -847,3 +847,14 @@ or supplied target before paging. Numeric IDs resolve equal distances. Targets
 are required for target-distance order; reached targets have zero distance.
 This supports closest-goal inspection without implying cheapest training or
 craft feasibility. Offline source only; native testing remains deferred.
+
+## Passive owned-auction cache (2026-11-10)
+
+The manual Forever exporter and both snapshot readers now support a bounded,
+numeric-only owned_auctions section for the already-loaded cache in an open
+AuctionHouseFrame. Existing inspection and section-status discovery apply.
+Hidden/restricted/changing/invalid cache observations stay unavailable. No
+query, refresh, transaction, third-party identity, inventory credit or wallet
+credit is introduced. Current ownership, cache freshness/completeness and
+native availability remain unverified. See ADR-077-passive-owned-auctions.md.
+Update readers before exporter installation; live testing remains deferred.
