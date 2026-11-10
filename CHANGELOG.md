@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved recipe captures within a reported profession skill-modifier range.
+
 - Compare reported profession skill modifiers independently of base ranks.
 
 - Retain the visible profession recipe view's separate reported skill modifier.

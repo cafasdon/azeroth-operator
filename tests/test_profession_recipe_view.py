@@ -125,6 +125,19 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     changed_view['entries'].pop('8')
                     changed_view['entries']['10']={'learned':False}
                     changed_key=store.ingest(changed)
+                    for bounds, expected in (
+                        ({'minimum_skill_modifier':-5,'maximum_skill_modifier':-5}, {key}),
+                        ({'minimum_skill_modifier':0,'maximum_skill_modifier':0}, {changed_key}),
+                        ({'minimum_skill_modifier':-5,'maximum_rank_points_to_cap':50}, {key}),
+                        ({'maximum_skill_modifier':-6}, set()),
+                    ):
+                        rows=(await search(profession_recipe={'recipe_id':7,**bounds}))['snapshots']
+                        self.assertEqual({row['snapshot_id'] for row in rows},expected)
+                    for bounds in ({'minimum_skill_modifier':1,'maximum_skill_modifier':0},
+                                   {'maximum_skill_modifier':2**31}, {'minimum_skill_modifier':True}):
+                        response=await session.call_tool('list_snapshots',{
+                            'family':'forever','profession_recipe':{'recipe_id':7,**bounds}})
+                        self.assertTrue(response.isError)
                     async def compare(left,right,**arguments):
                         response=await session.call_tool('compare_snapshots',{'before_id':left,'after_id':right,**arguments})
                         self.assertFalse(response.isError)

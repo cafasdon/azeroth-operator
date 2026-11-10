@@ -7,6 +7,10 @@ omit the observation. Update strict readers before rolling out the addon.
 An optional `skill_modifier` records the separate signed value when it
 is readable and stable alongside the base pair. Rank and cap calculations
 continue to use the base values.
+Use `profession_recipe.minimum_skill_modifier` and
+`maximum_skill_modifier` on `list_snapshots` for inclusive signed bounds.
+The filter requires a recorded modifier from that recipe view. Missing
+modifiers are excluded, including when the bound is zero.
 Use `list_snapshots.profession_recipe.maximum_rank_points_to_cap` for an
 inclusive distance from the same recipe view's recorded cap. Results show
 the recorded pair and the remaining points. Recipe search shows the pair

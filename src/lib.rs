@@ -507,6 +507,10 @@ pub struct ProfessionRecipeFilter {
     pub relative_difficulty: Option<analysis::RecipeRelativeDifficulty>,
     /// Inclusive maximum rank points remaining to the recipe view's recorded cap.
     pub maximum_rank_points_to_cap: Option<u32>,
+    /// Inclusive lower bound on the separate recorded skill modifier.
+    pub minimum_skill_modifier: Option<i32>,
+    /// Inclusive upper bound on the separate recorded skill modifier.
+    pub maximum_skill_modifier: Option<i32>,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
@@ -2563,6 +2567,13 @@ impl Store {
                 .is_none_or(|(minimum, maximum)| minimum <= maximum)),
             "Recipe skill-up bounds must be ordered"
         );
+        ensure!(
+            profession_recipe.as_ref().is_none_or(|filter| filter
+                .minimum_skill_modifier
+                .zip(filter.maximum_skill_modifier)
+                .is_none_or(|(minimum, maximum)| minimum <= maximum)),
+            "Recipe skill modifier bounds must be ordered"
+        );
         let profession_recipe_key = profession_recipe
             .as_ref()
             .map(|filter| filter.recipe_id.to_string());
@@ -3676,6 +3687,7 @@ impl Store {
                         let view = s.sections.get("profession_recipe_view")?;
                         let row = view["entries"].get(key)?;
                         let rank = view.get("rank_observation");
+                        let modifier = rank.and_then(|rank| rank["skill_modifier"].as_i64());
                         let remaining = rank.and_then(|rank| {
                             rank["max_rank"].as_u64()?.checked_sub(rank["rank"].as_u64()?)
                         });
@@ -3685,7 +3697,9 @@ impl Store {
                             && filter.minimum_skill_ups_reported.is_none_or(|minimum|row["skill_ups_reported"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
                             && filter.maximum_skill_ups_reported.is_none_or(|maximum|row["skill_ups_reported"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
                             && filter.relative_difficulty.is_none_or(|difficulty|row["relative_difficulty"].as_str()==Some(difficulty.as_str()))
-                            && filter.maximum_rank_points_to_cap.is_none_or(|maximum|remaining.is_some_and(|points|points<=u64::from(maximum))))
+                            && filter.maximum_rank_points_to_cap.is_none_or(|maximum|remaining.is_some_and(|points|points<=u64::from(maximum)))
+                            && filter.minimum_skill_modifier.is_none_or(|minimum|modifier.is_some_and(|value|value>=i64::from(minimum)))
+                            && filter.maximum_skill_modifier.is_none_or(|maximum|modifier.is_some_and(|value|value<=i64::from(maximum))))
                             .then(|| {
                                 let mut observation=json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
                                     "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]});
