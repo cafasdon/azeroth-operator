@@ -1,5 +1,12 @@
 # Forever coverage audit — 8 November 2026
 
+10 November quest reference update: optional local-provider starter/finisher
+references now cover the first 64 saved quests through strict export/readers,
+saved inspection/discovery and summary. Both readers bind references to the
+same source quest IDs/count/prefix. No provider database is bundled or synced;
+IDs do not establish native identity or current availability. See
+[offline verification](quest-giver-references-verification-2026-11-10.md).
+
 Saved instance progress follow-up (10 November). The Forever RaidFrame uses
 the same passive saved-instance API, but does not interpret its two progress
 positions in Lua. Native interpretation remains pending.

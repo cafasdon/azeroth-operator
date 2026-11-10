@@ -1,5 +1,25 @@
 # Forever interaction map
 
+## Saved quest-giver references (10 November 2026)
+
+With an independently installed compatible QuestieDB provider, manual export
+may capture `quest_giver_references` for the first 64 numeric saved quest IDs.
+Provider Forever flavour/contract and two matching reads are required. Retained
+starter NPC/object/item and finisher NPC/object groups contain at most 16
+distinct IDs each, with total counts and truncation. Nil/unreadable fields stay
+omitted; not-in-provider and unreadable records remain distinct. No provider
+code or database is bundled or automatically synced.
+
+Use `inspect_snapshot` with this section, `list_snapshots.required_sections`
+to find captures, and `character_summary.quest_giver_reference_observation`
+for status counts. Latest-per-character selection still precedes filtering.
+Missing summaries are null; observed empty captures retain zero. IDs remain
+in the provider namespace; native identity, availability, eligibility and full
+world coverage are unverified. No quest load, selection, acceptance, turn-in,
+reward or movement is invoked. Data remains owner-local, outside public search.
+Readers must be updated before exporter installation. Deployment and native
+testing remain deferred. See ADR080 and the dated verification evidence.
+
 `character_summary.capture_coverage` lists all known snapshot sections
 with observed, reported-unavailable or not-recorded status and counts.
 Observed sections retain their declared coverage scope when present.

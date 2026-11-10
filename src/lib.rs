@@ -15,6 +15,7 @@ pub mod macro_operation;
 pub mod owned_auction_filter;
 pub mod planning;
 pub mod player_life_state;
+pub mod quest_references;
 pub mod saved_resets;
 mod schema;
 pub mod skill_line_filter;
@@ -112,6 +113,7 @@ pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "stats",
     "professions",
     "quests",
+    "quest_giver_references",
     "currencies",
     "achievements",
     "macros",
@@ -123,6 +125,7 @@ pub const SNAPSHOT_SECTIONS: &[&str] = &[
 ];
 
 pub const FOREVER_ONLY_OBSERVATIONS: &[&str] = &[
+    "quest_giver_references",
     "selected_recipe",
     "tracked_recipes",
     "reputation",
@@ -325,6 +328,9 @@ impl Snapshot {
         }
         if let Some(cooldowns) = self.sections.get("bag_item_cooldowns") {
             schema::bag_item_cooldowns(cooldowns, self.sections.get("bags"))?;
+        }
+        if let Some(references) = self.sections.get("quest_giver_references") {
+            quest_references::validate_source(references, self.sections.get("quests"))?;
         }
         if self.sections.contains_key("character_bank")
             || self.sections.contains_key("account_bank")

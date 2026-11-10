@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture and review bounded quest starter/finisher references from an optional local provider without quest actions.
+
 - Add exact public knowledge record lookup and paged reference traversal without similarity fallback.
 
 - Find consumable alternatives by exact shared catalogue effect record ID, with normal filters and paging.

@@ -3874,6 +3874,108 @@ AO.collectors.reputation = function()
     return {coverage="visible_faction_rows_only",entries=rows}
 end
 
+-- Optional separately installed provider. References are not native quest availability.
+AO.collectors.quest_giver_references = function(quests)
+    assert(AO.family=="forever" and type(quests)=="table", "Saved quests unavailable")
+    local provider=LibQuestieDB
+    assert(type(provider)=="table" and type(provider.Quest)=="table"
+        and type(provider.Quest.Get)=="function" and type(provider.Quest.Exists)=="function"
+        and type(provider.RequireContract)=="function" and type(provider.ModeIndicator)=="table"
+        and type(provider.ModeIndicator.GetStatus)=="function", "Quest reference provider unavailable")
+    local api=provider.Quest
+    local get,exists,requireContract,status=api.Get,api.Exists,provider.RequireContract,provider.ModeIndicator.GetStatus
+    local guard=issecretvalue
+    assert(guard==nil or type(guard)=="function", "Invalid secret guard")
+    local function public(value)
+        assert(not guard or not guard(value), "Restricted quest reference")
+        return value
+    end
+    local function uint(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid quest reference number")
+        return value
+    end
+    local function context()
+        assert(AO.family=="forever" and LibQuestieDB==provider and provider.Quest==api
+            and api.Get==get and api.Exists==exists and provider.RequireContract==requireContract
+            and provider.ModeIndicator.GetStatus==status and issecretvalue==guard, "Quest reference context changed")
+        assert(public(requireContract(1))==true, "Quest reference contract unavailable")
+        local info=public(status())
+        assert(type(info)=="table" and public(info.expansion)=="Forever", "Quest reference flavour unavailable")
+        local mode=public(info.mode)
+        assert(mode=="source" or mode=="baked", "Quest reference mode unavailable")
+        return mode,uint(info.contractVersion,1,4294967295)
+    end
+    local mode,contract=context()
+    local ids={}
+    for key in pairs(quests) do
+        key=public(key)
+        assert(type(key)=="string", "Invalid saved quest key")
+        local id=uint(tonumber(key),1,4294967295)
+        assert(tostring(id)==key, "Noncanonical saved quest key")
+        ids[#ids+1]=id
+        assert(#ids<=4096, "Saved quest reference budget exceeded")
+    end
+    table.sort(ids)
+    local function idList(values)
+        values=public(values)
+        assert(type(values)=="table", "Invalid quest giver IDs")
+        local seen,positions,maximum={},0,0
+        for position,id in pairs(values) do
+            position=uint(position,1,4096);positions=positions+1
+            assert(positions<=4096, "Quest giver budget exceeded")
+            maximum=math.max(maximum,position)
+            id=uint(id,1,4294967295);seen[id]=true
+        end
+        assert(maximum==positions, "Sparse quest giver IDs")
+        local ordered={};for id in pairs(seen) do ordered[#ordered+1]=id end
+        table.sort(ordered)
+        local retained={}
+        for index=1,math.min(16,#ordered) do retained[tostring(ordered[index])]=true end
+        return {entries=retained,distinct_id_count=#ordered,truncated=#ordered>16}
+    end
+    local function givers(id,field,maximum)
+        local value=public(get(id,field))
+        if value==nil then return end
+        assert(type(value)=="table", "Invalid quest givers")
+        local names={"npcs","objects","items"}
+        local result={}
+        for position,values in pairs(value) do
+            position=uint(position,1,maximum)
+            result[names[position]]=idList(values)
+        end
+        return result
+    end
+    local function read(id)
+        local known=public(exists(id))
+        assert(type(known)=="boolean", "Invalid quest existence")
+        if not known then return {status="not_in_provider"} end
+        local row={status="reported"}
+        local ok,value=pcall(givers,id,"startedBy",3)
+        if ok then row.started_by=value end
+        ok,value=pcall(givers,id,"finishedBy",2)
+        if ok then row.finished_by=value end
+        return row
+    end
+    local function equal(a,b)
+        if type(a)~=type(b) then return false end
+        if type(a)~="table" then return a==b end
+        for key,value in pairs(a) do if not equal(value,b[key]) then return false end end
+        for key in pairs(b) do if a[key]==nil then return false end end
+        return true
+    end
+    local entries={}
+    for index=1,math.min(64,#ids) do
+        local id=ids[index]
+        local ok,first=pcall(read,id);local again,second=pcall(read,id)
+        entries[tostring(id)]=ok and again and equal(first,second) and first or {status="unavailable"}
+    end
+    local afterMode,afterContract=context()
+    assert(afterMode==mode and afterContract==contract, "Quest reference metadata changed")
+    return {coverage="first_saved_quest_ids",provider="questiedb",provider_mode=mode,
+        provider_contract_version=contract,reported_quest_count=#ids,entries=entries}
+end
+
 AO.collectors.gossip_options = function()
     assert(AO.family=="forever", "Gossip options unavailable")
     local api,frame=C_GossipInfo,GossipFrame

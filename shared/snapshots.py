@@ -35,6 +35,53 @@ SECTIONS = SECTIONS | {"owned_auctions"}
 SECTIONS = SECTIONS | {"battlefield_queue_slots"}
 SECTIONS = SECTIONS | {"player_life_state"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
+SECTIONS = SECTIONS | {"quest_giver_references"}
+
+
+def _validate_quest_giver_references(observation):
+    fields = {"coverage", "provider", "provider_mode", "provider_contract_version",
+              "reported_quest_count", "entries"}
+    if (not isinstance(observation, dict) or set(observation) != fields
+            or observation["coverage"] != "first_saved_quest_ids"
+            or observation["provider"] != "questiedb"
+            or observation["provider_mode"] not in ("source", "baked")
+            or type(observation["provider_contract_version"]) is not int
+            or not 1 <= observation["provider_contract_version"] <= 4_294_967_295
+            or type(observation["reported_quest_count"]) is not int
+            or not 0 <= observation["reported_quest_count"] <= 4096
+            or not isinstance(observation["entries"], dict)
+            or len(observation["entries"]) != min(observation["reported_quest_count"], 64)):
+        raise ValueError("Invalid quest giver reference coverage")
+    for quest_id, row in observation["entries"].items():
+        if (not _inventory_index(quest_id, 1, 4_294_967_295)
+                or not isinstance(row, dict)):
+            raise ValueError("Invalid quest giver reference row")
+        status = row.get("status")
+        if status in ("unavailable", "not_in_provider"):
+            if set(row) != {"status"}:
+                raise ValueError("Invalid quest giver reference status fields")
+            continue
+        if status != "reported" or set(row) - {"status", "started_by", "finished_by"}:
+            raise ValueError("Invalid quest giver reference status")
+        for relation in ("started_by", "finished_by"):
+            if relation not in row:
+                continue
+            groups = row[relation]
+            allowed = {"npcs", "objects", "items"} if relation == "started_by" else {"npcs", "objects"}
+            if not isinstance(groups, dict) or set(groups) - allowed:
+                raise ValueError("Invalid quest giver reference relation")
+            for group in groups.values():
+                if (not isinstance(group, dict)
+                        or set(group) != {"entries", "distinct_id_count", "truncated"}
+                        or type(group["distinct_id_count"]) is not int
+                        or not 0 <= group["distinct_id_count"] <= 4096
+                        or type(group["truncated"]) is not bool
+                        or group["truncated"] != (group["distinct_id_count"] > 16)
+                        or not isinstance(group["entries"], dict)
+                        or len(group["entries"]) != min(group["distinct_id_count"], 16)
+                        or any(not _inventory_index(key, 1, 4_294_967_295) or present is not True
+                               for key, present in group["entries"].items())):
+                    raise ValueError("Invalid quest giver reference ID group")
 
 
 def _validate_action_bar_observation(observation):
@@ -237,6 +284,17 @@ def validate_snapshot(value):
         raise ValueError("Unsupported snapshot section")
     unavailable = value.get("unavailable", {})
     _validate_talent_definition_observation(sections.get('talents'),c['family'])
+    if 'quest_giver_references' in sections:
+        if c['family'] != 'forever': raise ValueError('Quest giver references require Forever')
+        _validate_quest_giver_references(sections['quest_giver_references'])
+        quests = sections.get('quests')
+        references = sections['quest_giver_references']
+        if (not isinstance(quests, dict) or len(quests) > 4096
+                or any(not _inventory_index(key, 1, 4_294_967_295) for key in quests)
+                or references['reported_quest_count'] != len(quests)):
+            raise ValueError('Invalid quest giver reference source quests')
+        if set(references['entries']) != set(sorted(quests, key=int)[:64]):
+            raise ValueError('Quest giver references must match first saved quest IDs')
     if 'bag_item_cooldowns' in sections:
         if c['family'] != 'forever': raise ValueError('Bag cooldowns require Forever')
         _validate_bag_item_cooldowns(sections['bag_item_cooldowns'],sections.get('bags'))

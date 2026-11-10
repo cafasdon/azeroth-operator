@@ -12057,6 +12057,8 @@ pub fn summary(s: &Snapshot) -> Value {
     }).unwrap_or(Value::Null);
     summary["player_life_state_observation"] = s.sections.get("player_life_state")
         .map(crate::player_life_state::observation).unwrap_or(Value::Null);
+    summary["quest_giver_reference_observation"] = s.sections.get("quest_giver_references")
+        .map(crate::quest_references::observation).unwrap_or(Value::Null);
     summary["battlefield_queue_observation"] = s.sections.get("battlefield_queue_slots").map(|section| {
         let mut slots = BTreeMap::from([("none",Vec::<u32>::new()),("queued",Vec::new()),
             ("confirm",Vec::new()),("active",Vec::new()),("locked",Vec::new())]);

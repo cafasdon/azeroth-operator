@@ -530,6 +530,7 @@ fn talent_definition_observation(value: &Value) -> Result<()> {
 
 pub fn validate(name: &str, value: &Value) -> Result<()> {
     match name {
+        "quest_giver_references" => crate::quest_references::validate(value)?,
         "bag_item_cooldowns" => {} // Validated with its source bags by Snapshot::validate.
         "recipe_item_sources" => {
             object(
