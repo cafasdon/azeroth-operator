@@ -184,8 +184,7 @@ class World:
         if include_item_sources:
             if kind == 'item':
                 result['item_sources'] = None if row is None else self.item_sources(row['fields'], item_source_offset)
-            else:
-                result['sourced_items'] = None if row is None else self.sourced_items(kind, entity_id, item_source_offset)
+            result['sourced_items'] = None if row is None else self.sourced_items(kind, entity_id, item_source_offset)
         encoded(result)
         return result
 
@@ -194,6 +193,7 @@ class World:
             'npc': ('npcDrops', 'vendors'),
             'object': ('objectDrops',),
             'quest': ('questRewards',),
+            'item': ('itemDrops',),
         }[kind]
         matches = {field: [] for field in fields}
         for key, (row, _, _) in self.records.items():

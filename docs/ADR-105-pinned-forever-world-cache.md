@@ -97,3 +97,6 @@ offset applies across groups, with up to 32 items per group.
 
 For quests, the same option lists items whose cached `questRewards` field
 references the quest. The page uses the same item ID order and offset.
+
+For items, `sourced_items.itemDrops` lists cached items that name the selected
+item as their container. The same offset also pages forward acquisition sources.

@@ -1,5 +1,7 @@
 # Changelog
 
+- List cached container contents alongside item acquisition sources.
+
 - List cached item rewards from quest lookup.
 
 - List cached items associated with NPC drops, vendors and object drops.
