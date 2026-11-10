@@ -70,6 +70,16 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     path={'1':10,'2':30,'3':20}
                     data=await call('inspect_snapshot',snapshot_id=key,section='flight_map',flight_node_id=20)
                     self.assertEqual(data['data']['entries']['2']['observed_route_node_ids'],path)
+                    for reserve, affordable, gap, spendable in [(0,True,0,100),(100,True,0,0),(101,False,1,None)]:
+                        result = await call('inspect_snapshot', snapshot_id=key, section='flight_map',
+                            flight_wallet_projection=True, flight_wallet_reserve_copper=reserve)
+                        projection = result['flight_wallet_projection']
+                        self.assertEqual(projection['2'], {
+                            'affordable':affordable, 'shortfall_copper':gap,
+                            'remaining_wallet_after_fare_copper':100,
+                            'spendable_after_fare_and_reserve_copper':spendable,
+                        })
+                        self.assertTrue(all(value is None for value in projection['1'].values()))
                     search=await call('inspect_snapshot',snapshot_id=key,section='flight_map',flight_route_search={'destination_node_id':20})
                     plan=search['flight_route_search']
                     for limit,status in [(99,'no_route_within_fare_ceiling'),(100,'found')]:

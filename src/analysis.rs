@@ -9780,11 +9780,13 @@ pub fn flight_wallet_projection(map: &Value, balance: Option<u64>, reserve: u64)
     };
     Value::Object(
         entries.iter().map(|(slot, node)| {
-            let cost_and_balance = node["fare_copper"].as_u64()
-                .and_then(|fare| fare.checked_add(reserve)).zip(balance);
+            let fare = node["fare_copper"].as_u64();
+            let cost_and_balance = fare.and_then(|fare| fare.checked_add(reserve)).zip(balance);
             (slot.clone(), json!({
                 "affordable":cost_and_balance.map(|(cost, balance)| cost <= balance),
                 "shortfall_copper":cost_and_balance.map(|(cost, balance)| cost.saturating_sub(balance)),
+                "remaining_wallet_after_fare_copper":fare.zip(balance).and_then(|(fare, balance)| balance.checked_sub(fare)),
+                "spendable_after_fare_and_reserve_copper":cost_and_balance.and_then(|(cost, balance)| balance.checked_sub(cost)),
             }))
         }).collect()
     )

@@ -1,5 +1,10 @@
 # Forever interaction map
 
+In a saved flight map, `flight_wallet_projection` shows the wallet balance
+after each recorded fare and the spendable balance after also setting aside
+`flight_wallet_reserve_copper`. Each calculation is independent. Missing
+values or an insufficient balance leave the corresponding remainder unknown.
+
 In `inspect_snapshot`, select a saved profession with `section: "professions"`
 and `profession_skill_line`, then set `profession_target_rank` to check points
 remaining and whether the target exceeds the captured cap. A zero or
