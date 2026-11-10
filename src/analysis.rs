@@ -4378,10 +4378,8 @@ pub fn compare_observations(
             before.client.family == crate::Family::Forever,
             "Gossip quest comparison requires Forever"
         );
-        comparison["gossip_quest_changes"] = crate::gossip_option_filter::compare_quest_lists(
-            before.sections.get("gossip_quests"),
-            after.sections.get("gossip_quests"),
-        );
+        comparison["gossip_quest_changes"] =
+            crate::gossip_option_filter::compare_quest_lists(before, after);
     }
     if selectors.loot_window_changes {
         ensure!(

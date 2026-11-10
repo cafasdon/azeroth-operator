@@ -221,10 +221,16 @@ pub(crate) fn compare_options(before: Option<&Value>, after: Option<&Value>) -> 
     })
 }
 
-pub(crate) fn compare_quest_lists(before: Option<&Value>, after: Option<&Value>) -> Value {
+pub(crate) fn compare_quest_lists(before: &Snapshot, after: &Snapshot) -> Value {
+    let before_panel = before.sections.get("gossip_quests");
+    let after_panel = after.sections.get("gossip_quests");
+    let logs = before
+        .sections
+        .get("quests")
+        .zip(after.sections.get("quests"));
     let compare_list = |kind: &str| {
-        let old = before?[kind].as_object()?;
-        let new = after?[kind].as_object()?;
+        let old = before_panel?[kind].as_object()?;
+        let new = after_panel?[kind].as_object()?;
         let ids: BTreeSet<u32> = old
             .keys()
             .chain(new.keys())
@@ -233,10 +239,24 @@ pub(crate) fn compare_quest_lists(before: Option<&Value>, after: Option<&Value>)
         let mut only_before = Vec::new();
         let mut only_after = Vec::new();
         let mut changes = Vec::new();
+        let mut readiness_changes = Vec::new();
         for id in ids {
             let key = id.to_string();
             match (old.get(&key), new.get(&key)) {
                 (Some(first), Some(second)) => {
+                    if let Some((first_log, second_log)) = logs {
+                        if let Some((first_quest, second_quest)) =
+                            first_log.get(&key).zip(second_log.get(&key))
+                        {
+                            let previous = crate::analysis::quest_readiness(first_quest);
+                            let current = crate::analysis::quest_readiness(second_quest);
+                            if previous != current {
+                                readiness_changes.push(json!({
+                                    "quest_id":id,"before":previous,"after":current
+                                }));
+                            }
+                        }
+                    }
                     let fields: serde_json::Map<_, _> =
                         ["repeatable", "is_complete", "is_trivial", "is_ignored"]
                             .into_iter()
@@ -257,10 +277,12 @@ pub(crate) fn compare_quest_lists(before: Option<&Value>, after: Option<&Value>)
                 _ => {}
             }
         }
-        Some(
-            json!({"observed_only_before":only_before,"observed_only_after":only_after,
-            "flag_changes":changes}),
-        )
+        let mut report = json!({"observed_only_before":only_before,"observed_only_after":only_after,
+            "flag_changes":changes});
+        if logs.is_some() {
+            report["quest_log_readiness_changes"] = json!(readiness_changes);
+        }
+        Some(report)
     };
     json!({"available":compare_list("available"),"active":compare_list("active"),
         "same_npc_verified":false,"acceptance_eligibility_verified":false,

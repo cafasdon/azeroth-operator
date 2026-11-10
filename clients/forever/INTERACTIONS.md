@@ -24,6 +24,9 @@ available and active quest lists separately by quest ID. Each list shows
 IDs seen on only one side and changes to flags explicitly observed on both
 sides. A missing list leaves that comparison unknown. The comparison does
 not establish NPC identity, quest acceptance or turn-in eligibility.
+When both quest logs are available, each compared list includes
+`quest_log_readiness_changes` for IDs seen in that list and the log on both
+captures. These transitions are separate from the panel's reported flags.
 
 Saved dialogue search accepts `gossip_option.minimum_reported_order_index`
 and `maximum_reported_order_index` as inclusive signed bounds. They match

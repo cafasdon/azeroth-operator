@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved quest log readiness for quests seen in both dialogue panels.
+
 - Summarise same-capture quest log matches for saved dialogue panels.
 
 - Show same-capture dialogue evidence when inspecting a saved Forever quest.

@@ -31,6 +31,11 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                 sample = deepcopy(base)
                 if value is not None:
                     sample['sections']['gossip_quests'] = value
+                if value is section:
+                    sample['sections']['quests'] = {
+                        '20': {'title': 'Earlier quest', 'level': 10, 'ready_for_turn_in': False},
+                        '21': {'title': 'Panel exit', 'level': 10, 'ready_for_turn_in': False},
+                    }
                 valid.append((store.ingest(sample), value))
             invalid = [None, {}, {'coverage': section['coverage']}, {**section, 'coverage': 'all_quests'},
                        {**section, 'available': None}, {**section, 'available': []},
@@ -78,6 +83,7 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         '20': {'title':'Fixture quest','level':10,'ready_for_turn_in':True},
                         '22': {'title':'Unknown quest','level':10},
                         '10': {'title':'Failed quest','level':10,'ready_for_turn_in':True,'failed':True},
+                        '21': {'title':'Panel exit','level':10,'ready_for_turn_in':True},
                     }
                     followup_key = store.ingest(followup)
                     reply = await session.call_tool('character_summary', {'snapshot_id': followup_key})
@@ -103,16 +109,19 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                     changes = (await compare(followup_key))['gossip_quest_changes']
                     self.assertEqual(changes['available'], {
                         'observed_only_before': [10], 'observed_only_after': [3], 'flag_changes': [],
+                        'quest_log_readiness_changes': [],
                     })
                     self.assertEqual(changes['active'], {
                         'observed_only_before': [21], 'observed_only_after': [10],
                         'flag_changes': [{'quest_id': 20, 'fields': {'is_complete': {'before': True, 'after': False}}}],
+                        'quest_log_readiness_changes': [{'quest_id': 20, 'before': 'not_ready', 'after': 'ready'}],
                     })
                     self.assertFalse(changes['same_npc_verified'])
                     self.assertFalse(changes['acceptance_eligibility_verified'])
                     self.assertFalse(changes['turn_in_eligibility_verified'])
                     partial = (await compare(valid[2][0]))['gossip_quest_changes']
                     self.assertEqual(partial['available']['observed_only_before'], [2, 10])
+                    self.assertNotIn('quest_log_readiness_changes', partial['available'])
                     self.assertIsNone(partial['active'])
                     self.assertNotIn('gossip_quest_changes', await compare(followup_key, False))
                     for snapshot_id, quest_id, in_log, available, active in (
@@ -148,7 +157,7 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         ({'quest_id':20,'list':'active','is_complete':False},[followup_key]),
                         ({'quest_id':22,'list':'active','is_complete':False},[]),
                         ({'quest_id':20,'list':'active','is_complete':False,'quest_log_readiness':'ready'},[followup_key]),
-                        ({'quest_id':20,'list':'active','quest_log_readiness':'not_ready'},[]),
+                        ({'quest_id':20,'list':'active','quest_log_readiness':'not_ready'},[valid[1][0]]),
                         ({'quest_id':22,'list':'active','quest_log_readiness':'unknown'},[followup_key]),
                         ({'quest_id':10,'list':'active','quest_log_readiness':'failed'},[followup_key]),
                         ({'quest_id':2,'list':'available','quest_log_readiness':'unknown'},[]),
@@ -190,7 +199,8 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                             ids = sorted(map(int, rows))
                             complete = [i for i in ids if rows[str(i)].get('is_complete') is True]
                             self.assertEqual(summary[kind]['observed_quest_count'], len(ids))
-                            self.assertNotIn('quest_log_matches', summary[kind])
+                            if value is not section:
+                                self.assertNotIn('quest_log_matches', summary[kind])
                             self.assertEqual(summary[kind]['quest_ids'], ids[:50])
                             self.assertEqual(summary[kind]['quest_ids_truncated'], len(ids) > 50)
                             self.assertEqual(summary[kind]['reported_complete_quest_ids'], complete[:50])
