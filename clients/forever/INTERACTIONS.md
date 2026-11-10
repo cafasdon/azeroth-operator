@@ -3224,6 +3224,12 @@ resource and usability conditions apply to the same slot. Results contain
 the matched slot IDs and recorded metadata. They describe the saved visible
 spellbook and do not establish current casting eligibility.
 
+`inspect_snapshot.action_bar_spell_name` finds spell shortcuts in the
+saved `action_bar_observation` section by exact name. It uses reported spell
+IDs from the same capture's spellbook. All rows for a reported ID must
+agree with the name. Base-ID aliases alone do not qualify. Combine it
+with a slot, spell ID or hotkey to narrow the results.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

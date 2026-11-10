@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever action-bar spell slots by exact spellbook name.
+
 - Find saved Forever spellbook captures by exact spell name.
 
 - Find saved Forever toy journal captures by public toy name.

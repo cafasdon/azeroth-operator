@@ -68,6 +68,9 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(ValueError): validate_snapshot(saved)
                 raw = json.dumps(saved,sort_keys=True,separators=(',',':')).encode()
                 key = hashlib.sha256(raw).hexdigest(); (Path(folder)/f'{key}.json').write_bytes(raw); bad.append(key)
+            conflicting=deepcopy(base)
+            conflicting['sections']['spellbook']['entries']['10']['name']='Other label'
+            conflicting_key=store.ingest(conflicting)
             before = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}; env.pop('AZEROTH_FOREVER_CATALOGUE',None)
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -78,7 +81,27 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         self.assertNotIn('PRIVATE',str(reply))
                         return None if error else json.loads(reply.content[0].text)
+                    conflict=await call('inspect_snapshot',snapshot_id=conflicting_key,
+                        section='action_bar_observation',action_bar_spell_name='private_spell')
+                    self.assertEqual(list(conflict['data']['slots']),['3','5'])
+                    narrowed=await call('inspect_snapshot',snapshot_id=conflicting_key,
+                        section='action_bar_observation',action_bar_spell_name='private_spell',
+                        action_bar_spell_id=201,action_bar_slot=3)
+                    self.assertEqual(list(narrowed['data']['slots']),['3'])
+                    for invalid in [
+                        {'action_bar_item_id':101}, {'section':'spellbook'}, {'action_bar_spell_name':' '},
+                    ]:
+                        await call('inspect_snapshot',error=True,**{
+                            'snapshot_id':conflicting_key,'section':'action_bar_observation',
+                            'action_bar_spell_name':'private_spell',**invalid})
                     for key,mode,book in good:
+                        named=await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',
+                            action_bar_spell_name='  private_spell  ')
+                        expected_slots=[] if mode in ('empty','missing','maximum') else ['2','3','5']
+                        self.assertEqual(list(named['data']['slots']),expected_slots)
+                        self.assertEqual(named['action_bar_spell_name_match_count'],
+                            None if book is None else len(expected_slots))
+                        self.assertIs(named['action_bar_spell_name_spellbook_observed'],book is not None)
                         summary = (await call('character_summary',snapshot_id=key))['spellbook_resource_observations']
                         review = (await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',action_bar_spellbook=True))['action_bar_spellbook']
                         usability = None if book is None else {}

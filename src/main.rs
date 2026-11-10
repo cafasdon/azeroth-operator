@@ -350,6 +350,8 @@ struct Inspect {
     action_bar_shared_hotkeys: bool,
     /// Find captured action bar slots with this exact observed spell action ID.
     action_bar_spell_id: Option<std::num::NonZeroU32>,
+    /// Find spell shortcuts by exact saved name through the same capture's reported spell IDs.
+    action_bar_spell_name: Option<String>,
     /// Find captured action bar slots with this exact observed item action ID.
     action_bar_item_id: Option<std::num::NonZeroU32>,
     /// Show equipment and bag quantities for the matched item shortcut in the same capture.
@@ -2829,7 +2831,16 @@ impl Operator {
                 "Action bar hotkey requires 1 to 128 UTF-8 bytes",
             )]);
         }
-        if args.action_bar_spell_id.is_some() && args.action_bar_item_id.is_some() {
+        let action_spell_name = args.action_bar_spell_name.as_deref().map(str::trim);
+        if action_spell_name.is_some_and(|name| name.is_empty() || name.len() > 256) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar spell name requires 1 to 256 UTF-8 bytes",
+            )]);
+        }
+        let action_spell_name = action_spell_name.map(str::to_lowercase);
+        if (args.action_bar_spell_id.is_some() || action_spell_name.is_some())
+            && args.action_bar_item_id.is_some()
+        {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Choose either a spell ID or an item ID for an action bar search",
             )]);
@@ -2848,6 +2859,7 @@ impl Operator {
             || args.action_bar_shared_hotkeys
             || args.action_bar_slot.is_some()
             || action_id_filter.is_some()
+            || action_spell_name.is_some()
             || action_bar_hotkey.is_some();
         if review_action_bar && args.section.as_deref() != Some("action_bar_observation") {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -4975,15 +4987,50 @@ impl Operator {
                         rows.retain(|_, row| row["slot"].as_u64() == Some(u64::from(slot.get())));
                     }
                 }
-                if let Some((kind, id)) = action_id_filter {
+                let mut name_evidence_available = false;
+                let named_spell_ids = if let Some(name) = &action_spell_name {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read captured spellbook",
+                        )]);
+                    };
+                    let book = snapshot
+                        .sections
+                        .get("spellbook")
+                        .and_then(|book| book["entries"].as_object());
+                    name_evidence_available = book.is_some();
+                    let mut matches = std::collections::BTreeMap::new();
+                    for row in book.into_iter().flat_map(|rows| rows.values()) {
+                        if let Some(id) = row["spell_id"].as_u64() {
+                            let matches_name = row["name"]
+                                .as_str()
+                                .is_some_and(|label| label.trim().to_lowercase() == *name);
+                            matches
+                                .entry(id)
+                                .and_modify(|agrees| *agrees &= matches_name)
+                                .or_insert(matches_name);
+                        }
+                    }
+                    Some(matches)
+                } else {
+                    None
+                };
+                if action_id_filter.is_some() || named_spell_ids.is_some() {
                     let data = &mut value["data"];
                     let matched_slots = data
                         .get_mut("slots")
                         .and_then(serde_json::Value::as_object_mut)
                         .map(|slots| {
                             slots.retain(|_, row| {
-                                row["kind"] == kind
-                                    && row["id"].as_u64() == Some(u64::from(id.get()))
+                                action_id_filter.is_none_or(|(kind, id)| {
+                                    row["kind"] == kind
+                                        && row["id"].as_u64() == Some(u64::from(id.get()))
+                                }) && named_spell_ids.as_ref().is_none_or(|ids| {
+                                    row["kind"] == "spell"
+                                        && row["id"]
+                                            .as_u64()
+                                            .is_some_and(|id| ids.get(&id) == Some(&true))
+                                })
                             });
                             slots
                                 .keys()
@@ -5002,7 +5049,9 @@ impl Operator {
                             })
                         });
                     }
-                    value[format!("action_bar_{kind}_id")] = serde_json::json!(id);
+                    if let Some((kind, id)) = action_id_filter {
+                        value[format!("action_bar_{kind}_id")] = serde_json::json!(id);
+                    }
                 }
                 if let Some(key) = action_bar_hotkey {
                     let data = &mut value["data"];
@@ -5040,6 +5089,16 @@ impl Operator {
                     value[format!("action_bar_{kind}_match_count")] = serde_json::json!(
                         value["data"]["slots"].as_object().map(|slots| slots.len())
                     );
+                }
+                if named_spell_ids.is_some() {
+                    value["action_bar_spell_name_match_count"] = serde_json::json!(
+                        value["data"]["slots"]
+                            .as_object()
+                            .filter(|_| name_evidence_available)
+                            .map(|slots| slots.len())
+                    );
+                    value["action_bar_spell_name_spellbook_observed"] =
+                        serde_json::json!(name_evidence_available);
                 }
                 if args.action_bar_shared_hotkeys {
                     value["action_bar_shared_hotkeys"] = serde_json::json!(
@@ -5094,7 +5153,8 @@ impl Operator {
                             snapshot.sections.get("spellbook"),
                             args.action_bar_slot.is_none()
                                 && action_bar_hotkey.is_none()
-                                && action_id_filter.is_none(),
+                                && action_id_filter.is_none()
+                                && named_spell_ids.is_none(),
                         );
                 }
                 if filter_spellbook {
