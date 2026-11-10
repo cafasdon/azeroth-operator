@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare available and active quests across saved Forever dialogue panels.
+
 - Find saved dialogue options by their reported signed order index.
 
 - Find saved recipe captures within a reported profession skill-modifier range.

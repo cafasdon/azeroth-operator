@@ -960,6 +960,9 @@ struct Compare {
     /// Compare saved visible dialogue rows as a multiset, without assigning NPC identity.
     #[serde(default)]
     gossip_option_changes: bool,
+    /// Compare saved available and active quest lists without inferring NPC identity or eligibility.
+    #[serde(default)]
+    gossip_quest_changes: bool,
     /// Compare displayed loot quantities and slot counts across two historical Forever captures.
     #[serde(default)]
     loot_window_changes: bool,
@@ -2399,6 +2402,7 @@ impl Operator {
                     recipe_cooldown_changes: args.recipe_cooldown_changes,
                     loot_window_changes: args.loot_window_changes,
                     gossip_option_changes: args.gossip_option_changes,
+                    gossip_quest_changes: args.gossip_quest_changes,
                     profession_spell_changes: args.profession_spell_changes,
                     player_resource_changes: args.player_resource_changes,
                     player_aura_changes: args.player_aura_changes,

@@ -3520,6 +3520,7 @@ pub struct ComparisonSelectors<'a> {
     pub recipe_cooldown_changes: bool,
     pub loot_window_changes: bool,
     pub gossip_option_changes: bool,
+    pub gossip_quest_changes: bool,
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub mail_attachment_item_id: Option<std::num::NonZeroU32>,
@@ -4370,6 +4371,16 @@ pub fn compare_observations(
         comparison["gossip_option_changes"] = crate::gossip_option_filter::compare_options(
             before.sections.get("gossip_options"),
             after.sections.get("gossip_options"),
+        );
+    }
+    if selectors.gossip_quest_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Gossip quest comparison requires Forever"
+        );
+        comparison["gossip_quest_changes"] = crate::gossip_option_filter::compare_quest_lists(
+            before.sections.get("gossip_quests"),
+            after.sections.get("gossip_quests"),
         );
     }
     if selectors.loot_window_changes {

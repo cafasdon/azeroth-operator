@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `gossip_quest_changes` on `compare_snapshots` to compare the saved
+available and active quest lists separately by quest ID. Each list shows
+IDs seen on only one side and changes to flags explicitly observed on both
+sides. A missing list leaves that comparison unknown. The comparison does
+not establish NPC identity, quest acceptance or turn-in eligibility.
+
 Saved dialogue search accepts `gossip_option.minimum_reported_order_index`
 and `maximum_reported_order_index` as inclusive signed bounds. They match
 the reported index on the same option row as other predicates, while

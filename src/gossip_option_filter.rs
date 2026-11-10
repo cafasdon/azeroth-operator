@@ -4,7 +4,10 @@ use anyhow::{Result, ensure};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, num::NonZeroU32};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroU32,
+};
 
 #[derive(Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -156,6 +159,52 @@ pub(crate) fn compare_options(before: Option<&Value>, after: Option<&Value>) -> 
         "same_npc_verified":false,"same_dialogue_verified":false,
         "complete_dialogue_coverage_verified":false,"live":false,
     })
+}
+
+pub(crate) fn compare_quest_lists(before: Option<&Value>, after: Option<&Value>) -> Value {
+    let compare_list = |kind: &str| {
+        let old = before?[kind].as_object()?;
+        let new = after?[kind].as_object()?;
+        let ids: BTreeSet<u32> = old
+            .keys()
+            .chain(new.keys())
+            .map(|id| id.parse().unwrap())
+            .collect();
+        let mut only_before = Vec::new();
+        let mut only_after = Vec::new();
+        let mut changes = Vec::new();
+        for id in ids {
+            let key = id.to_string();
+            match (old.get(&key), new.get(&key)) {
+                (Some(first), Some(second)) => {
+                    let fields: serde_json::Map<_, _> =
+                        ["repeatable", "is_complete", "is_trivial", "is_ignored"]
+                            .into_iter()
+                            .filter_map(|field| {
+                                let before = first[field].as_bool()?;
+                                let after = second[field].as_bool()?;
+                                (before != after).then(|| {
+                                    (field.to_owned(), json!({"before":before,"after":after}))
+                                })
+                            })
+                            .collect();
+                    if !fields.is_empty() {
+                        changes.push(json!({"quest_id":id,"fields":fields}));
+                    }
+                }
+                (Some(_), None) => only_before.push(id),
+                (None, Some(_)) => only_after.push(id),
+                _ => {}
+            }
+        }
+        Some(
+            json!({"observed_only_before":only_before,"observed_only_after":only_after,
+            "flag_changes":changes}),
+        )
+    };
+    json!({"available":compare_list("available"),"active":compare_list("active"),
+        "same_npc_verified":false,"acceptance_eligibility_verified":false,
+        "turn_in_eligibility_verified":false,"live":false})
 }
 
 #[cfg(test)]

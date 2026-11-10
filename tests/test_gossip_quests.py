@@ -67,6 +67,35 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    followup = deepcopy(base)
+                    followup['captured_at'] = '2025-01-02T00:00:00Z'
+                    followup['sections']['gossip_quests'] = {
+                        'coverage': section['coverage'],
+                        'available': {'2': {'repeatable': True}, '3': {}},
+                        'active': {'10': {}, '20': {'is_complete': False}, '22': {'is_complete': True}},
+                    }
+                    followup_key = store.ingest(followup)
+                    async def compare(after, enabled=True):
+                        reply = await session.call_tool('compare_snapshots', {
+                            'before_id': valid[1][0], 'after_id': after, 'gossip_quest_changes': enabled,
+                        })
+                        self.assertFalse(reply.isError)
+                        return json.loads(reply.content[0].text)
+                    changes = (await compare(followup_key))['gossip_quest_changes']
+                    self.assertEqual(changes['available'], {
+                        'observed_only_before': [10], 'observed_only_after': [3], 'flag_changes': [],
+                    })
+                    self.assertEqual(changes['active'], {
+                        'observed_only_before': [21], 'observed_only_after': [10],
+                        'flag_changes': [{'quest_id': 20, 'fields': {'is_complete': {'before': True, 'after': False}}}],
+                    })
+                    self.assertFalse(changes['same_npc_verified'])
+                    self.assertFalse(changes['acceptance_eligibility_verified'])
+                    self.assertFalse(changes['turn_in_eligibility_verified'])
+                    partial = (await compare(valid[2][0]))['gossip_quest_changes']
+                    self.assertEqual(partial['available']['observed_only_before'], [2, 10])
+                    self.assertIsNone(partial['active'])
+                    self.assertNotIn('gossip_quest_changes', await compare(followup_key, False))
                     for key, value in valid:
                         response = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(response.isError)
