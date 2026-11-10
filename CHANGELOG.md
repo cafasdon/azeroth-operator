@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved professions within a rank-point budget or their recorded cap.
+
 - Page through unresolved gear locations in the standalone Forever inventory audit.
 
 - Audit saved Forever gear resolution directly through the local MCP without a simulation setup.

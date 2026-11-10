@@ -914,11 +914,33 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 })
                         for options in [
                             {"profession_max_rank": 20}, {"profession_target_rank": 80},
+                            {**profession_filter, "profession_target_max_remaining": 0},
+                            {**profession_filter, "profession_target_within_cap_only": True},
                             {**profession_filter, "profession_max_rank": 19},
                         ]:
                             self.assertTrue((await session.call_tool("list_snapshots", {
                                 "family": "forever", **options,
                             })).isError)
+                        for skill, target, remaining, within_cap, expected in [
+                            (164, 75, 55, True, forever_key),
+                            (164, 75, 54, True, None),
+                            (164, 76, 56, True, None),
+                            (164, 76, 56, False, forever_key),
+                            (164, 20, 0, True, forever_key),
+                            (166, 1, 1, True, None),
+                            (166, 1, 1, False, training_key),
+                        ]:
+                            result = await session.call_tool("list_snapshots", {
+                                "family": "forever", "profession_skill_line": skill,
+                                "profession_target_rank": target, "profession_target_max_remaining": remaining,
+                                "profession_target_within_cap_only": within_cap,
+                            })
+                            self.assertFalse(result.isError, result)
+                            ids = {row["snapshot_id"] for row in json.loads(result.content[0].text)["snapshots"]}
+                            if expected is None:
+                                self.assertFalse(ids)
+                            else:
+                                self.assertIn(expected, ids)
                         professions = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": training_key, "section": "professions"})
                         self.assertFalse(professions.isError)

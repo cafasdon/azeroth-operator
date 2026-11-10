@@ -554,6 +554,11 @@ struct List {
     profession_max_rank: Option<u32>,
     /// Report progress toward this rank for each matching saved profession.
     profession_target_rank: Option<std::num::NonZeroU32>,
+    /// Maximum rank points remaining to the saved profession target, inclusive.
+    profession_target_max_remaining: Option<u32>,
+    /// Require a known recorded cap at or above the saved profession target.
+    #[serde(default)]
+    profession_target_within_cap_only: bool,
     /// Filter Forever snapshots by the exact captured selected recipe ID.
     recipe_id: Option<std::num::NonZeroU32>,
     /// Match the selected recipe's recorded cooldown state, not overall craftability.
@@ -2602,6 +2607,8 @@ impl Operator {
                 profession_min_rank: args.profession_min_rank,
                 profession_max_rank: args.profession_max_rank,
                 profession_target_rank: args.profession_target_rank,
+                profession_target_max_remaining: args.profession_target_max_remaining,
+                profession_target_within_cap_only: args.profession_target_within_cap_only,
                 instance: azeroth_operator::InstanceCaptureFilters {
                     kind: args.instance_kind.as_deref(),
                     name: args.instance_name.as_deref(),

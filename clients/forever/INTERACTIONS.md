@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `profession_target_max_remaining` on `list_snapshots` with a
+`profession_skill_line` and `profession_target_rank` to find saved
+professions within an inclusive rank-point budget. Add
+`profession_target_within_cap_only` to require a known recorded cap
+at or above the target. These filters use saved ranks and caps.
+
 Use `action_bar_spell_resources` on `list_snapshots` with a positive
 `spell_id` and a `resources` predicate to find saved captures with a
 matching shortcut. The exact reported spell ID must appear in both

@@ -1949,6 +1949,8 @@ pub struct CaptureFilters<'a> {
     pub profession_min_rank: Option<u32>,
     pub profession_max_rank: Option<u32>,
     pub profession_target_rank: Option<std::num::NonZeroU32>,
+    pub profession_target_max_remaining: Option<u32>,
+    pub profession_target_within_cap_only: bool,
     pub instance: InstanceCaptureFilters<'a>,
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_map_name: Option<&'a str>,
@@ -2245,6 +2247,8 @@ impl Store {
             profession_min_rank,
             profession_max_rank,
             profession_target_rank,
+            profession_target_max_remaining,
+            profession_target_within_cap_only,
             instance,
             player_map_id,
             player_map_name,
@@ -2817,6 +2821,12 @@ impl Store {
                     .zip(profession_max_rank)
                     .is_none_or(|(min, max)| min <= max),
             "Profession filtering requires Forever, a skill line and ordered rank bounds"
+        );
+        ensure!(
+            profession_target_rank.is_some()
+                || (profession_target_max_remaining.is_none()
+                    && !profession_target_within_cap_only),
+            "Profession target filtering requires a target rank"
         );
         let filter_instance = instance.kind.is_some()
             || instance.name.is_some()
@@ -4038,6 +4048,24 @@ impl Store {
                     if profession_skill_line.is_some() && profession_match.is_none() {
                         continue;
                     }
+                    let profession_progress =
+                        profession_match
+                            .zip(profession_target_rank)
+                            .map(|(profession, target)| {
+                                analysis::profession_target_progress(Some(profession), target.get())
+                            });
+                    if !profession_target_max_remaining.is_none_or(|maximum| {
+                        profession_progress
+                            .as_ref()
+                            .and_then(|row| row["points_to_target"].as_u64())
+                            .is_some_and(|points| points <= u64::from(maximum))
+                    }) || (profession_target_within_cap_only
+                        && !profession_progress.as_ref().is_some_and(|row| {
+                            row["target_above_observed_cap"].as_bool() == Some(false)
+                        }))
+                    {
+                        continue;
+                    }
                     let merchant_matches = filter_merchant.then(|| {
                         let wallet = s
                             .sections
@@ -4526,12 +4554,8 @@ impl Store {
                             "skill_line":profession["skill_line"],"rank":profession["rank"],
                             "max_rank":profession["max_rank"],
                         });
-                        if let Some(target) = profession_target_rank {
-                            summary["profession_target_progress"] =
-                                analysis::profession_target_progress(
-                                    Some(profession),
-                                    target.get(),
-                                );
+                        if let Some(progress) = profession_progress {
+                            summary["profession_target_progress"] = progress;
                         }
                     }
                     if let Some(trainer) = trainer_match {
