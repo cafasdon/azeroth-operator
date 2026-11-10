@@ -18,7 +18,8 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
         base = fixture()
         base['client'] = {'family':'forever', 'variant':'live', 'interface':16001, 'build':'70862'}
         base['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,'client_version':'fixture',
-            'hearthstone_item_id':6948,'hearthstone_cooldown_seconds':30}
+            'hearthstone_item_id':6948,'hearthstone_cooldown_seconds':30,
+            'map_id':1411,'map_parent_id':1414}
         with tempfile.TemporaryDirectory() as folder:
             store = SnapshotStore(Path(folder))
             start = store.ingest(base)
@@ -26,10 +27,18 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
-                    for seconds, expected in [(20, 500), (19, -500), (40, 20500), (0, None), (None, None)]:
+                    for seconds, expected, parent, parent_changed in [
+                        (20, 500, 1414, False), (19, -500, 1415, True),
+                        (40, 20500, None, None), (0, None, None, None), (None, None, None, None),
+                    ]:
                         later = deepcopy(base)
                         later['captured_at'] = '2025-01-01T00:00:10.500Z'
                         stats = later['sections']['stats']
+                        stats['map_id'] = 1454
+                        if parent is None:
+                            del stats['map_parent_id']
+                        else:
+                            stats['map_parent_id'] = parent
                         if seconds is None:
                             del stats['hearthstone_cooldown_seconds']
                         else:
@@ -40,6 +49,10 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(result.isError, result)
                         context = json.loads(result.content[0].text)['travel_context_change']
                         self.assertEqual(context['hearthstone_active_ready_at_delta_milliseconds'], expected)
+                        self.assertTrue(context['map_changed'])
+                        self.assertEqual(context['before']['map_parent_id'], 1414)
+                        self.assertEqual(context['after']['map_parent_id'], parent)
+                        self.assertIs(context['parent_map_changed'], parent_changed)
 
     async def test_real_mcp_calendar_unknowns_scopes_and_privacy(self):
         root = Path(__file__).resolve().parents[1]

@@ -7265,6 +7265,7 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
             .and_then(|seconds| crate::saved_resets::projected_reset_at(seconds, captured_at));
         json!({
             "map_id":stats["map_id"],"map_name":stats["map_name"],
+            "map_parent_id":stats["map_parent_id"],
             "hearthstone_bind_name":stats["hearthstone_bind_name"],
             "hearthstone_item_id":stats["hearthstone_item_id"],
             "hearthstone_cooldown_seconds":stats["hearthstone_cooldown_seconds"],
@@ -7274,6 +7275,8 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
     Some(json!({
         "before":observed(before, old.captured_at),"after":observed(after, new.captured_at),
         "map_changed":map_ids.0.zip(map_ids.1).map(|(old,new)| old != new),
+        "parent_map_changed":before["map_parent_id"].as_u64().zip(after["map_parent_id"].as_u64())
+            .map(|(old,new)| old != new),
         "hearthstone_bind_name_changed":bind_names.0.zip(bind_names.1).map(|(old,new)| old != new),
         "hearthstone_item_changed":items.map(|(old,new)| old != new),
         "hearthstone_cooldown_seconds_delta":cooldown_delta,

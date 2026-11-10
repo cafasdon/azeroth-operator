@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare observed parent maps separately from local maps in saved travel context.
+
 - Compare projected Hearthstone ready times across saved active cooldowns.
 
 - Find the highest-coverage partial set shopping plan within the saved visit limit.
