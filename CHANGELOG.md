@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved snapshots by an exact section capture status.
+
 - Compare section capture status and declared scope across saved Forever snapshots.
 
 - Summarise all known capture sections and their reported scope for saved Forever characters.

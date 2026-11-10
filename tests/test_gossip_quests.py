@@ -87,6 +87,27 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         '21': {'title':'Panel exit','level':10,'ready_for_turn_in':True},
                     }
                     followup_key = store.ingest(followup)
+                    for query, expected in [
+                        ({'section':'gossip_quests','status':'observed'}, {followup_key, *[key for key, _ in valid[1:]]}),
+                        ({'section':'gossip_quests','status':'not_recorded'}, {valid[0][0]}),
+                        ({'section':'bags','status':'reported_unavailable'}, {followup_key, *[key for key, _ in valid]}),
+                        ({'section':'bags','status':'not_recorded'}, set()),
+                    ]:
+                        found = await session.call_tool('list_snapshots', {'family':'forever','section_capture':query})
+                        self.assertFalse(found.isError, found)
+                        rows = json.loads(found.content[0].text)['snapshots']
+                        self.assertEqual({row['snapshot_id'] for row in rows}, expected)
+                        for row in rows:
+                            self.assertEqual(row['section_capture_match']['status'], query['status'])
+                            self.assertEqual(row['section_capture_match']['section'], query['section'])
+                            self.assertNotIn('api_unavailable', json.dumps(row['section_capture_match']))
+                    for bad in [
+                        {'section':'unknown','status':'observed'},
+                        {'section':'bags','status':'missing'},
+                        {'section':'bags','status':'observed','extra':'PRIVATE'},
+                    ]:
+                        rejected = await session.call_tool('list_snapshots', {'family':'forever','section_capture':bad})
+                        self.assertTrue(rejected.isError)
                     reply = await session.call_tool('character_summary', {'snapshot_id': followup_key})
                     self.assertFalse(reply.isError)
                     summary = json.loads(reply.content[0].text)

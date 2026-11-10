@@ -7,6 +7,9 @@ An observed filtered panel still describes only that panel's saved data.
 `compare_snapshots.capture_coverage_changes` reports changes in those
 statuses or declared scope labels. Missing scope labels remain unknown.
 Unchanged coverage metadata can still accompany different panel filters.
+Use `list_snapshots.section_capture` with a known `section` and a
+`status` of `observed`, `reported_unavailable` or `not_recorded` to find
+those captures. Results expose the status and declared scope.
 
 Travel comparisons report `hearthstone_active_ready_at_delta_milliseconds`
 when both captures show a positive cooldown for the same Hearthstone item.

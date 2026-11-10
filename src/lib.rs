@@ -31,6 +31,31 @@ use std::{
 };
 
 pub const MAX_BYTES: u64 = 4 * 1024 * 1024;
+
+#[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CaptureStatus {
+    Observed,
+    ReportedUnavailable,
+    NotRecorded,
+}
+
+impl CaptureStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Observed => "observed",
+            Self::ReportedUnavailable => "reported_unavailable",
+            Self::NotRecorded => "not_recorded",
+        }
+    }
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SectionCaptureFilter {
+    pub section: String,
+    pub status: CaptureStatus,
+}
 pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "equipment",
     "equipment_sets",
@@ -1987,6 +2012,7 @@ pub struct CaptureFilters<'a> {
     pub latest_per_character: bool,
     pub required_sections: Option<&'a [String]>,
     pub any_missing_sections: Option<&'a [String]>,
+    pub section_capture: Option<&'a SectionCaptureFilter>,
     pub coverage_summary_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
@@ -2301,6 +2327,7 @@ impl Store {
             latest_per_character,
             required_sections,
             any_missing_sections,
+            section_capture,
             coverage_summary_sections,
             inventory_item,
             inventory_requirements,
@@ -2437,6 +2464,11 @@ impl Store {
         {
             validate_section_names(sections)?;
         }
+        ensure!(
+            section_capture
+                .is_none_or(|filter| SNAPSHOT_SECTIONS.contains(&filter.section.as_str())),
+            "Unknown capture section"
+        );
         ensure!(
             inventory_item.is_none() || inventory_requirements.is_none(),
             "Inventory item and inventory requirements filters are mutually exclusive"
@@ -3433,6 +3465,11 @@ impl Store {
                     };
                     if required_sections.is_some_and(|sections| {
                         sections.iter().any(|name| !s.sections.contains_key(name))
+                    }) {
+                        continue;
+                    }
+                    if section_capture.is_some_and(|filter| {
+                        s.section_capture_status(&filter.section) != filter.status.as_str()
                     }) {
                         continue;
                     }
@@ -4651,6 +4688,13 @@ impl Store {
                     let mut summary = json!({"snapshot_id":id,"character":s.character,"client":s.client,"captured_at":s.captured_at,"source":s.source});
                     if let Some(matches) = missing_section_matches {
                         summary["missing_section_matches"] = json!(matches);
+                    }
+                    if let Some(filter) = section_capture {
+                        summary["section_capture_match"] = json!({
+                            "section":filter.section,"status":filter.status,
+                            "reported_scope":s.sections.get(&filter.section)
+                                .and_then(|section| section["coverage"].as_str())
+                        });
                     }
                     if let Some((id, row, unfinished)) = achievement_match {
                         summary["tracked_achievement_match"] = json!({

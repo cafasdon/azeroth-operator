@@ -22,3 +22,11 @@ appearance/disappearance and retail compatibility.
 The advisory shipping result was supported using Jev 1.14.0, request
 `946c8ee551b7f4334e7d8b43926cf0f6f41671d550d4434a692037a253e405ea`.
 Usage was 491 input and 45 output tokens in 0.289 seconds.
+
+Exact status discovery passed two scoped integration tests against the
+rebuilt MCP. Independent failure review passed 24 stdio calls covering
+all statuses, legacy empty captures, latest selection, time windows,
+paging, other filters, malformed input and unavailable-reason exclusion.
+The advisory shipping result was supported using Jev 1.14.0, request
+`c77a50da812911bc886a5fa5850823c50f67154bb17f2c9e0f7b9e0433d8f753`.
+Usage was 467 input and 45 output tokens in 0.349 seconds.

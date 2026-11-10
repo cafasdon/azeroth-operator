@@ -552,6 +552,8 @@ struct List {
     required_sections: Option<Vec<String>>,
     /// Find captures missing at least one named section and report the coverage status.
     any_missing_sections: Option<Vec<String>>,
+    /// Find snapshots with an exact observed, reported_unavailable or not_recorded section status.
+    section_capture: Option<azeroth_operator::SectionCaptureFilter>,
     /// Count capture statuses for these sections across all matching snapshots before paging.
     coverage_summary_sections: Option<Vec<String>>,
     /// Filter Forever snapshots by the exact output item ID of the captured selected recipe.
@@ -2979,6 +2981,7 @@ impl Operator {
                 inventory_requirements_bank_plan: args.inventory_requirements_bank_plan,
                 required_sections: args.required_sections.as_deref(),
                 any_missing_sections: args.any_missing_sections.as_deref(),
+                section_capture: args.section_capture.as_ref(),
                 coverage_summary_sections: args.coverage_summary_sections.as_deref(),
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
