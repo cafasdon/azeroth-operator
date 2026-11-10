@@ -9,6 +9,10 @@ For cross-character discovery, use `list_snapshots` with the same skill
 line and optional target. Inclusive `profession_min_rank` and
 `profession_max_rank` filter the observed rank. Results require a unique
 skill-line observation in each matching Forever capture.
+Use the skill line and target with `compare_snapshots` to compare progress
+in both captures. As with other comparisons, the before capture cannot
+be newer than the after capture. Crossing flags stay unknown unless both
+captures report a unique rank.
 
 Use `list_snapshots.pet_action_command` with an exact `command_token` such as
 `PET_ACTION_ATTACK` to locate saved command slots. Optional `is_active` matches

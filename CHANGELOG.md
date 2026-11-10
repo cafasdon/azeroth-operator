@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved profession progress and target crossings between captures.
+
 - Find saved Forever professions within an observed rank range and report progress toward a target.
 
 - Check a saved profession's progress toward a target rank and flag targets above its observed cap.

@@ -3383,6 +3383,7 @@ pub struct ComparisonSelectors<'a> {
     pub achievement_id: Option<u32>,
     pub achievement_name: Option<&'a str>,
     pub profession_skill_line: Option<u32>,
+    pub profession_target_rank: Option<std::num::NonZeroU32>,
     pub wallet: bool,
     pub experience: bool,
     pub spellbook: bool,
@@ -4686,6 +4687,10 @@ pub fn compare_observations(
                 .map(|(a, b)| compare_criteria(&a["criteria"], &b["criteria"]))
         });
     }
+    ensure!(
+        selectors.profession_target_rank.is_none() || selectors.profession_skill_line.is_some(),
+        "Profession rank targets require a profession skill line"
+    );
     if let Some(skill_line) = selectors.profession_skill_line {
         ensure!(skill_line > 0, "Expected a positive profession skill line");
         let (before_status, previous) =
@@ -4699,6 +4704,18 @@ pub fn compare_observations(
             "skill_line":skill_line,"before_status":before_status,"after_status":after_status,
             "before":previous,"after":current,"rank_delta":rank_delta
         });
+        if let Some(target) = selectors.profession_target_rank {
+            let before = profession_target_progress(previous, target.get());
+            let after = profession_target_progress(current, target.get());
+            let reached = before["target_reached_at_capture"]
+                .as_bool()
+                .zip(after["target_reached_at_capture"].as_bool());
+            comparison["profession_target_change"] = json!({
+                "before":before,"after":after,
+                "crossed_up":reached.map(|(old, new)| !old && new),
+                "crossed_down":reached.map(|(old, new)| old && !new)
+            });
+        }
     }
     if selectors.action_bar_slots {
         ensure!(

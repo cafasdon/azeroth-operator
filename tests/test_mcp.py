@@ -1928,6 +1928,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         ambiguous_profession = ambiguous_data["profession_change"]
                         self.assertEqual(ambiguous_profession["after_status"], "ambiguous")
                         self.assertIsNone(ambiguous_profession["rank_delta"])
+                        for first, second, crossed_up, crossed_down in [
+                            (after_key, progress_key, True, False),
+                            (progress_key, after_key, False, True),
+                            (progress_key, progress_key, False, False),
+                            (progress_key, ambiguous_key, None, None),
+                        ]:
+                            response = await session.call_tool("compare_snapshots", {
+                                "before_id": first, "after_id": second,
+                                "profession_skill_line": 164, "profession_target_rank": 25,
+                            })
+                            self.assertFalse(response.isError, response)
+                            change = json.loads(response.content[0].text)["profession_target_change"]
+                            self.assertIs(change["crossed_up"], crossed_up)
+                            self.assertIs(change["crossed_down"], crossed_down)
+                            self.assertEqual(change["before"]["target_rank"], 25)
+                            self.assertEqual(change["after"]["target_rank"], 25)
+                        self.assertTrue((await session.call_tool("compare_snapshots", {
+                            "before_id": after_key, "after_id": progress_key,
+                            "profession_target_rank": 25,
+                        })).isError)
                         self.assertEqual(ambiguous_data["profession_progress"], {
                             "changes": [], "observed_only_before": [], "observed_only_after": [],
                             "ambiguous_skill_lines": [164],

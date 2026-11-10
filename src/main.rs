@@ -874,6 +874,8 @@ struct Compare {
     achievement_name: Option<String>,
     /// Optionally compare one captured profession by its skill-line ID.
     profession_skill_line: Option<std::num::NonZeroU32>,
+    /// Compare progress toward this rank for the selected profession.
+    profession_target_rank: Option<std::num::NonZeroU32>,
     /// Include a net change in captured Forever wallet copper.
     #[serde(default)]
     wallet: bool,
@@ -2301,6 +2303,7 @@ impl Operator {
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     achievement_name: args.achievement_name.as_deref(),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
+                    profession_target_rank: args.profession_target_rank,
                     wallet: args.wallet,
                     experience: args.experience,
                     spellbook: args.spellbook,
