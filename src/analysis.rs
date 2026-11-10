@@ -3931,6 +3931,30 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    if before.client.family == crate::Family::Forever {
+        let changes: Vec<_> = crate::SNAPSHOT_SECTIONS
+            .iter()
+            .filter_map(|name| {
+                let old_status = before.section_capture_status(name);
+                let new_status = after.section_capture_status(name);
+                let scope = |snapshot: &'_ Snapshot| {
+                    snapshot
+                        .sections
+                        .get(*name)
+                        .and_then(|section| section["coverage"].as_str())
+                        .map(str::to_owned)
+                };
+                let old_scope = scope(before);
+                let new_scope = scope(after);
+                (old_status != new_status || old_scope != new_scope).then(|| json!({
+                "section":name,"before_status":old_status,"after_status":new_status,
+                "before_reported_scope":old_scope,"after_reported_scope":new_scope,
+                "reported_scope_changed":old_scope.zip(new_scope).map(|(old,new)| old != new)
+            }))
+            })
+            .collect();
+        comparison["capture_coverage_changes"] = json!(changes);
+    }
     ensure!(
         !selectors.player_trade_offer_compare_carried
             || selectors.player_trade_offer_item_id.is_some(),

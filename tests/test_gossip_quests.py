@@ -121,6 +121,16 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(reply.isError)
                         return json.loads(reply.content[0].text)
                     changes = (await compare(followup_key))['gossip_quest_changes']
+                    coverage_changes = (await compare(followup_key))['capture_coverage_changes']
+                    self.assertEqual(coverage_changes, [])
+                    coverage_changes = (await compare(valid[0][0]))['capture_coverage_changes']
+                    self.assertEqual({row['section'] for row in coverage_changes}, {'gossip_quests', 'quests'})
+                    panel_change = next(row for row in coverage_changes if row['section'] == 'gossip_quests')
+                    self.assertEqual(panel_change, {
+                        'section':'gossip_quests','before_status':'observed','after_status':'not_recorded',
+                        'before_reported_scope':'visible_gossip_quest_lists','after_reported_scope':None,
+                        'reported_scope_changed':None,
+                    })
                     self.assertEqual(changes['available'], {
                         'observed_only_before': [10], 'observed_only_after': [3], 'flag_changes': [],
                         'quest_log_readiness_changes': [],

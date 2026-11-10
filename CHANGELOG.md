@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare section capture status and declared scope across saved Forever snapshots.
+
 - Summarise all known capture sections and their reported scope for saved Forever characters.
 
 - Search saved map level ranges for an explicit planning level.
