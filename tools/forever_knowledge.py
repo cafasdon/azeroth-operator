@@ -15,7 +15,18 @@ from tools.sync_forever_catalogue import PIN, MAX_BYTES, verify
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_LOCK = json.loads((ROOT / 'clients/forever/embedding.lock.json').read_text())
-SECTIONS = ('items', 'npcs', 'zones', 'factions', 'consumables')
+SOURCES = {
+    'items': ('items', 'id'),
+    'npcs': ('npcs', 'id'),
+    'zones': ('zones', 'id'),
+    'factions': ('factions', 'id'),
+    'consumables': ('consumables', 'id'),
+    'enchants': ('enchants', 'effectId'),
+    'random_suffixes': ('randomSuffixes', 'id'),
+    'spell_effects': ('spellEffects', 'id'),
+    'encounters': ('encounters', 'path'),
+}
+SECTIONS = tuple(SOURCES)
 FORMAT = 'forever_public_knowledge_v1'
 
 
@@ -48,9 +59,18 @@ def documents(catalogue):
         for kind in ('npcs', 'zones', 'factions')
     }
     rows = []
-    for section in SECTIONS:
-        for record in source[section]:
-            text = [section, str(record['id']), record['name']]
+    for section, (source_section, identity_field) in SOURCES.items():
+        for record in source[source_section]:
+            identity = record[identity_field]
+            name = record.get('name') or record.get('path') or f"Spell effect {identity}"
+            text = [section, str(identity), name]
+            if record.get('spellId'):
+                text.append(f"spell {record['spellId']}")
+            if record.get('itemId'):
+                text.append(f"item {record['itemId']}")
+            for target in record.get('targets', []):
+                if target.get('target', {}).get('name'):
+                    text.append(target['target']['name'])
             if record.get('setName'):
                 text.append('set ' + record['setName'])
             for origin in record.get('sources', []):
@@ -61,7 +81,10 @@ def documents(catalogue):
                             if value.get(field) in references[kind]:
                                 text.append(references[kind][value[field]])
             body = ' '.join(text)
-            rows.append((f"{section}:{record['id']}", section, record['id'], record['name'], body, digest(body.encode())))
+            key = f"{section}:{identity}"
+            if section == 'enchants':
+                key += ':' + digest(encoded(record).encode())
+            rows.append((key, section, identity, name, body, digest(body.encode())))
     if len(rows) != len({row[0] for row in rows}):
         raise ValueError('Ambiguous catalogue identity')
     return sorted(rows)
@@ -231,7 +254,8 @@ class Knowledge:
         winners = sorted(ranks, key=lambda key: (-ranks[key], key))[:limit]
         return {**metadata(), 'model_revision': MODEL_LOCK['revision'], 'source_revision': PIN['revision'],
                 'retrieval_only': True, 'live': False, 'results': [
-                    {'section': by_key[key][1], 'record_id': by_key[key][2], 'name': by_key[key][3],
+                    {'section': by_key[key][1], 'record_id': by_key[key][2], 'record_key':key,
+                     'name': by_key[key][3],
                      'document_sha256': by_key[key][5], 'retrieval_score': ranks[key]}
                     for key in winners]}
 

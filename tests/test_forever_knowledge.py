@@ -49,7 +49,9 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(tool.annotations.readOnlyHint)
                     self.assertFalse(tool.annotations.openWorldHint)
                     for query, section in [('Garb of Thero-shan', 'items'), ('restore my health', 'consumables'),
-                                           ('" OR * NOT (', 'zones')]:
+                                           ('" OR * NOT (', 'zones'), ('Inferior Stamina', 'enchants'),
+                                           ('of the Eagle', 'random_suffixes'), ('437', 'spell_effects'),
+                                           ('Movement', 'encounters')]:
                         reply = await asyncio.wait_for(session.call_tool('search_forever_knowledge', {
                             'query':query,'section':section,'limit':5,
                         }), 30)
@@ -59,14 +61,20 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(result['retrieval_only'])
                         self.assertFalse(result['live'])
                         self.assertEqual(result['catalogue_sha256'], knowledge.PIN['sha256'])
-                        self.assertEqual(len(result['results']), 5)
+                        self.assertEqual(len(result['results']), min(5, sum(row[1] == section for row in expected.values())))
                         for row in result['results']:
-                            source = expected[f"{row['section']}:{row['record_id']}"]
+                            source = expected[row['record_key']]
                             self.assertEqual(row['section'], section)
                             self.assertEqual(row['name'], source[3])
                             self.assertEqual(row['document_sha256'], source[5])
                         if query == 'Garb of Thero-shan':
                             self.assertEqual({row['record_id'] for row in result['results'][:2]}, {7950, 7953})
+                        if section == 'enchants':
+                            variants = [row for row in result['results'] if row['record_id'] == 41]
+                            self.assertEqual(len(variants), 2)
+                            self.assertEqual(len({row['record_key'] for row in variants}), 2)
+                        if section == 'encounters':
+                            self.assertEqual(result['results'][0]['record_id'], 'Default/Movement')
                     for args in [{'query':''}, {'query':'x'*513}, {'query':'x','limit':21},
                                  {'query':'x','section':'snapshots'}]:
                         rejected = await session.call_tool('search_forever_knowledge', args)

@@ -5,8 +5,9 @@ FTS5 keyword ranking and exact cosine search over 384-dimensional MiniLM
 vectors are fused with reciprocal ranks. Exact source identities remain
 available for the existing catalogue and owned-inventory tools.
 
-The corpus is limited to pinned public item, consumable, NPC, zone and
-faction records. Character snapshots are outside this index. Both source
+The corpus covers the pinned public items, consumables, NPCs, zones,
+factions, enchants, random suffixes, spell effects and encounter presets.
+Character snapshots are outside this index. Both source
 and model are checksum-pinned. Model execution uses local files, disabled
 network lookup and no remote model code. Explicit sync commands download
 public inputs. Build creates a complete temporary index and replaces the

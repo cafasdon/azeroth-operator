@@ -1,6 +1,6 @@
 # Local hybrid knowledge verification
 
-The public index contains 7,271 records from the pinned catalogue and
+The initial public index contained 7,271 records from the pinned catalogue and
 384-dimensional vectors from the checksum-pinned MiniLM model.
 The local environment uses requirements-knowledge.txt. Model and index
 files remain in ignored local-data directories.
@@ -62,3 +62,19 @@ Jev 1.14.0, request
 `a506eb32d9429f5b6bf45ba503628df43ae9ef0ae2c55a5ba1ef47c00addaf91`.
 Usage was 570 input and 50 output tokens in 0.322 seconds.
 This judgement does not resolve the unrelated-config hash discrepancy.
+
+The all-category extension rebuilt the local index to 7,749 documents.
+It added 247 enchants, 156 random suffixes, 71 spell effects and four
+encounter presets. Independent comparison found all original 7,271
+document tuples unchanged. Two offline local-model tests passed, including
+real stdio searches with external connections blocked.
+Independent review checked all nine source mappings against the Rust
+catalogue lookup, distinct enchant variant keys and text encounter paths.
+No concrete defects remained. Retrieval quality remains unbenchmarked.
+
+The advisory shipping judgement selected supported with confidence 0.49
+using Jev 1.14.0, request
+`e7117b947b867080508eb87c209716ef264165e21b6bd357cb1aa185c7286c49`.
+Usage was 546 input and 45 output tokens in 0.295 seconds.
+The author accepted the scoped identity and retrieval integration based
+on the exact corpus comparison and independent real-caller evidence.

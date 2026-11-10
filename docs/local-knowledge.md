@@ -27,9 +27,14 @@ discover a newly registered server.
 For another MCP client, launch the second command from this repository's root,
 using absolute paths for the interpreter and all three configured inputs.
 Its tool is `search_forever_knowledge`. Allowed section filters are
-`items`, `npcs`, `zones`, `factions` and `consumables`. Limit is 1–20.
+`items`, `npcs`, `zones`, `factions`, `consumables`, `enchants`,
+`random_suffixes`, `spell_effects` and `encounters`. Limit is 1–20.
 Use returned section and record IDs with the main catalogue tools for
 exact facts. Similarity scores describe retrieval.
+Encounter identities are paths. Enchant IDs are effect IDs and can match
+multiple source variants; their distinct record keys include a hash of
+the complete source row. Spell effects without names use a generated
+numeric label. No descriptions are inferred.
 
 The index contains public reference records. Its builder accepts the pinned
 catalogue and verifies its checksum. Search makes no source refresh or game
