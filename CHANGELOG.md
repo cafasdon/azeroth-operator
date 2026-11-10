@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare paged saved bulk recipe material, output and status observations without treating absent rows as unlearned recipes.
+
 - Quote saved copper-only merchant offers for single or joint recipe restock bag shortages, without bank credit or purchase actions.
 
 - Search bounded saved-stock craft schedules with backtracking, per-craft output credit, seeded cycles and paged resource-order witnesses.

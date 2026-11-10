@@ -1021,3 +1021,13 @@ output credit. Banks and mail money never offset this quote. Single-recipe gross
 inputs and cyclic-order limits remain explicit; no per-craft quotation or native
 purchase eligibility is established. This adds no action, source sync or live
 evidence. See ADR-093 and its offline evidence.
+
+## Bulk recipe input/output comparison (10 November)
+
+Saved snapshot comparison can now page every retained bulk recipe material,
+base output and status difference for one matching profession. Full counts and
+one-sided observations remain separate from bounded result pages. This closes
+the input/output comparison gap beside the existing cooldown/view reports.
+Unknown fields, missing sections and profession mismatch remain explicit. No
+unlearning, recipe-definition change, complete coverage or native craftability
+is inferred. See ADR-094 and its dated offline evidence. Live work stays deferred.

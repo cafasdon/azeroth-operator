@@ -1006,6 +1006,9 @@ struct Compare {
     /// Compare historical bulk cooldown observations for shared recipe IDs within one profession.
     #[serde(default)]
     recipe_cooldown_changes: bool,
+    /// Page saved bulk recipe input/output/status changes within one profession. Missing rows do not prove unlearning. Cooldowns and craftable counts are excluded.
+    #[serde(default, deserialize_with = "recipe_material_page_argument")]
+    recipe_material_changes: Option<azeroth_operator::recipe_material_compare::Page>,
     /// Compare saved visible dialogue rows as a multiset, without assigning NPC identity.
     #[serde(default)]
     gossip_option_changes: bool,
@@ -1396,6 +1399,13 @@ fn stock_schedule_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Opti
     Option::<serde_json::Value>::deserialize(input)?.map(|value| {
         if !value.is_object() {return Err(serde::de::Error::custom("Invalid stock schedule options"));}
         serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid stock schedule options"))
+    }).transpose()
+}
+
+fn recipe_material_page_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Option<azeroth_operator::recipe_material_compare::Page>,D::Error> {
+    Option::<serde_json::Value>::deserialize(input)?.map(|value| {
+        if !value.is_object() {return Err(serde::de::Error::custom("Invalid recipe material comparison options"));}
+        serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid recipe material comparison options"))
     }).transpose()
 }
 
@@ -2835,7 +2845,7 @@ impl Operator {
         let result = (|| {
             let a = self.store.read(&args.before_id)?;
             let b = self.store.read(&args.after_id)?;
-            azeroth_operator::analysis::compare_observations(
+            let mut comparison = azeroth_operator::analysis::compare_observations(
                 &a,
                 &b,
                 azeroth_operator::analysis::ComparisonSelectors {
@@ -2910,7 +2920,14 @@ impl Operator {
                     action_bar_spell_id: args.action_bar_spell_id,
                     action_bar_item_id: args.action_bar_item_id,
                 },
-            )
+            )?;
+            if let Some(page) = &args.recipe_material_changes {
+                anyhow::ensure!(a.client.family == Family::Forever, "Recipe material comparison requires Forever");
+                comparison["recipe_material_changes"] = azeroth_operator::recipe_material_compare::compare(
+                    a.sections.get("profession_recipe_materials"),
+                    b.sections.get("profession_recipe_materials"), page)?;
+            }
+            Ok(comparison)
         })();
         match result {
             Ok(v) => CallToolResult::success(vec![ContentBlock::text(v.to_string())]),

@@ -4587,3 +4587,14 @@ inputs. No bank withdrawal or pending mail money is assumed. Cyclic whole-recipe
 orders return an unavailable status, even with a separate stock-schedule witness.
 Quotes are conditional saved copper-only arithmetic, not purchases, native
 eligibility, complete acquisition optimisation or current prices. See ADR-093.
+
+## Bulk recipe material observation changes
+
+Use `compare_snapshots.recipe_material_changes:{"offset":0,"limit":20}` to
+compare saved bulk recipe inputs, outputs and fixed status observations. Both
+captures must describe the same character, exact client and profession. Pages
+use numeric recipe ID order; full counts stay independent of page size. Missing
+sections/profession mismatch stay unknown. Recipes seen only on one side do not
+prove learned/unlearned state. Cooldowns and craftable counts are excluded; use
+their separate reports. No recipe definition, coverage or native craftability
+claim follows from an observation difference. See ADR-094. Offline/source only.
