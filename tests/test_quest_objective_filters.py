@@ -269,7 +269,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(projection['shortfall_after_known_ready_rewards'],shortfall)
                         if covers:
                             self.assertEqual(projection['ready_turn_in_plan'],{
-                                'quest_count':1,'quest_ids':[3],'truncated':False,'recorded_honor_total':25})
+                                'quest_count':1,'quest_ids':[3],'truncated':False,'recorded_honor_total':25,
+                                'selected_quests_wallet_projection':None})
                         else:
                             self.assertIsNone(projection['ready_turn_in_plan'])
                     for options in [{'section':'wallet'},{'quest_id':3},{'quest_ready_honor_target':0}]:
@@ -755,4 +756,25 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     unchanged=json.loads(reordered.content[0].text)['quest_change']['reward_entry_changes']
                     self.assertEqual(unchanged['item_rewards']['changes'],[])
                     self.assertEqual(unchanged['item_choices']['changes'],[])
+                    funded=deepcopy(tied)
+                    for quest_id,honor,cost,reward in [('3',25,5,0),('10',20,0,4)]:
+                        funded['sections']['quests'][quest_id].update(ready_for_turn_in=True,
+                            required_copper=cost,reward_amounts={'honor':honor,'copper':reward})
+                    for wallet,prefix,shortfall in [(2,45,0),(0,20,25),(None,None,None)]:
+                        if wallet is None:
+                            del funded['sections']['wallet']
+                        else:
+                            funded['sections']['wallet']['copper']=wallet
+                        funded_id=store.ingest(funded)
+                        original[funded_id+'.json']=(Path(folder)/(funded_id+'.json')).read_bytes()
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':funded_id,'section':'quests','quest_ready_honor_target':45})
+                        self.assertFalse(reply.isError,reply)
+                        plan=json.loads(reply.content[0].text)['quest_ready_honor_projection']['ready_turn_in_plan']
+                        self.assertEqual(plan['quest_ids'],[3,10])
+                        order=plan['selected_quests_wallet_projection']
+                        self.assertEqual(order['quest_ids'],['10','3'])
+                        self.assertEqual(order['minimum_starting_copper'],1)
+                        self.assertEqual(order['honor_from_affordable_prefix'],prefix)
+                        self.assertEqual(order['honor_shortfall_after_affordable_prefix'],shortfall)
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})

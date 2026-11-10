@@ -4667,6 +4667,7 @@ impl Operator {
                     let context = if args.quest_on_captured_map
                         || args.quest_within_captured_wallet
                         || args.quest_list_xp_projection
+                        || args.quest_ready_honor_target.is_some()
                         || args.quest_list_wallet_projection
                         || args.quest_list_currency_projection
                         || args.quest_list_renown_projection
@@ -4914,6 +4915,9 @@ impl Operator {
                                 azeroth_operator::analysis::quest_ready_honor_projection(
                                     quests,
                                     target.get(),
+                                    context
+                                        .as_ref()
+                                        .and_then(|snapshot| snapshot.sections.get("wallet")),
                                 )
                             });
                     }

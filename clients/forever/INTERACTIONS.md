@@ -3360,6 +3360,11 @@ uses quests recorded as ready, chooses the highest known rewards first,
 and breaks ties by quest ID. Unknown rewards may leave target coverage
 unknown. The plan does not convert honour rewards into PvP rank points.
 
+If the selected quests have recorded copper costs and rewards, the honour
+plan also shows a wallet-friendly order for that selection. It reports
+the minimum starting copper, the affordable prefix and its honour total
+when a wallet is captured. It does not search alternative quest sets.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

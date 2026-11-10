@@ -7093,7 +7093,11 @@ pub fn quest_list_xp_projection(
     })
 }
 
-pub fn quest_ready_honor_projection(quests: &serde_json::Map<String, Value>, target: u64) -> Value {
+pub fn quest_ready_honor_projection(
+    quests: &serde_json::Map<String, Value>,
+    target: u64,
+    wallet: Option<&Value>,
+) -> Value {
     let mut unknown = 0;
     let mut rewards = Vec::new();
     for (id, quest) in quests {
@@ -7105,13 +7109,13 @@ pub fn quest_ready_honor_projection(quests: &serde_json::Map<String, Value>, tar
             continue;
         };
         if honor > 0
-            && let Ok(id) = id.parse::<u32>()
+            && let Ok(numeric_id) = id.parse::<u32>()
         {
-            rewards.push((std::cmp::Reverse(honor), id));
+            rewards.push((std::cmp::Reverse(honor), numeric_id, id, quest));
         }
     }
-    rewards.sort_unstable();
-    let known_total: u64 = rewards.iter().map(|(honor, _)| honor.0).sum();
+    rewards.sort_unstable_by_key(|(honor, id, _, _)| (*honor, *id));
+    let known_total: u64 = rewards.iter().map(|(honor, _, _, _)| honor.0).sum();
     let shortfall = target.saturating_sub(known_total);
     let covers_target = if shortfall == 0 {
         Some(true)
@@ -7122,14 +7126,35 @@ pub fn quest_ready_honor_projection(quests: &serde_json::Map<String, Value>, tar
     };
     let plan = (shortfall == 0).then(|| {
         let mut selected = Vec::new();
+        let mut selected_ids = Vec::new();
         let mut total = 0;
-        for (honor, id) in rewards {
+        for (honor, numeric_id, id, quest) in rewards {
             total += honor.0;
-            selected.push(id);
+            selected.push((id, quest));
+            selected_ids.push(numeric_id);
             if total >= target { break; }
         }
-        json!({"quest_count":selected.len(),"quest_ids":selected.iter().take(20).collect::<Vec<_>>(),
-            "truncated":selected.len()>20,"recorded_honor_total":total})
+        let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
+        let wallet_order = quest_wallet_turn_in_order(selected.into_iter(), balance).map(|mut order| {
+            let prefix_honor = order["captured_wallet_progress"]["affordable_prefix_count"]
+                .as_u64().and_then(|count| {
+                    order["quest_ids"].as_array()?.iter().take(usize::try_from(count).ok()?)
+                        .try_fold(0u64, |total, id| {
+                            total.checked_add(quests.get(id.as_str()?)?["reward_amounts"]["honor"].as_u64()?)
+                        })
+                });
+            let ids = order["quest_ids"].as_array_mut().unwrap();
+            let truncated = ids.len() > 20;
+            ids.truncate(20);
+            order["quest_ids_truncated"] = json!(truncated);
+            order["honor_from_affordable_prefix"] = json!(prefix_honor);
+            order["honor_shortfall_after_affordable_prefix"] =
+                json!(prefix_honor.map(|honor| target.saturating_sub(honor)));
+            order
+        });
+        json!({"quest_count":selected_ids.len(),"quest_ids":selected_ids.iter().take(20).collect::<Vec<_>>(),
+            "truncated":selected_ids.len()>20,"recorded_honor_total":total,
+            "selected_quests_wallet_projection":wallet_order})
     });
     json!({"target_honor":target,"known_ready_reward_honor":known_total,
         "ready_quests_with_unknown_honor":unknown,"covers_target":covers_target,
@@ -8827,7 +8852,7 @@ pub fn quest_list_wallet_projection(
     json!({
         "known_required_copper":known_cost,"unknown_cost_count":unknown_cost,
         "known_reward_copper":u64::try_from(known_reward).ok(),"unknown_reward_count":unknown_reward,
-        "ready_turn_in_order":quest_wallet_turn_in_order(quests, balance),
+        "ready_turn_in_order":quest_wallet_turn_in_order(quests.iter(), balance),
         "wallet_observed":balance.is_some(),
         "known_cost_shortfall_without_rewards_copper":estimate.map(|(cost,balance)| cost.saturating_sub(balance)),
         "all_costs_fit_wallet_without_rewards":estimate.and_then(|(cost,balance)| {
@@ -8857,12 +8882,11 @@ pub fn quest_xp_wallet_projection(
     projection
 }
 
-fn quest_wallet_turn_in_order(
-    quests: &serde_json::Map<String, Value>,
+fn quest_wallet_turn_in_order<'a>(
+    quests: impl Iterator<Item = (&'a String, &'a Value)>,
     balance: Option<u64>,
 ) -> Option<Value> {
     let mut steps = quests
-        .iter()
         .map(|(id, quest)| {
             if quest_readiness(quest) != QuestReadiness::Ready {
                 return None;
