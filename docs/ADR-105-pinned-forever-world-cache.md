@@ -124,3 +124,6 @@ Search accepts max_required_level (1–255) to list quests whose recorded
 requiredLevel is at or below the limit. Quests without this field are excluded.
 Combine with a name or quest category as needed. The CLI flag is
 --max-required-level. This filter covers the minimum level field only.
+
+Search accepts min_item_level (1–65535) for items at or above the recorded
+item level. Missing levels are excluded. The CLI flag is --min-item-level.

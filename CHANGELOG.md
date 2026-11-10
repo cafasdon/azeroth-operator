@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter cached items by their recorded item level.
+
 - Filter cached quests by their recorded minimum player level.
 
 - Search cached quests by provider area or quest category.
