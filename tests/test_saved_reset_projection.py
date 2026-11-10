@@ -27,6 +27,7 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
+                    within_ids, below_ids = [], []
                     for seconds, expected, parent, parent_changed in [
                         (20, 500, 1414, False), (19, -500, 1415, True),
                         (40, 20500, None, None), (0, None, None, None), (None, None, None, None),
@@ -50,8 +51,13 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                             del stats['hearthstone_cooldown_seconds']
                         else:
                             stats['hearthstone_cooldown_seconds'] = seconds
+                        later_id = store.ingest(later)
+                        if seconds == 20:
+                            within_ids.append(later_id)
+                        elif seconds == 19:
+                            below_ids.append(later_id)
                         result = await session.call_tool('compare_snapshots', {
-                            'before_id':start, 'after_id':store.ingest(later),
+                            'before_id':start, 'after_id':later_id,
                         })
                         self.assertFalse(result.isError, result)
                         context = json.loads(result.content[0].text)['travel_context_change']
@@ -70,6 +76,14 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                                              'within' if seconds == 20 else 'below')
                         else:
                             self.assertIsNone(after_range)
+                    for position, expected in [('within', within_ids), ('below', below_ids), ('above', [start])]:
+                        result = await session.call_tool('list_snapshots', {
+                            'family': 'forever', 'player_map_level_position': position,
+                        })
+                        self.assertFalse(result.isError, result)
+                        rows = json.loads(result.content[0].text)['snapshots']
+                        self.assertEqual({row['snapshot_id'] for row in rows}, set(expected))
+                        self.assertTrue(all(row['player_map_match']['map_level_position'] == position for row in rows))
 
     async def test_real_mcp_calendar_unknowns_scopes_and_privacy(self):
         root = Path(__file__).resolve().parents[1]

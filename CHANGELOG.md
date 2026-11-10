@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved characters below, within or above their captured map level range.
+
 - Compare captured character levels with saved map level ranges in travel reviews.
 
 - Compare observed parent maps separately from local maps in saved travel context.

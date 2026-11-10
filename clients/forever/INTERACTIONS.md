@@ -8,6 +8,8 @@ they differ. If either parent map was unavailable, the change is unknown.
 When a capture includes both map level bounds, its travel comparison
 reports whether the captured character level is below, within or above
 that range. This is map metadata, with no access or safety determination.
+Use `list_snapshots.player_map_level_position` with `below`, `within`
+or `above` to find those saved observations. Missing ranges do not match.
 
 Use `lookup_forever_catalogue` with `section: "items"` and `set_name`
 to find pieces by a case-insensitive set-name substring. Combine it with

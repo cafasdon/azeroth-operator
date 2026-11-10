@@ -2023,6 +2023,7 @@ pub struct CaptureFilters<'a> {
     pub instance: InstanceCaptureFilters<'a>,
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_map_name: Option<&'a str>,
+    pub player_map_level_position: Option<analysis::MapLevelPosition>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub hearthstone_bind_name: Option<&'a str>,
     pub hearthstone_max_cooldown_seconds: Option<u32>,
@@ -2335,6 +2336,7 @@ impl Store {
             instance,
             player_map_id,
             player_map_name,
+            player_map_level_position,
             player_parent_map_id,
             hearthstone_bind_name,
             hearthstone_max_cooldown_seconds,
@@ -3016,8 +3018,10 @@ impl Store {
             !filter_hearthstone || family == Family::Forever,
             "Hearthstone filtering requires Forever"
         );
-        let filter_player_map =
-            player_map_id.is_some() || player_parent_map_id.is_some() || player_map_name.is_some();
+        let filter_player_map = player_map_id.is_some()
+            || player_parent_map_id.is_some()
+            || player_map_name.is_some()
+            || player_map_level_position.is_some();
         let filter_repair = repair_max_quote_copper.is_some()
             || repair_affordable_only
             || repair_min_remaining_copper.is_some();
@@ -4372,6 +4376,8 @@ impl Store {
                                 stats["map_name"]
                                     .as_str()
                                     .is_some_and(|observed| observed.to_lowercase() == *name)
+                            }) && player_map_level_position.is_none_or(|expected| {
+                                analysis::map_level_position(stats) == Some(expected)
                             }) && hearthstone_bind_name.as_ref().is_none_or(|name| {
                                 stats["hearthstone_bind_name"]
                                     .as_str()
@@ -4920,6 +4926,7 @@ impl Store {
                         summary["player_map_match"] = json!({
                             "map_id":stats["map_id"],"map_name":stats["map_name"],
                             "map_parent_id":stats["map_parent_id"],
+                            "map_level_position":analysis::map_level_position(stats),
                         });
                     }
                     if let Some(ready) = hearthstone_projected_ready_at {

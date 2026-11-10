@@ -4,6 +4,27 @@ use anyhow::{Result, ensure};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Clone, Copy, PartialEq, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MapLevelPosition {
+    Below,
+    Within,
+    Above,
+}
+
+pub fn map_level_position(stats: &Value) -> Option<MapLevelPosition> {
+    let minimum = stats["map_min_level"].as_i64()?;
+    let maximum = stats["map_max_level"].as_i64()?;
+    let level = stats["level"].as_i64()?;
+    Some(if level < minimum {
+        MapLevelPosition::Below
+    } else if level > maximum {
+        MapLevelPosition::Above
+    } else {
+        MapLevelPosition::Within
+    })
+}
+
 #[derive(Default)]
 struct ObservedReagent {
     quantities: [u64; 3],
@@ -7268,13 +7289,7 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
             .zip(stats["map_max_level"].as_i64())
             .zip(stats["level"].as_i64())
             .map(|((minimum, maximum), level)| {
-                let position = if level < minimum {
-                    "below"
-                } else if level > maximum {
-                    "above"
-                } else {
-                    "within"
-                };
+                let position = map_level_position(stats);
                 json!({"minimum":minimum,"maximum":maximum,"character_level":level,
                     "position_in_reported_range":position})
             });
