@@ -79,6 +79,24 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(match['current_warning_verified'])
                     self.assertTrue((await session.call_tool('list_snapshots',{
                         'family':'retail','instance_lock_warning':{}})).isError)
+                    for selector, count in [
+                        ({'encounter_name':'  sAME NAME ','encounter_defeated':False},2),
+                        ({'encounter_name':'Defeated','encounter_defeated':True},1),
+                        ({'encounter_name':'Same name','encounter_defeated':True},0),
+                        ({'encounter_name':'Same'},0),
+                    ]:
+                        reply=await session.call_tool('list_snapshots',{
+                            'family':'forever','instance_lock_warning':selector})
+                        self.assertFalse(reply.isError,reply)
+                        matches=json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in matches],[encounters_id] if count else [])
+                        if count:
+                            self.assertEqual(matches[0]['instance_lock_warning_match']['matching_encounter_count'],count)
+                            self.assertNotIn('Same name',json.dumps(matches))
+                    for invalid in [{'encounter_defeated':False},{'encounter_name':' '},{'encounter_name':'é'*129}]:
+                        reply=await session.call_tool('list_snapshots',{
+                            'family':'forever','instance_lock_warning':invalid})
+                        self.assertTrue(reply.isError,reply)
                     for capture_id, details in [(encounters_id,{
                             'completed':[{'slot':2,'name':'Defeated'}],
                             'pending':[{'slot':1,'name':'Same name'},{'slot':3,'name':'Same name'}]}),

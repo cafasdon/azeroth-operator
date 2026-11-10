@@ -63,17 +63,32 @@ pub(crate) fn matches_projected_window(
             })
 }
 
-#[derive(Clone, Copy, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Clone, serde::Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct InstanceLockWarningFilter {
     pub minimum_completed_encounters: Option<u32>,
     pub minimum_remaining_encounters: Option<u32>,
     pub maximum_warning_seconds: Option<u32>,
     pub has_encounter_details: Option<bool>,
+    /// Exact case-insensitive encounter name from the saved warning.
+    pub encounter_name: Option<String>,
+    /// Require this defeated state on the same named encounter row.
+    pub encounter_defeated: Option<bool>,
 }
 
 impl InstanceLockWarningFilter {
-    pub(crate) fn match_observation(self, context: &Value) -> Option<Value> {
+    pub(crate) fn validate(&self) -> Result<()> {
+        ensure!(
+            self.encounter_name
+                .as_ref()
+                .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256)
+                && (self.encounter_defeated.is_none() || self.encounter_name.is_some()),
+            "Encounter state requires a valid named encounter"
+        );
+        Ok(())
+    }
+
+    pub(crate) fn match_observation(&self, context: &Value) -> Option<Value> {
         let warning = &context["lock_warning"];
         let completed = warning["encounters_completed"].as_u64()?;
         let remaining = warning["encounters_total"]
@@ -81,7 +96,7 @@ impl InstanceLockWarningFilter {
             .checked_sub(completed)?;
         let seconds = warning["remaining_seconds"].as_u64()?;
         let has_details = warning["encounters"].is_object();
-        (self
+        let matches_aggregate = self
             .minimum_completed_encounters
             .is_none_or(|min| completed >= u64::from(min))
             && self
@@ -92,13 +107,34 @@ impl InstanceLockWarningFilter {
                 .is_none_or(|max| seconds <= u64::from(max))
             && self
                 .has_encounter_details
-                .is_none_or(|expected| expected == has_details))
-        .then(|| {
-            json!({"instance_kind":context["kind"],"difficulty_id":context["difficulty_id"],
+                .is_none_or(|expected| expected == has_details);
+        if !matches_aggregate {
+            return None;
+        }
+        let mut report = json!({"instance_kind":context["kind"],"difficulty_id":context["difficulty_id"],
                 "encounters_completed":completed,"encounters_remaining":remaining,
                 "reported_warning_remaining_seconds":seconds,"has_encounter_details":has_details,
-                "current_warning_verified":false,"saved_lockout_identity_verified":false})
-        })
+                "current_warning_verified":false,"saved_lockout_identity_verified":false});
+        if let Some(name) = self.encounter_name.as_ref() {
+            let name = name.trim().to_lowercase();
+            let matches = warning["encounters"]
+                .as_object()?
+                .values()
+                .filter(|row| {
+                    row["name"]
+                        .as_str()
+                        .is_some_and(|label| label.trim().to_lowercase() == name)
+                        && self
+                            .encounter_defeated
+                            .is_none_or(|defeated| row["killed"].as_bool() == Some(defeated))
+                })
+                .count();
+            if matches == 0 {
+                return None;
+            }
+            report["matching_encounter_count"] = json!(matches);
+        }
+        Some(report)
     }
 }
 

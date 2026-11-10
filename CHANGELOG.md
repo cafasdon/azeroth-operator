@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved instance warnings by encounter name and defeated state.
+
 - Search saved Forever instance lock warnings by encounter progress and timer.
 
 - Review completed and pending encounters from saved instance lock warnings.

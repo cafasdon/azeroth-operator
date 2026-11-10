@@ -1535,6 +1535,10 @@ warning seconds, or presence of encounter details. Bounds are inclusive.
 An empty filter matches any recorded warning. Results include counts and
 timer only, alongside instance kind and difficulty. Encounter names stay
 in the individual snapshot review.
+Set `encounter_name` for an exact case-insensitive name match. Optional
+`encounter_defeated` must match the same saved row. Counts-only warnings
+cannot satisfy a named search. Results show how many rows matched and
+leave encounter names in the individual review.
 
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture

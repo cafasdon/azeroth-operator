@@ -2363,6 +2363,9 @@ impl Store {
             instance_lock_warning.is_none() || family == Family::Forever,
             "Instance lock warning filtering requires Forever"
         );
+        if let Some(filter) = &instance_lock_warning {
+            filter.validate()?;
+        }
         let saved_instance_name = saved_instance
             .as_ref()
             .and_then(|filter| filter.name.as_ref())
@@ -3383,9 +3386,10 @@ impl Store {
                     if profession_recipe.is_some() && profession_recipe_match.is_none() {
                         continue;
                     }
-                    let instance_lock_warning_match = instance_lock_warning.and_then(|filter| {
-                        filter.match_observation(s.sections.get("instance_context")?)
-                    });
+                    let instance_lock_warning_match =
+                        instance_lock_warning.as_ref().and_then(|filter| {
+                            filter.match_observation(s.sections.get("instance_context")?)
+                        });
                     if instance_lock_warning.is_some() && instance_lock_warning_match.is_none() {
                         continue;
                     }
