@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate carried bag space for item bundles in a saved merchant cart.
+
 - Estimate carried bag space for matching loaded inbox attachments.
 
 - Estimate carried bag space for requested items visible in saved loot windows.

@@ -1942,6 +1942,37 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                   "extended_cost": False, "available": 1},
                         }
                         mixed_key = SnapshotStore(Path(folder)).ingest(mixed_merchant)
+                        cart_capture = json.loads(json.dumps(merchant))
+                        cart_capture["sections"]["merchant_stock"]["1"]["item_id"] = 87654321
+                        cart_capture["sections"]["merchant_stock"]["2"]["item_id"] = 87654321
+                        cart_capture["sections"]["merchant_stock"]["3"]["currency_id"] = 87654321
+                        cart_capture["sections"]["bags"] = {"0": {"1": {
+                            "item_id": 87654321, "count": 2, "link": "item:87654321:0", "reported_stack_limit": 6}}}
+                        cart_capture["sections"]["bag_capacity"] = {
+                            "0": {"total_slots": 16, "free_slots": 1, "family_mask": 0},
+                            **{str(bag): {"total_slots": 0, "free_slots": 0} for bag in range(1, 5)}}
+                        cart_id = SnapshotStore(Path(folder)).ingest(cart_capture)
+                        cart_lines = [{"slot": slot, "bundles": 1} for slot in (1, 2, 3)]
+                        cart_request = {"snapshot_id": cart_id, "section": "merchant_stock",
+                                        "merchant_cart": cart_lines}
+                        plain_cart = await session.call_tool("inspect_snapshot", cart_request)
+                        self.assertFalse(plain_cart.isError, plain_cart)
+                        self.assertNotIn("bag_space_projection", json.loads(plain_cart.content[0].text)["merchant_cart_budget"])
+                        for missing_slot in (False, True):
+                            reply = await session.call_tool("inspect_snapshot", {
+                                **cart_request, "merchant_cart_estimate_bag_space": True,
+                                "merchant_cart": cart_lines + ([{"slot": 4, "bundles": 1}] if missing_slot else [])})
+                            self.assertFalse(reply.isError, reply)
+                            cart = json.loads(reply.content[0].text)["merchant_cart_budget"]
+                            self.assertEqual(cart["sold_out_slots"], [2])
+                            space = cart["bag_space_projection"]
+                            self.assertEqual([(row["item_id"], row["requested_quantity"]) for row in space["items"]], [(87654321, 10)])
+                            self.assertEqual(space["estimated_new_stack_slots"], 2)
+                            self.assertEqual(space["estimated_new_stack_slots_if_same_item_stacks_merge"], 1)
+                            self.assertIs(space["all_cart_slots_observed"], not missing_slot)
+                            self.assertIs(space["fits_recorded_general_slots_if_same_item_stacks_merge"], None if missing_slot else True)
+                        self.assertTrue((await session.call_tool("inspect_snapshot", {
+                            "snapshot_id": cart_id, "section": "merchant_stock", "merchant_cart_estimate_bag_space": True})).isError)
                         mixed_quote = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": mixed_key, "section": "merchant_stock",
                             "merchant_item_id": 123456789, "merchant_target_quantity": 8,

@@ -9154,6 +9154,7 @@ pub fn merchant_cart_budget(
     snapshot: &Snapshot,
     cart: impl Iterator<Item = (u32, u32)>,
     include_repair: bool,
+    estimate_bag_space: bool,
 ) -> Result<Value> {
     let Some(offers) = snapshot
         .sections
@@ -9255,6 +9256,30 @@ pub fn merchant_cart_budget(
         "known_copper_shortfall":copper_shortfall,"resource_budget_status":budget_status});
     if let Some(reservation) = repair_reservation {
         result["repair_reservation"] = reservation;
+    }
+    if estimate_bag_space {
+        let mut quantities = BTreeMap::<u32, u64>::new();
+        for line in lines.values() {
+            if let Some(id) = line["item_id"].as_u64() {
+                let total = quantities.entry(u32::try_from(id)?).or_default();
+                *total = total
+                    .checked_add(line["requested_quantity"].as_u64().unwrap())
+                    .ok_or_else(|| anyhow::anyhow!("Merchant cart quantity is too large"))?;
+            }
+        }
+        let mut space = incoming_items_bag_space(
+            snapshot,
+            quantities.into_iter(),
+            "observed_cart_item_bundles_before_purchase",
+            "requested_quantity",
+        );
+        space["all_cart_slots_observed"] = json!(missing.is_empty());
+        space["item_token_slots_freed_included"] = json!(false);
+        if !missing.is_empty() {
+            space["fits_recorded_general_slots"] = Value::Null;
+            space["fits_recorded_general_slots_if_same_item_stacks_merge"] = Value::Null;
+        }
+        result["bag_space_projection"] = space;
     }
     Ok(result)
 }

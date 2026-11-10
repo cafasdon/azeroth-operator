@@ -1626,6 +1626,12 @@ positive limited count does not establish how many requested bundles fit.
 Set `merchant_cart_include_repair` to include the same capture's repair
 quote in the resource budget. The repair reservation shows the combined
 copper and shortfall. Missing repair quotes leave full coverage unknown.
+Set `merchant_cart_estimate_bag_space` to estimate the shared bag space
+for the requested bundles of observed item offers, grouping the same item
+across slots. Currency offers are excluded. Sold-out item offers still
+contribute to the hypothetical space estimate and retain their stock flag.
+Unobserved slots leave whole-cart fit unknown. The estimate uses bags
+before purchase and excludes slots freed by spending item tokens.
 
 Set `merchant_offer_slot` to select an
 offer and optionally `merchant_bundles` for the requested bundle count.

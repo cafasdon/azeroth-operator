@@ -191,6 +191,9 @@ struct Inspect {
     /// Include the repair quote from the same saved merchant capture in the cart budget.
     #[serde(default)]
     merchant_cart_include_repair: bool,
+    /// Estimate carried bag space for item bundles in the saved cart.
+    #[serde(default)]
+    merchant_cart_estimate_bag_space: bool,
     /// Filter saved merchant search results by captured stock state.
     merchant_stock_state: Option<azeroth_operator::MerchantStockState>,
     /// Review whole-entry buyback quotes for 1 to 12 distinct captured slots; requires merchant_buyback.
@@ -2784,6 +2787,11 @@ impl Operator {
                 "Repair reservation requires a merchant cart",
             )]);
         }
+        if args.merchant_cart_estimate_bag_space && args.merchant_cart.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Merchant bag space requires a merchant cart",
+            )]);
+        }
         if let Some(cart) = &args.merchant_cart
             && (args.section.as_deref() != Some("merchant_stock")
                 || args.merchant_offer_slot.is_some()
@@ -4388,6 +4396,7 @@ impl Operator {
                             cart.iter()
                                 .map(|line| (line.slot.get(), line.bundles.get())),
                             args.merchant_cart_include_repair,
+                            args.merchant_cart_estimate_bag_space,
                         )
                     });
                     let Ok(result) = result else {
