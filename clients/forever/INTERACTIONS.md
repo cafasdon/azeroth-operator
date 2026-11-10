@@ -3212,6 +3212,12 @@ to look up an exact public toy name, ignoring case and surrounding spaces.
 It can be combined with the recorded collection and favourite flags.
 Matches cover only the saved filtered view.
 
+`list_snapshots.toy_name` searches across saved Forever toy journal views
+by exact name, ignoring case and surrounding spaces. It returns up to 20
+matching item IDs per capture with recorded collection and favourite flags.
+Combine it with `toy_in_view` to require the name, ID and flags on the same
+row.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

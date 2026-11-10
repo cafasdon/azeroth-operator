@@ -1928,6 +1928,7 @@ pub struct CaptureFilters<'a> {
     pub collected_mount: Option<CollectedMountFilter>,
     pub collected_mount_name: Option<&'a str>,
     pub toy_in_view: Option<ToyViewFilter>,
+    pub toy_name: Option<&'a str>,
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
     pub profession_recipe: Option<ProfessionRecipeFilter>,
@@ -2178,6 +2179,7 @@ impl Store {
             collected_mount,
             collected_mount_name,
             toy_in_view,
+            toy_name,
             saved_instance,
             saved_world_boss,
             profession_recipe,
@@ -2284,6 +2286,14 @@ impl Store {
             toy_in_view.is_none() || family == Family::Forever,
             "Toy view filtering requires Forever"
         );
+        let toy_name = toy_name.map(str::trim);
+        ensure!(
+            toy_name.is_none_or(|name| family == Family::Forever
+                && !name.is_empty()
+                && name.len() <= 256),
+            "Toy name filtering requires Forever and a valid name"
+        );
+        let toy_name = toy_name.map(str::to_lowercase);
         ensure!(
             saved_instance.as_ref().is_none_or(|filter| {
                 family == Family::Forever
@@ -3392,6 +3402,25 @@ impl Store {
                     if toy_in_view.is_some() && toy_match.is_none() {
                         continue;
                     }
+                    let toy_name_match = toy_name.as_ref().and_then(|name| {
+                        let view = s.sections.get("toy_collection_view")?;
+                        let mut matches: Vec<_> = view["entries"].as_object()?.iter().filter_map(|(id, row)| {
+                            let id = id.parse::<u32>().ok()?;
+                            (toy_in_view.as_ref().is_none_or(|filter| filter.item_id.get() == id)
+                                && row["name"].as_str().is_some_and(|label| label.trim().to_lowercase() == *name))
+                                .then_some((id, row))
+                        }).collect();
+                        matches.sort_unstable_by_key(|(id, _)| *id);
+                        (!matches.is_empty()).then(|| json!({
+                            "coverage":view["coverage"],"matched_count":matches.len(),"truncated":matches.len()>20,
+                            "toys":matches.into_iter().take(20).map(|(id,row)| json!({
+                                "item_id":id,"name":row["name"],"collected":row["collected"],"favorite":row["favorite"],
+                            })).collect::<Vec<_>>(),
+                        }))
+                    });
+                    if toy_name.is_some() && toy_name_match.is_none() {
+                        continue;
+                    }
                     let achievement_match = tracked_achievement
                         .as_ref()
                         .zip(achievement_key.as_ref())
@@ -4183,6 +4212,9 @@ impl Store {
                     }
                     if let Some(observation) = toy_match {
                         summary["toy_in_view_match"] = observation;
+                    }
+                    if let Some(observation) = toy_name_match {
+                        summary["toy_name_match"] = observation;
                     }
                     if let Some(space) = bag_space {
                         summary["carried_bag_space"] = space;

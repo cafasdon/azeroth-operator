@@ -522,6 +522,8 @@ struct List {
     collected_mount_name: Option<String>,
     /// Find an exact toy ID in the saved filtered journal with optional recorded flags.
     toy_in_view: Option<azeroth_operator::ToyViewFilter>,
+    /// Find an exact case-insensitive public name in saved filtered toy journals.
+    toy_name: Option<String>,
     /// Match a named saved instance and its recorded lock/reset state.
     saved_instance: Option<azeroth_operator::SavedInstanceFilter>,
     /// Find a named world boss in the saved cache; does not establish loot eligibility.
@@ -2344,6 +2346,7 @@ impl Operator {
                 collected_mount: args.collected_mount,
                 collected_mount_name: args.collected_mount_name.as_deref(),
                 toy_in_view: args.toy_in_view,
+                toy_name: args.toy_name.as_deref(),
                 saved_instance: args.saved_instance,
                 saved_world_boss: args.saved_world_boss,
                 profession_recipe: args.profession_recipe,

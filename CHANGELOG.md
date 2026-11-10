@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever toy journal captures by public toy name.
+
 - Inspect saved Forever toy journal rows by public toy name.
 
 - Find saved collected Forever mounts by public mount name.

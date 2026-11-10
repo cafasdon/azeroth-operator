@@ -88,6 +88,26 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                         rejected=await session.call_tool("list_snapshots",{"family":family,"toy_in_view":selector})
                         self.assertTrue(rejected.isError)
                     result = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "toy_collection_view"})
+                    async def by_name(name, **options):
+                        reply=await session.call_tool("list_snapshots",{
+                            "family":"forever","toy_name":name,**options})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)["snapshots"]
+                    named=await by_name("  NeW VIEW row  ")
+                    self.assertEqual([row["snapshot_id"] for row in named],[after_key])
+                    matched=named[0]["toy_name_match"]
+                    self.assertEqual((matched["coverage"],matched["matched_count"],matched["truncated"]),
+                        ("filtered_journal",2,False))
+                    self.assertEqual([row["item_id"] for row in matched["toys"]],[3,10])
+                    self.assertEqual(await by_name("New view"),[])
+                    self.assertEqual(await by_name("New view row",toy_in_view={"item_id":1,"favorite":True}),[])
+                    self.assertEqual(await by_name("New view row",toy_in_view={"item_id":3,"collected":False}),[])
+                    narrowed=await by_name("New view row",toy_in_view={"item_id":3,"collected":True})
+                    self.assertEqual([row["item_id"] for row in narrowed[0]["toy_name_match"]["toys"]],[3])
+                    self.assertEqual(await by_name("Owned",latest_per_character=True),[])
+                    for family,name in [("retail","Owned"),("forever"," "),("forever","é"*129)]:
+                        rejected=await session.call_tool("list_snapshots",{"family":family,"toy_name":name})
+                        self.assertTrue(rejected.isError)
                     self.assertFalse(result.isError)
                     self.assertEqual(json.loads(result.content[0].text)["data"], captured["sections"]["toy_collection_view"])
                     for source, flags, expected in [
