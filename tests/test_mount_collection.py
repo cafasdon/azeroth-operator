@@ -35,6 +35,9 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                 'coverage':'loaded_builtin_buttons_only','observed_buttons':4,'missing_buttons':0,'slots':{
                     '1':{'empty':False,'kind':'spell','id':40002},'2':{'empty':False,'kind':'item','id':40002},
                     '3':{'empty':False,'kind':'spell','id':999},'10':{'empty':False,'kind':'spell','id':40002}}}
+            captured['sections']['action_bar_observation']['button_hotkeys']={
+                '1':{'button':'ActionButton1','slot':1,'key1':'1','key2':'SHIFT-1'},
+                '2':{'button':'MultiBarBottomLeftButton1','slot':1,'key1':'1'}}
             key = store.ingest(captured)
             self.assertEqual(store.inspect(key, "mount_collection")["data"], captured["sections"]["mount_collection"])
             empty = copy.deepcopy(captured)
@@ -93,6 +96,8 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                             self.assertIsNone(audit)
                         elif expected:
                             self.assertEqual(audit['matches_by_mount_id']['2']['observed_action_slots'],expected)
+                            hotkeys={'1':['1','SHIFT-1'],'10':None} if len(expected)==2 else {'10':None}
+                            self.assertEqual(audit['matches_by_mount_id']['2']['observed_hotkeys_by_slot'],hotkeys)
                             self.assertFalse(audit['current_mount_usability_verified'])
                         else:
                             self.assertEqual(audit['matches_by_mount_id'],{})

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show captured hotkeys for matching mount and toy action-bar slots.
+
 - Cross-reference saved action-bar item slots with the filtered toy journal.
 
 - Cross-reference saved action-bar spell slots with collected mounts.

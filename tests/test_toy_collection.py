@@ -30,6 +30,8 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                 'coverage':'loaded_builtin_buttons_only','observed_buttons':4,'missing_buttons':0,'slots':{
                     '1':{'empty':False,'kind':'item','id':1},'2':{'empty':False,'kind':'spell','id':1},
                     '3':{'empty':False,'kind':'item','id':2},'10':{'empty':False,'kind':'item','id':1}}}
+            captured['sections']['action_bar_observation']['button_hotkeys']={
+                '1':{'button':'ActionButton1','slot':1},'2':{'button':'ActionButton3','slot':3,'key1':'3'}}
             key = store.ingest(captured)
             empty = copy.deepcopy(captured)
             empty["sections"]["toy_collection_view"].update(displayed_count=0, entries={})
@@ -85,6 +87,8 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(report['current_toy_usability_verified'])
                             if '2' in expected:
                                 self.assertFalse(report['matches_by_item_id']['2']['captured_collected'])
+                                self.assertEqual(report['matches_by_item_id']['2']['observed_hotkeys_by_slot'],{'3':['3']})
+                                self.assertEqual(report['matches_by_item_id']['1']['observed_hotkeys_by_slot'],{'1':[],'10':None})
                     for snapshot, section in [(key,'toy_collection_view'),(retail_key,'action_bar_observation')]:
                         reply=await session.call_tool('inspect_snapshot',{
                             'snapshot_id':snapshot,'section':section,'action_bar_toy_audit':True})

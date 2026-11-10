@@ -4910,11 +4910,13 @@ fn action_slots_by_id(actions: &Value, kind: &str) -> Option<BTreeMap<u64, BTree
 pub fn action_bar_mount_audit(actions: &Value, mounts: Option<&Value>) -> Option<Value> {
     let mounts = mounts?["entries"].as_object()?;
     let slots_by_spell = action_slots_by_id(actions, "spell")?;
+    let hotkeys = observed_action_hotkeys_by_slot(actions);
     let matches: BTreeMap<_, _> = mounts.iter().filter_map(|(id, row)| {
         let spell = row["spell_id"].as_u64()?;
         let slots = slots_by_spell.get(&spell)?;
         Some((id.parse::<u32>().ok()?, json!({"spell_id":spell,"name":row["name"],
-            "observed_action_slots":slots,"captured_usable":row["usable"],"captured_favorite":row["favorite"]})))
+            "observed_action_slots":slots,"captured_usable":row["usable"],"captured_favorite":row["favorite"],
+            "observed_hotkeys_by_slot":selected_action_hotkeys(slots, hotkeys.as_ref())})))
     }).collect();
     Some(
         json!({"basis":"exact_saved_mount_spell_id","matches_by_mount_id":matches,
@@ -4926,6 +4928,7 @@ pub fn action_bar_toy_audit(actions: &Value, toys: Option<&Value>) -> Option<Val
     let toys = toys?;
     let entries = toys["entries"].as_object()?;
     let slots_by_item = action_slots_by_id(actions, "item")?;
+    let hotkeys = observed_action_hotkeys_by_slot(actions);
     let matches: BTreeMap<_, _> = slots_by_item
         .iter()
         .filter_map(|(id, slots)| {
@@ -4933,7 +4936,8 @@ pub fn action_bar_toy_audit(actions: &Value, toys: Option<&Value>) -> Option<Val
             Some((
                 id,
                 json!({"name":row["name"],"observed_action_slots":slots,
-            "captured_collected":row["collected"],"captured_favorite":row["favorite"]}),
+            "captured_collected":row["collected"],"captured_favorite":row["favorite"],
+            "observed_hotkeys_by_slot":selected_action_hotkeys(slots, hotkeys.as_ref())}),
             ))
         })
         .collect();
@@ -4942,6 +4946,32 @@ pub fn action_bar_toy_audit(actions: &Value, toys: Option<&Value>) -> Option<Val
         "matches_by_item_id":matches,"current_toy_usability_verified":false,
         "complete_action_bar_coverage_verified":false,"live":false}),
     )
+}
+
+fn observed_action_hotkeys_by_slot(actions: &Value) -> Option<BTreeMap<u32, BTreeSet<&str>>> {
+    let buttons = actions["button_hotkeys"].as_object()?;
+    let mut hotkeys = BTreeMap::<u32, BTreeSet<&str>>::new();
+    for button in buttons.values() {
+        let slot = u32::try_from(button["slot"].as_u64()?).ok()?;
+        hotkeys.entry(slot).or_default().extend(
+            [button["key1"].as_str(), button["key2"].as_str()]
+                .into_iter()
+                .flatten(),
+        );
+    }
+    Some(hotkeys)
+}
+
+fn selected_action_hotkeys(
+    slots: &BTreeSet<u32>,
+    hotkeys: Option<&BTreeMap<u32, BTreeSet<&str>>>,
+) -> Value {
+    json!(hotkeys.map(|hotkeys| {
+        slots
+            .iter()
+            .map(|slot| (*slot, hotkeys.get(slot)))
+            .collect::<BTreeMap<_, _>>()
+    }))
 }
 
 pub fn shared_action_bar_hotkeys(actions: &Value) -> Option<BTreeMap<String, BTreeSet<u64>>> {

@@ -3388,6 +3388,9 @@ Set `action_bar_toy_audit: true` on the same section to match retained
 item slots to exact item IDs in the same capture's filtered toy journal.
 Matches preserve the recorded collected and favourite flags. Missing
 matches leave journal coverage and current toy usability unverified.
+Both audits include `observed_hotkeys_by_slot` when button hotkeys were
+captured. An empty list means a button was observed with no reported
+keys. A null value means the slot or hotkey section was unobserved.
 
 Set `inspect_snapshot.toy_name` with the `toy_collection_view` section
 to look up an exact public toy name, ignoring case and surrounding spaces.
