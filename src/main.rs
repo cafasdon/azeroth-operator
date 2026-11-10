@@ -148,7 +148,7 @@ struct Inspect {
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
     bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
-    /// Project retained saved cooldown timers against this timestamp. Requires bag_cooldown_filter.
+    /// Project saved carried cooldowns at this timestamp for a cooldown filter or exact action-bar item stock lookup.
     bag_cooldown_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
     #[serde(default, deserialize_with = "skill_line_argument")]
@@ -2713,9 +2713,12 @@ impl Operator {
                 "Reset projection requires a saved reset section",
             )]);
         }
-        if args.bag_cooldown_reference_at.is_some() && args.bag_cooldown_filter.is_none() {
+        if args.bag_cooldown_reference_at.is_some()
+            && args.bag_cooldown_filter.is_none()
+            && !args.action_bar_item_stock
+        {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Bag cooldown reference requires a cooldown filter",
+                "Bag cooldown reference requires a cooldown filter or exact action-bar item stock lookup",
             )]);
         }
         if args.bag_cooldown_filter.as_ref().is_some_and(|filter| {
@@ -5751,6 +5754,13 @@ impl Operator {
                         ));
                 }
                 if args.action_bar_item_stock {
+                    if args.bag_cooldown_reference_at.is_some()
+                        && value["client"]["family"] != "forever"
+                    {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Action-bar item cooldown projections require a saved Forever snapshot",
+                        )]);
+                    }
                     let mut stock = serde_json::Value::Null;
                     if let Some(id) = args.action_bar_item_id
                         && value["action_bar_item_match_count"]
@@ -5758,7 +5768,15 @@ impl Operator {
                             .is_some_and(|count| count > 0)
                     {
                         let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
-                            azeroth_operator::analysis::find_item(&snapshot, id.get(), 0, 1)
+                            azeroth_operator::analysis::find_item_with_container_quantities(
+                                &snapshot,
+                                id.get(),
+                                0,
+                                1,
+                                false,
+                                args.bag_cooldown_reference_at,
+                                None,
+                            )
                         });
                         let Ok(found) = result else {
                             return CallToolResult::error(vec![ContentBlock::text(
@@ -5768,6 +5786,11 @@ impl Operator {
                         let quantities = &found["quantity_by_storage"];
                         stock = serde_json::json!({"equipment_quantity":quantities["equipment"],
                             "bag_quantity":quantities["bags"]});
+                        if let Some(reference) = args.bag_cooldown_reference_at {
+                            stock["bag_cooldown_reference_at"] = serde_json::json!(reference);
+                            stock["bag_cooldown_quantity_projection"] =
+                                found["bag_cooldown_quantity_projection"].clone();
+                        }
                     }
                     value["action_bar_item_stock"] = stock;
                 }

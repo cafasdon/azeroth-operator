@@ -1820,6 +1820,9 @@ and spell searches are mutually exclusive and keep their ID types separate.
 Set `action_bar_item_stock` with the item selector to include captured
 equipment and bag quantities when a shortcut matches. A missing storage
 section stays unknown. Counts do not establish that the shortcut can be used.
+In Forever, add `bag_cooldown_reference_at` to that lookup to group the
+matching carried copies by projected cooldown end. The projection uses
+the same capture as the shortcut and leaves current usability unverified.
 Use `action_bar_item_stock_audit` to check every retained item shortcut at
 once. Results group captured slots by item ID and report equipment and bag
 counts only for those IDs.

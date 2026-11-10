@@ -1,5 +1,7 @@
 # Changelog
 
+- Show projected carried cooldown quantities for exact saved action-bar item shortcuts.
+
 - Show captured hotkeys for matching mount and toy action-bar slots.
 
 - Cross-reference saved action-bar item slots with the filtered toy journal.

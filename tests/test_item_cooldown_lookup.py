@@ -21,6 +21,9 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             base=Path(folder); store=SnapshotStore(base); value=fixture()
             value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             value['sections']['equipment']={'11':{'item_id':100}}
+            value['sections']['action_bar_observation']={
+                'coverage':'loaded_builtin_buttons_only','observed_buttons':2,'missing_buttons':0,'slots':{
+                    '1':{'empty':False,'kind':'item','id':100},'2':{'empty':False,'kind':'spell','id':101}}}
             value['sections']['bags']={'0':{str(slot):{'item_id':100,'count':slot} for slot in [1,2,3]},
                 '1':{'1':{'item_id':101,'count':99}}, '2':{}}
             value['sections']['character_bank']={'6':{'1':{'item_id':100,'count':20}}}
@@ -106,6 +109,23 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn('bag_cooldown_reference_at',combined)
                     reference='2025-01-02T00:00:06Z'
                     projected=await find(additional_snapshot_ids=[alt_key,legacy_key],bag_cooldown_reference_at=reference)
+                    for capture_id,item,expected in [(key,100,(1,0,5)),(alt_key,100,(0,1,5)),
+                                                      (legacy_key,100,(0,0,6)),(key,101,None)]:
+                        reply=await session.call_tool('inspect_snapshot',{'snapshot_id':capture_id,
+                            'section':'action_bar_observation','action_bar_item_id':item,
+                            'action_bar_item_stock':True,'bag_cooldown_reference_at':reference})
+                        self.assertFalse(reply.isError,reply)
+                        stock=json.loads(reply.content[0].text)['action_bar_item_stock']
+                        if expected is None:
+                            self.assertIsNone(stock)
+                        else:
+                            self.assertEqual(stock['bag_quantity'],6)
+                            self.assertEqual(stock['bag_cooldown_reference_at'],reference)
+                            self.assertEqual(stock['bag_cooldown_quantity_projection'],{
+                                'quantity_with_projected_end_at_or_before_reference':expected[0],
+                                'quantity_with_projected_end_after_reference':expected[1],
+                                'quantity_with_unknown_projected_end':expected[2],
+                                'current_usability_verified':False})
                     for capture, timestamp, comparison, totals in [
                         (projected,'2025-01-01T00:00:00Z',True,(1,0,5)),
                         (projected['additional_snapshot_results'][0],'2025-01-02T00:00:07Z',False,(0,1,5)),
