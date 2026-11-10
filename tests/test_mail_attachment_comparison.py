@@ -54,6 +54,21 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError)
                         return json.loads(response.content[0].text)
                     delta=(await compare(before,after))['mail_attachment_changes']
+                    reply = await session.call_tool('compare_snapshots',{
+                        'before_id':before,'after_id':after,
+                        'mail_attachment_item_id':720,'mail_attachment_currency_id':720,
+                    })
+                    self.assertFalse(reply.isError,reply)
+                    focused = json.loads(reply.content[0].text)
+                    self.assertNotIn('mail_attachment_changes',focused)
+                    currency_comparison = focused['mail_attachment_currency_comparison']
+                    self.assertEqual(currency_comparison['currency_id'],720)
+                    self.assertEqual(currency_comparison['before']['known_quantity'],4)
+                    self.assertEqual(currency_comparison['after']['known_quantity'],4)
+                    self.assertEqual(currency_comparison['before']['known_attachment_slots'],1)
+                    self.assertEqual(currency_comparison['after']['known_attachment_slots'],2)
+                    self.assertEqual(currency_comparison['known_quantity_delta'],0)
+                    self.assertEqual(focused['mail_attachment_item_comparison']['known_quantity_delta'],-1)
                     for a,b,expected_before,expected_after,expected_delta in [
                         (before,after,7,6,-1),(before,empty,7,None,None),
                         (missing,after,None,6,None),(after,after,6,6,0),

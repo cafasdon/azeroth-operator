@@ -5,6 +5,9 @@ item's saved loaded inbox quantities and attachment counts. A missing
 inbox is unknown, and an item absent from the loaded rows has no known
 quantity. The delta requires known quantities in both captures and
 does not establish delivery or retrieval.
+Use `mail_attachment_currency_id` for the corresponding currency
+comparison. It can be combined with the item selector, and the two
+identifier namespaces remain separate.
 
 Set `quest_list_objective_checklist` in saved quest-list inspection to
 see explicitly unfinished objectives and remaining counts for matching

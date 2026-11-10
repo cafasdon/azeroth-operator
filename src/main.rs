@@ -902,6 +902,8 @@ struct Compare {
     mail_attachment_changes: bool,
     /// Compare loaded saved mail quantities for this exact item without listing other attachments.
     mail_attachment_item_id: Option<std::num::NonZeroU32>,
+    /// Compare loaded saved mail quantities for this exact currency.
+    mail_attachment_currency_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Resolve one tracked achievement by exact saved name before comparing progress.
@@ -2337,6 +2339,7 @@ impl Operator {
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     mail_attachment_item_id: args.mail_attachment_item_id,
+                    mail_attachment_currency_id: args.mail_attachment_currency_id,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     achievement_name: args.achievement_name.as_deref(),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),

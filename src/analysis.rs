@@ -3383,6 +3383,7 @@ pub struct ComparisonSelectors<'a> {
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub mail_attachment_item_id: Option<std::num::NonZeroU32>,
+    pub mail_attachment_currency_id: Option<std::num::NonZeroU32>,
     pub achievement_id: Option<u32>,
     pub achievement_name: Option<&'a str>,
     pub profession_skill_line: Option<u32>,
@@ -4038,15 +4039,20 @@ pub fn compare_observations(
             .map(|(old, new)| compare_pet_views(old, new))
             .unwrap_or(Value::Null);
     }
-    if let Some(item_id) = selectors.mail_attachment_item_id {
+    for (kind, id) in [
+        ("item", selectors.mail_attachment_item_id),
+        ("currency", selectors.mail_attachment_currency_id),
+    ] {
+        let Some(id) = id else { continue };
         ensure!(
             before.client.family == crate::Family::Forever,
             "Mail attachment comparison requires Forever"
         );
-        comparison["mail_attachment_item_comparison"] = compare_mail_attachment_item(
+        comparison[format!("mail_attachment_{kind}_comparison")] = compare_mail_attachment_id(
             before.sections.get("mail_attachments"),
             after.sections.get("mail_attachments"),
-            item_id.get(),
+            kind,
+            id.get(),
         );
     }
     if selectors.mail_attachment_changes {
@@ -6004,14 +6010,15 @@ pub(crate) fn unloaded_mail_messages(mail: &Value) -> u64 {
     mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
 }
 
-fn compare_mail_attachment_item(
+fn compare_mail_attachment_id(
     before: Option<&Value>,
     after: Option<&Value>,
-    item_id: u32,
+    kind: &str,
+    id: u32,
 ) -> Value {
     let observe = |mail: &Value| {
         let (totals, unknown_slots) = mail_attachment_totals(mail);
-        let found = totals.get(&("item", u64::from(item_id)));
+        let found = totals.get(&(kind, u64::from(id)));
         json!({"known_quantity":found.map(|(quantity, _)| quantity),
             "known_attachment_slots":found.map(|(_, slots)| slots),
             "unloaded_messages":unloaded_mail_messages(mail),"unknown_attachment_slots":unknown_slots})
@@ -6027,9 +6034,11 @@ fn compare_mail_attachment_item(
                     - i128::from(before["known_quantity"].as_u64()?),
             )
         });
-    json!({"item_id":item_id,"coverage":"loaded_inbox_attachments",
+    let mut result = json!({"coverage":"loaded_inbox_attachments",
         "before":before,"after":after,"known_quantity_delta":delta,
-        "deliveries_or_retrievals_verified":false,"live":false})
+        "deliveries_or_retrievals_verified":false,"live":false});
+    result[format!("{kind}_id")] = json!(id);
+    result
 }
 
 fn compare_mail_attachments(before: &Value, after: &Value) -> Value {

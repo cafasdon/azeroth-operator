@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved inbox attachment quantities for one exact currency.
+
 - Compare saved inbox attachment quantities for one exact item.
 
 - Show saved pending mail attachments for reputation turn-in materials still missing after bank planning.
