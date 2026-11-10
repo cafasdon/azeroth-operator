@@ -12,6 +12,7 @@ pub mod gossip_option_filter;
 pub mod import;
 pub mod loot_observation;
 pub mod macro_operation;
+pub mod mail_funds;
 pub mod owned_auction_filter;
 pub mod planning;
 pub mod player_life_state;
@@ -107,6 +108,7 @@ pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "profession_recipe_materials",
     "recipe_item_sources",
     "mail_attachments",
+    "mail_funds",
     "pet_collection_view",
     "skill_lines",
     "bag_capacity",
@@ -169,6 +171,7 @@ pub const FOREVER_ONLY_OBSERVATIONS: &[&str] = &[
     "profession_recipe_materials",
     "recipe_item_sources",
     "mail_attachments",
+    "mail_funds",
     "pet_collection_view",
     "skill_lines",
     "bag_capacity",

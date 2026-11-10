@@ -657,6 +657,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 "Inconsistent pet journal row count"
             );
         }
+        "mail_funds" => crate::mail_funds::validate(value)?,
         "mail_attachments" => {
             object(
                 value,

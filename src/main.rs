@@ -102,6 +102,8 @@ struct Inspect {
     section: Option<String>,
     /// Group saved quests by retained provider finisher NPC/object IDs. include_reward_review adds saved reward/budget projections; quest_giver_references only, no action.
     quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
+    /// Review saved mail header amounts against the captured wallet and reserve. mail_funds only; no actions.
+    mail_funds_review: Option<azeroth_operator::mail_funds::Page>,
     /// Compare each saved group category's reported member count against this target.
     group_member_target: Option<std::num::NonZeroU32>,
     /// Compare the saved instance group count with a uniquely matching saved lockout size reference.
@@ -3194,6 +3196,15 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.mail_funds_review.as_ref().is_some_and(|page| {
+            args.section.as_deref() != Some("mail_funds")
+                || args.coverage_sections.is_some()
+                || page.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Mail funds review requires mail_funds and valid bounded review options",
+            )]);
+        }
         if args.quest_turn_in_review.as_ref().is_some_and(|page| {
             args.section.as_deref() != Some("quest_giver_references")
                 || args.coverage_sections.is_some()
@@ -4339,6 +4350,16 @@ impl Operator {
             args.coverage_sections.as_deref(),
         ) {
             Ok(mut value) => {
+                if let Some(page) = &args.mail_funds_review {
+                    let review = self.store.read(&args.snapshot_id)
+                        .and_then(|snapshot| azeroth_operator::mail_funds::review(&snapshot, page));
+                    match review {
+                        Ok(review) => value["data"] = review,
+                        Err(_) => return CallToolResult::error(vec![ContentBlock::text(
+                            "Saved mail funds context unavailable or invalid",
+                        )]),
+                    }
+                }
                 if let Some(page) = &args.quest_turn_in_review {
                     let review = self.store.read(&args.snapshot_id)
                         .and_then(|snapshot| azeroth_operator::quest_turn_in::review(&snapshot, page));

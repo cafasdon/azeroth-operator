@@ -15,6 +15,7 @@ SECTIONS = frozenset({"equipment", "bags", "character_bank", "account_bank", "se
 SECTIONS = SECTIONS | {"mount_collection", "toy_collection_view", "saved_instances", "saved_world_bosses"}
 SECTIONS = SECTIONS | {"profession_recipe_view"}
 SECTIONS = SECTIONS | {"mail_attachments"}
+SECTIONS = SECTIONS | {"mail_funds"}
 SECTIONS = SECTIONS | {"pet_collection_view"}
 SECTIONS = SECTIONS | {"equipment_durability"}
 SECTIONS = SECTIONS | {"weapon_enchants"}
@@ -382,6 +383,30 @@ def validate_snapshot(value):
                 raise ValueError("Invalid pet collection species")
             total+=row["owned_rows"]+row["unowned_rows"]
         if total!=view["displayed_rows"]:raise ValueError("Inconsistent pet journal rows")
+    if "mail_funds" in sections:
+        funds = sections["mail_funds"]
+        if (c["family"] != "forever" or not isinstance(funds, dict)
+                or set(funds) != {"coverage", "loaded_messages", "total_messages", "messages"}
+                or funds["coverage"] != "loaded_inbox_funds"
+                or type(funds["loaded_messages"]) is not int or not 0 <= funds["loaded_messages"] <= 100
+                or type(funds["total_messages"]) is not int
+                or not funds["loaded_messages"] <= funds["total_messages"] <= 4_294_967_295
+                or not isinstance(funds["messages"], dict)
+                or set(funds["messages"]) != {str(i) for i in range(1, funds["loaded_messages"] + 1)}):
+            raise ValueError("Invalid inbox funds coverage")
+        for row in funds["messages"].values():
+            if not isinstance(row, dict):
+                raise ValueError("Invalid inbox funds row")
+            if row.get("status") == "unavailable":
+                if set(row) != {"status"}:
+                    raise ValueError("Invalid unavailable inbox funds")
+            elif row.get("status") == "reported":
+                if (set(row) != {"status", "money_copper", "cod_copper"}
+                        or any(type(row[field]) is not int or not 0 <= row[field] <= 9_999_999_999_999
+                               for field in ("money_copper", "cod_copper"))):
+                    raise ValueError("Invalid reported inbox funds")
+            else:
+                raise ValueError("Invalid inbox funds status")
     if "mail_attachments" in sections:
         mail=sections["mail_attachments"]
         if (c["family"]!="forever" or not isinstance(mail,dict)

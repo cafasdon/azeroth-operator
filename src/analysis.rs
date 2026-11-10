@@ -12025,6 +12025,8 @@ pub fn summary(s: &Snapshot) -> Value {
             "species_with_both_row_types":mixed})
         })
         .unwrap_or(Value::Null);
+    summary["mail_funds_observation"] = s.sections.get("mail_funds")
+        .map(crate::mail_funds::observation).unwrap_or(Value::Null);
     summary["mail_attachment_counts"] = s.sections.get("mail_attachments").map(|mail| {
         let rows: Vec<_> = mail["messages"].as_object().unwrap().values()
             .flat_map(|attachments| attachments.as_object().unwrap().values()).collect();

@@ -1,5 +1,27 @@
 # Forever interaction map
 
+## Saved mailbox amounts and COD quotes (10 November 2026)
+
+Manual Forever export may record `mail_funds` from an already-loaded, visible,
+idle inbox. It retains only matching numeric money/COD pairs for up to100
+loaded positions, with explicit unknown rows and whole reported counts. Private
+header fields, names, text and invoices are excluded. Mailbox money is pending,
+not spendable funds; COD is a quote, not an obligation or payment permission.
+No open, refresh, retrieval, payment, return, delete or send occurs.
+
+Inspect the section, find captures with `list_snapshots.required_sections`, or
+read `character_summary.mail_funds_observation`. Known sums and partial/unloaded
+counts remain distinct from complete reported-cache totals and known zero.
+For selected quote arithmetic, use `inspect_snapshot` section `mail_funds`
+with `mail_funds_review: {message_slots: [1,2], reserve_copper: 100}`. Omit
+slots to use all loaded positions. Money in those messages never funds COD:
+only the captured wallet after the reserve is used. Unknown selected amounts
+prevent an overall positive fit; explicit unrecorded slots remain not_captured.
+Offset/limit pages rows after computing selected totals (limit1..50, default20).
+Missing capture/wallet stays unknown. No native availability, mail continuity,
+item ownership or payment eligibility is established. Readers must be updated
+before exporter installation; deployment/live testing remain deferred. See ADR084.
+
 ## Raw player PvP flags (10 November 2026)
 
 Manual Forever export may record `player_pvp_flags` with raw `is_pvp`,
@@ -1927,7 +1949,8 @@ list makes the comparison unknown.
 | Dungeons, raids, combat and PvP | Offline encounter, roster or preparation analysis from appropriate owner-provided data. | No live combat coaching from restricted values, input automation, targeting, queueing or play. |
 | Saved instances | Passive updated-cache capture and search of saved dungeon/raid names, difficulties, reset timers and lock/extension flags, with update age. Compare public descriptions across captures, marking duplicates ambiguous. | Qualify native events and returns. Public descriptions cannot establish lockout identity. No refresh requests, unique lockout IDs, acceptance or extension actions. |
 | Saved world bosses | Separate passive cache capture of names and reset timers after instance-info updates, with cache age and summary count. Search saved characters by exact name and recorded timer/cache-age limits. | Qualify native events and returns. Missing entries do not prove loot eligibility. No refresh requests or identifiers are exported. |
-| Mail attachments | Observe loaded pending item/currency attachment IDs and counts in a visible idle inbox. Search saved characters by kind, ID and summed known quantity, retaining partial coverage. Excludes private correspondence and spendable inventory. | Qualify native loading, idle flags and item/currency returns. Missing/unresolved/unloaded data is unknown. No headers, bodies, senders, COD, refresh, opening, retrieval, deletion or sending. |
+| Mail attachments | Observe loaded pending item/currency attachment IDs and counts in a visible idle inbox. Search saved characters by kind, ID and summed known quantity, retaining partial coverage. Excludes private correspondence and spendable inventory. | Qualify native loading, idle flags and item/currency returns. Missing/unresolved/unloaded data is unknown. This collector reads no headers or COD; numeric funds are separate. No bodies, senders, refresh, opening, retrieval, deletion or sending. |
+| Mail funds/COD quotes | Observe only numeric loaded-header amounts; review selected COD quotes against the captured wallet/reserve without crediting pending money. | Native cache/amount semantics remain unqualified. No correspondence, invoice or attachment identity is captured; no retrieval, payment or other mail action occurs. |
 | Social, guild and account administration | Public reference or owner-approved offline records only. | Chat, invitations, account changes and distribution of private data stay outside MCP scope. |
 
 New MCP routes are denied until reviewed for data source, owner scope, outputs and side effects. The tool cannot drive game input, bypass protected values, read process memory, intercept traffic or invoke a game API. See [enforced policy](../../docs/operation-policy.md) and Blizzard's [addon policy](https://us.forums.blizzard.com/en/wow/t/ui-add-on-development-policy/24534).

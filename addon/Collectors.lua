@@ -2142,6 +2142,76 @@ AO.collectors.pet_collection_view = function()
     for key in pairs(final.entries) do assert(result.entries[key],"Pet journal changed") end
     return result
 end
+-- Only numeric fields from already-loaded headers; private correspondence is discarded.
+AO.collectors.mail_funds = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Mail funds restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted mail funds")
+        return value
+    end
+    local function integer(value,low,high)
+        value=public(value)
+        assert(type(value)=="number" and value%1==0 and value>=low and value<=high, "Invalid mail funds number")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Mail funds unavailable")
+    local frame=public(MailFrame);local inbox=public(InboxFrame);local api=public(C_Mail)
+    assert(type(frame)=="table" and type(inbox)=="table" and type(api)=="table", "Mail context unavailable")
+    local visible=public(frame.IsVisible);local inboxVisible=public(inbox.IsVisible)
+    local pending=public(api.IsCommandPending)
+    local count=public(GetInboxNumItems);local header=public(GetInboxHeaderInfo)
+    assert(type(visible)=="function" and type(inboxVisible)=="function" and type(pending)=="function"
+        and type(count)=="function" and type(header)=="function", "Mail funds API unavailable")
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and rawequal(public(MailFrame),frame) and rawequal(public(InboxFrame),inbox)
+            and rawequal(public(C_Mail),api) and public(frame.IsVisible)==visible
+            and public(inbox.IsVisible)==inboxVisible and public(api.IsCommandPending)==pending
+            and public(GetInboxNumItems)==count and public(GetInboxHeaderInfo)==header, "Mail funds context changed")
+        -- Native frame methods can come from an __index table rather than raw fields.
+        local finalVisible,finalInboxVisible=frame.IsVisible,inbox.IsVisible
+        assert(rawequal(finalVisible,visible) and rawequal(finalInboxVisible,inboxVisible), "Mail visibility API changed")
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret)
+            and rawequal(rawget(_G,"MailFrame"),frame) and rawequal(rawget(_G,"InboxFrame"),inbox)
+            and rawequal(rawget(_G,"C_Mail"),api) and rawequal(rawget(api,"IsCommandPending"),pending)
+            and rawequal(rawget(_G,"GetInboxNumItems"),count) and rawequal(rawget(_G,"GetInboxHeaderInfo"),header),
+            "Mail funds API changed")
+        assert(rawequal(rawget(frame,"inboxBeingChecked"),false), "Mail inbox is not idle")
+    end
+    local function context()
+        for pass=1,2 do
+            fixed()
+            assert(public(pending())==false and public(visible(frame))==true and public(inboxVisible(inbox))==true
+                and public(frame.inboxBeingChecked)==false, "Mail funds inbox is not idle")
+            fixed()
+        end
+    end
+    local function capacity()
+        context()
+        local loaded,total=count()
+        loaded=integer(loaded,0,100);total=integer(total,loaded,4294967295)
+        context()
+        return loaded,total
+    end
+    local function read(slot)
+        local money,cod=select(5,header(slot))
+        return {status="reported",money_copper=integer(money,0,9999999999999),
+            cod_copper=integer(cod,0,9999999999999)}
+    end
+    local loaded,total=capacity()
+    local messages={}
+    for slot=1,loaded do
+        context();local ok,first=pcall(read,slot);context()
+        local again,second=pcall(read,slot);context()
+        messages[tostring(slot)]=ok and again and first.money_copper==second.money_copper
+            and first.cod_copper==second.cod_copper and second or {status="unavailable"}
+    end
+    local afterLoaded,afterTotal=capacity()
+    assert(afterLoaded==loaded and afterTotal==total, "Mail funds counts changed")
+    return {coverage="loaded_inbox_funds",loaded_messages=loaded,total_messages=total,messages=messages}
+end
+
 AO.collectors.mail_attachments = function()
     assert(AO.family=="forever" and MailFrame and MailFrame.IsVisible and InboxFrame and InboxFrame.IsVisible
         and C_Mail and C_Mail.IsCommandPending and GetInboxNumItems and HasInboxItem and GetInboxItem,

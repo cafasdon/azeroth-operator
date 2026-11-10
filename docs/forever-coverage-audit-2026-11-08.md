@@ -1,5 +1,11 @@
 # Forever coverage audit — 8 November 2026
 
+10 November mailbox amounts: optional numeric loaded-header capture now reaches
+strict readers, saved inspection/discovery, summary and selected COD quote
+arithmetic. Mail money never credits wallet/inventory; correspondence and mail
+actions are excluded. Unknown, unloaded and zero values remain distinct.
+[Offline evidence](mail-funds-verification-2026-11-10.md).
+
 10 November raw PvP flags: manual export, strict readers, saved inspection,
 summary, discovery and comparison now cover three independent player-only
 flags. Unknown/restricted data stays unavailable; no safety/eligibility/current
