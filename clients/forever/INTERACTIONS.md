@@ -1539,6 +1539,11 @@ Set `encounter_name` for an exact case-insensitive name match. Optional
 `encounter_defeated` must match the same saved row. Counts-only warnings
 cannot satisfy a named search. Results show how many rows matched and
 leave encounter names in the individual review.
+Use `compare_snapshots.instance_lock_warning_changes` to compare two
+warnings with the same saved instance description and encounter total.
+Per-slot defeat flags are compared only when both detailed lists have
+the same names at the same slots. This leaves encounter completion events
+and lockout identity unverified.
 
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture

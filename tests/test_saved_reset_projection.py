@@ -297,6 +297,34 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     for bad in ['PRIVATE_CANARY', 1, 0, None, {}, []]:
                         await inspect(flag=bad, error=True)
                     await inspect(skill_line_filter={'filter':{'minimum_rank':0}}, error=True)
+                    updated=store.read(encounters_id)
+                    updated['captured_at']='2025-01-02T00:00:00Z'
+                    warning=updated['sections']['instance_context']['lock_warning']
+                    warning['encounters']['3']['killed']=True
+                    warning['encounters_completed']=2
+                    updated_id=store.ingest(updated)
+                    warning['encounters']['3']['name']='Different encounter'
+                    changed_names_id=store.ingest(updated)
+                    updated['sections']['instance_context']['difficulty_id']=2
+                    different_difficulty_id=store.ingest(updated)
+                    for after_id,delta,changes in [
+                        (updated_id,1,[{'slot':3,'name':'Same name','before_defeated':False,'after_defeated':True}]),
+                        (changed_names_id,1,None),(counts_only_id,0,None),(different_difficulty_id,None,None),
+                        (key,None,None),
+                    ]:
+                        reply=await session.call_tool('compare_snapshots',{
+                            'before_id':encounters_id,'after_id':after_id,'instance_lock_warning_changes':True})
+                        self.assertFalse(reply.isError,reply)
+                        report=json.loads(reply.content[0].text)['instance_lock_warning_changes']
+                        if delta is None:
+                            self.assertIsNone(report)
+                        else:
+                            self.assertEqual(report['completed_count_delta'],delta)
+                            self.assertEqual(report['encounter_flag_changes'],changes)
+                            self.assertFalse(report['saved_lockout_identity_verified'])
+                    reply=await session.call_tool('compare_snapshots',{
+                        'before_id':retail_key,'after_id':retail_key,'instance_lock_warning_changes':True})
+                    self.assertTrue(reply.isError,reply)
             self.assertEqual(before, {p:p.read_bytes() for p in before})
 
 

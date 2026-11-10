@@ -815,6 +815,9 @@ struct Compare {
     /// Compare public saved-instance descriptions; ambiguous rows never produce deltas.
     #[serde(default)]
     saved_instance_changes: bool,
+    /// Compare encounter progress from saved warnings with matching instance descriptions.
+    #[serde(default)]
+    instance_lock_warning_changes: bool,
     /// Compare saved world boss reset durations by unique case-insensitive reported names.
     #[serde(default)]
     saved_world_boss_changes: bool,
@@ -2213,6 +2216,7 @@ impl Operator {
                     mount_collection_changes: args.mount_collection_changes,
                     toy_view_changes: args.toy_view_changes,
                     saved_instance_changes: args.saved_instance_changes,
+                    instance_lock_warning_changes: args.instance_lock_warning_changes,
                     saved_world_boss_changes: args.saved_world_boss_changes,
                     profession_recipe_changes: args.profession_recipe_changes,
                     recipe_cooldown_changes: args.recipe_cooldown_changes,

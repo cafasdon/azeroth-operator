@@ -138,6 +138,43 @@ impl InstanceLockWarningFilter {
     }
 }
 
+pub(crate) fn compare_instance_lock_warnings(before: &Value, after: &Value) -> Option<Value> {
+    if ["kind", "name", "difficulty_id", "instance_map_id"]
+        .into_iter()
+        .any(|field| before[field] != after[field])
+    {
+        return None;
+    }
+    let old = &before["lock_warning"];
+    let new = &after["lock_warning"];
+    let total = old["encounters_total"].as_u64()?;
+    if new["encounters_total"].as_u64() != Some(total) {
+        return None;
+    }
+    let completed_before = old["encounters_completed"].as_i64()?;
+    let completed_after = new["encounters_completed"].as_i64()?;
+    let changes = old["encounters"].as_object().zip(new["encounters"].as_object()).and_then(|(old, new)| {
+        if old.len() != new.len() || old.iter().any(|(slot, row)| new.get(slot).is_none_or(|after| row["name"] != after["name"])) {
+            return None;
+        }
+        let mut changes: Vec<_> = old.iter().filter_map(|(slot, row)| {
+            let after = &new[slot];
+            (row["killed"] != after["killed"]).then(|| {
+                let slot = slot.parse::<u32>().unwrap();
+                (slot, json!({"slot":slot,"name":row["name"],"before_defeated":row["killed"],"after_defeated":after["killed"]}))
+            })
+        }).collect();
+        changes.sort_unstable_by_key(|(slot, _)| *slot);
+        Some(changes.into_iter().map(|(_, row)| row).collect::<Vec<_>>())
+    });
+    Some(
+        json!({"encounters_total":total,"before_encounters_completed":completed_before,
+        "after_encounters_completed":completed_after,"completed_count_delta":completed_after-completed_before,
+        "encounter_flag_changes":changes,"saved_lockout_identity_verified":false,
+        "encounter_completion_events_verified":false,"live":false}),
+    )
+}
+
 pub(crate) fn discovery_report(
     mut matches: Vec<(&String, &Value)>,
     saved: &Value,

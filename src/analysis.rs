@@ -3181,6 +3181,7 @@ pub struct ComparisonSelectors<'a> {
     pub mount_collection_changes: bool,
     pub toy_view_changes: bool,
     pub saved_instance_changes: bool,
+    pub instance_lock_warning_changes: bool,
     pub saved_world_boss_changes: bool,
     pub profession_recipe_changes: bool,
     pub recipe_cooldown_changes: bool,
@@ -3758,6 +3759,18 @@ pub fn compare_observations(
             .get("saved_world_bosses")
             .zip(after.sections.get("saved_world_bosses"))
             .map(|(old, new)| crate::saved_resets::compare_world_bosses(old, new))
+            .unwrap_or(Value::Null);
+    }
+    if selectors.instance_lock_warning_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Instance lock warning comparison requires Forever"
+        );
+        comparison["instance_lock_warning_changes"] = before
+            .sections
+            .get("instance_context")
+            .zip(after.sections.get("instance_context"))
+            .and_then(|(old, new)| crate::saved_resets::compare_instance_lock_warnings(old, new))
             .unwrap_or(Value::Null);
     }
     if selectors.saved_instance_changes {
