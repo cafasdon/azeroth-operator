@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures by Hearthstone bind name and recorded cooldown.
+
 - Capture, search and compare Forever's reported saved-instance extension flag.
 
 - Filter saved Forever instances by exact reported encounter total.

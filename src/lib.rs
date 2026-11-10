@@ -1971,6 +1971,8 @@ pub struct CaptureFilters<'a> {
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_map_name: Option<&'a str>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
+    pub hearthstone_bind_name: Option<&'a str>,
+    pub hearthstone_max_cooldown_seconds: Option<u32>,
     pub repair_max_quote_copper: Option<u64>,
     pub repair_min_remaining_copper: Option<u64>,
     pub equipment_durability_max_percent: Option<u8>,
@@ -2271,6 +2273,8 @@ impl Store {
             player_map_id,
             player_map_name,
             player_parent_map_id,
+            hearthstone_bind_name,
+            hearthstone_max_cooldown_seconds,
             repair_max_quote_copper,
             repair_min_remaining_copper,
             equipment_durability_max_percent,
@@ -2899,6 +2903,18 @@ impl Store {
             "Invalid captured player map name"
         );
         let player_map_name = player_map_name.map(str::to_lowercase);
+        let hearthstone_bind_name = hearthstone_bind_name.map(str::trim);
+        ensure!(
+            hearthstone_bind_name.is_none_or(|name| !name.is_empty() && name.len() <= 256),
+            "Invalid captured Hearthstone bind name"
+        );
+        let hearthstone_bind_name = hearthstone_bind_name.map(str::to_lowercase);
+        let filter_hearthstone =
+            hearthstone_bind_name.is_some() || hearthstone_max_cooldown_seconds.is_some();
+        ensure!(
+            !filter_hearthstone || family == Family::Forever,
+            "Hearthstone filtering requires Forever"
+        );
         let filter_player_map =
             player_map_id.is_some() || player_parent_map_id.is_some() || player_map_name.is_some();
         let filter_repair = repair_max_quote_copper.is_some()
@@ -4104,19 +4120,27 @@ impl Store {
                     } else {
                         None
                     };
-                    let player_map = s.sections.get("stats").filter(|stats| {
-                        player_map_id
-                            .is_none_or(|id| stats["map_id"].as_u64() == Some(u64::from(id.get())))
-                            && player_parent_map_id.is_none_or(|id| {
+                    let player_map =
+                        s.sections.get("stats").filter(|stats| {
+                            player_map_id.is_none_or(|id| {
+                                stats["map_id"].as_u64() == Some(u64::from(id.get()))
+                            }) && player_parent_map_id.is_none_or(|id| {
                                 stats["map_parent_id"].as_u64() == Some(u64::from(id.get()))
-                            })
-                            && player_map_name.as_ref().is_none_or(|name| {
+                            }) && player_map_name.as_ref().is_none_or(|name| {
                                 stats["map_name"]
                                     .as_str()
                                     .is_some_and(|observed| observed.to_lowercase() == *name)
+                            }) && hearthstone_bind_name.as_ref().is_none_or(|name| {
+                                stats["hearthstone_bind_name"]
+                                    .as_str()
+                                    .is_some_and(|observed| observed.to_lowercase() == *name)
+                            }) && hearthstone_max_cooldown_seconds.is_none_or(|maximum| {
+                                stats["hearthstone_cooldown_seconds"]
+                                    .as_u64()
+                                    .is_some_and(|seconds| seconds <= u64::from(maximum))
                             })
-                    });
-                    if filter_player_map && player_map.is_none() {
+                        });
+                    if (filter_player_map || filter_hearthstone) && player_map.is_none() {
                         continue;
                     }
                     let tracked_match = tracked_recipe_key.as_ref().and_then(|key| {

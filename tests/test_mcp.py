@@ -1520,6 +1520,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(named_map.isError)
                         self.assertEqual(json.loads(named_map.content[0].text)["snapshots"],exact_maps)
+                        for filters, expected in (
+                            ({"hearthstone_bind_name": "  fIRst Inn "}, [travel_before]),
+                            ({"hearthstone_max_cooldown_seconds": 0}, [travel_after]),
+                            ({"hearthstone_bind_name": "First inn", "hearthstone_max_cooldown_seconds": 29}, []),
+                            ({"hearthstone_bind_name": "First inn", "hearthstone_max_cooldown_seconds": 30,
+                              "player_map_id": 1414}, [travel_before]),
+                            ({"hearthstone_max_cooldown_seconds": 0, "player_map_id": 1414}, []),
+                        ):
+                            result = await session.call_tool("list_snapshots", {"family": "forever", **filters})
+                            self.assertFalse(result.isError)
+                            self.assertEqual([row["snapshot_id"] for row in json.loads(result.content[0].text)["snapshots"]],
+                                             expected)
+                        for invalid_hearthstone in (
+                            {"family": "retail", "hearthstone_max_cooldown_seconds": 0},
+                            {"family": "forever", "hearthstone_bind_name": " "},
+                        ):
+                            self.assertTrue((await session.call_tool("list_snapshots", invalid_hearthstone)).isError)
                         for bad_map in [" ", "x"*257]:
                             self.assertTrue((await session.call_tool("list_snapshots", {
                                 **map_query,"player_map_name":bad_map,

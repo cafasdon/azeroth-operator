@@ -1,5 +1,11 @@
 # Forever interaction map
 
+On `list_snapshots`, find saved travel options by exact, case-insensitive
+`hearthstone_bind_name` and inclusive `hearthstone_max_cooldown_seconds`.
+Use zero for a cooldown that was ready at capture. Missing observations
+cannot match the corresponding filter. Both filters can be combined with
+captured player-map filters. This does not project current item usability.
+
 Saved instance inspection includes `encounter_total` and
 `reported_encounter_progress` when both cache values are readable and
 consistent. Older captures and rows with missing or restricted values omit
