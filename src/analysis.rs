@@ -2654,6 +2654,7 @@ fn find_item_page(
     );
     let mut locations = Vec::new();
     let mut preferred_locations = Vec::new();
+    let mut preferred_match_count = 0;
     let mut matched_locations = 0usize;
     let mut quantities = BTreeMap::new();
     let mut container_quantities = BTreeMap::new();
@@ -2723,6 +2724,7 @@ fn find_item_page(
                         });
                 let preferred =
                     preferred_link.is_some_and(|link| item["link"].as_str() == Some(link));
+                preferred_match_count += usize::from(preferred);
                 let page = if preferred {
                     &mut preferred_locations
                 } else {
@@ -2783,6 +2785,9 @@ fn find_item_page(
         "locations":locations,"matched_locations":matched_locations,
         "quantity_by_storage":quantities,"has_more":matched_locations.saturating_sub(offset)>limit
     });
+    if preferred_link.is_some() {
+        result["exact_saved_link_location_count"] = json!(preferred_match_count);
+    }
     if include_container_quantities {
         result["quantity_by_container"] = json!(container_quantities);
     }

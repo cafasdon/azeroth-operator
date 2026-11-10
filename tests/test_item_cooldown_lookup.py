@@ -82,8 +82,10 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     later['sections']['bags']['1'].update({
                         str(slot): {'item_id':100,'count':1} for slot in range(2,14)
                     })
-                    later['sections']['bags']['2']['1'] = {
-                        'item_id':100,'count':1,'link':'item:100:0:0:0:0:0:0'}
+                    later['sections']['bags']['2'] = {
+                        str(slot): {'item_id':100,'count':1,'link':'item:100:0:0:0:0:0:0'}
+                        for slot in range(1,13)
+                    }
                 location_captures.append((store.ingest(later), status, item))
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -106,9 +108,10 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                             **equipment_request['selections'][0], 'status':status,
                             'observed_item_id':item['item_id'] if item else None})
                         if status == 'not_observed':
-                            self.assertEqual(candidates['matched_locations'], 17)
+                            self.assertEqual(candidates['matched_locations'], 28)
+                            self.assertEqual(candidates['exact_saved_link_location_count'], 13)
                             self.assertTrue(candidates['has_more'])
-                            self.assertEqual(candidates['quantity_by_storage']['bags'], 19)
+                            self.assertEqual(candidates['quantity_by_storage']['bags'], 30)
                             self.assertEqual(len(candidates['locations']), 10)
                             self.assertEqual(candidates['locations'][:2], [
                                 {'storage':'bags','container':bag,'slot':'1','count':1,
@@ -117,6 +120,7 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         elif status in ('different_item_id', 'same_item_id_different_link'):
                             changed_link = status == 'same_item_id_different_link'
                             self.assertEqual(candidates['matched_locations'], 5 if changed_link else 4)
+                            self.assertEqual(candidates['exact_saved_link_location_count'], 1)
                             self.assertFalse(candidates['has_more'])
                             self.assertEqual(candidates['quantity_by_storage'],
                                              {'equipment':1,'bags':6,'character_bank':int(changed_link),

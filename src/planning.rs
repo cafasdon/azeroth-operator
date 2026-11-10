@@ -140,6 +140,7 @@ pub fn compare_equipment_sources(
                         })
                     }).collect::<Vec<_>>(),
                     "matched_locations": matches["matched_locations"],
+                    "exact_saved_link_location_count": matches["exact_saved_link_location_count"],
                     "has_more": matches["has_more"],
                     "quantity_by_storage": matches["quantity_by_storage"]
                 });

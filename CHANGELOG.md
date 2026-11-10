@@ -1,5 +1,7 @@
 # Changelog
 
+- Count exact saved gear link matches before truncating candidate lists.
+
 - Prioritise exact saved item links before limiting Forever gear replacement candidates.
 
 - Show same-base gear candidates when the saved source link changed.

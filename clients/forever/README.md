@@ -316,6 +316,9 @@ or a confirmed link change,
 capture, with total matches and quantities by observed storage. Exact
 saved-link matches come first, including those found beyond the first ten
 base-ID matches.
+The `exact_saved_link_location_count` counts matching locations across the
+entire newer capture before the list limit. It is null if the original link
+is missing or blank. Zero means no exact link was observed.
 Each listed location's `saved_link_matches_original` compares the exact
 recorded strings and is null when either link is missing or blank. The
 original location is counted and can appear when it still holds the same
