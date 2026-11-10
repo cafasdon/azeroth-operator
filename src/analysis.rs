@@ -3482,6 +3482,49 @@ const PVP_CAP_FIELDS: [&str; 3] = [
     "previous_week_max_rank",
 ];
 
+pub fn instance_group_size_reference(snapshot: &Snapshot) -> Value {
+    let instance = snapshot.sections.get("instance_context");
+    let is_raid = match instance.and_then(|row| row["kind"].as_str()) {
+        Some("raid") => Some(true),
+        Some("party") => Some(false),
+        _ => None,
+    };
+    let cache = snapshot.sections.get("saved_instances");
+    let matches = is_raid
+        .zip(instance)
+        .zip(cache)
+        .and_then(|((is_raid, instance), cache)| {
+            Some(
+                cache["entries"]
+                    .as_object()?
+                    .values()
+                    .filter(|row| {
+                        row["name"] == instance["name"]
+                            && row["difficulty_id"] == instance["difficulty_id"]
+                            && row["is_raid"].as_bool() == Some(is_raid)
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        });
+    let size = matches.as_deref().and_then(|matches| match matches {
+        [row] => row["max_players"].as_u64().filter(|size| *size > 0),
+        _ => None,
+    });
+    let count = snapshot
+        .sections
+        .get("group_context")
+        .and_then(|section| section["categories"]["instance"]["reported_member_count"].as_u64());
+    json!({
+        "matching_saved_lockout_rows":matches.as_ref().map(Vec::len),
+        "saved_lockout_cache_age_seconds":cache.and_then(|row| row["update_age_seconds"].as_u64()),
+        "reported_size_reference":size,"reported_instance_group_count":count,
+        "shortfall_to_size_reference":size.zip(count).map(|(size, count)| size.saturating_sub(count)),
+        "excess_over_size_reference":size.zip(count).map(|(size, count)| count.saturating_sub(size)),
+        "instance_identity_verified":false,"instance_capacity_verified":false,
+        "current_group_verified":false,"live":false
+    })
+}
+
 pub fn group_member_target_projection(section: &Value, target: u32) -> Value {
     let target = u64::from(target);
     let categories = ["home", "instance"]

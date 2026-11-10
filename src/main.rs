@@ -102,6 +102,9 @@ struct Inspect {
     section: Option<String>,
     /// Compare each saved group category's reported member count against this target.
     group_member_target: Option<std::num::NonZeroU32>,
+    /// Compare the saved instance group count with a uniquely matching saved lockout size reference.
+    #[serde(default)]
+    instance_group_size_reference: bool,
     /// Return only capture statuses for these distinct section names instead of section data.
     coverage_sections: Option<Vec<String>>,
     /// Compare a target PvP rank with saved rank thresholds and caps.
@@ -2716,6 +2719,12 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.instance_group_size_reference && args.section.as_deref() != Some("instance_context")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Instance group size review requires the instance_context section",
+            )]);
+        }
         if args.group_member_target.is_some() && args.section.as_deref() != Some("group_context") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Group member targets require the group_context section",
@@ -4474,6 +4483,20 @@ impl Operator {
                                 )
                             })
                     );
+                }
+                if args.instance_group_size_reference {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the captured instance group context",
+                        )]);
+                    };
+                    if snapshot.client.family != Family::Forever {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Instance group size review requires Forever",
+                        )]);
+                    }
+                    value["instance_group_size_reference"] =
+                        azeroth_operator::analysis::instance_group_size_reference(&snapshot);
                 }
                 if let Some(target) = args.group_member_target {
                     if value["client"]["family"] != "forever" {

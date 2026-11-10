@@ -162,6 +162,32 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                     for a,b in [(later,earlier), (other_id,later), (retail_id,retail_id), (retail_id,later)]:
                         await call('compare_snapshots',error=True,before_id=a,after_id=b,group_context_changes=True)
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='group_context')
+                    size = deepcopy(base)
+                    size['sections'].update(group_context=both,instance_context={
+                        'kind':'raid','name':'Fixture raid','difficulty_id':1,
+                    })
+                    lock = {'name':'Fixture raid','difficulty_id':1,'is_raid':True,'max_players':45,
+                            'reset_seconds':100,'locked':True,'extended':False}
+                    for rows, matches, capacity in [
+                        ({'1':lock},1,45),({'1':lock,'2':lock},2,None),
+                        ({'1':{**lock,'difficulty_id':2}},0,None),
+                        ({'1':{**lock,'max_players':0}},1,None),
+                    ]:
+                        size['sections']['saved_instances'] = {
+                            'coverage':'updated_cache','update_age_seconds':3,'entries':rows,
+                        }
+                        key = store.ingest(size)
+                        before[key+'.json'] = (Path(folder)/(key+'.json')).read_bytes()
+                        response = await call('inspect_snapshot',snapshot_id=key,
+                            section='instance_context',instance_group_size_reference=True)
+                        reference = response['instance_group_size_reference']
+                        self.assertEqual(reference['matching_saved_lockout_rows'],matches)
+                        self.assertEqual(reference['reported_size_reference'],capacity)
+                        self.assertEqual(reference['reported_instance_group_count'],40)
+                        self.assertEqual(reference['shortfall_to_size_reference'],5 if capacity else None)
+                        self.assertFalse(reference['instance_capacity_verified'])
+                    await call('inspect_snapshot',error=True,snapshot_id=retail_id,
+                        section='instance_context',instance_group_size_reference=True)
             self.assertEqual(before,{path.name:path.read_bytes() for path in Path(folder).glob('*.json')})
 
 

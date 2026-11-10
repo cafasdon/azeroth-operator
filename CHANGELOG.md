@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved instance-group counts with a matching lockout size reference.
+
 - Compare saved group count targets and identify threshold crossings.
 
 - Compare saved home and instance group counts against a member target.

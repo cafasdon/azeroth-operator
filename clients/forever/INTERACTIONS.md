@@ -9,6 +9,11 @@ The same selector on `compare_snapshots` shows the count and target
 projection on each side and flags crossings separately for home and
 instance. A crossing requires both counts and does not establish a
 membership event or group continuity.
+Set `instance_group_size_reference` on saved `instance_context` inspection
+to compare the instance-group count with a saved lockout row's reported
+size. The reference requires exactly one cache row with matching name,
+difficulty and party or raid kind, and a positive size. It does not
+establish instance identity, current capacity or roster completeness.
 
 Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap
