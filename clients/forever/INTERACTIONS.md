@@ -3079,6 +3079,11 @@ Set `weapon_enchant_reference_at` in `inspect_snapshot` on
 `weapon_enchants` to see projected temporary enchant expiries per hand.
 The report compares each known expiry with the reference time. Missing
 timers and unobserved hands stay unknown. Current enchants remain unverified.
+Saved weapon enchant comparisons group temporary rows by hand and exact
+enchant ID and compare sorted projected expiry timestamps. A match
+requires equal row counts and known timers on both sides. Matching
+timestamps can explain a changed countdown. They leave enchant events
+and item continuity unverified.
 
 ## Saved trainer affordability after a reserve
 

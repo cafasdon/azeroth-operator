@@ -5368,15 +5368,48 @@ fn compare_weapon_enchants(before: &Snapshot, after: &Snapshot) -> Value {
         });
         Some(rows)
     }
+    fn expiry_groups(
+        rows: &[&Value],
+        at: chrono::DateTime<chrono::Utc>,
+    ) -> BTreeMap<u64, Vec<Option<chrono::DateTime<chrono::Utc>>>> {
+        let mut groups = BTreeMap::<_, Vec<_>>::new();
+        for row in rows
+            .iter()
+            .filter(|row| row["has_enchant"] == true && row["enchant_type"] == "temporary")
+        {
+            if let Some(id) = row["enchant_id"].as_u64() {
+                groups
+                    .entry(id)
+                    .or_default()
+                    .push(temporary_weapon_enchant_expiry(row, at));
+            }
+        }
+        for expiries in groups.values_mut() {
+            expiries.sort_unstable();
+        }
+        groups
+    }
     let hands: BTreeMap<_, _> = ["main_hand", "off_hand", "ranged"]
         .into_iter()
         .map(|hand| {
             let old = rows(before, hand);
             let new = rows(after, hand);
             let changed = old.as_ref().zip(new.as_ref()).map(|(a, b)| a != b);
+            let expiry_comparison = old.as_ref().zip(new.as_ref()).map(|(old, new)| {
+                let old = expiry_groups(old, before.captured_at);
+                let new = expiry_groups(new, after.captured_at);
+                old.iter().filter_map(|(id, previous)| {
+                    let current = new.get(id)?;
+                    let comparable = previous.len() == current.len()
+                        && previous.iter().chain(current).all(Option::is_some);
+                    Some(json!({"enchant_id":id,"before_projected_expiries":previous,"after_projected_expiries":current,
+                        "projected_expiries_match":comparable.then(|| previous == current)}))
+                }).collect::<Vec<_>>()
+            });
             (
                 hand,
-                json!({"before_rows":old,"after_rows":new,"observed_rows_changed":changed}),
+                json!({"before_rows":old,"after_rows":new,"observed_rows_changed":changed,
+                    "shared_temporary_enchant_expiries":expiry_comparison}),
             )
         })
         .collect();

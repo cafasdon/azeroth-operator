@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare projected expiry timestamps across saved temporary weapon enchant observations.
+
 - Review projected expiry of saved temporary weapon enchants at an explicit time.
 
 - Distinguish changed equipped item IDs from slot durability changes in saved comparisons.

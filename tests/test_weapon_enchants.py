@@ -175,9 +175,9 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     same=await compare(store.ingest(reordered))
                     self.assertFalse(same['hands']['main_hand']['observed_rows_changed'])
                     self.assertEqual(same['hands']['off_hand'],
-                        {'before_rows':[],'after_rows':[],'observed_rows_changed':False})
+                        {'before_rows':[],'after_rows':[],'observed_rows_changed':False,'shared_temporary_enchant_expiries':[]})
                     self.assertEqual(same['hands']['ranged'],
-                        {'before_rows':None,'after_rows':None,'observed_rows_changed':None})
+                        {'before_rows':None,'after_rows':None,'observed_rows_changed':None,'shared_temporary_enchant_expiries':None})
                     difference=await compare(store.ingest(changed))
                     self.assertTrue(difference['hands']['main_hand']['observed_rows_changed'])
                     self.assertFalse(difference['enchant_events_verified'])
@@ -215,6 +215,23 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     rejected=await session.call_tool('inspect_snapshot',{
                         'snapshot_id':timed_key,'section':'equipment','weapon_enchant_reference_at':deadline})
                     self.assertTrue(rejected.isError)
+                    comparable=deepcopy(timed)
+                    comparable['sections']['weapon_enchants']['hands']['main_hand']['entries']['10']['enchant_id']=44
+                    before_id=store.ingest(comparable)
+                    comparable['captured_at']=deadline
+                    for milliseconds, matches in [(0,True),(1,False),(None,None)]:
+                        row=comparable['sections']['weapon_enchants']['hands']['main_hand']['entries']['10']
+                        if milliseconds is None:
+                            row.pop('remaining_milliseconds')
+                        else:
+                            row['remaining_milliseconds']=milliseconds
+                        report=await call('compare_snapshots',before_id=before_id,after_id=store.ingest(comparable),
+                                          weapon_enchant_changes=True)
+                        hand=report['weapon_enchant_changes']['hands']['main_hand']
+                        expiry=next(row for row in hand['shared_temporary_enchant_expiries'] if row['enchant_id']==44)
+                        self.assertIs(hand['observed_rows_changed'],milliseconds != 1)
+                        self.assertEqual(expiry['before_projected_expiries'],[deadline])
+                        self.assertIs(expiry['projected_expiries_match'],matches)
                     invalid_deadline = await session.call_tool('list_snapshots', {'family':'forever',
                         'weapon_enchant':{'hand':'main_hand','projected_expiry_by':'invalid'}})
                     self.assertTrue(invalid_deadline.isError)
