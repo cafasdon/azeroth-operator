@@ -19,7 +19,8 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));cases=[]
-            for pet in [{'present':True,'family_id':1,'level':17,'food_types':{'1':'Meat','2':'Poisson'}},
+            for pet in [{'present':True,'family_id':1,'level':17,'food_types':{'1':'Meat','2':'Poisson'},
+                         'happiness':0,'loyalty':'Très fidèle'},
                         {'present':True}, {'present':True,'food_types':{}}, {'present':False},None]:
                 value=fixture()
                 value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
@@ -37,7 +38,8 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(ValueError):validate_snapshot(bad)
                 raw=json.dumps(bad,sort_keys=True,separators=(',',':')).encode()
                 key=hashlib.sha256(raw).hexdigest();(Path(folder)/f'{key}.json').write_bytes(raw);bad_keys.append(key)
-            later=deepcopy(cases[0][1]);later['sections']['pet_care'].update(family_id=2,level=18)
+            later=deepcopy(cases[0][1]);later['sections']['pet_care'].update(
+                family_id=2,level=18,happiness=2,loyalty=' Loyal ')
             later_key=store.ingest(later)
             env={**os.environ,'AZEROTH_DATA_DIR':folder};env.pop('AZEROTH_FOREVER_CATALOGUE',None)
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -81,6 +83,24 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(rows[0]['active_pet_match']['food_type_name'],
                                              filters['food_type_name'].strip().capitalize())
                     for filters in ({'food_type_name':' '}, {'present':False,'food_type_name':'Meat'}):
+                        self.assertTrue((await session.call_tool('list_snapshots',{
+                            'family':'forever','active_pet':filters})).isError)
+                    for filters, expected in (
+                        ({'happiness':0, 'loyalty':' TRÈS FIDÈLE '}, [cases[0][0]]),
+                        ({'happiness':2, 'food_type_name':'Meat', 'loyalty':'loyal'}, [later_key]),
+                        ({'happiness':0, 'family_id':2}, []),
+                        ({'loyalty':'fidèle'}, []),
+                    ):
+                        reply=await session.call_tool('list_snapshots',{'family':'forever','active_pet':filters})
+                        self.assertFalse(reply.isError)
+                        rows=json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in rows],expected)
+                        if rows:
+                            self.assertEqual(rows[0]['active_pet_match']['happiness'],filters['happiness'])
+                            if 'loyalty' in filters:
+                                self.assertEqual(rows[0]['active_pet_match']['loyalty'],
+                                                 'Très fidèle' if expected == [cases[0][0]] else ' Loyal ')
+                    for filters in ({'loyalty':' '}, {'happiness':256}, {'present':False,'happiness':0}):
                         self.assertTrue((await session.call_tool('list_snapshots',{
                             'family':'forever','active_pet':filters})).isError)
                     for key in bad_keys:

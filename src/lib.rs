@@ -685,6 +685,10 @@ pub struct ActivePetCaptureFilter {
     pub maximum_training_points_balance: Option<i64>,
     /// Exact case-insensitive localized food category reported for the saved pet.
     pub food_type_name: Option<String>,
+    /// Exact recorded happiness value, from 0 to 255.
+    pub happiness: Option<u8>,
+    /// Exact case-insensitive localized loyalty label, ignoring surrounding whitespace.
+    pub loyalty: Option<String>,
 }
 
 impl ActivePetCaptureFilter {
@@ -694,7 +698,9 @@ impl ActivePetCaptureFilter {
             || self.maximum_level.is_some()
             || self.minimum_training_points_balance.is_some()
             || self.maximum_training_points_balance.is_some()
-            || self.food_type_name.is_some();
+            || self.food_type_name.is_some()
+            || self.happiness.is_some()
+            || self.loyalty.is_some();
         ensure!(
             self.present.is_some() || details,
             "Select an active-pet observation filter"
@@ -708,6 +714,12 @@ impl ActivePetCaptureFilter {
                 .as_ref()
                 .is_none_or(|name| { !name.trim().is_empty() && name.len() <= 256 }),
             "Invalid saved pet food type name"
+        );
+        ensure!(
+            self.loyalty
+                .as_ref()
+                .is_none_or(|name| !name.trim().is_empty() && name.len() <= 256),
+            "Invalid saved pet loyalty label"
         );
         ensure!(
             self.minimum_level
@@ -772,6 +784,19 @@ impl ActivePetCaptureFilter {
                 .filter_map(Value::as_str)
                 .find(|category| category.to_lowercase() == expected)?;
             result["food_type_name"] = json!(observed);
+        }
+        if let Some(happiness) = self.happiness {
+            let observed = pet["happiness"]
+                .as_u64()
+                .filter(|value| *value == u64::from(happiness))?;
+            result["happiness"] = json!(observed);
+        }
+        if let Some(loyalty) = &self.loyalty {
+            let expected = loyalty.trim().to_lowercase();
+            let observed = pet["loyalty"]
+                .as_str()
+                .filter(|label| label.trim().to_lowercase() == expected)?;
+            result["loyalty"] = json!(observed);
         }
         Some(result)
     }

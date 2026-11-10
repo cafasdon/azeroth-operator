@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Saved pet searches also support `active_pet.happiness` for the exact
+recorded value and `active_pet.loyalty` for the exact case-insensitive
+localized label, ignoring surrounding whitespace. Missing observations do not match, and matching results
+retain the recorded values.
+
 Use `active_pet.food_type_name` on `list_snapshots` to match an exact
 case-insensitive localized food category from a saved pet capture. The
 result retains the recorded category spelling. Missing or empty diet

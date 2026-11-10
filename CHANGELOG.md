@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet captures by recorded happiness and loyalty.
+
 - Compare reported pet diet category labels across saved Forever captures.
 
 - Find saved Forever pet captures by a reported food category.
