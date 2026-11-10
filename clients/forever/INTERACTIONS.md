@@ -4562,3 +4562,18 @@ not prove an executable seed or native craftability. Modelled final quantities
 exclude new acquisitions/withdrawals; their maxima are not actual-stock bounds
 after those additions. Omit additional_targets for the old single-target result.
 See ADR-091 and the joint-recipe-restock verification record. No crafting occurs.
+
+## Saved-stock craft schedules
+
+Add stock_schedule: {} to a single or joint plan_forever_recipe_restock request.
+Optional state_budget is1..50000 (default10000); offset is zero-based and limit
+is1..50 (default20). Search uses captured bags and the already-planned minimum-
+output craft counts. A complete witness can resolve a seeded cycle or within-
+recipe recycling that the gross whole-recipe ledger cannot credit. Steps mean
+sequential individual crafts, not native batch commands. Pages retain one full
+witness digest. No-seed exhaustive failure is scoped to the fixed count model;
+state-budget exhaustion stays unknown. Neither returns partial instructions.
+Static cycle status and existing whole-recipe material ledgers remain unchanged.
+A witness checks resource arithmetic only, not current stock, cooldowns, charges,
+conditions, variants, bag space or native craftability. No game action occurs.
+See ADR-092 and stock-craft-schedule-verification-2026-11-10.md. Offline only.

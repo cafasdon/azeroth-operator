@@ -1002,3 +1002,13 @@ ledger applies only to acyclic active dependencies; cyclic arithmetic does not
 establish execution order or initial seed. This is a bounded base-item model,
 not full profession knowledge, acquisition optimisation or native craftability.
 No live action or new source is added. See ADR-091 and its dated offline evidence.
+
+## Saved-stock resource order (10 November)
+
+Single/joint recipe targets can request a bounded individual-craft stock search.
+Backtracking and minimum-output replay support resource witnesses for seeded
+cycles and recycling, without changing gross material ledgers or planned counts.
+Witness pages are complete-model evidence only; budget exhaustion remains unknown
+and exhaustive failure refers to the fixed captured-stock model. Conditions,
+charges, native legality, variants and current ownership remain unproven.
+No craft action or deployment occurred. See ADR-092 and its dated evidence.

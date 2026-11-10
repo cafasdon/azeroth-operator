@@ -53,6 +53,19 @@ pub fn plan(
     target: NonZeroU32,
     additional: &[AdditionalTarget],
 ) -> Result<Value> {
+    plan_with_stock_schedule(snapshot, primary, target, additional, None)
+}
+
+pub fn plan_with_stock_schedule(
+    snapshot: &Snapshot,
+    primary: Option<NonZeroU32>,
+    target: NonZeroU32,
+    additional: &[AdditionalTarget],
+    page: Option<&crate::recipe_stock_schedule::Page>,
+) -> Result<Value> {
+    if let Some(page) = page {
+        page.validate()?;
+    }
     ensure!(
         (1..=7).contains(&additional.len()),
         "Expected one to seven additional targets"
@@ -205,8 +218,7 @@ pub fn plan(
     } else {
         (Value::Null, Value::Null)
     };
-    Ok(
-        json!({"basis":"same_capture_joint_base_item_bag_targets","captured_at":snapshot.captured_at,
+    let mut report = json!({"basis":"same_capture_joint_base_item_bag_targets","captured_at":snapshot.captured_at,
         "count_basis":"minimum_base_output_fixed_point_for_requested_recipes_only",
         "targets":rows,"combined_gross_materials":combined,"ordered_materials":ordered,
         "ordered_stock_checkpoint":checkpoint,
@@ -218,6 +230,23 @@ pub fn plan(
         "same_recipe_intermediate_output_credit":false,"acquisition_effects_included":false,
         "current_inventory_verified":false,"active_character_verified":false,"craftability_verified":false,
         "native_bag_placement_verified":false,"item_variant_equivalence_verified":false,
-        "complete_ownership_verified":false,"game_execution":false,"live":false}),
-    )
+        "complete_ownership_verified":false,"game_execution":false,"live":false});
+    if let Some(page) = page {
+        let inputs = recipes
+            .iter()
+            .enumerate()
+            .map(|(i, recipe)| crate::recipe_stock_schedule::Recipe {
+                id: recipe.id,
+                item: recipe.item,
+                output: recipe.minimum,
+                target: recipe.target,
+                crafts: crafts[i],
+                reagents: recipe.reagents.clone(),
+            })
+            .collect::<Vec<_>>();
+        report["same_recipe_intermediate_output_credit_scope"] =
+            json!("whole_recipe_material_ledger_only");
+        report["stock_schedule"] = crate::recipe_stock_schedule::review(snapshot, &inputs, page)?;
+    }
+    Ok(report)
 }

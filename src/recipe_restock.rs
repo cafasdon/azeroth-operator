@@ -192,3 +192,33 @@ pub fn plan(
         "native_bag_placement_verified":false,"complete_ownership_verified":false,
         "game_execution":false,"live":false}))
 }
+
+pub fn plan_with_stock_schedule(
+    snapshot: &Snapshot,
+    recipe_id: Option<NonZeroU32>,
+    target: NonZeroU32,
+    page: &crate::recipe_stock_schedule::Page,
+) -> Result<Value> {
+    page.validate()?;
+    let mut report = plan(snapshot, recipe_id, target)?;
+    let unit = analysis::plan_recipe_by_id(snapshot, recipe_id, Some(1), None, None)?;
+    let reagents = unit["recipe"]["reagents"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(id, quantity)| Ok((id.parse::<u64>()?, quantity.as_u64().unwrap())))
+        .collect::<Result<std::collections::BTreeMap<_, _>>>()?;
+    let recipe = crate::recipe_stock_schedule::Recipe {
+        id: report["recipe_id"].as_u64().unwrap(),
+        item: report["output_item_id"].as_u64().unwrap(),
+        output: report["output_units_per_craft"]["minimum"]
+            .as_u64()
+            .unwrap(),
+        target: u64::from(target.get()),
+        crafts: report["planned_crafts"].as_u64().unwrap(),
+        reagents,
+    };
+    report["reagent_basis_scope"] = json!("whole_recipe_material_ledger_only");
+    report["stock_schedule"] = crate::recipe_stock_schedule::review(snapshot, &[recipe], page)?;
+    Ok(report)
+}

@@ -1382,8 +1382,18 @@ struct RecipeRestock {
     recipe_id: Option<std::num::NonZeroU32>,
     /// Desired final base-item quantity in observed carried bags, not new output.
     target_bag_quantity: std::num::NonZeroU32,
-    /// Joint targets from this same capture (one to seven). Shared inputs and selected producer output are accounted once; cyclic execution order stays unresolved.
+    /// Joint targets from this same capture (one to seven). Shared inputs and selected producer output are accounted once; static whole-recipe order can remain cyclic.
     additional_targets: Option<Vec<azeroth_operator::recipe_restock_batch::AdditionalTarget>>,
+    /// Bounded search for an individual-craft resource order using saved bags and minimum output. No native execution or cooldown eligibility.
+    #[serde(default, deserialize_with = "stock_schedule_argument")]
+    stock_schedule: Option<azeroth_operator::recipe_stock_schedule::Page>,
+}
+
+fn stock_schedule_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Option<azeroth_operator::recipe_stock_schedule::Page>,D::Error> {
+    Option::<serde_json::Value>::deserialize(input)?.map(|value| {
+        if !value.is_object() {return Err(serde::de::Error::custom("Invalid stock schedule options"));}
+        serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid stock schedule options"))
+    }).transpose()
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2293,13 +2303,18 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Plan crafts to reach base-item quantities in saved Forever bags. One owner-local snapshot; selected or exact bulk recipes with fixed inputs and known yield. additional_targets adds up to seven joint targets with shared materials and cross-recipe consumption; cyclic execution order remains unresolved. Existing bank/mail output is not credited to bag targets. At most 1000 crafts per recipe. No crafting, acquisition or native eligibility guarantee.",
+        description = "Plan crafts for base-item quantities in saved Forever bags. One owner-local snapshot; fixed recipe inputs and known yield. additional_targets adds up to seven joint targets with shared materials. Optional stock_schedule searches bounded individual-craft orders from captured bags and minimum output, including seeded cycles; budget exhaustion stays unknown. Bank/mail output is not credited. At most 1000 crafts per recipe. No crafting, acquisition or native eligibility guarantee.",
         annotations(read_only_hint = true, destructive_hint = false, open_world_hint = false)
     )]
     fn plan_forever_recipe_restock(&self, Parameters(args): Parameters<RecipeRestock>) -> CallToolResult {
+        if args.stock_schedule.as_ref().is_some_and(|page|page.validate().is_err()) {
+            return CallToolResult::error(vec![ContentBlock::text("Stock schedule requires valid bounded page options")]);
+        }
         let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
             if let Some(additional) = &args.additional_targets {
-                azeroth_operator::recipe_restock_batch::plan(&snapshot,args.recipe_id,args.target_bag_quantity,additional)
+                azeroth_operator::recipe_restock_batch::plan_with_stock_schedule(&snapshot,args.recipe_id,args.target_bag_quantity,additional,args.stock_schedule.as_ref())
+            } else if let Some(page)=&args.stock_schedule {
+                azeroth_operator::recipe_restock::plan_with_stock_schedule(&snapshot,args.recipe_id,args.target_bag_quantity,page)
             } else {
                 azeroth_operator::recipe_restock::plan(&snapshot, args.recipe_id, args.target_bag_quantity)
             }
