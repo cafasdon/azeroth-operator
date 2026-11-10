@@ -7223,8 +7223,12 @@ fn compare_flight_destination(
             .zip(wallet)
             .filter(|_| row["state"] == "reachable")
             .map(|(fare, balance)| fare <= balance);
-        json!({"status":"observed","map_id":map["map_id"],"origin_node_id":origin,
-            "state":row["state"],"fare_copper":fare,"affordable":affordable})
+        let mut observed = json!({"status":"observed","map_id":map["map_id"],"origin_node_id":origin,
+            "state":row["state"],"fare_copper":fare,"affordable":affordable});
+        if let Some(path) = row.get("observed_route_node_ids") {
+            observed["observed_route_node_ids"] = path.clone();
+        }
+        observed
     };
     let a = observation(before, before_wallet);
     let b = observation(after, after_wallet);
@@ -7244,9 +7248,20 @@ fn compare_flight_destination(
         .zip(b["affordable"].as_bool())
         .filter(|_| same_map_and_origin == Some(true))
         .map(|(a, b)| a != b);
-    json!({"destination_node_id":destination,"before":a,"after":b,
+    let route_before = a.get("observed_route_node_ids");
+    let route_after = b.get("observed_route_node_ids");
+    let route_changed = route_before
+        .zip(route_after)
+        .filter(|_| same_map_and_origin == Some(true))
+        .map(|(a, b)| a != b);
+    let has_route_evidence = route_before.is_some() || route_after.is_some();
+    let mut comparison = json!({"destination_node_id":destination,"before":a,"after":b,
         "same_map_and_origin":same_map_and_origin,"fare_copper_delta":fare_delta,
-        "affordability_changed":affordability_changed,"live":false})
+        "affordability_changed":affordability_changed,"live":false});
+    if has_route_evidence {
+        comparison["observed_route_changed"] = json!(route_changed);
+    }
+    comparison
 }
 
 fn compare_flight_maps(before: &Value, after: &Value, wallets: Option<(u64, u64)>) -> Value {

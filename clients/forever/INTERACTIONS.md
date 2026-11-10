@@ -3274,6 +3274,11 @@ state, fare and affordability on each side. It uses each capture's own
 wallet and reports deltas only for the same map and origin. Missing
 panels, ambiguous maps and unlisted destinations remain distinct.
 
+When a visit includes a captured flight preview, the destination comparison
+shows its ordered node IDs. The path-change flag requires both previews
+and the same map and origin. One missing preview or differing origins
+leave the change unknown.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

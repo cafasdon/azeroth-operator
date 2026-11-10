@@ -117,6 +117,24 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool('list_snapshots', args)).isError)
                     longest_data=await call('inspect_snapshot',snapshot_id=longest_key,section='flight_map',flight_node_id=65)
                     self.assertEqual(len(longest_data['data']['entries']['65']['observed_route_node_ids']),65)
+                    direct=deepcopy(base)
+                    direct_path={'1':10,'2':20}
+                    direct['sections']['flight_map']['entries']['2']['observed_route_node_ids']=direct_path
+                    direct_key=store.ingest(direct)
+                    other_map=deepcopy(direct)
+                    other_map['sections']['flight_map']['map_id']=2
+                    for target,expected_path,changed in [
+                            (key,path,False),(direct_key,direct_path,True),
+                            (old,None,None),(store.ingest(other_map),direct_path,None)]:
+                        result=await call('compare_snapshots',before_id=key,after_id=target,
+                            flight_destination_node_id=20)
+                        route=result['flight_destination_comparison']
+                        self.assertEqual(route['before']['observed_route_node_ids'],path)
+                        self.assertEqual(route['after'].get('observed_route_node_ids'),expected_path)
+                        self.assertIs(route['observed_route_changed'],changed)
+                    no_routes=await call('compare_snapshots',before_id=old,after_id=old,
+                        flight_destination_node_id=20)
+                    self.assertNotIn('observed_route_changed',no_routes['flight_destination_comparison'])
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'flight_map'})
                         self.assertTrue(response.isError)

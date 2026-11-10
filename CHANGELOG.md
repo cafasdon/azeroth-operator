@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare observed flight preview paths for saved Forever destinations.
+
 - Compare saved Forever fares and affordability for an exact flight destination.
 
 - Compare recorded prerequisites for named Forever trainer lessons.
