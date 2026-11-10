@@ -2611,11 +2611,49 @@ pub fn find_item_with_container_quantities(
     cooldown_reference: Option<chrono::DateTime<chrono::Utc>>,
     cooldown_target: Option<std::num::NonZeroU64>,
 ) -> Result<Value> {
+    find_item_page(
+        snapshot,
+        item_id,
+        (offset, limit),
+        include_container_quantities,
+        cooldown_reference,
+        cooldown_target,
+        None,
+    )
+}
+
+pub(crate) fn find_item_preferring_saved_link(
+    snapshot: &Snapshot,
+    item_id: u32,
+    limit: usize,
+    preferred_link: Option<&str>,
+) -> Result<Value> {
+    find_item_page(
+        snapshot,
+        item_id,
+        (0, limit),
+        false,
+        None,
+        None,
+        preferred_link,
+    )
+}
+
+fn find_item_page(
+    snapshot: &Snapshot,
+    item_id: u32,
+    (offset, limit): (usize, usize),
+    include_container_quantities: bool,
+    cooldown_reference: Option<chrono::DateTime<chrono::Utc>>,
+    cooldown_target: Option<std::num::NonZeroU64>,
+    preferred_link: Option<&str>,
+) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),
         "Invalid item query"
     );
     let mut locations = Vec::new();
+    let mut preferred_locations = Vec::new();
     let mut matched_locations = 0usize;
     let mut quantities = BTreeMap::new();
     let mut container_quantities = BTreeMap::new();
@@ -2683,7 +2721,14 @@ pub fn find_item_with_container_quantities(
                             }
                             (end, ended_by_reference)
                         });
-                if matched_locations >= offset && locations.len() < limit {
+                let preferred =
+                    preferred_link.is_some_and(|link| item["link"].as_str() == Some(link));
+                let page = if preferred {
+                    &mut preferred_locations
+                } else {
+                    &mut locations
+                };
+                if matched_locations >= offset && page.len() < limit {
                     let mut location = json!({
                         "storage":storage,"container":container,"slot":slot,"count":count
                     });
@@ -2698,7 +2743,7 @@ pub fn find_item_with_container_quantities(
                         location["projected_end_at_or_before_reference"] =
                             json!(ended_by_reference);
                     }
-                    locations.push(location);
+                    page.push(location);
                 }
                 matched_locations += 1;
                 return count;
@@ -2724,6 +2769,14 @@ pub fn find_item_with_container_quantities(
             container_quantities.insert(storage, Some(container_totals));
         }
         quantities.insert(storage, Some(quantity));
+    }
+    if !preferred_locations.is_empty() {
+        preferred_locations.extend(
+            locations
+                .into_iter()
+                .take(limit - preferred_locations.len()),
+        );
+        locations = preferred_locations;
     }
     let mut result = json!({
         "captured_at":snapshot.captured_at,"item_id":item_id,"live":false,

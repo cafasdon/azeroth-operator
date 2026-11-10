@@ -114,7 +114,15 @@ pub fn compare_equipment_sources(
                 status,
                 "not_observed" | "different_item_id" | "same_item_id_different_link"
             ) {
-                let matches = crate::analysis::find_item(newer, selection.expected_item_id, 0, 10)?;
+                let preferred_link = before
+                    .and_then(|row| row["link"].as_str())
+                    .filter(|link| !link.trim().is_empty());
+                let matches = crate::analysis::find_item_preferring_saved_link(
+                    newer,
+                    selection.expected_item_id,
+                    10,
+                    preferred_link,
+                )?;
                 row["same_base_item_candidates"] = json!({
                     "locations": matches["locations"].as_array().unwrap().iter().map(|location| {
                         let observed = location["storage"].as_str().and_then(|storage| {

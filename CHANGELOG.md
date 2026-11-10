@@ -1,5 +1,7 @@
 # Changelog
 
+- Prioritise exact saved item links before limiting Forever gear replacement candidates.
+
 - Show same-base gear candidates when the saved source link changed.
 
 - Compare saved links for alternative gear locations with the original selection.
