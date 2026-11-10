@@ -73,6 +73,18 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    async def lookup(**args):
+                        reply = await session.call_tool('lookup_forever_catalogue', args)
+                        return reply
+                    match = await lookup(section='items', set_name='  gArB OF THERO-SHAN  ')
+                    self.assertFalse(match.isError)
+                    records = json.loads(match.content[0].text)['records']
+                    self.assertEqual({row['id'] for row in records}, {7950, 7953})
+                    mismatch = await lookup(section='items', set_name='thero-shan', set_id=162)
+                    self.assertFalse(mismatch.isError)
+                    self.assertEqual(json.loads(mismatch.content[0].text)['records'], [])
+                    for section, name in [('items', ' '), ('items', 'x' * 161), ('consumables', 'thero-shan')]:
+                        self.assertTrue((await lookup(section=section, set_name=name)).isError)
                     async def review(key, **filters):
                         response = await session.call_tool('review_forever_owned_gear', {'snapshot_id': key, **filters})
                         self.assertFalse(response.isError, response)

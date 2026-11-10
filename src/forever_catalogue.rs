@@ -198,6 +198,8 @@ pub struct Query {
     pub only_observed_learned_recipe: bool,
     /// Restrict items to this pinned catalogue set ID.
     pub set_id: Option<std::num::NonZeroU32>,
+    /// Case-insensitive substring of a recorded item set name. Items only.
+    pub set_name: Option<String>,
     /// Restrict items to catalogue placements for this simulator equipment slot.
     pub simulator_slot: Option<SimulatorSlot>,
     /// Preserve any recorded set membership of the saved item in the requested slot.
@@ -725,6 +727,14 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
     }
+    let set_name = query.set_name.as_deref().map(str::trim);
+    if let Some(name) = set_name {
+        ensure!(
+            !name.is_empty() && name.len() <= 160,
+            "Invalid catalogue set name"
+        );
+    }
+    let set_name = set_name.map(str::to_lowercase);
     let consumable_group = query.consumable_group_key.as_deref().map(str::trim);
     if let Some(group) = consumable_group {
         ensure!(
@@ -922,6 +932,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let inventory_filter = item_ids.is_some() || ownership.is_some();
     let item_filter = check_requirements.is_some()
         || query.set_id.is_some()
+        || set_name.is_some()
         || query.simulator_slot.is_some()
         || query.minimum_item_level.is_some()
         || query.item_random_suffix_id.is_some()
@@ -1072,6 +1083,12 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             let matches_set = query
                 .set_id
                 .is_none_or(|id| recorded_set_id(row) == Some(u64::from(id.get())))
+                && set_name.as_deref().is_none_or(|name| {
+                    recorded_set_id(row).is_some()
+                        && row["setName"]
+                            .as_str()
+                            .is_some_and(|recorded| recorded.to_lowercase().contains(name))
+                })
                 && protected_set.is_none_or(|id| recorded_set_id(row) == Some(id));
             let matches_drop =
                 !drop_filter

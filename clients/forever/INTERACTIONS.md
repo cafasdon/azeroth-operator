@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Use `lookup_forever_catalogue` with `section: "items"` and `set_name`
+to find pieces by a case-insensitive set-name substring. Combine it with
+`set_id` or other item filters to narrow the same catalogue records.
+
 In `review_forever_owned_gear`, a `set_id` review reports distinct
 catalogue-matched set pieces separately for equipment, bags, character
 bank and account bank. Duplicate copies within one storage count once.
