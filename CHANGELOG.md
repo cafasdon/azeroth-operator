@@ -1,5 +1,7 @@
 # Changelog
 
+- Shortlist saved carried-item cooldowns by their projected end deadline.
+
 - Project saved carried-item cooldown ends against an explicit reference time.
 
 - Compare projected expiry timestamps across saved temporary weapon enchant observations.

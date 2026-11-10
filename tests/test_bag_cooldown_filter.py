@@ -63,6 +63,18 @@ class BagCooldownFilterTests(unittest.IsolatedAsyncioTestCase):
                                      [True,None,None,True])
                     self.assertEqual(projected['rows'][1]['remaining_seconds'],60)
                     self.assertFalse(projected['current_usability_verified'])
+                    deadline=(await query({'projected_end_by':reference}))['data']
+                    self.assertEqual([(row['bag'],row['slot']) for row in deadline['rows']],[(0,1),(2,12)])
+                    self.assertEqual([row['projected_cooldown_end_at'] for row in deadline['rows']],
+                                     ['2025-01-01T00:00:00Z',reference])
+                    self.assertEqual(deadline['unknown_filter_item_locations'],3)
+                    self.assertEqual(deadline['nonmatching_item_locations'],1)
+                    selected=(await query({'item_ids':[102],'projected_end_by':reference,'limit':1},
+                                          bag_cooldown_reference_at='2025-01-01T00:00:29Z'))['data']
+                    self.assertEqual(selected['matched_item_locations'],1)
+                    self.assertFalse(selected['rows'][0]['projected_end_at_or_before_reference'])
+                    self.assertEqual(selected['unknown_filter_item_locations'],0)
+                    await query({'projected_end_by':'invalid'},error=True)
                     missing=(await query({'limit':1},snapshot=legacy_key,bag_cooldown_reference_at=reference))['data']
                     self.assertIsNone(missing['rows'])
                     await query(error=True,bag_cooldown_reference_at=reference)

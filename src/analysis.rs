@@ -2240,6 +2240,9 @@ pub struct BagCooldownFilter {
     pub enabled: Option<bool>,
     pub minimum_remaining_seconds: Option<u32>,
     pub maximum_remaining_seconds: Option<u32>,
+    /// Inclusive projected deadline for an enabled saved cooldown.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub projected_end_by: Option<chrono::DateTime<chrono::Utc>>,
     pub offset: Option<usize>,
     pub limit: Option<usize>,
 }
@@ -2252,6 +2255,7 @@ impl BagCooldownFilter {
                 || self.enabled.is_some()
                 || self.minimum_remaining_seconds.is_some()
                 || self.maximum_remaining_seconds.is_some()
+                || self.projected_end_by.is_some()
                 || self.offset.is_some()
                 || self.limit.is_some(),
             "Bag cooldown filter must contain at least one field"
@@ -2277,7 +2281,11 @@ impl BagCooldownFilter {
     }
 }
 
-fn bag_cooldown_matches(row: &Value, filter: &BagCooldownFilter) -> Option<bool> {
+fn bag_cooldown_matches(
+    row: &Value,
+    filter: &BagCooldownFilter,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Option<bool> {
     let checks: Vec<_> = [
         filter.item_ids.as_ref().map(|ids| {
             Some(
@@ -2307,6 +2315,9 @@ fn bag_cooldown_matches(row: &Value, filter: &BagCooldownFilter) -> Option<bool>
                 .as_u64()
                 .map(|seconds| seconds <= u64::from(maximum))
         }),
+        filter.projected_end_by.map(|deadline| {
+            bag_cooldown_projected_end(row, captured_at).map(|end| end <= deadline)
+        }),
     ]
     .into_iter()
     .flatten()
@@ -2321,7 +2332,11 @@ fn bag_cooldown_matches(row: &Value, filter: &BagCooldownFilter) -> Option<bool>
 }
 
 /// Filters validated, captured bag cooldown rows without inferring present usability.
-pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter) -> Result<Value> {
+pub fn filter_bag_cooldowns(
+    section: Option<&Value>,
+    filter: &BagCooldownFilter,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Result<Value> {
     filter.validate()?;
     let offset = filter.offset.unwrap_or(0);
     let limit = filter.limit.unwrap_or(20);
@@ -2347,7 +2362,7 @@ pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter)
             .ok_or_else(|| anyhow::anyhow!("Bag cooldown slots unavailable"))?;
         for (slot, row) in slots {
             captured += 1;
-            match bag_cooldown_matches(row, filter) {
+            match bag_cooldown_matches(row, filter, captured_at) {
                 Some(true) => matching.push((bag, slot.parse::<u32>()?, row)),
                 Some(false) => nonmatching += 1,
                 None => unknown += 1,
@@ -2367,6 +2382,10 @@ pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter)
                     flattened[key] = value.clone();
                 }
             }
+            if filter.projected_end_by.is_some() {
+                flattened["projected_cooldown_end_at"] =
+                    json!(bag_cooldown_projected_end(row, captured_at));
+            }
             flattened
         })
         .collect();
@@ -2379,6 +2398,14 @@ pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter)
     Ok(result)
 }
 
+fn bag_cooldown_projected_end(
+    row: &Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Option<chrono::DateTime<chrono::Utc>> {
+    (row["enabled"] == true).then_some(())?;
+    crate::saved_resets::projected_reset_at(row["remaining_seconds"].as_i64()?, captured_at)
+}
+
 pub fn project_bag_cooldown_reference(
     review: &mut Value,
     captured_at: chrono::DateTime<chrono::Utc>,
@@ -2386,10 +2413,7 @@ pub fn project_bag_cooldown_reference(
 ) {
     review["reference_at"] = json!(reference);
     for row in review["rows"].as_array_mut().into_iter().flatten() {
-        let end = (row["enabled"] == true)
-            .then(|| row["remaining_seconds"].as_i64())
-            .flatten()
-            .and_then(|seconds| crate::saved_resets::projected_reset_at(seconds, captured_at));
+        let end = bag_cooldown_projected_end(row, captured_at);
         row["projected_cooldown_end_at"] = json!(end);
         row["projected_end_at_or_before_reference"] = json!(end.map(|end| end <= reference));
     }
@@ -2398,6 +2422,10 @@ pub fn project_bag_cooldown_reference(
 #[cfg(test)]
 mod bag_cooldown_filter_tests {
     use super::*;
+
+    fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter) -> Result<Value> {
+        super::filter_bag_cooldowns(section, filter, chrono::DateTime::UNIX_EPOCH)
+    }
 
     fn filter(value: Value) -> BagCooldownFilter {
         serde_json::from_value(value).unwrap()

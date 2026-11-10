@@ -4188,21 +4188,21 @@ impl Operator {
                         )]);
                     }
                     let section = value["data"].take();
+                    let Some(captured_at) = value["captured_at"]
+                        .as_str()
+                        .and_then(|text| text.parse::<chrono::DateTime<chrono::Utc>>().ok())
+                    else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Invalid saved cooldown capture timestamp",
+                        )]);
+                    };
                     match azeroth_operator::analysis::filter_bag_cooldowns(
                         (!section.is_null()).then_some(&section),
                         filter,
+                        captured_at,
                     ) {
                         Ok(mut review) => {
                             if let Some(reference) = args.bag_cooldown_reference_at {
-                                let Some(captured_at) =
-                                    value["captured_at"].as_str().and_then(|text| {
-                                        text.parse::<chrono::DateTime<chrono::Utc>>().ok()
-                                    })
-                                else {
-                                    return CallToolResult::error(vec![ContentBlock::text(
-                                        "Invalid saved cooldown capture timestamp",
-                                    )]);
-                                };
                                 azeroth_operator::analysis::project_bag_cooldown_reference(
                                     &mut review,
                                     captured_at,

@@ -3031,6 +3031,9 @@ Pass `bag_cooldown_reference_at` alongside `bag_cooldown_filter` in
 capture time and reported remaining seconds. The comparison is inclusive
 at the reference time. Disabled and missing timers leave the projection unknown, and a projected end
 leaves current item usability unverified.
+Set `bag_cooldown_filter.projected_end_by` for an inclusive deadline.
+The filter runs before paging. A disabled or missing timer cannot meet
+the deadline and is counted as unknown when the other predicates match.
 
 Use `compare_snapshots.bag_cooldown_item_id` to compare two saved readings for
 one base item ID. Each side counts reported, unavailable and enabled locations
