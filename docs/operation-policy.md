@@ -1,5 +1,14 @@
 # Operation scope and evidence
 
+## Optional public knowledge companion
+
+The local public knowledge stdio companion exposes only
+`search_forever_knowledge`. It reads a configured, pinned public catalogue,
+derived SQLite index and checksum-pinned local embedding model. Request
+arguments select a query, known record section and bounded result count.
+Its output supplies candidate source identities. Snapshot ingestion,
+external inference, gameplay and document writes have no routes.
+
 Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; macro creation is live-qualified; other player-applied mutations have separate qualification gaps. ADR006 supersedes the original blanket read-only implementation target.
 
 ## MCP enforcement, 7 November 2026

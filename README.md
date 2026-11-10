@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+An optional local knowledge MCP now searches the pinned public Forever
+catalogue with keyword and vector retrieval. It returns source identities
+for exact catalogue lookup. Setup and offline verification are described in
+[local knowledge search](docs/local-knowledge.md).
+
 Multi-window owned-gear collection now reuses item pages within one run while
 retaining fresh snapshot and source checks. A bounded temporary cache reduces
 repeated MCP requests and writes no cache files.
