@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever equipment at or below a durability threshold in a specific slot.
+
 - Preserve a copper reserve when finding affordable saved next-level quest plans.
 
 - Filter saved next-level quest XP plans by recorded wallet affordability.

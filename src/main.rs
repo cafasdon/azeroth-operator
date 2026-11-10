@@ -606,6 +606,9 @@ struct List {
     /// Find saved Forever captures with a slot at or below this whole durability percentage.
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
+    /// Apply the saved durability threshold to this exact equipment slot.
+    #[schemars(range(min = 1, max = 19))]
+    equipment_durability_slot: Option<u8>,
     /// Require the repair-all quote to fit the wallet recorded on the same visit.
     #[serde(default)]
     repair_affordable_only: bool,
@@ -2664,6 +2667,7 @@ impl Operator {
                 repair_max_quote_copper: args.repair_max_quote_copper,
                 repair_min_remaining_copper: args.repair_min_remaining_copper,
                 equipment_durability_max_percent: args.equipment_durability_max_percent,
+                equipment_durability_slot: args.equipment_durability_slot,
                 repair_affordable_only: args.repair_affordable_only,
                 minimum_free_bag_slots: args.minimum_free_bag_slots,
                 minimum_general_free_bag_slots: args.minimum_general_free_bag_slots,

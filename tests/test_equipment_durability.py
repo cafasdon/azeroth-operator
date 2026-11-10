@@ -150,6 +150,23 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual({row['snapshot_id']:row['equipment_durability_matching_slots']
                                       for row in listing['snapshots']},
                                      {keys[0]:[1],keys[5]:[2]})
+                    for slot, maximum, expected in [
+                        (1,33,{keys[0]:[1]}),(2,33,{keys[5]:[2]}),
+                        (16,33,{}),(16,34,{key:[16] for key in (keys[0],keys[4],keys[5])}),
+                        (19,100,{keys[3]:[19]}),
+                    ]:
+                        targeted=await call('list_snapshots',family='forever',
+                                            equipment_durability_max_percent=maximum,
+                                            equipment_durability_slot=slot)
+                        self.assertEqual({row['snapshot_id']:row['equipment_durability_matching_slots']
+                                          for row in targeted['snapshots']},expected)
+                    for query in (
+                        {'equipment_durability_slot':1},
+                        {'equipment_durability_slot':0,'equipment_durability_max_percent':100},
+                        {'equipment_durability_slot':20,'equipment_durability_max_percent':100},
+                    ):
+                        response=await session.call_tool('list_snapshots',{'family':'forever',**query})
+                        self.assertTrue(response.isError)
                     latest=await call('list_snapshots',family='forever',latest_per_character=True,
                                       equipment_durability_max_percent=33)
                     self.assertEqual([row['snapshot_id'] for row in latest['snapshots']],[keys[5]])

@@ -2019,6 +2019,7 @@ pub struct CaptureFilters<'a> {
     pub repair_max_quote_copper: Option<u64>,
     pub repair_min_remaining_copper: Option<u64>,
     pub equipment_durability_max_percent: Option<u8>,
+    pub equipment_durability_slot: Option<u8>,
     pub repair_affordable_only: bool,
     pub minimum_free_bag_slots: Option<u32>,
     pub minimum_general_free_bag_slots: Option<u32>,
@@ -2329,6 +2330,7 @@ impl Store {
             repair_max_quote_copper,
             repair_min_remaining_copper,
             equipment_durability_max_percent,
+            equipment_durability_slot,
             repair_affordable_only,
             minimum_free_bag_slots,
             minimum_general_free_bag_slots,
@@ -2993,6 +2995,12 @@ impl Store {
             equipment_durability_max_percent
                 .is_none_or(|maximum| family == Family::Forever && maximum <= 100),
             "Durability filtering requires Forever and a percentage from 0 to 100"
+        );
+        ensure!(
+            equipment_durability_slot.is_none_or(|slot| {
+                equipment_durability_max_percent.is_some() && (1..=19).contains(&slot)
+            }),
+            "A durability slot requires a threshold and a slot from 1 to 19"
         );
         let bag_family_space = bag_family_space.map(|filter| {
             (
@@ -4251,6 +4259,12 @@ impl Store {
                             .get("equipment_durability")
                             .and_then(|section| {
                                 analysis::equipment_durability_matching_slots(section, maximum)
+                            })
+                            .map(|mut slots| {
+                                if let Some(slot) = equipment_durability_slot {
+                                    slots.retain(|observed| *observed == u32::from(slot));
+                                }
+                                slots
                             })
                             .filter(|slots| !slots.is_empty())
                         else {
