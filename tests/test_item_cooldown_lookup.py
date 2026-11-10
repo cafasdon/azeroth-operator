@@ -98,18 +98,26 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(row, {
                             **equipment_request['selections'][0], 'status':status,
                             'observed_item_id':item['item_id'] if item else None})
-                        if status in ('different_item_id', 'not_observed'):
-                            self.assertEqual(candidates['matched_locations'], 4)
+                        if status in ('different_item_id', 'not_observed', 'same_item_id_different_link'):
+                            changed_link = status == 'same_item_id_different_link'
+                            self.assertEqual(candidates['matched_locations'], 5 if changed_link else 4)
                             self.assertFalse(candidates['has_more'])
                             self.assertEqual(candidates['quantity_by_storage'],
-                                             {'equipment':1,'bags':6,'character_bank':0,'account_bank':None})
-                            self.assertEqual(candidates['locations'], [
+                                             {'equipment':1,'bags':6,'character_bank':int(changed_link),
+                                              'account_bank':None})
+                            expected_locations = [
                                 {'storage':'equipment','container':None,'slot':'11','count':1,
                                  'saved_link_matches_original':None},
                                 *[{'storage':'bags','container':'0','slot':str(slot),'count':slot,
                                    'saved_link_matches_original':link_matches}
                                   for slot, link_matches in [(1,True),(2,False),(3,None)]],
-                            ])
+                            ]
+                            if changed_link:
+                                expected_locations.append({
+                                    'storage':'character_bank','container':'6','slot':'1','count':1,
+                                    'saved_link_matches_original':False,
+                                })
+                            self.assertEqual(candidates['locations'], expected_locations)
                         else:
                             self.assertIsNone(candidates)
                     for invalid_key in [key, alt_key, retail_key]:

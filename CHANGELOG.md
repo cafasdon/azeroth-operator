@@ -1,5 +1,7 @@
 # Changelog
 
+- Show same-base gear candidates when the saved source link changed.
+
 - Compare saved links for alternative gear locations with the original selection.
 
 - Find alternative saved locations by base item ID when a gear selection's source no longer matches.

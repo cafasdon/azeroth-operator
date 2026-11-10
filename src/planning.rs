@@ -110,7 +110,10 @@ pub fn compare_equipment_sources(
             let mut row = json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"observed_item_id":observed_id,
             "status":status});
-            if observed_id != Some(u64::from(selection.expected_item_id)) {
+            if matches!(
+                status,
+                "not_observed" | "different_item_id" | "same_item_id_different_link"
+            ) {
                 let matches = crate::analysis::find_item(newer, selection.expected_item_id, 0, 10)?;
                 row["same_base_item_candidates"] = json!({
                     "locations": matches["locations"].as_array().unwrap().iter().map(|location| {
