@@ -1524,6 +1524,11 @@ The snapshot listing excludes the warning details. [Forever lock warning source]
 When the warning reports completed encounters, it can also include the
 tooltip's boss names and defeat flags. The list is saved only when all
 rows are readable and agree with the aggregate counts.
+Use `instance_lock_encounter_review: true` on `instance_context` to
+separate completed and pending encounters in saved slot order and show
+the projected warning expiry. If only counts were captured, encounter
+names remain unknown. The review leaves current warning and saved
+lockout identity unverified.
 
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture

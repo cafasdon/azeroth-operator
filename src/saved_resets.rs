@@ -13,6 +13,41 @@ pub(crate) fn projected_reset_at(
         .and_then(|delta| captured_at.checked_add_signed(delta))
 }
 
+pub fn instance_lock_encounter_review(
+    context: &Value,
+    captured_at: DateTime<Utc>,
+) -> Option<Value> {
+    let warning = &context["lock_warning"];
+    let total = warning["encounters_total"].as_u64()?;
+    let completed = warning["encounters_completed"].as_u64()?;
+    let seconds = warning["remaining_seconds"].as_u64()?;
+    let details = warning["encounters"].as_object().map(|rows| {
+        let mut ordered: Vec<_> = rows
+            .iter()
+            .map(|(slot, row)| (slot.parse::<u32>().unwrap(), row))
+            .collect();
+        ordered.sort_unstable_by_key(|(slot, _)| *slot);
+        let (completed, pending): (Vec<_>, Vec<_>) = ordered
+            .into_iter()
+            .partition(|(_, row)| row["killed"] == true);
+        let describe = |rows: Vec<(u32, &Value)>| {
+            rows.into_iter()
+                .map(|(slot, row)| json!({"slot":slot,"name":row["name"]}))
+                .collect::<Vec<_>>()
+        };
+        json!({"completed":describe(completed),"pending":describe(pending)})
+    });
+    let expiry = i64::try_from(seconds)
+        .ok()
+        .and_then(|seconds| projected_reset_at(seconds, captured_at));
+    Some(
+        json!({"encounters_total":total,"encounters_completed":completed,
+        "encounters_remaining":total.checked_sub(completed),"encounter_details":details,
+        "reported_warning_remaining_seconds":seconds,"projected_warning_expiry_at":expiry,
+        "current_warning_verified":false,"saved_lockout_identity_verified":false,"live":false}),
+    )
+}
+
 pub(crate) fn matches_projected_window(
     seconds: Option<i64>,
     captured_at: DateTime<Utc>,

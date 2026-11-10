@@ -104,6 +104,9 @@ struct Inspect {
     coverage_sections: Option<Vec<String>>,
     /// Compare a target PvP rank with saved rank thresholds and caps.
     pvp_target_rank: Option<u32>,
+    /// Review historical encounter progress and expiry for the saved instance lock warning.
+    #[serde(default)]
+    instance_lock_encounter_review: bool,
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
@@ -2683,6 +2686,13 @@ impl Operator {
                 "Mail bag space requires mail_attachments and one to 64 distinct positive item IDs",
             )]);
         }
+        if args.instance_lock_encounter_review
+            && args.section.as_deref() != Some("instance_context")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Instance lock review requires instance_context",
+            )]);
+        }
         if args.pvp_target_rank.is_some()
             && args.section.as_deref() != Some("player_pvp_progression")
         {
@@ -4122,6 +4132,24 @@ impl Operator {
                             )]);
                         }
                     }
+                }
+                if args.instance_lock_encounter_review {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Instance lock review requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["instance_lock_encounter_review"] = serde_json::json!(
+                        value["captured_at"]
+                            .as_str()
+                            .and_then(|text| text.parse::<chrono::DateTime<chrono::Utc>>().ok())
+                            .and_then(|captured_at| {
+                                azeroth_operator::saved_resets::instance_lock_encounter_review(
+                                    &value["data"],
+                                    captured_at,
+                                )
+                            })
+                    );
                 }
                 if let Some(rank) = args.pvp_target_rank {
                     if value["client"]["family"] != "forever" {

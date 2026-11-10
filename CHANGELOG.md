@@ -1,5 +1,7 @@
 # Changelog
 
+- Review completed and pending encounters from saved instance lock warnings.
+
 - Filter saved reset schedules by the cache update age recorded at capture.
 
 - Distinguish unknown timers and out-of-window rows in saved reset schedules.

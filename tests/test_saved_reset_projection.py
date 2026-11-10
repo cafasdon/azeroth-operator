@@ -31,6 +31,17 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     'reset_seconds':3600, 'difficulty_id':1, 'locked':True,
                     'extended':True, 'is_raid':True, 'max_players':40}}}
             key = store.ingest(capture)
+            encounter_capture=deepcopy(capture)
+            encounter_capture['sections']={}
+            encounter_capture['sections']['instance_context']={
+                'kind':'raid','name':'Fixture raid','difficulty_id':1,'lock_warning':{
+                    'remaining_seconds':60,'encounters_total':3,'encounters_completed':1,'encounters':{
+                        '1':{'name':'Same name','killed':False},'2':{'name':'Defeated','killed':True},
+                        '3':{'name':'Same name','killed':False}}}}
+            encounters_id=store.ingest(encounter_capture)
+            warning=encounter_capture['sections']['instance_context']['lock_warning']
+            del warning['encounters']
+            counts_only_id=store.ingest(encounter_capture)
             empty = deepcopy(capture)
             for section in ['saved_instances', 'saved_world_bosses']:
                 empty['sections'][section]['entries'] = {}
@@ -48,6 +59,25 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
+                    for capture_id, details in [(encounters_id,{
+                            'completed':[{'slot':2,'name':'Defeated'}],
+                            'pending':[{'slot':1,'name':'Same name'},{'slot':3,'name':'Same name'}]}),
+                            (counts_only_id,None),(key,None)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':capture_id,'section':'instance_context','instance_lock_encounter_review':True})
+                        self.assertFalse(reply.isError,reply)
+                        review=json.loads(reply.content[0].text)['instance_lock_encounter_review']
+                        if capture_id==key:
+                            self.assertIsNone(review)
+                        else:
+                            self.assertEqual(review['encounter_details'],details)
+                            self.assertEqual(review['encounters_remaining'],2)
+                            self.assertEqual(review['projected_warning_expiry_at'],'2025-01-02T00:00:00Z')
+                            self.assertFalse(review['saved_lockout_identity_verified'])
+                    for capture_id, section in [(key,'saved_instances'),(retail_key,'instance_context')]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':capture_id,'section':section,'instance_lock_encounter_review':True})
+                        self.assertTrue(reply.isError,reply)
                     for selector,name,reset in [
                         ('saved_world_boss','Fixture','2025-01-02T00:01:00Z'),
                         ('saved_instance','Fixture raid','2025-01-02T00:59:00Z'),
