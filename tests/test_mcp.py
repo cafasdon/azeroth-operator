@@ -1727,6 +1727,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(context["hearthstone_bind_name_changed"])
                         self.assertFalse(context["hearthstone_item_changed"])
                         self.assertEqual(context["hearthstone_cooldown_seconds_delta"], -30)
+                        self.assertEqual(context["before"]["hearthstone_projected_ready_at"], "2025-01-01T00:00:30Z")
+                        self.assertEqual(context["after"]["hearthstone_projected_ready_at"], "2025-01-03T00:00:00Z")
+                        del no_panel["sections"]["stats"]["hearthstone_cooldown_seconds"]
+                        no_cooldown_id = SnapshotStore(Path(folder)).ingest(no_panel)
+                        no_cooldown = await session.call_tool("compare_snapshots", {
+                            "before_id": travel_before, "after_id": no_cooldown_id,
+                        })
+                        self.assertFalse(no_cooldown.isError)
+                        no_cooldown_context = json.loads(no_cooldown.content[0].text)["travel_context_change"]
+                        self.assertIsNone(no_cooldown_context["after"]["hearthstone_projected_ready_at"])
+                        (Path(folder) / f"{no_cooldown_id}.json").unlink()
                         self.assertNotIn("class", context["after"])
                         missing_space = travel_changes["carried_bag_space_change"]
                         self.assertIsNone(missing_space["family_space_changes"])

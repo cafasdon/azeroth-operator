@@ -1,5 +1,7 @@
 # Changelog
 
+- Show historical Hearthstone cooldown projections in Forever travel comparisons.
+
 - Find saved Forever Hearthstone cooldowns by projected ready deadline.
 
 - Find saved Forever captures by Hearthstone bind name and recorded cooldown.

@@ -9,6 +9,9 @@ Use `hearthstone_projected_ready_by` with an explicit RFC 3339 timestamp
 to match capture time plus recorded cooldown at or before that deadline.
 Matching rows include `hearthstone_projected_ready_at`. Zero uses the capture
 time itself. This historical projection does not establish current readiness.
+In `compare_snapshots`, the two `travel_context_change` observations also
+report their own projected timestamps. An unavailable cooldown or timestamp
+appears as null.
 
 Saved instance inspection includes `encounter_total` and
 `reported_encounter_progress` when both cache values are readable and

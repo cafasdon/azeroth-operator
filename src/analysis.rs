@@ -4460,10 +4460,7 @@ pub fn compare_observations(
     let flight_before = before.sections.get("flight_map");
     let flight_after = after.sections.get("flight_map");
     if before.client.family == crate::Family::Forever
-        && let Some(travel) = compare_travel_context(
-            before.sections.get("stats").unwrap_or(&Value::Null),
-            after.sections.get("stats").unwrap_or(&Value::Null),
-        )
+        && let Some(travel) = compare_travel_context(before, after)
     {
         comparison["travel_context_change"] = travel;
     }
@@ -7096,7 +7093,9 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
     })
 }
 
-fn compare_travel_context(before: &Value, after: &Value) -> Option<Value> {
+fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
+    let before = old.sections.get("stats").unwrap_or(&Value::Null);
+    let after = new.sections.get("stats").unwrap_or(&Value::Null);
     let map_ids = (before["map_id"].as_u64(), after["map_id"].as_u64());
     let bind_names = (
         before["hearthstone_bind_name"].as_str(),
@@ -7116,16 +7115,20 @@ fn compare_travel_context(before: &Value, after: &Value) -> Option<Value> {
                 - before["hearthstone_cooldown_seconds"].as_i64()?,
         )
     });
-    let observed = |stats: &Value| {
+    let observed = |stats: &Value, captured_at| {
+        let projected_ready = stats["hearthstone_cooldown_seconds"]
+            .as_i64()
+            .and_then(|seconds| crate::saved_resets::projected_reset_at(seconds, captured_at));
         json!({
             "map_id":stats["map_id"],"map_name":stats["map_name"],
             "hearthstone_bind_name":stats["hearthstone_bind_name"],
             "hearthstone_item_id":stats["hearthstone_item_id"],
             "hearthstone_cooldown_seconds":stats["hearthstone_cooldown_seconds"],
+            "hearthstone_projected_ready_at":projected_ready,
         })
     };
     Some(json!({
-        "before":observed(before),"after":observed(after),
+        "before":observed(before, old.captured_at),"after":observed(after, new.captured_at),
         "map_changed":map_ids.0.zip(map_ids.1).map(|(old,new)| old != new),
         "hearthstone_bind_name_changed":bind_names.0.zip(bind_names.1).map(|(old,new)| old != new),
         "hearthstone_item_changed":items.map(|(old,new)| old != new),
