@@ -38,10 +38,23 @@ only to the importer. The producer must close stdin after sending one export.
 The read-only MCP worker must see that same owner's data through a read-only
 mount. Do not use a shared writable store across principals.
 
-The standalone profile generator is tools/gateway_profile.py. Its version-one
-output was accepted by CT290 Docker MCP. It selects only Azeroth tools and a
-fixed read-only Rodrigo store; it neither reads nor modifies the homelab profile.
-Acceptance does not verify container mounts, authentication or public routing.
+The standalone profile generator is tools/gateway_profile.py. Earlier version-one
+output was accepted by CT290 Docker MCP. Current generation requires both an
+immutable image and an explicit dedicated snapshot directory on the Linux Docker
+host, for example:
+
+```text
+python -m tools.gateway_profile --image sha256:<64-lowercase-hex-digits> --store /srv/alice/snapshots
+```
+
+It emits only Azeroth read tools and that one read-only store at /data. It has no
+user/environment fallback and neither reads nor modifies the homelab profile.
+Paths must use normalised absolute Linux syntax with ASCII letter/digit/dot/
+underscore/hyphen components; root, traversal, placeholders and volume options
+are rejected. Syntax validation does not prove host filesystem ownership or
+permissions. Assign the installing user's private store outside any incoming
+payload and check its authentication/mount boundary before deployment. Current
+source changes do not prove Docker mount acceptance, authentication or routing.
 
 Public route verified 2026-11-03: https://mcp.cafas.com.br/scopes/azeroth/mcp.
 Dedicated bearer authentication is required; no credential is stored in source.

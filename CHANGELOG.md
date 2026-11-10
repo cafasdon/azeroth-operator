@@ -1,5 +1,7 @@
 # Changelog
 
+- Require an explicit snapshot store for standalone profile generation, removing the personal default while retaining the existing upgrade owner pin.
+
 - Capture private saved player map coordinates and preview explicit same-map targets as diagram geometry, without movement or travel-route claims.
 
 - Plan recipe restock toward a saved bag quantity, with conservative net yield, exact local recipe review and no craft actions.

@@ -11,7 +11,10 @@ import tempfile
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.gateway_profile import profile, STORE
+from tools.gateway_profile import profile
+
+# This existing deployment is deliberately owner-pinned; generic rendering has no default.
+STORE = "/var/lib/azeroth-operator/rodrigo/snapshots"
 
 
 def run(*args):
@@ -60,12 +63,12 @@ if __name__ == "__main__":
     candidate = evidence / "candidate.json"
     run("docker", "mcp", "profile", "export", "azeroth-operator", str(before))
     check_current(json.loads(before.read_text()), args.expected_image)
-    candidate.write_text(json.dumps(profile(args.image)))
+    candidate.write_text(json.dumps(profile(args.image, store=STORE)))
     try:
         run("docker", "mcp", "profile", "import", str(candidate))
         run("docker", "mcp", "profile", "export", "azeroth-operator", str(after))
         check_current(json.loads(after.read_text()), args.image)
-        if json.loads(after.read_text())["servers"][0]["tools"] != profile(args.image)["servers"][0]["tools"]:
+        if json.loads(after.read_text())["servers"][0]["tools"] != profile(args.image, store=STORE)["servers"][0]["tools"]:
             raise ValueError("Tool allowlist mismatch")
         run("systemctl", "restart", "azeroth-mcp.service")
         run("systemctl", "is-active", "--quiet", "azeroth-mcp.service")

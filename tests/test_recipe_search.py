@@ -107,6 +107,6 @@ class RecipeSearchTests(unittest.IsolatedAsyncioTestCase):
                                 {'snapshot_id': '0' * 64}, {'snapshot_id': retail_id}]:
                         await search(error=True, **bad)
             self.assertEqual(original, {path.name: path.read_bytes() for path in Path(folder).glob('*.json')})
-        rendered = profile('sha256:' + 'a' * 64)
+        rendered = profile('sha256:' + 'a' * 64, store='/srv/fixture/snapshots')
         self.assertIn('search_forever_recipes', rendered['servers'][0]['tools'])
         self.assertTrue(rendered['servers'][0]['snapshot']['server']['volumes'][0].endswith(':ro'))

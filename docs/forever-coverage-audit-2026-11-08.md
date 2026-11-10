@@ -975,3 +975,12 @@ restricted/invalid data. Normalised diagram geometry does not establish travel
 distance, reachability, arrival, active identity or current position. No map
 setter, polling or movement action is added. See ADR-088 and the dated map
 position evidence. Native capture, installation and live tests remain deferred.
+
+## Explicit profile store (10 November)
+
+Generic standalone profile generation now needs an explicit literal snapshot
+store and has no personal/environment fallback. It emits one read-only mount;
+the existing personal upgrade keeps its separate exact owner pin. This closes
+an implicit-path setup risk, not OS ownership/authentication proof. Host paths,
+permissions and authentication need their own deployment evidence. No installed
+profile or private data changed. See ADR-089 and its offline evidence record.
