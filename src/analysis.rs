@@ -65,6 +65,7 @@ pub enum RecipeSearchOrder {
     #[default]
     RecipeId,
     ObservedItemCapacityDesc,
+    ObservedSoleShortfallAsc,
     ReportedSkillUpsDesc,
     ReportedCooldownRemainingAsc,
     ReportedBaseOutputMinimumDesc,
@@ -521,6 +522,11 @@ pub fn search_recipe_materials_ordered(
         "Observed item capacity ordering requires material filtering"
     );
     ensure!(
+        order != RecipeSearchOrder::ObservedSoleShortfallAsc
+            || material_filter.is_some_and(|filter| filter.sole_shortfall_item_id.is_some()),
+        "Observed sole shortfall ordering requires a sole shortfall item ID"
+    );
+    ensure!(
         material_filter.is_none_or(|filter| filter.sole_shortfall_item_id.is_none()
             || filter.insufficient_only == Some(true)),
         "A sole reagent shortfall requires insufficient_only"
@@ -639,7 +645,7 @@ pub fn search_recipe_materials_ordered(
             }
             let support = if let (Some(filter), Some(stock)) = (material_filter, stock.as_ref()) {
                 match stock.support(row, filter.minimum_crafts.get()) {
-                    Some(support) => {
+                    Some(mut support) => {
                         let short = support["covers_minimum_crafts"] == false;
                         insufficient += usize::from(short);
                         if short != insufficient_only {
@@ -656,6 +662,9 @@ pub fn search_recipe_materials_ordered(
                                 .is_some_and(|maximum| missing > maximum)
                             {
                                 return None;
+                            }
+                            if order == RecipeSearchOrder::ObservedSoleShortfallAsc {
+                                support["sole_shortfall_quantity"] = json!(missing);
                             }
                         }
                         Some(support)
@@ -679,6 +688,15 @@ pub fn search_recipe_materials_ordered(
             (
                 capacity.is_none(),
                 std::cmp::Reverse(capacity.unwrap_or(0)),
+                id.parse::<u32>().unwrap(),
+            )
+        });
+    } else if order == RecipeSearchOrder::ObservedSoleShortfallAsc {
+        matches.sort_unstable_by_key(|(id, _, support, _)| {
+            (
+                support
+                    .as_ref()
+                    .and_then(|row| row["sole_shortfall_quantity"].as_u64()),
                 id.parse::<u32>().unwrap(),
             )
         });
@@ -776,6 +794,8 @@ pub fn search_recipe_materials_ordered(
         result["ordering_basis"] = json!(match order {
             RecipeSearchOrder::ObservedItemCapacityDesc =>
                 "independent_observed_required_item_capacity_only",
+            RecipeSearchOrder::ObservedSoleShortfallAsc =>
+                "independent_observed_sole_reagent_shortfall_quantity",
             RecipeSearchOrder::ReportedCooldownRemainingAsc =>
                 "captured_cooldown_remaining_seconds_only",
             RecipeSearchOrder::ReportedSkillUpsDesc => "captured_same_profession_skill_ups_only",

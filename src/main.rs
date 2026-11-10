@@ -1218,7 +1218,7 @@ struct RecipeSearch {
     recipe_view_filter: Option<azeroth_operator::analysis::RecipeViewFilter>,
     /// Filter original bulk-row cooldown state, observed charges or recorded timer; no elapsed recharge/current eligibility.
     cooldown_filter: Option<azeroth_operator::analysis::RecipeCooldownFilter>,
-    /// Order by recipe ID, observed capacity, skill-ups, cooldown, or minimum base output. Output per reagent ordering requires output_item_id and reagent_item_id.
+    /// Order by recipe ID, observed capacity, sole shortfall quantity, skill-ups, cooldown, or base output. Output per reagent ordering requires output_item_id and reagent_item_id.
     #[serde(default, deserialize_with = "recipe_search_order")]
     order: Option<azeroth_operator::analysis::RecipeSearchOrder>,
     offset: Option<usize>,
@@ -1830,7 +1830,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe search requires owned valid Forever snapshots, exact positive IDs and a page size from 1 to 50. Observed capacity ordering requires material_filter. Output per reagent ordering requires output_item_id and reagent_item_id. An inventory snapshot requires material filtering and the same character/client/build with no older capture time.",
+                "Recipe search requires owned valid Forever snapshots, exact positive IDs and a page size from 1 to 50. Observed capacity ordering requires material_filter. Sole shortfall ordering requires material_filter.sole_shortfall_item_id and insufficient_only. Output per reagent ordering requires output_item_id and reagent_item_id. An inventory snapshot requires material filtering and the same character/client/build with no older capture time.",
             )]),
         }
     }

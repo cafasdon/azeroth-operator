@@ -13,6 +13,8 @@ all observed gaps before applying the sole-item filter.
 Set `material_filter.maximum_sole_shortfall_quantity` with that item ID
 to keep only gaps at or below a planned pickup quantity. Each recipe is
 evaluated independently against the saved inventory.
+Use `order: "observed_sole_shortfall_asc"` with the sole-item filter to
+show the smallest pickups first, with ties ordered by numeric recipe ID.
 
 With `profession_target_trainer_lessons` on a saved profession inspection,
 set `profession_target_trainer_reserve_copper` to check each projected

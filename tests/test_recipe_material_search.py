@@ -67,7 +67,7 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
             store = SnapshotStore(Path(folder))
             key = store.ingest(base)
             variants = {}
-            for name in ['missing_inventory','empty_bags','bags_only','missing_recipes','empty_recipes']:
+            for name in ['missing_inventory','empty_bags','bags_only','missing_recipes','empty_recipes','rank_shortfall']:
                 saved = deepcopy(base)
                 if name in ['missing_inventory','empty_bags','bags_only']:
                     for field in ['bags','character_bank','account_bank']:
@@ -75,6 +75,10 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
                     if name == 'empty_bags': saved['sections']['bags'] = {}
                 if name == 'missing_recipes': saved['sections'].pop('profession_recipe_materials')
                 if name == 'empty_recipes': saved['sections']['profession_recipe_materials']['entries'] = {}
+                if name == 'rank_shortfall':
+                    ranked_rows = saved['sections']['profession_recipe_materials']['entries']
+                    ranked_rows['8']['reagents']['10'] = 3
+                    ranked_rows['9'] = deepcopy(ranked_rows['1'])
                 variants[name] = store.ingest(saved)
             original = {p.name:p.read_bytes() for p in Path(folder).glob('*.json')}
             env = {**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -123,6 +127,15 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bounded['material_support_insufficient_observed_count'],4)
                     await search({**short_filter,'maximum_sole_shortfall_quantity':3},error=True)
                     await search({**only_item,'maximum_sole_shortfall_quantity':-1},error=True)
+                    ordered_args = {'snapshot_id':variants['rank_shortfall'],'order':'observed_sole_shortfall_asc'}
+                    ordered_filter = {**only_item,'sole_shortfall_item_id':10}
+                    ordered = await search(ordered_filter,limit=2,**ordered_args)
+                    self.assertEqual(ids(ordered),[8,1])
+                    self.assertEqual([row['material_support']['sole_shortfall_quantity'] for row in ordered['records']],[1,3])
+                    self.assertEqual(ordered['next_offset'],2)
+                    self.assertEqual(ids(await search(ordered_filter,offset=2,**ordered_args)),[9])
+                    self.assertEqual(ids(await search({**ordered_filter,'maximum_sole_shortfall_quantity':1},**ordered_args)),[8])
+                    await search(short_filter,error=True,**ordered_args)
                     self.assertEqual(ids(await search({**only_item,'minimum_crafts':3})),[])
                     self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1)),[1])
                     self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1,offset=1)),[8])
