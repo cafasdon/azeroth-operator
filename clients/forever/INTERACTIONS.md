@@ -26,6 +26,10 @@ quotes and affordability. The report shows each capture's repair status
 and signed changes in quote, wallet shortfall and copper remaining after
 the quote. Each change requires two known values. A remaining balance
 requires an affordable quote in that capture. Repair events stay unverified.
+Use `repair_wallet_reserve_copper` with `inspect_snapshot` on `repair_quote`
+to check the quote and reserve against the same saved wallet. The report
+shows affordability, the combined shortfall and any copper left after
+both. A missing quote leaves the combined shortfall unknown.
 
 Use `list_snapshots.merchant_buyback` with an exact `item_id` to find
 saved buyback entries. Optional `minimum_quantity` and

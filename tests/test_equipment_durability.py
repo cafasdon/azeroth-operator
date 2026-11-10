@@ -66,6 +66,21 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         response=await session.call_tool(tool,args);self.assertFalse(response.isError,response.content)
                         return json.loads(response.content[0].text)
                     captured=await call('inspect_snapshot',snapshot_id=keys[0],section='equipment_durability')
+                    for key,reserve,affordable,shortfall,remaining in [
+                            (budgets[3],3,True,0,0),(budgets[3],4,False,1,None),
+                            (budgets[1],1,False,11,None),(budgets[0],1,None,None,None),
+                            (keys[0],1,None,None,None)]:
+                        report=await call('inspect_snapshot',snapshot_id=key,section='repair_quote',
+                                          repair_wallet_reserve_copper=reserve)
+                        projection=report['repair_reserve_projection']
+                        self.assertIs(projection['affordable_with_reserve'],affordable)
+                        self.assertEqual(projection['shortfall_copper'],shortfall)
+                        self.assertEqual(projection['wallet_remaining_after_quote_and_reserve_copper'],remaining)
+                        self.assertFalse(projection['repair_eligibility_verified'])
+                    for section,reserve in [('equipment_durability',0),('repair_quote',10**13)]:
+                        result=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':keys[0],'section':section,'repair_wallet_reserve_copper':reserve})
+                        self.assertTrue(result.isError,result)
                     for key, covers, remaining, shortfall in zip(
                         budgets,[None,False,True,True],[None,None,0,3],[None,10,0,0],strict=True):
                         status=(await call('character_summary',snapshot_id=key))['repair_status']

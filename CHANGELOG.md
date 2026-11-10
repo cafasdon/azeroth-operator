@@ -1,5 +1,7 @@
 # Changelog
 
+- Budget a copper reserve alongside a saved repair-all quote.
+
 - Compare encounter progress across compatible saved instance lock warnings.
 
 - Find saved instance warnings by encounter name and defeated state.

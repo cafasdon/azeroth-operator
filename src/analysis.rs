@@ -8352,7 +8352,7 @@ fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize
     Some((available, unknown_prices, subtotal))
 }
 
-pub fn trainer_reserved_shortfall(cost: u64, balance: u64, reserve: u64) -> Option<u64> {
+pub fn reserved_balance_shortfall(cost: u64, balance: u64, reserve: u64) -> Option<u64> {
     match balance.checked_sub(reserve) {
         Some(spendable) => Some(cost.saturating_sub(spendable)),
         None => cost.checked_add(reserve - balance),
@@ -8378,7 +8378,7 @@ pub fn trainer_lesson_affordability(
                     None => Some(false),
                 });
                 let shortfall = price.zip(balance).and_then(|(price, balance)| {
-                    trainer_reserved_shortfall(price, balance, reserve)
+                    reserved_balance_shortfall(price, balance, reserve)
                 });
                 (
                     id,
@@ -10026,6 +10026,28 @@ pub(crate) fn repair_status(s: &Snapshot) -> Value {
         "wallet_remaining_after_saved_repair_quote_copper":budget
             .and_then(|(cost, balance)| balance.checked_sub(cost)),
     })
+}
+
+pub fn repair_reserve_projection(snapshot: &Snapshot, reserve: u64) -> Value {
+    let quote = snapshot
+        .sections
+        .get("repair_quote")
+        .and_then(|row| row["copper"].as_u64());
+    let wallet = snapshot
+        .sections
+        .get("wallet")
+        .and_then(|row| row["copper"].as_u64());
+    let reserve_covered = wallet.map(|balance| balance >= reserve);
+    let budget = quote.zip(wallet);
+    let remaining =
+        budget.and_then(|(quote, balance)| balance.checked_sub(quote)?.checked_sub(reserve));
+    json!({"reserve_copper":reserve,"reserve_covered":reserve_covered,
+        "affordable_with_reserve":if reserve_covered == Some(false) { Some(false) }
+            else { budget.map(|_| remaining.is_some()) },
+        "shortfall_copper":budget.and_then(|(cost, balance)| reserved_balance_shortfall(cost, balance, reserve)),
+        "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
+        "wallet_remaining_after_quote_and_reserve_copper":remaining,
+        "repair_eligibility_verified":false,"live":false})
 }
 
 pub fn summary(s: &Snapshot) -> Value {

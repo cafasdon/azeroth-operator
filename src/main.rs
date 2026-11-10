@@ -110,6 +110,8 @@ struct Inspect {
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
+    /// Copper to preserve after paying the captured repair-all quote.
+    repair_wallet_reserve_copper: Option<u64>,
     /// Filter saved pet species by presence of an observed owned row.
     pet_has_owned_rows: Option<bool>,
     /// Filter saved pet species by presence of an observed unowned row.
@@ -2586,6 +2588,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.repair_wallet_reserve_copper.is_some_and(|reserve| {
+            reserve > 9_999_999_999_999 || args.section.as_deref() != Some("repair_quote")
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Repair reserve requires repair_quote and a valid copper amount",
+            )]);
+        }
         if let Some(maximum) = args.equipment_durability_max_percent
             && (maximum > 100 || args.section.as_deref() != Some("equipment_durability"))
         {
@@ -3921,6 +3930,20 @@ impl Operator {
                         value["bag_restock_merchant_quote"] = quote;
                     }
                 }
+                if let Some(reserve) = args.repair_wallet_reserve_copper {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read saved repair budget",
+                        )]);
+                    };
+                    if snapshot.client.family != Family::Forever {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Repair reserve requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["repair_reserve_projection"] =
+                        azeroth_operator::analysis::repair_reserve_projection(&snapshot, reserve);
+                }
                 if let Some(maximum) = args.equipment_durability_max_percent {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
@@ -4389,7 +4412,7 @@ impl Operator {
                             .is_some_and(|(cost, spendable)| cost > spendable);
                         let shortfall = |cost: Option<u64>| {
                             cost.zip(trainer_balance).and_then(|(cost, balance)| {
-                                azeroth_operator::analysis::trainer_reserved_shortfall(
+                                azeroth_operator::analysis::reserved_balance_shortfall(
                                     cost, balance, reserve,
                                 )
                             })
