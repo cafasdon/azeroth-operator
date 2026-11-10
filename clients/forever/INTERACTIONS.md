@@ -17,6 +17,10 @@ establish instance identity, current capacity or roster completeness.
 Set `instance_group_size_max_cache_age_seconds` to require an inclusive
 cache age limit at capture time. An older or unavailable cache leaves the
 size and shortfall unknown. The report still shows any matching row count.
+Use these same options with `compare_snapshots` to see both references.
+Shortfall and excess deltas require the same recorded name, kind,
+difficulty, map ID and positive size reference. This still leaves
+instance and group identity unverified.
 
 Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap

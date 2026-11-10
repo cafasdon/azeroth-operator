@@ -836,6 +836,11 @@ struct Compare {
     /// Compare reported group categories across two saved Forever captures.
     #[serde(default)]
     group_context_changes: bool,
+    /// Compare saved instance group size references across both captures.
+    #[serde(default)]
+    instance_group_size_reference: bool,
+    /// Maximum saved lockout cache age at capture for both size references.
+    instance_group_size_max_cache_age_seconds: Option<u32>,
     /// Compare reported group member counts against the same target in both captures.
     group_member_target: Option<std::num::NonZeroU32>,
     /// Compare the reported personal PvP progression and cap distances in saved Forever captures.
@@ -2358,6 +2363,9 @@ impl Operator {
                     equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
+                    instance_group_size_reference: args.instance_group_size_reference,
+                    instance_group_size_max_cache_age_seconds: args
+                        .instance_group_size_max_cache_age_seconds,
                     group_member_target: args.group_member_target,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
                     pvp_target_rank: args.pvp_target_rank,

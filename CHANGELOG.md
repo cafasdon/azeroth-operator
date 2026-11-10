@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved instance-group shortfalls against matching size references.
+
 - Limit saved instance group size references by the lockout cache age at capture.
 
 - Compare saved instance-group counts with a matching lockout size reference.

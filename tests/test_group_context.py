@@ -164,7 +164,7 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                     for key in bad:await call('inspect_snapshot',error=True,snapshot_id=key,section='group_context')
                     size = deepcopy(base)
                     size['sections'].update(group_context=both,instance_context={
-                        'kind':'raid','name':'Fixture raid','difficulty_id':1,
+                        'kind':'raid','name':'Fixture raid','difficulty_id':1,'instance_map_id':100,
                     })
                     lock = {'name':'Fixture raid','difficulty_id':1,'is_raid':True,'max_players':45,
                             'reset_seconds':100,'locked':True,'extended':False}
@@ -188,6 +188,8 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(reference['instance_capacity_verified'])
                         self.assertNotIn('cache_age_within_limit_at_capture',reference)
                         if capacity:
+                            reference_key = key
+                            reference_capture = deepcopy(size)
                             for age, within in [(0,False),(2,False),(3,True),(4,True)]:
                                 bounded = await call('inspect_snapshot',snapshot_id=key,
                                     section='instance_context',instance_group_size_reference=True,
@@ -197,6 +199,33 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(bounded['matching_saved_lockout_rows'],1)
                                 self.assertEqual(bounded['reported_size_reference'],45 if within else None)
                                 self.assertEqual(bounded['shortfall_to_size_reference'],5 if within else None)
+                    for map_id, age, size, context_match, size_match, shortfall in [
+                        (100,3,45,True,True,-5),(101,3,45,False,True,None),
+                        (100,4,45,True,None,None),(100,3,50,True,False,None),
+                        (None,3,45,None,True,None),
+                    ]:
+                        candidate = deepcopy(reference_capture)
+                        instance = candidate['sections']['instance_context']
+                        if map_id is None:
+                            del instance['instance_map_id']
+                        else:
+                            instance['instance_map_id'] = map_id
+                        cache = candidate['sections']['saved_instances']
+                        cache['update_age_seconds'] = age
+                        cache['entries']['1']['max_players'] = size
+                        candidate['sections']['group_context']['categories']['instance']['reported_member_count'] = 50
+                        key = store.ingest(candidate)
+                        before[key+'.json'] = (Path(folder)/(key+'.json')).read_bytes()
+                        result = await call('compare_snapshots',before_id=reference_key,after_id=key,
+                            instance_group_size_reference=True,instance_group_size_max_cache_age_seconds=3)
+                        change = result['instance_group_size_reference_comparison']
+                        self.assertIs(change['reported_instance_context_matches'],context_match)
+                        self.assertIs(change['reported_size_references_match'],size_match)
+                        self.assertEqual(change['shortfall_to_size_reference_delta'],shortfall)
+                        self.assertEqual(change['excess_over_size_reference_delta'],5 if shortfall is not None else None)
+                        self.assertFalse(change['instance_identity_verified'])
+                    await call('compare_snapshots',error=True,before_id=earlier,after_id=later,
+                        instance_group_size_max_cache_age_seconds=0)
                     await call('inspect_snapshot',error=True,snapshot_id=earlier,
                         section='instance_context',instance_group_size_max_cache_age_seconds=0)
                     await call('inspect_snapshot',error=True,snapshot_id=retail_id,

@@ -3356,6 +3356,8 @@ pub struct ComparisonSelectors<'a> {
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
+    pub instance_group_size_reference: bool,
+    pub instance_group_size_max_cache_age_seconds: Option<u32>,
     pub group_member_target: Option<std::num::NonZeroU32>,
     pub player_pvp_progression_changes: bool,
     pub pvp_target_rank: Option<u32>,
@@ -3535,6 +3537,42 @@ pub fn instance_group_size_reference(snapshot: &Snapshot, maximum_cache_age: Opt
         report["cache_age_within_limit_at_capture"] = json!(within_limit);
     }
     report
+}
+
+fn compare_instance_group_size_references(
+    before: &Snapshot,
+    after: &Snapshot,
+    maximum_cache_age: Option<u32>,
+) -> Value {
+    let identity = |snapshot: &Snapshot| {
+        let row = snapshot.sections.get("instance_context")?;
+        Some((
+            row["kind"].as_str()?.to_owned(),
+            row["name"].as_str()?.to_owned(),
+            row["difficulty_id"].as_u64()?,
+            row["instance_map_id"].as_u64()?,
+        ))
+    };
+    let same_context = identity(before)
+        .zip(identity(after))
+        .map(|(old, new)| old == new);
+    let old = instance_group_size_reference(before, maximum_cache_age);
+    let new = instance_group_size_reference(after, maximum_cache_age);
+    let same_size = old["reported_size_reference"]
+        .as_u64()
+        .zip(new["reported_size_reference"].as_u64())
+        .map(|(old, new)| old == new);
+    let delta = |field: &str| {
+        if same_context != Some(true) || same_size != Some(true) {
+            return None;
+        }
+        Some(i128::from(new[field].as_u64()?) - i128::from(old[field].as_u64()?))
+    };
+    json!({"before":old,"after":new,"reported_instance_context_matches":same_context,
+        "reported_size_references_match":same_size,
+        "shortfall_to_size_reference_delta":delta("shortfall_to_size_reference"),
+        "excess_over_size_reference_delta":delta("excess_over_size_reference"),
+        "instance_identity_verified":false,"group_identity_verified":false,"live":false})
 }
 
 pub fn group_member_target_projection(section: &Value, target: u32) -> Value {
@@ -3919,6 +3957,25 @@ pub fn compare_observations(
             "observed_next_threshold_change_with_matching_season_id":next_threshold_change,
             "observed_cap_changes_with_matching_season_id":cap_changes,
             "reported_season_ids_match":season_match,"same_season_verified":false,"earned_points_delta":null,"live":false});
+    }
+    ensure!(
+        selectors
+            .instance_group_size_max_cache_age_seconds
+            .is_none()
+            || selectors.instance_group_size_reference,
+        "A cache age limit requires the instance group size reference"
+    );
+    if selectors.instance_group_size_reference {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Instance group size comparison requires Forever"
+        );
+        comparison["instance_group_size_reference_comparison"] =
+            compare_instance_group_size_references(
+                before,
+                after,
+                selectors.instance_group_size_max_cache_age_seconds,
+            );
     }
     if let Some(target) = selectors.group_member_target {
         ensure!(
