@@ -1,5 +1,7 @@
 # Changelog
 
+- Project loaded saved currency attachments against each capture's recorded cap headroom.
+
 - Compare recorded currency balances alongside exact saved mail currency observations.
 
 - Compare recorded carried stock alongside saved mail observations for an exact item.

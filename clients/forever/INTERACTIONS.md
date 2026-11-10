@@ -12,6 +12,10 @@ With the currency selector, set `mail_attachment_compare_currency_balance`
 to view each capture's balance separately. A balance delta requires both
 balances to have the same known account-wide flag. Pending attachments
 stay separate, and balance changes do not prove a transfer.
+The same option shows a hypothetical comparison of each loaded attachment
+total with the recorded cap headroom from that capture. It requires a
+known attachment quantity and recorded cap. Whether mailbox retrieval
+applies those caps remains unverified.
 With the item selector, set `mail_attachment_compare_carried_item` to
 compare the same captures' bag quantities separately. Pending mail
 does not count toward carried stock and changes do not prove transfers.

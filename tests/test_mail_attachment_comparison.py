@@ -49,7 +49,7 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                 return capture(messages,sections={'currency_balances':{
                     'coverage':'visible_currency_ids_only','entries':{'720':{
                         'name':'Fixture currency','quantity':quantity,'account_wide':account_wide,'inactive':False,
-                        'max_quantity':0,'max_weekly_quantity':0,'earned_this_week':0,
+                        'max_quantity':6,'max_weekly_quantity':0,'earned_this_week':0,
                         'total_earned':0,'cap_uses_total_earned':False,
                     }},
                 }})
@@ -114,6 +114,16 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(balance['quantity_delta'],balance_delta)
                         self.assertFalse(balance['mail_counts_toward_currency_balance'])
                         self.assertFalse(balance['currency_transfers_verified'])
+                        caps = focused['hypothetical_cap_projection']
+                        self.assertFalse(caps['mail_cap_application_verified'])
+                        self.assertEqual(caps['before'],{
+                            'proposed_quantity':4,'quantity_within_recorded_headroom':1,
+                            'quantity_above_recorded_headroom':3,
+                        })
+                        self.assertEqual(caps['after'],None if target == after else {
+                            'proposed_quantity':4,'quantity_within_recorded_headroom':0,
+                            'quantity_above_recorded_headroom':4,
+                        })
                     rejected = await session.call_tool('compare_snapshots',{
                         'before_id':before,'after_id':after,'mail_attachment_item_id':720,
                         'mail_attachment_compare_currency_balance':True,

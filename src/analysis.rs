@@ -4078,6 +4078,18 @@ pub fn compare_observations(
         if kind == "currency" && selectors.mail_attachment_compare_currency_balance {
             attachment["balance_comparison"] =
                 compare_mail_currency_balances(before, after, id.get());
+            let key = id.to_string();
+            let project = |snapshot: &Snapshot, side: &Value| {
+                let quantity = side["known_quantity"].as_u64()?;
+                let row = snapshot.sections.get("currency_balances")?["entries"].get(&key)?;
+                let caps = currency_entry_cap_headroom(row)?;
+                Some(currency_reward_projection(quantity, row, &caps))
+            };
+            attachment["hypothetical_cap_projection"] = json!({
+                "before":project(before, &attachment["before"]),
+                "after":project(after, &attachment["after"]),
+                "mail_cap_application_verified":false
+            });
         }
         comparison[format!("mail_attachment_{kind}_comparison")] = attachment;
     }
