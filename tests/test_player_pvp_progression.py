@@ -177,6 +177,26 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([row['snapshot_id'] for row in capped['snapshots']],[valid[12][0]])
                     await call('list_snapshots',error=True,family='forever',
                         pvp_cap_distance={'cap':'unknown','maximum_remaining_points':0})
+                    for basis, maximum, expected in [
+                        ('total_threshold',90,{11:90,12:0}),
+                        ('total_threshold',0,{12:0}),
+                        ('next_rank_threshold',90,{11:90}),
+                    ]:
+                        listing = await call('list_snapshots',family='forever',pvp_season_id=7,
+                            pvp_target_distance={'target_rank':4,'basis':basis,
+                                                 'maximum_remaining_points':maximum})
+                        matches = {row['snapshot_id']:row['pvp_rank_match']['target_distance']
+                                   for row in listing['snapshots']}
+                        self.assertEqual(set(matches),{valid[i][0] for i in expected})
+                        for i, remaining in expected.items():
+                            observation = matches[valid[i][0]]
+                            self.assertEqual(observation['basis'],basis)
+                            self.assertEqual(observation['remaining_points'],remaining)
+                            self.assertFalse(observation['projection']['rank_eligibility_verified'])
+                    await call('list_snapshots',error=True,family='retail',
+                        pvp_target_distance={'target_rank':4,'maximum_remaining_points':90})
+                    await call('list_snapshots',error=True,family='forever',
+                        pvp_target_distance={'target_rank':4,'maximum_remaining_points':90,'basis':'unknown'})
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
                     for a,b,match,up,down in [

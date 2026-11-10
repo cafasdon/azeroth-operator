@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever characters within a points distance of an exact PvP rank.
+
 - Compare saved PvP points remaining to an exact rank when reported thresholds agree.
 
 - Compare a saved PvP rank target across captures and report observed target crossings.

@@ -8,6 +8,11 @@ Points-remaining deltas also require matching reported season IDs.
 The total-points delta requires the same target threshold and current-rank
 thresholds in both captures. The next-rank delta requires the same
 reported next-rank threshold and a usable estimate on each side.
+Use `pvp_target_distance` on `list_snapshots` with `target_rank`
+and `maximum_remaining_points` to find saved captures near a rank.
+The default `total_threshold` basis uses recorded total thresholds.
+Select `next_rank_threshold` to use the recorded next-rank estimate
+only. Missing estimates cannot satisfy the inclusive bound.
 
 Set `player_trade_offer_item_id` on `compare_snapshots` to limit saved
 outgoing trade comparisons to one base item, even if the general trade

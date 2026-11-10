@@ -612,6 +612,8 @@ struct List {
     maximum_pvp_points_to_next_threshold: Option<u32>,
     /// Match a saved Forever PvP cap and its maximum remaining points.
     pvp_cap_distance: Option<azeroth_operator::PvpCapDistanceFilter>,
+    /// Match saved PvP captures within a points distance of an exact rank.
+    pvp_target_distance: Option<azeroth_operator::PvpTargetDistanceFilter>,
     /// Match saved Forever health or primary power by percentage range or primary power type.
     player_resource: Option<azeroth_operator::PlayerResourceFilter>,
     /// Match an exact spell ID in a saved helpful or harmful Forever player aura list.
@@ -2610,6 +2612,7 @@ impl Operator {
                 pvp_season_id: args.pvp_season_id,
                 maximum_pvp_points_to_next_threshold: args.maximum_pvp_points_to_next_threshold,
                 pvp_cap_distance: args.pvp_cap_distance,
+                pvp_target_distance: args.pvp_target_distance,
                 player_resource: args.player_resource,
                 player_aura: args.player_aura,
                 weapon_enchant: args.weapon_enchant,

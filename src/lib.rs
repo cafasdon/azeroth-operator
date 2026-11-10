@@ -1817,6 +1817,39 @@ impl PvpCapDistanceFilter {
     }
 }
 
+#[derive(Clone, Copy, Default, Deserialize, Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum PvpTargetDistanceBasis {
+    #[default]
+    TotalThreshold,
+    NextRankThreshold,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct PvpTargetDistanceFilter {
+    target_rank: u32,
+    maximum_remaining_points: u32,
+    #[serde(default)]
+    basis: PvpTargetDistanceBasis,
+}
+
+impl PvpTargetDistanceFilter {
+    fn observation_match(&self, progression: &Value) -> Option<Value> {
+        let projection = analysis::pvp_rank_target_projection(progression, self.target_rank)?;
+        let field = match self.basis {
+            PvpTargetDistanceBasis::TotalThreshold => "remaining_points_using_total_threshold",
+            PvpTargetDistanceBasis::NextRankThreshold => {
+                "remaining_points_using_next_rank_threshold"
+            }
+        };
+        let remaining = projection[field].as_u64()?;
+        (remaining <= u64::from(self.maximum_remaining_points)).then(
+            || json!({"basis":self.basis,"remaining_points":remaining,"projection":projection}),
+        )
+    }
+}
+
 #[derive(Clone, Copy, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupContextCategory {
@@ -1890,6 +1923,7 @@ pub struct CaptureFilters<'a> {
     pub pvp_season_id: Option<std::num::NonZeroU32>,
     pub maximum_pvp_points_to_next_threshold: Option<u32>,
     pub pvp_cap_distance: Option<PvpCapDistanceFilter>,
+    pub pvp_target_distance: Option<PvpTargetDistanceFilter>,
     pub player_resource: Option<PlayerResourceFilter>,
     pub player_aura: Option<PlayerAuraFilter>,
     pub weapon_enchant: Option<WeaponEnchantFilter>,
@@ -2184,6 +2218,7 @@ impl Store {
             pvp_season_id,
             maximum_pvp_points_to_next_threshold,
             pvp_cap_distance,
+            pvp_target_distance,
             player_resource,
             player_aura,
             weapon_enchant,
@@ -2438,7 +2473,8 @@ impl Store {
             || maximum_pvp_rank.is_some()
             || pvp_season_id.is_some()
             || maximum_pvp_points_to_next_threshold.is_some()
-            || pvp_cap_distance.is_some();
+            || pvp_cap_distance.is_some()
+            || pvp_target_distance.is_some();
         ensure!(
             player_aura.is_none() || family == Family::Forever,
             "Player aura search requires Forever"
@@ -3259,6 +3295,12 @@ impl Store {
                                 continue;
                             };
                             observation["cap_distance"] = cap;
+                        }
+                        if let Some(filter) = &pvp_target_distance {
+                            let Some(target) = filter.observation_match(progression) else {
+                                continue;
+                            };
+                            observation["target_distance"] = target;
                         }
                         Some(observation)
                     } else {
