@@ -1677,6 +1677,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                              "before_price": 10, "after_price": 0, "price_delta": -10},
                         ])
                         quest = progress_data["quest_change"]
+                        for selection,error in [
+                            ({"quest_title":"  fIXture QUEST "},False),
+                            ({"quest_title":"Fixture quest","quest_id":42},False),
+                            ({"quest_title":"Fixture quest","quest_id":10},True),
+                            ({"quest_title":"Fixture"},True),
+                            ({"quest_title":" "},True),
+                        ]:
+                            named_quest=await session.call_tool("compare_snapshots",{
+                                "before_id":after_key,"after_id":progress_key,**selection})
+                            self.assertEqual(bool(named_quest.isError),error,named_quest)
+                            if not error:
+                                self.assertEqual(json.loads(named_quest.content[0].text)["quest_change"],quest)
                         self.assertTrue(quest["ready_for_turn_in_changed"])
                         self.assertIsNone(quest["failed_changed"])
                         self.assertEqual(quest["timer_change"], {

@@ -3333,6 +3333,11 @@ one ID across both captures and compare saved progress. Add an
 `achievement_id` to disambiguate. Only player-tracked achievements in
 the selected captures are covered.
 
+`compare_snapshots.quest_title` resolves an exact saved Forever quest
+title across both captures before comparing progress by ID. If the title
+matches multiple IDs, supply `quest_id` as well. A quest missing on one side
+does not establish completion, failure or abandonment.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

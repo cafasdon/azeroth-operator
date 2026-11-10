@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever quest progress by exact quest title.
+
 - Find and compare saved tracked Forever achievements by exact name.
 
 - Find saved Forever renown and paragon progress by exact faction name.

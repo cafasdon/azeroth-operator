@@ -3122,6 +3122,7 @@ pub struct ComparisonSelectors<'a> {
     pub faction_id: Option<u32>,
     pub faction_name: Option<&'a str>,
     pub quest_id: Option<u32>,
+    pub quest_title: Option<&'a str>,
     pub quest_waypoints: bool,
     pub quest_readiness_changes: bool,
     pub achievement_status_changes: bool,
@@ -3246,6 +3247,8 @@ fn resolve_comparison_id(
     before: &Snapshot,
     after: &Snapshot,
     section: &str,
+    entries_key: Option<&str>,
+    label_key: &str,
     id: Option<u32>,
     name: Option<&str>,
 ) -> Result<Option<u32>> {
@@ -3259,12 +3262,18 @@ fn resolve_comparison_id(
     let name = name.to_lowercase();
     let ids: BTreeSet<_> = [before, after]
         .into_iter()
-        .filter_map(|snapshot| snapshot.sections.get(section)?["entries"].as_object())
+        .filter_map(|snapshot| {
+            let section = snapshot.sections.get(section)?;
+            match entries_key {
+                Some(key) => section.get(key)?.as_object(),
+                None => section.as_object(),
+            }
+        })
         .flat_map(|entries| entries.iter())
         .filter_map(|(key, row)| {
             let matched = key.parse::<u32>().ok()?;
             (id.is_none_or(|wanted| matched == wanted)
-                && row["name"]
+                && row[label_key]
                     .as_str()
                     .is_some_and(|label| label.trim().to_lowercase() == name))
             .then_some(matched)
@@ -3993,6 +4002,8 @@ pub fn compare_observations(
         before,
         after,
         "currency_balances",
+        Some("entries"),
+        "name",
         selectors.currency_id,
         selectors.currency_name,
     )? {
@@ -4040,6 +4051,8 @@ pub fn compare_observations(
         before,
         after,
         "reputation",
+        Some("entries"),
+        "name",
         selectors.faction_id,
         selectors.faction_name,
     )? {
@@ -4075,7 +4088,15 @@ pub fn compare_observations(
             "special_progress_change":special_progress_change
         });
     }
-    if let Some(quest_id) = selectors.quest_id {
+    if let Some(quest_id) = resolve_comparison_id(
+        before,
+        after,
+        "quests",
+        None,
+        "title",
+        selectors.quest_id,
+        selectors.quest_title,
+    )? {
         ensure!(quest_id > 0, "Expected a positive quest ID");
         let key = quest_id.to_string();
         let quest = |snapshot: &Snapshot| {
@@ -4247,6 +4268,8 @@ pub fn compare_observations(
         before,
         after,
         "tracked_achievements",
+        Some("entries"),
+        "name",
         selectors.achievement_id,
         selectors.achievement_name,
     )? {

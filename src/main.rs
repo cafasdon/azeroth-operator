@@ -720,6 +720,8 @@ struct Compare {
     faction_name: Option<String>,
     /// Optionally compare one captured quest by ID.
     quest_id: Option<std::num::NonZeroU32>,
+    /// Resolve one Forever quest by exact saved title before comparing progress.
+    quest_title: Option<String>,
     /// Compare next waypoint maps for quests present in both Forever captures.
     #[serde(default)]
     quest_waypoints: bool,
@@ -2104,6 +2106,7 @@ impl Operator {
                     faction_id: args.faction_id.map(|id| id.get()),
                     faction_name: args.faction_name.as_deref(),
                     quest_id: args.quest_id.map(|id| id.get()),
+                    quest_title: args.quest_title.as_deref(),
                     quest_waypoints: args.quest_waypoints,
                     quest_readiness_changes: args.quest_readiness_changes,
                     achievement_status_changes: args.achievement_status_changes,
