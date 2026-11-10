@@ -18,6 +18,11 @@ from tools import role_metrics as roles
 
 
 OWNED_STORAGE_SECTIONS = ('equipment', 'bags', 'character_bank', 'account_bank')
+ITEM_RESOLUTION_STATUSES = {
+    'catalogue_item_unavailable', 'item_link_unresolved', 'modifier_values_unavailable',
+    'resolved', 'suffix_reference_unresolved', 'enchant_reference_unresolved',
+    'simulator_item_unresolved',
+}
 
 
 async def selected_snapshot(args, deadline):
@@ -87,7 +92,7 @@ async def selected_snapshot(args, deadline):
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
-async def catalogue_preflight(args, deadline):
+async def catalogue_preflight(args, deadline, *, include_resolution_counts):
     ranker = collection.ranker
     require(monotonic() < deadline)
     async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
@@ -97,18 +102,29 @@ async def catalogue_preflight(args, deadline):
                 async with ranker.ClientSession(reader, writer) as session:
                     await session.initialize()
                     reply = await session.call_tool('review_forever_owned_gear',
-                        {'snapshot_id': args.snapshot_id, 'limit': 1})
+                        {'snapshot_id': args.snapshot_id, 'limit': 1,
+                         'include_simulator_item_resolution_counts': include_resolution_counts})
                     require(not reply.isError and len(reply.content) == 1)
                     result = parse_report(reply.content[0].text.encode())
                     evidence = checked_inventory_evidence(result['inventory_evidence'])
                     require(result['snapshot_id'] == args.snapshot_id and evidence is not None)
-                    return evidence
+                    counts = None
+                    if include_resolution_counts:
+                        counts = result['simulator_item_resolution_counts']
+                        require(isinstance(counts, dict) and counts.keys() <= ITEM_RESOLUTION_STATUSES)
+                        for count in counts.values():
+                            integer(count, 1, 2**64-1)
+                        require(sum(counts.values()) == integer(result['observed_item_locations'], 0, 2**64-1)
+                            and counts.get('catalogue_item_unavailable', 0)
+                                == evidence['catalogue_unmatched_item_locations'])
+                    return evidence, counts
 
 
 async def execute(args):
     args = copy(args)
     require_catalogue_coverage = getattr(args, "require_catalogue_coverage", False)
-    require(type(require_catalogue_coverage) is bool)
+    include_resolution_counts = getattr(args, "include_item_resolution_counts", False)
+    require(type(require_catalogue_coverage) is bool and type(include_resolution_counts) is bool)
     args.candidate_scan_limit = collection.ranker.validate_candidate_scan_limit(getattr(args, 'candidate_scan_limit', 256))
     objective = simulation.ranking_objective(args)
     floor = simulation.encounter_improvement_floor(args)
@@ -165,8 +181,11 @@ async def execute(args):
     for field in ['item_id', 'set_id', 'storage', 'max_swaps', 'minimum_required_level',
         'maximum_required_level', 'observed_enchant_effect_id', 'observed_random_suffix_id']:
         setattr(args, field, None)
-    preflight = await catalogue_preflight(args, deadline) if require_catalogue_coverage else None
-    catalogue_gap = bool(preflight and preflight['catalogue_unmatched_item_locations'])
+    preflight, resolution_counts = (None, None)
+    if require_catalogue_coverage or include_resolution_counts:
+        preflight, resolution_counts = await catalogue_preflight(args, deadline,
+            include_resolution_counts=include_resolution_counts)
+    catalogue_gap = bool(require_catalogue_coverage and preflight['catalogue_unmatched_item_locations'])
     collection_deadline = min(deadline, monotonic() + args.collection_seconds)
     try:
         if catalogue_gap:
@@ -243,6 +262,8 @@ async def execute(args):
         'feasible_set_coverage_verified': False, 'game_execution': False}
     if getattr(args,'include_empty_slots',False):
         report['empty_slot_choices_included'] = True
+    if include_resolution_counts:
+        report['preflight_simulator_item_resolution_counts'] = resolution_counts
     require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
     return report
 
@@ -267,6 +288,8 @@ def parser():
                      help='Require equipment, bags, character bank and account bank in the selected capture')
     cli.add_argument('--require-catalogue-coverage', action='store_true',
                      help='Check observed item catalogue coverage before collecting plans and require saved coverage evidence before simulation')
+    cli.add_argument('--include-item-resolution-counts', action='store_true',
+                     help='Report a preflight count of observed item locations by simulator resolution status')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

@@ -228,17 +228,28 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(strict_cached['simulation']['ranked_gear_sets'],
                                  cached['simulation']['ranked_gear_sets'])
                 self.assertEqual(strict_cached['simulation']['new_runs'], 0)
+                diagnostic = launch(['--checkpoint-only','--include-item-resolution-counts'])
+                self.assertFalse(diagnostic['catalogue_coverage_required'])
+                self.assertEqual(diagnostic['simulation']['ranked_gear_sets'],
+                                 cached['simulation']['ranked_gear_sets'])
+                self.assertGreaterEqual(diagnostic['preflight_simulator_item_resolution_counts']['resolved'], 1)
+                self.assertNotIn('preflight_simulator_item_resolution_counts', cached)
                 with_gap = deepcopy(value)
                 with_gap["character"]["name"] = "CatalogueGap"
                 with_gap['sections']['bags']['0']['2'] = {'item_id':4294967295,'count':1}
+                with_gap['sections']['bags']['0']['3'] = {'item_id':4549,'count':1}
                 gap_key = SnapshotStore(base).ingest(with_gap)
                 stage_count = len(captured)
                 gap = launch(['--snapshot-id',gap_key,'--journal',str(base/'gap.sqlite'),
                               '--simulation-journal',str(base/'gap-results'),
-                              '--require-catalogue-coverage'])
+                              '--require-catalogue-coverage','--include-item-resolution-counts'])
                 self.assertEqual(gap['simulation_stop_reason'],'catalogue_unmatched_items')
                 self.assertTrue(gap['catalogue_coverage_required'])
                 self.assertEqual(gap['inventory_evidence']['catalogue_unmatched_item_ids'],[4294967295])
+                counts = gap['preflight_simulator_item_resolution_counts']
+                self.assertEqual(counts['catalogue_item_unavailable'], 1)
+                self.assertGreaterEqual(counts['item_link_unresolved'], 1)
+                self.assertGreaterEqual(counts['resolved'], 1)
                 self.assertIsNone(gap['simulation'])
                 self.assertEqual(captured[stage_count:], [])
                 self.assertEqual(gap['collection']['windows_attempted'], 0)

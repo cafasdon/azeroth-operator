@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally report simulator item resolution counts before collecting owned-gear plans.
+
 - Check strict owned-gear catalogue coverage before enumerating builds or opening a plan journal.
 
 - Report an incomplete owned-gear search when its collection budget expires before the first journal is created. New collection uses a new source fingerprint.

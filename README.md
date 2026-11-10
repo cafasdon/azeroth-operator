@@ -491,6 +491,10 @@ collecting plans. An unmatched observed item stops collection and simulation
 before the plan journal is opened. The report shows the catalogue gap.
 Simulation also requires matching evidence from the saved plan windows.
 This checks base-item matches independently of storage and modifier coverage.
+Use `--include-item-resolution-counts` to report the preflight totals by
+simulator resolution status across observed item locations. This includes
+missing links, incomplete modifier values and unresolved enchant or suffix
+references. The counts describe saved observations and do not gate ranking.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.
