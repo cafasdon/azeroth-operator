@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare a saved PvP rank target across captures and report observed target crossings.
+
 - Compare carried quantities alongside an exact saved outgoing trade item.
 
 - Compare one exact base item in saved outgoing trade offers.

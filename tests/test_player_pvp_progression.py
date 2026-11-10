@@ -179,6 +179,19 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         pvp_cap_distance={'cap':'unknown','maximum_remaining_points':0})
                     selector = 'player_pvp_progression_changes'
                     self.assertNotIn(selector, await call('compare_snapshots',before_id=old,after_id=new))
+                    for a,b,match,up,down in [
+                        (11,14,True,True,False),(14,11,True,False,True),
+                        (11,12,True,False,False),(11,13,False,None,None),(0,11,None,None,None),
+                    ]:
+                        result = await call('compare_snapshots',before_id=valid[a][0],
+                            after_id=valid[b][0],pvp_target_rank=4)
+                        self.assertNotIn(selector,result)
+                        target = result['pvp_rank_target_comparison']
+                        self.assertIs(target['reported_season_ids_match'],match)
+                        self.assertIs(target['crossed_up'],up)
+                        self.assertIs(target['crossed_down'],down)
+                        self.assertFalse(target['same_season_verified'])
+                        self.assertEqual(target['after']['target_rank'],4)
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:
                         compared = (await call('compare_snapshots',before_id=first,after_id=second,**{selector:True}))[selector]
                         self.assertEqual(compared['before'], summaries[first])

@@ -830,6 +830,8 @@ struct Compare {
     /// Compare the reported personal PvP progression and cap distances in saved Forever captures.
     #[serde(default)]
     player_pvp_progression_changes: bool,
+    /// Compare the same saved PvP target rank across both captures.
+    pvp_target_rank: Option<u32>,
     /// Compare captured outgoing trade item quantities by base item ID.
     #[serde(default)]
     player_trade_offer_changes: bool,
@@ -2346,6 +2348,7 @@ impl Operator {
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
+                    pvp_target_rank: args.pvp_target_rank,
                     player_trade_offer_changes: args.player_trade_offer_changes,
                     player_trade_offer_item_id: args.player_trade_offer_item_id,
                     player_trade_offer_compare_carried: args.player_trade_offer_compare_carried,

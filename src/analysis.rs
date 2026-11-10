@@ -3357,6 +3357,7 @@ pub struct ComparisonSelectors<'a> {
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
+    pub pvp_target_rank: Option<u32>,
     pub player_trade_offer_changes: bool,
     pub player_trade_offer_item_id: Option<std::num::NonZeroU32>,
     pub player_trade_offer_compare_carried: bool,
@@ -3679,6 +3680,35 @@ pub fn compare_observations(
             carried["offers_count_toward_carried_stock"] = json!(false);
             comparison["player_trade_offer_changes"]["carried_comparison"] = carried;
         }
+    }
+    if let Some(target) = selectors.pvp_target_rank {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "PvP target comparison requires Forever"
+        );
+        let previous = before.sections.get("player_pvp_progression");
+        let current = after.sections.get("player_pvp_progression");
+        let season = previous
+            .and_then(|row| row["reported_season_id"].as_u64())
+            .zip(current.and_then(|row| row["reported_season_id"].as_u64()))
+            .map(|(before, after)| before == after);
+        let old = previous.and_then(|row| pvp_rank_target_projection(row, target));
+        let new = current.and_then(|row| pvp_rank_target_projection(row, target));
+        let reached = old
+            .as_ref()
+            .zip(new.as_ref())
+            .filter(|_| season == Some(true))
+            .and_then(|(old, new)| {
+                old["captured_rank_at_or_above_target"]
+                    .as_bool()
+                    .zip(new["captured_rank_at_or_above_target"].as_bool())
+            });
+        comparison["pvp_rank_target_comparison"] = json!({
+            "target_rank":target,"before":old,"after":new,"reported_season_ids_match":season,
+            "crossed_up":reached.map(|(before, after)| !before && after),
+            "crossed_down":reached.map(|(before, after)| before && !after),
+            "same_season_verified":false,"live":false
+        });
     }
     if selectors.player_pvp_progression_changes {
         ensure!(

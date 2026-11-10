@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Set `pvp_target_rank` on `compare_snapshots` for the same rank target
+in both saved PvP captures. Each side retains its own threshold and cap
+observations. Crossings use captured ranks and require matching reported
+season IDs. Season continuity and eligibility remain unverified.
+
 Set `player_trade_offer_item_id` on `compare_snapshots` to limit saved
 outgoing trade comparisons to one base item, even if the general trade
 comparison flag is also set. Missing or incomplete offer observations
