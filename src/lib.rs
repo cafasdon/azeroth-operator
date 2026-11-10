@@ -2013,7 +2013,9 @@ pub struct CurrencyBalanceFilter {
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ReputationRankFilter {
-    pub faction_id: std::num::NonZeroU32,
+    pub faction_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved faction name.
+    pub faction_name: Option<String>,
     /// Inclusive minimum standard reputation reaction, from 1 to 8.
     #[schemars(range(min = 1, max = 8))]
     pub minimum_reaction: u8,
@@ -2777,13 +2779,25 @@ impl Store {
             .map(|filter| filter.currency_id.to_string());
         ensure!(
             reputation_rank.as_ref().is_none_or(|filter| {
-                family == Family::Forever && (1..=8).contains(&filter.minimum_reaction)
+                family == Family::Forever
+                    && (1..=8).contains(&filter.minimum_reaction)
+                    && (filter.faction_id.is_some() || filter.faction_name.is_some())
+                    && filter
+                        .faction_name
+                        .as_deref()
+                        .map(str::trim)
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256)
             }),
-            "Reputation filtering requires Forever and a standard reaction from 1 to 8"
+            "Reputation filtering requires Forever, a faction ID or name and a standard reaction from 1 to 8"
         );
         let reputation_key = reputation_rank
             .as_ref()
-            .map(|filter| filter.faction_id.to_string());
+            .and_then(|filter| filter.faction_id.map(|id| id.to_string()));
+        let reputation_name = reputation_rank
+            .as_ref()
+            .and_then(|filter| filter.faction_name.as_deref())
+            .map(str::trim)
+            .map(str::to_lowercase);
         ensure!(
             renown.is_none() || family == Family::Forever,
             "Renown filtering requires Forever"
@@ -3504,15 +3518,34 @@ impl Store {
                     if renown.is_some() && renown_match.is_none() {
                         continue;
                     }
-                    let reputation_match = reputation_rank
-                        .as_ref()
-                        .zip(reputation_key.as_ref())
-                        .and_then(|(filter, key)| {
-                            let row = s.sections.get("reputation")?["entries"].get(key)?;
-                            (row["kind"] == "standard"
-                                && row["reaction"].as_u64()? >= u64::from(filter.minimum_reaction))
-                            .then_some(row)
-                        });
+                    let reputation_match = reputation_rank.as_ref().and_then(|filter| {
+                        let entries = s.sections.get("reputation")?["entries"].as_object()?;
+                        let matches_faction = |row: &Value| {
+                            row["kind"] == "standard"
+                                && reputation_name.as_ref().is_none_or(|name| {
+                                    row["name"]
+                                        .as_str()
+                                        .is_some_and(|label| label.trim().to_lowercase() == *name)
+                                })
+                        };
+                        let (id, row) = if let Some(key) = &reputation_key {
+                            entries
+                                .get_key_value(key)
+                                .filter(|(_, row)| matches_faction(row))?
+                        } else {
+                            let mut matches =
+                                entries.iter().filter(|(_, row)| matches_faction(row));
+                            let first = matches.next()?;
+                            if matches.next().is_some() {
+                                return None;
+                            }
+                            first
+                        };
+                        if row["reaction"].as_u64()? < u64::from(filter.minimum_reaction) {
+                            return None;
+                        }
+                        Some((id.parse::<u32>().ok()?, row))
+                    });
                     if reputation_rank.is_some() && reputation_match.is_none() {
                         continue;
                     }
@@ -4031,9 +4064,9 @@ impl Store {
                             summary["paragon_match"]["reward_quest_readiness"] = json!(readiness);
                         }
                     }
-                    if let Some((filter, row)) = reputation_rank.as_ref().zip(reputation_match) {
+                    if let Some((id, row)) = reputation_match {
                         summary["reputation_rank_match"] = json!({
-                            "faction_id":filter.faction_id,"reaction":row["reaction"],
+                            "faction_id":id,"reaction":row["reaction"],
                             "account_wide":row["account_wide"],
                         });
                     }

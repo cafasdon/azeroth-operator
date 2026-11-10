@@ -3301,6 +3301,11 @@ within the leg limit. When a fare ceiling applies, it shows the effective
 ceiling and how much the lowest fare exceeds it. This diagnostic uses the
 lowest fare even when the route search prefers fewer legs.
 
+`list_snapshots.reputation_rank.faction_name` accepts an exact standard
+faction name, ignoring case and surrounding spaces. Name-only searches
+require one matching standard faction before the reaction threshold is
+applied. Use `faction_id` with the name to disambiguate.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

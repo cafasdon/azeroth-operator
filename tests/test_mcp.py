@@ -1482,6 +1482,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "faction_id": 10, "minimum_reaction": invalid_rank,
                                 },
                             })).isError)
+                        for fields, expected in [
+                            ({"faction_name":"  fIXTURE FaCtIoN "},[new_freshness_id]),
+                            ({"faction_name":"Fixture faction","faction_id":10},[new_freshness_id]),
+                            ({"faction_name":"Fixture faction","faction_id":20},[]),
+                            ({"faction_name":"Fixture"},[]),
+                        ]:
+                            ranked=await session.call_tool("list_snapshots",{
+                                **latest_query,"reputation_rank":{"minimum_reaction":4,**fields}})
+                            self.assertFalse(ranked.isError,ranked)
+                            rows=json.loads(ranked.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows],expected)
+                            for row in rows:
+                                self.assertEqual(row["reputation_rank_match"]["faction_id"],10)
+                        for fields in [{},{"faction_name":" "},{"faction_name":"é"*129}]:
+                            invalid=await session.call_tool("list_snapshots",{
+                                **latest_query,"reputation_rank":{"minimum_reaction":4,**fields}})
+                            self.assertTrue(invalid.isError)
                         for selection, expected_ids in [
                             ({"faction_id": 20, "minimum_level": 5, "capped": False}, [new_freshness_id]),
                             ({"faction_id": 20, "minimum_level": 6}, []),

@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever standard reputation ranks by exact faction name.
+
 - Report the lowest fully recorded fare and budget shortfall for unsuccessful saved flight searches.
 
 - Explain saved Forever flight search failures using observed reachability and fare coverage.
