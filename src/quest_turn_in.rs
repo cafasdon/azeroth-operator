@@ -1,5 +1,5 @@
 //! Deterministic grouping of historical provider finisher references only.
-use crate::{Family, Snapshot, quest_references};
+use crate::{Family, Snapshot, analysis, quest_references};
 use anyhow::{Result, ensure};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -37,6 +37,8 @@ fn default_limit() -> usize {
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Page {
+    #[serde(default)]
+    pub include_reward_review: bool,
     pub ready_for_turn_in: Option<bool>,
     pub giver_kind: Option<GiverKind>,
     pub giver_id: Option<NonZeroU32>,
@@ -45,6 +47,57 @@ pub struct Page {
     pub offset: u32,
     #[serde(default = "default_limit")]
     pub limit: usize,
+}
+
+const MAX_REWARD_REVIEW_BYTES: usize = 256 * 1024;
+
+fn bounded_result(result: Value, include_rewards: bool) -> Result<Value> {
+    if include_rewards {
+        ensure!(
+            serde_json::to_vec(&result)?.len() <= MAX_REWARD_REVIEW_BYTES,
+            "Quest turn-in reward review exceeds 256 KiB output limit"
+        );
+    }
+    Ok(result)
+}
+
+fn reward_review(snapshot: &Snapshot, ids: &BTreeSet<u32>) -> Value {
+    let quests = snapshot.sections["quests"].as_object().unwrap();
+    let subset = ids
+        .iter()
+        .map(|id| {
+            let key = id.to_string();
+            let quest = quests[&key].clone();
+            (key, quest)
+        })
+        .collect();
+    let mut honor = 0u128;
+    let mut unknown_honor = 0;
+    let mut currency_choices = Vec::new();
+    let mut unknown_currency_choices = 0;
+    for id in ids {
+        let quest = &quests[&id.to_string()];
+        match quest["reward_amounts"]["honor"].as_u64() {
+            Some(value) => honor += u128::from(value),
+            None => unknown_honor += 1,
+        }
+        match quest["currency_choices"].as_object() {
+            Some(choices) if !choices.is_empty() => currency_choices.push(*id),
+            Some(_) => (),
+            None => unknown_currency_choices += 1,
+        }
+    }
+    json!({"scope":"saved_potential_numeric_and_fixed_item_rewards", "quest_ids":ids,"quest_count":ids.len(),
+        "xp":analysis::quest_list_xp_projection(&subset,snapshot.sections.get("experience")),
+        "wallet":analysis::quest_list_wallet_projection(&subset,snapshot.sections.get("wallet")),
+        "fixed_items":analysis::quest_list_item_rewards(&subset),
+        "currencies":analysis::quest_list_currency_projection(&subset,snapshot.sections.get("currency_balances").unwrap_or(&Value::Null)),
+        "renown":analysis::quest_list_renown_projection(&subset,snapshot.sections.get("reputation").unwrap_or(&Value::Null)),
+        "honor":{"known_reward_honor":u64::try_from(honor).ok(),"unknown_reward_count":unknown_honor},
+        "currency_choices":{"quests_with_observed_currency_choices":currency_choices,
+            "unknown_currency_choice_list_count":unknown_currency_choices,"choices_applied":false},
+        "choices_applied":false,"spell_rewards_projected":false,"reward_delivery_verified":false,
+        "cross_quest_exclusivity_verified":false,"live":false})
 }
 
 impl Page {
@@ -85,13 +138,17 @@ pub fn review(snapshot: &Snapshot, page: &Page) -> Result<Value> {
         "current_readiness_verified":false, "turn_in_eligibility_verified":false,
         "optimal_route_verified":false, "complete_finisher_coverage_verified":false
     });
+    if page.include_reward_review {
+        result["unique_quest_reward_review"] = Value::Null;
+        result["group_reward_views_are_additive"] = json!(false);
+    }
     let references = snapshot.sections.get("quest_giver_references");
     if let Some(references) = references {
         quest_references::validate(references)?;
         quest_references::validate_source(references, snapshot.sections.get("quests"))?;
     }
     let Some(quests) = snapshot.sections.get("quests").and_then(Value::as_object) else {
-        return Ok(result);
+        return bounded_result(result, page.include_reward_review);
     };
     let mut selected = BTreeMap::new();
     let mut unknown = 0;
@@ -121,7 +178,7 @@ pub fn review(snapshot: &Snapshot, page: &Page) -> Result<Value> {
     result["ready_flag_unknown_quest_count"] = json!(unknown);
     result["status"] = json!("references_not_recorded");
     let Some(references) = references else {
-        return Ok(result);
+        return bounded_result(result, page.include_reward_review);
     };
     let entries = references["entries"].as_object().unwrap();
     let mut statuses = BTreeMap::from([
@@ -167,11 +224,20 @@ pub fn review(snapshot: &Snapshot, page: &Page) -> Result<Value> {
         }
     }
     let matching = groups.len();
+    if page.include_reward_review {
+        let unique_ids = groups
+            .values()
+            .flat_map(|ids| ids.iter().copied())
+            .collect();
+        result["unique_quest_reward_review"] = reward_review(snapshot, &unique_ids);
+    }
     let rows: Vec<_> = groups.into_iter().skip(page.offset as usize).take(page.limit).map(|((kind,giver),ids)| {
         let by_ready = |ready| ids.iter().copied().filter(|id| selected[id] == ready).collect::<Vec<_>>();
-        json!({"giver_kind":kind.label(), "giver_id":giver, "quest_ids":ids,
+        let mut group = json!({"giver_kind":kind.label(), "giver_id":giver, "quest_ids":ids,
             "ready_for_turn_in_quest_ids":by_ready(Some(true)), "not_ready_quest_ids":by_ready(Some(false)),
-            "unknown_ready_quest_ids":by_ready(None)})
+            "unknown_ready_quest_ids":by_ready(None)});
+        if page.include_reward_review { group["reward_review"] = reward_review(snapshot, &ids); }
+        group
     }).collect();
     result["status"] = json!("reviewed");
     result["reference_status_counts"] = json!(statuses);
@@ -182,7 +248,7 @@ pub fn review(snapshot: &Snapshot, page: &Page) -> Result<Value> {
     result["ungrouped_quest_ids_truncated"] = json!(ungrouped.len() > 64);
     result["ungrouped_quest_ids"] = json!(ungrouped.into_iter().take(64).collect::<Vec<_>>());
     result["selected_reference_truncated_group_count"] = json!(truncated);
-    Ok(result)
+    bounded_result(result, page.include_reward_review)
 }
 
 #[cfg(test)]
@@ -363,5 +429,242 @@ mod tests {
         saved.sections.get_mut("quest_giver_references").unwrap()["reported_quest_count"] =
             json!(4);
         assert!(review(&saved, &page(json!({}))).is_err());
+    }
+
+    fn reward_fixture() -> Snapshot {
+        snapshot(
+            json!({
+            "2":{"ready_for_turn_in":true,"required_copper":0,"reward_amounts":{"xp":10,"copper":20,"honor":3},
+                "item_rewards":{"1":{"item_id":1,"quantity":2}},"item_choices":{"1":{"item_id":1,"quantity":100}},
+                "currency_rewards":{"1":{"currency_id":9,"quantity":4}},"currency_choices":{"1":{"currency_id":9,"quantity":100}},
+                "renown_rewards":{"1":{"faction_id":5,"quantity":6}}},
+            "10":{"ready_for_turn_in":false,"required_copper":5,"reward_amounts":{"xp":30,"copper":40,"honor":7},
+                "item_rewards":{"1":{"item_id":1,"quantity":3}},"item_choices":{},"currency_rewards":{},"currency_choices":{},"renown_rewards":{}},
+            "30":{}}),
+            json!({
+            "2":{"status":"reported","finished_by":{"npcs":group(&[2,10]),"objects":group(&[2])}},
+            "10":{"status":"reported","finished_by":{"npcs":group(&[2])}},
+            "30":{"status":"unavailable"}}),
+        )
+    }
+
+    #[test]
+    fn rewards_union_is_unique_and_independent_of_paging() {
+        let saved = reward_fixture();
+        let result = review(
+            &saved,
+            &page(json!({"include_reward_review":true,"limit":1})),
+        )
+        .unwrap();
+        let union = &result["unique_quest_reward_review"];
+        assert_eq!(union["quest_ids"], json!([2, 10]));
+        assert_eq!(union["quest_count"], 2);
+        assert_eq!(union["xp"]["known_reward_xp"], 40);
+        assert_eq!(union["wallet"]["known_required_copper"], 5);
+        assert_eq!(union["wallet"]["known_reward_copper"], 60);
+        assert_eq!(union["honor"]["known_reward_honor"], 10);
+        assert_eq!(
+            union["currencies"]["known_fixed_rewards"]["9"]["proposed_quantity"],
+            4
+        );
+        assert!(
+            union["currencies"]["known_fixed_rewards"]["9"]["quantity_within_recorded_headroom"]
+                .is_null()
+        );
+        assert_eq!(
+            union["renown"]["known_rewards_by_faction"]["5"]["reward_points"],
+            6
+        );
+        assert!(union["renown"]["known_rewards_by_faction"]["5"]["reaches_next_rank"].is_null());
+        assert_eq!(
+            union["fixed_items"]["known_fixed_quantity_by_item_id"]["1"],
+            5
+        );
+        assert_eq!(
+            union["currency_choices"]["quests_with_observed_currency_choices"],
+            json!([2])
+        );
+        assert_eq!(
+            union["currency_choices"]["unknown_currency_choice_list_count"],
+            0
+        );
+        assert_eq!(union["choices_applied"], false);
+        assert_eq!(union["currency_choices"]["choices_applied"], false);
+        assert_eq!(result["groups"][0]["reward_review"], *union);
+        assert_eq!(result["group_reward_views_are_additive"], false);
+        let other = review(
+            &saved,
+            &page(json!({"include_reward_review":true,"offset":1,"limit":1})),
+        )
+        .unwrap();
+        assert_eq!(other["groups"][0]["reward_review"]["quest_ids"], json!([2]));
+        assert_eq!(other["unique_quest_reward_review"], *union);
+        let beyond = review(
+            &saved,
+            &page(json!({"include_reward_review":true,"offset":u32::MAX})),
+        )
+        .unwrap();
+        assert_eq!(beyond["groups"], json!([]));
+        assert_eq!(beyond["unique_quest_reward_review"], *union);
+        for flag in [
+            "spell_rewards_projected",
+            "reward_delivery_verified",
+            "cross_quest_exclusivity_verified",
+            "live",
+        ] {
+            assert_eq!(union[flag], false);
+        }
+    }
+
+    #[test]
+    fn reward_opt_in_is_strict_and_omission_preserves_shape() {
+        let saved = fixture();
+        let omitted = review(&saved, &page(json!({}))).unwrap();
+        let disabled = review(&saved, &page(json!({"include_reward_review":false}))).unwrap();
+        assert_eq!(omitted, disabled);
+        assert!(omitted.get("unique_quest_reward_review").is_none());
+        assert!(omitted.get("group_reward_views_are_additive").is_none());
+        assert!(omitted["groups"][0].get("reward_review").is_none());
+        for bad in [json!(null), json!("true"), json!(1), json!([])] {
+            assert!(serde_json::from_value::<Page>(json!({"include_reward_review":bad})).is_err());
+        }
+        let mut saved = saved;
+        saved.sections.remove("quest_giver_references");
+        for without_source in [false, true] {
+            if without_source {
+                saved.sections.remove("quests");
+            }
+            let result = review(&saved, &page(json!({"include_reward_review":true}))).unwrap();
+            assert!(result["unique_quest_reward_review"].is_null());
+            assert_eq!(result["group_reward_views_are_additive"], false);
+        }
+        let result = review(
+            &snapshot(json!({}), json!({})),
+            &page(json!({"include_reward_review":true})),
+        )
+        .unwrap();
+        assert_eq!(result["unique_quest_reward_review"]["quest_count"], 0);
+        assert_eq!(
+            result["unique_quest_reward_review"]["xp"]["known_reward_xp"],
+            0
+        );
+    }
+
+    #[test]
+    fn reward_unknowns_zero_observations_and_readiness_keep_existing_semantics() {
+        let mut saved = fixture();
+        let opt = page(json!({"include_reward_review":true}));
+        let result = review(&saved, &opt).unwrap();
+        let reward = &result["unique_quest_reward_review"];
+        assert_eq!(reward["xp"]["unknown_reward_count"], 3);
+        assert!(reward["xp"]["xp_to_next_level"].is_null());
+        assert_eq!(reward["wallet"]["unknown_cost_count"], 3);
+        assert_eq!(reward["wallet"]["wallet_observed"], false);
+        assert!(reward["wallet"]["ready_turn_in_order"].is_null());
+        assert_eq!(reward["honor"]["unknown_reward_count"], 3);
+        assert_eq!(
+            reward["currency_choices"]["unknown_currency_choice_list_count"],
+            3
+        );
+        saved.sections.insert("wallet".into(), json!({"copper":0}));
+        saved.sections.insert(
+            "experience".into(),
+            json!({"status":"progress","current_xp":0,"level_threshold_xp":50,"xp_disabled":false}),
+        );
+        saved.validate().unwrap();
+        let result = review(&saved, &opt).unwrap();
+        assert_eq!(
+            result["unique_quest_reward_review"]["wallet"]["wallet_observed"],
+            true
+        );
+        assert_eq!(
+            result["unique_quest_reward_review"]["xp"]["xp_to_next_level"],
+            50
+        );
+        let mut saved = reward_fixture();
+        saved.sections.insert("wallet".into(), json!({"copper":0}));
+        saved.sections.insert(
+            "experience".into(),
+            json!({"status":"progress","current_xp":0,"level_threshold_xp":50,"xp_disabled":false}),
+        );
+        saved.sections.get_mut("quests").unwrap()["2"]["failed"] = json!(true);
+        saved.validate().unwrap();
+        let result = review(&saved, &opt).unwrap();
+        let reward = &result["unique_quest_reward_review"];
+        assert_eq!(reward["xp"]["known_reward_xp"], 40);
+        assert!(reward["xp"]["ready_turn_in_plan"]["quest_ids_to_threshold"].is_null());
+        assert!(reward["wallet"]["ready_turn_in_order"].is_null());
+    }
+
+    #[test]
+    fn reward_output_cap_rejects_large_valid_source_without_truncation() {
+        let quests = Value::Object(
+            (1..=64)
+                .map(|id| {
+                    let items = Value::Object(
+                        (1..=32)
+                            .map(|slot| {
+                                (
+                                    slot.to_string(),
+                                    json!({"item_id":id*100+slot,"quantity":1}),
+                                )
+                            })
+                            .collect(),
+                    );
+                    (id.to_string(), json!({"item_rewards":items}))
+                })
+                .collect(),
+        );
+        let finishers = json!({"npcs":group(&(1..=16).collect::<Vec<_>>()),"objects":group(&(1..=16).collect::<Vec<_>>())});
+        let rows = Value::Object(
+            (1..=64)
+                .map(|id| {
+                    (
+                        id.to_string(),
+                        json!({"status":"reported","finished_by":finishers}),
+                    )
+                })
+                .collect(),
+        );
+        let saved = snapshot(quests, rows);
+        assert!(review(&saved, &page(json!({"limit":50}))).is_ok());
+        let error = review(
+            &saved,
+            &page(json!({"include_reward_review":true,"limit":50})),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("256 KiB"));
+        // Paging affects group output size, while the unique union remains complete.
+        let result = review(
+            &saved,
+            &page(json!({"include_reward_review":true,"offset":u32::MAX})),
+        )
+        .unwrap();
+        assert_eq!(result["unique_quest_reward_review"]["quest_count"], 64);
+        assert_eq!(
+            result["unique_quest_reward_review"]["fixed_items"]["known_fixed_quantity_by_item_id"]
+                .as_object()
+                .unwrap()
+                .len(),
+            2048
+        );
+    }
+
+    #[test]
+    fn zero_honor_is_observed_and_null_choices_are_unknown_lists() {
+        let mut saved = reward_fixture();
+        for id in ["2", "10"] {
+            saved.sections.get_mut("quests").unwrap()[id]["reward_amounts"]["honor"] = json!(0);
+            saved.sections.get_mut("quests").unwrap()[id]["currency_choices"] = Value::Null;
+        }
+        saved.validate().unwrap();
+        let result = review(&saved, &page(json!({"include_reward_review":true}))).unwrap();
+        let reward = &result["unique_quest_reward_review"];
+        assert_eq!(reward["honor"]["known_reward_honor"], 0);
+        assert_eq!(reward["honor"]["unknown_reward_count"], 0);
+        assert_eq!(
+            reward["currency_choices"]["unknown_currency_choice_list_count"],
+            2
+        );
     }
 }

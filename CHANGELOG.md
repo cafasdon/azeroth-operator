@@ -1,5 +1,7 @@
 # Changelog
 
+- Review saved quest-group rewards and budgets with deduplicated totals across alternative finishers.
+
 - Group saved quests by retained finisher NPC/object references, with ready/unknown states, filters and paging.
 
 - Capture and review bounded quest starter/finisher references from an optional local provider without quest actions.

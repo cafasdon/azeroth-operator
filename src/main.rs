@@ -100,7 +100,7 @@ struct QuestRenownTarget {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
-    /// Group saved quests by retained provider finisher NPC/object IDs. quest_giver_references only; no route or turn-in action.
+    /// Group saved quests by retained provider finisher NPC/object IDs. include_reward_review adds saved reward/budget projections; quest_giver_references only, no action.
     quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
     /// Compare each saved group category's reported member count against this target.
     group_member_target: Option<std::num::NonZeroU32>,

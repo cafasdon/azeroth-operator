@@ -33,6 +33,18 @@ visible. Unknown source sections yield null groups; known empty yields [].
 This does not establish current readiness, eligibility, a native location or
 an optimal route, and never submits quests. See ADR081.
 
+Set `include_reward_review: true` inside `quest_turn_in_review` to compare saved
+XP, copper costs/rewards, fixed items, currencies, renown and honor per group.
+Missing values stay unknown; choice rewards are identified but not applied,
+and spell rewards are not projected. `unique_quest_reward_review` deduplicates
+all matching groups before paging: alternative finishers do not multiply a
+quest's reward, and group views must not be added together. Ungrouped quests
+are not credited to that union. Saved wallet/XP models retain their existing
+readiness/cap rules and do not establish a combined optimum or executable plan.
+Review data above 256 KiB rejects; narrow the page or filters. Omitted/false
+retains the prior grouping output. No funds, items or progress are actually
+credited, and no new game/provider/network call occurs. See ADR082.
+
 `character_summary.capture_coverage` lists all known snapshot sections
 with observed, reported-unavailable or not-recorded status and counts.
 Observed sections retain their declared coverage scope when present.

@@ -12,6 +12,10 @@ unknown readiness, namespace-qualified giver filters, numeric groups and
 bounded pages. It preserves unknowns and truncation rather than implying
 eligibility or routing. [Offline evidence](quest-turn-in-groups-verification-2026-11-10.md).
 
+Opt-in group reward/budget views now retain saved XP/copper/fixed-item/currency/
+renown/honor unknowns and deduplicate quests across alternative finishers before
+paging. No rewards are credited or choices applied. [Offline evidence](quest-group-rewards-verification-2026-11-10.md).
+
 Saved instance progress follow-up (10 November). The Forever RaidFrame uses
 the same passive saved-instance API, but does not interpret its two progress
 positions in Lua. Native interpretation remains pending.
