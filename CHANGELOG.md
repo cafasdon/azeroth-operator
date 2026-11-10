@@ -1,5 +1,7 @@
 # Changelog
 
+- Search cached quests by provider area or quest category.
+
 - Search cached NPCs and objects by provider spawn area ID.
 
 - Expose offline quest and item lookup options through the world CLI.

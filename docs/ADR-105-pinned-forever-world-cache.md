@@ -115,3 +115,7 @@ The CLI get action supports the same views with --include-quest-links,
 Search accepts spawn_area_id to filter NPCs and objects by nonempty cached
 spawn groups. A name query is optional with this filter. The CLI flag is
 --spawn-area-id. IDs belong to the provider area namespace.
+
+Search accepts quest_zone_or_sort for quests with a matching zoneOrSort value.
+Use a positive provider area ID or a negative quest category ID. A name query
+is optional. The CLI flag is --quest-zone-or-sort.
