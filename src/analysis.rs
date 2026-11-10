@@ -10865,6 +10865,9 @@ pub struct AchievementFilter {
     pub criterion_id: Option<std::num::NonZeroU32>,
     pub criterion_completed: Option<bool>,
     pub criterion_max_remaining: Option<u32>,
+    /// Maximum number of explicitly unfinished captured criteria on the achievement.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum_unfinished_criteria: Option<u32>,
 }
 
 impl AchievementFilter {
@@ -10875,6 +10878,7 @@ impl AchievementFilter {
             && self.criterion_id.is_none()
             && self.criterion_completed.is_none()
             && self.criterion_max_remaining.is_none()
+            && self.maximum_unfinished_criteria.is_none()
     }
 
     pub fn matches(&self, achievement: &Value) -> Option<bool> {
@@ -10887,13 +10891,25 @@ impl AchievementFilter {
                 return Some(false);
             }
         }
-        if self.criterion_id.is_none()
-            && self.criterion_completed.is_none()
-            && self.criterion_max_remaining.is_none()
-        {
+        let has_criterion_filter = self.criterion_id.is_some()
+            || self.criterion_completed.is_some()
+            || self.criterion_max_remaining.is_some();
+        if !has_criterion_filter && self.maximum_unfinished_criteria.is_none() {
             return Some(true);
         }
         let criteria = achievement["criteria"].as_object()?;
+        if let Some(maximum) = self.maximum_unfinished_criteria {
+            let unfinished = criteria
+                .values()
+                .filter(|row| row["completed"] == false)
+                .count();
+            if unfinished > maximum as usize {
+                return Some(false);
+            }
+        }
+        if !has_criterion_filter {
+            return Some(true);
+        }
         let mut unknown = false;
         for criterion in criteria.values() {
             if self

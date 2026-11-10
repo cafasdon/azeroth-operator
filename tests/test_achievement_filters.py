@@ -66,6 +66,17 @@ class AchievementFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(found['achievement_filter_unknown_count'], 3)
                     incomplete = await query(achievement_filter={**filters, 'completed': False})
                     self.assertEqual(set(incomplete['data']['entries']), {'7', '10'})
+                    for maximum, ids in [
+                        (0, {'1','3'}),
+                        (1, {'1','2','3','4','5','6','7','8','9'}),
+                        (4294967295, {str(i) for i in range(1,12)}),
+                    ]:
+                        workload = await query(achievement_filter={'maximum_unfinished_criteria':maximum})
+                        self.assertEqual(set(workload['data']['entries']),ids)
+                    short = await query(achievement_filter={'maximum_unfinished_criteria':1,**filters})
+                    self.assertEqual(set(short['data']['entries']),{'2','7'})
+                    for maximum in [-1, True, 4294967296]:
+                        await query(error=True,achievement_filter={'maximum_unfinished_criteria':maximum})
                     credited = await query(achievement_filter={'completed': True, 'earned_by_character': False,
                                                                'account_wide': True})
                     self.assertEqual(set(credited['data']['entries']), {'2'})

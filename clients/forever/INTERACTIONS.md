@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `achievement_filter.maximum_unfinished_criteria` when inspecting
+`tracked_achievements` to find achievements within a limit on explicitly
+unfinished captured criteria. A missing achievement section stays unknown. Combine it
+with `criterion_completed: false` to require at least one unfinished
+criterion, or with `completed: false` to restrict achievement status.
+
 Use `mail_attachment_bag_space_message_slot` when inspecting saved mail
 to estimate space for known item attachments in one loaded message.
 You can also provide `mail_attachment_bag_space_item_ids` to limit the

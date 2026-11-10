@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved tracked achievements by the number of unfinished criteria.
+
 - Compare currency attachments in one loaded saved message with recorded cap headroom.
 
 - Estimate carried bag space for one loaded message in a saved Forever inbox.
