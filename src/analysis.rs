@@ -6814,16 +6814,21 @@ fn compare_saved_instances(before: &Value, after: &Value) -> Value {
         } else if b.is_empty() {
             only_before.push(description);
         } else {
-            let fields: serde_json::Map<_, _> = ["reset_seconds", "locked", "extended"]
-                .into_iter()
-                .filter(|field| a[0][*field] != b[0][*field])
-                .map(|field| {
-                    (
-                        field.to_owned(),
-                        json!({"before":a[0][field],"after":b[0][field]}),
-                    )
-                })
-                .collect();
+            let fields: serde_json::Map<_, _> = [
+                "reset_seconds",
+                "locked",
+                "extended",
+                "encounter_total",
+                "reported_encounter_progress",
+            ]
+            .into_iter()
+            .filter_map(|field| {
+                let before = a[0].get(field)?;
+                let after = b[0].get(field)?;
+                (before != after)
+                    .then(|| (field.to_owned(), json!({"before":before,"after":after})))
+            })
+            .collect();
             if !fields.is_empty() {
                 changes.push(json!({"description":description,"fields":fields}));
             }

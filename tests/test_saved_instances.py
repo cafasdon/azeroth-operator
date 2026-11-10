@@ -89,6 +89,25 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta["changes"][0]["fields"], {
                         "locked": {"before": True, "after": False},
                         "reset_seconds": {"before": 124, "after": 0}})
+                    progress = copy.deepcopy(value)
+                    progress["captured_at"] = later["captured_at"]
+                    row = progress["sections"]["saved_instances"]["entries"]["1"]
+                    row.update(encounter_total=11, reported_encounter_progress=0)
+                    progress_key = store.ingest(progress)
+                    progress_delta = (await compare(key, progress_key, saved_instance_changes=True))["saved_instance_changes"]
+                    self.assertEqual(len(progress_delta["changes"]), 1)
+                    self.assertEqual(progress_delta["changes"][0]["fields"], {
+                        "encounter_total": {"before": 10, "after": 11},
+                        "reported_encounter_progress": {"before": 4, "after": 0}})
+                    row.pop("encounter_total")
+                    row.pop("reported_encounter_progress")
+                    progress["captured_at"] = value["captured_at"]
+                    old_format_key = store.ingest(progress)
+                    for before, after in ((key, old_format_key), (old_format_key, key)):
+                        result = (await compare(before, after, saved_instance_changes=True))["saved_instance_changes"]
+                        self.assertEqual(result["changes"], [])
+                    for temporary_key in (progress_key, old_format_key):
+                        (root / f"{temporary_key}.json").unlink()
                     ambiguous = (await compare(key, duplicate_key, saved_instance_changes=True))["saved_instance_changes"]
                     self.assertEqual(ambiguous["changes"], [])
                     self.assertEqual(ambiguous["ambiguous"][0]["after_count"], 2)

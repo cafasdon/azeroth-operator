@@ -8,6 +8,11 @@ were defeated or whether loot is currently available.
 Update strict snapshot readers before installing an addon that emits the
 pair. Native Forever readback remains pending.
 
+With `saved_instance_changes`, compare both reported values across uniquely
+matched public instance descriptions when both captures contain the pair.
+Missing progress remains unknown. The result describes differences between
+saved rows and cannot establish that they belong to the same lockout.
+
 Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
 projected expiry falls at or before an explicit timestamp. The projection

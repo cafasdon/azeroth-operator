@@ -938,7 +938,8 @@ part of this section. Reader/importer updates are required before installation;
 native qualification remains pending.
 
 Set `saved_instance_changes: true` in `compare_snapshots` to compare captured
-reset timers and lock/extension flags. Matching uses case-insensitive public
+reset timers, lock/extension flags and reported encounter values present in
+both captures. Matching uses case-insensitive public
 name, difficulty, raid/dungeon kind and player capacity, not a unique lockout
 ID. Duplicate descriptions on either side are reported as ambiguous with no
 deltas. One-sided descriptions are observations only; they do not prove a reset
