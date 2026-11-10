@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved recipe captures near the reported profession cap and show compatible rank context in recipe search.
+
 - Capture the visible profession recipe view's reported rank and cap.
 
 - Order saved Forever recipes by reported skill-up count per selected reagent unit.

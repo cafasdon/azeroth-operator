@@ -830,6 +830,9 @@ pub fn search_recipe_materials_ordered(
     if let Some(minimum) = minimum_base_output {
         result["filters"]["minimum_base_output"] = json!(minimum);
     }
+    if let Some(rank) = compatible_view.and_then(|view| view.get("rank_observation")) {
+        result["recipe_view_rank_observation"] = rank.clone();
+    }
     if order != RecipeSearchOrder::RecipeId {
         result["order"] = json!(order);
         result["ordering_basis"] = json!(match order {

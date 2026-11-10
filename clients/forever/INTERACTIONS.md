@@ -6,6 +6,10 @@ rank and cap values when they agree across the capture. Older captures
 omit the observation. Update strict readers before rolling out the addon.
 These are the reported base values, separate from skill modifiers and
 account restrictions.
+Use `list_snapshots.profession_recipe.maximum_rank_points_to_cap` for an
+inclusive distance from the same recipe view's recorded cap. Results show
+the recorded pair and the remaining points. Recipe search shows the pair
+when the view and saved material schematics have the same profession ID.
 [Forever profession rank bar](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ProfessionsTemplates/Blizzard_ProfessionsRankBar.lua)
 
 Use `order: "reported_skill_ups_per_reagent_desc"` with a

@@ -505,6 +505,8 @@ pub struct ProfessionRecipeFilter {
     pub maximum_skill_ups_reported: Option<u32>,
     /// Match the exact client-reported difficulty.
     pub relative_difficulty: Option<analysis::RecipeRelativeDifficulty>,
+    /// Inclusive maximum rank points remaining to the recipe view's recorded cap.
+    pub maximum_rank_points_to_cap: Option<u32>,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
@@ -3673,17 +3675,26 @@ impl Store {
                     let profession_recipe_match = profession_recipe.as_ref().zip(profession_recipe_key.as_ref()).and_then(|(filter, key)| {
                         let view = s.sections.get("profession_recipe_view")?;
                         let row = view["entries"].get(key)?;
+                        let rank = view.get("rank_observation");
+                        let remaining = rank.and_then(|rank| {
+                            rank["max_rank"].as_u64()?.checked_sub(rank["rank"].as_u64()?)
+                        });
                         (filter.profession_id.is_none_or(|id| view["profession_id"].as_u64() == Some(u64::from(id.get())))
                             && filter.learning.is_none_or(|state| row["learned"].as_bool() == state.observed())
                             && filter.can_skill_up.is_none_or(|flag| row["can_skill_up"].as_bool()==Some(flag))
                             && filter.minimum_skill_ups_reported.is_none_or(|minimum|row["skill_ups_reported"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
                             && filter.maximum_skill_ups_reported.is_none_or(|maximum|row["skill_ups_reported"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
-                            && filter.relative_difficulty.is_none_or(|difficulty|row["relative_difficulty"].as_str()==Some(difficulty.as_str())))
+                            && filter.relative_difficulty.is_none_or(|difficulty|row["relative_difficulty"].as_str()==Some(difficulty.as_str()))
+                            && filter.maximum_rank_points_to_cap.is_none_or(|maximum|remaining.is_some_and(|points|points<=u64::from(maximum))))
                             .then(|| {
                                 let mut observation=json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
                                     "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]});
                                 for field in ["relative_difficulty","can_skill_up","skill_ups_reported"] {
                                     if let Some(value)=row.get(field) { observation[field]=value.clone(); }
+                                }
+                                if let Some(rank) = rank {
+                                    observation["rank_observation"] = rank.clone();
+                                    observation["rank_points_to_observed_cap"] = json!(remaining);
                                 }
                                 observation
                             })

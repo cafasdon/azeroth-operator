@@ -39,6 +39,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             store.ingest(later)
             nullable=copy.deepcopy(value)
             nullable['character']['name']='Null'
+            nullable['sections']['profession_recipe_view'].pop('rank_observation')
             nullable['sections']['profession_recipe_view']['entries']['9']['learned']=None
             nullable_key=store.ingest(nullable)
             bad_keys=[]
@@ -86,6 +87,15 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(rows[0]['profession_recipe_match']['recipe_id'],recipe)
                     args={'character':value['character'],'profession_recipe':{'recipe_id':7}}
                     self.assertEqual(len((await search(**args))['snapshots']),1)
+                    for maximum, expected in ((0,0),(49,0),(50,1)):
+                        rows=(await search(profession_recipe={
+                            'recipe_id':7,'maximum_rank_points_to_cap':maximum}))['snapshots']
+                        self.assertEqual(len(rows),expected)
+                        if rows:
+                            self.assertEqual(rows[0]['snapshot_id'],key)
+                            match=rows[0]['profession_recipe_match']
+                            self.assertEqual(match['rank_observation'],{'rank':100,'max_rank':150})
+                            self.assertEqual(match['rank_points_to_observed_cap'],50)
                     self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
                     self.assertEqual(len((await search(**args,latest_per_character=True,
                         captured_through='2025-01-01T00:00:00Z'))['snapshots']),1)

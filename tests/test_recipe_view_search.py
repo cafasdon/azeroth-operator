@@ -30,7 +30,8 @@ class RecipeViewSearchTests(unittest.IsolatedAsyncioTestCase):
         bulk = {str(i):{'status':'fixed_items','reagents':{'10':i%3+1}} for i in range(1,28)}
         bulk['28'] = {'status':'unsupported_required_slots'}
         base['sections']['profession_recipe_view'] = {
-            'coverage':'filtered_local_recipe_list','profession_id':164,'entries':observations}
+            'coverage':'filtered_local_recipe_list','profession_id':164,'entries':observations,
+            'rank_observation':{'rank':150,'max_rank':150}}
         base['sections']['profession_recipe_materials'] = {
             'coverage':'reported_known_spell_schematics','profession_id':164,'entries':bulk}
         base['sections']['bags'] = {'0':{'1':{'item_id':10,'count':4}}}
@@ -63,6 +64,7 @@ class RecipeViewSearchTests(unittest.IsolatedAsyncioTestCase):
                         return None if error else json.loads(reply.content[0].text)
                     default = await search()
                     self.assertEqual(default,await search(recipe_view_filter=None))
+                    self.assertEqual(default['recipe_view_rank_observation'],{'rank':150,'max_rank':150})
                     self.assertNotIn('recipe_view_coverage',default)
                     def truth(row,criteria):
                         checks = []
@@ -111,6 +113,7 @@ class RecipeViewSearchTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(found['recipe_view_nonmatching_count'],0)
                     mismatch = await search(snapshot_id=variants['different_profession'],recipe_view_filter={'learned':True})
                     self.assertFalse(mismatch['recipe_view_coverage']['profession_matches_bulk'])
+                    self.assertNotIn('recipe_view_rank_observation',mismatch)
                     for name,count in [('missing_bulk',None),('empty_bulk',0)]:
                         found = await search(snapshot_id=variants[name],recipe_view_filter={'learned':True})
                         self.assertEqual(found['recipe_view_unknown_count'],count)
