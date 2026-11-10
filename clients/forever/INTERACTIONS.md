@@ -14,6 +14,9 @@ to compare the instance-group count with a saved lockout row's reported
 size. The reference requires exactly one cache row with matching name,
 difficulty and party or raid kind, and a positive size. It does not
 establish instance identity, current capacity or roster completeness.
+Set `instance_group_size_max_cache_age_seconds` to require an inclusive
+cache age limit at capture time. An older or unavailable cache leaves the
+size and shortfall unknown. The report still shows any matching row count.
 
 Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap

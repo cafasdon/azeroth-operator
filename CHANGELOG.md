@@ -1,5 +1,7 @@
 # Changelog
 
+- Limit saved instance group size references by the lockout cache age at capture.
+
 - Compare saved instance-group counts with a matching lockout size reference.
 
 - Compare saved group count targets and identify threshold crossings.

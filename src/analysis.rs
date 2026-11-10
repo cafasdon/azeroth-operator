@@ -3482,7 +3482,7 @@ const PVP_CAP_FIELDS: [&str; 3] = [
     "previous_week_max_rank",
 ];
 
-pub fn instance_group_size_reference(snapshot: &Snapshot) -> Value {
+pub fn instance_group_size_reference(snapshot: &Snapshot, maximum_cache_age: Option<u32>) -> Value {
     let instance = snapshot.sections.get("instance_context");
     let is_raid = match instance.and_then(|row| row["kind"].as_str()) {
         Some("raid") => Some(true),
@@ -3490,6 +3490,10 @@ pub fn instance_group_size_reference(snapshot: &Snapshot) -> Value {
         _ => None,
     };
     let cache = snapshot.sections.get("saved_instances");
+    let cache_age = cache.and_then(|row| row["update_age_seconds"].as_u64());
+    let within_limit = maximum_cache_age
+        .zip(cache_age)
+        .map(|(maximum, age)| age <= u64::from(maximum));
     let matches = is_raid
         .zip(instance)
         .zip(cache)
@@ -3506,23 +3510,31 @@ pub fn instance_group_size_reference(snapshot: &Snapshot) -> Value {
                     .collect::<Vec<_>>(),
             )
         });
-    let size = matches.as_deref().and_then(|matches| match matches {
-        [row] => row["max_players"].as_u64().filter(|size| *size > 0),
-        _ => None,
-    });
+    let size = matches
+        .as_deref()
+        .filter(|_| maximum_cache_age.is_none() || within_limit == Some(true))
+        .and_then(|matches| match matches {
+            [row] => row["max_players"].as_u64().filter(|size| *size > 0),
+            _ => None,
+        });
     let count = snapshot
         .sections
         .get("group_context")
         .and_then(|section| section["categories"]["instance"]["reported_member_count"].as_u64());
-    json!({
+    let mut report = json!({
         "matching_saved_lockout_rows":matches.as_ref().map(Vec::len),
-        "saved_lockout_cache_age_seconds":cache.and_then(|row| row["update_age_seconds"].as_u64()),
+        "saved_lockout_cache_age_seconds":cache_age,
         "reported_size_reference":size,"reported_instance_group_count":count,
         "shortfall_to_size_reference":size.zip(count).map(|(size, count)| size.saturating_sub(count)),
         "excess_over_size_reference":size.zip(count).map(|(size, count)| count.saturating_sub(size)),
         "instance_identity_verified":false,"instance_capacity_verified":false,
         "current_group_verified":false,"live":false
-    })
+    });
+    if let Some(maximum) = maximum_cache_age {
+        report["maximum_cache_age_seconds_at_capture"] = json!(maximum);
+        report["cache_age_within_limit_at_capture"] = json!(within_limit);
+    }
+    report
 }
 
 pub fn group_member_target_projection(section: &Value, target: u32) -> Value {

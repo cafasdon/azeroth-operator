@@ -105,6 +105,8 @@ struct Inspect {
     /// Compare the saved instance group count with a uniquely matching saved lockout size reference.
     #[serde(default)]
     instance_group_size_reference: bool,
+    /// Maximum lockout cache age at capture for the instance group size reference.
+    instance_group_size_max_cache_age_seconds: Option<u32>,
     /// Return only capture statuses for these distinct section names instead of section data.
     coverage_sections: Option<Vec<String>>,
     /// Compare a target PvP rank with saved rank thresholds and caps.
@@ -2719,6 +2721,13 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.instance_group_size_max_cache_age_seconds.is_some()
+            && !args.instance_group_size_reference
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A cache age limit requires the instance group size reference",
+            )]);
+        }
         if args.instance_group_size_reference && args.section.as_deref() != Some("instance_context")
         {
             return CallToolResult::error(vec![ContentBlock::text(
@@ -4496,7 +4505,10 @@ impl Operator {
                         )]);
                     }
                     value["instance_group_size_reference"] =
-                        azeroth_operator::analysis::instance_group_size_reference(&snapshot);
+                        azeroth_operator::analysis::instance_group_size_reference(
+                            &snapshot,
+                            args.instance_group_size_max_cache_age_seconds,
+                        );
                 }
                 if let Some(target) = args.group_member_target {
                     if value["client"]["family"] != "forever" {

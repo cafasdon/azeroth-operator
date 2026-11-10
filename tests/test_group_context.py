@@ -186,6 +186,19 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(reference['reported_instance_group_count'],40)
                         self.assertEqual(reference['shortfall_to_size_reference'],5 if capacity else None)
                         self.assertFalse(reference['instance_capacity_verified'])
+                        self.assertNotIn('cache_age_within_limit_at_capture',reference)
+                        if capacity:
+                            for age, within in [(0,False),(2,False),(3,True),(4,True)]:
+                                bounded = await call('inspect_snapshot',snapshot_id=key,
+                                    section='instance_context',instance_group_size_reference=True,
+                                    instance_group_size_max_cache_age_seconds=age)
+                                bounded = bounded['instance_group_size_reference']
+                                self.assertIs(bounded['cache_age_within_limit_at_capture'],within)
+                                self.assertEqual(bounded['matching_saved_lockout_rows'],1)
+                                self.assertEqual(bounded['reported_size_reference'],45 if within else None)
+                                self.assertEqual(bounded['shortfall_to_size_reference'],5 if within else None)
+                    await call('inspect_snapshot',error=True,snapshot_id=earlier,
+                        section='instance_context',instance_group_size_max_cache_age_seconds=0)
                     await call('inspect_snapshot',error=True,snapshot_id=retail_id,
                         section='instance_context',instance_group_size_reference=True)
             self.assertEqual(before,{path.name:path.read_bytes() for path in Path(folder).glob('*.json')})
