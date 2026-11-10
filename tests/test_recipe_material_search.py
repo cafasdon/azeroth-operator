@@ -111,6 +111,17 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(short['records'][1]['observed_reagent_shortfalls'],
                                      {'11':{'required':4,'observed':1,'missing':3}})
                     self.assertEqual(ids(await search(short_filter,offset=2)),[7,8])
+                    only_item = {**short_filter,'sole_shortfall_item_id':11}
+                    sole = await search(only_item)
+                    self.assertEqual(ids(sole),[2])
+                    self.assertEqual(sole['material_support_insufficient_observed_count'],4)
+                    self.assertEqual(sole['records'][0]['observed_reagent_shortfalls'],
+                                     {'11':{'required':4,'observed':1,'missing':3}})
+                    self.assertEqual(ids(await search({**only_item,'minimum_crafts':3})),[])
+                    self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1)),[1])
+                    self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1,offset=1)),[8])
+                    await search({**only_item,'insufficient_only':False},error=True)
+                    await search({**only_item,'sole_shortfall_item_id':0},error=True)
                     self.assertEqual(ids(await search(short_filter,snapshot_id=variants['missing_inventory'])),[])
                     self.assertEqual(ids(await search({**short_filter,'insufficient_only':False})),[3])
                     all_items = await search({'scope':'all_observed_storage','minimum_crafts':3})

@@ -174,6 +174,9 @@ pub struct RecipeMaterialFilter {
     /// Return known observed shortfalls instead of recipes that meet the craft target.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insufficient_only: Option<bool>,
+    /// Match only recipes whose sole observed reagent shortfall is this item. Requires insufficient_only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sole_shortfall_item_id: Option<std::num::NonZeroU32>,
 }
 
 #[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
@@ -515,6 +518,11 @@ pub fn search_recipe_materials_ordered(
         "Observed item capacity ordering requires material filtering"
     );
     ensure!(
+        material_filter.is_none_or(|filter| filter.sole_shortfall_item_id.is_none()
+            || filter.insufficient_only == Some(true)),
+        "A sole reagent shortfall requires insufficient_only"
+    );
+    ensure!(
         order != RecipeSearchOrder::ReportedBaseOutputPerReagentDesc
             || (output_item_id.is_some() && reagent_item_id.is_some()),
         "Reagent efficiency ordering requires output and reagent item IDs"
@@ -628,6 +636,12 @@ pub fn search_recipe_materials_ordered(
                         insufficient += usize::from(short);
                         if short != insufficient_only {
                             return None;
+                        }
+                        if let Some(item) = filter.sole_shortfall_item_id {
+                            let shortfalls = stock.shortfalls(row, filter.minimum_crafts.get())?;
+                            if shortfalls.len() != 1 || !shortfalls.contains_key(&item.get()) {
+                                return None;
+                            }
                         }
                         Some(support)
                     }

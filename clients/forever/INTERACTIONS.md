@@ -6,6 +6,10 @@ observed storage. Each matching row lists the required, observed and
 missing quantities by reagent ID. Unavailable recipe or inventory evidence
 does not satisfy the filter. A gap in observed storage can understate the
 items you have elsewhere.
+Add `material_filter.sole_shortfall_item_id` with `insufficient_only: true`
+to find recipes where that exact item is the only observed reagent gap
+for the requested batch. The count of insufficient recipes still includes
+all observed gaps before applying the sole-item filter.
 
 With `profession_target_trainer_lessons` on a saved profession inspection,
 set `profession_target_trainer_reserve_copper` to check each projected
