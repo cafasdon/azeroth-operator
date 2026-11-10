@@ -1,5 +1,7 @@
 # Changelog
 
+- Find the highest-coverage partial set shopping plan within the saved visit limit.
+
 - Show remaining spendable copper after each saved set-shopping stop.
 
 - Show the saved capture time and player map for set-shopping stops.

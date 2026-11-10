@@ -1897,20 +1897,6 @@ impl Operator {
                             )
                         };
                         status = if !unquoted.is_empty() {
-                            let covered: Vec<_> = demands
-                                .iter()
-                                .filter(|row| {
-                                    row["item_id"]
-                                        .as_u64()
-                                        .is_some_and(|id| !unquoted.contains(&id))
-                                })
-                                .cloned()
-                                .collect();
-                            if !covered.is_empty() {
-                                partial = azeroth_operator::analysis::restock_travel_adjusted_plan(
-                                    &covered, ids, &offers, costs, max_visits, wallet,
-                                );
-                            }
                             "unquoted_pieces"
                         } else {
                             combined = plan_with_limit(max_visits);
@@ -1924,6 +1910,56 @@ impl Operator {
                                 "unrepresentable_total"
                             }
                         };
+                        if matches!(status, "unquoted_pieces" | "visit_limit") {
+                            partial = (1u8..(1 << ids.len()))
+                                .filter(|subset| subset.count_ones() <= u32::from(max_visits))
+                                .filter_map(|subset| {
+                                    let selected: Vec<_> = offers
+                                        .iter()
+                                        .enumerate()
+                                        .filter(|(index, _)| subset & (1 << index) != 0)
+                                        .collect();
+                                    let covered: Vec<_> = demands
+                                        .iter()
+                                        .filter(|row| {
+                                            row["item_id"].as_u64().is_some_and(|id| {
+                                                selected
+                                                    .iter()
+                                                    .any(|(_, offer)| offer.contains_key(&id))
+                                            })
+                                        })
+                                        .cloned()
+                                        .collect();
+                                    if covered.is_empty() {
+                                        return None;
+                                    }
+                                    let selected_ids: Vec<_> = selected
+                                        .iter()
+                                        .map(|(index, _)| ids[*index].clone())
+                                        .collect();
+                                    let selected_costs: Vec<_> =
+                                        selected.iter().map(|(index, _)| costs[*index]).collect();
+                                    let selected_offers: Vec<_> = selected
+                                        .into_iter()
+                                        .map(|(_, offer)| offer.clone())
+                                        .collect();
+                                    azeroth_operator::analysis::restock_travel_adjusted_plan(
+                                        &covered,
+                                        &selected_ids,
+                                        &selected_offers,
+                                        &selected_costs,
+                                        max_visits,
+                                        wallet,
+                                    )
+                                })
+                                .min_by_key(|plan| {
+                                    (
+                                        std::cmp::Reverse(plan["items"].as_array().unwrap().len()),
+                                        plan["complete_quote_copper"].as_u64().unwrap(),
+                                        plan["visit_count"].as_u64().unwrap(),
+                                    )
+                                });
+                        }
                         for plan in combined.iter_mut().chain(partial.iter_mut()) {
                             if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
                                 let total = plan["complete_quote_copper"].as_u64();
@@ -1961,8 +1997,11 @@ impl Operator {
                     acquisition["captured_merchant_combined_plan"] = serde_json::json!(combined);
                     acquisition["captured_merchant_partial_plan"] =
                         serde_json::json!(partial.map(|plan| {
+                            let omitted: Vec<_> = demands.iter().map(|row| &row["item_id"])
+                                .filter(|id| !plan["items"].as_array().unwrap().iter()
+                                    .any(|item| item["item_id"] == **id)).collect();
                             serde_json::json!({"basis":"pieces_with_supported_quotes_only",
-                            "excluded_unquoted_item_ids":unquoted, "plan":plan})
+                            "excluded_unquoted_item_ids":unquoted, "omitted_item_ids":omitted, "plan":plan})
                         }));
                     acquisition["captured_merchant_combined_plan_status"] = serde_json::json!({
                         "status":status, "unquoted_item_ids":unquoted, "maximum_visits":max_visits

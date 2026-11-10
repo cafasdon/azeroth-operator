@@ -45,9 +45,10 @@ combined plan at one to four visits.
 `captured_merchant_combined_plan_status` distinguishes missing supported
 quotes, an insufficient visit limit, an unrepresentable copper total,
 and a truncated or empty list. Missing quotes list the affected item IDs.
-When at least one piece lacks a supported quote, the separate
-`captured_merchant_partial_plan` can cover all quoted pieces within the
-visit limit. Its costs and affordability apply only to the included pieces.
+When quotes are missing or the visit limit prevents a complete plan,
+`captured_merchant_partial_plan` considers each allowed subset of visits.
+It favours more distinct pieces, then lower cost and fewer visits, and
+lists all omitted IDs. Its budget applies to the included pieces.
 Each planned stop shows the merchant capture time and, when recorded,
 the player map ID from that capture. The map describes the saved player
 location and does not establish a merchant identity or current location.
