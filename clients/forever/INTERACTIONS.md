@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Saved dialogue search accepts `gossip_option.minimum_reported_order_index`
+and `maximum_reported_order_index` as inclusive signed bounds. They match
+the reported index on the same option row as other predicates, while
+missing indices stay unknown. Label matching ignores surrounding whitespace
+and preserves the original recorded label.
+
 The saved recipe view and its skill-up candidate summary can include
 `rank_observation` for the same open profession. The addon retains readable
 rank and cap values when they agree across the capture. Older captures

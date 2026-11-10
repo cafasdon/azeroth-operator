@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved dialogue options by their reported signed order index.
+
 - Find saved recipe captures within a reported profession skill-modifier range.
 
 - Compare reported profession skill modifiers independently of base ranks.

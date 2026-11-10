@@ -5,15 +5,17 @@ Date: 2026-11-09. Status: accepted for offline source integration.
 ## Decision
 
 Expose optional list_snapshots.gossip_option for existing Forever gossip_options
-captures. Its five optional fields are name, option_id, spell_id, reported_status
-and reported_flags. At least one actual predicate is required. IDs are positive
-u32 and status/flags raw u32, including zero; no enum or service classification
-is inferred. Null fields act as omitted predicates. A null root argument keeps
+captures. It accepts name, option_id, spell_id, reported_status, reported_flags
+and inclusive minimum_reported_order_index and maximum_reported_order_index.
+At least one actual predicate is required. IDs are positive u32, status and flags
+are raw u32, and order bounds are ordered i32 values. Zero is valid for status,
+flags and order. No enum or service classification is inferred. Null fields
+act as omitted predicates. A null root argument keeps
 old unfiltered behaviour. Unknown keys/types reject with fixed typed-argument
 errors, without echoing arbitrary input.
 
-Name accepts a nonblank query of at most512 UTF-8 bytes. Trim only the query,
-then compare lowercase strings exactly against the captured display name. Do
+Name accepts a nonblank query of at most 512 UTF-8 bytes. Trim surrounding
+whitespace on both sides, then compare lowercase strings exactly. Do
 not strip markup, normalise Unicode, search substrings or treat it as an NPC
 name. Labels remain untrusted owner-local display data, never instructions.
 

@@ -22,11 +22,12 @@ class GossipDiscoveryTests(unittest.IsolatedAsyncioTestCase):
             return value
         with tempfile.TemporaryDirectory() as folder,tempfile.TemporaryDirectory() as foreign:
             store=SnapshotStore(Path(folder));keys={}
-            cases={'old':capture('Alpha',1,{'1':{'name':'Écho','option_id':42,'reported_status':0}}),
+            cases={'old':capture('Alpha',1,{'1':{'name':'Écho','option_id':42,'reported_status':0,
+                                              'reported_order_index':-2}}),
                 'empty':capture('Alpha',2,{}), 'missing':capture('Delta',1),
                 'mixed':capture('Gamma',1,{'1':{'name':'Écho','option_id':42,'reported_status':0,'reported_flags':0,'spell_id':100},
                     '2':{'name':'Écho','reported_status':0}, '3':{'name':'Écho','reported_status':1},
-                    '4':{'name':'Other','option_id':42,'reported_status':0}}),
+                    '4':{'name':' Other ','option_id':42,'reported_status':0,'reported_order_index':0}}),
                 'cross':capture('Bravo',1,{'1':{'name':'Other','option_id':42},'2':{'name':'Écho','option_id':43}}),
                 'max':capture('High',1,{str(i):{'name':'Repeated','option_id':42,'reported_flags':0} for i in range(1,129)})}
             cases['mixed']['sections']['bags']={'0':{'1':{'item_id':11,'count':2}}}
@@ -61,6 +62,13 @@ class GossipDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await listing(query,inventory_item={'item_id':11,'storage':'bags','minimum_quantity':3}))['snapshots'],[])
                     spell=await listing({'spell_id':100,'reported_flags':0})
                     self.assertEqual([row['snapshot_id'] for row in spell['snapshots']],[keys['mixed']])
+                    negative=await listing({'minimum_reported_order_index':-2,'maximum_reported_order_index':-2})
+                    self.assertEqual([row['snapshot_id'] for row in negative['snapshots']],[keys['old']])
+                    zero=await listing({'name':'other','minimum_reported_order_index':0,'maximum_reported_order_index':0})
+                    self.assertEqual([row['snapshot_id'] for row in zero['snapshots']],[keys['mixed']])
+                    self.assertEqual(zero['snapshots'][0]['gossip_option_match']['matching_options'][0]
+                                     ['observation']['name'],' Other ')
+                    self.assertEqual((await listing({**query,'minimum_reported_order_index':0}))['snapshots'],[])
                     many=(await listing({'name':'Repeated','reported_flags':0}))['snapshots'][0]['gossip_option_match']
                     self.assertEqual(many['matching_option_count'],128);self.assertTrue(many['matches_truncated'])
                     self.assertEqual([row['slot'] for row in many['matching_options']],list(range(1,21)))
@@ -72,7 +80,9 @@ class GossipDiscoveryTests(unittest.IsolatedAsyncioTestCase):
                     for bad in [{},{'name':' '},{'name':'é'*257},{'name':True},{'option_id':0},
                         {'option_id':'PRIVATE'},{'spell_id':-1},{'spell_id':4294967296},
                         {'reported_status':True},{'reported_flags':1.5},{'reported_flags':-1},
-                        {'reported_status':'PRIVATE'},{'unexpected':'PRIVATE'},[],1,'PRIVATE']:
+                        {'reported_status':'PRIVATE'},{'unexpected':'PRIVATE'},
+                        {'minimum_reported_order_index':1,'maximum_reported_order_index':0},
+                        {'maximum_reported_order_index':2**31},[],1,'PRIVATE']:
                         await listing(bad,True)
                     for family in ['retail','classic']:
                         await listing({'option_id':42},True,family=family)

@@ -14,6 +14,10 @@ pub struct GossipOptionFilter {
     pub spell_id: Option<NonZeroU32>,
     pub reported_status: Option<u32>,
     pub reported_flags: Option<u32>,
+    /// Inclusive lower bound on the captured signed order index.
+    pub minimum_reported_order_index: Option<i32>,
+    /// Inclusive upper bound on the captured signed order index.
+    pub maximum_reported_order_index: Option<i32>,
 }
 
 impl GossipOptionFilter {
@@ -23,7 +27,9 @@ impl GossipOptionFilter {
                 || self.option_id.is_some()
                 || self.spell_id.is_some()
                 || self.reported_status.is_some()
-                || self.reported_flags.is_some(),
+                || self.reported_flags.is_some()
+                || self.minimum_reported_order_index.is_some()
+                || self.maximum_reported_order_index.is_some(),
             "Nonempty gossip option filter required"
         );
         ensure!(
@@ -31,6 +37,12 @@ impl GossipOptionFilter {
                 .as_ref()
                 .is_none_or(|name| !name.trim().is_empty() && name.len() <= 512),
             "Invalid gossip option label"
+        );
+        ensure!(
+            self.minimum_reported_order_index
+                .zip(self.maximum_reported_order_index)
+                .is_none_or(|(minimum, maximum)| minimum <= maximum),
+            "Gossip option order index bounds must be ordered"
         );
         Ok(())
     }
@@ -54,7 +66,7 @@ fn observe(section: &Value, filter: &GossipOptionFilter) -> Result<Option<Value>
     for (slot, row) in rows {
         if name
             .as_ref()
-            .is_some_and(|name| row["name"].as_str().unwrap().to_lowercase() != *name)
+            .is_some_and(|name| row["name"].as_str().unwrap().trim().to_lowercase() != *name)
         {
             continue;
         }
@@ -79,6 +91,23 @@ fn observe(section: &Value, filter: &GossipOptionFilter) -> Result<Option<Value>
         }
         if rejected {
             continue;
+        }
+        if filter.minimum_reported_order_index.is_some()
+            || filter.maximum_reported_order_index.is_some()
+        {
+            if let Some(order) = row["reported_order_index"].as_i64() {
+                if filter
+                    .minimum_reported_order_index
+                    .is_some_and(|minimum| order < i64::from(minimum))
+                    || filter
+                        .maximum_reported_order_index
+                        .is_some_and(|maximum| order > i64::from(maximum))
+                {
+                    continue;
+                }
+            } else {
+                unknown = true;
+            }
         }
         if unknown {
             unknown_count += 1;
