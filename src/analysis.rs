@@ -34,6 +34,18 @@ pub(crate) fn temporary_weapon_enchant_expiry(
     captured_at.checked_add_signed(duration)
 }
 
+pub(crate) fn equipped_weapon_hand_enchants(snapshot: &Snapshot, slot: &str) -> Option<Value> {
+    let hand = match slot {
+        "16" => "main_hand",
+        "17" => "off_hand",
+        "18" => "ranged",
+        _ => return None,
+    };
+    let entries =
+        snapshot.sections.get("weapon_enchants")?["hands"][hand]["entries"].as_object()?;
+    Some(json!({"hand":hand,"entries":entries}))
+}
+
 pub fn weapon_enchant_expiry_review(
     section: &Value,
     captured_at: chrono::DateTime<chrono::Utc>,
@@ -2820,10 +2832,13 @@ fn find_item_page(
                     if let Some(row) = cooldown {
                         location["captured_cooldown"] = row.clone();
                     }
-                    if storage == "equipment"
-                        && let Some(condition) = durability.and_then(|slots| slots.get(slot))
-                    {
-                        location["observed_equipped_durability"] = condition.clone();
+                    if storage == "equipment" {
+                        if let Some(condition) = durability.and_then(|slots| slots.get(slot)) {
+                            location["observed_equipped_durability"] = condition.clone();
+                        }
+                        if let Some(enchants) = equipped_weapon_hand_enchants(snapshot, slot) {
+                            location["observed_weapon_hand_enchants"] = enchants;
+                        }
                     }
                     if let Some((end, ended_by_reference)) = projection {
                         location["projected_cooldown_end_at"] = json!(end);

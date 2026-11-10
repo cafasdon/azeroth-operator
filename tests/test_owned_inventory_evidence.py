@@ -48,6 +48,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 'entries': {'11': {'current': 0, 'maximum': 40}},
             }
             mixed_id = store.ingest(mixed)
+            enchanted = deepcopy(mixed)
+            enchanted['sections']['equipment']['16'] = {'item_id': 4549}
+            enchant_rows = {'1': {'has_enchant': True, 'enchant_type': 'temporary', 'remaining_milliseconds': 0}}
+            enchanted['sections']['weapon_enchants'] = {
+                'coverage': 'public_weapon_enchant_lists',
+                'hands': {'main_hand': {'entries': enchant_rows}},
+            }
+            enchanted_id = store.ingest(enchanted)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -64,6 +72,11 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                                      [('equipment', '11'), ('bags', '11')])
                     self.assertEqual(same_item[0]['observed_equipped_durability'], {'current': 0, 'maximum': 40})
                     self.assertNotIn('observed_equipped_durability', same_item[1])
+                    enchant_matches = (await review(enchanted_id, item_id=4549))['items']
+                    self.assertEqual([
+                        (row['storage'], row['slot'], row['observed_weapon_hand_enchants'])
+                        for row in enchant_matches if 'observed_weapon_hand_enchants' in row
+                    ], [('equipment', '16', {'hand': 'main_hand', 'entries': enchant_rows})])
                     container_field = 'observed_container_occupied_slots'
                     self.assertEqual(result['coverage']['bags'][container_field], {'0': 2})
                     self.assertNotIn(container_field, result['coverage']['equipment'])

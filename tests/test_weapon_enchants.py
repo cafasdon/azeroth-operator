@@ -18,6 +18,8 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
         binary=Path(os.environ.get('AZEROTH_TEST_BINARY',root/'target/debug'/(
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         value=fixture();value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
+        value['sections']['equipment']={str(slot):{'item_id':123} for slot in (15,16,17,18)}
+        value['sections']['bags']={'0':{'16':{'item_id':123,'count':1}}}
         rows={str(i):{'has_enchant':False,'enchant_type':'none'} for i in range(1,11)}
         rows['1']={'has_enchant':True,'enchant_type':'permanent','enchant_id':42,'charges':0,'remaining_milliseconds':0}
         rows['2']={'has_enchant':True,'enchant_type':'imbue'}
@@ -65,6 +67,16 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     async def search(hand, **filters):
                         return (await call('list_snapshots',family='forever',
                             weapon_enchant={'hand':hand,**filters}))['snapshots']
+                    item=await call('find_snapshot_item',snapshot_id=keys[0],item_id=123)
+                    self.assertEqual({
+                        (row['storage'],row['slot']):row['observed_weapon_hand_enchants']
+                        for row in item['locations'] if 'observed_weapon_hand_enchants' in row
+                    }, {
+                        ('equipment','16'):{'hand':'main_hand','entries':rows},
+                        ('equipment','17'):{'hand':'off_hand','entries':{}},
+                    })
+                    no_enchants=await call('find_snapshot_item',snapshot_id=keys[1],item_id=123)
+                    self.assertTrue(all('observed_weapon_hand_enchants' not in row for row in no_enchants['locations']))
                     covered=await call('list_snapshots',family='forever',required_sections=['weapon_enchants'])
                     self.assertEqual({row['snapshot_id'] for row in covered['snapshots']},
                         {keys[0],keys[2],keys[3]})

@@ -3611,10 +3611,15 @@ pub fn review_owned(
                     "weaponSpeed":item["weaponSpeed"],
                     "itemEffects":item["itemEffects"]
                 }))});
-                if storage == "equipment"
-                    && let Some(condition) = durability.and_then(|slots| slots.get(slot))
-                {
-                    entry["observed_equipped_durability"] = condition.clone();
+                if storage == "equipment" {
+                    if let Some(condition) = durability.and_then(|slots| slots.get(slot)) {
+                        entry["observed_equipped_durability"] = condition.clone();
+                    }
+                    if let Some(enchants) =
+                        crate::analysis::equipped_weapon_hand_enchants(snapshot, slot)
+                    {
+                        entry["observed_weapon_hand_enchants"] = enchants;
+                    }
                 }
                 entries.push(entry);
             }

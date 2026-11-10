@@ -1,5 +1,7 @@
 # Changelog
 
+- Show recorded weapon-hand enchant observations in Forever owned gear and item lookup.
+
 - Show same-capture equipped durability in item lookup without a catalogue.
 
 - Show recorded equipped-slot durability in Forever owned-gear reviews.
