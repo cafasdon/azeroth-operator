@@ -886,3 +886,9 @@ Saved battlefield summary now groups all five raw status tokens into counts
 and numeric slot lists, preserving null, zero-capacity and all-none cases.
 Non-none counts are not active-player counts or membership/acceptance proof.
 No new capture, action or native qualification was introduced.
+
+Battlefield discovery now finds saved exact raw tokens by optional slot and
+minimum matching count. Latest-per-character selection precedes matching;
+missing/empty/nonmatching captures do not resurrect old observations. Matches
+retain source capacity and all bounded numeric slot matches. No new capture,
+queue action, current-membership proof or native qualification is introduced.

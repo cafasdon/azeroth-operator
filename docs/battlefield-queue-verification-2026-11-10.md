@@ -75,3 +75,40 @@ request 100d1a57f8c6083c576cb47521d78d502cdb712063e1d7cbf8bfd34192e602be;
 563 input and 44 output tokens, 0.372 seconds. Author accepted the scoped
 analysis change based on direct tests and clean independent review. Native
 qualification, installation, deployment and live testing remain deferred.
+
+## Historical battlefield status discovery — 2026-11-10
+
+Added list_snapshots.battlefield_queue with required exact raw status and
+optional exact slot/minimum matching count. Thresholds apply after an exact
+slot restriction. Latest-per-character selection precedes the predicate;
+missing/empty/nonmatching captures do not resurrect older matches. Matching
+metadata retains capacity and every matching numeric slot, without asserting
+current membership, identity, full coverage or acceptance. No capture, game
+call, public-index input or action route changed. See ADR-078.
+
+Author: cargo build --bin azeroth-operator succeeded. With PYTHONPATH=.;tests,
+python -m unittest test_battlefield_queue_filters passed one actual Rust stdio
+MCP test in 0.742 seconds. Covered all five tokens, zero/missing latest capture
+suppression, explicit historical time bound, exact slots, count thresholds,
+contradictory slot/count predicates, 32-slot numeric order, owner/family gates,
+malformed type/token/bound/extra-field redaction, composition with inventory
+and coverage predicates, null/default compatibility and paging. Synthetic
+snapshot bytes remained unchanged. Diff check passed.
+
+One independent adversarial round: failure and security/data plus callers
+lenses, requested gpt-6-astra high; resolved model and token usage not exposed.
+Neither found a concrete flaw. Failure reviewer passed 125 independent reference
+filter cases over 66 captures plus missing data, timestamp-tie resolution before
+filtering, six paging cases including maximum offset and 30 malformed/redaction
+cases. Security/data review passed eleven fresh MCP probes of newer nonmatches,
+nullable predicates, composition, corrupt private captures, token/type redaction
+and absent slots. Both independently ran the actual MCP test. Readers remained
+validated/root-contained and result lists bounded to 32 numeric slots; no new
+capture, execution or public-index path was introduced. Docs matched behaviour.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.83,
+request ef8ab5c614a2039885b899d9fbf4dd9b908931bffa7051aa1c9e01f8516688a5;
+639 input and 44 output tokens, 0.278 seconds. Author accepted the bounded
+source change based on direct tests and both independent reviews. Current
+membership, complete coverage and native qualification remain unproven;
+installation, deployment and live testing remain deferred.

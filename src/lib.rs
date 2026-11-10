@@ -2,6 +2,7 @@
 pub mod action_operation;
 pub mod analysis;
 pub mod bag_operation;
+pub mod battlefield_queue_filter;
 pub mod binding_operation;
 pub mod equipment_operation;
 pub mod equipment_set_operation;
@@ -2042,6 +2043,7 @@ pub struct CaptureFilters<'a> {
     pub pet_action_command: Option<PetActionCommandFilter>,
     pub group_context: Option<GroupContextFilter>,
     pub owned_auction: Option<owned_auction_filter::OwnedAuctionFilter>,
+    pub battlefield_queue: Option<battlefield_queue_filter::BattlefieldQueueFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
@@ -2359,6 +2361,7 @@ impl Store {
             pet_action_command,
             group_context,
             owned_auction,
+            battlefield_queue,
             profession_spell_id,
             recipe: filters,
             tracked_recipe_id,
@@ -2746,6 +2749,10 @@ impl Store {
                 .is_none_or(|(min, max)| min <= max),
             "Reversed PvP rank bounds"
         );
+        if let Some(filter) = &battlefield_queue {
+            ensure!(family == Family::Forever, "Battlefield queue search requires Forever");
+            filter.validate()?;
+        }
         if let Some(filter) = &owned_auction {
             ensure!(family == Family::Forever, "Owned auction search requires Forever");
             filter.validate()?;
@@ -3511,6 +3518,8 @@ impl Store {
                     {
                         continue;
                     }
+                    let battlefield_queue_match = battlefield_queue.as_ref().and_then(|filter| filter.observation_match(&s));
+                    if battlefield_queue.is_some() && battlefield_queue_match.is_none() { continue; }
                     let owned_auction_match = owned_auction.as_ref().and_then(|filter| filter.observation_match(&s));
                     if owned_auction.is_some() && owned_auction_match.is_none() { continue; }
                     let group_context_match = group_context
@@ -4966,6 +4975,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_command_match {
                         summary["pet_action_command_match"] = observation;
+                    }
+                    if let Some(observation) = battlefield_queue_match {
+                        summary["battlefield_queue_match"] = observation;
                     }
                     if let Some(observation) = owned_auction_match {
                         summary["owned_auction_match"] = observation;

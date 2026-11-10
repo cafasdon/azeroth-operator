@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved battlefield status observations by exact token, slot and minimum matching-slot count.
+
 - Summarise saved battlefield slot statuses with per-token counts and numeric slot lists.
 
 - Observe personal battlefield queue slot status during manual exports, without queue actions or third-party data.

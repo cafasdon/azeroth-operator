@@ -4357,3 +4357,13 @@ includes queued, confirm, active and locked; it is not an active-player count.
 Missing observations stay null. Zero capacity stays distinct from a nonzero
 all-none capture. No queue identity, present membership or acceptance permission
 is verified, and no additional game call occurs.
+
+Use list_snapshots.battlefield_queue with required reported_status and optional
+slot or minimum_matching_slots (both 1..32). Status uses an exact raw token;
+threshold defaults to one and applies after restricting to an exact slot.
+Results include source capacity, full matching count and all matching numeric
+slots. Missing and zero-slot captures never invent none rows. Latest selection
+precedes filtering, so older matches do not replace newer nonmatching captures.
+The filter composes with other saved-snapshot predicates and time bounds.
+Null/omitted filter preserves ordinary listing. These are historical records,
+not present membership, acceptance eligibility or complete queue coverage.

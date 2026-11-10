@@ -686,6 +686,9 @@ struct List {
     /// Find saved loaded owned-auction rows by exact item ID, auction ID or raw status.
     #[serde(default, deserialize_with = "owned_auction_argument")]
     owned_auction: Option<azeroth_operator::owned_auction_filter::OwnedAuctionFilter>,
+    /// Find captured battlefield status slots, optionally by exact slot and minimum matching count.
+    #[serde(default, deserialize_with = "battlefield_queue_argument")]
+    battlefield_queue: Option<azeroth_operator::battlefield_queue_filter::BattlefieldQueueFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Find a recorded currency balance at or above the requested quantity.
@@ -1107,6 +1110,15 @@ fn owned_auction_argument<'de, D: serde::Deserializer<'de>, T: serde::de::Deseri
 fn owned_auction_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
     serde_json::Value::deserialize(input)?.as_bool()
         .ok_or_else(|| serde::de::Error::custom("Invalid owned auction comparison flag"))
+}
+
+fn battlefield_queue_argument<'de, D: serde::Deserializer<'de>>(
+    input: D,
+) -> Result<Option<azeroth_operator::battlefield_queue_filter::BattlefieldQueueFilter>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() { return Ok(None); }
+    serde_json::from_value(value).map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid battlefield queue filter"))
 }
 
 fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
@@ -3028,6 +3040,7 @@ impl Operator {
                 pet_action_command: args.pet_action_command,
                 group_context: args.group_context,
                 owned_auction: args.owned_auction,
+                battlefield_queue: args.battlefield_queue,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,

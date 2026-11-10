@@ -49,3 +49,21 @@ and empty lists, while all-none observations preserve their nonzero capacity.
 The output explicitly leaves current membership, complete queue coverage,
 queue identity and acceptance eligibility unverified, with execution/live false.
 It uses saved data only and does not invoke another getter or action.
+
+Historical search (10 November): list_snapshots accepts battlefield_queue with
+required reported_status (one of the five exact raw tokens), optional slot
+(1..32) and minimum_matching_slots (1..32, default one). It counts matching
+saved slots after any exact-slot restriction. A threshold above one combined
+with an exact slot cannot match, rather than implying additional hidden slots.
+Missing/zero/nonmatching sections do not satisfy the predicate. No none token
+is invented for unobserved slots. Null outer filter preserves default listing.
+
+Latest-per-character selection precedes this feature filter; an old matching
+capture is not substituted when the selected newer capture is empty, missing
+or nonmatching. Existing explicit capture-time and composition predicates
+remain available. Matching metadata preserves source capacity and coverage,
+full matching count and every matching slot in numeric order (at most 32).
+It explicitly withholds current membership, full queue coverage, queue identity,
+acceptance, live and execution verification. Strict redacting parsing rejects
+unknown fields and invalid types/tokens/bounds. Owner/family gates remain.
+This adds no capture, queue action, timer or public-data indexing path.
