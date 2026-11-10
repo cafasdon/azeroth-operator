@@ -193,6 +193,16 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                     focused = await call('compare_snapshots',before_id=maximum_id,after_id=full_id,
                         player_trade_offer_item_id=10,player_trade_offer_changes=True)
                     self.assertEqual(focused[selector]['items'], exact['items'][:1])
+                    self.assertNotIn('carried_comparison',focused[selector])
+                    for a, old, change in [(mixed_id,2,0),(no_bags_id,None,None)]:
+                        focused = await call('compare_snapshots',before_id=a,after_id=full_id,
+                            player_trade_offer_item_id=10,player_trade_offer_compare_carried=True)
+                        self.assertEqual(focused[selector]['carried_comparison'],{
+                            'before_quantity':old,'after_quantity':2,'quantity_delta':change,
+                            'inventory_transfers_verified':False,'offers_count_toward_carried_stock':False,
+                        })
+                    await call('compare_snapshots',error=True,before_id=full_id,after_id=full_id,
+                        player_trade_offer_changes=True,player_trade_offer_compare_carried=True)
                     await call('compare_snapshots',error=True,before_id=full_id,after_id=full_id,
                         player_trade_offer_item_id=0)
                     partial = await compare(mixed_id,full_id)

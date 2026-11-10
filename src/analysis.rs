@@ -3359,6 +3359,7 @@ pub struct ComparisonSelectors<'a> {
     pub player_pvp_progression_changes: bool,
     pub player_trade_offer_changes: bool,
     pub player_trade_offer_item_id: Option<std::num::NonZeroU32>,
+    pub player_trade_offer_compare_carried: bool,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub currency_name: Option<&'a str>,
@@ -3620,6 +3621,11 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
+    ensure!(
+        !selectors.player_trade_offer_compare_carried
+            || selectors.player_trade_offer_item_id.is_some(),
+        "Carried comparison requires an exact outgoing trade item"
+    );
     if selectors.player_trade_offer_changes || selectors.player_trade_offer_item_id.is_some() {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -3665,6 +3671,14 @@ pub fn compare_observations(
             "after_readable_item_slots":new.as_ref().map(|(slots, _)| *slots),
             "basis":"captured_normal_offer_slots_by_base_item_id",
             "same_trade_verified":false,"trade_completion_verified":false,"live":false});
+        if let Some(id) = selectors
+            .player_trade_offer_item_id
+            .filter(|_| selectors.player_trade_offer_compare_carried)
+        {
+            let mut carried = compare_carried_item_quantities(before, after, id.get())?;
+            carried["offers_count_toward_carried_stock"] = json!(false);
+            comparison["player_trade_offer_changes"]["carried_comparison"] = carried;
+        }
     }
     if selectors.player_pvp_progression_changes {
         ensure!(
@@ -4072,13 +4086,9 @@ pub fn compare_observations(
             id.get(),
         );
         if kind == "item" && selectors.mail_attachment_compare_carried_item {
-            let old = find_item(before, id.get(), 0, 1)?["quantity_by_storage"]["bags"].as_u64();
-            let new = find_item(after, id.get(), 0, 1)?["quantity_by_storage"]["bags"].as_u64();
-            attachment["carried_comparison"] = json!({
-                "before_quantity":old,"after_quantity":new,
-                "quantity_delta":old.zip(new).map(|(old, new)| i128::from(new) - i128::from(old)),
-                "mail_counts_toward_carried_stock":false,"inventory_transfers_verified":false
-            });
+            let mut carried = compare_carried_item_quantities(before, after, id.get())?;
+            carried["mail_counts_toward_carried_stock"] = json!(false);
+            attachment["carried_comparison"] = carried;
             let project = |snapshot: &Snapshot, side: &Value| {
                 let quantity = side["known_quantity"].as_u64()?;
                 Some(incoming_items_bag_space(
@@ -6065,6 +6075,14 @@ fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
 
 pub(crate) fn unloaded_mail_messages(mail: &Value) -> u64 {
     mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
+}
+
+fn compare_carried_item_quantities(before: &Snapshot, after: &Snapshot, id: u32) -> Result<Value> {
+    let old = find_item(before, id, 0, 1)?["quantity_by_storage"]["bags"].as_u64();
+    let new = find_item(after, id, 0, 1)?["quantity_by_storage"]["bags"].as_u64();
+    Ok(json!({"before_quantity":old,"after_quantity":new,
+        "quantity_delta":old.zip(new).map(|(old, new)| i128::from(new) - i128::from(old)),
+        "inventory_transfers_verified":false}))
 }
 
 fn compare_mail_currency_balances(before: &Snapshot, after: &Snapshot, id: u32) -> Value {

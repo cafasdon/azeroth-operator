@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare carried quantities alongside an exact saved outgoing trade item.
+
 - Compare one exact base item in saved outgoing trade offers.
 
 - Estimate saved bag space for each side of an exact mail item comparison.

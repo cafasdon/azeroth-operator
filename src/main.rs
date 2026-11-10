@@ -835,6 +835,9 @@ struct Compare {
     player_trade_offer_changes: bool,
     /// Compare outgoing trade observations for this exact base item ID only.
     player_trade_offer_item_id: Option<std::num::NonZeroU32>,
+    /// Compare the selected outgoing trade item's recorded bag quantities separately.
+    #[serde(default)]
+    player_trade_offer_compare_carried: bool,
     /// Optionally compare captured quantities for one base item ID.
     item_id: Option<std::num::NonZeroU32>,
     /// Compare recorded bag and bank container quantities for item_id.
@@ -2345,6 +2348,7 @@ impl Operator {
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
                     player_trade_offer_changes: args.player_trade_offer_changes,
                     player_trade_offer_item_id: args.player_trade_offer_item_id,
+                    player_trade_offer_compare_carried: args.player_trade_offer_compare_carried,
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     mail_attachment_item_id: args.mail_attachment_item_id,

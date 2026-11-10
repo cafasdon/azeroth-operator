@@ -5,6 +5,9 @@ outgoing trade comparisons to one base item, even if the general trade
 comparison flag is also set. Missing or incomplete offer observations
 stay unknown where appropriate. Deltas require fully readable offers
 in both captures and do not establish trade continuity or completion.
+With the exact item selector, set `player_trade_offer_compare_carried`
+to view each capture's bag quantity and its change independently of the
+offer. Offer quantities stay separate from carried stock.
 
 Set `mail_attachment_item_id` on `compare_snapshots` to compare one
 item's saved loaded inbox quantities and attachment counts. A missing
