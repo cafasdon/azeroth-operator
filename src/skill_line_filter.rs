@@ -36,12 +36,32 @@ pub struct SkillLineFilter {
 fn twenty() -> usize {
     20
 }
+#[derive(Default, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SkillLineOrder {
+    #[default]
+    SkillLineId,
+    PointsToObservedCap,
+    PointsToTarget,
+}
+
+fn skill_line_order<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<SkillLineOrder, D::Error> {
+    SkillLineOrder::deserialize(serde::de::value::StringDeserializer::<D::Error>::new(
+        String::deserialize(deserializer)?,
+    ))
+}
+
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SkillLinePage {
     pub filter: SkillLineFilter,
     /// Planning base rank, separate from modifiers and captured training eligibility.
     pub target_rank: Option<u32>,
+    /// Ascending distance, with numeric skill ID as a stable tie-breaker; applied before paging.
+    #[serde(default, deserialize_with = "skill_line_order")]
+    pub order_by: SkillLineOrder,
     #[serde(default)]
     pub offset: usize,
     #[serde(default = "twenty")]
@@ -150,6 +170,10 @@ impl SkillLinePage {
             (1..=50).contains(&self.limit),
             "Skill-line page limit out of range"
         );
+        ensure!(
+            self.order_by != SkillLineOrder::PointsToTarget || self.target_rank.is_some(),
+            "Target-distance ordering requires a target rank"
+        );
         Ok(())
     }
 }
@@ -195,6 +219,14 @@ pub fn inspect(section: Option<&Value>, page: &SkillLinePage) -> Result<Value> {
     if let Some(target) = page.target_rank {
         result["target_rank"] = json!(target);
     }
+    let distance_field = match page.order_by {
+        SkillLineOrder::SkillLineId => None,
+        SkillLineOrder::PointsToObservedCap => Some("points_to_observed_cap"),
+        SkillLineOrder::PointsToTarget => Some("points_to_target"),
+    };
+    if let Some(field) = distance_field {
+        result["order_by"] = json!(field);
+    }
     let Some(section) = section else {
         for field in [
             "rows",
@@ -217,6 +249,11 @@ pub fn inspect(section: Option<&Value>, page: &SkillLinePage) -> Result<Value> {
             row["observed_base_target_reached"] = json!(rank >= u64::from(target));
             row["target_exceeds_observed_cap"] = json!(u64::from(target) > cap);
         }
+    }
+    if let Some(field) = distance_field {
+        found.rows.sort_unstable_by_key(|row| {
+            (row[field].as_u64().unwrap(), row["skill_line_id"].as_u64().unwrap())
+        });
     }
     let matched = found.rows.len();
     result["captured_count"] = json!(found.captured);
@@ -295,6 +332,35 @@ mod tests {
         assert_eq!(inspect(Some(&rows), &selected).unwrap()["rows"][0]["points_to_target"], u32::MAX - 200);
         selected.target_rank = Some(0);
         assert_eq!(inspect(Some(&rows), &selected).unwrap()["rows"][0]["points_to_target"], 0);
+        assert!(inspect(None, &selected).unwrap()["rows"].is_null());
+        assert_eq!(inspect(Some(&json!({})), &selected).unwrap()["rows"], json!([]));
+    }
+    #[test]
+    fn distance_ordering_precedes_paging_with_stable_numeric_ties() {
+        for order in ["skill_line_id", "points_to_observed_cap", "points_to_target"] {
+            assert!(serde_json::from_value::<SkillLinePage>(json!({
+                "filter":{"minimum_rank":0}, "target_rank":250, "order_by":{order: null}
+            })).is_err());
+        }
+        let rows = json!({"1":{"name":"A","rank":0,"max_rank":300},
+            "2":{"name":"B","rank":200,"max_rank":300},
+            "10":{"name":"C","rank":200,"max_rank":300},
+            "20":{"name":"D","rank":300,"max_rank":300}});
+        let mut selected = page(json!({"minimum_rank":0}));
+        selected.order_by = SkillLineOrder::PointsToTarget;
+        assert!(selected.validate().is_err());
+        selected.target_rank = Some(250);
+        selected.offset = 1;
+        selected.limit = 2;
+        let result = inspect(Some(&rows), &selected).unwrap();
+        assert_eq!(result["rows"][0]["skill_line_id"], 2);
+        assert_eq!(result["rows"][1]["skill_line_id"], 10);
+        assert_eq!(result["matching_count"], 4);
+        assert_eq!(result["has_more"], true);
+        selected.order_by = SkillLineOrder::PointsToObservedCap;
+        selected.target_rank = None;
+        selected.offset = 0;
+        assert_eq!(inspect(Some(&rows), &selected).unwrap()["rows"][0]["skill_line_id"], 20);
         assert!(inspect(None, &selected).unwrap()["rows"].is_null());
         assert_eq!(inspect(Some(&json!({})), &selected).unwrap()["rows"], json!([]));
     }

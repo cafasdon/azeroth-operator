@@ -79,6 +79,18 @@ class SkillFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(target_rows[100]['points_to_target'],0)
                     self.assertTrue(target_rows[100]['observed_base_target_reached'])
                     self.assertTrue(target_rows[42]['target_exceeds_observed_cap'])
+                    ordered=(await inspect(keys['mixed'],{'minimum_rank':0},target_rank=275,
+                        order_by='points_to_target',offset=1,limit=2))['data']
+                    self.assertEqual([r['skill_line_id'] for r in ordered['rows']],[43,10])
+                    self.assertEqual(ordered['matching_count'],5)
+                    self.assertTrue(ordered['has_more'])
+                    cap_order=(await inspect(keys['mixed'],{'minimum_rank':0},order_by='points_to_observed_cap'))['data']
+                    self.assertEqual([r['skill_line_id'] for r in cap_order['rows']],[2,100,43,42,10])
+                    for order in ['unknown',True,1,{},[],'points_to_target',
+                        {'skill_line_id':None},{'points_to_observed_cap':None},{'points_to_target':None}]:
+                        await call('inspect_snapshot',True,snapshot_id=keys['mixed'],section='skill_lines',
+                            skill_line_filter={'filter':{'minimum_rank':0},'order_by':order,
+                                **({'target_rank':250} if isinstance(order,dict) else {})})
                     maximum_target=(await inspect(keys['maximum'],{'minimum_rank':0},target_rank=4294967295,limit=1))['data']
                     self.assertEqual(maximum_target['rows'][0]['points_to_target'],4294967295)
                     for invalid_target in [True,1.0,'250',-1,4294967296]:

@@ -16,3 +16,11 @@ retain their existing shape.
 
 The feature makes no current training, complete skill coverage, effective rank
 or simulation-input claim. Offline verification does not qualify native APIs.
+
+Distance ordering (10 November): SkillLinePage also accepts order_by with the
+existing skill_line_id default, points_to_observed_cap or points_to_target.
+Distance sorts ascending with numeric skill ID for ties after same-row filtering
+and before pagination. Target order requires an explicit target, including zero.
+Matching counts retain their existing whole-filter meaning. Reached targets
+sort first because their distance is zero; no training cost, feasibility or
+optimal progression model is inferred. Missing and empty captures stay distinct.

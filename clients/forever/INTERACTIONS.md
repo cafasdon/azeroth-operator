@@ -4286,3 +4286,12 @@ reduce the base-rank gap. Filtering, matching counts and pagination retain
 their existing meaning. Missing sections remain unknown. Omitting the target
 preserves the existing response shape. This applies to recorded profession
 and weapon skill rows, not a claim that every skill was captured.
+
+Set `skill_line_filter.order_by` to `points_to_observed_cap` or
+`points_to_target` to put the closest recorded goals first. Target-distance
+ordering requires `target_rank`. Ordering is ascending with numeric skill ID
+as the tie-breaker, after filtering and before paging; matching counts are
+unchanged. Zero gaps, including already reached targets, come first. The
+default `skill_line_id` preserves the existing order and response shape.
+This is a distance-based planning order, not a recommendation of training
+cost, craft feasibility or useful weapon choices.

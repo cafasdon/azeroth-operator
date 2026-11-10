@@ -841,3 +841,9 @@ Saved base skill inspection accepts an explicit target rank and reports base
 points still needed, whether the captured base rank reached it, and whether
 it exceeds the captured cap. Bonuses are excluded and no training eligibility
 is inferred. See ADR-076-saved-base-skill-targets.md. Native testing deferred.
+
+Skill planning can also order matching saved rows by points to the observed cap
+or supplied target before paging. Numeric IDs resolve equal distances. Targets
+are required for target-distance order; reached targets have zero distance.
+This supports closest-goal inspection without implying cheapest training or
+craft feasibility. Offline source only; native testing remains deferred.

@@ -1,5 +1,7 @@
 # Changelog
 
+- Order saved skill plans by distance to the captured cap or an explicit target before paging.
+
 - Plan base skill-rank targets from saved profession and weapon-skill observations.
 
 - Restrict local hybrid item search to explicit candidate IDs without indexing personal inventory.
