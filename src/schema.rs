@@ -949,6 +949,7 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("difficulty_name", "text", false),
                         ("encounter_total", "uint", false),
                         ("reported_encounter_progress", "uint", false),
+                        ("reported_extension_disabled", "bool", false),
                     ],
                 )?;
                 match (

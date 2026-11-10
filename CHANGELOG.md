@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture, search and compare Forever's reported saved-instance extension flag.
+
 - Filter saved Forever instances by exact reported encounter total.
 
 - Find saved Forever instance rows within a reported encounter progress range.

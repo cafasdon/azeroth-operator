@@ -460,10 +460,13 @@ def validate_snapshot(value):
         required = {"name", "reset_seconds", "difficulty_id", "locked", "extended", "is_raid", "max_players"}
         for row in saved["entries"].values():
             if (not isinstance(row, dict) or not required <= set(row)
-                    or set(row) - required - {"difficulty_name", "encounter_total", "reported_encounter_progress"}
+                    or set(row) - required - {"difficulty_name", "encounter_total",
+                                              "reported_encounter_progress", "reported_extension_disabled"}
                     or type(row["reset_seconds"]) is not int or not -(2**31) <= row["reset_seconds"] < 2**31
                     or any(type(row[field]) is not int or not 0 <= row[field] <= 4_294_967_295 for field in ("difficulty_id", "max_players"))
                     or any(type(row[field]) is not bool for field in ("locked", "extended", "is_raid"))
+                    or (row.get("reported_extension_disabled") is not None
+                        and type(row["reported_extension_disabled"]) is not bool)
                     or not isinstance(row["name"], str) or not 1 <= len(row["name"].encode()) <= 256
                     or (row.get("difficulty_name") is not None and (not isinstance(row["difficulty_name"], str)
                         or not 1 <= len(row["difficulty_name"].encode()) <= 256))):

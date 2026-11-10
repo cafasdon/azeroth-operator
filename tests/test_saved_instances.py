@@ -26,7 +26,8 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             value["sections"]["saved_instances"] = {"coverage": "updated_cache", "update_age_seconds": 10, "entries": {
                 "1": {"name": "Raid", "difficulty_id": 3, "reset_seconds": 124, "locked": True,
                       "extended": False, "is_raid": True, "max_players": 40,
-                      "encounter_total": 10, "reported_encounter_progress": 4},
+                      "encounter_total": 10, "reported_encounter_progress": 4,
+                      "reported_extension_disabled": True},
                 "2": {"name": "Dungeon", "difficulty_id": 1, "reset_seconds": -1, "locked": False,
                       "extended": False, "is_raid": False, "max_players": 5}}}
             key = store.ingest(value)
@@ -39,7 +40,8 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             later = copy.deepcopy(value)
             later["captured_at"] = "2025-01-02T00:00:00Z"
             later["sections"]["saved_instances"]["entries"]["1"].update(
-                locked=False, reset_seconds=0, reported_encounter_progress=0)
+                locked=False, reset_seconds=0, reported_encounter_progress=0,
+                reported_extension_disabled=False)
             later_key = store.ingest(later)
             duplicate = copy.deepcopy(later)
             duplicate["sections"]["saved_instances"]["entries"]["3"] = copy.deepcopy(
@@ -61,6 +63,7 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                 lambda x: x["sections"]["saved_instances"].update(update_age_seconds=True),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(lockout_id="private"),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(locked=1),
+                lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reported_extension_disabled=0),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reset_seconds=0.5),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reported_encounter_progress=11),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reported_encounter_progress=None),
@@ -90,6 +93,7 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta["changes"][0]["fields"], {
                         "locked": {"before": True, "after": False},
                         "reported_encounter_progress": {"before": 4, "after": 0},
+                        "reported_extension_disabled": {"before": True, "after": False},
                         "reset_seconds": {"before": 124, "after": 0}})
                     progress = copy.deepcopy(value)
                     progress["captured_at"] = later["captured_at"]
@@ -103,6 +107,7 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                         "reported_encounter_progress": {"before": 4, "after": 0}})
                     row.pop("encounter_total")
                     row.pop("reported_encounter_progress")
+                    row["reported_extension_disabled"] = None
                     progress["captured_at"] = value["captured_at"]
                     old_format_key = store.ingest(progress)
                     for before, after in ((key, old_format_key), (old_format_key, key)):
@@ -156,6 +161,10 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     nameless = await search({"locked": True, "is_raid": True, "max_players": 40})
                     self.assertEqual([row["snapshot_id"] for row in nameless], [key])
                     self.assertEqual(await search({"locked": True, "max_players": 5}), [])
+                    for disabled, expected in ((True, key), (False, later_key)):
+                        extension = await search({"reported_extension_disabled": disabled})
+                        self.assertEqual([row["snapshot_id"] for row in extension], [expected])
+                    self.assertEqual(await search({"name": "Dungeon", "reported_extension_disabled": False}), [])
                     exact_progress = await search({"minimum_reported_encounter_progress": 4,
                                                    "maximum_reported_encounter_progress": 4})
                     self.assertEqual([row["snapshot_id"] for row in exact_progress], [key])

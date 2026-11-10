@@ -17,7 +17,9 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
         function GetRealmName() return 'Test' end
         function GetServerTime() return now end
         function date() return '2025-01-01T00:00:00Z' end
-        function issecretvalue(value) return value=='PRIVATE-LOCKOUT' or (mode=='secret_name' and value=='Raid') end
+        function issecretvalue(value)
+            return value=='PRIVATE-LOCKOUT' or value=='RESTRICTED-FLAG' or (mode=='secret_name' and value=='Raid')
+        end
         function GetNumSavedInstances()
             counts=counts+1
             if mode=='empty' then return 0 end
@@ -29,7 +31,10 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
             local reset=mode=='negative' and -1 or (mode=='bad_reset' and 'bad' or 123.25)
             local progress=mode=='secret_progress' and 'PRIVATE-LOCKOUT' or (mode=='bad_progress' and 11 or 4)
             if mode=='missing_progress' then progress=nil end
-            return 'Raid','PRIVATE-LOCKOUT',reset,3,true,false,'PRIVATE-LOCKOUT',true,40,'40 Player',10,progress
+            local disabled=mode~='negative'
+            if mode=='secret_extension' then disabled='RESTRICTED-FLAG' end
+            if mode=='missing_extension' then disabled=nil end
+            return 'Raid','PRIVATE-LOCKOUT',reset,3,true,false,'PRIVATE-LOCKOUT',true,40,'40 Player',10,progress,disabled
         end
         function RequestRaidInfo() error('refresh forbidden') end
         function SetSavedInstanceExtend() error('extension forbidden') end
@@ -59,6 +64,14 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
     let row = &saved.sections["saved_instances"]["entries"]["1"];
     assert_eq!(row["encounter_total"], 10);
     assert_eq!(row["reported_encounter_progress"], 4);
+    assert_eq!(row["reported_extension_disabled"], true);
+    for mode in ["secret_extension", "missing_extension"] {
+        lua.globals().set("mode", mode)?;
+        let snapshot = capture()?;
+        let row = &snapshot.sections["saved_instances"]["entries"]["1"];
+        assert_eq!(row["name"], "Raid", "{mode}");
+        assert!(row.get("reported_extension_disabled").is_none(), "{mode}");
+    }
     for mode in ["secret_progress", "bad_progress", "missing_progress"] {
         lua.globals().set("mode", mode)?;
         let snapshot = capture()?;
@@ -72,6 +85,10 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
         1
     );
     lua.load("mode='negative'").exec()?;
+    assert_eq!(
+        capture()?.sections["saved_instances"]["entries"]["1"]["reported_extension_disabled"],
+        false
+    );
     assert_eq!(
         capture()?.sections["saved_instances"]["entries"]["1"]["reset_seconds"],
         -1

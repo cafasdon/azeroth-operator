@@ -436,6 +436,8 @@ pub struct SavedInstanceFilter {
     pub difficulty_id: Option<u32>,
     pub locked: Option<bool>,
     pub extended: Option<bool>,
+    /// Match the reported per-instance extension control flag at capture.
+    pub reported_extension_disabled: Option<bool>,
     pub is_raid: Option<bool>,
     /// Match the reported instance group-size cap.
     pub max_players: Option<std::num::NonZeroU32>,
@@ -2417,6 +2419,7 @@ impl Store {
                         || filter.difficulty_id.is_some()
                         || filter.locked.is_some()
                         || filter.extended.is_some()
+                        || filter.reported_extension_disabled.is_some()
                         || filter.is_raid.is_some()
                         || filter.max_players.is_some()
                         || filter.encounter_total.is_some()
@@ -3652,6 +3655,10 @@ impl Store {
                                     }) && filter
                                         .locked
                                         .is_none_or(|flag| row["locked"].as_bool() == Some(flag))
+                                        && filter.reported_extension_disabled.is_none_or(|flag| {
+                                            row["reported_extension_disabled"].as_bool()
+                                                == Some(flag)
+                                        })
                                         && filter.extended.is_none_or(|flag| {
                                             row["extended"].as_bool() == Some(flag)
                                         })

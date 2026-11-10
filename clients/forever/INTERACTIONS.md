@@ -19,6 +19,14 @@ value. Bounds are inclusive and apply to the same row as other instance
 filters. Rows with missing progress cannot satisfy either bound.
 Add `encounter_total` to match the exact reported total on the same row.
 
+Saved instance rows can include `reported_extension_disabled`. This is the
+cached per-row flag the Forever UI uses when the client supports the extension
+feature. Filter on it with `list_snapshots.saved_instance` or compare it with
+`saved_instance_changes` when both matching rows report it. The flag does
+not establish current control visibility, eligibility or an extension outcome.
+Update strict snapshot readers before installing an addon that emits the flag.
+[Forever Raid Info UI](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_RaidFrame/Mainline/RaidFrame.lua#L226)
+
 Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
 projected expiry falls at or before an explicit timestamp. The projection

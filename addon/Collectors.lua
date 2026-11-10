@@ -669,7 +669,7 @@ AO.collectors.saved_instances = function()
     local count=integer(GetNumSavedInstances(),0,128)
     local result={coverage="updated_cache",update_age_seconds=now-updated,entries={}}
     for index=1,count do
-        local name,_,reset,difficulty,locked,extended,_,raid,players,difficultyName,total,progress=GetSavedInstanceInfo(index)
+        local name,_,reset,difficulty,locked,extended,_,raid,players,difficultyName,total,progress,extendDisabled=GetSavedInstanceInfo(index)
         reset=readable(reset)
         assert(type(reset)=="number", "Invalid saved instance timer")
         local row={name=text(name),reset_seconds=integer(math.ceil(reset),-2147483648,2147483647),
@@ -685,6 +685,8 @@ AO.collectors.saved_instances = function()
             row.encounter_total=encounterTotal
             row.reported_encounter_progress=encounterProgress
         end
+        local flagReadable,disabled=pcall(boolean,extendDisabled)
+        if flagReadable then row.reported_extension_disabled=disabled end
         result.entries[tostring(index)]=row
     end
     assert(integer(GetNumSavedInstances(),0,128)==count and savedInstanceUpdate==updated,

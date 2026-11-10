@@ -6820,11 +6820,12 @@ fn compare_saved_instances(before: &Value, after: &Value) -> Value {
                 "extended",
                 "encounter_total",
                 "reported_encounter_progress",
+                "reported_extension_disabled",
             ]
             .into_iter()
             .filter_map(|field| {
-                let before = a[0].get(field)?;
-                let after = b[0].get(field)?;
+                let before = a[0].get(field).filter(|value| !value.is_null())?;
+                let after = b[0].get(field).filter(|value| !value.is_null())?;
                 (before != after)
                     .then(|| (field.to_owned(), json!({"before":before,"after":after})))
             })
