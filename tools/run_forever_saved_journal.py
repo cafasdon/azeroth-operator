@@ -14,6 +14,7 @@ from tools.prepare_forever_gear_window import selections_for_review, cleared_for
 from tools.merge_forever_gear_windows import retained_equipment
 from tools import role_metrics as roles
 from tools import encounter_frontier
+from tools import encounter_compromise
 
 RANKING_OBJECTIVES = ('weighted_gain', 'worst_encounter_gain')
 
@@ -136,6 +137,7 @@ def retain_encounter_leaders(leaders, row, gain_field):
 
 async def execute(args, *, deadline=None):
     include_frontier, frontier_offset = encounter_frontier.options(args)
+    include_compromise, compromise_offset = encounter_compromise.options(args)
     include_encounter_leaders = getattr(args, 'include_encounter_leaders', False)
     require(type(include_encounter_leaders) is bool)
     encounter_leaders = {}
@@ -162,6 +164,7 @@ async def execute(args, *, deadline=None):
     deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     source = journal.journal_status(args.journal, deadline=deadline)
     frontier = encounter_frontier.Frontier(len(weights), gain_field, deadline=deadline) if include_frontier else None
+    compromise = encounter_compromise.Compromise(len(weights), gain_field, deadline=deadline) if include_compromise else None
     require(not source['window_count'] or source['equipment_specs_retained'] is True)
     cursor = None
     leaders, contexts, baselines = {}, {}, {}
@@ -264,6 +267,8 @@ async def execute(args, *, deadline=None):
             row['ranking_score'] = score if objective == 'weighted_gain' else row[minimum_field]
             if frontier is not None and page_complete:
                 frontier.add(row)
+            if compromise is not None and page_complete:
+                compromise.add(row)
             if include_encounter_leaders:
                 retain_encounter_leaders(encounter_leaders, row, gain_field)
             if gear in leaders:
@@ -286,6 +291,12 @@ async def execute(args, *, deadline=None):
         cursor = next_cursor
     frontier_report = frontier.report(complete=exhausted and completed == source['window_count'] and completed > 0,
         offset=frontier_offset, limit=args.top) if frontier is not None else None
+    compromise_report = compromise.report(complete=exhausted and completed == source['window_count'] and completed > 0,
+        offset=compromise_offset, limit=args.top) if compromise is not None else None
+    if compromise_report is not None:
+        attach_saved_loadouts(args.journal,
+            {row['gear_set']['simulator_gear_sha256']: row['gear_set'] for row in compromise_report['gear_sets']},
+            source, deadline + 5)
     if frontier_report is not None:
         attach_saved_loadouts(args.journal,
             {row['simulator_gear_sha256']: row for row in frontier_report['gear_sets']}, source, deadline + 5)
@@ -330,6 +341,11 @@ async def execute(args, *, deadline=None):
             improvement_unit=roles.UNITS[metric], minimum_encounter_improvement=floor,
             all_saved_resolved_results_complete=complete)
         report['encounter_frontier'] = frontier_report
+    if compromise_report is not None:
+        compromise_report.update(ranking_scope=report['ranking_scope'], rank_by=metric,
+            improvement_unit=roles.UNITS[metric], minimum_encounter_improvement=floor,
+            all_saved_resolved_results_complete=complete)
+        report['encounter_compromise'] = compromise_report
     if include_encounter_leaders:
         report['encounter_leaders'] = {
             'basis': 'completed_candidate_point_estimates_after_encounter_floor',
@@ -364,6 +380,9 @@ def main(argv=None):
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--include-encounter-leaders', action='store_true',
         help='Retain the best completed point-estimate set per encounter after the same improvement floor, without extra simulations')
+    cli.add_argument('--include-encounter-compromise', action='store_true',
+        help='Page saved gear by minimum worst gap from encounter-specific best eligible improvements; no extra simulations')
+    cli.add_argument('--encounter-compromise-offset', type=int, default=0)
     cli.add_argument('--include-encounter-frontier', action='store_true',
         help='Page non-dominated gear across complete saved encounter results; point estimates only, no extra simulations')
     cli.add_argument('--encounter-frontier-offset', type=int, default=0,

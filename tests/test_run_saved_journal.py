@@ -208,6 +208,16 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertEqual(result['all_saved_resolved_results_complete'],index == 5)
                 self.assertEqual(calls.call_count,6)
                 per_encounter=launch(['--checkpoint-only','--top','1','--include-encounter-leaders'])
+                compromises = [launch(['--checkpoint-only', '--include-encounter-compromise', '--top', '1',
+                    '--encounter-compromise-offset', str(offset)])['encounter_compromise'] for offset in [0, 1, 2]]
+                self.assertEqual([page['eligible_distinct_candidate_count'] for page in compromises], [3,3,3])
+                self.assertEqual([page['gear_sets'][0]['worst_regret_exact'] for page in compromises],
+                    [{'numerator': str(value), 'denominator': '1'} for value in [10,30,40]])
+                self.assertEqual(len({page['point_estimates_sha256'] for page in compromises}), 1)
+                self.assertTrue(compromises[0]['has_more']); self.assertFalse(compromises[-1]['has_more'])
+                self.assertEqual(compromises[0]['gear_sets'][0]['gear_set']['saved_loadout']['selections'][0]['expected_item_id'],4549)
+                self.assertFalse(compromises[0]['encounter_weights_used'])
+                self.assertNotIn('encounter_compromise', result)
                 frontier_pages = [launch(['--checkpoint-only', '--include-encounter-frontier', '--top', '1',
                     '--encounter-frontier-offset', str(offset)])['encounter_frontier'] for offset in [0, 1]]
                 self.assertEqual(calls.call_count, 6)
@@ -350,7 +360,10 @@ class SavedJournalTests(unittest.TestCase):
                     return None if key in hidden else original_get(instance, key)
                 with patch.object(SimulationJournal, 'key', request_key), patch.object(SimulationJournal, 'get', available):
                     subset = launch(['--checkpoint-only','--page-limit','3','--include-encounter-leaders',
-                        '--include-encounter-frontier'])
+                        '--include-encounter-frontier','--include-encounter-compromise'])
+                self.assertEqual(subset['encounter_compromise']['status'],'incomplete_saved_results')
+                self.assertIsNone(subset['encounter_compromise']['point_estimates_sha256'])
+                self.assertEqual(subset['encounter_compromise']['gear_sets'],[])
                 self.assertEqual(subset['encounter_frontier']['status'], 'incomplete_saved_results')
                 self.assertIsNone(subset['encounter_frontier']['frontier_gear_set_count'])
                 self.assertEqual(subset['encounter_frontier']['gear_sets'], [])

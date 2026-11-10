@@ -1,5 +1,7 @@
 # Changelog
 
+- Rank saved gear by minimum worst gap from encounter-specific best eligible improvements, with exact regret arithmetic and no extra simulations.
+
 - Page exact incoming public catalogue references by target, with source pointers/hashes and no inferred acquisition or ownership claims.
 
 - Follow bounded exact multi-hop links in the pinned public catalogue, with source hashes, explicit missing targets and partial-budget states.

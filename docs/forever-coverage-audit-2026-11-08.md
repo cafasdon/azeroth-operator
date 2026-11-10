@@ -1103,3 +1103,12 @@ Exact incoming reference pages now answer which public cached records point to
 a selected target, with source keys, JSON pointers and row hashes (ADR-102).
 Counts cover recognised fields in the pinned corpus only. This supports local
 acquisition research without claiming current availability or full world data.
+
+## Saved encounter compromise (10 November)
+
+Saved-journal and owned-gear CLIs can now page a minimax-regret compromise across
+complete eligible saved encounter results. Exact gaps from each encounter's best
+eligible improvement avoid extra simulations and preserve tied gear. Incomplete
+or over-budget analysis remains unknown. This does not prove statistical
+superiority, complete owned pools or unconditional best-in-slot. See ADR-103 and
+its dated offline evidence. Installation and live qualification remain deferred.
