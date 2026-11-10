@@ -10925,6 +10925,8 @@ fn compare_quest_log_objectives(
     let mut unavailable = BTreeSet::new();
     let mut newly_finished = BTreeSet::new();
     let mut no_longer_finished = BTreeSet::new();
+    let mut fewer_remaining = BTreeSet::new();
+    let mut more_remaining = BTreeSet::new();
     let mut compared = 0;
     for (key, old) in before {
         let Some(new) = after.get(key) else { continue };
@@ -10949,6 +10951,13 @@ fn compare_quest_log_objectives(
                 continue;
             }
             changed.insert(id);
+            if let Some((_, remaining)) = quest_objective_count_deltas(row, other) {
+                if remaining < 0 {
+                    fewer_remaining.insert(id);
+                } else if remaining > 0 {
+                    more_remaining.insert(id);
+                }
+            }
             if row["kind"] == other["kind"] && row["required"] == other["required"] {
                 match (row["finished"].as_bool(), other["finished"].as_bool()) {
                     (Some(false), Some(true)) => {
@@ -10965,7 +10974,20 @@ fn compare_quest_log_objectives(
     json!({"compared_quest_count":compared,"changed_quest_ids":changed,
         "quest_ids_with_newly_finished_objectives":newly_finished,
         "quest_ids_with_no_longer_finished_objectives":no_longer_finished,
+        "quest_ids_with_decreased_remaining_counts":fewer_remaining,
+        "quest_ids_with_increased_remaining_counts":more_remaining,
         "quest_ids_with_unavailable_objectives":unavailable,"objective_identity_verified":false})
+}
+
+fn quest_objective_count_deltas(old: &Value, new: &Value) -> Option<(i128, i128)> {
+    let required = old["required"].as_u64()?;
+    (old["kind"] == new["kind"] && new["required"].as_u64() == Some(required)).then_some(())?;
+    let old = old["fulfilled"].as_u64()?;
+    let new = new["fulfilled"].as_u64()?;
+    Some((
+        i128::from(new) - i128::from(old),
+        i128::from(required.saturating_sub(new)) - i128::from(required.saturating_sub(old)),
+    ))
 }
 
 fn compare_quest_objective_indices(
@@ -10989,18 +11011,9 @@ fn compare_quest_objective_indices(
             {
                 return None;
             }
-            let deltas = old.zip(new).and_then(|(old, new)| {
-                let required = old["required"].as_u64()?;
-                (old["kind"] == new["kind"] && new["required"].as_u64() == Some(required))
-                    .then_some(())?;
-                let old = old["fulfilled"].as_u64()?;
-                let new = new["fulfilled"].as_u64()?;
-                Some((
-                    i128::from(new) - i128::from(old),
-                    i128::from(required.saturating_sub(new))
-                        - i128::from(required.saturating_sub(old)),
-                ))
-            });
+            let deltas = old
+                .zip(new)
+                .and_then(|(old, new)| quest_objective_count_deltas(old, new));
             let project = |row: &Value| {
                 json!({"kind":row["kind"],"finished":row["finished"],
             "required":row["required"],"fulfilled":row["fulfilled"]})

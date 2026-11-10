@@ -748,6 +748,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     }]})
                     progressed = deepcopy(changed)
                     progressed['sections']['quests']['9']['objectives']['1']['fulfilled'] = 2
+                    progressed['sections']['quests']['9']['objectives']['2']['fulfilled'] = 0
                     progressed['sections']['quests']['6']['objectives']['1'].update(required=None, fulfilled=None)
                     progressed['sections']['quests']['7']['objectives']['1']['finished'] = True
                     progressed['sections']['quests']['4']['objectives']['1']['finished'] = False
@@ -759,7 +760,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(progress.isError,progress)
                     changes = json.loads(progress.content[0].text)['quest_change']['objective_index_changes']['changes']
                     self.assertEqual([(row['index'],row['fulfilled_delta'],row['remaining_count_delta'])
-                                      for row in changes], [(1,2,-2)])
+                                      for row in changes], [(1,2,-2),(2,-2,1)])
                     unchanged = await session.call_tool('compare_snapshots',{
                         'before_id':changed_key,'after_id':progress_key,'quest_id':6,
                     })
@@ -774,6 +775,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'compared_quest_count':9,'changed_quest_ids':[4,7,9],
                         'quest_ids_with_newly_finished_objectives':[7],
                         'quest_ids_with_no_longer_finished_objectives':[4],
+                        'quest_ids_with_decreased_remaining_counts':[9],
+                        'quest_ids_with_increased_remaining_counts':[9],
                         'quest_ids_with_unavailable_objectives':[1],'objective_identity_verified':False,
                     })
                     unavailable = await session.call_tool('compare_snapshots',{

@@ -1,5 +1,11 @@
 # Forever interaction map
 
+With `quest_objective_changes`, saved quest comparisons list quest IDs
+whose remaining objective counts increased or decreased. Counts require
+the same objective index, kind and recorded requirement in both captures.
+A quest can appear in both lists if different objectives moved in
+opposite directions.
+
 The saved quest objective checklist includes
 `by_unfinished_objective_count`, ordered by the number of explicitly
 unfinished objectives and then by numeric quest ID. It follows the
