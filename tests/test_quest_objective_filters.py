@@ -842,11 +842,22 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         if ids:
                             self.assertEqual(plan['quest_ids'],ids)
                             self.assertNotIn('cap_projection',plan)
+                            self.assertIsNone(plan['selected_quests_wallet_projection']['items_from_affordable_prefix'])
                             if include_choices:
                                 self.assertEqual(plan['item_choices'],[{'quest_id':10,'position':2,'quantity':5}])
                                 self.assertEqual(plan['recorded_total_quantity'],8)
                         else:
                             self.assertIsNone(plan)
+                    for quantity,choices,carried,prefix,shortfall in [
+                            (5,False,False,3,2),(7,True,False,8,0),(10,False,True,3,2)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':currency_wallet_id,'section':'quests','quest_ready_item_target':{
+                                'item_id':118,'quantity':quantity,'include_choices':choices,'count_carried':carried}})
+                        self.assertFalse(reply.isError,reply)
+                        plan=json.loads(reply.content[0].text)['quest_ready_item_projection']['ready_turn_in_plan']
+                        wallet_plan=plan['selected_quests_wallet_projection']
+                        self.assertEqual(wallet_plan['items_from_affordable_prefix'],prefix)
+                        self.assertEqual(wallet_plan['item_shortfall_after_affordable_prefix'],shortfall)
                     unknown_bags=deepcopy(funded)
                     del unknown_bags['sections']['bags']
                     unknown_bags_id=store.ingest(unknown_bags)
@@ -868,6 +879,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(result['covers_target'],covered)
                         plan=result['ready_turn_in_plan']
                         self.assertEqual(plan['quest_ids'] if plan else None,ids)
+                        if ids == []:
+                            self.assertIsNone(plan['selected_quests_wallet_projection'])
                     for quantity,covered in [(100,True),(109,None)]:
                         reply=await session.call_tool('inspect_snapshot',{
                             'snapshot_id':currency_target_id,'section':'quests',

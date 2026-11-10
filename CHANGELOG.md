@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate captured wallet affordability for selected quest item rewards.
+
 - Estimate captured wallet affordability for selected currency reward turn-ins.
 
 - Show how much renown a selected quest plan can fund from the captured wallet.

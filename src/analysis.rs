@@ -6930,7 +6930,7 @@ pub fn quest_list_currency_projection(
 }
 
 pub enum QuestRewardTarget<'a> {
-    Item(u32),
+    Item(u32, Option<&'a Value>),
     Currency(u32, &'a Value, Option<&'a Value>),
     Renown(u32, &'a Value, Option<&'a Value>),
 }
@@ -6942,7 +6942,7 @@ pub fn quest_ready_reward_projection(
     include_choices: bool,
 ) -> Value {
     let (product_id, id_field, fixed_field, choice_field, coverage_field) = match reward {
-        QuestRewardTarget::Item(id) => (
+        QuestRewardTarget::Item(id, _) => (
             id,
             "item_id",
             "item_rewards",
@@ -7035,14 +7035,14 @@ pub fn quest_ready_reward_projection(
         if let QuestRewardTarget::Renown(_, faction, _) = reward {
             plan["renown_projection"] = renown_reward_projection(selected_quantity, faction);
         }
-        let wallet_projection = match reward {
-            QuestRewardTarget::Currency(_, _, wallet) => Some((wallet,
-                "currency_from_affordable_prefix_before_caps", "currency_shortfall_after_affordable_prefix_before_caps")),
-            QuestRewardTarget::Renown(_, _, wallet) => Some((wallet,
-                "renown_from_affordable_prefix", "renown_shortfall_after_affordable_prefix")),
-            QuestRewardTarget::Item(_) => None,
+        let (wallet, quantity_field, shortfall_field) = match reward {
+            QuestRewardTarget::Currency(_, _, wallet) => (wallet,
+                "currency_from_affordable_prefix_before_caps", "currency_shortfall_after_affordable_prefix_before_caps"),
+            QuestRewardTarget::Renown(_, _, wallet) => (wallet,
+                "renown_from_affordable_prefix", "renown_shortfall_after_affordable_prefix"),
+            QuestRewardTarget::Item(_, wallet) => (wallet,
+                "items_from_affordable_prefix", "item_shortfall_after_affordable_prefix"),
         };
-        if let Some((wallet, quantity_field, shortfall_field)) = wallet_projection {
             let selected: BTreeMap<_, _> = ids.iter().map(|(id, points)| (id.to_string(), points)).collect();
             let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
             plan["selected_quests_wallet_projection"] = json!(quest_wallet_turn_in_order(
@@ -7063,7 +7063,6 @@ pub fn quest_ready_reward_projection(
                     json!(prefix_points.map(|points| target.saturating_sub(points)));
                 order
             }));
-        }
         if let Some(choice_field) = choice_field {
             plan["recorded_choice_quantity"] = json!(selected_quantity - selected_fixed);
             plan["recorded_total_quantity"] = json!(selected_quantity);

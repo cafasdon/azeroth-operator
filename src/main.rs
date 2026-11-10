@@ -4720,10 +4720,7 @@ impl Operator {
                         || args.quest_list_wallet_projection
                         || args.quest_list_currency_projection
                         || args.quest_ready_currency_target.is_some()
-                        || args
-                            .quest_ready_item_target
-                            .as_ref()
-                            .is_some_and(|target| target.count_carried || target.estimate_bag_space)
+                        || args.quest_ready_item_target.is_some()
                         || args.quest_list_renown_projection
                         || args.quest_ready_renown_target.is_some()
                     {
@@ -5056,6 +5053,9 @@ impl Operator {
                                         quests,
                                         azeroth_operator::analysis::QuestRewardTarget::Item(
                                             item_id,
+                                            context.as_ref().and_then(|snapshot| {
+                                                snapshot.sections.get("wallet")
+                                            }),
                                         ),
                                         reward_goal,
                                         target.include_choices,

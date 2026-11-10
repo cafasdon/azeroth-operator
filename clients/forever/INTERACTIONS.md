@@ -3391,6 +3391,11 @@ per quest when `include_choices` is true. The plan describes potential
 reward quantities. Current eligibility, inventory space and acquisition
 remain unverified.
 
+The selected quests' wallet projection uses recorded copper costs and
+rewards to estimate starting copper and items from the affordable prefix.
+The shortfall is measured against the reward target after any counted
+carried copies. Missing wallet data leaves the prefix unknown.
+
 Set `count_carried: true` in a quest item target to count copies in the same
 capture's carried bags. The target then describes the desired total after
 rewards. If the bags already cover it, the plan is empty. If bags were not
