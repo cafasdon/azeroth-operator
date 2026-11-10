@@ -31,12 +31,16 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
             root = Path(directory)
             store = SnapshotStore(root)
             captured = mount_snapshot()
+            captured['sections']['action_bar_observation']={
+                'coverage':'loaded_builtin_buttons_only','observed_buttons':4,'missing_buttons':0,'slots':{
+                    '1':{'empty':False,'kind':'spell','id':40002},'2':{'empty':False,'kind':'item','id':40002},
+                    '3':{'empty':False,'kind':'spell','id':999},'10':{'empty':False,'kind':'spell','id':40002}}}
             key = store.ingest(captured)
             self.assertEqual(store.inspect(key, "mount_collection")["data"], captured["sections"]["mount_collection"])
-            empty = mount_snapshot()
+            empty = copy.deepcopy(captured)
             empty["sections"]["mount_collection"]["entries"] = {}
             empty_key = store.ingest(empty)
-            missing = mount_snapshot()
+            missing = copy.deepcopy(captured)
             del missing["sections"]["mount_collection"]
             missing_key = store.ingest(missing)
             before = copy.deepcopy(captured)
@@ -79,6 +83,23 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    for snapshot, extra, expected in [(key,{},[1,10]),(key,{'action_bar_slot':10},[10]),
+                                                        (empty_key,{},[]),(missing_key,{},None)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':snapshot,'section':'action_bar_observation','action_bar_mount_audit':True,**extra})
+                        self.assertFalse(reply.isError,reply)
+                        audit=json.loads(reply.content[0].text)['action_bar_mount_audit']
+                        if expected is None:
+                            self.assertIsNone(audit)
+                        elif expected:
+                            self.assertEqual(audit['matches_by_mount_id']['2']['observed_action_slots'],expected)
+                            self.assertFalse(audit['current_mount_usability_verified'])
+                        else:
+                            self.assertEqual(audit['matches_by_mount_id'],{})
+                    for snapshot, section in [(key,'mount_collection'),(retail_key,'action_bar_observation')]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':snapshot,'section':section,'action_bar_mount_audit':True})
+                        self.assertTrue(reply.isError,reply)
                     captured_result = await session.call_tool("inspect_snapshot", {"snapshot_id": key, "section": "mount_collection"})
                     self.assertFalse(captured_result.isError)
                     self.assertEqual(json.loads(captured_result.content[0].text)["data"], captured["sections"]["mount_collection"])

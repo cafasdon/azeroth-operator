@@ -1,5 +1,7 @@
 # Changelog
 
+- Cross-reference saved action-bar spell slots with collected mounts.
+
 - Find collected mounts by recorded spell ID in saved snapshots.
 
 - Plan exact-item cooldowns for a target carried quantity.

@@ -4896,6 +4896,27 @@ pub fn action_bar_item_stock_audit(actions: &Value, snapshot: &Snapshot) -> Opti
     ))
 }
 
+pub fn action_bar_mount_audit(actions: &Value, mounts: Option<&Value>) -> Option<Value> {
+    let slots = actions["slots"].as_object()?;
+    let mounts = mounts?["entries"].as_object()?;
+    let mut slots_by_spell = BTreeMap::<u64, BTreeSet<u32>>::new();
+    for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == "spell") {
+        if let (Ok(slot), Some(id)) = (slot.parse(), row["id"].as_u64()) {
+            slots_by_spell.entry(id).or_default().insert(slot);
+        }
+    }
+    let matches: BTreeMap<_, _> = mounts.iter().filter_map(|(id, row)| {
+        let spell = row["spell_id"].as_u64()?;
+        let slots = slots_by_spell.get(&spell)?;
+        Some((id.parse::<u32>().ok()?, json!({"spell_id":spell,"name":row["name"],
+            "observed_action_slots":slots,"captured_usable":row["usable"],"captured_favorite":row["favorite"]})))
+    }).collect();
+    Some(
+        json!({"basis":"exact_saved_mount_spell_id","matches_by_mount_id":matches,
+        "current_mount_usability_verified":false,"complete_action_bar_coverage_verified":false,"live":false}),
+    )
+}
+
 pub fn shared_action_bar_hotkeys(actions: &Value) -> Option<BTreeMap<String, BTreeSet<u64>>> {
     let buttons = actions["button_hotkeys"].as_object()?;
     let mut slots_by_key = BTreeMap::<String, BTreeSet<u64>>::new();

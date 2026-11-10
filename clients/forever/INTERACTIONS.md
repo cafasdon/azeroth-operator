@@ -3380,6 +3380,10 @@ saved spell ID. A mount name or exact mount ID supplied with it must
 match the same row. In `inspect_snapshot`, `mount_spell_id` filters
 `mount_collection` and can be combined with recorded usability or
 favourite flags. Results describe the saved collection.
+Set `action_bar_mount_audit: true` on `action_bar_observation` to match
+retained spell slots to collected mounts by exact spell ID in the same
+capture. The audit only covers captured spell rows and leaves current
+mount usability and complete action-bar coverage unverified.
 
 Set `inspect_snapshot.toy_name` with the `toy_collection_view` section
 to look up an exact public toy name, ignoring case and surrounding spaces.
