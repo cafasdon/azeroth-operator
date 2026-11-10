@@ -1,5 +1,7 @@
 # Changelog
 
+- Identify duplicate unique items and shared catalogue limits in skipped owned-gear drafts and saved search windows.
+
 - Reject simulator inputs whose saved equipment review records a unique-item or shared catalogue limit conflict.
 
 - Surface saved timers for ready quests within each waypoint map group.

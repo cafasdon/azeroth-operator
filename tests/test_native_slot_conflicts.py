@@ -172,6 +172,23 @@ class NativeSlotConflictTests(unittest.IsolatedAsyncioTestCase):
                                     for error in leaves(rejected.exception)))
                 drafts,skipped,*_=await collect(binary,keys[None],['finger1'],errlog)
                 self.assertEqual(len(drafts),2);self.assertEqual(skipped,[])
+                for equipped_id, item_id, slot, target, reason, conflicts in [
+                    (1076,1076,11,'finger2','catalogue_unique_item_duplicate',
+                     [{'item_id':1076,'slots':[11,12]}]),
+                    (18706,19024,13,'trinket2','catalogue_shared_limit_category',
+                     [{'limit_category':718,'items':[{'slot':13,'item_id':18706},{'slot':14,'item_id':19024}]}]),
+                ]:
+                    value=deepcopy(base)
+                    value['sections']['equipment']={str(slot):{
+                        'item_id':equipped_id,'link':f'item:{equipped_id}:0:0:0:0:0:0'}}
+                    value['sections']['bags']={'0':{'1':{
+                        'item_id':item_id,'count':1,'link':f'item:{item_id}:0:0:0:0:0:0'}}}
+                    drafts,skipped,*_,search=await collect(binary,store.ingest(value),[target],errlog,
+                        combination_limit=8,storage='bags')
+                    self.assertEqual(len(drafts),1)
+                    self.assertEqual([(row['reason'],row['conflicts']) for row in skipped],[(reason,conflicts)])
+                    outcomes=search['combination_window']['coordinate_outcomes']
+                    self.assertEqual(outcomes[-1],{'coordinate_decimal':'1','status':'unresolved','reason':reason})
 
 
 if __name__=='__main__':unittest.main()

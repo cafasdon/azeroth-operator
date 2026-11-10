@@ -177,7 +177,8 @@ def coordinate_outcomes(report):
             require(set(row) == {'coordinate_decimal', 'status', 'reason'})
             reasons = ('would_vacate_another_slot', 'reused_source_location') if status == 'excluded' else (
                 'native_slot_category_conflict', 'native_required_level_shortfall',
-                'catalogue_requirement_conflict', 'unresolved_simulator_draft')
+                'catalogue_requirement_conflict', 'catalogue_unique_item_duplicate',
+                'catalogue_shared_limit_category', 'unresolved_simulator_draft')
             require(isinstance(row['reason'], str) and row['reason'] in reasons)
     search = report['gear_search']
     proposed = search['proposed_alternative_drafts']

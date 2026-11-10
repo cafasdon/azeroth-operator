@@ -526,6 +526,9 @@ equipment spec. These checks use the local catalogue's recorded rules.
 This adapter revision changes the plan-collection and simulation-journal
 fingerprints. Continuing collection requires a journal created with the
 same collector and adapter revision.
+Skipped owned-gear drafts identify duplicate unique items and shared limit
+categories separately. Saved search windows retain the corresponding reason
+for each skipped coordinate.
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
 equipment, selected source locations and cleared slots, tied to the snapshot

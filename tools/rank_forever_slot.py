@@ -485,6 +485,18 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
                         "reason": "catalogue_requirement_conflict",
                         "conflicts": conflicts,
                     })
+                elif conflicts := draft["checks"].get("catalogue_unique_item_duplicates"):
+                    skipped.append({
+                        **({"selections": selections} if multi or not selections else {"selection": selections[0]}),
+                        "reason": "catalogue_unique_item_duplicate",
+                        "conflicts": conflicts,
+                    })
+                elif conflicts := draft["checks"].get("catalogue_shared_limit_categories"):
+                    skipped.append({
+                        **({"selections": selections} if multi or not selections else {"selection": selections[0]}),
+                        "reason": "catalogue_shared_limit_category",
+                        "conflicts": conflicts,
+                    })
                 elif multi or not selections:
                     skipped.append({"selections": selections, "reason": "unresolved_simulator_draft"})
                 else:

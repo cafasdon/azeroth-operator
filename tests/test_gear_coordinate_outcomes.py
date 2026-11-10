@@ -24,6 +24,15 @@ def detailed_report():
 
 
 class CoordinateOutcomeTests(unittest.TestCase):
+    def test_catalogue_limit_reasons_survive_journal_round_trip(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for reason in ['catalogue_unique_item_duplicate','catalogue_shared_limit_category']:
+                value = detailed_report()
+                value['gear_search']['combination_window']['coordinate_outcomes'][-1]['reason'] = reason
+                path = Path(folder) / f'{reason}.sqlite'
+                append_report(path, value)
+                self.assertEqual(journal_window(path, 0)['coordinate_outcomes'][-1]['reason'], reason)
+
     def test_exact_window_cli_legacy_unknown_and_invalid_rejection(self):
         value = detailed_report()
         root = Path(__file__).resolve().parents[1]
