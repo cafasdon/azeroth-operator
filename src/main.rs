@@ -6137,6 +6137,26 @@ impl Operator {
                                     value["reputation_turn_in_item_plan"] =
                                         serde_json::json!(plans.into_iter().next());
                                 } else {
+                                    let capacities: Vec<_> = reputation_item_costs
+                                        .iter()
+                                        .zip(observed)
+                                        .filter_map(|(cost, row)| {
+                                            let carried = row["observed_quantity"].as_u64()?;
+                                            Some((cost.item_id, carried / cost.quantity.get()))
+                                        })
+                                        .collect();
+                                    let supported = (capacities.len()
+                                        == reputation_item_costs.len())
+                                    .then(|| capacities.iter().map(|(_, count)| *count).min())
+                                    .flatten();
+                                    value["reputation_turn_in_bag_capacity"] = serde_json::json!({
+                                        "supported_turn_ins":supported,
+                                        "limiting_item_ids":supported.map(|capacity| capacities.iter()
+                                            .filter_map(|(id, count)| (*count == capacity).then_some(*id))
+                                            .collect::<Vec<_>>()),
+                                        "turn_ins_shortfall_to_next_rank":turn_ins.zip(supported)
+                                            .map(|(needed, capacity)| needed.saturating_sub(capacity))
+                                    });
                                     value["reputation_turn_in_item_plans"] =
                                         serde_json::json!(plans);
                                 }

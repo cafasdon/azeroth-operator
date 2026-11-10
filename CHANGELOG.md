@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how many complete reputation turn-ins the saved bags support and which items limit them.
+
 - Plan up to twenty distinct item costs for a saved reputation turn-in.
 
 - Estimate carried item shortfalls for saved reputation turn-in plans.

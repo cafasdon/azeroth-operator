@@ -1095,6 +1095,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             (row["item_id"],row["required_quantity"],row["observed_carried_quantity"],
                              row["shortfall_quantity"]) for row in data["reputation_turn_in_item_plans"]
                         ], [(744,6,4,2),(745,3,0,3)])
+                        self.assertEqual(data["reputation_turn_in_bag_capacity"], {
+                            "supported_turn_ins":0,"limiting_item_ids":[745],
+                            "turn_ins_shortfall_to_next_rank":3,
+                        })
+                        result = await session.call_tool("inspect_snapshot", {
+                            **request,"reputation_turn_in_item_costs":[{"item_id":744,"quantity":2}],
+                        })
+                        self.assertFalse(result.isError,result)
+                        self.assertEqual(json.loads(result.content[0].text)["reputation_turn_in_bag_capacity"], {
+                            "supported_turn_ins":2,"limiting_item_ids":[744],
+                            "turn_ins_shortfall_to_next_rank":1,
+                        })
                         for options in [
                             {"reputation_turn_in_item_costs":[]},
                             {"reputation_turn_in_item_costs":[costs[0],costs[0]]},

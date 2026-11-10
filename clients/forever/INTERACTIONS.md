@@ -12,6 +12,9 @@ total leave the shortfall unknown. An overflowing total is flagged.
 For a turn-in requiring several items, use `reputation_turn_in_item_costs`
 with one to twenty distinct item IDs and quantities. The response reports
 each shortfall separately in request order. Use one cost form per request.
+The plural plan also reports complete turn-ins supported by the saved
+bags, all limiting item IDs and the remaining turn-ins needed for the
+next rank. Missing bag observations leave capacity unknown.
 
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside
