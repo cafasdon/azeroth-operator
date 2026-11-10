@@ -119,3 +119,8 @@ spawn groups. A name query is optional with this filter. The CLI flag is
 Search accepts quest_zone_or_sort for quests with a matching zoneOrSort value.
 Use a positive provider area ID or a negative quest category ID. A name query
 is optional. The CLI flag is --quest-zone-or-sort.
+
+Search accepts max_required_level (1–255) to list quests whose recorded
+requiredLevel is at or below the limit. Quests without this field are excluded.
+Combine with a name or quest category as needed. The CLI flag is
+--max-required-level. This filter covers the minimum level field only.

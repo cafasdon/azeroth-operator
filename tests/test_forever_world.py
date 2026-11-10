@@ -75,6 +75,11 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         return None if error else json.loads(reply.content[0].text)
                     get, search = 'get_forever_world_record', 'search_forever_world_records'
+                    by_level = await call(search,query='Hogger',max_required_level=5,quest_zone_or_sort=12)
+                    self.assertEqual([row['id'] for row in by_level['results']],[176])
+                    below = await call(search,query='Hogger',max_required_level=4)
+                    self.assertEqual(below['results'],[])
+                    await call(search,error=True,kind='item',max_required_level=5)
                     quests = await call(search,quest_zone_or_sort=12,query='Hogger')
                     self.assertEqual([row['id'] for row in quests['results']],[176])
                     categories = await call(search,quest_zone_or_sort=-1,limit=1)

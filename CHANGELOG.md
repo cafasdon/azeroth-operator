@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter cached quests by their recorded minimum player level.
+
 - Search cached quests by provider area or quest category.
 
 - Search cached NPCs and objects by provider spawn area ID.
