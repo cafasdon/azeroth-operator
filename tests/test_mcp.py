@@ -1746,6 +1746,25 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "quest_count": 2, "quest_ids": [2, 10], "truncated": False,
                             "minimum_starting_copper": 39, "wallet_turn_in_quest_ids": ["2", "10"],
                         })
+                        capture = store.read(travel_before)
+                        capture["sections"]["wallet"]["copper"] = 40
+                        reserve_key = store.ingest(capture)
+                        affordable_keys.append(reserve_key)
+                        for reserve, expected in ((1, [reserve_key]), (2, []), (41, [])):
+                            reply = await session.call_tool("list_snapshots", {
+                                **ready_xp_query, "ready_quest_xp_affordable_only": True,
+                                "ready_quest_xp_wallet_reserve_copper": reserve,
+                            })
+                            self.assertFalse(reply.isError)
+                            rows = json.loads(reply.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows], expected)
+                            if rows:
+                                plan = rows[0]["experience_match"]["ready_quest_xp_plan"]
+                                self.assertEqual(plan["wallet_reserve_copper"], reserve)
+                                self.assertEqual(plan["minimum_starting_copper"], 39)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **ready_xp_query, "ready_quest_xp_wallet_reserve_copper": 0,
+                        })).isError)
                         for temporary_id in affordable_keys:
                             (Path(folder) / f"{temporary_id}.json").unlink()
                         self.assertTrue((await session.call_tool("list_snapshots", {

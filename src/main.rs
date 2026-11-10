@@ -718,6 +718,9 @@ struct List {
     /// Require the saved wallet to cover the selected ready quest XP turn-in plan.
     #[serde(default)]
     ready_quest_xp_affordable_only: bool,
+    /// Keep this much captured copper untouched throughout the selected ready quest XP plan.
+    #[schemars(range(max = 9999999999999_u64))]
+    ready_quest_xp_wallet_reserve_copper: Option<u64>,
     /// Match an exact quest ID in a saved Forever quest log.
     quest_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive title in the saved Forever quest log.
@@ -2715,6 +2718,7 @@ impl Operator {
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 ready_quest_xp_covers_next_level: args.ready_quest_xp_covers_next_level,
                 ready_quest_xp_affordable_only: args.ready_quest_xp_affordable_only,
+                ready_quest_xp_wallet_reserve_copper: args.ready_quest_xp_wallet_reserve_copper,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),
                 quest_reward_item_id: args.quest_reward_item_id,

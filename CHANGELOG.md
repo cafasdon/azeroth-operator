@@ -1,5 +1,7 @@
 # Changelog
 
+- Preserve a copper reserve when finding affordable saved next-level quest plans.
+
 - Filter saved next-level quest XP plans by recorded wallet affordability.
 
 - Find saved Forever captures with enough recorded ready-quest XP for the next level.

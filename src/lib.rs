@@ -2049,6 +2049,7 @@ pub struct CaptureFilters<'a> {
     pub xp_gain_enabled_only: bool,
     pub ready_quest_xp_covers_next_level: bool,
     pub ready_quest_xp_affordable_only: bool,
+    pub ready_quest_xp_wallet_reserve_copper: Option<u64>,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
@@ -2358,6 +2359,7 @@ impl Store {
             xp_gain_enabled_only,
             ready_quest_xp_covers_next_level,
             ready_quest_xp_affordable_only,
+            ready_quest_xp_wallet_reserve_copper,
             quest_id,
             quest_title,
             quest_reward_item_id,
@@ -3025,6 +3027,12 @@ impl Store {
         ensure!(
             !ready_quest_xp_affordable_only || ready_quest_xp_covers_next_level,
             "Ready quest XP affordability requires the next-level ready quest XP filter"
+        );
+        ensure!(
+            ready_quest_xp_wallet_reserve_copper.is_none_or(
+                |reserve| ready_quest_xp_affordable_only && reserve <= 9_999_999_999_999
+            ),
+            "Ready quest XP wallet reserve requires affordability filtering and a valid copper amount"
         );
         ensure!(
             currency_balance
@@ -4146,7 +4154,12 @@ impl Store {
                                 let balance = s
                                     .sections
                                     .get("wallet")
-                                    .and_then(|wallet| wallet["copper"].as_u64());
+                                    .and_then(|wallet| wallet["copper"].as_u64())
+                                    .and_then(|balance| {
+                                        balance.checked_sub(
+                                            ready_quest_xp_wallet_reserve_copper.unwrap_or(0),
+                                        )
+                                    });
                                 let Some(order) = selected
                                     .and_then(|quests| {
                                         analysis::quest_wallet_turn_in_order(
@@ -4160,6 +4173,10 @@ impl Store {
                                 };
                                 evidence["ready_quest_xp_plan"]["minimum_starting_copper"] =
                                     order["minimum_starting_copper"].clone();
+                                if let Some(reserve) = ready_quest_xp_wallet_reserve_copper {
+                                    evidence["ready_quest_xp_plan"]["wallet_reserve_copper"] =
+                                        json!(reserve);
+                                }
                                 evidence["ready_quest_xp_plan"]["wallet_turn_in_quest_ids"] = json!(
                                     order["quest_ids"]
                                         .as_array()

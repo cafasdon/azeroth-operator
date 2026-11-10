@@ -14,6 +14,10 @@ and rewards for the selected shortlist and enough recorded starting copper.
 Matching plans include the minimum starting copper and the first 20 quest
 IDs in wallet order. This checks the selected plan rather than searching
 alternate quest combinations.
+With affordability filtering enabled, set `ready_quest_xp_wallet_reserve_copper`
+to keep that copper untouched throughout the selected turn-ins. Matching
+plans report the reserve separately from the minimum starting copper for
+the quest costs.
 
 Saved pet searches also support `active_pet.happiness` for the exact
 recorded value and `active_pet.loyalty` for the exact case-insensitive
