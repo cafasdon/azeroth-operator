@@ -439,6 +439,10 @@ pub struct SavedInstanceFilter {
     pub is_raid: Option<bool>,
     /// Match the reported instance group-size cap.
     pub max_players: Option<std::num::NonZeroU32>,
+    /// Inclusive lower bound on reported encounter progress at capture.
+    pub minimum_reported_encounter_progress: Option<u32>,
+    /// Inclusive upper bound on reported encounter progress at capture.
+    pub maximum_reported_encounter_progress: Option<u32>,
     /// Only nonnegative reset timers at or below this value, as recorded at capture.
     pub maximum_reset_seconds: Option<u32>,
     /// Inclusive historical reset deadline (RFC 3339). Unknown projections do not match.
@@ -2413,12 +2417,21 @@ impl Store {
                         || filter.extended.is_some()
                         || filter.is_raid.is_some()
                         || filter.max_players.is_some()
+                        || filter.minimum_reported_encounter_progress.is_some()
+                        || filter.maximum_reported_encounter_progress.is_some()
                         || filter.maximum_reset_seconds.is_some()
                         || filter.projected_reset_from.is_some()
                         || filter.projected_reset_by.is_some()
                         || filter.maximum_update_age_seconds.is_some())
             }),
             "Saved instance filtering requires Forever and at least one valid criterion"
+        );
+        ensure!(
+            saved_instance.as_ref().is_none_or(|filter| filter
+                .minimum_reported_encounter_progress
+                .zip(filter.maximum_reported_encounter_progress)
+                .is_none_or(|(minimum, maximum)| minimum <= maximum)),
+            "Saved instance progress bounds must be ordered"
         );
         ensure!(
             instance_lock_warning.is_none() || family == Family::Forever,
@@ -3597,56 +3610,70 @@ impl Store {
                     if saved_world_boss.is_some() && saved_world_boss_match.is_none() {
                         continue;
                     }
-                    let saved_instance_match =
-                        saved_instance.as_ref().and_then(|filter| {
-                            let saved = s.sections.get("saved_instances")?;
-                            if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
-                                saved["update_age_seconds"]
-                                    .as_u64()
-                                    .is_some_and(|age| age <= u64::from(maximum))
-                            }) {
-                                return None;
-                            }
-                            let matches =
-                                saved["entries"]
-                                    .as_object()?
-                                    .iter()
-                                    .filter(|(_, row)| {
-                                        saved_instance_name.as_ref().is_none_or(|name| {
-                                            row["name"]
-                                                .as_str()
-                                                .is_some_and(|value| value.to_lowercase() == *name)
-                                        }) && filter.max_players.is_none_or(|size| {
-                                            row["max_players"].as_u64()
-                                                == Some(u64::from(size.get()))
-                                        }) && filter.difficulty_id.is_none_or(|id| {
-                                            row["difficulty_id"].as_u64() == Some(u64::from(id))
-                                        }) && filter.locked.is_none_or(|flag| {
-                                            row["locked"].as_bool() == Some(flag)
-                                        }) && filter.extended.is_none_or(|flag| {
+                    let saved_instance_match = saved_instance.as_ref().and_then(|filter| {
+                        let saved = s.sections.get("saved_instances")?;
+                        if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
+                            saved["update_age_seconds"]
+                                .as_u64()
+                                .is_some_and(|age| age <= u64::from(maximum))
+                        }) {
+                            return None;
+                        }
+                        let matches =
+                            saved["entries"]
+                                .as_object()?
+                                .iter()
+                                .filter(|(_, row)| {
+                                    saved_instance_name.as_ref().is_none_or(|name| {
+                                        row["name"]
+                                            .as_str()
+                                            .is_some_and(|value| value.to_lowercase() == *name)
+                                    }) && filter.max_players.is_none_or(|size| {
+                                        row["max_players"].as_u64() == Some(u64::from(size.get()))
+                                    }) && filter.minimum_reported_encounter_progress.is_none_or(
+                                        |min| {
+                                            row["reported_encounter_progress"]
+                                                .as_u64()
+                                                .is_some_and(|progress| progress >= u64::from(min))
+                                        },
+                                    ) && filter.maximum_reported_encounter_progress.is_none_or(
+                                        |max| {
+                                            row["reported_encounter_progress"]
+                                                .as_u64()
+                                                .is_some_and(|progress| progress <= u64::from(max))
+                                        },
+                                    ) && filter.difficulty_id.is_none_or(|id| {
+                                        row["difficulty_id"].as_u64() == Some(u64::from(id))
+                                    }) && filter
+                                        .locked
+                                        .is_none_or(|flag| row["locked"].as_bool() == Some(flag))
+                                        && filter.extended.is_none_or(|flag| {
                                             row["extended"].as_bool() == Some(flag)
-                                        }) && filter.is_raid.is_none_or(|flag| {
+                                        })
+                                        && filter.is_raid.is_none_or(|flag| {
                                             row["is_raid"].as_bool() == Some(flag)
-                                        }) && filter.maximum_reset_seconds.is_none_or(|maximum| {
+                                        })
+                                        && filter.maximum_reset_seconds.is_none_or(|maximum| {
                                             row["reset_seconds"].as_u64().is_some_and(|seconds| {
                                                 seconds <= u64::from(maximum)
                                             })
-                                        }) && saved_resets::matches_projected_window(
+                                        })
+                                        && saved_resets::matches_projected_window(
                                             row["reset_seconds"].as_i64(),
                                             s.captured_at,
                                             filter.projected_reset_from,
                                             filter.projected_reset_by,
                                         )
-                                    })
-                                    .collect();
-                            saved_resets::discovery_report(
-                                matches,
-                                saved,
-                                s.captured_at,
-                                filter.projected_reset_from.is_some()
-                                    || filter.projected_reset_by.is_some(),
-                            )
-                        });
+                                })
+                                .collect();
+                        saved_resets::discovery_report(
+                            matches,
+                            saved,
+                            s.captured_at,
+                            filter.projected_reset_from.is_some()
+                                || filter.projected_reset_by.is_some(),
+                        )
+                    });
                     if saved_instance.is_some() && saved_instance_match.is_none() {
                         continue;
                     }

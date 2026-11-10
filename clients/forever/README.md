@@ -968,6 +968,9 @@ For saved-instance searches, use `list_snapshots.saved_instance`, for example
 `family: "forever"`. Names match exactly without case sensitivity. Optional
 `difficulty_id`, `extended` and `is_raid` flags apply to the same row. Negative
 reset timers are excluded when a maximum is supplied.
+Use `minimum_reported_encounter_progress` or
+`maximum_reported_encounter_progress` for inclusive bounds on the saved
+value. An uncaptured value cannot match either bound.
 `maximum_update_age_seconds` limits the cache's age at capture, not its age now.
 Results include a count and up to 20 matching rows, with `truncated` when more
 match. Character, capture-time and newest-per-character filters still apply.

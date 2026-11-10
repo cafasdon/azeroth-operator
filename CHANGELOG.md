@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever instance rows within a reported encounter progress range.
+
 - Compare reported encounter totals and progress across saved Forever instance rows.
 
 - Retain reported encounter totals and progress in saved Forever instance cache rows.

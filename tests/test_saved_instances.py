@@ -38,7 +38,8 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             missing_key = store.ingest(missing)
             later = copy.deepcopy(value)
             later["captured_at"] = "2025-01-02T00:00:00Z"
-            later["sections"]["saved_instances"]["entries"]["1"].update(locked=False, reset_seconds=0)
+            later["sections"]["saved_instances"]["entries"]["1"].update(
+                locked=False, reset_seconds=0, reported_encounter_progress=0)
             later_key = store.ingest(later)
             duplicate = copy.deepcopy(later)
             duplicate["sections"]["saved_instances"]["entries"]["3"] = copy.deepcopy(
@@ -88,6 +89,7 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(delta["changes"]), 1)
                     self.assertEqual(delta["changes"][0]["fields"], {
                         "locked": {"before": True, "after": False},
+                        "reported_encounter_progress": {"before": 4, "after": 0},
                         "reset_seconds": {"before": 124, "after": 0}})
                     progress = copy.deepcopy(value)
                     progress["captured_at"] = later["captured_at"]
@@ -154,6 +156,17 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     nameless = await search({"locked": True, "is_raid": True, "max_players": 40})
                     self.assertEqual([row["snapshot_id"] for row in nameless], [key])
                     self.assertEqual(await search({"locked": True, "max_players": 5}), [])
+                    exact_progress = await search({"minimum_reported_encounter_progress": 4,
+                                                   "maximum_reported_encounter_progress": 4})
+                    self.assertEqual([row["snapshot_id"] for row in exact_progress], [key])
+                    self.assertEqual(exact_progress[0]["saved_instance_match"]["entries"][0]["data"]
+                                     ["reported_encounter_progress"], 4)
+                    zero_progress = await search({"maximum_reported_encounter_progress": 0})
+                    self.assertEqual([row["snapshot_id"] for row in zero_progress], [later_key])
+                    self.assertEqual(await search({"name": "Dungeon", "minimum_reported_encounter_progress": 0}), [])
+                    inverted = {"minimum_reported_encounter_progress": 4, "maximum_reported_encounter_progress": 3}
+                    self.assertTrue((await session.call_tool("list_snapshots", {
+                        **query, "saved_instance": inverted})).isError)
                     by_size = await search({"max_players": 5})
                     self.assertEqual({row["snapshot_id"] for row in by_size}, {key, later_key})
                     self.assertTrue(all(row["saved_instance_match"]["entries"][0]["slot"] == 2 for row in by_size))

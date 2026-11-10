@@ -13,6 +13,11 @@ matched public instance descriptions when both captures contain the pair.
 Missing progress remains unknown. The result describes differences between
 saved rows and cannot establish that they belong to the same lockout.
 
+On `list_snapshots`, use `saved_instance.minimum_reported_encounter_progress`
+or `maximum_reported_encounter_progress` to find captures by the recorded
+value. Bounds are inclusive and apply to the same row as other instance
+filters. Rows with missing progress cannot satisfy either bound.
+
 Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
 projected expiry falls at or before an explicit timestamp. The projection
