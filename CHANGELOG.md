@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare recorded completion flags for uniquely matched tracked achievement criteria.
+
 - Identify tracked achievements with increased or decreased remaining criterion quantities across saved captures.
 
 - Find saved characters whose selected tracked achievement is within an unfinished-criteria limit.

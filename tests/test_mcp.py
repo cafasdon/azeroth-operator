@@ -1768,6 +1768,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         criteria = reputation_after["sections"]["tracked_achievements"]["entries"]["101"]["criteria"]
                         criteria["1"], criteria["2"] = criteria["2"], criteria["1"]
                         criteria["2"]["quantity"] = 3
+                        criteria["2"]["completed"] = True
+                        criteria["1"]["completed"] = False
                         profession = reputation_after["sections"]["professions"].pop("1")
                         profession["rank"] = 25
                         profession["max_rank"] = 150
@@ -1793,6 +1795,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "achievement_ids_with_scope_changes": [],
                             "achievement_ids_with_decreased_remaining_criterion_quantities": [101],
                             "achievement_ids_with_increased_remaining_criterion_quantities": [],
+                            "newly_completed_criterion_ids_by_achievement": {"101": [301]},
+                            "no_longer_completed_criterion_ids_by_achievement": {"101": [302]},
                         })
                         changed_scope = json.loads(json.dumps(reputation_after))
                         changed_scope["sections"]["tracked_achievements"]["entries"]["101"]["account_wide"] = False
@@ -1805,6 +1809,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(scope_data["changes"], [])
                         self.assertEqual(scope_data["achievement_ids_with_scope_changes"], [101])
                         self.assertEqual(scope_data["achievement_ids_with_decreased_remaining_criterion_quantities"], [])
+                        self.assertEqual(scope_data["newly_completed_criterion_ids_by_achievement"], {})
+                        self.assertEqual(scope_data["no_longer_completed_criterion_ids_by_achievement"], {})
                         dated = await session.call_tool("list_snapshots", {
                             "family": "forever",
                             "character": {"name": "Example", "realm": "First"},
@@ -2162,9 +2168,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(achievement["earned_by_character_changed"])
                         comparison = achievement["criterion_comparison"]
                         self.assertEqual(comparison["matched_criterion_count"], 3)
-                        self.assertEqual(len(comparison["changes"]), 1)
+                        self.assertEqual(len(comparison["changes"]), 2)
                         self.assertEqual(comparison["changes"][0]["criterion_id"], 301)
                         self.assertEqual(comparison["changes"][0]["quantity_delta"], 1)
+                        self.assertEqual(comparison["changes"][1]["criterion_id"], 302)
+                        self.assertIsNone(comparison["changes"][1]["quantity_delta"])
                         profession_change = progress_data["profession_change"]
                         self.assertEqual(profession_change["rank_delta"], 5)
                         self.assertEqual(profession_change["before_status"], "observed")

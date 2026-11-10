@@ -13,6 +13,10 @@ whose comparable criteria have increased or decreased remaining quantities.
 The comparison requires the same account scope, a unique criterion ID on
 both sides and the same known requirement. Different criteria can put
 one achievement in both lists.
+The same comparison groups newly completed and no-longer-completed
+criterion IDs by achievement. The recorded completion flag is evaluated
+separately from numeric progress. Criterion requirements must agree,
+including when both observations omit a requirement.
 
 Use `mail_attachment_bag_space_message_slot` when inspecting saved mail
 to estimate space for known item attachments in one loaded message.

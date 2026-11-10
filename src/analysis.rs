@@ -5059,6 +5059,8 @@ pub fn compare_observations(
             let mut scope_changed = BTreeSet::new();
             let mut fewer_remaining = BTreeSet::new();
             let mut more_remaining = BTreeSet::new();
+            let mut newly_complete = BTreeMap::<u32, Vec<u64>>::new();
+            let mut no_longer_complete = BTreeMap::<u32, Vec<u64>>::new();
             for key in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
                 let Ok(id) = key.parse::<u32>() else { continue };
                 match (before.get(key), after.get(key)) {
@@ -5066,7 +5068,15 @@ pub fn compare_observations(
                         scope_changed.insert(id);
                     }
                     (Some(old), Some(new)) => {
-                        for (_, previous, current) in matched_achievement_criteria(&old["criteria"], &new["criteria"]) {
+                        for (criterion_id, previous, current) in matched_achievement_criteria(&old["criteria"], &new["criteria"]) {
+                            if previous["required"] != current["required"] {
+                                continue;
+                            }
+                            match (previous["completed"].as_bool(), current["completed"].as_bool()) {
+                                (Some(false), Some(true)) => { newly_complete.entry(id).or_default().push(criterion_id); }
+                                (Some(true), Some(false)) => { no_longer_complete.entry(id).or_default().push(criterion_id); }
+                                _ => {}
+                            }
                             if let Some(required) = previous["required"].as_u64()
                                 && current["required"].as_u64() == Some(required)
                                 && let Some((old, new)) = previous["quantity"].as_u64().zip(current["quantity"].as_u64())
@@ -5093,6 +5103,8 @@ pub fn compare_observations(
                 "achievement_ids_observed_only_before":only_before,"achievement_ids_observed_only_after":only_after,
                 "achievement_ids_with_decreased_remaining_criterion_quantities":fewer_remaining,
                 "achievement_ids_with_increased_remaining_criterion_quantities":more_remaining,
+                "newly_completed_criterion_ids_by_achievement":newly_complete,
+                "no_longer_completed_criterion_ids_by_achievement":no_longer_complete,
                 "achievement_ids_with_scope_changes":scope_changed})
         }));
     }
