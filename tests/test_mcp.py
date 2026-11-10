@@ -2464,6 +2464,37 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
                             **quote_request, "merchant_currency_id": 117,
                         })).isError)
+                        restock_request = {**food_offer_query, "snapshot_id": food_mix_id}
+                        for item, target, carried, shortfall in (
+                            (117, 11, 3, 8), (117, 3, 3, 0), (117, 2, 3, 0),
+                            (999999, 11, None, None),
+                        ):
+                            quote = await session.call_tool("inspect_snapshot", {
+                                **restock_request, "merchant_item_id": item,
+                                "merchant_pet_food_target_carried_quantity": target,
+                            })
+                            self.assertFalse(quote.isError)
+                            data = json.loads(quote.content[0].text)
+                            self.assertEqual(data["merchant_pet_food_restock"], {
+                                "item_id": item, "target_carried_quantity": target,
+                                "accepted_carried_quantity": carried, "shortfall_quantity": shortfall,
+                            })
+                            if shortfall:
+                                plan = data["merchant_quantity_plan"]
+                                self.assertEqual(plan["target_quantity"], 8)
+                                self.assertEqual(plan["lowest_cost_copper_only_bundle_mix"]["required_copper"], 13)
+                            else:
+                                self.assertNotIn("merchant_quantity_plan", data)
+                        for invalid_target in ({}, {"merchant_item_id": 117, "merchant_target_quantity": 8}):
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                **restock_request, **invalid_target,
+                                "merchant_pet_food_target_carried_quantity": 11,
+                            })).isError)
+                        for invalid_quantity in (0, 1001):
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                **restock_request, "merchant_item_id": 117,
+                                "merchant_pet_food_target_carried_quantity": invalid_quantity,
+                            })).isError)
                         exact_food_listing = {
                             "family": "forever", "merchant_pet_food_snapshot_id": travel_before,
                             "merchant_item_id": 117, "merchant_target_quantity": 8,

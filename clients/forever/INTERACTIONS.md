@@ -1732,6 +1732,11 @@ For one specific food, combine `merchant_item_id` with the pet food capture
 and target quantity. The quote can mix whole bundles of that item across
 the saved offers. The selected item must appear in the saved accepted-food
 classification.
+Alternatively, set `merchant_pet_food_target_carried_quantity` instead of
+`merchant_target_quantity`. The MCP subtracts accepted units recorded for
+that exact item in the food capture and quotes only a positive shortfall
+using the saved merchant offers. A missing accepted-item row leaves the
+shortfall unknown. An already covered target needs no purchase quote.
 Use this for historical sourcing. Pet acceptance can change between captures.
 
 Use the same `merchant_pet_food_snapshot_id` in `list_snapshots` to

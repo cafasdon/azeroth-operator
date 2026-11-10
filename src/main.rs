@@ -245,6 +245,8 @@ struct Inspect {
     merchant_pet_food_snapshot_id: Option<String>,
     /// Calculate whole bundles needed for this quantity in each matching merchant offer.
     merchant_target_quantity: Option<std::num::NonZeroU32>,
+    /// Quote the shortfall to this carried quantity for an exact item in a saved pet food classification.
+    merchant_pet_food_target_carried_quantity: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare captured quest currency rewards against caps from the same snapshot.
@@ -3111,6 +3113,19 @@ impl Operator {
                 "Merchant quantity planning requires an item, currency or pet food search and 1 to 1000 units",
             )]);
         }
+        if args
+            .merchant_pet_food_target_carried_quantity
+            .is_some_and(|target| {
+                target.get() > 1000
+                    || args.merchant_target_quantity.is_some()
+                    || args.merchant_item_id.is_none()
+                    || args.merchant_pet_food_snapshot_id.is_none()
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Pet food carried targets require an exact item, a pet food capture and 1 to 1000 units without a separate purchase quantity",
+            )]);
+        }
         if args.merchant_cart_include_repair && args.merchant_cart.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Repair reservation requires a merchant cart",
@@ -4942,6 +4957,7 @@ impl Operator {
                     });
                     value["merchant_match_count"] = serde_json::json!(count);
                 }
+                let mut merchant_target_quantity = args.merchant_target_quantity;
                 if let Some(food_id) = &args.merchant_pet_food_snapshot_id {
                     let result = (|| {
                         let merchant = self.store.read(&args.snapshot_id)?;
@@ -4961,6 +4977,22 @@ impl Operator {
                         .sections
                         .get("pet_care")
                         .and_then(|pet| pet["carried_food"].as_object());
+                    if let Some(target) = args.merchant_pet_food_target_carried_quantity {
+                        let carried = args
+                            .merchant_item_id
+                            .and_then(|item| accepted?.get(&item.get().to_string())?.as_u64());
+                        let shortfall =
+                            carried.map(|count| u64::from(target.get()).saturating_sub(count));
+                        merchant_target_quantity = shortfall
+                            .and_then(|count| u32::try_from(count).ok())
+                            .and_then(std::num::NonZeroU32::new);
+                        value["merchant_pet_food_restock"] = serde_json::json!({
+                            "item_id": args.merchant_item_id,
+                            "target_carried_quantity": target,
+                            "accepted_carried_quantity": carried,
+                            "shortfall_quantity": shortfall,
+                        });
+                    }
                     let count = if let Some(accepted) = accepted {
                         value["data"].as_object_mut().map(|offers| {
                             offers.retain(|_, offer| {
@@ -4984,7 +5016,7 @@ impl Operator {
                     });
                     value["merchant_match_count"] = serde_json::json!(count);
                 }
-                if let Some(quantity) = args.merchant_target_quantity {
+                if let Some(quantity) = merchant_target_quantity {
                     value["merchant_quantity_plan"] =
                         azeroth_operator::analysis::merchant_quantity_plan(
                             &value["data"],
