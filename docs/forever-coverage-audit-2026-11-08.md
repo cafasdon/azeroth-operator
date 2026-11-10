@@ -898,3 +898,12 @@ capacity changes, keeping missing/unrecorded separate from none and known zero.
 All changed numeric slots are retained within the existing 32-slot bound.
 Slot identity/continuity and join/leave events are explicitly unverified; no
 new capture, action, membership proof or native qualification was introduced.
+
+## Passive player life-state flags (2026-11-10)
+
+Manual Forever exports now support player-only dead, ghost, dead-or-ghost and
+feign-death Boolean observations, with bounded two-pass agreement and strict
+readers. Existing inspection and capture-status discovery apply. Unreadable
+flags never become false. No classification, present-state/eligibility proof,
+other-player observation, public indexing or release/resurrection action is
+introduced. See ADR-079-passive-player-life-state.md. Native testing deferred.

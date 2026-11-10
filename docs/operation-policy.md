@@ -129,3 +129,14 @@ are retained; all other API returns remain excluded. Historical confirm/active
 readings authorise no action. Owner-local storage and strict readers apply;
 source fixtures do not establish native availability or Blizzard approval.
 All queue-management and automation routes remain excluded. See ADR-078.
+
+## Passive player life flags (2026-11-10)
+
+A manual out-of-combat Forever export may read four player-only Boolean life
+flags through ordinary unit getters. No other units, identities, corpse
+positions, release/retrieval/resurrection/soulstone operations or monitoring
+are introduced. Flags remain raw owner-local observations and establish no
+current life state, eligibility or character-continuity permission. Strict
+readers reject extra personal data. Existing action exclusions remain;
+source fixtures do not establish native availability or Blizzard approval.
+See ADR-079-passive-player-life-state.md.

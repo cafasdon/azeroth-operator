@@ -2038,6 +2038,11 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_life_state" => {
+            object(value, &[("coverage", "text", true), ("is_dead", "bool", true), ("is_ghost", "bool", true),
+                ("is_dead_or_ghost", "bool", true), ("is_feigning_death", "bool", true)])?;
+            ensure!(value["coverage"] == "reported_player_life_flags", "Invalid life-state coverage");
+        }
         "battlefield_queue_slots" => {
             object(value, &[("coverage", "text", true), ("reported_slot_count", "uint", true), ("entries", "map", true)])?;
             ensure!(value["coverage"] == "reported_battlefield_queue_slots", "Invalid queue coverage");

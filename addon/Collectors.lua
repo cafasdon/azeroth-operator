@@ -1,5 +1,52 @@
 local _, AO = ...
 AO.collectors = {}
+-- Player-only saved life flags, without interpreting action eligibility.
+AO.collectors.player_life_state = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Life-state restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted life-state observation")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Life-state observation unavailable")
+    local names={"UnitIsDead","UnitIsGhost","UnitIsDeadOrGhost","UnitIsFeignDeath"}
+    local fields={"is_dead","is_ghost","is_dead_or_ghost","is_feigning_death"}
+    local getters={}
+    for index,name in ipairs(names) do
+        getters[index]=public(_G[name])
+        assert(type(getters[index])=="function", "Life-state getter unavailable")
+    end
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret, "Life-state context changed")
+        for index,name in ipairs(names) do
+            assert(public(_G[name])==getters[index], "Life-state getter changed")
+        end
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret),
+            "Life-state context changed")
+        for index,name in ipairs(names) do
+            assert(rawequal(rawget(_G,name),getters[index]), "Life-state getter changed")
+        end
+    end
+    local function projection()
+        local flags={}
+        for index,getter in ipairs(getters) do
+            fixed()
+            local value=public(getter("player"))
+            assert(type(value)=="boolean", "Life-state flag unavailable")
+            flags[fields[index]]=value
+            fixed()
+        end
+        return flags
+    end
+    local first=projection()
+    local second=projection()
+    for _,field in ipairs(fields) do
+        assert(first[field]==second[field], "Life-state observation changed")
+    end
+    fixed()
+    second.coverage="reported_player_life_flags"
+    return second
+end
 -- Player-requested status-only projection; never queue, accept, leave or refresh.
 AO.collectors.battlefield_queue_slots = function()
     local secret=issecretvalue

@@ -4377,3 +4377,17 @@ reported_status_changed. Capacity changes and unchanged recorded slots are
 counted. Positional equality does not establish queue identity or continuity;
 no join, leave, acceptance or current membership event is inferred. Existing
 character/client/time/owner gates apply and default output stays unchanged.
+
+## Passive player life-state flags (2026-11-10)
+
+Manual Forever exports may record player_life_state with four player-only raw
+Boolean flags: is_dead, is_ghost, is_dead_or_ghost and is_feigning_death.
+Two matching projections and stable getter/context checks are required. Failed,
+missing, restricted, non-Boolean or changing reads remain unavailable, never
+false. Combat export stays refused. Inspect the section or find captures with
+existing section-status filters. Flags are not normalised into an alive/dead
+classification or action eligibility and do not establish current state or
+character continuity. No release, corpse retrieval, resurrection or other
+player action is invoked. Data stays owner-local, outside public indexing.
+Update readers before exporter installation. Native testing remains deferred.
+See ADR-079-passive-player-life-state.md.

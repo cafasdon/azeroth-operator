@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture player-only raw dead, ghost and feign-death flags during manual Forever exports without resurrection actions.
+
 - Compare saved battlefield status positions and capacity while withholding queue continuity and join/leave inference.
 
 - Find saved battlefield status observations by exact token, slot and minimum matching-slot count.

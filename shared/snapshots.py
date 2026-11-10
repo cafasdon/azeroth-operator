@@ -33,6 +33,7 @@ SECTIONS = SECTIONS | {"player_pvp_progression"}
 SECTIONS = SECTIONS | {"group_context"}
 SECTIONS = SECTIONS | {"owned_auctions"}
 SECTIONS = SECTIONS | {"battlefield_queue_slots"}
+SECTIONS = SECTIONS | {"player_life_state"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -856,6 +857,12 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "player_life_state" in sections:
+        life=sections['player_life_state']
+        flags={'is_dead','is_ghost','is_dead_or_ghost','is_feigning_death'}
+        if (c['family']!='forever' or not isinstance(life,dict) or set(life)!=flags|{'coverage'}
+                or life['coverage']!='reported_player_life_flags' or any(type(life[field]) is not bool for field in flags)):
+            raise ValueError('Invalid player life-state observation')
     if "battlefield_queue_slots" in sections:
         queues=sections['battlefield_queue_slots']
         if (c['family']!='forever' or not isinstance(queues,dict)
