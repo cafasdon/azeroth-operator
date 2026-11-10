@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved captures satisfying several exact section statuses together.
+
 - Find saved snapshots by an exact section capture status.
 
 - Compare section capture status and declared scope across saved Forever snapshots.

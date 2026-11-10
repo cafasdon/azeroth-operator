@@ -2013,6 +2013,7 @@ pub struct CaptureFilters<'a> {
     pub required_sections: Option<&'a [String]>,
     pub any_missing_sections: Option<&'a [String]>,
     pub section_capture: Option<&'a SectionCaptureFilter>,
+    pub section_captures: Option<&'a [SectionCaptureFilter]>,
     pub coverage_summary_sections: Option<&'a [String]>,
     pub inventory_item: Option<InventoryItemFilter>,
     pub inventory_requirements: Option<InventoryRequirementsFilter>,
@@ -2328,6 +2329,7 @@ impl Store {
             required_sections,
             any_missing_sections,
             section_capture,
+            section_captures,
             coverage_summary_sections,
             inventory_item,
             inventory_requirements,
@@ -2465,10 +2467,20 @@ impl Store {
             validate_section_names(sections)?;
         }
         ensure!(
-            section_capture
-                .is_none_or(|filter| SNAPSHOT_SECTIONS.contains(&filter.section.as_str())),
-            "Unknown capture section"
+            section_capture.is_none() || section_captures.is_none(),
+            "Choose one capture filter or a list"
         );
+        let capture_filters = section_capture
+            .map(std::slice::from_ref)
+            .or(section_captures);
+        if let Some(filters) = capture_filters {
+            validate_section_names(
+                &filters
+                    .iter()
+                    .map(|filter| filter.section.clone())
+                    .collect::<Vec<_>>(),
+            )?;
+        }
         ensure!(
             inventory_item.is_none() || inventory_requirements.is_none(),
             "Inventory item and inventory requirements filters are mutually exclusive"
@@ -3468,8 +3480,10 @@ impl Store {
                     }) {
                         continue;
                     }
-                    if section_capture.is_some_and(|filter| {
-                        s.section_capture_status(&filter.section) != filter.status.as_str()
+                    if capture_filters.is_some_and(|filters| {
+                        filters.iter().any(|filter| {
+                            s.section_capture_status(&filter.section) != filter.status.as_str()
+                        })
                     }) {
                         continue;
                     }
@@ -4689,12 +4703,19 @@ impl Store {
                     if let Some(matches) = missing_section_matches {
                         summary["missing_section_matches"] = json!(matches);
                     }
-                    if let Some(filter) = section_capture {
-                        summary["section_capture_match"] = json!({
+                    let capture_match = |filter: &SectionCaptureFilter| {
+                        json!({
                             "section":filter.section,"status":filter.status,
                             "reported_scope":s.sections.get(&filter.section)
                                 .and_then(|section| section["coverage"].as_str())
-                        });
+                        })
+                    };
+                    if let Some(filter) = section_capture {
+                        summary["section_capture_match"] = capture_match(filter);
+                    }
+                    if let Some(filters) = section_captures {
+                        summary["section_capture_matches"] =
+                            json!(filters.iter().map(capture_match).collect::<Vec<_>>());
                     }
                     if let Some((id, row, unfinished)) = achievement_match {
                         summary["tracked_achievement_match"] = json!({

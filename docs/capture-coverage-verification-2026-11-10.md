@@ -30,3 +30,10 @@ paging, other filters, malformed input and unavailable-reason exclusion.
 The advisory shipping result was supported using Jev 1.14.0, request
 `c77a50da812911bc886a5fa5850823c50f67154bb17f2c9e0f7b9e0433d8f753`.
 Usage was 467 input and 45 output tokens in 0.349 seconds.
+
+Combined status filters passed two scoped tests and independent MCP
+checks for same-capture conjunction, latest selection, pagination,
+all 57 distinct sections, order preservation and 14 invalid requests.
+The advisory shipping judgement selected supported using Jev 1.14.0,
+request `7fd0e31a6ecc89c8be1de9b0835cf5ae24b0b5fbe4bbb3dbd0aaa98328df0d46`.
+Usage was 437 input and 45 output tokens in 0.363 seconds.

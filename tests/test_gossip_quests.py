@@ -108,6 +108,29 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                     ]:
                         rejected = await session.call_tool('list_snapshots', {'family':'forever','section_capture':bad})
                         self.assertTrue(rejected.isError)
+                    filters = [
+                        {'section':'gossip_quests','status':'not_recorded'},
+                        {'section':'bags','status':'reported_unavailable'},
+                    ]
+                    found = await session.call_tool('list_snapshots', {'family':'forever','section_captures':filters})
+                    self.assertFalse(found.isError, found)
+                    rows = json.loads(found.content[0].text)['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in rows], [valid[0][0]])
+                    self.assertEqual(rows[0]['section_capture_matches'], [
+                        {**entry, 'reported_scope':None} for entry in filters
+                    ])
+                    contradictory = await session.call_tool('list_snapshots', {
+                        'family':'forever','section_captures':filters,'required_sections':['bags'],
+                    })
+                    self.assertFalse(contradictory.isError)
+                    self.assertEqual(json.loads(contradictory.content[0].text)['snapshots'], [])
+                    for bad in [
+                        {'section_captures': []},
+                        {'section_captures': [filters[0], filters[0]]},
+                        {'section_captures': filters, 'section_capture': filters[0]},
+                    ]:
+                        rejected = await session.call_tool('list_snapshots', {'family':'forever', **bad})
+                        self.assertTrue(rejected.isError)
                     reply = await session.call_tool('character_summary', {'snapshot_id': followup_key})
                     self.assertFalse(reply.isError)
                     summary = json.loads(reply.content[0].text)

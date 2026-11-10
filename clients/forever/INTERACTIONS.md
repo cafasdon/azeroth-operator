@@ -10,6 +10,9 @@ Unchanged coverage metadata can still accompany different panel filters.
 Use `list_snapshots.section_capture` with a known `section` and a
 `status` of `observed`, `reported_unavailable` or `not_recorded` to find
 those captures. Results expose the status and declared scope.
+Use `section_captures` instead for a nonempty list of distinct sections.
+Every status must match in the same snapshot. Results preserve the
+supplied order in `section_capture_matches`.
 
 Travel comparisons report `hearthstone_active_ready_at_delta_milliseconds`
 when both captures show a positive cooldown for the same Hearthstone item.
