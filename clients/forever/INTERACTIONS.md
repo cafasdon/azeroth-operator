@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `mail_attachment_bag_space_message_slot` when inspecting saved mail
+to estimate space for known item attachments in one loaded message.
+You can also provide `mail_attachment_bag_space_item_ids` to limit the
+estimate to selected items. Unloaded slots return unknown. The message
+slot belongs to that capture and does not identify a live message.
+
 Use `mail_attachment_headroom_currency_ids` when inspecting a saved
 `mail_attachments` section to compare loaded pending quantities with
 the same capture's currency caps. Missing attachment or cap observations

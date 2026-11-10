@@ -88,6 +88,29 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(space['estimated_new_stack_slots'],2)
                     self.assertEqual(space['estimated_new_stack_slots_if_same_item_stacks_merge'],1)
                     self.assertTrue(space['fits_recorded_general_slots_if_same_item_stacks_merge'])
+                    async def message_space(slot, ids=None, section='mail_attachments', error=False):
+                        args={'snapshot_id':with_mail,'section':section,
+                              'mail_attachment_bag_space_message_slot':slot}
+                        if ids is not None:
+                            args['mail_attachment_bag_space_item_ids']=ids
+                        reply=await session.call_tool('inspect_snapshot',args)
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['mail_attachment_bag_space_projection']
+                    first=await message_space(1)
+                    self.assertEqual((first['message_slot'],first['unloaded_messages'],
+                                      first['unknown_attachment_slots']),(1,4,1))
+                    self.assertEqual([(row['item_id'],row['known_pending_quantity']) for row in first['items']],[(10,2)])
+                    self.assertTrue(first['fits_recorded_general_slots'])
+                    self.assertFalse(first['retrieval_eligibility_verified'])
+                    second=await message_space(2,[10,720])
+                    self.assertEqual([row['known_pending_quantity'] for row in second['items']],[5,0])
+                    self.assertFalse(second['fits_recorded_general_slots'])
+                    self.assertEqual(second['unknown_attachment_slots'],0)
+                    self.assertIsNone(await message_space(3))
+                    await message_space(0,error=True)
+                    await message_space(101,error=True)
+                    await message_space(1,section='bags',error=True)
                     matched=await session.call_tool('list_snapshots',{'family':'forever',
                         'mail_attachment':{'kind':'item','id':10,'require_recorded_bag_space':True}})
                     self.assertFalse(matched.isError,matched)

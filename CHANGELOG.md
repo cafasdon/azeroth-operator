@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate carried bag space for one loaded message in a saved Forever inbox.
+
 - Optionally require all messages loaded and no unknown attachment slots when searching saved inboxes.
 
 - Find saved item attachments that fit recorded general bag slots without stack merges.

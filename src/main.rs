@@ -146,6 +146,8 @@ struct Inspect {
     loot_estimate_bag_space: bool,
     /// Estimate bag space for all observed loaded mail attachments matching these distinct item IDs.
     mail_attachment_bag_space_item_ids: Option<Vec<std::num::NonZeroU32>>,
+    /// Estimate bag space for one loaded saved message, optionally limited to the requested item IDs.
+    mail_attachment_bag_space_message_slot: Option<std::num::NonZeroU32>,
     /// Compare known loaded mail quantities for these distinct currency IDs with recorded cap headroom.
     mail_attachment_headroom_currency_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
@@ -2912,6 +2914,16 @@ impl Operator {
                 "Mail projections require mail_attachments and one to 64 distinct positive IDs per list",
             )]);
         }
+        if args
+            .mail_attachment_bag_space_message_slot
+            .is_some_and(|slot| {
+                args.section.as_deref() != Some("mail_attachments") || slot.get() > 100
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Mail message bag space requires mail_attachments and a message slot from 1 to 100",
+            )]);
+        }
         if args.weapon_enchant_reference_at.is_some()
             && args.section.as_deref() != Some("weapon_enchants")
         {
@@ -4598,6 +4610,7 @@ impl Operator {
                         ));
                 }
                 if args.mail_attachment_bag_space_item_ids.is_some()
+                    || args.mail_attachment_bag_space_message_slot.is_some()
                     || args.mail_attachment_headroom_currency_ids.is_some()
                 {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
@@ -4610,9 +4623,16 @@ impl Operator {
                             "Mail projections require a saved Forever snapshot",
                         )]);
                     }
-                    if let Some(ids) = &args.mail_attachment_bag_space_item_ids {
+                    if args.mail_attachment_bag_space_item_ids.is_some()
+                        || args.mail_attachment_bag_space_message_slot.is_some()
+                    {
                         value["mail_attachment_bag_space_projection"] = serde_json::json!(
-                            azeroth_operator::analysis::mail_attachment_bag_space(&snapshot, ids)
+                            azeroth_operator::analysis::mail_attachment_bag_space(
+                                &snapshot,
+                                args.mail_attachment_bag_space_item_ids.as_deref(),
+                                args.mail_attachment_bag_space_message_slot
+                                    .map(|slot| slot.get()),
+                            )
                         );
                     }
                     if let Some(ids) = &args.mail_attachment_headroom_currency_ids {

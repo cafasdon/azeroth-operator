@@ -6389,24 +6389,46 @@ pub fn restock_pending_mail(snapshot: &Snapshot, residual: &Value) -> Option<Val
 
 pub fn mail_attachment_bag_space(
     snapshot: &Snapshot,
-    ids: &[std::num::NonZeroU32],
+    ids: Option<&[std::num::NonZeroU32]>,
+    message_slot: Option<u32>,
 ) -> Option<Value> {
     let mail = snapshot.sections.get("mail_attachments")?;
-    let (totals, unknown_slots) = mail_attachment_totals(mail);
-    let quantities = ids.iter().map(|id| {
+    let (totals, unknown_slots) = if let Some(slot) = message_slot {
+        let message = mail["messages"].get(slot.to_string())?.as_object()?;
+        mail_attachment_rows_totals(message.values())
+    } else {
+        mail_attachment_totals(mail)
+    };
+    let items = ids.map_or_else(
+        || {
+            totals
+                .keys()
+                .filter_map(|&(kind, id)| (kind == "item").then_some(id as u32))
+                .collect::<Vec<_>>()
+        },
+        |ids| ids.iter().map(|id| id.get()).collect(),
+    );
+    let quantities = items.into_iter().map(|id| {
         let quantity = totals
-            .get(&("item", u64::from(id.get())))
+            .get(&("item", u64::from(id)))
             .map_or(0, |(quantity, _)| *quantity);
-        (id.get(), quantity)
+        (id, quantity)
     });
     let mut report = incoming_items_bag_space(
         snapshot,
         quantities,
-        "matching_loaded_mail_items_only",
+        if message_slot.is_some() {
+            "selected_loaded_mail_message"
+        } else {
+            "matching_loaded_mail_items_only"
+        },
         "known_pending_quantity",
     );
     report["unloaded_messages"] = json!(unloaded_mail_messages(mail));
     report["unknown_attachment_slots"] = json!(unknown_slots);
+    if let Some(slot) = message_slot {
+        report["message_slot"] = json!(slot);
+    }
     report["retrieval_eligibility_verified"] = json!(false);
     Some(report)
 }
@@ -6446,25 +6468,35 @@ pub fn mail_attachment_currency_headroom(
 }
 
 fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
+    mail_attachment_rows_totals(
+        mail["messages"]
+            .as_object()
+            .unwrap()
+            .values()
+            .flat_map(|message| message.as_object().unwrap().values()),
+    )
+}
+
+fn mail_attachment_rows_totals<'a>(
+    rows: impl Iterator<Item = &'a Value>,
+) -> (KnownMailTotals, u32) {
     let mut totals = KnownMailTotals::new();
     let mut unknown = 0u32;
-    for message in mail["messages"].as_object().unwrap().values() {
-        for row in message.as_object().unwrap().values() {
-            let (kind, field) = match row["kind"].as_str().unwrap() {
-                "item" => ("item", "item_id"),
-                "currency" => ("currency", "currency_id"),
-                _ => {
-                    unknown += 1;
-                    continue;
-                }
-            };
-            let entry = totals
-                .entry((kind, row[field].as_u64().unwrap()))
-                .or_default();
-            // Validated inbox coverage bounds totals to 100 * 16 * u32::MAX.
-            entry.0 += row["count"].as_u64().unwrap();
-            entry.1 += 1;
-        }
+    for row in rows {
+        let (kind, field) = match row["kind"].as_str().unwrap() {
+            "item" => ("item", "item_id"),
+            "currency" => ("currency", "currency_id"),
+            _ => {
+                unknown += 1;
+                continue;
+            }
+        };
+        let entry = totals
+            .entry((kind, row[field].as_u64().unwrap()))
+            .or_default();
+        // Validated inbox coverage bounds totals to 100 * 16 * u32::MAX.
+        entry.0 += row["count"].as_u64().unwrap();
+        entry.1 += 1;
     }
     (totals, unknown)
 }
