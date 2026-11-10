@@ -4274,3 +4274,15 @@ or different limit makes the estimate unknown. Free slots and merge
 headroom still refer to carried bags.
 Update the importer and reader before syncing captures with this field.
 [Forever item API documentation](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/ItemDocumentation.lua)
+
+## Saved base skill targets (2026-11-10)
+
+Optional `skill_line_filter.target_rank` on inspection plans an unsigned
+32-bit base rank (including zero). Each returned row adds `points_to_target`,
+`observed_base_target_reached` and `target_exceeds_observed_cap`. Targets above
+the captured cap remain visible as a planning gap, with that flag set; no
+training availability is inferred. Modifiers and temporary points do not
+reduce the base-rank gap. Filtering, matching counts and pagination retain
+their existing meaning. Missing sections remain unknown. Omitting the target
+preserves the existing response shape. This applies to recorded profession
+and weapon skill rows, not a claim that every skill was captured.

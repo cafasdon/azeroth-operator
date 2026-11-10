@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan base skill-rank targets from saved profession and weapon-skill observations.
+
 - Restrict local hybrid item search to explicit candidate IDs without indexing personal inventory.
 
 - Return optional exact public source records alongside hybrid search candidates.

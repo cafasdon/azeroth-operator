@@ -834,3 +834,10 @@ Only numeric candidate_page_cache statistics are reported. Full caches fall back
 to fresh MCP requests, and a new invocation starts empty. No page cache files,
 new public cache input, lower simulation precision or broader BiS claim. See
 docs/ADR-074-invocation-owned-page-reuse.md.
+
+## Saved base skill targets (2026-11-10)
+
+Saved base skill inspection accepts an explicit target rank and reports base
+points still needed, whether the captured base rank reached it, and whether
+it exceeds the captured cap. Bonuses are excluded and no training eligibility
+is inferred. See ADR-076-saved-base-skill-targets.md. Native testing deferred.

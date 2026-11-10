@@ -40,6 +40,8 @@ fn twenty() -> usize {
 #[serde(deny_unknown_fields)]
 pub struct SkillLinePage {
     pub filter: SkillLineFilter,
+    /// Planning base rank, separate from modifiers and captured training eligibility.
+    pub target_rank: Option<u32>,
     #[serde(default)]
     pub offset: usize,
     #[serde(default = "twenty")]
@@ -190,6 +192,9 @@ pub fn inspect(section: Option<&Value>, page: &SkillLinePage) -> Result<Value> {
     result["filter"] = json!(page.filter);
     result["offset"] = json!(page.offset);
     result["limit"] = json!(page.limit);
+    if let Some(target) = page.target_rank {
+        result["target_rank"] = json!(target);
+    }
     let Some(section) = section else {
         for field in [
             "rows",
@@ -203,7 +208,16 @@ pub fn inspect(section: Option<&Value>, page: &SkillLinePage) -> Result<Value> {
         }
         return Ok(result);
     };
-    let found = scan(section, &page.filter)?;
+    let mut found = scan(section, &page.filter)?;
+    if let Some(target) = page.target_rank {
+        for row in &mut found.rows {
+            let rank = row["observation"]["rank"].as_u64().unwrap();
+            let cap = row["observation"]["max_rank"].as_u64().unwrap();
+            row["points_to_target"] = json!(u64::from(target).saturating_sub(rank));
+            row["observed_base_target_reached"] = json!(rank >= u64::from(target));
+            row["target_exceeds_observed_cap"] = json!(u64::from(target) > cap);
+        }
+    }
     let matched = found.rows.len();
     result["captured_count"] = json!(found.captured);
     result["matching_count"] = json!(matched);
@@ -263,6 +277,26 @@ mod tests {
         assert_eq!(found["has_more"], false);
         assert_eq!(found["matching_count"], 1);
         assert_eq!(found["rows"], json!([]));
+    }
+    #[test]
+    fn targets_keep_base_rank_and_observed_cap_separate() {
+        let rows = json!({"1":{"name":"Weapon","rank":200,"max_rank":225,"modifier":100},
+            "2":{"name":"Profession","rank":300,"max_rank":300}});
+        let mut selected = page(json!({"minimum_rank":0}));
+        selected.target_rank = Some(250);
+        let result = inspect(Some(&rows), &selected).unwrap();
+        assert_eq!(result["rows"][0]["points_to_target"], 50);
+        assert_eq!(result["rows"][0]["target_exceeds_observed_cap"], true);
+        assert_eq!(result["rows"][0]["observed_base_target_reached"], false);
+        assert_eq!(result["rows"][1]["points_to_target"], 0);
+        assert_eq!(result["rows"][1]["target_exceeds_observed_cap"], false);
+        assert_eq!(result["rows"][1]["observed_base_target_reached"], true);
+        selected.target_rank = Some(u32::MAX);
+        assert_eq!(inspect(Some(&rows), &selected).unwrap()["rows"][0]["points_to_target"], u32::MAX - 200);
+        selected.target_rank = Some(0);
+        assert_eq!(inspect(Some(&rows), &selected).unwrap()["rows"][0]["points_to_target"], 0);
+        assert!(inspect(None, &selected).unwrap()["rows"].is_null());
+        assert_eq!(inspect(Some(&json!({})), &selected).unwrap()["rows"], json!([]));
     }
     #[test]
     fn empty_reversed_and_invalid_paging_reject() {

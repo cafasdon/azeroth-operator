@@ -68,6 +68,22 @@ class SkillFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([mixed['data'][f] for f in ['captured_count','matching_count','unknown_count','nonmatching_count']],[5,2,1,2])
                     self.assertEqual(mixed['data']['rows'][0]['points_to_observed_cap'],50)
                     self.assertEqual(mixed['data']['rows'][0]['observation']['modifier'],100)
+                    self.assertNotIn('target_rank',mixed['data'])
+                    self.assertNotIn('points_to_target',mixed['data']['rows'][0])
+                    target=(await inspect(keys['mixed'],{'minimum_rank':0},target_rank=275))['data']
+                    self.assertEqual(target['target_rank'],275)
+                    target_rows={r['skill_line_id']:r for r in target['rows']}
+                    self.assertEqual(target_rows[43]['points_to_target'],25)
+                    self.assertFalse(target_rows[43]['observed_base_target_reached'])
+                    self.assertFalse(target_rows[43]['target_exceeds_observed_cap'])
+                    self.assertEqual(target_rows[100]['points_to_target'],0)
+                    self.assertTrue(target_rows[100]['observed_base_target_reached'])
+                    self.assertTrue(target_rows[42]['target_exceeds_observed_cap'])
+                    maximum_target=(await inspect(keys['maximum'],{'minimum_rank':0},target_rank=4294967295,limit=1))['data']
+                    self.assertEqual(maximum_target['rows'][0]['points_to_target'],4294967295)
+                    for invalid_target in [True,1.0,'250',-1,4294967296]:
+                        await call('inspect_snapshot',True,snapshot_id=keys['mixed'],section='skill_lines',
+                            skill_line_filter={'filter':{'minimum_rank':0},'target_rank':invalid_target})
                     modifiers={'modifier':-5,'temporary_points':0}
                     matching=(await inspect(keys['mixed'],modifiers))['data']
                     self.assertEqual([r['skill_line_id'] for r in matching['rows']],[42])
