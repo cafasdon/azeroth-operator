@@ -50,7 +50,12 @@ class RecipeSkillUpTests(unittest.IsolatedAsyncioTestCase):
                             (80,{'can_skill_up':False,'minimum_skill_ups_reported':0},1),
                             (81,{'can_skill_up':False},0),(81,{'minimum_skill_ups_reported':0},0),
                             (1,{'minimum_skill_ups_reported':2},1),(1,{'minimum_skill_ups_reported':3},0),
-                            (82,{'learning':'learned','can_skill_up':True},0)]:
+                            (82,{'learning':'learned','can_skill_up':True},0),
+                            (80,{'maximum_skill_ups_reported':0,'relative_difficulty':'trivial'},1),
+                            (81,{'maximum_skill_ups_reported':0},0),
+                            (1,{'minimum_skill_ups_reported':2,'maximum_skill_ups_reported':2},1),
+                            (1,{'maximum_skill_ups_reported':1},0),
+                            (1,{'relative_difficulty':'trivial'},0)]:
                         result=await call('list_snapshots',family='forever',profession_recipe={'recipe_id':recipe,**options})
                         self.assertEqual(len(result['snapshots']),expected,(recipe,options))
                         if expected:
@@ -60,7 +65,9 @@ class RecipeSkillUpTests(unittest.IsolatedAsyncioTestCase):
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'profession_recipe_view'})
                         self.assertTrue(response.isError);self.assertNotIn('PRIVATE',response.content[0].text)
                     for options in [{'minimum_skill_ups_reported':-1},{'minimum_skill_ups_reported':True},
-                                    {'minimum_skill_ups_reported':2**32},{'can_skill_up':1}]:
+                                    {'minimum_skill_ups_reported':2**32},{'can_skill_up':1},
+                                    {'minimum_skill_ups_reported':2,'maximum_skill_ups_reported':1},
+                                    {'relative_difficulty':'orange'}]:
                         response=await session.call_tool('list_snapshots',{'family':'forever','profession_recipe':{'recipe_id':1,**options}})
                         self.assertTrue(response.isError)
 

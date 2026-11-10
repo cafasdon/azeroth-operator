@@ -67,9 +67,11 @@ class RecipeViewSearchTests(unittest.IsolatedAsyncioTestCase):
                     def truth(row,criteria):
                         checks = []
                         for field,expected in criteria.items():
-                            source = 'skill_ups_reported' if field=='minimum_skill_ups_reported' else field
+                            source = 'skill_ups_reported' if field in (
+                                'minimum_skill_ups_reported','maximum_skill_ups_reported') else field
                             checks.append(None if source not in row else row[source]>=expected
-                                if field=='minimum_skill_ups_reported' else row[source]==expected)
+                                if field=='minimum_skill_ups_reported' else row[source]<=expected
+                                if field=='maximum_skill_ups_reported' else row[source]==expected)
                         return False if False in checks else None if None in checks else True
                     for learned,skill,points in product([None,False,True],[None,False,True],[None,0,1,3]):
                         criteria = {field:value for field,value in [('learned',learned),('can_skill_up',skill),
@@ -115,6 +117,18 @@ class RecipeViewSearchTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(found['matched_row_count'],count)
                     partial = await search(snapshot_id=variants['partial_view'],recipe_id=27,recipe_view_filter={'learned':True})
                     self.assertEqual(partial['recipe_view_unknown_count'],1)
+                    for bounds in (
+                        {'maximum_skill_ups_reported':0},
+                        {'minimum_skill_ups_reported':2,'maximum_skill_ups_reported':2},
+                        {'maximum_skill_ups_reported':2**32-1,'relative_difficulty':'optimal'},
+                    ):
+                        found=await search(recipe_view_filter=bounds,limit=50)
+                        expected=[int(i) for i,row in observations.items() if truth(row,bounds) is True]
+                        self.assertEqual([row['recipe_id'] for row in found['records']],expected)
+                        self.assertEqual(found['recipe_view_unknown_count'],
+                                         sum(truth(row,bounds) is None for row in observations.values()))
+                    await search(error=True,recipe_view_filter={
+                        'minimum_skill_ups_reported':2,'maximum_skill_ups_reported':1})
                     narrowed = await search(recipe_id=27,recipe_view_filter={'learned':True,'can_skill_up':True})
                     self.assertEqual([row['recipe_id'] for row in narrowed['records']],[27])
                     rejected = await session.call_tool('review_forever_recipe',{'snapshot_id':key,'recipe_id':27,'crafts':1})

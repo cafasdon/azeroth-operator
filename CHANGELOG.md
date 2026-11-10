@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved recipe skill-up ranges and match difficulty in character discovery.
+
 - Retain saved condition readings for equipped replacement candidates during draft revalidation.
 
 - Compare saved equipped source-slot condition when revalidating an equipment draft.

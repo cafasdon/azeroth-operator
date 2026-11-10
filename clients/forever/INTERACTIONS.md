@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `maximum_skill_ups_reported` on a saved recipe view filter or
+`list_snapshots.profession_recipe` for an inclusive upper bound. Combine
+it with the minimum for an exact count. Saved character discovery can
+also match `relative_difficulty`. Missing values cannot satisfy those
+predicates, and reported counts do not guarantee skill gains.
+
 On `list_snapshots`, combine `equipment_durability_slot` (1–19) with
 `equipment_durability_max_percent` to find saved captures where that
 specific slot meets the threshold. Missing readings do not match.

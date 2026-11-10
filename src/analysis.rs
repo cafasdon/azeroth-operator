@@ -201,6 +201,8 @@ pub struct RecipeViewFilter {
     pub learned: Option<bool>,
     pub can_skill_up: Option<bool>,
     pub minimum_skill_ups_reported: Option<u32>,
+    /// Inclusive upper bound on the client-reported skill-up count.
+    pub maximum_skill_ups_reported: Option<u32>,
     /// Exact client-reported difficulty. Missing observations are unevaluable.
     pub relative_difficulty: Option<RecipeRelativeDifficulty>,
 }
@@ -215,7 +217,7 @@ pub enum RecipeRelativeDifficulty {
 }
 
 impl RecipeRelativeDifficulty {
-    fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             Self::Optimal => "optimal",
             Self::Medium => "medium",
@@ -291,6 +293,10 @@ fn recipe_view_matches(row: Option<&Value>, filter: &RecipeViewFilter) -> Option
         filter.minimum_skill_ups_reported.map(|minimum| {
             row.and_then(|r| r["skill_ups_reported"].as_u64())
                 .map(|value| value >= u64::from(minimum))
+        }),
+        filter.maximum_skill_ups_reported.map(|maximum| {
+            row.and_then(|r| r["skill_ups_reported"].as_u64())
+                .map(|value| value <= u64::from(maximum))
         }),
         filter.relative_difficulty.map(|expected| {
             row.and_then(|r| r["relative_difficulty"].as_str())
@@ -587,8 +593,16 @@ pub fn search_recipe_materials_ordered(
             filter.learned.is_some()
                 || filter.can_skill_up.is_some()
                 || filter.minimum_skill_ups_reported.is_some()
+                || filter.maximum_skill_ups_reported.is_some()
                 || filter.relative_difficulty.is_some(),
             "Recipe view filter requires at least one predicate"
+        );
+        ensure!(
+            filter
+                .minimum_skill_ups_reported
+                .zip(filter.maximum_skill_ups_reported)
+                .is_none_or(|(minimum, maximum)| minimum <= maximum),
+            "Recipe skill-up bounds must be ordered"
         );
     }
     let view = snapshot.sections.get("profession_recipe_view");

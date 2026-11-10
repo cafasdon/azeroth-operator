@@ -501,6 +501,10 @@ pub struct ProfessionRecipeFilter {
     pub can_skill_up: Option<bool>,
     /// Require an observed reported skill-up count at or above this bound.
     pub minimum_skill_ups_reported: Option<u32>,
+    /// Require an observed reported skill-up count at or below this bound.
+    pub maximum_skill_ups_reported: Option<u32>,
+    /// Match the exact client-reported difficulty.
+    pub relative_difficulty: Option<analysis::RecipeRelativeDifficulty>,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, schemars::JsonSchema)]
@@ -2550,6 +2554,13 @@ impl Store {
             profession_recipe.is_none() || family == Family::Forever,
             "Profession recipe view filtering requires Forever"
         );
+        ensure!(
+            profession_recipe.as_ref().is_none_or(|filter| filter
+                .minimum_skill_ups_reported
+                .zip(filter.maximum_skill_ups_reported)
+                .is_none_or(|(minimum, maximum)| minimum <= maximum)),
+            "Recipe skill-up bounds must be ordered"
+        );
         let profession_recipe_key = profession_recipe
             .as_ref()
             .map(|filter| filter.recipe_id.to_string());
@@ -3665,7 +3676,9 @@ impl Store {
                         (filter.profession_id.is_none_or(|id| view["profession_id"].as_u64() == Some(u64::from(id.get())))
                             && filter.learning.is_none_or(|state| row["learned"].as_bool() == state.observed())
                             && filter.can_skill_up.is_none_or(|flag| row["can_skill_up"].as_bool()==Some(flag))
-                            && filter.minimum_skill_ups_reported.is_none_or(|minimum|row["skill_ups_reported"].as_u64().is_some_and(|n|n>=u64::from(minimum))))
+                            && filter.minimum_skill_ups_reported.is_none_or(|minimum|row["skill_ups_reported"].as_u64().is_some_and(|n|n>=u64::from(minimum)))
+                            && filter.maximum_skill_ups_reported.is_none_or(|maximum|row["skill_ups_reported"].as_u64().is_some_and(|n|n<=u64::from(maximum)))
+                            && filter.relative_difficulty.is_none_or(|difficulty|row["relative_difficulty"].as_str()==Some(difficulty.as_str())))
                             .then(|| {
                                 let mut observation=json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
                                     "recipe_id":filter.recipe_id,"name":row["name"],"learned":row["learned"]});
