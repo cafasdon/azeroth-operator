@@ -113,3 +113,17 @@ request `c82ba07d10ec158d22ce9621db878508135b2f72e8d2244927f4272281fb6fd9`;
 539 input and 44 output tokens, 0.376 seconds. The author accepted the scoped
 change based on direct tests and both independent reviews. Retrieval ranking
 is not a simulation score or proof of best-in-slot gear.
+
+A source-grounded retrieval sanity baseline is recorded in
+local-knowledge-retrieval-baseline-2026-11-10.json at source a958b1a.
+Fourteen manually chosen queries cover all nine categories: ten reference
+queries and four descriptive queries. All expected source sets were validated
+against the pinned catalogue, including duplicate suffix names, item set names
+and spellId versus spell-effect record ID. Results: 13/14 first place, 14/14
+within three, reciprocal-rank mean 0.95238. Median warm query time including
+index validation was 0.407207 seconds; model loading was 10.865586 seconds.
+Socket connect was blocked, zero attempts were observed, and index SHA-256 was
+unchanged. A separate readback recomputed source labels, ranks and metrics.
+This small selected set is not a held-out relevance benchmark or a comparison
+with lexical-only search; no simulation, native interaction or privacy boundary
+was qualified by these measurements. No runtime changes were made.

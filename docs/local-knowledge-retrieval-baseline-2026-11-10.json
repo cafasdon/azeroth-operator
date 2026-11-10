@@ -1,0 +1,299 @@
+{
+  "date": "2026-11-10",
+  "scope": "offline_public_catalogue_retrieval_baseline",
+  "source_commit": "a958b1a",
+  "catalogue_sha256": "5ca68229623b8bc1f9a085ed3b5f564ab82ff66055503749e324d640ac04640e",
+  "catalogue_revision": "9dc32ac8ca0d8d1b76337861d38b93c0f884af11",
+  "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "index_sha256": "53443e5fab48cf754422a8e9253ebdd9acb688065693b46ab97b56bed36eeda1",
+  "model_load_seconds": 10.865586,
+  "python": "3.14.7",
+  "processor_architecture": "AMD64",
+  "network_connect_attempts": 0,
+  "index_unchanged": true,
+  "queries": [
+    {
+      "section": "items",
+      "query": "Thunderfury",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Thunderfury, Blessed Blade of the Windseeker",
+      "accepted_record_keys": [
+        "items:19019"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "items:19019",
+        "items:17223",
+        "items:22097",
+        "items:22098",
+        "items:22096"
+      ],
+      "elapsed_seconds": 0.35248
+    },
+    {
+      "section": "items",
+      "query": "Garb of Thero-shan",
+      "kind": "reference",
+      "expected_source_field": "setName",
+      "expected_source_value": "Garb of Thero-shan",
+      "accepted_record_keys": [
+        "items:7950",
+        "items:7953"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "items:7950",
+        "items:7953",
+        "items:21365",
+        "items:21368",
+        "items:21366"
+      ],
+      "elapsed_seconds": 0.619467
+    },
+    {
+      "section": "consumables",
+      "query": "Minor Healing Potion",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Minor Healing Potion",
+      "accepted_record_keys": [
+        "consumables:118"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "consumables:118",
+        "consumables:929",
+        "consumables:18839",
+        "consumables:268881",
+        "consumables:13446"
+      ],
+      "elapsed_seconds": 0.488175
+    },
+    {
+      "section": "npcs",
+      "query": "Harvest Golem",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Harvest Golem",
+      "accepted_record_keys": [
+        "npcs:36"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "npcs:36",
+        "npcs:480",
+        "npcs:8983",
+        "npcs:16060",
+        "npcs:12237"
+      ],
+      "elapsed_seconds": 0.605002
+    },
+    {
+      "section": "zones",
+      "query": "Dun Morogh",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Dun Morogh",
+      "accepted_record_keys": [
+        "zones:1"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "zones:1",
+        "zones:14",
+        "zones:490",
+        "zones:493",
+        "zones:16558"
+      ],
+      "elapsed_seconds": 0.520482
+    },
+    {
+      "section": "factions",
+      "query": "Thorium Brotherhood",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Thorium Brotherhood",
+      "accepted_record_keys": [
+        "factions:59"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "factions:59",
+        "factions:2798",
+        "factions:509",
+        "factions:2827",
+        "factions:2819"
+      ],
+      "elapsed_seconds": 0.51762
+    },
+    {
+      "section": "enchants",
+      "query": "Crude Scope",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "Crude Scope",
+      "accepted_record_keys": [
+        "enchants:30:56aa21dfc7767ca977702564195ead0e120220fb69188f8403c68398aff5882b"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "enchants:30:56aa21dfc7767ca977702564195ead0e120220fb69188f8403c68398aff5882b",
+        "enchants:33:d5aa511cf68d85ec083b4ff57365c402e413184b46e3ae40221040507da4a69a",
+        "enchants:664:86c380a332d545048dd0d3f01b833e6215cac30d56417e22d8102bae9826a949",
+        "enchants:663:94becfa296820fb3316827da21eb679ce0a80454ea877544c109b9ee15c40e57",
+        "enchants:8720:24c306a195fe93145acd2600b51b5e7006402d1261977c8f5fd55cb91807ac9e"
+      ],
+      "elapsed_seconds": 0.555182
+    },
+    {
+      "section": "random_suffixes",
+      "query": "of the Eagle",
+      "kind": "reference",
+      "expected_source_field": "name",
+      "expected_source_value": "of the Eagle",
+      "accepted_record_keys": [
+        "random_suffixes:12718",
+        "random_suffixes:13012",
+        "random_suffixes:13138",
+        "random_suffixes:13188"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "random_suffixes:13138",
+        "random_suffixes:12718",
+        "random_suffixes:13012",
+        "random_suffixes:13188",
+        "random_suffixes:12720"
+      ],
+      "elapsed_seconds": 0.41993
+    },
+    {
+      "section": "spell_effects",
+      "query": "437",
+      "kind": "reference",
+      "expected_source_field": "spellId",
+      "expected_source_value": 437,
+      "accepted_record_keys": [
+        "spell_effects:679151"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "spell_effects:679151",
+        "spell_effects:679365",
+        "spell_effects:699637",
+        "spell_effects:679366",
+        "spell_effects:679187"
+      ],
+      "elapsed_seconds": 0.381233
+    },
+    {
+      "section": "encounters",
+      "query": "Movement",
+      "kind": "reference",
+      "expected_source_field": "path",
+      "expected_source_value": "Default/Movement",
+      "accepted_record_keys": [
+        "encounters:Default/Movement"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "encounters:Default/Movement",
+        "encounters:Default/Dynamic Adds",
+        "encounters:Default/Raid Target",
+        "encounters:Default/Custom Boss"
+      ],
+      "elapsed_seconds": 0.37722
+    },
+    {
+      "section": "consumables",
+      "query": "small healing potion",
+      "kind": "descriptive",
+      "expected_source_field": "name",
+      "expected_source_value": "Minor Healing Potion",
+      "accepted_record_keys": [
+        "consumables:118"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "consumables:118",
+        "consumables:929",
+        "consumables:18839",
+        "consumables:13446",
+        "consumables:1710"
+      ],
+      "elapsed_seconds": 0.38749
+    },
+    {
+      "section": "enchants",
+      "query": "scope for my ranged weapon",
+      "kind": "descriptive",
+      "expected_source_field": "name",
+      "expected_source_value": "Crude Scope",
+      "accepted_record_keys": [
+        "enchants:30:56aa21dfc7767ca977702564195ead0e120220fb69188f8403c68398aff5882b"
+      ],
+      "first_accepted_rank": 3,
+      "top_five_record_keys": [
+        "enchants:664:86c380a332d545048dd0d3f01b833e6215cac30d56417e22d8102bae9826a949",
+        "enchants:33:d5aa511cf68d85ec083b4ff57365c402e413184b46e3ae40221040507da4a69a",
+        "enchants:30:56aa21dfc7767ca977702564195ead0e120220fb69188f8403c68398aff5882b",
+        "enchants:663:94becfa296820fb3316827da21eb679ce0a80454ea877544c109b9ee15c40e57",
+        "enchants:8720:24c306a195fe93145acd2600b51b5e7006402d1261977c8f5fd55cb91807ac9e"
+      ],
+      "elapsed_seconds": 0.386188
+    },
+    {
+      "section": "zones",
+      "query": "swamp full of sorrows",
+      "kind": "descriptive",
+      "expected_source_field": "name",
+      "expected_source_value": "Swamp of Sorrows",
+      "accepted_record_keys": [
+        "zones:8"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "zones:8",
+        "zones:16756",
+        "zones:3429",
+        "zones:16544",
+        "zones:16611"
+      ],
+      "elapsed_seconds": 0.394484
+    },
+    {
+      "section": "npcs",
+      "query": "a golem harvesting fields",
+      "kind": "descriptive",
+      "expected_source_field": "name",
+      "expected_source_value": "Harvest Golem",
+      "accepted_record_keys": [
+        "npcs:36"
+      ],
+      "first_accepted_rank": 1,
+      "top_five_record_keys": [
+        "npcs:36",
+        "npcs:480",
+        "npcs:8983",
+        "npcs:11988",
+        "npcs:16060"
+      ],
+      "elapsed_seconds": 0.382072
+    }
+  ],
+  "metrics": {
+    "query_count": 14,
+    "hit_at_1": 13,
+    "hit_at_5": 14,
+    "mean_reciprocal_rank": 0.9523809523809524,
+    "median_query_seconds": 0.407207
+  },
+  "limitations": [
+    "Small manually chosen sanity set; no held-out general relevance or gameplay benchmark.",
+    "Descriptive targets are examples of acceptable references, not exhaustive relevance labels.",
+    "All matching source rows accepted: duplicate names, set membership and spellId are not confused with unique record IDs.",
+    "Warm per-query timing includes index validation; model startup reported separately; no comparison to alternate retrieval methods.",
+    "No private snapshots, game calls, missing-fact inference, equip legality or simulation quality measured."
+  ]
+}
