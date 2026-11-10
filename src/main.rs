@@ -322,6 +322,8 @@ struct Inspect {
     toy_collected: Option<bool>,
     /// Keep only saved toy rows with this recorded favourite flag.
     toy_favorite: Option<bool>,
+    /// Keep saved toy rows with this exact case-insensitive public name.
+    toy_name: Option<String>,
     /// Select one saved profession by skill line. Requires section "professions".
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
@@ -2446,14 +2448,22 @@ impl Operator {
                 "Mount flag filtering requires the mount_collection section without an exact mount selector",
             )]);
         }
-        let filter_toys = args.toy_collected.is_some() || args.toy_favorite.is_some();
+        let toy_name = args.toy_name.as_deref().map(str::trim);
+        if toy_name.is_some_and(|name| name.is_empty() || name.len() > 256) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Toy name requires one to 256 bytes after trimming",
+            )]);
+        }
+        let toy_name = toy_name.map(str::to_lowercase);
+        let filter_toys =
+            args.toy_collected.is_some() || args.toy_favorite.is_some() || toy_name.is_some();
         if filter_toys
             && (args.section.as_deref() != Some("toy_collection_view")
                 || args.toy_item_id.is_some()
                 || args.toy_in_view.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Toy flag filtering requires the toy_collection_view section without an exact toy selector",
+                "Toy filtering requires the toy_collection_view section without an exact toy selector",
             )]);
         }
         if args.toy_in_view.is_some()
@@ -3757,7 +3767,7 @@ impl Operator {
                 if filter_toys {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Toy flag filtering requires a saved Forever snapshot",
+                            "Toy filtering requires a saved Forever snapshot",
                         )]);
                     }
                     let count = value["data"]
@@ -3770,6 +3780,11 @@ impl Operator {
                                     && args
                                         .toy_favorite
                                         .is_none_or(|flag| row["favorite"].as_bool() == Some(flag))
+                                    && toy_name.as_ref().is_none_or(|name| {
+                                        row["name"].as_str().is_some_and(|label| {
+                                            label.trim().to_lowercase() == *name
+                                        })
+                                    })
                             });
                             entries.len()
                         });

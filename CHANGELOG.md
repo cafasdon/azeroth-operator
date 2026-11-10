@@ -1,5 +1,7 @@
 # Changelog
 
+- Inspect saved Forever toy journal rows by public toy name.
+
 - Find saved collected Forever mounts by public mount name.
 
 - Require a storage-wide bag review for quest bank withdrawal plans.

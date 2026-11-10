@@ -3207,6 +3207,11 @@ by exact public name, ignoring case and surrounding spaces. Results show
 up to 20 matching mount IDs and their saved flags. Combine it with
 `collected_mount` to require the name, ID and any flags on the same mount.
 
+Set `inspect_snapshot.toy_name` with the `toy_collection_view` section
+to look up an exact public toy name, ignoring case and surrounding spaces.
+It can be combined with the recorded collection and favourite flags.
+Matches cover only the saved filtered view.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

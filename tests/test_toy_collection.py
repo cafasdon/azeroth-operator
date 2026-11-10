@@ -92,6 +92,11 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(json.loads(result.content[0].text)["data"], captured["sections"]["toy_collection_view"])
                     for source, flags, expected in [
                         (key, {"toy_collected":True}, ["1"]),
+                        (key, {"toy_name":"  oWnEd  ","toy_collected":True}, ["1"]),
+                        (key, {"toy_name":"Owned","toy_collected":False}, []),
+                        (key, {"toy_name":"collected"}, []),
+                        (key, {"toy_name":"Not collected","toy_collected":False}, ["2"]),
+                        (missing_key, {"toy_name":"Owned"}, None),
                         (after_key, {"toy_collected":False,"toy_favorite":True}, ["1"]),
                         (after_key, {"toy_collected":True,"toy_favorite":True}, []),
                         (missing_key, {"toy_favorite":False}, None),
@@ -109,8 +114,13 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
                         (key,"toy_collection_view",{"toy_item_id":1}),
                         (key,"toy_collection_view",{"toy_in_view":{"item_id":1}}),
                     ]:
-                        reply=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
-                            "section":section,"toy_favorite":True,**extra})
+                        for selection in [{"toy_favorite":True},{"toy_name":"Owned"}]:
+                            reply=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
+                                "section":section,**selection,**extra})
+                            self.assertTrue(reply.isError)
+                    for name in [" ", "é"*129, True]:
+                        reply=await session.call_tool("inspect_snapshot",{
+                            "snapshot_id":key,"section":"toy_collection_view","toy_name":name})
                         self.assertTrue(reply.isError)
                     selector = {"item_id":1,"collected":True,"favorite":False}
                     for source, matched in [(key,True),(after_key,False),(missing_key,False),(empty_key,False)]:
