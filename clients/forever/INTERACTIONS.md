@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `action_bar_spell_resource_filter` with saved action-bar inspection
+to find retained spell shortcuts matching recorded charge, cast-count or
+cooldown predicates. All predicates must match one spellbook row with the
+exact reported action spell ID. Missing values cannot satisfy a predicate.
+The result reports matching slots and leaves cast eligibility unverified.
+
 Set `group_member_target` with `inspect_snapshot` on `group_context`
 to compare the saved home and instance counts separately. It reports
 shortfall and excess against the target. Missing counts stay unknown.

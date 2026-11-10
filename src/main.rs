@@ -448,6 +448,8 @@ struct Inspect {
     /// Match observed built-in action bar spells to the same saved Forever spellbook.
     #[serde(default)]
     action_bar_spellbook: bool,
+    /// Find retained saved spell shortcuts with an exact reported spellbook row matching these resources.
+    action_bar_spell_resource_filter: Option<azeroth_operator::SpellResourceFilter>,
     /// Select one captured Forever built-in action slot, numbered 1 to 4096.
     action_bar_slot: Option<std::num::NonZeroU32>,
     /// Match an exact key on captured Forever built-in action buttons.
@@ -3277,6 +3279,7 @@ impl Operator {
             .map(|id| ("spell", id))
             .or_else(|| args.action_bar_item_id.map(|id| ("item", id)));
         let review_action_bar = args.action_bar_spellbook
+            || args.action_bar_spell_resource_filter.is_some()
             || args.action_bar_item_stock_audit
             || args.action_bar_mount_audit
             || args.action_bar_toy_audit
@@ -3288,6 +3291,15 @@ impl Operator {
         if review_action_bar && args.section.as_deref() != Some("action_bar_observation") {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Action bar slot and spellbook review require the action_bar_observation section",
+            )]);
+        }
+        if args
+            .action_bar_spell_resource_filter
+            .as_ref()
+            .is_some_and(|filter| filter.validate().is_err())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar spell resource filters require nonempty, ordered predicates",
             )]);
         }
         if args.action_bar_slot.is_some_and(|slot| slot.get() > 4096) {
@@ -6049,7 +6061,7 @@ impl Operator {
                     }
                     value["action_bar_item_stock"] = stock;
                 }
-                if args.action_bar_spellbook {
+                if args.action_bar_spellbook || args.action_bar_spell_resource_filter.is_some() {
                     let snapshot = match self.store.read(&args.snapshot_id) {
                         Ok(snapshot) => snapshot,
                         Err(_) => {
@@ -6058,15 +6070,26 @@ impl Operator {
                             )]);
                         }
                     };
-                    value["action_bar_spellbook"] =
-                        azeroth_operator::analysis::action_bar_spellbook(
-                            &value["data"],
-                            snapshot.sections.get("spellbook"),
-                            args.action_bar_slot.is_none()
-                                && action_bar_hotkey.is_none()
-                                && action_id_filter.is_none()
-                                && named_spell_ids.is_none(),
+                    if args.action_bar_spellbook {
+                        value["action_bar_spellbook"] =
+                            azeroth_operator::analysis::action_bar_spellbook(
+                                &value["data"],
+                                snapshot.sections.get("spellbook"),
+                                args.action_bar_slot.is_none()
+                                    && action_bar_hotkey.is_none()
+                                    && action_id_filter.is_none()
+                                    && named_spell_ids.is_none(),
+                            );
+                    }
+                    if let Some(filter) = args.action_bar_spell_resource_filter.as_ref() {
+                        value["action_bar_spell_resource_matches"] = serde_json::json!(
+                            azeroth_operator::analysis::action_bar_spell_resource_matches(
+                                &value["data"],
+                                snapshot.sections.get("spellbook"),
+                                filter
+                            )
                         );
+                    }
                 }
                 if filter_spellbook {
                     if value["client"]["family"] != "forever" {

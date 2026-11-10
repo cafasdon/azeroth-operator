@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved action-bar spell slots by exact spellbook charge, cast-count and cooldown observations.
+
 - Compare saved instance-group shortfalls against matching size references.
 
 - Limit saved instance group size references by the lockout cache age at capture.

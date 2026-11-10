@@ -5446,6 +5446,37 @@ fn spellbook_observation_conflicts<'a>(
     })
 }
 
+pub fn action_bar_spell_resource_matches(
+    actions: &Value,
+    spellbook: Option<&Value>,
+    filter: &crate::SpellResourceFilter,
+) -> Option<Value> {
+    let action_slots = action_slots_by_id(actions, "spell")?;
+    let entries = spellbook?["entries"].as_object()?;
+    let mut matching_spellbook_slots = BTreeMap::<u64, BTreeSet<u32>>::new();
+    for (slot, row) in entries {
+        if let (Ok(slot), Some(id)) = (slot.parse(), row["spell_id"].as_u64())
+            && action_slots.contains_key(&id)
+            && filter.matches(row) == Some(true)
+        {
+            matching_spellbook_slots.entry(id).or_default().insert(slot);
+        }
+    }
+    let matches: BTreeMap<_, _> = matching_spellbook_slots
+        .into_iter()
+        .map(|(id, slots)| {
+            (
+                id,
+                json!({"action_slots":action_slots[&id],"matching_spellbook_slots":slots}),
+            )
+        })
+        .collect();
+    Some(
+        json!({"matches":matches,"basis":"exact_reported_spell_id_same_capture",
+        "cast_eligibility_verified":false,"live":false}),
+    )
+}
+
 pub fn action_bar_spellbook(
     actions: &Value,
     spellbook: Option<&Value>,

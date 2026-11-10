@@ -136,6 +136,32 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                             'snapshot_id':conflicting_key,'section':'action_bar_observation',
                             'action_bar_spell_name':'private_spell',**invalid})
                     for key,mode,book in good:
+                        selected = await call('inspect_snapshot',snapshot_id=key,
+                            section='action_bar_observation',action_bar_spell_resource_filter={'minimum_charges':1})
+                        matches = selected['action_bar_spell_resource_matches']
+                        if book is None:
+                            self.assertIsNone(matches)
+                        else:
+                            self.assertFalse(matches['cast_eligibility_verified'])
+                            self.assertNotIn('100',matches['matches'])
+                            expected_slots = [2] if mode in ('full','ambiguous') else list(range(1,1025)) if mode=='maximum' else None
+                            expected = {} if expected_slots is None else {
+                                '101':{'action_slots':[2],'matching_spellbook_slots':expected_slots}}
+                            self.assertEqual(matches['matches'],expected)
+                        if mode == 'full':
+                            conflicting = await call('inspect_snapshot',snapshot_id=key,
+                                section='action_bar_observation',
+                                action_bar_spell_resource_filter={'minimum_charges':1,'cooldown_active':True})
+                            self.assertEqual(conflicting['action_bar_spell_resource_matches']['matches'],{})
+                            filtered = await call('inspect_snapshot',snapshot_id=key,
+                                section='action_bar_observation',action_bar_slot=1,
+                                action_bar_spell_resource_filter={'minimum_charges':1})
+                            self.assertEqual(filtered['action_bar_spell_resource_matches']['matches'],{})
+                            for section, predicates in [('spellbook',{'minimum_charges':1}),
+                                                        ('action_bar_observation',{}),
+                                                        ('action_bar_observation',{'minimum_charges':2,'maximum_charges':1})]:
+                                await call('inspect_snapshot',error=True,snapshot_id=key,
+                                    section=section,action_bar_spell_resource_filter=predicates)
                         named=await call('inspect_snapshot',snapshot_id=key,section='action_bar_observation',
                             action_bar_spell_name='  private_spell  ')
                         expected_slots=[] if mode in ('empty','missing','maximum') else ['2','3','5']
