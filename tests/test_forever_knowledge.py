@@ -18,6 +18,44 @@ from test_snapshots import fixture
 
 
 class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_norm_validation_preserves_scalar_boundary_and_corruption_rejection(self):
+        root = Path(__file__).resolve().parents[1]
+        index = root / 'local-data/knowledge/index.sqlite'
+        catalogue = root / 'local-data/forever/catalogue.json'
+        if not index.exists() or not catalogue.exists():
+            self.skipTest('Optional pinned catalogue and built index required')
+        import numpy as np
+        expected = knowledge.documents(catalogue)
+        dimensions = knowledge.MODEL_LOCK['dimensions']
+        cases = []
+        for value in [0,1,1e-30,1e30,np.nan,np.inf,-np.inf,
+                np.float32(.99989),np.nextafter(np.float32(.99989),np.float32(0)),
+                np.nextafter(np.float32(.99989),np.float32(1)),np.float32(1.00011),
+                np.nextafter(np.float32(1.00011),np.float32(1)),
+                np.nextafter(np.float32(1.00011),np.float32(2))]:
+            vector = np.zeros(dimensions,dtype='<f4');vector[0]=value
+            cases.append(vector.tobytes())
+        cases.extend([b'',b'\0',np.zeros(dimensions-1,dtype='<f4').tobytes(),
+            np.zeros(dimensions+1,dtype='<f4').tobytes()])
+        with closing(sqlite3.connect(':memory:')) as memory:
+            with closing(sqlite3.connect(index)) as source:
+                source.backup(memory)
+            for payload in cases:
+                try:
+                    vector=np.frombuffer(payload,dtype='<f4')
+                    # Fixed pre-change scalar predicate is the compatibility reference.
+                    accepted=bool(vector.shape==(dimensions,) and np.isfinite(vector).all()
+                        and np.isclose(np.linalg.norm(vector),1,atol=1e-4))
+                except ValueError:
+                    accepted=False
+                memory.execute('UPDATE documents SET vector=? WHERE key=?',(payload,expected[0][0]))
+                memory.execute('UPDATE integrity SET value=?',(knowledge.derived_digest(memory),))
+                memory.commit()
+                if accepted:
+                    self.assertEqual(len(knowledge.checked_records(memory,expected)),len(expected))
+                else:
+                    with self.assertRaises(ValueError):knowledge.checked_records(memory,expected)
+
     async def test_real_model_mcp_offline_retrieval_and_exact_provenance(self):
         root = Path(__file__).resolve().parents[1]
         python = root / '.venv/Scripts/python.exe'

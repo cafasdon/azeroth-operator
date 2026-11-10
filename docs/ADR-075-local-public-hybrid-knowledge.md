@@ -32,3 +32,17 @@ separate source/licence, version and owner-scope ingestion decisions.
 The companion is an optional process. It is registered locally on ICARUS
 as `azeroth-knowledge`, with one enabled search tool, a 60-second startup
 allowance and a 30-second tool timeout. Hosted deployment remains deferred.
+
+Validation performance follow-up (10 November): every query still verifies
+source records, visible FTS rows, derived vector/schema/FTS seal, individual
+vector dimensions and finiteness. Individual float32 vector norms are computed
+as before, then their tolerance comparisons use one NumPy array operation.
+Tolerance and retrieval calculations are unchanged. No index format, query API,
+model, data source, persistent query cache or privacy boundary changes.
+
+A twelve-pair alternating offline benchmark on this host recorded warm lookup
+medians of 0.667274 seconds before and 0.412818 seconds after (38.1% reduction).
+The same warm model and pinned index were used, startup excluded, responses
+identical and index unchanged. This small fixed-query result is not a general
+performance, relevance, simulation or BiS guarantee. See the recorded benchmark
+and verification evidence for inputs and acceptance-boundary tests.

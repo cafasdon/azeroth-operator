@@ -49,3 +49,11 @@ supplied candidate IDs do not establish ownership or equip legality.
 The index contains public reference records. Its builder accepts the pinned
 catalogue and verifies its checksum. Search makes no source refresh or game
 call. Personal snapshot data stays in the existing owner-scoped store.
+
+Every query retains full source/index/vector validation. Norm-tolerance checks
+are combined after the unchanged per-vector dimension, finite-value and norm
+calculations. A small alternating warm benchmark on this host measured 38.1%
+lower median lookup latency with identical replies; model startup is excluded.
+No query API, index format, model, persistent query cache or privacy boundary
+changed. See local-knowledge-validation-benchmark-2026-11-10.json for the scoped
+measurements and limitations.

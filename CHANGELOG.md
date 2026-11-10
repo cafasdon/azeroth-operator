@@ -1,5 +1,7 @@
 # Changelog
 
+- Reduce local knowledge lookup overhead by combining norm-tolerance checks while retaining full per-request index validation.
+
 - Summarise, search and compare saved player life flags without classifying life state or inferring death/resurrection events.
 
 - Capture player-only raw dead, ghost and feign-death flags during manual Forever exports without resurrection actions.

@@ -1,0 +1,167 @@
+{
+  "date": "2026-11-10",
+  "scope": "offline_public_knowledge_validation_optimisation",
+  "baseline_commit": "00e7053",
+  "baseline_source_sha256": "7489782018ddb42c2bc27767a65b650360ef89706f60741655ded15f24d63678",
+  "candidate_source_sha256": "b0e3660e23e1c2d93bea5f8d06531c83f94b4bb6e1a191e6cb363e8806d43fc3",
+  "catalogue_sha256": "5ca68229623b8bc1f9a085ed3b5f564ab82ff66055503749e324d640ac04640e",
+  "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "index_sha256": "53443e5fab48cf754422a8e9253ebdd9acb688065693b46ab97b56bed36eeda1",
+  "python": "3.14.7",
+  "architecture": "AMD64",
+  "method": "One warm shared CPU model; alternating serial before/after calls; unchanged pinned index; model startup excluded.",
+  "pairs": [
+    {
+      "repeat": 1,
+      "query": "Thunderfury",
+      "before_seconds": 0.690038,
+      "after_seconds": 0.442224,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 1,
+      "query": "Garb of Thero-shan",
+      "after_seconds": 0.323261,
+      "before_seconds": 0.701831,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    },
+    {
+      "repeat": 1,
+      "query": "healing potion",
+      "before_seconds": 0.430783,
+      "after_seconds": 0.430869,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 1,
+      "query": "ranged weapon",
+      "after_seconds": 0.380524,
+      "before_seconds": 0.6028,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    },
+    {
+      "repeat": 2,
+      "query": "Thunderfury",
+      "after_seconds": 0.4899,
+      "before_seconds": 0.77485,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    },
+    {
+      "repeat": 2,
+      "query": "Garb of Thero-shan",
+      "before_seconds": 0.68898,
+      "after_seconds": 0.45282,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 2,
+      "query": "healing potion",
+      "after_seconds": 0.428914,
+      "before_seconds": 0.666012,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    },
+    {
+      "repeat": 2,
+      "query": "ranged weapon",
+      "before_seconds": 0.66552,
+      "after_seconds": 0.337525,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 3,
+      "query": "Thunderfury",
+      "before_seconds": 0.647097,
+      "after_seconds": 0.381599,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 3,
+      "query": "Garb of Thero-shan",
+      "after_seconds": 0.40479,
+      "before_seconds": 0.70141,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    },
+    {
+      "repeat": 3,
+      "query": "healing potion",
+      "before_seconds": 0.49092,
+      "after_seconds": 0.392655,
+      "identical_response": true,
+      "execution_order": [
+        "before",
+        "after"
+      ]
+    },
+    {
+      "repeat": 3,
+      "query": "ranged weapon",
+      "after_seconds": 0.420846,
+      "before_seconds": 0.668535,
+      "identical_response": true,
+      "execution_order": [
+        "after",
+        "before"
+      ]
+    }
+  ],
+  "before_median_seconds": 0.6672735000000001,
+  "after_median_seconds": 0.412818,
+  "median_reduction_fraction": 0.38133613877967587,
+  "network_connect_attempts": 0,
+  "index_unchanged": true,
+  "limitations": [
+    "Small fixed public query set on this host; no general performance guarantee.",
+    "Only unit-norm tolerance comparisons batched; source/FTS/vector seals, vector shapes, finiteness and individual norm calculations preserved.",
+    "Retrieval responses identical for all measured pairs; not native simulation, relevance or BiS evidence."
+  ],
+  "numpy_version": "2.4.4",
+  "repeats": 3,
+  "queries": [
+    "Thunderfury",
+    "Garb of Thero-shan",
+    "healing potion",
+    "ranged weapon"
+  ],
+  "shared_model_instance": true,
+  "warmup_query": "Thunderfury"
+}

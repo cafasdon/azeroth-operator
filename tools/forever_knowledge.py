@@ -178,11 +178,14 @@ def checked_records(database, expected):
     seal = database.execute('SELECT value FROM integrity').fetchone()
     if seal is None or seal[0] != derived_digest(database):
         raise ValueError('Derived search index checksum mismatch')
+    norms = []
     for row in records:
         vector = np.frombuffer(row[6], dtype='<f4')
-        if (vector.shape != (MODEL_LOCK['dimensions'],) or not np.isfinite(vector).all()
-                or not np.isclose(np.linalg.norm(vector), 1, atol=1e-4)):
+        if vector.shape != (MODEL_LOCK['dimensions'],) or not np.isfinite(vector).all():
             raise ValueError('Invalid index vector')
+        norms.append(np.linalg.norm(vector))
+    if not np.isclose(np.asarray(norms), 1, atol=1e-4).all():
+        raise ValueError('Invalid index vector')
     return records
 
 

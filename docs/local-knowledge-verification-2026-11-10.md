@@ -127,3 +127,47 @@ unchanged. A separate readback recomputed source labels, ranks and metrics.
 This small selected set is not a held-out relevance benchmark or a comparison
 with lexical-only search; no simulation, native interaction or privacy boundary
 was qualified by these measurements. No runtime changes were made.
+
+## Index validation latency — 2026-11-10
+
+Profiling identified repeated scalar unit-norm tolerance calls as avoidable
+lookup overhead. checked_records now collects the unchanged individual float32
+norms and compares tolerance in one NumPy array operation. Source records, FTS
+visible rows, derived schema/vector/FTS seal, vector dimensions/finiteness,
+model pins, size/deadline guards and retrieval calculations remain unchanged.
+No query API, index format or persistent query cache changed.
+
+Author: PYTHONPATH=.;tests python -m unittest test_forever_knowledge passed
+three tests in 34.117 seconds, including actual offline stdio/model retrieval,
+exact public source records, corruption/no-op build and new resealed boundary
+vectors. Boundary cases use the fixed predecessor scalar predicate, including
+near-threshold neighbours, zero/underflow, finite overflow, NaN/Inf and malformed
+lengths. The intentional finite-overflow negative case emits a NumPy warning;
+both old and new predicates reject it. Optional NumPy import follows the local
+resource skip check, preserving fresh-environment behaviour.
+
+A twelve-pair alternating serial warm-query benchmark shares one CPU model,
+excludes startup and uses the unchanged pinned index. All replies were exactly
+equal. Before/after medians were 0.6672735 and 0.412818 seconds, a 38.1336%
+reduction for the measured workload. No socket connections were attempted;
+index bytes remained unchanged. Input/source hashes, NumPy 2.4.4, query order,
+repeats and raw timings are in local-knowledge-validation-benchmark-2026-11-10.json.
+This is a small host-specific lookup measurement, not a general speed guarantee,
+relevance benchmark, simulation speedup or BiS/native qualification.
+
+One independent adversarial round: failure and security/data plus callers,
+requested gpt-6-astra high; resolved model/usage not exposed. No concrete findings.
+Failure review compared the exact Git predecessor and candidate: 5,042 float32
+values including every representable boundary neighbour agreed, all 7,749
+pristine rows matched, and sixteen resealed vector/source/FTS/seal corruption
+cases had identical acceptance. Data/callers review passed all three tests,
+7,558 independent float32 parity values and four real-model baseline/candidate
+queries with attached source records; replies matched, no network attempts and
+unchanged index bytes. It verified benchmark hashes, medians and scoped claims.
+Diff check passed. No game or deployment operations occurred.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.98,
+request b72b37a2dd44b40220ad0a46e01c3016ad685fd87f1e6de5e258c982532afaef;
+721 input and 44 output tokens, 0.309 seconds. Author accepted the bounded
+optimisation on direct measurements and both independent reviews. Live game
+testing and native qualification remain deferred.
