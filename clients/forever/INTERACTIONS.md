@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
+`available` or `active`. Optional `is_complete`, `repeatable`,
+`is_trivial` and `is_ignored` flags must match the same recorded row.
+Missing flags do not match either true or false. Results describe saved
+lists and do not establish current acceptance or turn-in eligibility.
+
 Set `gossip_quest_changes` on `compare_snapshots` to compare the saved
 available and active quest lists separately by quest ID. Each list shows
 IDs seen on only one side and changes to flags explicitly observed on both

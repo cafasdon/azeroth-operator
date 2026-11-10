@@ -1995,6 +1995,7 @@ pub struct CaptureFilters<'a> {
     pub loot_observation: Option<loot_observation::LootObservationFilter>,
     pub skill_line: Option<skill_line_filter::SkillLineFilter>,
     pub gossip_option: Option<gossip_option_filter::GossipOptionFilter>,
+    pub gossip_quest: Option<gossip_option_filter::GossipQuestFilter>,
     pub outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     pub pvp_rank_range: (Option<u32>, Option<u32>),
     pub pvp_season_id: Option<std::num::NonZeroU32>,
@@ -2306,6 +2307,7 @@ impl Store {
             loot_observation,
             skill_line,
             gossip_option,
+            gossip_quest,
             outgoing_trade_item_id,
             pvp_rank_range: (minimum_pvp_rank, maximum_pvp_rank),
             pvp_season_id,
@@ -2594,6 +2596,10 @@ impl Store {
         ensure!(
             gossip_option.is_none() || family == Family::Forever,
             "Gossip option filtering requires Forever"
+        );
+        ensure!(
+            gossip_quest.is_none() || family == Family::Forever,
+            "Gossip quest filtering requires Forever"
         );
         ensure!(
             outgoing_trade_item_id.is_none() || family == Family::Forever,
@@ -3381,6 +3387,12 @@ impl Store {
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
                     if gossip_option.is_some() && gossip_option_match.is_none() {
+                        continue;
+                    }
+                    let gossip_quest_match = gossip_quest
+                        .as_ref()
+                        .and_then(|filter| filter.observation_match(&s));
+                    if gossip_quest.is_some() && gossip_quest_match.is_none() {
                         continue;
                     }
                     let outgoing_trade_item_match = outgoing_trade_item_id.and_then(|id| {
@@ -4831,6 +4843,9 @@ impl Store {
                     }
                     if let Some(observation) = gossip_option_match {
                         summary["gossip_option_match"] = observation;
+                    }
+                    if let Some(observation) = gossip_quest_match {
+                        summary["gossip_quest_match"] = observation;
                     }
                     if let Some(observation) = outgoing_trade_item_match {
                         summary["outgoing_trade_item_match"] = observation;

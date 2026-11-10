@@ -96,6 +96,30 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(partial['available']['observed_only_before'], [2, 10])
                     self.assertIsNone(partial['active'])
                     self.assertNotIn('gossip_quest_changes', await compare(followup_key, False))
+                    for query, expected in (
+                        ({'quest_id':10,'list':'available','repeatable':False},[valid[1][0]]),
+                        ({'quest_id':10,'list':'active'},[followup_key,valid[3][0]]),
+                        ({'quest_id':10,'list':'active','repeatable':False},[]),
+                        ({'quest_id':20,'list':'active','is_complete':False},[followup_key]),
+                        ({'quest_id':22,'list':'active','is_complete':False},[]),
+                    ):
+                        reply = await session.call_tool('list_snapshots', {'family':'forever','gossip_quest':query})
+                        self.assertFalse(reply.isError)
+                        rows = json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in rows],expected)
+                        if rows:
+                            match = rows[0]['gossip_quest_match']
+                            self.assertEqual((match['quest_id'],match['list']),(query['quest_id'],query['list']))
+                            self.assertFalse(match['turn_in_eligibility_verified'])
+                    for family, query in (
+                        ('retail',{'quest_id':10,'list':'active'}),
+                        ('forever',{'quest_id':0,'list':'active'}),
+                        ('forever',{'quest_id':10,'list':'PRIVATE'}),
+                        ('forever',{'quest_id':10,'list':'active','is_complete':0}),
+                    ):
+                        reply=await session.call_tool('list_snapshots',{'family':family,'gossip_quest':query})
+                        self.assertTrue(reply.isError)
+                        self.assertNotIn('PRIVATE',str(reply))
                     for key, value in valid:
                         response = await session.call_tool('character_summary', {'snapshot_id': key})
                         self.assertFalse(response.isError)

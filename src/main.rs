@@ -638,6 +638,9 @@ struct List {
     /// Find an exact recorded dialogue label or raw ID/status/flags on the same saved option; no selection eligibility.
     #[serde(default, deserialize_with = "gossip_option_argument")]
     gossip_option: Option<azeroth_operator::gossip_option_filter::GossipOptionFilter>,
+    /// Match an exact quest ID and recorded flags in one saved dialogue list.
+    #[serde(default, deserialize_with = "gossip_quest_argument")]
+    gossip_quest: Option<azeroth_operator::gossip_option_filter::GossipQuestFilter>,
     /// Find saved Forever captures whose outgoing trade offer visibly contained this base item ID.
     outgoing_trade_item_id: Option<std::num::NonZeroU32>,
     /// Inclusive minimum reported personal PvP rank in a saved Forever capture.
@@ -1082,6 +1085,15 @@ fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
     serde_json::from_value(value)
         .map(Some)
         .map_err(|_| serde::de::Error::custom("Invalid gossip option filter"))
+}
+
+fn gossip_quest_argument<'de, D: serde::Deserializer<'de>>(
+    input: D,
+) -> Result<Option<azeroth_operator::gossip_option_filter::GossipQuestFilter>, D::Error> {
+    Option::<serde_json::Value>::deserialize(input)?
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|_| serde::de::Error::custom("Invalid gossip quest filter"))
 }
 
 fn recipe_search_order<'de, D: serde::Deserializer<'de>>(
@@ -2687,6 +2699,7 @@ impl Operator {
                 loot_observation: args.loot_observation,
                 skill_line: args.skill_line,
                 gossip_option: args.gossip_option,
+                gossip_quest: args.gossip_quest,
                 outgoing_trade_item_id: args.outgoing_trade_item_id,
                 pvp_rank_range: (args.minimum_pvp_rank, args.maximum_pvp_rank),
                 pvp_season_id: args.pvp_season_id,

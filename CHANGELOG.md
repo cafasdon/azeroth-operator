@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved dialogue captures by quest ID, list and reported quest flags.
+
 - Compare available and active quests across saved Forever dialogue panels.
 
 - Find saved dialogue options by their reported signed order index.

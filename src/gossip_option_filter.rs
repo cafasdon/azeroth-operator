@@ -23,6 +23,48 @@ pub struct GossipOptionFilter {
     pub maximum_reported_order_index: Option<i32>,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GossipQuestList {
+    Available,
+    Active,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GossipQuestFilter {
+    pub quest_id: NonZeroU32,
+    pub list: GossipQuestList,
+    pub is_complete: Option<bool>,
+    pub repeatable: Option<bool>,
+    pub is_trivial: Option<bool>,
+    pub is_ignored: Option<bool>,
+}
+
+impl GossipQuestFilter {
+    pub(crate) fn observation_match(&self, snapshot: &Snapshot) -> Option<Value> {
+        let list = match self.list {
+            GossipQuestList::Available => "available",
+            GossipQuestList::Active => "active",
+        };
+        let section = snapshot.sections.get("gossip_quests")?;
+        let row = section[list].get(self.quest_id.get().to_string())?;
+        [
+            ("is_complete", self.is_complete),
+            ("repeatable", self.repeatable),
+            ("is_trivial", self.is_trivial),
+            ("is_ignored", self.is_ignored),
+        ]
+        .into_iter()
+        .all(|(field, expected)| expected.is_none_or(|flag| row[field].as_bool() == Some(flag)))
+        .then(|| {
+            json!({"quest_id":self.quest_id,"list":list,"observation":row,
+            "npc_identity_verified":false,"acceptance_eligibility_verified":false,
+            "turn_in_eligibility_verified":false,"live":false})
+        })
+    }
+}
+
 impl GossipOptionFilter {
     pub fn validate(&self) -> Result<()> {
         ensure!(
