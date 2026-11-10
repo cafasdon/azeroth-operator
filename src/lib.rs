@@ -1904,6 +1904,8 @@ pub struct CaptureFilters<'a> {
     pub tracked_recipe_learning: Option<RecipeLearning>,
     pub profession_skill_line: Option<std::num::NonZeroU32>,
     pub profession_min_rank: Option<u32>,
+    pub profession_max_rank: Option<u32>,
+    pub profession_target_rank: Option<std::num::NonZeroU32>,
     pub instance: InstanceCaptureFilters<'a>,
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_map_name: Option<&'a str>,
@@ -2196,6 +2198,8 @@ impl Store {
             tracked_recipe_learning,
             profession_skill_line,
             profession_min_rank,
+            profession_max_rank,
+            profession_target_rank,
             instance,
             player_map_id,
             player_map_name,
@@ -2751,8 +2755,14 @@ impl Store {
         let recraft_enabled = !matches!(tracked_recipe_kind, Some(TrackedRecipeKind::Craft));
         ensure!(
             profession_skill_line.is_none_or(|_| family == Family::Forever)
-                && (profession_min_rank.is_none() || profession_skill_line.is_some()),
-            "Profession filtering requires Forever and a profession skill line"
+                && (profession_skill_line.is_some()
+                    || (profession_min_rank.is_none()
+                        && profession_max_rank.is_none()
+                        && profession_target_rank.is_none()))
+                && profession_min_rank
+                    .zip(profession_max_rank)
+                    .is_none_or(|(min, max)| min <= max),
+            "Profession filtering requires Forever, a skill line and ordered rank bounds"
         );
         let filter_instance = instance.kind.is_some()
             || instance.name.is_some()
@@ -3936,10 +3946,11 @@ impl Store {
                             skill_line.get(),
                         );
                         row.filter(|row| {
+                            let rank = row["rank"].as_u64();
                             profession_min_rank.is_none_or(|minimum| {
-                                row["rank"]
-                                    .as_u64()
-                                    .is_some_and(|rank| rank >= u64::from(minimum))
+                                rank.is_some_and(|rank| rank >= u64::from(minimum))
+                            }) && profession_max_rank.is_none_or(|maximum| {
+                                rank.is_some_and(|rank| rank <= u64::from(maximum))
                             })
                         })
                     });
@@ -4431,6 +4442,13 @@ impl Store {
                             "skill_line":profession["skill_line"],"rank":profession["rank"],
                             "max_rank":profession["max_rank"],
                         });
+                        if let Some(target) = profession_target_rank {
+                            summary["profession_target_progress"] =
+                                analysis::profession_target_progress(
+                                    Some(profession),
+                                    target.get(),
+                                );
+                        }
                     }
                     if let Some(trainer) = trainer_match {
                         summary["trainer_match"] = trainer;

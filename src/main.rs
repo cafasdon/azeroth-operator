@@ -514,6 +514,10 @@ struct List {
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Minimum observed rank for the selected profession skill line.
     profession_min_rank: Option<u32>,
+    /// Maximum observed rank for the selected profession skill line, inclusive.
+    profession_max_rank: Option<u32>,
+    /// Report progress toward this rank for each matching saved profession.
+    profession_target_rank: Option<std::num::NonZeroU32>,
     /// Filter Forever snapshots by the exact captured selected recipe ID.
     recipe_id: Option<std::num::NonZeroU32>,
     /// Match the selected recipe's recorded cooldown state, not overall craftability.
@@ -2510,6 +2514,8 @@ impl Operator {
                 tracked_recipe_learning: args.tracked_recipe_learning,
                 profession_skill_line: args.profession_skill_line,
                 profession_min_rank: args.profession_min_rank,
+                profession_max_rank: args.profession_max_rank,
+                profession_target_rank: args.profession_target_rank,
                 instance: azeroth_operator::InstanceCaptureFilters {
                     kind: args.instance_kind.as_deref(),
                     name: args.instance_name.as_deref(),

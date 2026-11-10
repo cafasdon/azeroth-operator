@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever professions within an observed rank range and report progress toward a target.
+
 - Check a saved profession's progress toward a target rank and flag targets above its observed cap.
 
 - Count exact saved gear link matches before truncating candidate lists.

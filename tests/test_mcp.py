@@ -895,6 +895,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "forever", "profession_min_rank": 20,
                         })).isError)
+                        for maximum, expected_ids in [(19, set()), (20, {row["snapshot_id"] for row in matches})]:
+                            result = await session.call_tool("list_snapshots", {
+                                "family": "forever", "profession_skill_line": 164,
+                                "profession_max_rank": maximum, "profession_target_rank": 80,
+                            })
+                            self.assertFalse(result.isError, result)
+                            rows = json.loads(result.content[0].text)["snapshots"]
+                            self.assertEqual({row["snapshot_id"] for row in rows}, expected_ids)
+                            for row in rows:
+                                self.assertEqual(row["profession_target_progress"], {
+                                    "target_rank": 80, "points_to_target": 60,
+                                    "target_reached_at_capture": False,
+                                    "target_above_observed_cap": True, "points_above_observed_cap": 5,
+                                })
+                        for options in [
+                            {"profession_max_rank": 20}, {"profession_target_rank": 80},
+                            {**profession_filter, "profession_max_rank": 19},
+                        ]:
+                            self.assertTrue((await session.call_tool("list_snapshots", {
+                                "family": "forever", **options,
+                            })).isError)
                         professions = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": training_key, "section": "professions"})
                         self.assertFalse(professions.isError)

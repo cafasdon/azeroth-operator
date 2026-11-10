@@ -5,6 +5,10 @@ and `profession_skill_line`, then set `profession_target_rank` to check points
 remaining and whether the target exceeds the captured cap. A zero or
 inconsistent cap leaves cap comparisons unknown. Ambiguous or unavailable
 observations leave progress unknown. This does not verify training eligibility.
+For cross-character discovery, use `list_snapshots` with the same skill
+line and optional target. Inclusive `profession_min_rank` and
+`profession_max_rank` filter the observed rank. Results require a unique
+skill-line observation in each matching Forever capture.
 
 Use `list_snapshots.pet_action_command` with an exact `command_token` such as
 `PET_ACTION_ATTACK` to locate saved command slots. Optional `is_active` matches
