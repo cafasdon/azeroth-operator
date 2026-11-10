@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever instances by exact reported encounter total.
+
 - Find saved Forever instance rows within a reported encounter progress range.
 
 - Compare reported encounter totals and progress across saved Forever instance rows.

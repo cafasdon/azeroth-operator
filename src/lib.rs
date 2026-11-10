@@ -439,6 +439,8 @@ pub struct SavedInstanceFilter {
     pub is_raid: Option<bool>,
     /// Match the reported instance group-size cap.
     pub max_players: Option<std::num::NonZeroU32>,
+    /// Match the reported total number of encounters at capture.
+    pub encounter_total: Option<u32>,
     /// Inclusive lower bound on reported encounter progress at capture.
     pub minimum_reported_encounter_progress: Option<u32>,
     /// Inclusive upper bound on reported encounter progress at capture.
@@ -2417,6 +2419,7 @@ impl Store {
                         || filter.extended.is_some()
                         || filter.is_raid.is_some()
                         || filter.max_players.is_some()
+                        || filter.encounter_total.is_some()
                         || filter.minimum_reported_encounter_progress.is_some()
                         || filter.maximum_reported_encounter_progress.is_some()
                         || filter.maximum_reset_seconds.is_some()
@@ -3630,6 +3633,8 @@ impl Store {
                                             .is_some_and(|value| value.to_lowercase() == *name)
                                     }) && filter.max_players.is_none_or(|size| {
                                         row["max_players"].as_u64() == Some(u64::from(size.get()))
+                                    }) && filter.encounter_total.is_none_or(|total| {
+                                        row["encounter_total"].as_u64() == Some(u64::from(total))
                                     }) && filter.minimum_reported_encounter_progress.is_none_or(
                                         |min| {
                                             row["reported_encounter_progress"]

@@ -164,6 +164,15 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                     zero_progress = await search({"maximum_reported_encounter_progress": 0})
                     self.assertEqual([row["snapshot_id"] for row in zero_progress], [later_key])
                     self.assertEqual(await search({"name": "Dungeon", "minimum_reported_encounter_progress": 0}), [])
+                    by_total = await search({"encounter_total": 10})
+                    self.assertEqual({row["snapshot_id"] for row in by_total}, {key, later_key})
+                    self.assertTrue(all(row["saved_instance_match"]["matched_count"] == 1 for row in by_total))
+                    self.assertEqual(await search({"encounter_total": 0}), [])
+                    self.assertEqual(await search({"name": "Dungeon", "encounter_total": 10}), [])
+                    self.assertEqual(await search({"encounter_total": 11,
+                                                   "minimum_reported_encounter_progress": 4}), [])
+                    combined = await search({"encounter_total": 10, "minimum_reported_encounter_progress": 4})
+                    self.assertEqual([row["snapshot_id"] for row in combined], [key])
                     inverted = {"minimum_reported_encounter_progress": 4, "maximum_reported_encounter_progress": 3}
                     self.assertTrue((await session.call_tool("list_snapshots", {
                         **query, "saved_instance": inverted})).isError)

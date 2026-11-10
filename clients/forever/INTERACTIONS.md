@@ -17,6 +17,7 @@ On `list_snapshots`, use `saved_instance.minimum_reported_encounter_progress`
 or `maximum_reported_encounter_progress` to find captures by the recorded
 value. Bounds are inclusive and apply to the same row as other instance
 filters. Rows with missing progress cannot satisfy either bound.
+Add `encounter_total` to match the exact reported total on the same row.
 
 Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
