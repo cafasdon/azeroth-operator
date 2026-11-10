@@ -75,6 +75,13 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         return None if error else json.loads(reply.content[0].text)
                     get, search = 'get_forever_world_record', 'search_forever_world_records'
+                    linked = await call(get,kind='quest',entity_id=2,include_quest_links=True)
+                    prerequisite = linked['quest_links']['preQuestSingle']['1']
+                    exact = await call(get,kind='quest',entity_id=6383)
+                    self.assertEqual(prerequisite['quest_id'],6383)
+                    self.assertEqual(prerequisite['record']['record_sha256'],exact['record']['record_sha256'])
+                    self.assertNotIn('quest_links',exact)
+                    await call(get,error=True,kind='npc',entity_id=240,include_quest_links=True)
                     result = await call(get,kind='quest',entity_id=176)
                     record = result['record']
                     self.assertEqual(record['name'],'WANTED: "Hogger"')

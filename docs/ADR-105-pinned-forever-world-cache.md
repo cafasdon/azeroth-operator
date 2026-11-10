@@ -65,3 +65,8 @@ the publisher's tuple semantics. Hashes cover each exact export line without its
 line terminator. Responses cap at 256 KiB; unknown IDs return no record. Source
 hash, cache hash, generation counters and record counts identify the evidence.
 No current eligibility, spawn visibility, routing or native gameplay is claimed.
+
+The exact MCP lookup accepts `include_quest_links=true` for quests. It
+preserves source positions for grouped and alternative prerequisites, child
+quests, group peers and exclusive quests. An unresolved ID retains a null
+record. The view covers direct links and leaves quest eligibility unevaluated.

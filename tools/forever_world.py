@@ -163,15 +163,37 @@ class World:
         return {'kind': key[0], 'id': key[1], 'record_key': f'questiedb:{key[0]}:{key[1]}',
                 'name': row['fields']['name'], 'record_sha256': sha}
 
-    def get(self, kind, entity_id):
+    def get(self, kind, entity_id, *, include_quest_links=False):
         if kind not in KINDS or type(entity_id) is not int or not 1 <= entity_id <= 2**32-1:
             raise ValueError('Invalid world record key')
         key = (kind, entity_id)
         row = None if key not in self.records else {
             **self.summary(key), 'fields': deepcopy(self.records[key][0]['fields'])}
         result = {**self.metadata(), 'found': row is not None, 'record': row}
+        if include_quest_links:
+            if kind != 'quest':
+                raise ValueError('Quest links require a quest record')
+            result['quest_links'] = None if row is None else self.quest_links(row['fields'])
         encoded(result)
         return result
+
+    def quest_links(self, fields):
+        links = {}
+        for field in ('preQuestGroup', 'preQuestSingle', 'childQuests', 'inGroupWith', 'exclusiveTo'):
+            entries = fields.get(field)
+            if not isinstance(entries, dict):
+                continue
+            links[field] = {}
+            for position, identity in entries.items():
+                if type(identity) is not int or not 1 <= identity <= 2**32-1:
+                    links[field][position] = {'status': 'unsupported_reference'}
+                    continue
+                key = ('quest', identity)
+                links[field][position] = {
+                    'quest_id': identity,
+                    'record': self.summary(key) if key in self.records else None,
+                }
+        return links
 
     def search(self, query, kind=None, limit=10, offset=0):
         if (type(query) is not str or len(query.encode()) > 128 or not query.strip()
@@ -194,14 +216,15 @@ class World:
 def serve(world):
     from mcp.server.fastmcp import FastMCP
     from mcp.types import ToolAnnotations
-    from pydantic import Field, StrictInt
+    from pydantic import Field, StrictBool, StrictInt
     server = FastMCP('Azeroth Forever World References')
     readonly = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
     @server.tool(annotations=readonly)
-    def get_forever_world_record(kind: Kind, entity_id: Annotated[StrictInt, Field(ge=1, le=4294967295)]) -> dict:
+    def get_forever_world_record(kind: Kind, entity_id: Annotated[StrictInt, Field(ge=1, le=4294967295)],
+                                 include_quest_links: StrictBool = False) -> dict:
         """Read one exact quest, NPC, object or item from the pinned local QuestieDB Forever export. Static corrections and derived data only; no character-specific eligibility, routing or current availability."""
-        return world.get(kind, entity_id)
+        return world.get(kind, entity_id, include_quest_links=include_quest_links)
 
     @server.tool(annotations=readonly)
     def search_forever_world_records(query: str, kind: Kind | None = None,
