@@ -4549,3 +4549,16 @@ journal progress remain in force. Changed collector source can invalidate an old
 collection binding; old journals are not relabelled or migrated. See ADR-090 and
 gear-connection-reuse-verification-2026-11-10.md for the bounded synthetic benchmark.
 This changes connection cost, not ownership, native legality or BiS evidence.
+
+## Joint recipe restock targets
+
+Add one to seven additional_targets entries (recipe_id, target_bag_quantity) to
+plan_forever_recipe_restock. All targets use the same snapshot. Distinct recipes
+and output items are necessary. Counts compensate for output consumed by another
+requested recipe; combined materials reserve captured stock against total needs.
+An acyclic active graph gets a producer-first order and stock ledger. A cyclic
+count solution keeps a null execution order/ledger and unresolved IDs. It does
+not prove an executable seed or native craftability. Modelled final quantities
+exclude new acquisitions/withdrawals; their maxima are not actual-stock bounds
+after those additions. Omit additional_targets for the old single-target result.
+See ADR-091 and the joint-recipe-restock verification record. No crafting occurs.

@@ -27,6 +27,7 @@ pub mod talent_operation;
 pub mod upload;
 pub mod workflow_coverage;
 pub mod recipe_restock;
+pub mod recipe_restock_batch;
 pub mod player_map_position;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};

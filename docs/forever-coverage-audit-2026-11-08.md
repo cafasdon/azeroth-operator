@@ -993,3 +993,12 @@ benchmark used one process instead of nine; it does not prove full-set/native
 coverage or general simulation speed. Source bindings and deadlines remain in
 force, and older source-bound journals are not migrated. See ADR-090 and its
 reproducible offline benchmark. Live work remains deferred.
+
+## Joint profession restock targets (10 November)
+
+Saved recipe restock now supports eight joint targets with shared materials and
+minimum-yield demand compensation across requested recipes. A producer-first
+ledger applies only to acyclic active dependencies; cyclic arithmetic does not
+establish execution order or initial seed. This is a bounded base-item model,
+not full profession knowledge, acquisition optimisation or native craftability.
+No live action or new source is added. See ADR-091 and its dated offline evidence.

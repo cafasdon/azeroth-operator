@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan up to eight joint recipe restock targets with shared reagent totals, cross-recipe output demand and explicit cyclic-order limits.
+
 - Reuse one local MCP connection across saved gear collection windows, with unchanged source bindings, deadlines and resumable journal checks.
 
 - Require an explicit snapshot store for standalone profile generation, removing the personal default while retaining the existing upgrade owner pin.

@@ -1382,6 +1382,8 @@ struct RecipeRestock {
     recipe_id: Option<std::num::NonZeroU32>,
     /// Desired final base-item quantity in observed carried bags, not new output.
     target_bag_quantity: std::num::NonZeroU32,
+    /// Joint targets from this same capture (one to seven). Shared inputs and selected producer output are accounted once; cyclic execution order stays unresolved.
+    additional_targets: Option<Vec<azeroth_operator::recipe_restock_batch::AdditionalTarget>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2291,12 +2293,16 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Plan crafts to reach a target base-item quantity in saved Forever bags. Uses one owner-local snapshot and a selected or exact bulk recipe with fixed inputs and known output yield. Existing bank/mail stock is not credited to the bag target. At most 1000 crafts; no crafting, acquisition, live eligibility or variant equivalence guarantee.",
+        description = "Plan crafts to reach base-item quantities in saved Forever bags. One owner-local snapshot; selected or exact bulk recipes with fixed inputs and known yield. additional_targets adds up to seven joint targets with shared materials and cross-recipe consumption; cyclic execution order remains unresolved. Existing bank/mail output is not credited to bag targets. At most 1000 crafts per recipe. No crafting, acquisition or native eligibility guarantee.",
         annotations(read_only_hint = true, destructive_hint = false, open_world_hint = false)
     )]
     fn plan_forever_recipe_restock(&self, Parameters(args): Parameters<RecipeRestock>) -> CallToolResult {
         let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
-            azeroth_operator::recipe_restock::plan(&snapshot, args.recipe_id, args.target_bag_quantity)
+            if let Some(additional) = &args.additional_targets {
+                azeroth_operator::recipe_restock_batch::plan(&snapshot,args.recipe_id,args.target_bag_quantity,additional)
+            } else {
+                azeroth_operator::recipe_restock::plan(&snapshot, args.recipe_id, args.target_bag_quantity)
+            }
         });
         match result {
             Ok(mut plan) => {
@@ -2304,7 +2310,7 @@ impl Operator {
                 CallToolResult::success(vec![ContentBlock::text(plan.to_string())])
             }
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe restock needs a valid owner-local Forever snapshot, observed bags, fixed recipe inputs and a known output item/yield. A positive shortfall needs positive minimum net output and at most 1000 crafts.",
+                "Recipe restock needs a valid owner-local Forever snapshot, observed bags, fixed recipe inputs and a known output item/yield. Joint mode needs one to seven additional distinct recipes/output items. Positive shortfalls need positive minimum net output and at most 1000 crafts per recipe.",
             )]),
         }
     }
