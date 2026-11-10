@@ -179,6 +179,11 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                     ])
                     for flag in ['same_trade_verified','trade_completion_verified','live']:
                         self.assertIs(exact[flag],False)
+                    self.assertEqual(exact['readable_slot_changes'], [
+                        {'slot': slot, 'before': {'item_id': 4294967295, 'quantity': 4294967295},
+                         'after': {'item_id': 10, 'quantity': 1}}
+                        for slot in range(1, 7)
+                    ])
                     for a,b,item_id,expected in [
                         (maximum_id,full_id,4294967295,(25769803770,0,-25769803770)),
                         (full_id,full_id,99,(0,0,0)),
@@ -206,10 +211,20 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                     await call('compare_snapshots',error=True,before_id=full_id,after_id=full_id,
                         player_trade_offer_item_id=0)
                     partial = await compare(mixed_id,full_id)
+                    self.assertEqual(partial['readable_slot_changes'], [
+                        {'slot': slot, 'before': {'item_id': 10, 'quantity': quantity},
+                         'after': {'item_id': 10, 'quantity': 1}}
+                        for slot, quantity in [(1, 4), (2, 5)]
+                    ])
+                    self.assertEqual((await compare(full_id,full_id))['readable_slot_changes'], [])
+                    self.assertNotIn('readable_slot_changes', (await call('compare_snapshots',
+                        before_id=maximum_id,after_id=full_id,player_trade_offer_item_id=10,
+                        player_trade_offer_changes=True))[selector])
                     self.assertEqual(partial['items'], [{'item_id':10,'before_observed_quantity':9,
                         'after_observed_quantity':6,'quantity_delta':None}])
                     for key,slots in [(missing_id,None),(unknown_id,0)]:
                         uncertain = await compare(key,full_id)
+                        self.assertEqual(uncertain['readable_slot_changes'], None if slots is None else [])
                         self.assertEqual(uncertain['before_readable_item_slots'],slots)
                         self.assertIsNone(uncertain['items'][0]['before_observed_quantity'])
                         self.assertIsNone(uncertain['items'][0]['quantity_delta'])

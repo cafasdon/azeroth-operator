@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare readable outgoing trade slots across saved Forever captures, even when the rest of the offer is unreadable.
+
 - Compare saved quest log readiness for quests seen in both dialogue panels.
 
 - Summarise same-capture quest log matches for saved dialogue panels.

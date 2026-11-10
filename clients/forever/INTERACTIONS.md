@@ -372,6 +372,11 @@ outgoing trade comparisons to one base item, even if the general trade
 comparison flag is also set. Missing or incomplete offer observations
 stay unknown where appropriate. Deltas require fully readable offers
 in both captures and do not establish trade continuity or completion.
+An unfiltered `player_trade_offer_changes` comparison also lists
+`readable_slot_changes` when a slot reports an item in both captures and
+its item ID or quantity changes. Unreadable slots cannot establish a
+change. A missing offer makes the slot comparison null. Exact-item
+comparisons omit this list to keep other item IDs out of the response.
 With the exact item selector, set `player_trade_offer_compare_carried`
 to view each capture's bag quantity and its change independently of the
 offer. Offer quantities stay separate from carried stock.

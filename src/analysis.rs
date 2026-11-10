@@ -3912,14 +3912,10 @@ pub fn compare_observations(
             before.client.family == crate::Family::Forever,
             "Trade offer comparison requires Forever"
         );
-        let old = before
-            .sections
-            .get("player_trade_offer")
-            .map(observed_trade_offer_quantities);
-        let new = after
-            .sections
-            .get("player_trade_offer")
-            .map(observed_trade_offer_quantities);
+        let before_offer = before.sections.get("player_trade_offer");
+        let after_offer = after.sections.get("player_trade_offer");
+        let old = before_offer.map(observed_trade_offer_quantities);
+        let new = after_offer.map(observed_trade_offer_quantities);
         let ids: BTreeSet<_> = selectors.player_trade_offer_item_id.map_or_else(
             || {
                 old.iter()
@@ -3952,6 +3948,25 @@ pub fn compare_observations(
             "after_readable_item_slots":new.as_ref().map(|(slots, _)| *slots),
             "basis":"captured_normal_offer_slots_by_base_item_id",
             "same_trade_verified":false,"trade_completion_verified":false,"live":false});
+        if selectors.player_trade_offer_item_id.is_none() {
+            let changes = before_offer.zip(after_offer).map(|(before, after)| {
+                (1..=6)
+                    .filter_map(|slot| {
+                        let key = slot.to_string();
+                        let old = &before["entries"][&key];
+                        let new = &after["entries"][&key];
+                        (old["status"] == "item" && new["status"] == "item" && old != new).then(
+                            || {
+                                json!({"slot":slot,
+                                "before":{"item_id":old["item_id"],"quantity":old["quantity"]},
+                                "after":{"item_id":new["item_id"],"quantity":new["quantity"]}})
+                            },
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            });
+            comparison["player_trade_offer_changes"]["readable_slot_changes"] = json!(changes);
+        }
         if let Some(id) = selectors
             .player_trade_offer_item_id
             .filter(|_| selectors.player_trade_offer_compare_carried)
