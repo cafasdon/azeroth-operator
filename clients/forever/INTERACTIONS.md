@@ -3378,6 +3378,12 @@ breaking ties by recorded position, and reports the position alongside
 fixed rewards. Missing fixed or optional reward lists may leave a
 shortfall inconclusive. Choice eligibility remains unverified.
 
+When selected quests have recorded copper costs and rewards, the wallet
+projection shows the minimum starting copper and the currency from the
+affordable prefix, including selected choices. Prefix quantities are
+before caps. A missing wallet leaves the prefix unknown. The estimate
+covers the selected quests and uses the wallet from the same capture.
+
 `inspect_snapshot.quest_ready_item_target` accepts an `item_id` and
 positive `quantity` in the `quests` section. It selects ready quests
 from recorded fixed item rewards, or includes one matching optional choice

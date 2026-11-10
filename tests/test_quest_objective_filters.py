@@ -801,7 +801,11 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         target=json.loads(reply.content[0].text)['quest_ready_currency_projection']
                         self.assertIs(target['covers_target_before_caps'],covered)
                         if covered:
-                            self.assertEqual(target['ready_turn_in_plan'],{
+                            plan=target['ready_turn_in_plan']
+                            wallet_plan=plan.pop('selected_quests_wallet_projection')
+                            self.assertEqual(wallet_plan['minimum_starting_copper'],1)
+                            self.assertIsNone(wallet_plan['currency_from_affordable_prefix_before_caps'])
+                            self.assertEqual(plan,{
                                 'quest_count':2,'quest_ids':[3,10],'truncated':False,'recorded_fixed_quantity':9,
                                 'cap_projection':{'proposed_quantity':9,'quantity_within_recorded_headroom':7,
                                                   'quantity_above_recorded_headroom':2}})
@@ -811,6 +815,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'snapshot_id':currency_target_id,'section':'quests',
                         'quest_ready_currency_target':{'currency_id':100,'quantity':0}})
                     self.assertTrue(rejected.isError)
+                    currency_wallet=deepcopy(funded)
+                    currency_wallet['sections']['wallet']={'copper':0}
+                    currency_wallet_id=store.ingest(currency_wallet)
+                    original[currency_wallet_id+'.json']=(Path(folder)/(currency_wallet_id+'.json')).read_bytes()
+                    for include_choices,quantity,prefix,shortfall in [(False,8,4,4),(True,100,103,0)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':currency_wallet_id,'section':'quests','quest_ready_currency_target':{
+                                'currency_id':100,'quantity':quantity,'include_choices':include_choices}})
+                        self.assertFalse(reply.isError,reply)
+                        plan=json.loads(reply.content[0].text)['quest_ready_currency_projection']['ready_turn_in_plan']
+                        wallet_plan=plan['selected_quests_wallet_projection']
+                        self.assertEqual(wallet_plan['currency_from_affordable_prefix_before_caps'],prefix)
+                        self.assertEqual(wallet_plan['currency_shortfall_after_affordable_prefix_before_caps'],shortfall)
                     for quantity,include_choices,covered,ids in [
                             (5,False,True,[10,3]),(6,False,False,None),(7,True,True,[10])]:
                         reply=await session.call_tool('inspect_snapshot',{

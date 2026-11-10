@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate captured wallet affordability for selected currency reward turn-ins.
+
 - Show how much renown a selected quest plan can fund from the captured wallet.
 
 - Plan saved ready quest turn-ins for a renown quantity or the recorded next rank.

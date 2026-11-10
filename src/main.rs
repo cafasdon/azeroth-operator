@@ -5023,6 +5023,9 @@ impl Operator {
                                     azeroth_operator::analysis::QuestRewardTarget::Currency(
                                         target.currency_id.get(),
                                         balances,
+                                        context
+                                            .as_ref()
+                                            .and_then(|snapshot| snapshot.sections.get("wallet")),
                                     ),
                                     target.quantity.get(),
                                     target.include_choices,
