@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare recorded currency balances alongside exact saved mail currency observations.
+
 - Compare recorded carried stock alongside saved mail observations for an exact item.
 
 - Compare saved inbox attachment quantities for one exact currency.

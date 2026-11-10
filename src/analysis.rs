@@ -3385,6 +3385,7 @@ pub struct ComparisonSelectors<'a> {
     pub mail_attachment_item_id: Option<std::num::NonZeroU32>,
     pub mail_attachment_compare_carried_item: bool,
     pub mail_attachment_currency_id: Option<std::num::NonZeroU32>,
+    pub mail_attachment_compare_currency_balance: bool,
     pub achievement_id: Option<u32>,
     pub achievement_name: Option<&'a str>,
     pub profession_skill_line: Option<u32>,
@@ -4045,6 +4046,11 @@ pub fn compare_observations(
             || selectors.mail_attachment_item_id.is_some(),
         "Carried item comparison requires an exact mail item"
     );
+    ensure!(
+        !selectors.mail_attachment_compare_currency_balance
+            || selectors.mail_attachment_currency_id.is_some(),
+        "Currency balance comparison requires an exact mail currency"
+    );
     for (kind, id) in [
         ("item", selectors.mail_attachment_item_id),
         ("currency", selectors.mail_attachment_currency_id),
@@ -4068,6 +4074,10 @@ pub fn compare_observations(
                 "quantity_delta":old.zip(new).map(|(old, new)| i128::from(new) - i128::from(old)),
                 "mail_counts_toward_carried_stock":false,"inventory_transfers_verified":false
             });
+        }
+        if kind == "currency" && selectors.mail_attachment_compare_currency_balance {
+            attachment["balance_comparison"] =
+                compare_mail_currency_balances(before, after, id.get());
         }
         comparison[format!("mail_attachment_{kind}_comparison")] = attachment;
     }
@@ -6024,6 +6034,26 @@ fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
 
 pub(crate) fn unloaded_mail_messages(mail: &Value) -> u64 {
     mail["total_messages"].as_u64().unwrap() - mail["loaded_messages"].as_u64().unwrap()
+}
+
+fn compare_mail_currency_balances(before: &Snapshot, after: &Snapshot, id: u32) -> Value {
+    let key = id.to_string();
+    let observe = |snapshot: &Snapshot| {
+        let row = snapshot.sections.get("currency_balances")?["entries"].get(&key)?;
+        Some((row["quantity"].as_u64()?, row["account_wide"].as_bool()))
+    };
+    let before = observe(before);
+    let after = observe(after);
+    let same_scope = before
+        .and_then(|(_, scope)| scope)
+        .zip(after.and_then(|(_, scope)| scope))
+        .map(|(before, after)| before == after);
+    let project =
+        |(quantity, account_wide)| json!({"quantity":quantity,"account_wide":account_wide});
+    json!({"before":before.map(project),"after":after.map(project),"same_scope":same_scope,
+        "quantity_delta":before.zip(after).filter(|_| same_scope == Some(true))
+            .map(|((before, _), (after, _))| i128::from(after) - i128::from(before)),
+        "mail_counts_toward_currency_balance":false,"currency_transfers_verified":false})
 }
 
 fn compare_mail_attachment_id(

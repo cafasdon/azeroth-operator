@@ -907,6 +907,9 @@ struct Compare {
     mail_attachment_compare_carried_item: bool,
     /// Compare loaded saved mail quantities for this exact currency.
     mail_attachment_currency_id: Option<std::num::NonZeroU32>,
+    /// Compare the selected mail currency's recorded balance separately.
+    #[serde(default)]
+    mail_attachment_compare_currency_balance: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
     /// Resolve one tracked achievement by exact saved name before comparing progress.
@@ -2344,6 +2347,8 @@ impl Operator {
                     mail_attachment_item_id: args.mail_attachment_item_id,
                     mail_attachment_compare_carried_item: args.mail_attachment_compare_carried_item,
                     mail_attachment_currency_id: args.mail_attachment_currency_id,
+                    mail_attachment_compare_currency_balance: args
+                        .mail_attachment_compare_currency_balance,
                     achievement_id: args.achievement_id.map(|id| id.get()),
                     achievement_name: args.achievement_name.as_deref(),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),

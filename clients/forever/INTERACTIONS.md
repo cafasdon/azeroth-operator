@@ -8,6 +8,10 @@ does not establish delivery or retrieval.
 Use `mail_attachment_currency_id` for the corresponding currency
 comparison. It can be combined with the item selector, and the two
 identifier namespaces remain separate.
+With the currency selector, set `mail_attachment_compare_currency_balance`
+to view each capture's balance separately. A balance delta requires both
+balances to have the same known account-wide flag. Pending attachments
+stay separate, and balance changes do not prove a transfer.
 With the item selector, set `mail_attachment_compare_carried_item` to
 compare the same captures' bag quantities separately. Pending mail
 does not count toward carried stock and changes do not prove transfers.
