@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved recipes with observed reagent shortfalls for a requested batch size.
+
 - Show how far saved trainer quotes fit the wallet in profession rank order.
 
 - Show the cheapest subset of projected profession trainer quotes within the saved wallet budget.

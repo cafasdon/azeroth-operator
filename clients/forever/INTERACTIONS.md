@@ -1,5 +1,12 @@
 # Forever interaction map
 
+Set `material_filter.insufficient_only` on `search_forever_recipes` to
+find fixed-item recipes below the requested craft count in the selected
+observed storage. Each matching row lists the required, observed and
+missing quantities by reagent ID. Unavailable recipe or inventory evidence
+does not satisfy the filter. A gap in observed storage can understate the
+items you have elsewhere.
+
 With `profession_target_trainer_lessons` on a saved profession inspection,
 set `profession_target_trainer_reserve_copper` to check each projected
 lesson's saved quote against the saved wallet while preserving a reserve.

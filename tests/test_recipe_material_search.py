@@ -99,6 +99,20 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((bags['material_support_unknown_count'],bags['material_support_insufficient_observed_count']),(3,2))
                     self.assertEqual(bags['records'][0]['material_support']['supported_crafts'],1)
                     self.assertFalse(bags['craftability_verified'])
+                    short_filter = {'scope':'bags','minimum_crafts':2,'insufficient_only':True}
+                    short = await search(short_filter, limit=2)
+                    self.assertEqual(ids(short),[1,2])
+                    self.assertEqual(short['matched_row_count'],4)
+                    self.assertEqual(short['material_support_insufficient_observed_count'],4)
+                    self.assertEqual(short['material_support_unknown_count'],3)
+                    self.assertEqual(short['next_offset'],2)
+                    self.assertEqual(short['records'][0]['observed_reagent_shortfalls'],
+                                     {'10':{'required':8,'observed':5,'missing':3}})
+                    self.assertEqual(short['records'][1]['observed_reagent_shortfalls'],
+                                     {'11':{'required':4,'observed':1,'missing':3}})
+                    self.assertEqual(ids(await search(short_filter,offset=2)),[7,8])
+                    self.assertEqual(ids(await search(short_filter,snapshot_id=variants['missing_inventory'])),[])
+                    self.assertEqual(ids(await search({**short_filter,'insufficient_only':False})),[3])
                     all_items = await search({'scope':'all_observed_storage','minimum_crafts':3})
                     self.assertEqual(ids(all_items),[1,2,3,8])
                     self.assertEqual(all_items['records'][1]['material_support']['supported_crafts'],3)

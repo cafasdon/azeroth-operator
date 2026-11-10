@@ -171,6 +171,9 @@ pub enum RecipeMaterialScope {
 pub struct RecipeMaterialFilter {
     pub scope: RecipeMaterialScope,
     pub minimum_crafts: std::num::NonZeroU32,
+    /// Return known observed shortfalls instead of recipes that meet the craft target.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insufficient_only: Option<bool>,
 }
 
 #[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
@@ -346,6 +349,22 @@ impl RecipeMaterialStock {
             json!({"supported_crafts":capacity,"no_required_items":reagents.is_empty(),
             "covers_minimum_crafts":capacity.is_none_or(|value|value >= u64::from(minimum))}),
         )
+    }
+
+    fn shortfalls(&self, row: &Value, crafts: u32) -> Option<BTreeMap<u32, Value>> {
+        let mut shortfalls = BTreeMap::new();
+        for (id, quantity) in row["reagents"].as_object()? {
+            let id = id.parse::<u32>().ok()?;
+            let required = quantity.as_u64()?.checked_mul(u64::from(crafts))?;
+            let observed = self.quantities.get(&u64::from(id)).copied().unwrap_or(0);
+            if observed < required {
+                shortfalls.insert(
+                    id,
+                    json!({"required":required,"observed":observed,"missing":required-observed}),
+                );
+            }
+        }
+        Some(shortfalls)
     }
 }
 
@@ -552,6 +571,8 @@ pub fn search_recipe_materials_ordered(
         .transpose()?;
     let mut unknown = 0;
     let mut insufficient = 0;
+    let insufficient_only =
+        material_filter.is_some_and(|filter| filter.insufficient_only == Some(true));
     let status_value = status.map(|value| json!(value));
     let mut matches: Vec<_> = rows
         .into_iter()
@@ -602,10 +623,13 @@ pub fn search_recipe_materials_ordered(
             }
             let support = if let (Some(filter), Some(stock)) = (material_filter, stock.as_ref()) {
                 match stock.support(row, filter.minimum_crafts.get()) {
-                    Some(support) if support["covers_minimum_crafts"] == true => Some(support),
-                    Some(_) => {
-                        insufficient += 1;
-                        return None;
+                    Some(support) => {
+                        let short = support["covers_minimum_crafts"] == false;
+                        insufficient += usize::from(short);
+                        if short != insufficient_only {
+                            return None;
+                        }
+                        Some(support)
                     }
                     None => {
                         unknown += 1;
@@ -690,6 +714,9 @@ pub fn search_recipe_materials_ordered(
             }
             if let Some(support) = support {
                 record["material_support"] = support.clone();
+            }
+            if insufficient_only && let Some((stock, filter)) = stock.as_ref().zip(material_filter) {
+                record["observed_reagent_shortfalls"] = json!(stock.shortfalls(row, filter.minimum_crafts.get()));
             }
             if let Some(observation) = observation.filter(|_| recipe_view_filter.is_some() || order == RecipeSearchOrder::ReportedSkillUpsDesc) {
                 record["recipe_view_observation"] = json!({"source":"profession_recipe_view",
