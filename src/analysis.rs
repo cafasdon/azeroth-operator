@@ -12044,14 +12044,29 @@ pub fn summary(s: &Snapshot) -> Value {
             "complete_dialogue_coverage_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
     summary["gossip_quest_observations"] = s.sections.get("gossip_quests").map(|section| {
+        let quest_log = s.sections.get("quests").and_then(Value::as_object);
         let describe=|rows:Option<&Value>|rows.map(|rows| {
             let rows=rows.as_object().unwrap();
             let mut ids:Vec<_>=rows.keys().map(|id|id.parse::<u32>().unwrap()).collect();ids.sort_unstable();
             let complete:Vec<_>=ids.iter().filter(|id|rows[&id.to_string()]["is_complete"]==true).copied().collect();
-            json!({"observed_quest_count":ids.len(),"quest_ids":ids.iter().take(50).collect::<Vec<_>>(),"quest_ids_truncated":ids.len()>50,
+            let mut report = json!({"observed_quest_count":ids.len(),"quest_ids":ids.iter().take(50).collect::<Vec<_>>(),"quest_ids_truncated":ids.len()>50,
                 "reported_complete_quest_count":complete.len(),"reported_complete_quest_ids":complete.iter().take(50).collect::<Vec<_>>(),
                 "reported_complete_truncated":complete.len()>50,
-                "quests_with_unknown_completion":rows.values().filter(|row|row.get("is_complete").is_none()).count()})
+                "quests_with_unknown_completion":rows.values().filter(|row|row.get("is_complete").is_none()).count()});
+            if let Some(log) = quest_log {
+                let matched: Vec<_> = ids.iter().filter_map(|id| {
+                    let key = id.to_string();
+                    let readiness = quest_readiness(log.get(&key)?);
+                    Some(json!({"quest_id":id,"quest_log_readiness":readiness,
+                        "panel_is_complete":rows[&key]["is_complete"]}))
+                }).collect();
+                report["quest_log_matches"] = json!({
+                    "matched_quest_count":matched.len(),
+                    "rows":matched.iter().take(50).collect::<Vec<_>>(),
+                    "truncated":matched.len()>50,
+                });
+            }
+            report
         });
         json!({"coverage":section["coverage"],"available":describe(section.get("available")),"active":describe(section.get("active")),
             "acceptance_eligibility_verified":false,"turn_in_eligibility_verified":false})

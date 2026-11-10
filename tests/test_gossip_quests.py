@@ -80,6 +80,20 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         '10': {'title':'Failed quest','level':10,'ready_for_turn_in':True,'failed':True},
                     }
                     followup_key = store.ingest(followup)
+                    reply = await session.call_tool('character_summary', {'snapshot_id': followup_key})
+                    self.assertFalse(reply.isError)
+                    observation = json.loads(reply.content[0].text)['gossip_quest_observations']
+                    self.assertEqual(observation['available']['quest_log_matches'], {
+                        'matched_quest_count': 0, 'rows': [], 'truncated': False,
+                    })
+                    self.assertEqual(observation['active']['quest_log_matches'], {
+                        'matched_quest_count': 3, 'truncated': False,
+                        'rows': [
+                            {'quest_id':10,'quest_log_readiness':'failed','panel_is_complete':None},
+                            {'quest_id':20,'quest_log_readiness':'ready','panel_is_complete':False},
+                            {'quest_id':22,'quest_log_readiness':'unknown','panel_is_complete':True},
+                        ],
+                    })
                     async def compare(after, enabled=True):
                         reply = await session.call_tool('compare_snapshots', {
                             'before_id': valid[1][0], 'after_id': after, 'gossip_quest_changes': enabled,
@@ -176,6 +190,7 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                             ids = sorted(map(int, rows))
                             complete = [i for i in ids if rows[str(i)].get('is_complete') is True]
                             self.assertEqual(summary[kind]['observed_quest_count'], len(ids))
+                            self.assertNotIn('quest_log_matches', summary[kind])
                             self.assertEqual(summary[kind]['quest_ids'], ids[:50])
                             self.assertEqual(summary[kind]['quest_ids_truncated'], len(ids) > 50)
                             self.assertEqual(summary[kind]['reported_complete_quest_ids'], complete[:50])

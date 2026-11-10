@@ -14,6 +14,10 @@ On `inspect_snapshot`, set `section: "quests"`, a `quest_id` and
 dialogue lists. An observed list can show that the ID was absent. A missing
 list stays unknown, and the dialogue observation can exist without a quest
 log row.
+In `character_summary`, observed dialogue lists also include
+`quest_log_matches` when the quest log was captured. It reports the full
+match count and the first 50 matching IDs in numeric order with their
+separate panel completion and log readiness observations.
 
 Set `gossip_quest_changes` on `compare_snapshots` to compare the saved
 available and active quest lists separately by quest ID. Each list shows
