@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved currency attachments within a specified amount above recorded cap headroom.
+
 - Compare loaded mail currency attachments with recorded cap headroom in a saved Forever inbox.
 
 - Summarise saved owned-gear skip reasons and count skipped coordinates whose older windows lack a reason.

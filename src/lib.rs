@@ -509,6 +509,8 @@ pub struct MailAttachmentFilter {
     pub id: std::num::NonZeroU32,
     /// Minimum summed quantity in the loaded inbox only; defaults to one.
     pub minimum_quantity: Option<u64>,
+    /// Currency only. Require a known hypothetical overflow no greater than this quantity.
+    pub maximum_quantity_above_recorded_headroom: Option<u64>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -2597,6 +2599,13 @@ impl Store {
             "Pending mail attachment filtering requires Forever"
         );
         ensure!(
+            mail_attachment.as_ref().is_none_or(|filter| {
+                filter.maximum_quantity_above_recorded_headroom.is_none()
+                    || matches!(filter.kind, MailAttachmentKind::Currency)
+            }),
+            "Mail cap headroom filtering requires a currency attachment"
+        );
+        ensure!(
             pet_species.is_none() || family == Family::Forever,
             "Pet species view filtering requires Forever"
         );
@@ -3453,14 +3462,30 @@ impl Store {
                         // Validated coverage bounds this sum to 100 * 16 * u32::MAX.
                         let quantity:u64=locations.iter().map(|(_,_,count)| count).sum();
                         if locations.is_empty() || quantity<filter.minimum_quantity.unwrap_or(1) {return None;}
+                        let projection = if let Some(maximum) = filter.maximum_quantity_above_recorded_headroom {
+                            let balance = s.sections.get("currency_balances")?["entries"].get(filter.id.to_string())?;
+                            let caps = analysis::currency_entry_cap_headroom(balance)?;
+                            let projection = analysis::currency_reward_projection(quantity, balance, &caps);
+                            if projection["quantity_above_recorded_headroom"].as_u64()? > maximum {
+                                return None;
+                            }
+                            Some(projection)
+                        } else {
+                            None
+                        };
                         locations.sort_by_key(|(message,slot,_)| (*message,*slot));
-                        Some(json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
+                        let mut report = json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
                             "total_messages":mail["total_messages"],"kind":filter.kind,"id":filter.id,
                             "unloaded_messages":analysis::unloaded_mail_messages(mail),
                             "unknown_attachment_slots":unknown_slots,
                             "quantity":quantity,"matched_locations":locations.len(),"truncated":locations.len()>20,
                             "locations":locations.iter().take(20).map(|(message,slot,count)|json!({
-                                "message_slot":message,"attachment_slot":slot,"count":count})).collect::<Vec<_>>()}))
+                                "message_slot":message,"attachment_slot":slot,"count":count})).collect::<Vec<_>>()});
+                        if let Some(projection) = projection {
+                            report["hypothetical_cap_projection"] = projection;
+                            report["mail_cap_application_verified"] = json!(false);
+                        }
+                        Some(report)
                     });
                     if mail_attachment.is_some() && mail_attachment_match.is_none() {
                         continue;

@@ -27,6 +27,13 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                      '3':{'kind':'item','item_id':720,'count':5},'16':{'kind':'unknown'}}}}
             value['sections']['mail_attachments']=mail
             key=store.ingest(value)
+            capped=copy.deepcopy(value)
+            capped['character']['name']='Capped'
+            capped['sections']['currency_balances']={'coverage':'visible_currency_ids_only','entries':{
+                '720':{'name':'Fixture currency','quantity':2,'max_quantity':4,'max_weekly_quantity':0,
+                    'earned_this_week':0,'total_earned':0,'cap_uses_total_earned':False,
+                    'account_wide':False,'inactive':False}}}
+            capped_key=store.ingest(capped)
             empty=copy.deepcopy(value)
             empty['character']['name']='Empty'
             empty['sections']['mail_attachments'].update(loaded_messages=0,total_messages=0,messages={})
@@ -86,6 +93,17 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(len((await search(**q))['snapshots']),expected)
                     rows=(await search(character=value['character'],mail_attachment={'kind':'currency','id':720}))['snapshots']
                     self.assertEqual(rows[0]['mail_attachment_match']['quantity'],4)
+                    for maximum in [0,1,2,2**64-1]:
+                        filtered=(await search(mail_attachment={'kind':'currency','id':720,
+                            'maximum_quantity_above_recorded_headroom':maximum}))['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in filtered],[capped_key] if maximum >= 2 else [])
+                        if filtered:
+                            match=filtered[0]['mail_attachment_match']
+                            self.assertEqual(match['hypothetical_cap_projection'],{
+                                'proposed_quantity':4,'quantity_within_recorded_headroom':2,
+                                'quantity_above_recorded_headroom':2})
+                            self.assertFalse(match['mail_cap_application_verified'])
+                            self.assertEqual(match['unloaded_messages'],3)
                     self.assertEqual((await search(character=value['character'],mail_attachment={
                         'kind':'item','id':999,'minimum_quantity':0}))['snapshots'],[])
                     self.assertEqual((await search(**query,latest_per_character=True))['snapshots'],[])
@@ -100,7 +118,9 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(all('mail_attachment_match' not in row for row in (await search())['snapshots']))
                     for bad in [{'kind':'unknown','id':720},{'kind':'item','id':0},{'kind':'item','id':True},
                         {'kind':'item','id':720,'minimum_quantity':-1},{'kind':'item','id':720,'minimum_quantity':True},
-                        {'kind':'item','id':720,'minimum_quantity':2**64},{'kind':'item','id':720,'sender':'x'},{}]:
+                        {'kind':'item','id':720,'minimum_quantity':2**64},{'kind':'item','id':720,'sender':'x'},
+                        {'kind':'item','id':720,'maximum_quantity_above_recorded_headroom':0},
+                        {'kind':'currency','id':720,'maximum_quantity_above_recorded_headroom':-1},{}]:
                         response=await session.call_tool('list_snapshots',{'family':'forever','mail_attachment':bad})
                         self.assertTrue(response.isError)
                     response=await session.call_tool('list_snapshots',{'family':'retail','mail_attachment':{'kind':'item','id':720}})

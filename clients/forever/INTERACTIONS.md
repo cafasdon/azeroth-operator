@@ -5,6 +5,10 @@ Use `mail_attachment_headroom_currency_ids` when inspecting a saved
 the same capture's currency caps. Missing attachment or cap observations
 stay unknown. The comparison is hypothetical and does not establish
 whether mailbox retrieval applies the recorded caps.
+For saved inbox discovery, set
+`mail_attachment.maximum_quantity_above_recorded_headroom` with
+`kind: "currency"` on `list_snapshots`. Use zero to require the known
+loaded quantity to fit. Missing cap evidence cannot satisfy this filter.
 
 Set `quest_list_ready_waypoint_groups` when inspecting the saved quest
 list to group quests marked ready by their next waypoint map. Ready
