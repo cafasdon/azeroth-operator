@@ -1,5 +1,7 @@
 # Changelog
 
+- Identify tracked achievements with increased or decreased remaining criterion quantities across saved captures.
+
 - Find saved characters whose selected tracked achievement is within an unfinished-criteria limit.
 
 - Filter saved tracked achievements by the number of unfinished criteria.

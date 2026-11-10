@@ -8,6 +8,11 @@ criterion, or with `completed: false` to restrict achievement status.
 On `list_snapshots`, use `tracked_achievement.maximum_unfinished_criteria`
 with an exact tracked achievement ID or name to find matching saved
 characters. The result includes the captured unfinished count.
+With `achievement_status_changes`, saved comparisons also list achievements
+whose comparable criteria have increased or decreased remaining quantities.
+The comparison requires the same account scope, a unique criterion ID on
+both sides and the same known requirement. Different criteria can put
+one achievement in both lists.
 
 Use `mail_attachment_bag_space_message_slot` when inspecting saved mail
 to estimate space for known item attachments in one loaded message.

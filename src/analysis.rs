@@ -5057,6 +5057,8 @@ pub fn compare_observations(
             let mut only_before = BTreeSet::new();
             let mut only_after = BTreeSet::new();
             let mut scope_changed = BTreeSet::new();
+            let mut fewer_remaining = BTreeSet::new();
+            let mut more_remaining = BTreeSet::new();
             for key in before.keys().chain(after.keys()).collect::<BTreeSet<_>>() {
                 let Ok(id) = key.parse::<u32>() else { continue };
                 match (before.get(key), after.get(key)) {
@@ -5064,6 +5066,18 @@ pub fn compare_observations(
                         scope_changed.insert(id);
                     }
                     (Some(old), Some(new)) => {
+                        for (_, previous, current) in matched_achievement_criteria(&old["criteria"], &new["criteria"]) {
+                            if let Some(required) = previous["required"].as_u64()
+                                && current["required"].as_u64() == Some(required)
+                                && let Some((old, new)) = previous["quantity"].as_u64().zip(current["quantity"].as_u64())
+                            {
+                                match required.saturating_sub(new).cmp(&required.saturating_sub(old)) {
+                                    std::cmp::Ordering::Less => { fewer_remaining.insert(id); }
+                                    std::cmp::Ordering::Greater => { more_remaining.insert(id); }
+                                    std::cmp::Ordering::Equal => {}
+                                }
+                            }
+                        }
                         if old["completed"] != new["completed"] || old["earned_by_character"] != new["earned_by_character"] {
                             let status = |entry: &Value| json!({"completed":entry["completed"],
                                 "earned_by_character":entry["earned_by_character"],"account_wide":entry["account_wide"]});
@@ -5077,6 +5091,8 @@ pub fn compare_observations(
             }
             json!({"changes":changes.into_values().collect::<Vec<_>>(),
                 "achievement_ids_observed_only_before":only_before,"achievement_ids_observed_only_after":only_after,
+                "achievement_ids_with_decreased_remaining_criterion_quantities":fewer_remaining,
+                "achievement_ids_with_increased_remaining_criterion_quantities":more_remaining,
                 "achievement_ids_with_scope_changes":scope_changed})
         }));
     }
@@ -6317,15 +6333,21 @@ fn criteria_by_id(criteria: &Value) -> BTreeMap<u64, Option<&Value>> {
     indexed
 }
 
-fn compare_criteria(before: &Value, after: &Value) -> Value {
+fn matched_achievement_criteria<'a>(
+    before: &'a Value,
+    after: &'a Value,
+) -> impl Iterator<Item = (u64, &'a Value, &'a Value)> {
     let before = criteria_by_id(before);
     let after = criteria_by_id(after);
+    before
+        .into_iter()
+        .filter_map(move |(id, previous)| Some((id, previous?, after.get(&id).copied().flatten()?)))
+}
+
+fn compare_criteria(before: &Value, after: &Value) -> Value {
     let mut matched = 0;
     let mut changes = Vec::new();
-    for (id, previous) in before {
-        let Some((previous, current)) = previous.zip(after.get(&id).copied().flatten()) else {
-            continue;
-        };
+    for (id, previous, current) in matched_achievement_criteria(before, after) {
         matched += 1;
         if previous != current {
             let quantity_delta = (previous["required"] == current["required"])

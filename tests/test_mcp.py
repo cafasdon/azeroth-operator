@@ -1791,6 +1791,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "achievement_ids_observed_only_before": [],
                             "achievement_ids_observed_only_after": [],
                             "achievement_ids_with_scope_changes": [],
+                            "achievement_ids_with_decreased_remaining_criterion_quantities": [101],
+                            "achievement_ids_with_increased_remaining_criterion_quantities": [],
                         })
                         changed_scope = json.loads(json.dumps(reputation_after))
                         changed_scope["sections"]["tracked_achievements"]["entries"]["101"]["account_wide"] = False
@@ -1802,6 +1804,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         scope_data = json.loads(scope_comparison.content[0].text)["achievement_status_changes"]
                         self.assertEqual(scope_data["changes"], [])
                         self.assertEqual(scope_data["achievement_ids_with_scope_changes"], [101])
+                        self.assertEqual(scope_data["achievement_ids_with_decreased_remaining_criterion_quantities"], [])
                         dated = await session.call_tool("list_snapshots", {
                             "family": "forever",
                             "character": {"name": "Example", "realm": "First"},
