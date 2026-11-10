@@ -37,6 +37,11 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             alt['sections']['bag_item_cooldowns']['entries']['0']['1']['remaining_seconds']=7
             alt['sections']['account_bank']={}
             alt_key=store.ingest(alt)
+            target_capture=deepcopy(alt)
+            timers=target_capture['sections']['bag_item_cooldowns']['entries']['0']
+            timers['2'].update(enabled=True,remaining_seconds=7)
+            timers['3'].update(status='reported',enabled=True,remaining_seconds=2)
+            target_key=store.ingest(target_capture)
             changed=deepcopy(legacy)
             changed['captured_at']='2025-01-02T00:00:00Z'
             changed['sections']['bags']['0']['1']['count']=4
@@ -129,6 +134,20 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(absent_bags['bag_cooldown_quantity_projection'])
                     zero_bags=await find(item_id=999,bag_cooldown_reference_at=reference)
                     self.assertEqual(zero_bags['bag_cooldown_quantity_projection']['quantity_with_unknown_projected_end'],0)
+                    for snapshot,quantity,covered,shortfall,earliest in [
+                            (target_key,3,True,0,'2025-01-02T00:00:02Z'),
+                            (target_key,4,False,1,'2025-01-02T00:00:07Z'),
+                            (alt_key,1,None,1,'2025-01-02T00:00:07Z'),
+                            (alt_key,6,False,6,None)]:
+                        target=(await find(snapshot,offset=99,limit=1,bag_cooldown_reference_at=reference,
+                                           bag_cooldown_target_quantity=quantity))['bag_cooldown_target_projection']
+                        self.assertIs(target['projected_end_by_reference_covers_target'],covered)
+                        self.assertEqual(target['shortfall_at_reference_from_known_timers'],shortfall)
+                        self.assertEqual(target['earliest_known_projected_end_covering_target'],earliest)
+                    for options in [{'bag_cooldown_target_quantity':1},
+                                    {'bag_cooldown_target_quantity':0,'bag_cooldown_reference_at':reference}]:
+                        reply=await session.call_tool('find_snapshot_item',{'snapshot_id':key,'item_id':100,**options})
+                        self.assertTrue(reply.isError,reply)
                     rejected=await session.call_tool('find_snapshot_item',{
                         'snapshot_id':retail_key,'item_id':100,'bag_cooldown_reference_at':reference})
                     self.assertTrue(rejected.isError,rejected)

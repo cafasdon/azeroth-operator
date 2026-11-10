@@ -1137,6 +1137,8 @@ struct FindItem {
     limit: Option<usize>,
     /// Compare matching carried cooldowns with this reference time. Requires Forever.
     bag_cooldown_reference_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Target carried quantity for projected cooldown planning. Requires bag_cooldown_reference_at.
+    bag_cooldown_target_quantity: Option<std::num::NonZeroU64>,
     /// Up to seven additional snapshot IDs with the exact same client/build.
     additional_snapshot_ids: Option<Vec<String>>,
     /// Include exact item quantities by recorded bag or bank container, before paging.
@@ -1597,6 +1599,11 @@ impl Operator {
         )
     )]
     fn find_snapshot_item(&self, Parameters(args): Parameters<FindItem>) -> CallToolResult {
+        if args.bag_cooldown_target_quantity.is_some() && args.bag_cooldown_reference_at.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Item cooldown quantity targets require a reference time",
+            )]);
+        }
         let result = (|| {
             let additional = args.additional_snapshot_ids.unwrap_or_default();
             anyhow::ensure!(additional.len() <= 7, "Too many snapshots");
@@ -1625,6 +1632,7 @@ impl Operator {
                     args.limit.unwrap_or(20),
                     args.include_container_quantities,
                     args.bag_cooldown_reference_at,
+                    args.bag_cooldown_target_quantity,
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
                 if args.bag_stack_groups {

@@ -3042,6 +3042,11 @@ Additional snapshots are projected separately.
 carried locations before paging. It distinguishes ends at or before the
 reference, later ends, and unknown ends. Missing bags leave the totals
 unknown. Disabled and missing timers contribute to the unknown quantity.
+Set `bag_cooldown_target_quantity` with that reference to report the
+shortfall from known timers and the earliest projected end at which
+known timers cover the target. Unknown timers can leave coverage at the
+reference inconclusive. The estimate uses all matching carried copies,
+even when the location page is empty.
 
 Use `compare_snapshots.bag_cooldown_item_id` to compare two saved readings for
 one base item ID. Each side counts reported, unavailable and enabled locations
