@@ -39,3 +39,13 @@ The source's slot loop and first-return status comparisons establish this
 narrow data projection, not a full return contract or game-client acceptance.
 [Forever-specific overrides](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_QueueStatusFrame/Camelot/QueueStatusFrameOverrides.lua)
 also show why other queue systems must be qualified separately.
+
+Saved summary (10 November): character_summary.battlefield_queue_observation
+reports the captured capacity, per-token counts and numerically sorted slot
+lists for all five allowed status tokens. reported_non_none_slot_count counts
+every token other than none; it is not a queued/active player count. An absent
+section leaves the summary null. Zero-capacity observations retain zero counts
+and empty lists, while all-none observations preserve their nonzero capacity.
+The output explicitly leaves current membership, complete queue coverage,
+queue identity and acceptance eligibility unverified, with execution/live false.
+It uses saved data only and does not invoke another getter or action.

@@ -65,6 +65,20 @@ class BattlefieldQueueTests(unittest.IsolatedAsyncioTestCase):
                     for key,expected in zip(keys,[None,zero,section,maximum]):
                         result=await call('inspect_snapshot',snapshot_id=key,section='battlefield_queue_slots')
                         self.assertEqual(result['available'],expected is not None);self.assertEqual(result['data'],expected)
+                        summary=(await call('character_summary',snapshot_id=key))['battlefield_queue_observation']
+                        if expected is None:
+                            self.assertIsNone(summary)
+                            continue
+                        tokens=['none','queued','confirm','active','locked']
+                        slots={token:sorted(int(slot) for slot,row in expected['entries'].items()
+                            if row['reported_status']==token) for token in tokens}
+                        self.assertEqual(summary['reported_status_slots'],slots)
+                        self.assertEqual(summary['reported_status_counts'],{token:len(slots[token]) for token in tokens})
+                        self.assertEqual(summary['reported_slot_count'],expected['reported_slot_count'])
+                        self.assertEqual(summary['reported_non_none_slot_count'],expected['reported_slot_count']-len(slots['none']))
+                        for flag in ['current_queue_membership_verified','complete_queue_coverage_verified',
+                                'acceptance_eligibility_verified','queue_identity_verified','game_execution','live']:
+                            self.assertFalse(summary[flag])
                     listed=await call('list_snapshots',family='forever',section_capture={
                         'section':'battlefield_queue_slots','status':'observed'})
                     self.assertEqual({r['snapshot_id'] for r in listed['snapshots']},set(keys[1:]))

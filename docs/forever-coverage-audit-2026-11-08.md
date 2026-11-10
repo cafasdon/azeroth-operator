@@ -881,3 +881,8 @@ It is not full queue coverage, current membership, eligibility or acceptance
 proof. No join/accept/leave/query/refresh, polling, names, timers, teams or
 scoreboard data is introduced. Other queue systems and native qualification
 remain open. See ADR-078-passive-battlefield-queues.md. Live testing deferred.
+
+Saved battlefield summary now groups all five raw status tokens into counts
+and numeric slot lists, preserving null, zero-capacity and all-none cases.
+Non-none counts are not active-player counts or membership/acceptance proof.
+No new capture, action or native qualification was introduced.

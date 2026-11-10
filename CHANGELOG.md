@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise saved battlefield slot statuses with per-token counts and numeric slot lists.
+
 - Observe personal battlefield queue slot status during manual exports, without queue actions or third-party data.
 
 - Compare saved owned-auction cache identities, quantities and raw status without inferring sales or inventory credit.

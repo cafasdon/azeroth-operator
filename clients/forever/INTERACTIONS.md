@@ -4350,3 +4350,10 @@ invoked. Saved statuses do not prove current membership or acceptance rights.
 This covers battlefield slots only; other queue systems remain separate.
 Data stays owner-local, outside public search. Update readers before exporter
 installation. Native testing/deployment remain deferred. See ADR-078.
+
+character_summary.battlefield_queue_observation groups saved slots by each
+reported token, with counts and numeric slot lists. reported_non_none_slot_count
+includes queued, confirm, active and locked; it is not an active-player count.
+Missing observations stay null. Zero capacity stays distinct from a nonzero
+all-none capture. No queue identity, present membership or acceptance permission
+is verified, and no additional game call occurs.

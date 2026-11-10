@@ -12043,6 +12043,21 @@ pub fn summary(s: &Snapshot) -> Value {
             "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
             "current_usability_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
+    summary["battlefield_queue_observation"] = s.sections.get("battlefield_queue_slots").map(|section| {
+        let mut slots = BTreeMap::from([("none",Vec::<u32>::new()),("queued",Vec::new()),
+            ("confirm",Vec::new()),("active",Vec::new()),("locked",Vec::new())]);
+        for (slot,row) in section["entries"].as_object().unwrap() {
+            slots.get_mut(row["reported_status"].as_str().unwrap()).unwrap().push(slot.parse().unwrap());
+        }
+        for rows in slots.values_mut() { rows.sort_unstable(); }
+        let counts: BTreeMap<_,_> = slots.iter().map(|(status,rows)|(*status,rows.len())).collect();
+        json!({"coverage":section["coverage"],"reported_slot_count":section["reported_slot_count"],
+            "reported_status_counts":counts,"reported_status_slots":slots,
+            "reported_non_none_slot_count":section["reported_slot_count"].as_u64().unwrap()-slots["none"].len() as u64,
+            "current_queue_membership_verified":false,"complete_queue_coverage_verified":false,
+            "acceptance_eligibility_verified":false,"queue_identity_verified":false,
+            "game_execution":false,"live":false})
+    }).unwrap_or(Value::Null);
     summary["group_context_observation"] = s.sections.get("group_context").map(|section| {
         json!({"coverage":section["coverage"],"categories":section["categories"],
             "current_group_verified":false,"group_identity_verified":false,

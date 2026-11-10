@@ -47,3 +47,31 @@ request 319f1e915348a9d13d48c4f9e38be17de5d05a5d4d1ec2119dabfdca13e81663;
 731 input and 44 output tokens, 0.308 seconds. Author accepted the bounded
 source feature based on direct tests and both independent reviews. Existing
 queue action exclusions and parked native/install/deployment gates remain.
+
+## Saved status summary — 2026-11-10
+
+Character summary now reports per-token counts and numeric slot lists, saved
+capacity and a raw non-none count. Missing data remains null; zero and all-none
+observations remain distinct. All current membership, coverage, identity,
+acceptance, execution and live-verification flags stay false. No collector,
+guard, permission or game-call path changed.
+
+Author: cargo build --bin azeroth-operator succeeded. With PYTHONPATH=.;tests,
+python -m unittest test_battlefield_queue_slots passed one actual Rust stdio
+MCP integration test in 0.652 seconds, including summary values, numeric order,
+missing/zero/all-none, strict schema/owner boundaries and unchanged store bytes.
+Diff check passed.
+
+One independent adversarial round, failure lens, requested gpt-6-astra high;
+resolved model and token usage not exposed. No concrete finding. Independent
+real-MCP probes passed 198 capacity/status/mixed/reverse-order cases across
+capacities zero through 32. Missing summary was null. Seventeen malformed
+on-disk captures rejected before summary while the server remained usable.
+The reviewer also independently ran the actual MCP test and checked all six
+boundary flags stayed false. Only temporary synthetic probes were written.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.88,
+request 100d1a57f8c6083c576cb47521d78d502cdb712063e1d7cbf8bfd34192e602be;
+563 input and 44 output tokens, 0.372 seconds. Author accepted the scoped
+analysis change based on direct tests and clean independent review. Native
+qualification, installation, deployment and live testing remain deferred.
