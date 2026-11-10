@@ -9,7 +9,9 @@ IDs match and lists up to 50 of them with their catalogue names. A unique match 
 whole-capture set observation as an explicit ID. An ambiguous match
 leaves the set observation absent.
 Each name match also shows the number of distinct pieces observed anywhere
-in the saved inventory and the number observed equipped. The equipped
+in the saved inventory and the number observed equipped. Catalogue totals
+include all pieces sharing the set ID. Unobserved counts measure the gap
+against that local catalogue, including pieces that may be in unseen storage. The equipped
 count is null when equipment was unavailable. Item filters and paging do
 not change these counts.
 

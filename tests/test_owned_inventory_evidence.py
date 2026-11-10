@@ -100,6 +100,7 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(named_owned['set_name_resolution'], {
                         'matched_set_count': 1, 'matched_set_ids': [221], 'matched_set_ids_truncated': False,
                         'matched_sets': [{'set_id': 221, 'set_name': 'Garb of Thero-shan',
+                                          'catalogue_distinct_pieces': 2, 'unobserved_catalogue_distinct_pieces': 0,
                                           'observed_distinct_pieces': 2, 'observed_equipped_distinct_pieces': 1}],
                     })
                     ambiguous = await review(set_capture_id, set_name='of', limit=1)
@@ -115,6 +116,8 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(unknown['set_name_resolution']['matched_sets'][0]
                                       ['observed_equipped_distinct_pieces'])
                     no_match = await review(set_capture_id, set_name='no-matching-set-zzzz')
+                    missing_pieces = (await review(partial, set_name='thero-shan'))['set_name_resolution']['matched_sets'][0]
+                    self.assertEqual(missing_pieces['unobserved_catalogue_distinct_pieces'], 2)
                     self.assertNotIn('set_observation', no_match)
                     self.assertEqual(no_match['set_name_resolution']['matched_set_count'], 0)
                     self.assertEqual((await review(set_capture_id, set_name='thero-shan', set_id=162))['items'], [])

@@ -3770,6 +3770,12 @@ pub fn review_owned(
         "best_in_slot_verified":false
     });
     if let Some(sets) = matching_sets {
+        let mut catalogue_piece_counts = BTreeMap::<u64, usize>::new();
+        for item in catalogue.values() {
+            if let Some(id) = recorded_set_id(item) {
+                *catalogue_piece_counts.entry(id).or_default() += 1;
+            }
+        }
         result["set_name_resolution"] = json!({
             "matched_set_count":sets.len(),
             "matched_set_ids":sets.keys().take(50).collect::<Vec<_>>(),
@@ -3777,8 +3783,12 @@ pub fn review_owned(
             "matched_sets":sets.iter().take(50)
                 .map(|(id, name)| {
                     let pieces = matched_set_pieces.get(id);
+                    let observed = pieces.map_or(0, BTreeMap::len);
+                    let catalogue_count = catalogue_piece_counts[id];
                     json!({"set_id":id,"set_name":name,
-                        "observed_distinct_pieces":pieces.map_or(0, BTreeMap::len),
+                        "catalogue_distinct_pieces":catalogue_count,
+                        "unobserved_catalogue_distinct_pieces":catalogue_count - observed,
+                        "observed_distinct_pieces":observed,
                         "observed_equipped_distinct_pieces":snapshot.sections.contains_key("equipment")
                             .then(|| pieces.map_or(0, |items| items.values().filter(|equipped| **equipped).count()))})
                 })
