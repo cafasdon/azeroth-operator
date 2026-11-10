@@ -19,7 +19,7 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
         base['client'] = {'family':'forever', 'variant':'live', 'interface':16001, 'build':'70862'}
         base['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,'client_version':'fixture',
             'hearthstone_item_id':6948,'hearthstone_cooldown_seconds':30,
-            'map_id':1411,'map_parent_id':1414}
+            'map_id':1411,'map_parent_id':1414,'map_min_level':1,'map_max_level':10}
         with tempfile.TemporaryDirectory() as folder:
             store = SnapshotStore(Path(folder))
             start = store.ingest(base)
@@ -35,6 +35,13 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         later['captured_at'] = '2025-01-01T00:00:10.500Z'
                         stats = later['sections']['stats']
                         stats['map_id'] = 1454
+                        if seconds == 20:
+                            stats.update(map_min_level=60, map_max_level=60)
+                        elif seconds == 19:
+                            stats.update(map_min_level=61, map_max_level=65)
+                        else:
+                            del stats['map_min_level']
+                            del stats['map_max_level']
                         if parent is None:
                             del stats['map_parent_id']
                         else:
@@ -53,6 +60,16 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(context['before']['map_parent_id'], 1414)
                         self.assertEqual(context['after']['map_parent_id'], parent)
                         self.assertIs(context['parent_map_changed'], parent_changed)
+                        self.assertEqual(context['before']['reported_map_level_range'], {
+                            'minimum': 1, 'maximum': 10, 'character_level': 60,
+                            'position_in_reported_range': 'above',
+                        })
+                        after_range = context['after']['reported_map_level_range']
+                        if seconds in (20, 19):
+                            self.assertEqual(after_range['position_in_reported_range'],
+                                             'within' if seconds == 20 else 'below')
+                        else:
+                            self.assertIsNone(after_range)
 
     async def test_real_mcp_calendar_unknowns_scopes_and_privacy(self):
         root = Path(__file__).resolve().parents[1]

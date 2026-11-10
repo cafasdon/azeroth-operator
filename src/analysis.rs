@@ -7263,9 +7263,25 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
         let projected_ready = stats["hearthstone_cooldown_seconds"]
             .as_i64()
             .and_then(|seconds| crate::saved_resets::projected_reset_at(seconds, captured_at));
+        let map_level = stats["map_min_level"]
+            .as_i64()
+            .zip(stats["map_max_level"].as_i64())
+            .zip(stats["level"].as_i64())
+            .map(|((minimum, maximum), level)| {
+                let position = if level < minimum {
+                    "below"
+                } else if level > maximum {
+                    "above"
+                } else {
+                    "within"
+                };
+                json!({"minimum":minimum,"maximum":maximum,"character_level":level,
+                    "position_in_reported_range":position})
+            });
         json!({
             "map_id":stats["map_id"],"map_name":stats["map_name"],
             "map_parent_id":stats["map_parent_id"],
+            "reported_map_level_range":map_level,
             "hearthstone_bind_name":stats["hearthstone_bind_name"],
             "hearthstone_item_id":stats["hearthstone_item_id"],
             "hearthstone_cooldown_seconds":stats["hearthstone_cooldown_seconds"],

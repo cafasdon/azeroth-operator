@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare captured character levels with saved map level ranges in travel reviews.
+
 - Compare observed parent maps separately from local maps in saved travel context.
 
 - Compare projected Hearthstone ready times across saved active cooldowns.
