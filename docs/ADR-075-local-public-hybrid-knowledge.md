@@ -76,3 +76,29 @@ The pinned corpus has 4,124 recognised edges across 7,749 records: 2,990 resolve
 and 1,134 lack a target row (882 NPC and 252 zone links). Maximum per record is
 22, so the current corpus is untruncated. This measures recognised local links
 only, not complete world/acquisition coverage.
+
+Suffix-option extension (10 November): recognised direct links also include
+randomSuffixOptions array entries pointing to random_suffixes records. Each
+edge is labelled catalogue_option_not_owned_variant; owned_variant_verified
+stays false. These are listed catalogue possibilities, not proof of an owned
+roll, effective item stats, acquisition availability, simulator resolution or
+best-in-slot eligibility. No native/gear-planning state is inferred or changed.
+
+To reach every edge while retaining the 32-edge response bound, include_references
+accepts reference_offset (uint32, default zero; CLI --reference-offset). A nonzero
+offset requires include_references. The offset applies to every returned hit's
+recognised-edge list. Existing world links retain their order, followed by suffix
+options in source-array order. Each hit reports reference_offset, reference_limit
+32, total/returned counts and has_more_references. Advance by 32 while has_more
+is true, keeping the same query/filter/base record key/hash and pinned source.
+Beyond-end offsets return an empty edge page with the full count and no more.
+references_truncated means the current response omits any recognised edges,
+including an earlier prefix; it can remain true on the last page. It is not the
+iteration condition. No recursive traversal or name matching is introduced.
+
+Earlier counts above describe world-field links only. Adding 30,493 suffix-option
+edges for 960 items yields 34,617 recognised edges. All suffix targets resolve;
+the previous 1,134 missing world targets remain explicit. Maximum per record is
+43; 575 records require a second page and every current record fits two pages.
+The combined 256KiB bound and source/target hashes apply to each response.
+No index rebuild, model change, private-data copy or network lookup occurs.

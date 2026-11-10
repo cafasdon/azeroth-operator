@@ -1,5 +1,7 @@
 # Changelog
 
+- Link listed random-suffix options to exact local records and page reference edges without implying owned variants.
+
 - Attach exact local NPC, zone and faction records to hybrid acquisition-reference results, retaining unresolved links explicitly.
 
 - Reduce local knowledge lookup overhead by combining norm-tolerance checks while retaining full per-request index validation.

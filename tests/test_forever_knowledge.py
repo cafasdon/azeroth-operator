@@ -204,6 +204,33 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(reply.isError)
                         self.assertEqual(json.loads(reply.content[0].text)['results'], [])
+                    suffix_base=next(row for row in raw_catalogue['items'] if row['id']==14270)
+                    expected_paths=[]
+                    for source_index,origin in enumerate(suffix_base.get('sources',[])):
+                        for kind,value in sorted(origin.items()):
+                            if isinstance(value,dict):
+                                expected_paths.extend(f'/sources/{source_index}/{kind}/{field}' for field in ['npcId','zoneId','repFactionId'] if field in value)
+                    expected_paths.extend(f'/randomSuffixOptions/{index}' for index in range(len(suffix_base['randomSuffixOptions'])))
+                    all_references=[]
+                    for offset in [0,32,64,4294967295]:
+                        reply=await session.call_tool('search_forever_knowledge',{'query':"Gaea's Cloak",'section':'items',
+                            'item_ids':[14270],'limit':1,'include_references':True,'reference_offset':offset})
+                        self.assertFalse(reply.isError,reply)
+                        row=json.loads(reply.content[0].text)['results'][0];links=row['catalogue_references']
+                        self.assertEqual(links['reference_count'],len(expected_paths))
+                        self.assertEqual(links['reference_offset'],offset);self.assertEqual(links['reference_limit'],32)
+                        self.assertEqual([r['source_path'] for r in links['references']],expected_paths[offset:offset+32])
+                        self.assertEqual(links['has_more_references'],offset+32<len(expected_paths))
+                        self.assertFalse(links['owned_variant_verified'])
+                        if offset<64:all_references.extend(links['references'])
+                    self.assertEqual([r['source_path'] for r in all_references],expected_paths)
+                    for link in all_references:
+                        if link['target_section']=='random_suffixes':
+                            self.assertEqual(link['relationship'],'catalogue_option_not_owned_variant')
+                            self.assertEqual(link['status'],'resolved')
+                            target=next(r for r in raw_catalogue['randomSuffixes'] if r['id']==link['record_id'])
+                            self.assertEqual(link['catalogue_record'],target)
+                            self.assertEqual(link['catalogue_record_sha256'],knowledge.digest(knowledge.encoded(target).encode()))
                     for args in [{'query':''}, {'query':'x'*513}, {'query':'x','limit':21},
                                  {'query':'x','section':'snapshots'}, {'query':'x','limit':6,'include_records':True},
                                  {'query':'x','section':'items','item_ids':[7950,7950]},
@@ -218,6 +245,12 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         reply=await session.call_tool('search_forever_knowledge',{'query':'x','limit':1,'include_references':value})
                         self.assertTrue(reply.isError)
                     rejected=await session.call_tool('search_forever_knowledge',{'query':'x','limit':6,'include_references':True})
+                    self.assertTrue(rejected.isError)
+                    for offset in [None,True,-1,1.0,'1',4294967296,[],{}]:
+                        rejected=await session.call_tool('search_forever_knowledge',{'query':'x','limit':1,
+                            'include_references':True,'reference_offset':offset})
+                        self.assertTrue(rejected.isError)
+                    rejected=await session.call_tool('search_forever_knowledge',{'query':'x','reference_offset':1})
                     self.assertTrue(rejected.isError)
         self.assertEqual(hashlib.sha256(index.read_bytes()).hexdigest(), original)
 
@@ -236,6 +269,19 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
         base['sources']=[{'drop':{'npcId':True}}]
         invalid=instance.references('items:3')['references'][0]
         self.assertEqual(invalid['status'],'invalid_reference_id');self.assertIsNone(invalid['record_id'])
+        instance.source_records['items:4']={'id':4,'randomSuffixOptions':[7]*65}
+        instance.source_records['random_suffixes:7']={'id':7,'name':'Public suffix','stats':[1,2]}
+        gathered=[]
+        for offset in [0,32,64]:
+            result=instance.references('items:4',offset)
+            self.assertEqual(result['reference_count'],65)
+            self.assertEqual(result['has_more_references'],offset+32<65)
+            gathered.extend(result['references'])
+        self.assertEqual([r['source_path'] for r in gathered],[f'/randomSuffixOptions/{i}' for i in range(65)])
+        gathered[0]['catalogue_record']['stats'][0]=99
+        self.assertEqual(instance.references('items:4')['references'][0]['catalogue_record']['stats'],[1,2])
+        for offset in [None,True,-1,1.0,'1',4294967296]:
+            with self.assertRaises(ValueError):instance.references('items:4',offset)
 
     async def test_index_pin_integrity_and_noop_build(self):
         root = Path(__file__).resolve().parents[1]

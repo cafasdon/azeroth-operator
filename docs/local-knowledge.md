@@ -72,3 +72,17 @@ retains the 256 KiB bound. References use catalogue IDs and do not verify native
 world identity, current acquisition availability or a complete reference graph.
 Private snapshots and the public index remain unchanged. Existing queries that
 omit the option keep their previous response shape.
+
+Reference results also link listed randomSuffixOptions to exact random_suffixes
+rows. They are labelled catalogue_option_not_owned_variant, with
+owned_variant_verified: false. Public possibilities never establish an owned
+modifier, effective item stats, simulator resolution or equip eligibility.
+
+Use reference_offset (CLI --reference-offset) with include_references to page
+all recognised edges, 32 at a time. It is a uint32 starting at zero and applies
+to every hit. Keep query/filter/base key/hash and pinned source unchanged, and
+advance by 32 while has_more_references is true. Beyond-end pages are empty.
+references_truncated can stay true on the last page because earlier edges are
+omitted from that response; use has_more_references to continue. World links
+come first, then suffix options in their original array order. The combined
+256KiB bound, exact records/hashes and privacy boundary remain unchanged.

@@ -226,3 +226,45 @@ feature based on exact corpus joins, direct CLI/MCP checks and both independent
 reviews. Native qualification, installation/deployment and live testing remain
 deferred. The earlier latency benchmark applies to its recorded predecessor
 source and default query workload, not a new reference-enrichment benchmark.
+
+## Exact suffix options and reference pagination — 2026-11-10
+
+Listed randomSuffixOptions now join exact random_suffixes rows, labelled
+catalogue_option_not_owned_variant with owned_variant_verified false. Reference
+offset pagination exposes all edges within the existing 32-edge/256KiB bounds.
+Full counts, offset/limit, has_more_references and omitted-edge flags remain
+explicit. No source/model/index/private-data/native action change. See ADR-075.
+
+Author's initial four-test run passed the helper, integrity and boundary tests;
+the actual MCP assertions passed but a new fixture loop shadowed the index Path
+at the final checksum check. Renaming the loop counter corrected this test-only
+fault. The scoped actual-model/stdIO test then passed in 23.039 seconds. It
+checks all forty-three Gaea's Cloak edges across pages, exact suffix rows/hashes,
+non-ownership labels, empty beyond-end/maximum-offset pages and strict offset/
+flag guards. Synthetic fixtures exercise sixty-five duplicate options, world
+prefixes, full coverage and nested copy isolation. The real CLI second page
+returned eleven exact suffix edges and preserved index bytes. Diff check passed.
+
+An all-pages pinned-corpus scan accounted for 34,617 edges: 30,493 suffix-option
+edges for 960 items, plus the prior 4,124 world-field edges. All suffix targets
+resolve; the prior 1,134 missing world targets remain explicit. Maximum43 edges;
+575 records require a second page. Every current record fits two bounded pages.
+These possibilities never establish owned rolls, effective stats or BiS.
+
+One independent adversarial round: failure and security/data plus callers,
+requested gpt-6-astra high; resolved model/usage not exposed. No concrete finding.
+Failure reviewer independently checked every edge/page/path/order/hash/count,
+ran two scoped real model/helper tests in 22.163 seconds, twelve synthetic page/
+count cases, nine malformed offsets, duplicate options/world prefixes, nested
+copy isolation, zero-offset defaults and second-page payload-cap refusal. Its
+real offline CLI page passed. Data/callers review passed all four tests and
+verified every edge, namespace and documented count, plus missing/invalid/copy
+cases and actual CLI last-page semantics. Zero network attempts/index mutation;
+no source edits or deployment performed by reviewers.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.76,
+request 5d78638e2e3383dea87bd9b7382a2d746e291e80bdd5a1089dfb8fe1601b7c3d;
+745 input and 44 output tokens, 0.359 seconds. Author accepted the bounded
+feature on exhaustive pinned-data coverage, direct CLI/MCP checks and both
+independent reviews. Installation, deployment, native qualification and live
+testing remain deferred.
