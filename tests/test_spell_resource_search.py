@@ -28,6 +28,7 @@ class SpellResourceSearchTests(unittest.IsolatedAsyncioTestCase):
         rows['6']['charge_count'] = {'current':1,'maximum':2}
         rows['7']['reported_cast_count'] = 2
         rows['8']['cooldown_state'] = {'enabled':True,'active':False}
+        rows['4']['name'] = 'Fixture Bolt'
         base['sections']['spellbook'] = {'coverage':'visible_player_spell_slots','entries':rows}
         def truth(row,criteria):
             checks=[]
@@ -123,6 +124,20 @@ class SpellResourceSearchTests(unittest.IsolatedAsyncioTestCase):
                     await call('inspect_snapshot',error=True,snapshot_id=key,section='equipment',spellbook_resource_filter={'minimum_charges':1})
                     await call('list_snapshots',error=True,family='retail',spellbook_spell={'resources':{'minimum_charges':1}})
                     await call('list_snapshots',error=True,family='forever',spellbook_spell={})
+                    for name in [' ', 'é'*129, True]:
+                        await call('list_snapshots',error=True,family='forever',spellbook_spell={'name':name})
+                    for name,extra,expected in [
+                        ('  fiXTUre Bolt ',{},[4]),
+                        ('Fixture Bolt',{'spell_id':102,'resources':{'minimum_charges':2}},[4]),
+                        ('Fixture Bolt',{'spell_id':101},[]),
+                        ('Fixture Bolt',{'resources':{'minimum_charges':3}},[]),
+                        ('Fixture',{},[]),
+                    ]:
+                        result=await call('list_snapshots',family='forever',
+                            spellbook_spell={'name':name,**extra})
+                        matched=[row['spellbook_spell_match']['entries'] for row in result['snapshots']]
+                        self.assertEqual({entry['slot'] for entries in matched for entry in entries},set(expected))
+                        self.assertTrue(all('name' not in entry for entries in matched for entry in entries))
             self.assertEqual(before,{p.name:p.read_bytes() for p in Path(folder).glob('*.json')})
 
 

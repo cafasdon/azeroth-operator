@@ -633,6 +633,8 @@ impl SpellResourceFilter {
 pub struct SpellbookSpellFilter {
     /// Match either the base or reported spell ID in one saved player spellbook row.
     pub spell_id: Option<std::num::NonZeroU32>,
+    /// Match the exact case-insensitive saved spell name.
+    pub name: Option<String>,
     /// Captured resource predicates on the same row; allows resource-only discovery.
     pub resources: Option<SpellResourceFilter>,
     pub passive: Option<bool>,
@@ -2520,8 +2522,16 @@ impl Store {
         );
         if let Some(filter) = &spellbook_spell {
             ensure!(
-                filter.spell_id.is_some() || filter.resources.is_some(),
-                "Spell ID or resource filter required"
+                filter.spell_id.is_some() || filter.resources.is_some() || filter.name.is_some(),
+                "Spell ID, name or resource filter required"
+            );
+            ensure!(
+                filter
+                    .name
+                    .as_deref()
+                    .map(str::trim)
+                    .is_none_or(|name| !name.is_empty() && name.len() <= 256),
+                "Spell name requires one to 256 bytes after trimming"
             );
             if let Some(resources) = &filter.resources {
                 resources.validate()?;
@@ -3176,10 +3186,13 @@ impl Store {
                     let spellbook_match=spellbook_spell.as_ref().and_then(|filter| {
                         let book=s.sections.get("spellbook")?;
                         let requested=filter.spell_id.map(|id|u64::from(id.get()));
+                        let name=filter.name.as_deref().map(str::trim).map(str::to_lowercase);
                         let mut resource_unknown=0;
                         let mut resource_nonmatching=0;
                         let mut matches=book["entries"].as_object()?.iter().filter(|(_,row)| {
                             (requested.is_none() || row["base_spell_id"].as_u64()==requested || row["spell_id"].as_u64()==requested)
+                                && name.as_ref().is_none_or(|name| row["name"].as_str()
+                                    .is_some_and(|label| label.trim().to_lowercase() == *name))
                                 && filter.passive.is_none_or(|flag|row["passive"].as_bool()==Some(flag))
                                 && filter.off_spec.is_none_or(|flag|row["off_spec"].as_bool()==Some(flag))
                                 && filter.usable.is_none_or(|flag|row["usability"]["usable"].as_bool()==Some(flag))

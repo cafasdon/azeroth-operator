@@ -3218,6 +3218,12 @@ matching item IDs per capture with recorded collection and favourite flags.
 Combine it with `toy_in_view` to require the name, ID and flags on the same
 row.
 
+`list_snapshots.spellbook_spell.name` finds captures containing an exact
+saved spell name, ignoring case and surrounding spaces. Optional spell ID,
+resource and usability conditions apply to the same slot. Results contain
+the matched slot IDs and recorded metadata. They describe the saved visible
+spellbook and do not establish current casting eligibility.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

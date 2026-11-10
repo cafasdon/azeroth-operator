@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever spellbook captures by exact spell name.
+
 - Find saved Forever toy journal captures by public toy name.
 
 - Inspect saved Forever toy journal rows by public toy name.

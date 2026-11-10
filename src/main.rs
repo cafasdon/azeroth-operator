@@ -538,7 +538,7 @@ struct List {
     pet_species_name: Option<String>,
     /// Match saved active-pet presence, family, level and signed training-point balance.
     active_pet: Option<azeroth_operator::ActivePetCaptureFilter>,
-    /// Match a saved visible player spellbook row by base/reported ID and optional metadata.
+    /// Match a saved visible player spellbook row by ID, exact name or recorded resources.
     spellbook_spell: Option<azeroth_operator::SpellbookSpellFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
