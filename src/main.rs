@@ -4278,11 +4278,19 @@ impl Operator {
                         trainer_balance,
                         reserve,
                     );
-                    let (projection_key, total_key) =
+                    let (projection_key, total_key, subtotal_key) =
                         if trainer_balance_field == "price_training_points" {
-                            ("trainer_points_projection", "total_price_points")
+                            (
+                                "trainer_points_projection",
+                                "total_price_points",
+                                "known_price_subtotal_points",
+                            )
                         } else {
-                            ("trainer_wallet_projection", "total_price_copper")
+                            (
+                                "trainer_wallet_projection",
+                                "total_price_copper",
+                                "known_price_subtotal_copper",
+                            )
                         };
                     if let Some(projection) = value
                         .get_mut(projection_key)
@@ -4292,13 +4300,27 @@ impl Operator {
                             .get(total_key)
                             .and_then(serde_json::Value::as_u64);
                         let budget = total.zip(trainer_spendable);
+                        let subtotal = projection
+                            .get(subtotal_key)
+                            .and_then(serde_json::Value::as_u64);
                         let reserve_covered = trainer_balance.map(|balance| reserve <= balance);
+                        let known_budget_insufficient = subtotal
+                            .zip(trainer_spendable)
+                            .is_some_and(|(cost, spendable)| cost > spendable);
+                        let shortfall = |cost: Option<u64>| {
+                            cost.zip(trainer_balance).and_then(|(cost, balance)| {
+                                azeroth_operator::analysis::trainer_reserved_shortfall(
+                                    cost, balance, reserve,
+                                )
+                            })
+                        };
                         projection.insert("after_reserve".into(), serde_json::json!({
                             "reserve_covered":reserve_covered,
                             "spendable_balance":trainer_spendable,
-                            "retained_lessons_affordable":if reserve_covered == Some(false) { Some(false) }
+                            "retained_lessons_affordable":if reserve_covered == Some(false) || known_budget_insufficient { Some(false) }
                                 else { budget.map(|(cost, balance)| cost <= balance) },
-                            "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance)),
+                            "retained_lessons_shortfall":shortfall(total),
+                            "known_lessons_and_reserve_shortfall":shortfall(subtotal),
                             "cheapest_affordable_known_lessons":cheapest,
                             "individual_lesson_affordability":individual
                         }));

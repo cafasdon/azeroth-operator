@@ -271,6 +271,10 @@ does not remove lessons from the review.
 The reserve breakdown also reports each retained available lesson's
 affordability and the extra balance needed to cover both the lesson and
 the reserve. An unknown price leaves the exact shortfall unknown.
+The total shortfall includes any gap in the reserve itself. If prices
+are missing, `known_lessons_and_reserve_shortfall` gives the shortfall
+for known costs. A positive value proves the retained lessons do not
+all fit the saved budget.
 With `trainer_service_slots`, the after-reserve breakdown also reports how
 many lessons fit in the requested order and identifies the first blocker.
 A slot excluded by the shortlist is reported as `lesson_not_retained`.

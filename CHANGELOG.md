@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the combined trainer reserve and lesson shortfall, including when some prices are unknown.
+
 - Show per-lesson affordability and shortfalls after a trainer budget reserve.
 
 - Plan the cheapest saved trainer lessons after a reserve without filtering out other lessons.

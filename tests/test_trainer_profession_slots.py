@@ -38,6 +38,10 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                 '1':{'name':'Pet lesson','status':'available','price_training_points':5},
                 '2':{'name':'Advanced pet lesson','status':'unavailable','required_level':22}}}
             pet_key=store.ingest(pet)
+            partial_pet=deepcopy(pet)
+            partial_pet['sections']['trainer_services']['pet_training_points_available']=6
+            partial_pet['sections']['trainer_services']['entries']['3']={'name':'Unpriced lesson','status':'available'}
+            partial_pet_id=store.ingest(partial_pet)
             point_cases=[]
             for total,used,trainer_points,pet_level,agree in [(10,3,7,20,True),(3,10,0,19,True),
                                                             (10,3,6,20,False),(-1,3,0,20,None)]:
@@ -91,6 +95,11 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                         'level_shortfall_vs_active_pet_observation'])
                     legacy_points=(await inspect(pet_key,trainer_points_projection=True))['trainer_points_projection']
                     self.assertIsNone(legacy_points['active_pet_capture_context']['spendable_points_observations_agree'])
+                    partial=(await inspect(partial_pet_id,trainer_points_projection=True,trainer_balance_reserve=2))[
+                        'trainer_points_projection']['after_reserve']
+                    self.assertFalse(partial['retained_lessons_affordable'])
+                    self.assertIsNone(partial['retained_lessons_shortfall'])
+                    self.assertEqual(partial['known_lessons_and_reserve_shortfall'],1)
                     for key,signed,points,level,agree in point_cases:
                         report=await inspect(key,trainer_points_projection=True)
                         projection=report['trainer_points_projection']
@@ -113,6 +122,8 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(reserved['cheapest_affordable_known_lessons'],expected)
                         self.assertEqual(reserved['individual_lesson_affordability']['1'],
                                          {'affordable':points>=7,'shortfall':max(0,7-points)})
+                        self.assertEqual(reserved['retained_lessons_shortfall'],max(0,7-points))
+                        self.assertEqual(reserved['known_lessons_and_reserve_shortfall'],max(0,7-points))
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
                                                                           'trainer_requirements_review':True})

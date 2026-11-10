@@ -8308,6 +8308,13 @@ fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize
     Some((available, unknown_prices, subtotal))
 }
 
+pub fn trainer_reserved_shortfall(cost: u64, balance: u64, reserve: u64) -> Option<u64> {
+    match balance.checked_sub(reserve) {
+        Some(spendable) => Some(cost.saturating_sub(spendable)),
+        None => cost.checked_add(reserve - balance),
+    }
+}
+
 pub fn trainer_lesson_affordability(
     trainer: &Value,
     price_field: &str,
@@ -8327,10 +8334,7 @@ pub fn trainer_lesson_affordability(
                     None => Some(false),
                 });
                 let shortfall = price.zip(balance).and_then(|(price, balance)| {
-                    match balance.checked_sub(reserve) {
-                        Some(spendable) => Some(price.saturating_sub(spendable)),
-                        None => price.checked_add(reserve - balance),
-                    }
+                    trainer_reserved_shortfall(price, balance, reserve)
                 });
                 (
                     id,
