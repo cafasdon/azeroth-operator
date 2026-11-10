@@ -1,5 +1,7 @@
 # Changelog
 
+- Join saved dialogue quest matches with same-capture quest log readiness.
+
 - Find saved dialogue captures by quest ID, list and reported quest flags.
 
 - Compare available and active quests across saved Forever dialogue panels.

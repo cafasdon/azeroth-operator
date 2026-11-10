@@ -39,6 +39,8 @@ pub struct GossipQuestFilter {
     pub repeatable: Option<bool>,
     pub is_trivial: Option<bool>,
     pub is_ignored: Option<bool>,
+    /// Match the same quest ID's readiness in the saved quest log.
+    pub quest_log_readiness: Option<crate::analysis::QuestReadiness>,
 }
 
 impl GossipQuestFilter {
@@ -48,7 +50,19 @@ impl GossipQuestFilter {
             GossipQuestList::Active => "active",
         };
         let section = snapshot.sections.get("gossip_quests")?;
-        let row = section[list].get(self.quest_id.get().to_string())?;
+        let key = self.quest_id.get().to_string();
+        let row = section[list].get(&key)?;
+        let readiness = snapshot
+            .sections
+            .get("quests")
+            .and_then(|quests| quests.get(&key))
+            .map(crate::analysis::quest_readiness);
+        if self
+            .quest_log_readiness
+            .is_some_and(|expected| readiness != Some(expected))
+        {
+            return None;
+        }
         [
             ("is_complete", self.is_complete),
             ("repeatable", self.repeatable),
@@ -58,9 +72,13 @@ impl GossipQuestFilter {
         .into_iter()
         .all(|(field, expected)| expected.is_none_or(|flag| row[field].as_bool() == Some(flag)))
         .then(|| {
-            json!({"quest_id":self.quest_id,"list":list,"observation":row,
+            let mut result = json!({"quest_id":self.quest_id,"list":list,"observation":row,
             "npc_identity_verified":false,"acceptance_eligibility_verified":false,
-            "turn_in_eligibility_verified":false,"live":false})
+            "turn_in_eligibility_verified":false,"live":false});
+            if let Some(readiness) = readiness {
+                result["quest_log_readiness"] = json!(readiness);
+            }
+            result
         })
     }
 }

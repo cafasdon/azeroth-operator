@@ -5,6 +5,10 @@ Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `is_trivial` and `is_ignored` flags must match the same recorded row.
 Missing flags do not match either true or false. Results describe saved
 lists and do not establish current acceptance or turn-in eligibility.
+When the same quest ID also appears in the saved quest log, matches show
+`quest_log_readiness`. Use it as an optional filter independently of the
+panel's `is_complete` flag. An unknown readiness requires a recorded log
+row. A missing row does not match any readiness predicate.
 
 Set `gossip_quest_changes` on `compare_snapshots` to compare the saved
 available and active quest lists separately by quest ID. Each list shows

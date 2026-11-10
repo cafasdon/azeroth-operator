@@ -74,6 +74,11 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         'available': {'2': {'repeatable': True}, '3': {}},
                         'active': {'10': {}, '20': {'is_complete': False}, '22': {'is_complete': True}},
                     }
+                    followup['sections']['quests'] = {
+                        '20': {'title':'Fixture quest','level':10,'ready_for_turn_in':True},
+                        '22': {'title':'Unknown quest','level':10},
+                        '10': {'title':'Failed quest','level':10,'ready_for_turn_in':True,'failed':True},
+                    }
                     followup_key = store.ingest(followup)
                     async def compare(after, enabled=True):
                         reply = await session.call_tool('compare_snapshots', {
@@ -102,6 +107,11 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                         ({'quest_id':10,'list':'active','repeatable':False},[]),
                         ({'quest_id':20,'list':'active','is_complete':False},[followup_key]),
                         ({'quest_id':22,'list':'active','is_complete':False},[]),
+                        ({'quest_id':20,'list':'active','is_complete':False,'quest_log_readiness':'ready'},[followup_key]),
+                        ({'quest_id':20,'list':'active','quest_log_readiness':'not_ready'},[]),
+                        ({'quest_id':22,'list':'active','quest_log_readiness':'unknown'},[followup_key]),
+                        ({'quest_id':10,'list':'active','quest_log_readiness':'failed'},[followup_key]),
+                        ({'quest_id':2,'list':'available','quest_log_readiness':'unknown'},[]),
                     ):
                         reply = await session.call_tool('list_snapshots', {'family':'forever','gossip_quest':query})
                         self.assertFalse(reply.isError)
@@ -111,10 +121,13 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                             match = rows[0]['gossip_quest_match']
                             self.assertEqual((match['quest_id'],match['list']),(query['quest_id'],query['list']))
                             self.assertFalse(match['turn_in_eligibility_verified'])
+                            if 'quest_log_readiness' in query:
+                                self.assertEqual(match['quest_log_readiness'],query['quest_log_readiness'])
                     for family, query in (
                         ('retail',{'quest_id':10,'list':'active'}),
                         ('forever',{'quest_id':0,'list':'active'}),
                         ('forever',{'quest_id':10,'list':'PRIVATE'}),
+                        ('forever',{'quest_id':10,'list':'active','quest_log_readiness':'PRIVATE'}),
                         ('forever',{'quest_id':10,'list':'active','is_complete':0}),
                     ):
                         reply=await session.call_tool('list_snapshots',{'family':family,'gossip_quest':query})
