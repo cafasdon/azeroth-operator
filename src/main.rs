@@ -866,6 +866,8 @@ struct Summary {
     saved_reset_kind: Option<azeroth_operator::saved_resets::SavedResetKind>,
     /// Limit the reset schedule to saved instances matching these recorded details.
     saved_reset_instance_filter: Option<azeroth_operator::saved_resets::SavedResetInstanceFilter>,
+    /// Maximum cache update age in seconds at capture. Requires saved_reset_reference_at.
+    saved_reset_maximum_update_age_seconds: Option<u32>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2258,6 +2260,13 @@ impl Operator {
         )
     )]
     fn character_summary(&self, Parameters(args): Parameters<Summary>) -> CallToolResult {
+        if args.saved_reset_maximum_update_age_seconds.is_some()
+            && args.saved_reset_reference_at.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A saved reset cache age limit requires a reference time",
+            )]);
+        }
         if args.saved_reset_instance_filter.is_some()
             && (args.saved_reset_reference_at.is_none()
                 || matches!(
@@ -2293,6 +2302,7 @@ impl Operator {
                         args.saved_reset_through,
                         args.saved_reset_kind,
                         args.saved_reset_instance_filter,
+                        args.saved_reset_maximum_update_age_seconds,
                     ) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Saved reset schedules require a valid Forever snapshot",

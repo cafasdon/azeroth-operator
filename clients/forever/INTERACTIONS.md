@@ -2701,6 +2701,11 @@ whole capture, and a match leaves current lockout status unverified.
 section. It separates resets at or before the reference, inside the
 window, after the window, and unknown. A missing section gives null,
 while a captured section with no matching rows gives zero counts.
+Set `saved_reset_maximum_update_age_seconds` with the reference time to
+keep sections whose cache age at capture was at or below the limit.
+`cache_age_filter_matches` reports the result per section and leaves
+missing sections unknown. The filter uses the recorded cache age, so it
+does not establish present-day freshness.
 
 `inspect_snapshot` with `section: "saved_instances"` or `"saved_world_bosses"`
 accepts `saved_reset_projection: true`. Raw `data` remains unchanged and the

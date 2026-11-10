@@ -150,6 +150,7 @@ pub fn combined_schedule(
     through: Option<DateTime<Utc>>,
     kind: Option<SavedResetKind>,
     instance_filter: Option<SavedResetInstanceFilter>,
+    maximum_update_age_seconds: Option<u32>,
 ) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever,
@@ -158,6 +159,7 @@ pub fn combined_schedule(
     let mut by_time = BTreeMap::<DateTime<Utc>, Vec<Value>>::new();
     let mut coverage = BTreeMap::new();
     let mut matching_reset_window_counts = BTreeMap::new();
+    let mut cache_age_filter_matches = BTreeMap::new();
     for section in ["saved_instances", "saved_world_bosses"] {
         let projected = project(
             section,
@@ -170,12 +172,23 @@ pub fn combined_schedule(
             "unknown_count":projected["unknown_count"],
             "cache_update_age_seconds":projected["cache_update_age_seconds"]}),
         );
+        let cache_age_match = maximum_update_age_seconds.map(|maximum| {
+            projected["cache_update_age_seconds"]
+                .as_u64()
+                .map(|age| age <= u64::from(maximum))
+        });
+        if let Some(matched) = cache_age_match {
+            cache_age_filter_matches.insert(section, matched);
+        }
         let Some(rows) = projected["rows"].as_array() else {
             matching_reset_window_counts.insert(section, Value::Null);
             continue;
         };
         let (mut elapsed, mut within_window, mut after_window, mut unknown) = (0, 0, 0, 0);
         for row in rows {
+            if cache_age_match.is_some_and(|matched| matched != Some(true)) {
+                break;
+            }
             let observation = &row["observation"];
             let is_instance = section == "saved_instances";
             if instance_filter.is_some_and(|filter| {
@@ -246,6 +259,10 @@ pub fn combined_schedule(
     }
     if let Some(filter) = instance_filter {
         result["instance_filter"] = json!(filter);
+    }
+    if let Some(maximum) = maximum_update_age_seconds {
+        result["maximum_update_age_seconds"] = json!(maximum);
+        result["cache_age_filter_matches"] = json!(cache_age_filter_matches);
     }
     Ok(result)
 }

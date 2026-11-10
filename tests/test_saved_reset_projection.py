@@ -103,6 +103,7 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z'})
                     self.assertFalse(combined.isError,combined)
                     schedule = json.loads(combined.content[0].text)['saved_reset_schedule']
+                    self.assertNotIn('cache_age_filter_matches',schedule)
                     self.assertEqual(schedule['upcoming_projected_resets'], [
                         {'at':'2025-01-02T00:01:00Z','entries':[
                             {'section':'saved_world_bosses','slot':1,'name':'Fixture'}]},
@@ -113,6 +114,22 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(schedule['coverage']['saved_world_bosses']['unknown_count'],1)
                     self.assertEqual(schedule['matching_reset_window_counts']['saved_world_bosses'],{
                         'at_or_before_reference':1,'within_window':1,'after_window':0,'unknown_reset':1})
+                    for limit, instances, bosses, expected in [
+                            (4,False,False,[]),(5,True,False,schedule['upcoming_projected_resets'][1:]),
+                            (999,True,True,schedule['upcoming_projected_resets'])]:
+                        reply=await session.call_tool('character_summary',{
+                            'snapshot_id':key,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                            'saved_reset_maximum_update_age_seconds':limit})
+                        self.assertFalse(reply.isError,reply)
+                        fresh=json.loads(reply.content[0].text)['saved_reset_schedule']
+                        self.assertEqual(fresh['cache_age_filter_matches'],{
+                            'saved_instances':instances,'saved_world_bosses':bosses})
+                        self.assertEqual(fresh['upcoming_projected_resets'],expected)
+                        self.assertEqual(fresh['coverage'],schedule['coverage'])
+                        if not bosses:
+                            self.assertEqual(fresh['matching_reset_window_counts']['saved_world_bosses']['unknown_reset'],0)
+                    self.assertTrue((await session.call_tool('character_summary',{
+                        'snapshot_id':key,'saved_reset_maximum_update_age_seconds':0})).isError)
                     for kind, expected in [('world_boss',schedule['upcoming_projected_resets'][:1]),
                                            ('raid',schedule['upcoming_projected_resets'][1:]),('dungeon',[])]:
                         reply = await session.call_tool('character_summary', {
@@ -165,10 +182,13 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     for capture_id, counts in [(missing_key,None),(empty_key,{
                             'at_or_before_reference':0,'within_window':0,'after_window':0,'unknown_reset':0})]:
                         reply=await session.call_tool('character_summary',{
-                            'snapshot_id':capture_id,'saved_reset_reference_at':'2025-01-01T23:59:00Z'})
+                            'snapshot_id':capture_id,'saved_reset_reference_at':'2025-01-01T23:59:00Z',
+                            'saved_reset_maximum_update_age_seconds':999})
                         self.assertFalse(reply.isError,reply)
-                        observed=json.loads(reply.content[0].text)['saved_reset_schedule']['matching_reset_window_counts']
-                        self.assertEqual(observed,{'saved_instances':counts,'saved_world_bosses':counts})
+                        observed=json.loads(reply.content[0].text)['saved_reset_schedule']
+                        self.assertEqual(observed['matching_reset_window_counts'],{'saved_instances':counts,'saved_world_bosses':counts})
+                        match=None if counts is None else True
+                        self.assertEqual(observed['cache_age_filter_matches'],{'saved_instances':match,'saved_world_bosses':match})
                     self.assertEqual(bounded['through_at'],'2025-01-02T00:01:00Z')
                     reversed_window = await session.call_tool('character_summary', {
                         'snapshot_id':key,'saved_reset_reference_at':'2025-01-02T00:01:00Z',
