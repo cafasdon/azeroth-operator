@@ -13,6 +13,10 @@ Set `mail_attachment.require_recorded_bag_space: true` with
 `kind: "item"` to require a known fit in the same capture's recorded
 general bag slots without stack merges. The estimate covers the selected
 item's known loaded quantities. Retrieval eligibility remains unverified.
+Set `mail_attachment.require_fully_readable_capture: true` for either
+attachment kind to require zero unloaded messages and zero unknown
+attachment slots in the saved inbox. It combines with cap or bag-space
+filters and applies to the recorded capture.
 
 Set `quest_list_ready_waypoint_groups` when inspecting the saved quest
 list to group quests marked ready by their next waypoint map. Ready

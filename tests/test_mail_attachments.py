@@ -104,6 +104,25 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                                 'quantity_above_recorded_headroom':2})
                             self.assertFalse(match['mail_cap_application_verified'])
                             self.assertEqual(match['unloaded_messages'],3)
+                    complete=copy.deepcopy(capped)
+                    complete['character']['name']='Complete'
+                    complete['sections']['mail_attachments']['total_messages']=1
+                    complete['sections']['mail_attachments']['messages']['1'].pop('16')
+                    complete_key=store.ingest(complete)
+                    unknown=copy.deepcopy(complete)
+                    unknown['character']['name']='Unreadable'
+                    unknown['sections']['mail_attachments']['messages']['1']['16']={'kind':'unknown'}
+                    store.ingest(unknown)
+                    unloaded=copy.deepcopy(complete)
+                    unloaded['character']['name']='Unloaded'
+                    unloaded['sections']['mail_attachments']['total_messages']=2
+                    store.ingest(unloaded)
+                    for kind, extra in [('item',{}),('currency',{'maximum_quantity_above_recorded_headroom':2})]:
+                        readable=(await search(mail_attachment={'kind':kind,'id':720,
+                            'require_fully_readable_capture':True,**extra}))['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in readable],[complete_key])
+                        match=readable[0]['mail_attachment_match']
+                        self.assertEqual((match['unloaded_messages'],match['unknown_attachment_slots']),(0,0))
                     self.assertEqual((await search(character=value['character'],mail_attachment={
                         'kind':'item','id':999,'minimum_quantity':0}))['snapshots'],[])
                     self.assertEqual((await search(**query,latest_per_character=True))['snapshots'],[])
@@ -120,7 +139,8 @@ class MailAttachmentTests(unittest.IsolatedAsyncioTestCase):
                         {'kind':'item','id':720,'minimum_quantity':-1},{'kind':'item','id':720,'minimum_quantity':True},
                         {'kind':'item','id':720,'minimum_quantity':2**64},{'kind':'item','id':720,'sender':'x'},
                         {'kind':'item','id':720,'maximum_quantity_above_recorded_headroom':0},
-                        {'kind':'currency','id':720,'maximum_quantity_above_recorded_headroom':-1},{}]:
+                        {'kind':'currency','id':720,'maximum_quantity_above_recorded_headroom':-1},
+                        {'kind':'item','id':720,'require_fully_readable_capture':'true'},{}]:
                         response=await session.call_tool('list_snapshots',{'family':'forever','mail_attachment':bad})
                         self.assertTrue(response.isError)
                     response=await session.call_tool('list_snapshots',{'family':'retail','mail_attachment':{'kind':'item','id':720}})

@@ -514,6 +514,9 @@ pub struct MailAttachmentFilter {
     /// Items only. Require a known fit in recorded general bag slots without stack merges.
     #[serde(default)]
     pub require_recorded_bag_space: bool,
+    /// Require zero unloaded messages and zero unknown attachment slots in the saved capture.
+    #[serde(default)]
+    pub require_fully_readable_capture: bool,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -3455,6 +3458,10 @@ impl Store {
                     }
                     let mail_attachment_match = mail_attachment.as_ref().and_then(|filter| {
                         let mail=s.sections.get("mail_attachments")?;
+                        let unloaded = analysis::unloaded_mail_messages(mail);
+                        if filter.require_fully_readable_capture && unloaded != 0 {
+                            return None;
+                        }
                         let (kind,field)=match filter.kind {
                             MailAttachmentKind::Item=>("item","item_id"),
                             MailAttachmentKind::Currency=>("currency","currency_id"),
@@ -3471,6 +3478,9 @@ impl Store {
                         }
                         // Validated coverage bounds this sum to 100 * 16 * u32::MAX.
                         let quantity:u64=locations.iter().map(|(_,_,count)| count).sum();
+                        if filter.require_fully_readable_capture && unknown_slots != 0 {
+                            return None;
+                        }
                         if locations.is_empty() || quantity<filter.minimum_quantity.unwrap_or(1) {return None;}
                         let projection = if let Some(maximum) = filter.maximum_quantity_above_recorded_headroom {
                             let balance = s.sections.get("currency_balances")?["entries"].get(filter.id.to_string())?;
@@ -3498,7 +3508,7 @@ impl Store {
                         locations.sort_by_key(|(message,slot,_)| (*message,*slot));
                         let mut report = json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
                             "total_messages":mail["total_messages"],"kind":filter.kind,"id":filter.id,
-                            "unloaded_messages":analysis::unloaded_mail_messages(mail),
+                            "unloaded_messages":unloaded,
                             "unknown_attachment_slots":unknown_slots,
                             "quantity":quantity,"matched_locations":locations.len(),"truncated":locations.len()>20,
                             "locations":locations.iter().take(20).map(|(message,slot,count)|json!({

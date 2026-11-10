@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally require all messages loaded and no unknown attachment slots when searching saved inboxes.
+
 - Find saved item attachments that fit recorded general bag slots without stack merges.
 
 - Find saved currency attachments within a specified amount above recorded cap headroom.
