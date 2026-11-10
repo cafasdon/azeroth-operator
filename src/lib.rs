@@ -27,6 +27,7 @@ pub mod talent_operation;
 pub mod upload;
 pub mod workflow_coverage;
 pub mod recipe_restock;
+pub mod recipe_restock_alternatives;
 pub mod recipe_restock_batch;
 pub mod recipe_restock_quote;
 pub mod recipe_restock_sources;

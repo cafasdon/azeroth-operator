@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare explicit alternative recipes for one saved bag target using independent copper-only purchase quotes, with unknown-preserving minima and tied methods.
+
 - Rank saved gear by minimum worst gap from encounter-specific best eligible improvements, with exact regret arithmetic and no extra simulations.
 
 - Page exact incoming public catalogue references by target, with source pointers/hashes and no inferred acquisition or ownership claims.

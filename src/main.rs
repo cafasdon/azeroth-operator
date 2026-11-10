@@ -1395,6 +1395,9 @@ struct RecipeRestock {
     /// Join same-capture local provider references to positive bag shortfalls. No lookup, acquisition or routing action.
     #[serde(default)]
     captured_sources: bool,
+    /// Compare one to seven explicit alternative recipes for the same base-item target using independent saved bag/merchant quotes. Excludes joint targets and stock_schedule. Missing quotes never establish a cheapest requested recipe.
+    #[serde(default, deserialize_with = "alternative_recipe_argument")]
+    alternative_recipe_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Exact bulk recipe ID; omit for the saved selected recipe.
     recipe_id: Option<std::num::NonZeroU32>,
     /// Desired final base-item quantity in observed carried bags, not new output.
@@ -1404,6 +1407,13 @@ struct RecipeRestock {
     /// Bounded search for an individual-craft resource order using saved bags and minimum output. No native execution or cooldown eligibility.
     #[serde(default, deserialize_with = "stock_schedule_argument")]
     stock_schedule: Option<azeroth_operator::recipe_stock_schedule::Page>,
+}
+
+fn alternative_recipe_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Option<Vec<std::num::NonZeroU32>>,D::Error> {
+    Option::<serde_json::Value>::deserialize(input)?.map(|value| {
+        if !value.is_array() {return Err(serde::de::Error::custom("Invalid alternative recipe IDs"));}
+        serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid alternative recipe IDs"))
+    }).transpose()
 }
 
 fn stock_schedule_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Option<azeroth_operator::recipe_stock_schedule::Page>,D::Error> {
@@ -2351,10 +2361,15 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Plan crafts for base-item quantities in saved Forever bags. One owner-local snapshot; fixed recipe inputs and known yield. additional_targets adds up to seven joint targets with shared materials. Optional stock_schedule searches bounded individual-craft orders from captured bags and minimum output, including seeded cycles; budget exhaustion stays unknown. Bank/mail output is not credited. At most 1000 crafts per recipe. No crafting, acquisition or native eligibility guarantee.",
+        description = "Plan crafts for base-item quantities in saved Forever bags. One owner-local snapshot; fixed recipe inputs and known yield. additional_targets adds up to seven joint targets with shared materials. alternative_recipe_ids instead compares up to seven explicit alternatives for the same output/target using independent saved copper-only bag-shortfall quotes; incomplete quotes keep the cheapest requested recipe unknown. Optional stock_schedule searches bounded individual-craft orders from captured bags and minimum output, including seeded cycles; budget exhaustion stays unknown. Bank/mail output is not credited. At most 1000 crafts per recipe. No crafting, acquisition or native eligibility guarantee.",
         annotations(read_only_hint = true, destructive_hint = false, open_world_hint = false)
     )]
     fn plan_forever_recipe_restock(&self, Parameters(args): Parameters<RecipeRestock>) -> CallToolResult {
+        if args.alternative_recipe_ids.as_ref().is_some_and(|ids|
+            args.additional_targets.is_some() || args.stock_schedule.is_some()
+            || azeroth_operator::recipe_restock_alternatives::validate(ids,args.recipe_id).is_err()) {
+            return CallToolResult::error(vec![ContentBlock::text("Alternative recipes need one to seven distinct IDs and single-target mode without stock_schedule")]);
+        }
         if args.stock_schedule.as_ref().is_some_and(|page|page.validate().is_err()) {
             return CallToolResult::error(vec![ContentBlock::text("Stock schedule requires valid bounded page options")]);
         }
@@ -2370,6 +2385,10 @@ impl Operator {
             if args.merchant_quote {
                 plan["merchant_quote"] = azeroth_operator::recipe_restock_quote::quote(&plan, &snapshot);
             }
+            if let Some(ids) = &args.alternative_recipe_ids {
+                plan["alternative_recipes"] = azeroth_operator::recipe_restock_alternatives::review(
+                    &snapshot,&plan,args.target_bag_quantity,ids)?;
+            }
             if args.captured_sources {
                 plan["captured_sources"] = azeroth_operator::recipe_restock_sources::review(&plan, &snapshot)?;
             }
@@ -2378,10 +2397,13 @@ impl Operator {
         match result {
             Ok(mut plan) => {
                 plan["snapshot_id"] = serde_json::json!(args.snapshot_id);
+                if args.alternative_recipe_ids.is_some() && plan.to_string().len() > 256*1024 {
+                    return CallToolResult::error(vec![ContentBlock::text("Recipe comparison exceeds byte limit")]);
+                }
                 CallToolResult::success(vec![ContentBlock::text(plan.to_string())])
             }
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Recipe restock needs a valid owner-local Forever snapshot, observed bags, fixed recipe inputs and a known output item/yield. Joint mode needs one to seven additional distinct recipes/output items. Positive shortfalls need positive minimum net output and at most 1000 crafts per recipe.",
+                "Recipe restock needs a valid owner-local Forever snapshot, observed bags, fixed recipe inputs and a known output item/yield. Joint mode needs one to seven additional distinct recipes/output items. Alternative comparison needs distinct IDs, the same known base output and single-target mode without stock_schedule. Positive shortfalls need positive minimum net output and at most 1000 crafts per recipe.",
             )]),
         }
     }

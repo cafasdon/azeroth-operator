@@ -1112,3 +1112,12 @@ eligible improvement avoid extra simulations and preserve tied gear. Incomplete
 or over-budget analysis remains unknown. This does not prove statistical
 superiority, complete owned pools or unconditional best-in-slot. See ADR-103 and
 its dated offline evidence. Installation and live qualification remain deferred.
+
+## Alternative recipe purchase quotes (10 November)
+
+The saved restock MCP can compare explicit fixed-input recipes for the same
+base-item bag target. Each method uses the same original bags and merchant
+offers independently. Missing quotes prevent a minimum across all requested
+methods; provisional known minima remain separate. Costs exclude the value of
+owned inputs, time, skill gains and travel. No craft or purchase action occurs.
+See ADR-104 and its dated offline evidence. Native qualification stays deferred.
