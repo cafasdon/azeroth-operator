@@ -125,6 +125,8 @@ struct Inspect {
     /// Estimate carried space for the requested quantities visible in the saved loot window.
     #[serde(default)]
     loot_estimate_bag_space: bool,
+    /// Estimate bag space for all observed loaded mail attachments matching these distinct item IDs.
+    mail_attachment_bag_space_item_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Check one exact spell ID against the saved Forever profession_spells observation.
@@ -2633,6 +2635,19 @@ impl Operator {
                 "Skill-line inspection requires skill_lines, a nonempty ordered filter and limit from 1 to 50",
             )]);
         }
+        if args
+            .mail_attachment_bag_space_item_ids
+            .as_ref()
+            .is_some_and(|ids| {
+                args.section.as_deref() != Some("mail_attachments")
+                    || !(1..=64).contains(&ids.len())
+                    || ids.iter().collect::<std::collections::BTreeSet<_>>().len() != ids.len()
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Mail bag space requires mail_attachments and one to 64 distinct positive item IDs",
+            )]);
+        }
         if args.loot_estimate_bag_space && args.loot_requirements.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Loot bag space requires loot requirements",
@@ -4030,6 +4045,21 @@ impl Operator {
                             )]);
                         }
                     }
+                }
+                if let Some(ids) = &args.mail_attachment_bag_space_item_ids {
+                    let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Could not read the saved inbox capture",
+                        )]);
+                    };
+                    if snapshot.client.family != azeroth_operator::Family::Forever {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Mail bag space requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["mail_attachment_bag_space_projection"] = serde_json::json!(
+                        azeroth_operator::analysis::mail_attachment_bag_space(&snapshot, ids)
+                    );
                 }
                 if let Some(requirements) = args.loot_requirements.as_ref() {
                     let reviewed = self.store.read(&args.snapshot_id).and_then(|snapshot| {

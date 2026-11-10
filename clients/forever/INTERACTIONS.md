@@ -426,6 +426,13 @@ limits from the same capture. Unrequested or unreadable loot is outside
 the estimate. Same-item merges are hypothetical, and loot eligibility
 and placement remain unverified.
 
+In the `mail_attachments` section, pass `mail_attachment_bag_space_item_ids`
+with one to 64 distinct item IDs. The estimate covers all readable loaded
+attachments matching those IDs and uses the same capture's carried bags.
+Unloaded messages and unreadable slots are counted separately. Currency
+attachments do not count as items. The estimate leaves retrieval and
+placement unverified.
+
 Saved profession recipe-view comparisons report changes in the client-reported
 skill-up flag, count and relative difficulty for recipe IDs seen in both
 captures of the same profession. Missing observations remain null, and the

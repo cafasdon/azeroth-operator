@@ -2142,17 +2142,35 @@ pub fn review_loot_requirements(
 }
 
 pub fn loot_requirement_bag_space(snapshot: &Snapshot, review: &Value) -> Value {
-    let items: Vec<_> = review["items"]
+    let items = review["items"]
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(|row| {
             let item_id = u32::try_from(row["item_id"].as_u64()?).ok()?;
             let quantity = row["covered_quantity_if_readable_items_acquired"].as_u64()?;
+            Some((item_id, quantity))
+        });
+    incoming_items_bag_space(
+        snapshot,
+        items,
+        "readable_requested_loot_only",
+        "readable_requested_quantity",
+    )
+}
+
+fn incoming_items_bag_space(
+    snapshot: &Snapshot,
+    quantities: impl Iterator<Item = (u32, u64)>,
+    scope: &str,
+    quantity_field: &str,
+) -> Value {
+    let items: Vec<_> = quantities
+        .map(|(item_id, quantity)| {
             let mut estimate = carried_item_quantity_bag_space(snapshot, item_id, quantity);
             estimate["item_id"] = json!(item_id);
-            estimate["readable_requested_quantity"] = json!(quantity);
-            Some(estimate)
+            estimate[quantity_field] = json!(quantity);
+            estimate
         })
         .collect();
     let free =
@@ -2164,7 +2182,7 @@ pub fn loot_requirement_bag_space(snapshot: &Snapshot, review: &Value) -> Value 
     };
     let slots = total("estimated_new_stack_slots");
     let merged = total("estimated_new_stack_slots_if_same_item_stacks_merge");
-    json!({"scope":"readable_requested_loot_only","items":items,
+    json!({"scope":scope,"items":items,
         "recorded_general_free_slots":free,"estimated_new_stack_slots":slots,
         "fits_recorded_general_slots":slots.zip(free).map(|(needed, free)| needed <= free),
         "estimated_new_stack_slots_if_same_item_stacks_merge":merged,
@@ -5489,6 +5507,30 @@ pub fn restock_pending_mail(snapshot: &Snapshot, residual: &Value) -> Option<Val
         "items":items,"counts_toward_restock_stock":false,"retrieval_eligibility_verified":false,
         "live":false,
     }))
+}
+
+pub fn mail_attachment_bag_space(
+    snapshot: &Snapshot,
+    ids: &[std::num::NonZeroU32],
+) -> Option<Value> {
+    let mail = snapshot.sections.get("mail_attachments")?;
+    let (totals, unknown_slots) = mail_attachment_totals(mail);
+    let quantities = ids.iter().map(|id| {
+        let quantity = totals
+            .get(&("item", u64::from(id.get())))
+            .map_or(0, |(quantity, _)| *quantity);
+        (id.get(), quantity)
+    });
+    let mut report = incoming_items_bag_space(
+        snapshot,
+        quantities,
+        "matching_loaded_mail_items_only",
+        "known_pending_quantity",
+    );
+    report["unloaded_messages"] = json!(unloaded_mail_messages(mail));
+    report["unknown_attachment_slots"] = json!(unknown_slots);
+    report["retrieval_eligibility_verified"] = json!(false);
+    Some(report)
 }
 
 fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {

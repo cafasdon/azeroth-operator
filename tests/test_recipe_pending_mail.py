@@ -32,6 +32,7 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder))
+            retail_id=store.ingest(fixture())
             base=fixture();base['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             base['sections']['selected_recipe']=recipe(100,900,{'10':2,'720':3,'2':1})
             base['sections']['bags']={'0':{'1':{'item_id':10,'count':1},'2':{'item_id':720,'count':1},'3':{'item_id':2,'count':1}}}
@@ -41,6 +42,10 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                 'available':-1,'extended_cost':False} for i,item in enumerate([2,10,720],1)}
             no_mail=store.ingest(base)
             observed=deepcopy(base)
+            observed['sections']['bags']['0']['1'].update(link='item:10:0',reported_stack_limit=4)
+            observed['sections']['bag_capacity']={
+                '0':{'total_slots':16,'free_slots':1,'family_mask':0},
+                **{str(bag):{'total_slots':0,'free_slots':0} for bag in range(1,5)}}
             observed['sections']['mail_attachments']=mail({
                 '1':{'1':{'kind':'item','item_id':10,'count':2},'2':{'kind':'currency','currency_id':720,'count':999},'16':{'kind':'unknown'}},
                 '2':{'1':{'kind':'item','item_id':10,'count':5},'2':{'kind':'item','item_id':2,'count':9},
@@ -61,6 +66,26 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    async def mail_space(key, ids, section='mail_attachments', error=False):
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':section,'mail_attachment_bag_space_item_ids':ids})
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['mail_attachment_bag_space_projection']
+                    space=await mail_space(with_mail,[10,720])
+                    self.assertEqual([row['known_pending_quantity'] for row in space['items']],[7,0])
+                    self.assertEqual(space['unloaded_messages'],4)
+                    self.assertEqual(space['unknown_attachment_slots'],1)
+                    self.assertEqual(space['estimated_new_stack_slots'],2)
+                    self.assertEqual(space['estimated_new_stack_slots_if_same_item_stacks_merge'],1)
+                    self.assertTrue(space['fits_recorded_general_slots_if_same_item_stacks_merge'])
+                    self.assertIsNone((await mail_space(with_mail,[10,2]))['estimated_new_stack_slots'])
+                    self.assertEqual((await mail_space(empty_id,[10]))['estimated_new_stack_slots'],0)
+                    self.assertIsNone(await mail_space(no_mail,[10]))
+                    for invalid in [[],[10,10],[0],list(range(1,66))]:
+                        await mail_space(with_mail,invalid,error=True)
+                    await mail_space(with_mail,[10],section='bags',error=True)
+                    await mail_space(retail_id,[10],error=True)
                     async def review(key,**arguments):
                         response=await session.call_tool('review_forever_recipe',{'snapshot_id':key,'crafts':2,**arguments})
                         self.assertFalse(response.isError)
