@@ -268,6 +268,9 @@ reserve is supplied. This checks whether all retained available lessons
 fit together after the reserve and lists the cheapest known lessons that
 fit the remaining balance. Without the affordability filter, the reserve
 does not remove lessons from the review.
+The reserve breakdown also reports each retained available lesson's
+affordability and the extra balance needed to cover both the lesson and
+the reserve. An unknown price leaves the exact shortfall unknown.
 With `trainer_service_slots`, the after-reserve breakdown also reports how
 many lessons fit in the requested order and identifies the first blocker.
 A slot excluded by the shortlist is reported as `lesson_not_retained`.

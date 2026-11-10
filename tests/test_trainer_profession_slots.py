@@ -111,6 +111,8 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                         expected=({'lesson_slots':['1'],'lesson_count':1,'total_price':5} if points>=7 else
                                   {'lesson_slots':[],'lesson_count':0,'total_price':0} if points>=2 else None)
                         self.assertEqual(reserved['cheapest_affordable_known_lessons'],expected)
+                        self.assertEqual(reserved['individual_lesson_affordability']['1'],
+                                         {'affordable':points>=7,'shortfall':max(0,7-points)})
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
                                                                           'trainer_requirements_review':True})

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show per-lesson affordability and shortfalls after a trainer budget reserve.
+
 - Plan the cheapest saved trainer lessons after a reserve without filtering out other lessons.
 
 - Preserve saved trainer prerequisite candidates when lesson filters hide them.

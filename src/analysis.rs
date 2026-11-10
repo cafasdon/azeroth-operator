@@ -8308,16 +8308,40 @@ fn available_trainer_prices(trainer: &Value, price_field: &str) -> Option<(usize
     Some((available, unknown_prices, subtotal))
 }
 
-fn trainer_lesson_affordability(trainer: &Value, price_field: &str, balance: Option<u64>) -> Value {
-    json!(trainer["entries"].as_object().into_iter().flatten()
-        .filter(|(_, lesson)| lesson["status"] == "available")
-        .map(|(id, lesson)| {
-            let comparison = lesson[price_field].as_u64().zip(balance);
-            (id, json!({
-                "affordable": comparison.map(|(price, balance)| price <= balance),
-                "shortfall": comparison.map(|(price, balance)| price.saturating_sub(balance))
-            }))
-        }).collect::<BTreeMap<_, _>>())
+pub fn trainer_lesson_affordability(
+    trainer: &Value,
+    price_field: &str,
+    balance: Option<u64>,
+    reserve: u64,
+) -> Value {
+    json!(
+        trainer["entries"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .filter(|(_, lesson)| lesson["status"] == "available")
+            .map(|(id, lesson)| {
+                let price = lesson[price_field].as_u64();
+                let affordable = balance.and_then(|balance| match balance.checked_sub(reserve) {
+                    Some(spendable) => price.map(|price| price <= spendable),
+                    None => Some(false),
+                });
+                let shortfall = price.zip(balance).and_then(|(price, balance)| {
+                    match balance.checked_sub(reserve) {
+                        Some(spendable) => Some(price.saturating_sub(spendable)),
+                        None => price.checked_add(reserve - balance),
+                    }
+                });
+                (
+                    id,
+                    json!({
+                        "affordable": affordable,
+                        "shortfall": shortfall
+                    }),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    )
 }
 
 pub fn trainer_cheapest_affordable(
@@ -8397,7 +8421,7 @@ pub fn trainer_wallet_projection(
         "known_price_subtotal_copper":subtotal,
         "total_price_copper":total,
         "wallet_shortfall_copper":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
-        "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_copper", balance),
+        "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_copper", balance, 0),
         "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_copper", balance),
     });
     if let Some(slots) = slots {
@@ -8424,7 +8448,7 @@ pub fn trainer_points_projection(trainer: &Value, slots: Option<&[std::num::NonZ
         "known_price_subtotal_points":subtotal,
         "total_price_points":total,
         "training_point_shortfall":total.zip(balance).map(|(cost, balance)| cost.saturating_sub(balance)),
-        "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_training_points", balance),
+        "individual_lesson_affordability":trainer_lesson_affordability(trainer, "price_training_points", balance, 0),
         "cheapest_affordable_known_lessons":trainer_cheapest_affordable(trainer, "price_training_points", balance),
     });
     if let Some(slots) = slots {

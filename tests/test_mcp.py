@@ -362,13 +362,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         unfiltered_reserve = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services",
                             "trainer_service_slots": [1, 5], "trainer_wallet_projection": True,
-                            "trainer_balance_reserve": forever["sections"]["wallet"]["copper"] - 15,
+                            "trainer_balance_reserve": forever["sections"]["wallet"]["copper"] - 14,
                         })
                         self.assertFalse(unfiltered_reserve.isError, unfiltered_reserve)
                         projection = json.loads(unfiltered_reserve.content[0].text)["trainer_wallet_projection"]
                         self.assertEqual(projection["available_lessons"], 2)
                         self.assertEqual(projection["after_reserve"]["cheapest_affordable_known_lessons"], {
                             "lesson_slots": ["1"], "lesson_count": 1, "total_price": 10})
+                        self.assertEqual(projection["after_reserve"]["individual_lesson_affordability"], {
+                            "1": {"affordable": True, "shortfall": 0},
+                            "5": {"affordable": False, "shortfall": 1}})
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
                             "snapshot_id": forever_key, "section": "trainer_services", "trainer_balance_reserve": 0,
                         })).isError)

@@ -4272,6 +4272,12 @@ impl Operator {
                         trainer_balance_field,
                         trainer_spendable,
                     );
+                    let individual = azeroth_operator::analysis::trainer_lesson_affordability(
+                        &value["data"],
+                        trainer_balance_field,
+                        trainer_balance,
+                        reserve,
+                    );
                     let (projection_key, total_key) =
                         if trainer_balance_field == "price_training_points" {
                             ("trainer_points_projection", "total_price_points")
@@ -4293,7 +4299,8 @@ impl Operator {
                             "retained_lessons_affordable":if reserve_covered == Some(false) { Some(false) }
                                 else { budget.map(|(cost, balance)| cost <= balance) },
                             "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance)),
-                            "cheapest_affordable_known_lessons":cheapest
+                            "cheapest_affordable_known_lessons":cheapest,
+                            "individual_lesson_affordability":individual
                         }));
                         if let Some(ordered_budget) = ordered_budget {
                             projection["after_reserve"]["ordered_lesson_budget"] = ordered_budget;
