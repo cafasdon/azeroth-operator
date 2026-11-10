@@ -46,6 +46,8 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             changed['sections']['account_bank']={}
             changed_key=store.ingest(changed)
             retail_key=store.ingest(fixture())
+            no_bags=deepcopy(legacy);del no_bags['sections']['bags']
+            no_bags_key=store.ingest(no_bags)
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -99,12 +101,17 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn('bag_cooldown_reference_at',combined)
                     reference='2025-01-02T00:00:06Z'
                     projected=await find(additional_snapshot_ids=[alt_key,legacy_key],bag_cooldown_reference_at=reference)
-                    for capture, timestamp, comparison in [
-                        (projected,'2025-01-01T00:00:00Z',True),
-                        (projected['additional_snapshot_results'][0],'2025-01-02T00:00:07Z',False),
-                        (projected['additional_snapshot_results'][1],None,None),
+                    for capture, timestamp, comparison, totals in [
+                        (projected,'2025-01-01T00:00:00Z',True,(1,0,5)),
+                        (projected['additional_snapshot_results'][0],'2025-01-02T00:00:07Z',False,(0,1,5)),
+                        (projected['additional_snapshot_results'][1],None,None,(0,0,6)),
                     ]:
                         self.assertEqual(capture['bag_cooldown_reference_at'],reference)
+                        self.assertEqual(capture['bag_cooldown_quantity_projection'],{
+                            'quantity_with_projected_end_at_or_before_reference':totals[0],
+                            'quantity_with_projected_end_after_reference':totals[1],
+                            'quantity_with_unknown_projected_end':totals[2],
+                            'current_usability_verified':False})
                         carried=[row for row in capture['locations'] if row['storage']=='bags']
                         self.assertEqual([row['projected_cooldown_end_at'] for row in carried],[timestamp,None,None])
                         self.assertEqual([row['projected_end_at_or_before_reference'] for row in carried],[comparison,None,None])
@@ -114,6 +121,14 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(page['locations']),1)
                     self.assertTrue(page['locations'][0]['projected_end_at_or_before_reference'])
                     self.assertEqual(page['bag_cooldown_observation'],counts)
+                    self.assertEqual(page['bag_cooldown_quantity_projection'],projected['bag_cooldown_quantity_projection'])
+                    beyond=await find(offset=99,limit=1,bag_cooldown_reference_at=reference)
+                    self.assertEqual(beyond['locations'],[])
+                    self.assertEqual(beyond['bag_cooldown_quantity_projection'],projected['bag_cooldown_quantity_projection'])
+                    absent_bags=await find(no_bags_key,bag_cooldown_reference_at=reference)
+                    self.assertIsNone(absent_bags['bag_cooldown_quantity_projection'])
+                    zero_bags=await find(item_id=999,bag_cooldown_reference_at=reference)
+                    self.assertEqual(zero_bags['bag_cooldown_quantity_projection']['quantity_with_unknown_projected_end'],0)
                     rejected=await session.call_tool('find_snapshot_item',{
                         'snapshot_id':retail_key,'item_id':100,'bag_cooldown_reference_at':reference})
                     self.assertTrue(rejected.isError,rejected)

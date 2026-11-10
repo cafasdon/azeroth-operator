@@ -2419,24 +2419,6 @@ pub fn project_bag_cooldown_reference(
     }
 }
 
-pub fn project_item_lookup_cooldowns(
-    found: &mut Value,
-    captured_at: chrono::DateTime<chrono::Utc>,
-    reference: chrono::DateTime<chrono::Utc>,
-) {
-    found["bag_cooldown_reference_at"] = json!(reference);
-    for location in found["locations"]
-        .as_array_mut()
-        .into_iter()
-        .flatten()
-        .filter(|row| row["storage"] == "bags")
-    {
-        let end = bag_cooldown_projected_end(&location["captured_cooldown"], captured_at);
-        location["projected_cooldown_end_at"] = json!(end);
-        location["projected_end_at_or_before_reference"] = json!(end.map(|end| end <= reference));
-    }
-}
-
 #[cfg(test)]
 mod bag_cooldown_filter_tests {
     use super::*;
@@ -2617,7 +2599,7 @@ mod bag_cooldown_filter_tests {
 }
 
 pub fn find_item(snapshot: &Snapshot, item_id: u32, offset: usize, limit: usize) -> Result<Value> {
-    find_item_with_container_quantities(snapshot, item_id, offset, limit, false)
+    find_item_with_container_quantities(snapshot, item_id, offset, limit, false, None)
 }
 
 pub fn find_item_with_container_quantities(
@@ -2626,6 +2608,7 @@ pub fn find_item_with_container_quantities(
     offset: usize,
     limit: usize,
     include_container_quantities: bool,
+    cooldown_reference: Option<chrono::DateTime<chrono::Utc>>,
 ) -> Result<Value> {
     ensure!(
         item_id > 0 && (1..=50).contains(&limit),
@@ -2636,6 +2619,11 @@ pub fn find_item_with_container_quantities(
     let mut quantities = BTreeMap::new();
     let mut container_quantities = BTreeMap::new();
     let cooldowns = snapshot.sections.get("bag_item_cooldowns");
+    ensure!(
+        cooldown_reference.is_none() || snapshot.client.family == crate::Family::Forever,
+        "Item cooldown projections require Forever"
+    );
+    let (mut ended, mut pending, mut unknown_end) = (0u64, 0u64, 0u64);
     let (mut reported, mut unavailable, mut disabled, mut positive_timer) =
         (0usize, 0usize, 0usize, 0usize);
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
@@ -2675,6 +2663,21 @@ pub fn find_item_with_container_quantities(
                         unavailable += 1;
                     }
                 }
+                let projection =
+                    cooldown_reference
+                        .filter(|_| storage == "bags")
+                        .map(|reference| {
+                            let end = cooldown.and_then(|row| {
+                                bag_cooldown_projected_end(row, snapshot.captured_at)
+                            });
+                            let ended_by_reference = end.map(|end| end <= reference);
+                            match ended_by_reference {
+                                Some(true) => ended += count,
+                                Some(false) => pending += count,
+                                None => unknown_end += count,
+                            }
+                            (end, ended_by_reference)
+                        });
                 if matched_locations >= offset && locations.len() < limit {
                     let mut location = json!({
                         "storage":storage,"container":container,"slot":slot,"count":count
@@ -2684,6 +2687,11 @@ pub fn find_item_with_container_quantities(
                     }
                     if let Some(row) = cooldown {
                         location["captured_cooldown"] = row.clone();
+                    }
+                    if let Some((end, ended_by_reference)) = projection {
+                        location["projected_cooldown_end_at"] = json!(end);
+                        location["projected_end_at_or_before_reference"] =
+                            json!(ended_by_reference);
                     }
                     locations.push(location);
                 }
@@ -2719,6 +2727,15 @@ pub fn find_item_with_container_quantities(
     });
     if include_container_quantities {
         result["quantity_by_container"] = json!(container_quantities);
+    }
+    if let Some(reference) = cooldown_reference {
+        result["bag_cooldown_reference_at"] = json!(reference);
+        result["bag_cooldown_quantity_projection"] = json!(quantities["bags"].map(|_| json!({
+            "quantity_with_projected_end_at_or_before_reference":ended,
+            "quantity_with_projected_end_after_reference":pending,
+            "quantity_with_unknown_projected_end":unknown_end,
+            "current_usability_verified":false,
+        })));
     }
     if cooldowns.is_some() {
         result["bag_cooldown_observation"] = json!({"basis":"same_snapshot_exact_bag_slot_item",
@@ -2899,8 +2916,8 @@ fn compare_item(
     item_id: u32,
     by_container: bool,
 ) -> Result<Value> {
-    let before = find_item_with_container_quantities(before, item_id, 0, 1, by_container)?;
-    let after = find_item_with_container_quantities(after, item_id, 0, 1, by_container)?;
+    let before = find_item_with_container_quantities(before, item_id, 0, 1, by_container, None)?;
+    let after = find_item_with_container_quantities(after, item_id, 0, 1, by_container, None)?;
     let quantities = after["quantity_by_storage"].as_object().unwrap();
     let mut net_delta = Some(0i64);
     let mut by_storage = BTreeMap::new();

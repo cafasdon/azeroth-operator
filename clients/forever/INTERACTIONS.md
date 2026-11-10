@@ -3038,6 +3038,10 @@ the deadline and is counted as unknown when the other predicates match.
 Forever captures. Each returned bag location uses its own capture time
 and enabled timer. Equipment and bank locations have no projection.
 Additional snapshots are projected separately.
+`bag_cooldown_quantity_projection` totals copies across all matching
+carried locations before paging. It distinguishes ends at or before the
+reference, later ends, and unknown ends. Missing bags leave the totals
+unknown. Disabled and missing timers contribute to the unknown quantity.
 
 Use `compare_snapshots.bag_cooldown_item_id` to compare two saved readings for
 one base item ID. Each side counts reported, unavailable and enabled locations

@@ -1,5 +1,7 @@
 # Changelog
 
+- Total exact-item bag quantities by projected cooldown end before paging.
+
 - Project carried-item cooldowns in exact-item snapshot lookups.
 
 - Shortlist saved carried-item cooldowns by their projected end deadline.

@@ -1624,19 +1624,9 @@ impl Operator {
                     args.offset.unwrap_or(0),
                     args.limit.unwrap_or(20),
                     args.include_container_quantities,
+                    args.bag_cooldown_reference_at,
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
-                if let Some(reference) = args.bag_cooldown_reference_at {
-                    anyhow::ensure!(
-                        snapshot.client.family == Family::Forever,
-                        "Item cooldown projections require Forever"
-                    );
-                    azeroth_operator::analysis::project_item_lookup_cooldowns(
-                        &mut found,
-                        snapshot.captured_at,
-                        reference,
-                    );
-                }
                 if args.bag_stack_groups {
                     match args.stack_group_storage {
                         Some(azeroth_operator::InventoryStorage::Equipment) => {
