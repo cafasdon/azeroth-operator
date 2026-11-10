@@ -1,0 +1,67 @@
+# Local Forever world reference cache
+
+Use QuestieDB's own offline Forever Generation loader as the public world source.
+The pinned revision, every staged file hash and the generated cache hash are in
+`clients/forever/world.lock.json`. The existing WoWSims catalogue and owner-local
+captures keep their namespaces and roles. This source adds quests, NPCs, objects
+and items without translating provider IDs into native map/phase identities.
+
+[QuestieDB's Forever notes](https://github.com/Questie/QuestieDB/blob/aca0da1c4a5ed0bc12997b9aaeef7b35af9ee26e/docs/forever.md)
+describe independently maintained base data and correction layers. Use the
+publisher's Generation path to apply Static Corrections and Derived Passes.
+Do not treat raw Era rows or the uncorrected Forever seed as the same result.
+Character-specific Dynamic Corrections, localized lookups and live client
+availability remain outside this cache. The publisher documents limitations in
+new Forever content. Counts describe this corpus, not world completeness.
+
+QuestieDB's [licensing notice](https://github.com/Questie/QuestieDB/blob/aca0da1c4a5ed0bc12997b9aaeef7b35af9ee26e/LICENSE.md)
+distinguishes historical contributions from specifically licensed content. Keep
+the upstream notices and provenance in the local source pack. Do not commit or
+bundle the publisher's assets, interpreter or generated dataset with this repo.
+The lock and integration code contain no character data or third-party payload.
+
+Run these commands from the project root on Windows:
+
+```powershell
+.venv/Scripts/python.exe -B -m tools.forever_world sync-source --source local-data/world-reference/pinned-source
+.venv/Scripts/python.exe -B -m tools.forever_world build --source local-data/world-reference/pinned-source --cache local-data/world-reference/forever-world.jsonl
+.venv/Scripts/python.exe -B -m tools.forever_world search --cache local-data/world-reference/forever-world.jsonl --kind quest --query Hogger
+.venv/Scripts/python.exe -B -m tools.forever_world get --cache local-data/world-reference/forever-world.jsonl --kind quest --entity-id 176
+```
+
+Only `sync-source` reaches the network. It fetches one explicit revision from
+the fixed public repository with sparse checkout, no credential helper and
+bounded noninteractive Git commands. It verifies and publishes only pinned files,
+not Git metadata. Reuse of a valid source pack performs no download. A mismatched
+existing pack is refused. No automatic refresh, mutable branch lookup or fallback
+data source is used by the runtime. For a future revision, review and replace the
+pin and generated-output evidence together; keep old cache files under distinct
+paths if needed.
+
+`build` runs offline. It stages verified files, including the pinned Windows Lua
+interpreter, with an isolated child environment and deadline. The Lua exporter
+permits reads of staged pinned paths only and removes shell, native module and
+write APIs from the generator's globals. These restrictions are defence in depth,
+not an operating-system sandbox or trust in arbitrary Lua/binaries. The publisher
+revision and pinned interpreter remain trusted dependencies. The writer caps
+generated JSON lines and verifies the complete cache digest before publication.
+Publication does not overwrite existing content. A matching existing cache is a
+no-op. Cache verification is mandatory before serving.
+
+`serve --cache <file>` starts a separate local stdio companion with two read-only
+tools: `get_forever_world_record` and `search_forever_world_records`. Existing
+server tool counts and installed profiles do not change. Exact lookup accepts a
+kind and a positive uint32 ID. Search uses literal case-insensitive name terms,
+optional kind, limit 1–20, offset uint32, and up to 128 UTF-8 bytes. Exact name
+matches precede phrase prefixes, then other matches; ties use folded name and
+kind/ID order. Fetch the exact record from a result's kind/ID. No embeddings,
+network, source interpreter, snapshot access or writes are needed for queries.
+
+Records preserve publisher field names. Nested tables use JSON objects with
+decimal-string numeric keys, so nil holes are absent rather than renumbered and
+zero/false remain values. This is an exact data projection, not a decoded
+prerequisite evaluator. For example, the nested starter/finisher positions retain
+the publisher's tuple semantics. Hashes cover each exact export line without its
+line terminator. Responses cap at 256 KiB; unknown IDs return no record. Source
+hash, cache hash, generation counters and record counts identify the evidence.
+No current eligibility, spawn visibility, routing or native gameplay is claimed.

@@ -1121,3 +1121,12 @@ offers independently. Missing quotes prevent a minimum across all requested
 methods; provisional known minima remain separate. Costs exclude the value of
 owned inputs, time, skill gains and travel. No craft or purchase action occurs.
 See ADR-104 and its dated offline evidence. Native qualification stays deferred.
+
+## Local QuestieDB world cache (10 November)
+
+An explicit pinned QuestieDB source sync and offline Generation build add a
+separate public lookup/search companion for quests, NPCs, objects and items.
+Static corrections and derived passes are retained, with exact source/cache/row
+hashes. Dynamic character rules, localization, live visibility, routing and
+complete world coverage remain unqualified. No private data or installed profile
+changes. See ADR-105 and its dated evidence.
