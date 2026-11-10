@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from test_merge_gear_windows import report
-from tools.journal_forever_gear_windows import append_report, journal_window
+from tools.journal_forever_gear_windows import append_report, journal_status, journal_window
 from tools.merge_forever_gear_windows import merge_reports
 
 
@@ -45,10 +45,17 @@ class CoordinateOutcomeTests(unittest.TestCase):
             self.assertTrue(result['coordinate_outcomes_available'])
             self.assertEqual(result['coordinate_outcomes'], value['gear_search']['combination_window']['coordinate_outcomes'])
             self.assertEqual(result['resolution_accounting']['unresolved_proposed_coordinates'], 1)
+            self.assertEqual(result['skip_reason_coverage'], {
+                'counts':{'unresolved_simulator_draft':1},'skipped_coordinates_without_reason':0})
             self.assertFalse(result['best_in_slot_verified'])
             legacy = journal_window(path, 4)
             self.assertFalse(legacy['coordinate_outcomes_available'])
             self.assertIsNone(legacy['coordinate_outcomes'])
+            self.assertEqual(legacy['skip_reason_coverage'],{
+                'counts':{},'skipped_coordinates_without_reason':4})
+            mixed = {'counts':{'unresolved_simulator_draft':1},'skipped_coordinates_without_reason':4}
+            self.assertEqual(journal_status(path)['skip_reason_coverage'],mixed)
+            self.assertEqual(merge_reports([value,report(4,['b' * 64])])['skip_reason_coverage'],mixed)
             for offset in [-1, True, 1, 99]:
                 with self.assertRaises(ValueError):
                     journal_window(path, offset)

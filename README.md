@@ -529,6 +529,9 @@ same collector and adapter revision.
 Skipped owned-gear drafts identify duplicate unique items and shared limit
 categories separately. Saved search windows retain the corresponding reason
 for each skipped coordinate.
+Journal status and merged window reports aggregate those reasons under
+`skip_reason_coverage`. Skipped coordinates from older windows without
+per-coordinate outcomes are counted separately.
 
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
 equipment, selected source locations and cleared slots, tied to the snapshot

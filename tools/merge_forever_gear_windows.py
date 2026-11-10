@@ -1,5 +1,6 @@
 """Aggregate bounded local plan-window artifacts; never infer a simulated optimum."""
 import argparse
+from collections import Counter
 import hashlib
 import json
 from math import isfinite
@@ -190,11 +191,19 @@ def coordinate_outcomes(report):
     return rows
 
 
+def skip_reason_coverage(reasons, accounting):
+    skipped = (accounting['pre_review_excluded_coordinates']
+               + accounting['unresolved_proposed_coordinates'])
+    return {'counts':dict(sorted(reasons.items())),
+            'skipped_coordinates_without_reason':skipped - sum(reasons.values())}
+
+
 def merge_reports(reports):
     require(isinstance(reports, list) and 1 <= len(reports) <= 64)
     signature = baseline = scope = snapshot = binding = None
     intervals, windows, gear, equipment = [], [], {}, {}
     accounting = empty_accounting()
+    reasons = Counter()
     for index, report in enumerate(reports, 1):
         require(isinstance(report, dict) and report.get('mode') == 'plan_only'
                 and report.get('best_in_slot_verified') is False)
@@ -306,7 +315,8 @@ def merge_reports(reports):
         if baseline is None:
             baseline = keys[0]
         require(baseline == keys[0])
-        coordinate_outcomes(report)
+        outcomes = coordinate_outcomes(report)
+        reasons.update(row['reason'] for row in outcomes or () if 'reason' in row)
         if considered:
             intervals.append((offset, end))
         windows.append({'window_index': index, 'offset_decimal': str(offset), 'considered': considered})
@@ -325,6 +335,7 @@ def merge_reports(reports):
             'inventory_evidence':inventory,
             'unresolved_candidate_locations_by_slot': unresolved_candidates,
             'resolution_accounting': accounting,
+            'skip_reason_coverage': skip_reason_coverage(reasons, accounting),
             'total_combinations_decimal': str(total), 'covered_coordinate_count': sum(end - start for start, end in intervals),
             'reported_coordinate_coverage_complete': not gaps, 'uncovered_ranges': gaps,
             'next_uncovered_offset_decimal': gaps[0]['start_decimal'] if gaps else None,

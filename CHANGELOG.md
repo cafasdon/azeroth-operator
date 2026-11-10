@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise saved owned-gear skip reasons and count skipped coordinates whose older windows lack a reason.
+
 - Identify duplicate unique items and shared catalogue limits in skipped owned-gear drafts and saved search windows.
 
 - Reject simulator inputs whose saved equipment review records a unique-item or shared catalogue limit conflict.

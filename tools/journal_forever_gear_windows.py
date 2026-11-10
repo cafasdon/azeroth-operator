@@ -1,5 +1,6 @@
 """Persist owner-local plan windows transactionally; never execute saved commands."""
 import argparse
+from collections import Counter
 import hashlib
 import json
 import os
@@ -9,7 +10,10 @@ import sqlite3
 import stat
 from time import monotonic
 
-from tools.merge_forever_gear_windows import ACCOUNTING_FIELDS, MAX_REPORT_BYTES, coordinate_outcomes, empty_accounting, integer, merge_reports, parse_report, require
+from tools.merge_forever_gear_windows import (
+    ACCOUNTING_FIELDS, MAX_REPORT_BYTES, coordinate_outcomes, empty_accounting,
+    integer, merge_reports, parse_report, require, skip_reason_coverage,
+)
 
 APPLICATION_ID = 0x415A4757
 SCHEMA = '''CREATE TABLE windows (
@@ -154,6 +158,7 @@ def journal_status(path, deadline=None):
         cursor = covered = count = gap_count = 0
         gaps = []
         accounting = empty_accounting()
+        reasons = Counter()
         content = hashlib.sha256()
         for row in connection.execute('SELECT start_key,end_key,report,report_sha,payload_bytes FROM windows ORDER BY start_key'):
             require(monotonic() <= deadline)
@@ -161,6 +166,7 @@ def journal_status(path, deadline=None):
             content.update(encoded([row[0], row[1], row[3]]) + b'\n')
             for field in ACCOUNTING_FIELDS:
                 accounting[field] += current['resolution_accounting'][field]
+            reasons.update(current['skip_reason_coverage']['counts'])
             if anchor is None:
                 anchor, summary = report, current
             else:
@@ -191,6 +197,7 @@ def journal_status(path, deadline=None):
                 'journal_content_sha256': content.hexdigest(),
                 'equipment_specs_retained': summary['equipment_specs_retained'] if summary else None,
                 'resolution_accounting': accounting,
+                'skip_reason_coverage': skip_reason_coverage(reasons, accounting),
                 'total_combinations_decimal': str(total) if total is not None else None,
                 'reported_coordinate_coverage_complete': total is not None and gap_count == 0,
                 'uncovered_ranges': gaps, 'uncovered_range_count': gap_count, 'ranges_truncated': gap_count > len(gaps),
@@ -216,6 +223,7 @@ def journal_window(path, offset, include_equipment_specs=False):
                 'considered': report['gear_search']['combination_window']['considered'],
                 'coordinate_outcomes_available': outcomes is not None, 'coordinate_outcomes': outcomes,
                 'resolution_accounting': summary['resolution_accounting'],
+                'skip_reason_coverage': summary['skip_reason_coverage'],
                 **({'equipment_specs_available': summary['equipment_specs_retained'],
                     'equipment_specs': [{'review': row['review'],
                         'simulator_gear_sha256': row['simulator_gear_sha256'],
