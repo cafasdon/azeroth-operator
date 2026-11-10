@@ -1850,6 +1850,7 @@ impl Operator {
                         Ok(serde_json::json!({"merchant_snapshot_id":id,"quote":quote_for_id(id)?}))
                     }).collect::<anyhow::Result<Vec<_>>>()?;
                     let mut combined = None;
+                    let mut partial = None;
                     let mut unquoted = Vec::new();
                     let max_visits = args.set_merchant_max_visits.unwrap_or(4);
                     let mut status = if demands.is_empty() {
@@ -1890,6 +1891,20 @@ impl Operator {
                             )
                         };
                         status = if !unquoted.is_empty() {
+                            let covered: Vec<_> = demands
+                                .iter()
+                                .filter(|row| {
+                                    row["item_id"]
+                                        .as_u64()
+                                        .is_some_and(|id| !unquoted.contains(&id))
+                                })
+                                .cloned()
+                                .collect();
+                            if !covered.is_empty() {
+                                partial = azeroth_operator::analysis::restock_travel_adjusted_plan(
+                                    &covered, ids, &offers, costs, max_visits, wallet,
+                                );
+                            }
                             "unquoted_pieces"
                         } else {
                             combined = plan_with_limit(max_visits);
@@ -1903,14 +1918,20 @@ impl Operator {
                                 "unrepresentable_total"
                             }
                         };
-                        if let (Some(plan), Some(reserve)) =
-                            (&mut combined, args.set_merchant_wallet_reserve_copper)
-                        {
-                            let total = plan["complete_quote_copper"].as_u64();
-                            plan["after_wallet_reserve"] = reserved_budget(total, total, reserve);
+                        if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
+                            for plan in combined.iter_mut().chain(partial.iter_mut()) {
+                                let total = plan["complete_quote_copper"].as_u64();
+                                plan["after_wallet_reserve"] =
+                                    reserved_budget(total, total, reserve);
+                            }
                         }
                     }
                     acquisition["captured_merchant_combined_plan"] = serde_json::json!(combined);
+                    acquisition["captured_merchant_partial_plan"] =
+                        serde_json::json!(partial.map(|plan| {
+                            serde_json::json!({"basis":"pieces_with_supported_quotes_only",
+                            "excluded_unquoted_item_ids":unquoted, "plan":plan})
+                        }));
                     acquisition["captured_merchant_combined_plan_status"] = serde_json::json!({
                         "status":status, "unquoted_item_ids":unquoted, "maximum_visits":max_visits
                     });

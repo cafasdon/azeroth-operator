@@ -1,5 +1,7 @@
 # Changelog
 
+- Return a partial set shopping plan when saved visits can quote only some pieces.
+
 - Explain why saved set-piece merchant visits cannot produce a complete quote.
 
 - Include assumed travel costs and a visit limit in saved set-piece shopping plans.

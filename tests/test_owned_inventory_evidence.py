@@ -141,6 +141,10 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         {'merchant_snapshot_id': merchant_capture_id, 'quote': separate_quote},
                     ])
                     self.assertIsNone(visit_acquisition['captured_merchant_combined_plan'])
+                    partial_plan = visit_acquisition['captured_merchant_partial_plan']
+                    self.assertEqual(partial_plan['excluded_unquoted_item_ids'], [7953])
+                    self.assertEqual(partial_plan['plan']['complete_quote_copper'], 7)
+                    self.assertEqual([row['item_id'] for row in partial_plan['plan']['items']], [7950])
                     self.assertEqual(visit_acquisition['captured_merchant_combined_plan_status'], {
                         'status': 'unquoted_pieces', 'unquoted_item_ids': [7953], 'maximum_visits': 4,
                     })
