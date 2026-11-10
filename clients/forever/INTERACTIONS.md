@@ -30,6 +30,9 @@ When that capture includes a merchant window, the acquisition review can
 quote one unit per unobserved piece against those recorded offers and
 compare supported copper totals with the saved wallet. A missing merchant
 window or an empty piece list gives a null quote.
+Use `set_merchant_snapshot_id` with set sources to quote from another
+capture for the same character and exact client build. Affordability uses
+the inventory capture's wallet. A quote identifies the merchant capture.
 
 With the local catalogue, `review_equipment_selection` reports
 `checks.catalogue_projected_set_changes` for sets whose distinct equipped

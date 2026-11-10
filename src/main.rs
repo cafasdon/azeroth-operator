@@ -1133,6 +1133,8 @@ struct OwnedGearReview {
     /// Include local acquisition records for up to 50 unobserved pieces of a resolved set.
     #[serde(default)]
     include_unobserved_set_sources: bool,
+    /// Optional saved merchant visit from the same character and exact client build.
+    set_merchant_snapshot_id: Option<String>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
     /// Find observed copies of up to sixteen distinct base item IDs. Exclusive with item_id.
@@ -1713,6 +1715,18 @@ impl Operator {
                 .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
             let snapshot = self.store.read(&args.snapshot_id)?;
             anyhow::ensure!(
+                args.set_merchant_snapshot_id.is_none() || args.include_unobserved_set_sources,
+                "A set merchant snapshot requires set acquisition sources"
+            );
+            let merchant = args
+                .set_merchant_snapshot_id
+                .as_deref()
+                .map(|id| self.store.read(id))
+                .transpose()?;
+            if let Some(merchant) = &merchant {
+                azeroth_operator::analysis::ensure_same_character_and_client(&snapshot, merchant)?;
+            }
+            anyhow::ensure!(
                 args.item_id.is_none() || args.item_ids.is_none(),
                 "Choose item_id or item_ids"
             );
@@ -1733,6 +1747,7 @@ impl Operator {
                 args.set_id,
                 args.set_name.as_deref(),
                 args.include_unobserved_set_sources,
+                merchant.as_ref(),
                 item_ids,
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),
@@ -1747,12 +1762,22 @@ impl Operator {
                 args.container_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
+            if let Some(quote) = review.pointer_mut(
+                "/set_observation/unobserved_piece_acquisition/captured_merchant_quote",
+            ) && quote.is_object()
+            {
+                quote["merchant_snapshot_id"] = serde_json::json!(
+                    args.set_merchant_snapshot_id
+                        .as_deref()
+                        .unwrap_or(&args.snapshot_id)
+                );
+            }
             Ok::<_, anyhow::Error>(review)
         })();
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds. Container IDs must be from 0 to 64 and cannot be used with equipment storage. Set sources require an explicit set ID or unique set name.",
+                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds. Container IDs must be from 0 to 64 and cannot be used with equipment storage. Set sources require an explicit set ID or unique set name. A separate merchant capture requires set sources and the same character and client build.",
             )]),
         }
     }

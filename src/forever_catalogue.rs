@@ -3459,6 +3459,7 @@ pub fn review_owned(
     set_id: Option<std::num::NonZeroU32>,
     set_name: Option<&str>,
     include_unobserved_set_sources: bool,
+    set_merchant_snapshot: Option<&Snapshot>,
     observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
     required_levels: (Option<u32>, Option<u32>),
@@ -3859,10 +3860,11 @@ pub fn review_owned(
                 .collect();
             let mut merchant_quote = Value::Null;
             if !demands.is_empty() {
+                let merchant = set_merchant_snapshot.unwrap_or(snapshot);
                 merchant_quote =
-                    crate::analysis::material_merchant_plan(&demands, snapshot, snapshot);
+                    crate::analysis::material_merchant_plan(&demands, merchant, snapshot);
                 if merchant_quote.is_object() {
-                    crate::analysis::restock_merchant_offer_coverage(&mut merchant_quote, snapshot);
+                    crate::analysis::restock_merchant_offer_coverage(&mut merchant_quote, merchant);
                     merchant_quote["items"] = merchant_quote
                         .as_object_mut()
                         .unwrap()

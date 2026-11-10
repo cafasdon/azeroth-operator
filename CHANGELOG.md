@@ -1,5 +1,7 @@
 # Changelog
 
+- Quote Forever set pieces from a separate saved visit by the same character.
+
 - Quote unobserved set pieces against a merchant window saved in the same capture.
 
 - Review local acquisition sources for unobserved Forever set pieces.

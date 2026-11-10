@@ -75,6 +75,12 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 'available': -1, 'extended_cost': False,
             }}
             merchant_capture_id = store.ingest(merchant_capture)
+            separate_wallet = deepcopy(base)
+            separate_wallet['sections']['wallet'] = {'copper': 9}
+            separate_wallet_id = store.ingest(separate_wallet)
+            wrong_merchant = deepcopy(merchant_capture)
+            wrong_merchant['character']['name'] = 'Other'
+            wrong_merchant_id = store.ingest(wrong_merchant)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -111,6 +117,20 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quote['copper_only_bundle_mix_unquoted_item_ids'], [7953])
                     self.assertIsNone(quote['copper_only_bundle_mix_total'])
                     self.assertFalse(quote['current_offers_verified'])
+                    self.assertEqual(quote['merchant_snapshot_id'], merchant_capture_id)
+                    separate = await review(separate_wallet_id, set_id=221,
+                        include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id)
+                    separate_quote = separate['set_observation']['unobserved_piece_acquisition']['captured_merchant_quote']
+                    self.assertEqual(separate_quote['merchant_snapshot_id'], merchant_capture_id)
+                    self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal'], 7)
+                    self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'], 0)
+                    for options in [
+                        {'set_merchant_snapshot_id': merchant_capture_id},
+                        {'set_merchant_snapshot_id': wrong_merchant_id, 'include_unobserved_set_sources': True},
+                    ]:
+                        rejected = await session.call_tool('review_forever_owned_gear',
+                            {'snapshot_id': separate_wallet_id, 'set_id': 221, **options})
+                        self.assertTrue(rejected.isError)
                     complete_set = await review(set_capture_id, set_name='thero-shan',
                                                 include_unobserved_set_sources=True)
                     self.assertEqual(complete_set['set_observation']['unobserved_piece_acquisition']['records'], [])
