@@ -712,6 +712,8 @@ struct Compare {
     item_container_changes: bool,
     /// Optionally compare one captured Forever currency balance by ID.
     currency_id: Option<std::num::NonZeroU32>,
+    /// Resolve a currency by exact saved name before comparing balances.
+    currency_name: Option<String>,
     /// Optionally compare one captured Forever reputation faction by ID.
     faction_id: Option<std::num::NonZeroU32>,
     /// Resolve a faction by exact saved name before comparing reputation.
@@ -2096,6 +2098,7 @@ impl Operator {
                     item_id: args.item_id.map(|id| id.get()),
                     item_container_changes: args.item_container_changes,
                     currency_id: args.currency_id.map(|id| id.get()),
+                    currency_name: args.currency_name.as_deref(),
                     faction_id: args.faction_id.map(|id| id.get()),
                     faction_name: args.faction_name.as_deref(),
                     quest_id: args.quest_id.map(|id| id.get()),

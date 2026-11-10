@@ -3312,6 +3312,11 @@ must identify one ID across both captures. Supply `faction_id` to narrow
 the match. Once resolved, the ID is used on both sides, including when the
 recorded label changed or one side did not capture the faction.
 
+`compare_snapshots.currency_name` resolves an exact saved currency name
+across both captures before comparing balances by ID. A name alone must
+resolve to one ID. Supply `currency_id` to narrow the match. Existing
+account-scope checks still apply to balance and cap differences.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

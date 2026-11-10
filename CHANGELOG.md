@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever currency balances by exact currency name.
+
 - Compare saved Forever reputation progress by exact faction name.
 
 - Find saved Forever standard reputation ranks by exact faction name.

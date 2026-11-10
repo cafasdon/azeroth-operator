@@ -2235,6 +2235,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "reached_cap": False, "left_cap": False,
                         })
                         self.assertEqual(currency["change"], {"direction": "increased", "amount": 5})
+                        for selection,error in [
+                            ({"currency_name":"  fIXTURE cURRENCY "},False),
+                            ({"currency_name":"Fixture currency","currency_id":100},False),
+                            ({"currency_name":"Fixture currency","currency_id":999},True),
+                            ({"currency_name":"Fixture"},True),
+                            ({"currency_name":"é"*129},True),
+                        ]:
+                            reply=await session.call_tool("compare_snapshots",{
+                                "before_id":capped_key,"after_id":moved_key,**selection})
+                            self.assertEqual(bool(reply.isError),error,reply)
+                            if not error:
+                                self.assertEqual(json.loads(reply.content[0].text)["currency_balance_change"],currency)
                         item_change = comparison_data["item_quantity_change"]
                         self.assertEqual(item_change["net_delta"], 0)
                         self.assertEqual(item_change["by_storage"]["bags"], {"before": 42, "after": 41, "delta": -1})
@@ -2246,6 +2258,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         comparison_data = json.loads(partial.content[0].text)
                         currency = comparison_data["currency_balance_change"]
                         self.assertIsNone(currency["after"])
+                        named_partial=await session.call_tool("compare_snapshots",{
+                            "before_id":capped_key,"after_id":partial_key,"currency_name":"Fixture currency"})
+                        self.assertFalse(named_partial.isError,named_partial)
+                        self.assertEqual(json.loads(named_partial.content[0].text)["currency_balance_change"],currency)
                         self.assertIsNone(currency["weekly_earned_delta"])
                         self.assertIsNone(currency["weekly_headroom_change"])
                         self.assertIsNone(currency["change"])
