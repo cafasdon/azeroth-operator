@@ -124,6 +124,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(separate_quote['merchant_snapshot_id'], merchant_capture_id)
                     self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal'], 7)
                     self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'], 0)
+                    visits = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
+                                          set_merchant_snapshot_ids=[partial, merchant_capture_id])
+                    visit_acquisition = visits['set_observation']['unobserved_piece_acquisition']
+                    self.assertNotIn('captured_merchant_quote', visit_acquisition)
+                    self.assertEqual(visit_acquisition['captured_merchant_quotes'], [
+                        {'merchant_snapshot_id': partial, 'quote': None},
+                        {'merchant_snapshot_id': merchant_capture_id, 'quote': separate_quote},
+                    ])
                     reserved = await review(separate_wallet_id, set_id=221,
                         include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id,
                         set_merchant_wallet_reserve_copper=4)
@@ -137,6 +145,10 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         {'set_merchant_snapshot_id': merchant_capture_id},
                         {'set_merchant_wallet_reserve_copper': 0},
                         {'set_merchant_snapshot_id': wrong_merchant_id, 'include_unobserved_set_sources': True},
+                        {'set_merchant_snapshot_ids': [merchant_capture_id, merchant_capture_id],
+                         'include_unobserved_set_sources': True},
+                        {'set_merchant_snapshot_ids': [merchant_capture_id, wrong_merchant_id],
+                         'include_unobserved_set_sources': True},
                     ]:
                         rejected = await session.call_tool('review_forever_owned_gear',
                             {'snapshot_id': separate_wallet_id, 'set_id': 221, **options})

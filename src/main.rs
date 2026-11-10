@@ -1135,6 +1135,8 @@ struct OwnedGearReview {
     include_unobserved_set_sources: bool,
     /// Optional saved merchant visit from the same character and exact client build.
     set_merchant_snapshot_id: Option<String>,
+    /// Compare one to four distinct saved visits. Exclusive with set_merchant_snapshot_id.
+    set_merchant_snapshot_ids: Option<Vec<String>>,
     /// Copper to keep in the inventory capture's wallet when evaluating set offers.
     set_merchant_wallet_reserve_copper: Option<u64>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
@@ -1718,18 +1720,19 @@ impl Operator {
             let snapshot = self.store.read(&args.snapshot_id)?;
             anyhow::ensure!(
                 (args.set_merchant_snapshot_id.is_none()
+                    && args.set_merchant_snapshot_ids.is_none()
                     && args.set_merchant_wallet_reserve_copper.is_none())
                     || args.include_unobserved_set_sources,
                 "Set merchant options require set acquisition sources"
             );
-            let merchant = args
-                .set_merchant_snapshot_id
-                .as_deref()
-                .map(|id| self.store.read(id))
-                .transpose()?;
-            if let Some(merchant) = &merchant {
-                azeroth_operator::analysis::ensure_same_character_and_client(&snapshot, merchant)?;
-            }
+            anyhow::ensure!(
+                args.set_merchant_snapshot_ids.as_ref().is_none_or(|ids| {
+                    args.set_merchant_snapshot_id.is_none()
+                        && (1..=4).contains(&ids.len())
+                        && ids.iter().collect::<std::collections::BTreeSet<_>>().len() == ids.len()
+                }),
+                "Expected one to four distinct merchant captures or one exact capture"
+            );
             anyhow::ensure!(
                 args.item_id.is_none() || args.item_ids.is_none(),
                 "Choose item_id or item_ids"
@@ -1751,7 +1754,6 @@ impl Operator {
                 args.set_id,
                 args.set_name.as_deref(),
                 args.include_unobserved_set_sources,
-                merchant.as_ref(),
                 item_ids,
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),
@@ -1766,38 +1768,74 @@ impl Operator {
                 args.container_id,
             )?;
             review["snapshot_id"] = serde_json::json!(args.snapshot_id);
-            if let Some(quote) = review.pointer_mut(
-                "/set_observation/unobserved_piece_acquisition/captured_merchant_quote",
-            ) && quote.is_object()
+            if let Some(acquisition) =
+                review.pointer_mut("/set_observation/unobserved_piece_acquisition")
             {
-                quote["merchant_snapshot_id"] = serde_json::json!(
-                    args.set_merchant_snapshot_id
-                        .as_deref()
-                        .unwrap_or(&args.snapshot_id)
-                );
-                if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
-                    let wallet = snapshot
-                        .sections
-                        .get("wallet")
-                        .and_then(|row| row["copper"].as_u64());
-                    let total = quote["copper_only_bundle_mix_total"].as_u64();
-                    let subtotal = quote["copper_only_bundle_mix_quoted_subtotal"].as_u64();
-                    let shortfall = |cost: Option<u64>| {
-                        cost.zip(wallet).and_then(|(cost, balance)| {
-                            azeroth_operator::analysis::reserved_balance_shortfall(
-                                cost, balance, reserve,
-                            )
-                        })
+                let demands: Vec<_> = acquisition["records"].as_array().unwrap().iter()
+                    .map(|item| serde_json::json!({"item_id":item["item_id"],"shortfall_vs_observed":1}))
+                    .collect();
+                let make_quote = |id: &str, merchant: &azeroth_operator::Snapshot| {
+                    let mut quote = if demands.is_empty() {
+                        serde_json::Value::Null
+                    } else {
+                        azeroth_operator::analysis::material_merchant_plan(
+                            &demands, merchant, &snapshot,
+                        )
                     };
-                    quote["after_wallet_reserve"] = serde_json::json!({
-                        "wallet_reserve_copper":reserve,
-                        "spendable_copper":wallet.map(|balance| balance.saturating_sub(reserve)),
-                        "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
-                        "quoted_subtotal_shortfall_copper":shortfall(subtotal),
-                        "complete_quote_shortfall_copper":shortfall(total),
-                        "complete_quote_affordable":total.zip(wallet).map(|(cost, balance)|
-                            balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
-                    });
+                    if !quote.is_object() {
+                        return quote;
+                    }
+                    azeroth_operator::analysis::restock_merchant_offer_coverage(
+                        &mut quote, merchant,
+                    );
+                    quote["items"] = quote.as_object_mut().unwrap().remove("reagents").unwrap();
+                    quote["basis"] = serde_json::json!("one_unit_per_unobserved_catalogue_piece");
+                    quote["current_offers_verified"] = serde_json::json!(false);
+                    quote["merchant_snapshot_id"] = serde_json::json!(id);
+                    if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
+                        let wallet = snapshot
+                            .sections
+                            .get("wallet")
+                            .and_then(|row| row["copper"].as_u64());
+                        let total = quote["copper_only_bundle_mix_total"].as_u64();
+                        let subtotal = quote["copper_only_bundle_mix_quoted_subtotal"].as_u64();
+                        let shortfall = |cost: Option<u64>| {
+                            cost.zip(wallet).and_then(|(cost, balance)| {
+                                azeroth_operator::analysis::reserved_balance_shortfall(
+                                    cost, balance, reserve,
+                                )
+                            })
+                        };
+                        quote["after_wallet_reserve"] = serde_json::json!({
+                            "wallet_reserve_copper":reserve,
+                            "spendable_copper":wallet.map(|balance| balance.saturating_sub(reserve)),
+                            "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
+                            "quoted_subtotal_shortfall_copper":shortfall(subtotal),
+                            "complete_quote_shortfall_copper":shortfall(total),
+                            "complete_quote_affordable":total.zip(wallet).map(|(cost, balance)|
+                                balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
+                        });
+                    }
+                    quote
+                };
+                let quote_for_id = |id: &str| -> anyhow::Result<_> {
+                    let merchant = self.store.read(id)?;
+                    azeroth_operator::analysis::ensure_same_character_and_client(
+                        &snapshot, &merchant,
+                    )?;
+                    Ok(make_quote(id, &merchant))
+                };
+                if let Some(ids) = &args.set_merchant_snapshot_ids {
+                    let quotes = ids.iter().map(|id| {
+                        Ok(serde_json::json!({"merchant_snapshot_id":id,"quote":quote_for_id(id)?}))
+                    }).collect::<anyhow::Result<Vec<_>>>()?;
+                    acquisition["captured_merchant_quotes"] = serde_json::json!(quotes);
+                } else {
+                    acquisition["captured_merchant_quote"] =
+                        match args.set_merchant_snapshot_id.as_deref() {
+                            Some(id) => quote_for_id(id)?,
+                            None => make_quote(&args.snapshot_id, &snapshot),
+                        };
                 }
             }
             Ok::<_, anyhow::Error>(review)

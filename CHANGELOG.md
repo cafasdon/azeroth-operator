@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved quotes for unobserved Forever set pieces across up to four merchant visits.
+
 - Account for a wallet reserve in saved Forever set-piece merchant quotes.
 
 - Quote Forever set pieces from a separate saved visit by the same character.
