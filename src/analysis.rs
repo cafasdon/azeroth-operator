@@ -5453,6 +5453,7 @@ pub fn action_bar_spell_resource_matches(
 ) -> Option<Value> {
     let action_slots = action_slots_by_id(actions, "spell")?;
     let entries = spellbook?["entries"].as_object()?;
+    let hotkeys = observed_action_hotkeys_by_slot(actions);
     let mut matching_spellbook_slots = BTreeMap::<u64, BTreeSet<u32>>::new();
     for (slot, row) in entries {
         if let (Ok(slot), Some(id)) = (slot.parse(), row["spell_id"].as_u64())
@@ -5465,9 +5466,11 @@ pub fn action_bar_spell_resource_matches(
     let matches: BTreeMap<_, _> = matching_spellbook_slots
         .into_iter()
         .map(|(id, slots)| {
+            let actions = &action_slots[&id];
             (
                 id,
-                json!({"action_slots":action_slots[&id],"matching_spellbook_slots":slots}),
+                json!({"action_slots":actions,"matching_spellbook_slots":slots,
+                    "observed_hotkeys_by_slot":selected_action_hotkeys(actions, hotkeys.as_ref())}),
             )
         })
         .collect();

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved hotkeys on action-bar spell resource matches.
+
 - Find saved action-bar spell slots by exact spellbook charge, cast-count and cooldown observations.
 
 - Compare saved instance-group shortfalls against matching size references.

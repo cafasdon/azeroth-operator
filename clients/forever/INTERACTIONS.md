@@ -5,6 +5,9 @@ to find retained spell shortcuts matching recorded charge, cast-count or
 cooldown predicates. All predicates must match one spellbook row with the
 exact reported action spell ID. Missing values cannot satisfy a predicate.
 The result reports matching slots and leaves cast eligibility unverified.
+Matching slots include their captured hotkeys where available. An
+observed button with no keys has an empty list. Missing observations
+remain unknown.
 
 Set `group_member_target` with `inspect_snapshot` on `group_context`
 to compare the saved home and instance counts separately. It reports

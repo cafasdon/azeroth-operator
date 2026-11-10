@@ -50,6 +50,11 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
             store = SnapshotStore(Path(folder)); good = []; bad = []
             for mode in ['full','legacy','empty','missing','maximum','ambiguous','partial']:
                 saved = deepcopy(base)
+                if mode in ('full','ambiguous'):
+                    saved['sections']['action_bar_observation']['button_hotkeys']={
+                        '1':{'button':'ActionButton2','slot':2,'key1':'2','key2':'SHIFT-2'},
+                        '2':{'button':'ActionButton3','slot':3,'key1':'3'},
+                    }
                 if mode=='legacy':
                     for row in saved['sections']['spellbook']['entries'].values():
                         for field in fields: row.pop(field,None)
@@ -146,7 +151,9 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                             self.assertNotIn('100',matches['matches'])
                             expected_slots = [2] if mode in ('full','ambiguous') else list(range(1,1025)) if mode=='maximum' else None
                             expected = {} if expected_slots is None else {
-                                '101':{'action_slots':[2],'matching_spellbook_slots':expected_slots}}
+                                '101':{'action_slots':[2],'matching_spellbook_slots':expected_slots,
+                                       'observed_hotkeys_by_slot':{'2':['2','SHIFT-2']}
+                                       if mode in ('full','ambiguous') else None}}
                             self.assertEqual(matches['matches'],expected)
                         if mode == 'full':
                             conflicting = await call('inspect_snapshot',snapshot_id=key,
