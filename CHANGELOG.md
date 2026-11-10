@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures with low observed carried pet-food stock.
+
 - Show historical Hearthstone cooldown projections in Forever travel comparisons.
 
 - Find saved Forever Hearthstone cooldowns by projected ready deadline.

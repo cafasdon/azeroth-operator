@@ -1458,6 +1458,29 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "retail", "pet_food": {"minimum_quantity": 0},
                         })).isError)
+                        for bounds, expected in (
+                            ({"minimum_quantity": 0, "maximum_quantity": 1}, [travel_after]),
+                            ({"minimum_quantity": 1, "maximum_quantity": 1, "item_id": 117}, [travel_after]),
+                            ({"minimum_quantity": 0, "maximum_quantity": 0}, []),
+                        ):
+                            result = await session.call_tool("list_snapshots", {"family": "forever", "pet_food": bounds})
+                            self.assertFalse(result.isError)
+                            self.assertEqual([row["snapshot_id"] for row in json.loads(result.content[0].text)["snapshots"]],
+                                             expected)
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "pet_food": {"minimum_quantity": 2, "maximum_quantity": 1},
+                        })).isError)
+                        empty_food = json.loads(json.dumps(travel))
+                        empty_food["sections"]["pet_care"]["carried_food"] = {}
+                        empty_food_id = SnapshotStore(Path(folder)).ingest(empty_food)
+                        result = await session.call_tool("list_snapshots", {
+                            "family": "forever", "pet_food": {"minimum_quantity": 0, "maximum_quantity": 0},
+                        })
+                        self.assertFalse(result.isError)
+                        food_rows = json.loads(result.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in food_rows], [empty_food_id])
+                        self.assertEqual(food_rows[0]["pet_food_match"]["accepted_quantity"], 0)
+                        (Path(folder) / f"{empty_food_id}.json").unlink()
                         bag_query = {"family": "forever", "minimum_free_bag_slots": 10,
                                      "minimum_general_free_bag_slots": 1}
                         bag_visits = await session.call_tool("list_snapshots", bag_query)

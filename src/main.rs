@@ -613,7 +613,7 @@ struct List {
     minimum_general_free_bag_slots: Option<u32>,
     /// Require an exact observed bag family and a minimum number of free slots in it.
     bag_family_space: Option<azeroth_operator::BagFamilySpaceFilter>,
-    /// Find saved captures with enough carried food classified as accepted by the active pet.
+    /// Filter saved quantities of carried food classified as accepted by the captured pet.
     pet_food: Option<azeroth_operator::PetFoodCaptureFilter>,
     /// Find saved characters by one base item's observed quantity in one explicit storage; never aggregate characters or shared banks.
     inventory_item: Option<azeroth_operator::InventoryItemFilter>,

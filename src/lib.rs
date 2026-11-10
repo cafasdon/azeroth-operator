@@ -2060,6 +2060,8 @@ pub struct PetFoodCaptureFilter {
     pub item_id: Option<std::num::NonZeroU32>,
     /// Inclusive minimum accepted units in the captured carried bags.
     pub minimum_quantity: u32,
+    /// Inclusive maximum accepted units in the captured carried bags.
+    pub maximum_quantity: Option<u32>,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -2944,6 +2946,12 @@ impl Store {
         ensure!(
             pet_food.is_none() || family == Family::Forever,
             "Pet food filtering requires Forever"
+        );
+        ensure!(
+            pet_food.as_ref().is_none_or(|filter| filter
+                .maximum_quantity
+                .is_none_or(|maximum| filter.minimum_quantity <= maximum)),
+            "Pet food quantity bounds must be ordered"
         );
         let pet_food_key = pet_food
             .as_ref()
@@ -4052,7 +4060,11 @@ impl Store {
                             Some(key) => food.get(key).and_then(Value::as_u64).unwrap_or(0),
                             None => food.values().filter_map(Value::as_u64).sum(),
                         };
-                        if quantity < u64::from(filter.minimum_quantity) {
+                        if quantity < u64::from(filter.minimum_quantity)
+                            || filter
+                                .maximum_quantity
+                                .is_some_and(|maximum| quantity > u64::from(maximum))
+                        {
                             continue;
                         }
                         Some(json!({"item_id":filter.item_id,"accepted_quantity":quantity}))

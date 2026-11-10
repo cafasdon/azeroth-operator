@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Find saved pet-food restock candidates with `list_snapshots.pet_food`.
+Set `minimum_quantity: 0` and an inclusive `maximum_quantity` to look
+for low carried stock. Use `item_id` to count one accepted food item.
+Captures without a readable carried-food observation do not match.
+
 On `list_snapshots`, find saved travel options by exact, case-insensitive
 `hearthstone_bind_name` and inclusive `hearthstone_max_cooldown_seconds`.
 Use zero for a cooldown that was ready at capture. Missing observations
