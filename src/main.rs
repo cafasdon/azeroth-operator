@@ -596,6 +596,8 @@ struct List {
     saved_instance: Option<azeroth_operator::SavedInstanceFilter>,
     /// Find a named world boss in the saved cache; does not establish loot eligibility.
     saved_world_boss: Option<azeroth_operator::SavedWorldBossFilter>,
+    /// Find saved Forever instance lock warnings matching aggregate encounter progress.
+    instance_lock_warning: Option<azeroth_operator::saved_resets::InstanceLockWarningFilter>,
     /// Match a recipe observed in the saved local filtered profession list, optionally by learning state.
     profession_recipe: Option<azeroth_operator::ProfessionRecipeFilter>,
     /// Match a known pending attachment in the saved loaded inbox, never spendable stock.
@@ -2502,6 +2504,7 @@ impl Operator {
                 toy_name: args.toy_name.as_deref(),
                 saved_instance: args.saved_instance,
                 saved_world_boss: args.saved_world_boss,
+                instance_lock_warning: args.instance_lock_warning,
                 profession_recipe: args.profession_recipe,
                 mail_attachment: args.mail_attachment,
                 pet_species: args.pet_species,

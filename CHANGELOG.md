@@ -1,5 +1,7 @@
 # Changelog
 
+- Search saved Forever instance lock warnings by encounter progress and timer.
+
 - Review completed and pending encounters from saved instance lock warnings.
 
 - Filter saved reset schedules by the cache update age recorded at capture.

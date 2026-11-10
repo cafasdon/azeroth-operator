@@ -1933,6 +1933,7 @@ pub struct CaptureFilters<'a> {
     pub toy_name: Option<&'a str>,
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
+    pub instance_lock_warning: Option<saved_resets::InstanceLockWarningFilter>,
     pub profession_recipe: Option<ProfessionRecipeFilter>,
     pub mail_attachment: Option<MailAttachmentFilter>,
     pub pet_species: Option<PetSpeciesFilter>,
@@ -2223,6 +2224,7 @@ impl Store {
             toy_name,
             saved_instance,
             saved_world_boss,
+            instance_lock_warning,
             profession_recipe,
             mail_attachment,
             pet_species,
@@ -2356,6 +2358,10 @@ impl Store {
                         || filter.maximum_update_age_seconds.is_some())
             }),
             "Saved instance filtering requires Forever and at least one valid criterion"
+        );
+        ensure!(
+            instance_lock_warning.is_none() || family == Family::Forever,
+            "Instance lock warning filtering requires Forever"
         );
         let saved_instance_name = saved_instance
             .as_ref()
@@ -3377,6 +3383,12 @@ impl Store {
                     if profession_recipe.is_some() && profession_recipe_match.is_none() {
                         continue;
                     }
+                    let instance_lock_warning_match = instance_lock_warning.and_then(|filter| {
+                        filter.match_observation(s.sections.get("instance_context")?)
+                    });
+                    if instance_lock_warning.is_some() && instance_lock_warning_match.is_none() {
+                        continue;
+                    }
                     let saved_world_boss_match = saved_world_boss.as_ref().and_then(|filter| {
                         let saved = s.sections.get("saved_world_bosses")?;
                         if !filter.maximum_update_age_seconds.is_none_or(|maximum| {
@@ -4287,6 +4299,9 @@ impl Store {
                     }
                     if let Some(observation) = saved_world_boss_match {
                         summary["saved_world_boss_match"] = observation;
+                    }
+                    if let Some(observation) = instance_lock_warning_match {
+                        summary["instance_lock_warning_match"] = observation;
                     }
                     if let Some(observation) = profession_recipe_match {
                         summary["profession_recipe_match"] = observation;

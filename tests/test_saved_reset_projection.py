@@ -59,6 +59,26 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                     env={**os.environ, 'AZEROTH_DATA_DIR':folder})) as (reader, writer):
                 async with ClientSession(reader, writer) as session:
                     await session.initialize()
+                    for warning_filter, expected in [
+                        ({},{encounters_id,counts_only_id}),
+                        ({'minimum_completed_encounters':1,'minimum_remaining_encounters':2,
+                          'maximum_warning_seconds':60,'has_encounter_details':True},{encounters_id}),
+                        ({'has_encounter_details':False},{counts_only_id}),
+                        ({'minimum_remaining_encounters':3},set()),({'maximum_warning_seconds':59},set()),
+                    ]:
+                        reply=await session.call_tool('list_snapshots',{
+                            'family':'forever','instance_lock_warning':warning_filter})
+                        self.assertFalse(reply.isError,reply)
+                        rows=json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual({row['snapshot_id'] for row in rows},expected)
+                        for row in rows:
+                            match=row['instance_lock_warning_match']
+                            self.assertEqual(match['encounters_remaining'],2)
+                            self.assertEqual(match['reported_warning_remaining_seconds'],60)
+                            self.assertNotIn('Same name',json.dumps(row))
+                            self.assertFalse(match['current_warning_verified'])
+                    self.assertTrue((await session.call_tool('list_snapshots',{
+                        'family':'retail','instance_lock_warning':{}})).isError)
                     for capture_id, details in [(encounters_id,{
                             'completed':[{'slot':2,'name':'Defeated'}],
                             'pending':[{'slot':1,'name':'Same name'},{'slot':3,'name':'Same name'}]}),

@@ -1529,6 +1529,12 @@ separate completed and pending encounters in saved slot order and show
 the projected warning expiry. If only counts were captured, encounter
 names remain unknown. The review leaves current warning and saved
 lockout identity unverified.
+Use `list_snapshots.instance_lock_warning` to search saved Forever
+warnings by minimum completed or remaining encounters, maximum recorded
+warning seconds, or presence of encounter details. Bounds are inclusive.
+An empty filter matches any recorded warning. Results include counts and
+timer only, alongside instance kind and difficulty. Encounter names stay
+in the individual snapshot review.
 
 The `experience` section records the game's `resting` flag alongside
 XP progress when available. The flag describes the character at capture

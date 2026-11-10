@@ -63,6 +63,45 @@ pub(crate) fn matches_projected_window(
             })
 }
 
+#[derive(Clone, Copy, serde::Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InstanceLockWarningFilter {
+    pub minimum_completed_encounters: Option<u32>,
+    pub minimum_remaining_encounters: Option<u32>,
+    pub maximum_warning_seconds: Option<u32>,
+    pub has_encounter_details: Option<bool>,
+}
+
+impl InstanceLockWarningFilter {
+    pub(crate) fn match_observation(self, context: &Value) -> Option<Value> {
+        let warning = &context["lock_warning"];
+        let completed = warning["encounters_completed"].as_u64()?;
+        let remaining = warning["encounters_total"]
+            .as_u64()?
+            .checked_sub(completed)?;
+        let seconds = warning["remaining_seconds"].as_u64()?;
+        let has_details = warning["encounters"].is_object();
+        (self
+            .minimum_completed_encounters
+            .is_none_or(|min| completed >= u64::from(min))
+            && self
+                .minimum_remaining_encounters
+                .is_none_or(|min| remaining >= u64::from(min))
+            && self
+                .maximum_warning_seconds
+                .is_none_or(|max| seconds <= u64::from(max))
+            && self
+                .has_encounter_details
+                .is_none_or(|expected| expected == has_details))
+        .then(|| {
+            json!({"instance_kind":context["kind"],"difficulty_id":context["difficulty_id"],
+                "encounters_completed":completed,"encounters_remaining":remaining,
+                "reported_warning_remaining_seconds":seconds,"has_encounter_details":has_details,
+                "current_warning_verified":false,"saved_lockout_identity_verified":false})
+        })
+    }
+}
+
 pub(crate) fn discovery_report(
     mut matches: Vec<(&String, &Value)>,
     saved: &Value,
