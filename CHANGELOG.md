@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve cached creature, object and item quest objective targets.
+
 - Resolve quest starters and finishers in the offline world cache by their original entity types.
 
 - Resolve direct QuestieDB quest references to local record names and hashes on request.

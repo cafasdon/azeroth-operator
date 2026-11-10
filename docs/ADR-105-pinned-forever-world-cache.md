@@ -73,3 +73,7 @@ record. The view covers direct links and leaves quest eligibility unevaluated.
 The same option adds `quest_contacts` for starters and finishers. It preserves
 the publisher's tuple positions and resolves IDs in their NPC, object or item
 namespace. Unresolved IDs retain a null record.
+
+`quest_objective_targets` resolves the creature, object and item groups from
+the original objective tuples. The raw fields retain quantities and other
+objective data.

@@ -175,8 +175,30 @@ class World:
                 raise ValueError('Quest links require a quest record')
             result['quest_links'] = None if row is None else self.quest_links(row['fields'])
             result['quest_contacts'] = None if row is None else self.quest_contacts(row['fields'])
+            result['quest_objective_targets'] = None if row is None else self.quest_objective_targets(row['fields'])
         encoded(result)
         return result
+
+    def quest_objective_targets(self, fields):
+        objectives = fields.get('objectives', {})
+        targets = {}
+        for position, kind in (('1', 'npc'), ('2', 'object'), ('3', 'item')):
+            group = objectives.get(position)
+            if not isinstance(group, dict):
+                continue
+            references = {}
+            for slot, objective in group.items():
+                identity = objective.get('1') if isinstance(objective, dict) else None
+                if type(identity) is not int or not 1 <= identity <= 2**32-1:
+                    references[slot] = {'status': 'unsupported_reference'}
+                    continue
+                key = (kind, identity)
+                references[slot] = {
+                    'entity_id': identity,
+                    'record': self.summary(key) if key in self.records else None,
+                }
+            targets[position] = {'kind': kind, 'references': references}
+        return targets
 
     def quest_links(self, fields):
         links = {}
