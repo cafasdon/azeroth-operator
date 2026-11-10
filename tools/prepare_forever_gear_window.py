@@ -94,6 +94,10 @@ async def prepare(args):
                     spec = retained_equipment({'simulator_equipment_spec': checks.get('simulator_equipment_spec'),
                                               'simulator_gear_sha256': draft['simulator_gear_sha256']})
                     require(spec == draft['simulator_equipment_spec'])
+                    if 'projected_set_changes' in draft:
+                        require(encoded(draft['projected_set_changes'])
+                                == encoded(checks.get('catalogue_projected_set_changes'))
+                                and draft['projected_set_changes'] is not None)
                     request = adapter.request_from(template, review, encounter)
                     observed = review.get('captured_equipped_bag_items')
                     adapter.hunter_quiver_observation(adapter.single_player(template['raid']), observed)

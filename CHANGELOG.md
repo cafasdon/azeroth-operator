@@ -1,5 +1,7 @@
 # Changelog
 
+- Revalidate saved gear-set projections against the original snapshot before preparing simulator requests.
+
 - Retain validated set-piece projections in loadouts from saved-window rankings.
 
 - Carry projected set-piece changes into offline gear plans and encounter rankings.

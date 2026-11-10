@@ -17,6 +17,8 @@ The offline slot ranker retains this evidence as `projected_set_changes`
 in resolved gear plans, per-encounter results and weighted DPS rankings.
 Saved-window rankings also report it under `saved_loadout` when the
 retained plan includes the projection.
+Request preparation checks retained projections against a fresh offline
+review of the same saved snapshot and draft.
 
 Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `available` or `active`. Optional `is_complete`, `repeatable`,

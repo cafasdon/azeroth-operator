@@ -100,6 +100,19 @@ class PrepareGearWindowTests(unittest.TestCase):
             wrong_journal = Path(folder) / 'wrong.sqlite'
             append_report(wrong_journal, mismatched)
             launch(['--journal', str(wrong_journal)], 1)
+            projection = deepcopy(artifact)
+            for row in projection['resolved_drafts']:
+                del row['projected_set_changes']
+            without_projection = Path(folder) / 'without-projection.sqlite'
+            append_report(without_projection, projection)
+            self.assertEqual(launch(['--journal', str(without_projection)])['requests'], result['requests'])
+            projection['resolved_drafts'][0]['projected_set_changes'] = {
+                **artifact['resolved_drafts'][0]['projected_set_changes'],
+                'before_uncatalogued_equipped_slots': False,
+            }
+            wrong_projection = Path(folder) / 'wrong-projection.sqlite'
+            append_report(wrong_projection, projection)
+            launch(['--journal', str(wrong_projection)], 1)
             for index,cleared in enumerate([[17],[17.0],None]):
                 wrong=deepcopy(artifact)
                 wrong['resolved_drafts'][0]['cleared_equipment_slots']=cleared
