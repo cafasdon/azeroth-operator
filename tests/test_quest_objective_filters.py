@@ -744,6 +744,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     progressed = deepcopy(changed)
                     progressed['sections']['quests']['9']['objectives']['1']['fulfilled'] = 2
                     progressed['sections']['quests']['6']['objectives']['1'].update(required=None, fulfilled=None)
+                    progressed['sections']['quests']['7']['objectives']['1']['finished'] = True
+                    progressed['sections']['quests']['4']['objectives']['1']['finished'] = False
                     progress_key = store.ingest(progressed)
                     original[progress_key+'.json'] = (Path(folder)/(progress_key+'.json')).read_bytes()
                     progress = await session.call_tool('compare_snapshots',{
@@ -764,7 +766,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     })
                     self.assertFalse(summary.isError,summary)
                     self.assertEqual(json.loads(summary.content[0].text)['quest_objective_changes'], {
-                        'compared_quest_count':9,'changed_quest_ids':[9],
+                        'compared_quest_count':9,'changed_quest_ids':[4,7,9],
+                        'quest_ids_with_newly_finished_objectives':[7],
+                        'quest_ids_with_no_longer_finished_objectives':[4],
                         'quest_ids_with_unavailable_objectives':[1],'objective_identity_verified':False,
                     })
                     unavailable = await session.call_tool('compare_snapshots',{

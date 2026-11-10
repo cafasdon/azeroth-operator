@@ -1,5 +1,7 @@
 # Changelog
 
+- Identify saved quests with objective completion flags that changed in either direction.
+
 - Find changed objective observations across two saved Forever quest logs.
 
 - Compare changes in remaining work for saved quest objectives.

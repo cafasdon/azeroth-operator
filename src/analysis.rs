@@ -10299,6 +10299,8 @@ fn compare_quest_log_objectives(
 ) -> Value {
     let mut changed = BTreeSet::new();
     let mut unavailable = BTreeSet::new();
+    let mut newly_finished = BTreeSet::new();
+    let mut no_longer_finished = BTreeSet::new();
     let mut compared = 0;
     for (key, old) in before {
         let Some(new) = after.get(key) else { continue };
@@ -10311,16 +10313,34 @@ fn compare_quest_log_objectives(
             continue;
         };
         compared += 1;
-        if old.len() != new.len()
-            || old.iter().any(|(index, row)| {
-                !new.get(index)
-                    .is_some_and(|other| quest_objective_observations_equal(row, other))
-            })
-        {
+        if old.len() != new.len() {
             changed.insert(id);
+        }
+        for (index, row) in old {
+            let Some(other) = new.get(index) else {
+                changed.insert(id);
+                continue;
+            };
+            if quest_objective_observations_equal(row, other) {
+                continue;
+            }
+            changed.insert(id);
+            if row["kind"] == other["kind"] && row["required"] == other["required"] {
+                match (row["finished"].as_bool(), other["finished"].as_bool()) {
+                    (Some(false), Some(true)) => {
+                        newly_finished.insert(id);
+                    }
+                    (Some(true), Some(false)) => {
+                        no_longer_finished.insert(id);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
     json!({"compared_quest_count":compared,"changed_quest_ids":changed,
+        "quest_ids_with_newly_finished_objectives":newly_finished,
+        "quest_ids_with_no_longer_finished_objectives":no_longer_finished,
         "quest_ids_with_unavailable_objectives":unavailable,"objective_identity_verified":false})
 }
 

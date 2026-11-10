@@ -17,6 +17,9 @@ does not establish objective identity.
 Set `quest_objective_changes` on `compare_snapshots` to list changed
 quest IDs across both logs. It compares only quests present in both logs
 and reports shared quests with unavailable objectives separately.
+It separately lists quests with newly finished or no-longer-finished
+objectives when the saved index, kind and required count agree. A quest
+can appear in both lists when different objectives changed.
 
 In `inspect_snapshot`, select a Forever `faction_id` in the reputation
 section and pass `reputation_points_per_turn_in` to estimate repetitions
