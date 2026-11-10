@@ -26,6 +26,8 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
         maximum=deepcopy(value);maximum['sections']['equipment_durability']['entries']={str(i):{'current':2**32-1,'maximum':2**32-1} for i in range(1,20)}
         fractional=deepcopy(value);fractional['sections']['equipment_durability']['entries']={'16':{'current':1,'maximum':3}}
         later=deepcopy(value);later['captured_at']='2025-01-02T00:00:00Z'
+        later['sections']['equipment']['1']={'item_id':201,'guid':'PRIVATE_REPLACEMENT'}
+        later['sections']['equipment']['16']={'item_id':301}
         later['sections']['equipment_durability']['entries']={
             '1':{'current':90,'maximum':120},'2':{'current':0,'maximum':5},
             '16':{'current':1,'maximum':3}}
@@ -159,6 +161,14 @@ class EquipmentDurabilityTests(unittest.IsolatedAsyncioTestCase):
                         'equipment_durability_changes']
                     self.assertEqual(changes['changes'],[{'slot':1,'before':{'current':0,'maximum':100},
                         'after':{'current':90,'maximum':120},'current_delta':90,'maximum_delta':20}])
+                    self.assertEqual(changes['item_context_by_shared_slot'],{
+                        '1':{'before_item_id':101,'after_item_id':201,'base_item_ids_match':False},
+                        '16':{'before_item_id':None,'after_item_id':301,'base_item_ids_match':None}})
+                    same=(await call('compare_snapshots',before_id=keys[0],after_id=keys[0]))[
+                        'equipment_durability_changes']
+                    self.assertTrue(same['item_context_by_shared_slot']['1']['base_item_ids_match'])
+                    self.assertFalse(same['same_item_verified'])
+                    self.assertNotIn('PRIVATE_',json.dumps(changes))
                     async def threshold(after, percent):
                         result = await call('compare_snapshots',before_id=keys[0],after_id=after,
                             equipment_durability_max_percent=percent)

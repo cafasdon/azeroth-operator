@@ -3992,8 +3992,18 @@ pub fn compare_observations(
                 let mut only_before = Vec::new();
                 let mut only_after = Vec::new();
                 let mut changes = Vec::new();
+                let mut item_context = BTreeMap::new();
+                let item_at = |snapshot: &Snapshot, slot: &str| {
+                    snapshot.sections.get("equipment")?[slot]["item_id"].as_u64()
+                };
                 for slot in slots {
                     let key = slot.to_string();
+                    if old.contains_key(&key) && new.contains_key(&key) {
+                        let before_id = item_at(before, &key);
+                        let after_id = item_at(after, &key);
+                        item_context.insert(slot, json!({"before_item_id":before_id,"after_item_id":after_id,
+                            "base_item_ids_match":before_id.zip(after_id).map(|(a,b)| a == b)}));
+                    }
                     match (old.get(&key), new.get(&key)) {
                         (Some(a), Some(b)) if a != b => changes.push(json!({
                             "slot":slot,"before":a,"after":b,
@@ -4006,6 +4016,7 @@ pub fn compare_observations(
                     }
                 }
                 json!({"basis":"captured_equipment_slots","changes":changes,
+                    "item_context_by_shared_slot":item_context,
                     "observed_only_before_slots":only_before,"observed_only_after_slots":only_after,
                     "same_item_verified":false,"repair_event_verified":false,"live":false})
             })

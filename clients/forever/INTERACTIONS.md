@@ -3035,6 +3035,11 @@ current item usability.
 
 ## Saved durability threshold crossings
 
+Saved durability comparisons include `item_context_by_shared_slot` for
+slots with readings on both sides. Different recorded base item IDs show
+a change in the item observed at that slot. Equal IDs leave item-instance
+continuity unverified. A missing item reading leaves the ID match unknown.
+
 Set `compare_snapshots.equipment_durability_max_percent` to a whole
 percentage from 0 to 100. The comparison lists matching slots on each side
 and reports threshold crossings only for slots readable in both captures.

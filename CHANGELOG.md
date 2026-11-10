@@ -1,5 +1,7 @@
 # Changelog
 
+- Distinguish changed equipped item IDs from slot durability changes in saved comparisons.
+
 - Identify damaged equipped items and durability coverage gaps in saved repair reviews.
 
 - Show observed damaged equipment alongside saved repair quotes.
