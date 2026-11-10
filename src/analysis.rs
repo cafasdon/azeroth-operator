@@ -2419,6 +2419,24 @@ pub fn project_bag_cooldown_reference(
     }
 }
 
+pub fn project_item_lookup_cooldowns(
+    found: &mut Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+    reference: chrono::DateTime<chrono::Utc>,
+) {
+    found["bag_cooldown_reference_at"] = json!(reference);
+    for location in found["locations"]
+        .as_array_mut()
+        .into_iter()
+        .flatten()
+        .filter(|row| row["storage"] == "bags")
+    {
+        let end = bag_cooldown_projected_end(&location["captured_cooldown"], captured_at);
+        location["projected_cooldown_end_at"] = json!(end);
+        location["projected_end_at_or_before_reference"] = json!(end.map(|end| end <= reference));
+    }
+}
+
 #[cfg(test)]
 mod bag_cooldown_filter_tests {
     use super::*;

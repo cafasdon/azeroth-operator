@@ -3034,6 +3034,10 @@ leaves current item usability unverified.
 Set `bag_cooldown_filter.projected_end_by` for an inclusive deadline.
 The filter runs before paging. A disabled or missing timer cannot meet
 the deadline and is counted as unknown when the other predicates match.
+`find_snapshot_item` also accepts `bag_cooldown_reference_at` for
+Forever captures. Each returned bag location uses its own capture time
+and enabled timer. Equipment and bank locations have no projection.
+Additional snapshots are projected separately.
 
 Use `compare_snapshots.bag_cooldown_item_id` to compare two saved readings for
 one base item ID. Each side counts reported, unavailable and enabled locations

@@ -1,5 +1,7 @@
 # Changelog
 
+- Project carried-item cooldowns in exact-item snapshot lookups.
+
 - Shortlist saved carried-item cooldowns by their projected end deadline.
 
 - Project saved carried-item cooldown ends against an explicit reference time.

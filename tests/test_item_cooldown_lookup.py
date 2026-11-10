@@ -45,6 +45,7 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             del changed['sections']['character_bank']
             changed['sections']['account_bank']={}
             changed_key=store.ingest(changed)
+            retail_key=store.ingest(fixture())
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
@@ -95,6 +96,27 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(next(row for row in other['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],7)
                     self.assertEqual(next(row for row in combined['locations'] if row['storage']=='bags')['captured_cooldown']['remaining_seconds'],0)
                     self.assertNotIn('bag_cooldown_observation',old)
+                    self.assertNotIn('bag_cooldown_reference_at',combined)
+                    reference='2025-01-02T00:00:06Z'
+                    projected=await find(additional_snapshot_ids=[alt_key,legacy_key],bag_cooldown_reference_at=reference)
+                    for capture, timestamp, comparison in [
+                        (projected,'2025-01-01T00:00:00Z',True),
+                        (projected['additional_snapshot_results'][0],'2025-01-02T00:00:07Z',False),
+                        (projected['additional_snapshot_results'][1],None,None),
+                    ]:
+                        self.assertEqual(capture['bag_cooldown_reference_at'],reference)
+                        carried=[row for row in capture['locations'] if row['storage']=='bags']
+                        self.assertEqual([row['projected_cooldown_end_at'] for row in carried],[timestamp,None,None])
+                        self.assertEqual([row['projected_end_at_or_before_reference'] for row in carried],[comparison,None,None])
+                        self.assertTrue(all('projected_cooldown_end_at' not in row for row in capture['locations']
+                                            if row['storage']!='bags'))
+                    page=await find(offset=1,limit=1,bag_cooldown_reference_at=value['captured_at'])
+                    self.assertEqual(len(page['locations']),1)
+                    self.assertTrue(page['locations'][0]['projected_end_at_or_before_reference'])
+                    self.assertEqual(page['bag_cooldown_observation'],counts)
+                    rejected=await session.call_tool('find_snapshot_item',{
+                        'snapshot_id':retail_key,'item_id':100,'bag_cooldown_reference_at':reference})
+                    self.assertTrue(rejected.isError,rejected)
                     comparison={'before_id':key,'after_id':changed_key,'item_id':100}
                     for options in [{}, {'item_container_changes':True}]:
                         reply=await session.call_tool('compare_snapshots',{**comparison,**options})

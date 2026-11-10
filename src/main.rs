@@ -1135,6 +1135,8 @@ struct FindItem {
     item_id: std::num::NonZeroU32,
     offset: Option<usize>,
     limit: Option<usize>,
+    /// Compare matching carried cooldowns with this reference time. Requires Forever.
+    bag_cooldown_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Up to seven additional snapshot IDs with the exact same client/build.
     additional_snapshot_ids: Option<Vec<String>>,
     /// Include exact item quantities by recorded bag or bank container, before paging.
@@ -1624,6 +1626,17 @@ impl Operator {
                     args.include_container_quantities,
                 )?;
                 found["snapshot_id"] = serde_json::json!(id);
+                if let Some(reference) = args.bag_cooldown_reference_at {
+                    anyhow::ensure!(
+                        snapshot.client.family == Family::Forever,
+                        "Item cooldown projections require Forever"
+                    );
+                    azeroth_operator::analysis::project_item_lookup_cooldowns(
+                        &mut found,
+                        snapshot.captured_at,
+                        reference,
+                    );
+                }
                 if args.bag_stack_groups {
                     match args.stack_group_storage {
                         Some(azeroth_operator::InventoryStorage::Equipment) => {
@@ -1671,7 +1684,7 @@ impl Operator {
         match result {
             Ok(found) => CallToolResult::success(vec![ContentBlock::text(found.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50. Stack review options require bag stack groups. Choose bags or a saved Forever bank, with a container ID from 0 to 64 if specified.",
+                "Item search requires up to eight distinct compatible snapshots and a limit from 1 to 50. Cooldown projections require Forever. Stack review options require bag stack groups. Choose bags or a saved Forever bank, with a container ID from 0 to 64 if specified.",
             )]),
         }
     }
