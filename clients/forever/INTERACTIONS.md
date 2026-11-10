@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `active_pet.food_type_name` on `list_snapshots` to match an exact
+case-insensitive localized food category from a saved pet capture. The
+result retains the recorded category spelling. Missing or empty diet
+observations cannot match. This does not establish acceptance of an individual item.
+
 Find saved pet-food restock candidates with `list_snapshots.pet_food`.
 Set `minimum_quantity: 0` and an inclusive `maximum_quantity` to look
 for low carried stock. Use `item_id` to count one accepted food item.

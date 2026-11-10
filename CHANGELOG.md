@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever pet captures by a reported food category.
+
 - Show saved pet training-point balances and total accepted food in pet-care comparisons.
 
 - Find saved merchant visits that cover an exact pet-food carried target.

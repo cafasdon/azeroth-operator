@@ -683,6 +683,8 @@ pub struct ActivePetCaptureFilter {
     /// Inclusive signed total-minus-used bound; requires observed counters.
     pub minimum_training_points_balance: Option<i64>,
     pub maximum_training_points_balance: Option<i64>,
+    /// Exact case-insensitive localized food category reported for the saved pet.
+    pub food_type_name: Option<String>,
 }
 
 impl ActivePetCaptureFilter {
@@ -691,7 +693,8 @@ impl ActivePetCaptureFilter {
             || self.minimum_level.is_some()
             || self.maximum_level.is_some()
             || self.minimum_training_points_balance.is_some()
-            || self.maximum_training_points_balance.is_some();
+            || self.maximum_training_points_balance.is_some()
+            || self.food_type_name.is_some();
         ensure!(
             self.present.is_some() || details,
             "Select an active-pet observation filter"
@@ -699,6 +702,12 @@ impl ActivePetCaptureFilter {
         ensure!(
             self.present != Some(false) || !details,
             "Absent-pet filtering cannot require pet details"
+        );
+        ensure!(
+            self.food_type_name
+                .as_ref()
+                .is_none_or(|name| { !name.trim().is_empty() && name.len() <= 256 }),
+            "Invalid saved pet food type name"
         );
         ensure!(
             self.minimum_level
@@ -754,9 +763,17 @@ impl ActivePetCaptureFilter {
         {
             return None;
         }
-        Some(
-            json!({"present":present,"family_id":pet["family_id"],"level":pet["level"],"training_points_balance":balance}),
-        )
+        let mut result = json!({"present":present,"family_id":pet["family_id"],"level":pet["level"],"training_points_balance":balance});
+        if let Some(name) = &self.food_type_name {
+            let expected = name.trim().to_lowercase();
+            let observed = pet["food_types"]
+                .as_object()?
+                .values()
+                .filter_map(Value::as_str)
+                .find(|category| category.to_lowercase() == expected)?;
+            result["food_type_name"] = json!(observed);
+        }
+        Some(result)
     }
 }
 

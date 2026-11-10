@@ -19,7 +19,8 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
             'azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator'))).resolve(strict=True)
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));cases=[]
-            for pet in [{'present':True,'family_id':1,'level':17}, {'present':True}, {'present':False},None]:
+            for pet in [{'present':True,'family_id':1,'level':17,'food_types':{'1':'Meat','2':'Poisson'}},
+                        {'present':True}, {'present':True,'food_types':{}}, {'present':False},None]:
                 value=fixture()
                 value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
                 value['sections']['equipment']={'16':{'item_id':123}}
@@ -64,6 +65,22 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta['before']['level'],17)
                     self.assertEqual(delta['after']['level'],18)
                     self.assertNotIn('level_delta',delta)
+                    for filters, expected in (
+                        ({'food_type_name':'  mEAT ', 'family_id':1}, [cases[0][0]]),
+                        ({'food_type_name':'poisson', 'minimum_level':18}, [later_key]),
+                        ({'food_type_name':'Me', 'present':True}, []),
+                        ({'food_type_name':'Meat', 'family_id':3}, []),
+                    ):
+                        reply=await session.call_tool('list_snapshots',{'family':'forever','active_pet':filters})
+                        self.assertFalse(reply.isError)
+                        rows=json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in rows],expected)
+                        if rows:
+                            self.assertEqual(rows[0]['active_pet_match']['food_type_name'],
+                                             filters['food_type_name'].strip().capitalize())
+                    for filters in ({'food_type_name':' '}, {'present':False,'food_type_name':'Meat'}):
+                        self.assertTrue((await session.call_tool('list_snapshots',{
+                            'family':'forever','active_pet':filters})).isError)
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})
                         self.assertTrue(response.isError)
