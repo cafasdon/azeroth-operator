@@ -7061,11 +7061,17 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
                     observed[field] = value.clone();
                 }
             }
+            if let Some(balance) = pet_training_points_balance(pet) {
+                observed["training_points_balance"] = json!(balance);
+            }
             observed
         })
     };
     let old_food = before["carried_food"].as_object();
     let new_food = after["carried_food"].as_object();
+    let total_food = |foods: &serde_json::Map<String, Value>| {
+        foods.values().filter_map(Value::as_u64).sum::<u64>()
+    };
     let food_changes =
         old_food
             .zip(new_food)
@@ -7089,6 +7095,8 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
         "before":observation(before),"after":observation(after),
         "before_accepted_carried_food_item_count":old_food.map(|foods| foods.len()),
         "after_accepted_carried_food_item_count":new_food.map(|foods| foods.len()),
+        "before_accepted_carried_food_quantity":old_food.map(total_food),
+        "after_accepted_carried_food_quantity":new_food.map(total_food),
         "accepted_carried_food_changes":food_changes,
     })
 }

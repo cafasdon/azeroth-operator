@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved pet training-point balances and total accepted food in pet-care comparisons.
+
 - Find saved merchant visits that cover an exact pet-food carried target.
 
 - Quote the shortfall to a carried target for one recorded accepted pet food.

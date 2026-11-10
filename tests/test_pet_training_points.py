@@ -62,6 +62,10 @@ class PetTrainingPointTests(unittest.IsolatedAsyncioTestCase):
                     delta=json.loads(response.content[0].text)['pet_care_change']
                     self.assertEqual(delta['before']['training_points'],{'total':25,'used':10})
                     self.assertEqual(delta['after']['training_points'],{'total':10,'used':20})
+                    self.assertEqual(delta['before']['training_points_balance'],15)
+                    self.assertEqual(delta['after']['training_points_balance'],-10)
+                    self.assertIsNone(delta['before_accepted_carried_food_quantity'])
+                    self.assertIsNone(delta['after_accepted_carried_food_quantity'])
                     self.assertNotIn('training_points_delta',delta)
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})

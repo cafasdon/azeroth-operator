@@ -1771,6 +1771,9 @@ offers.
 `compare_snapshots` reports `pet_care_change` with the observed pet
 presence, happiness and loyalty on each side, plus family ID and level when known. When both captures have
 food classifications, it compares accepted carried quantities by item ID.
+Each capture reports its own total accepted carried units and its signed
+training-point balance when recorded. An observed empty food list totals
+zero. These are independent observations of the captured pets.
 An absent item in an observed classification contributes zero accepted
 units. A missing classification leaves the comparison unknown. The
 captures can describe different pets, so changes can reflect different

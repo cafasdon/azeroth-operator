@@ -1716,6 +1716,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "after": {"present": True, "happiness": 2, "loyalty": "Fixture loyal"},
                             "before_accepted_carried_food_item_count":1,
                             "after_accepted_carried_food_item_count":1,
+                            "before_accepted_carried_food_quantity":3,
+                            "after_accepted_carried_food_quantity":1,
                             "accepted_carried_food_changes": {
                                 "117": {"before_quantity": 3, "after_quantity": 1, "quantity_delta": -2,
                                         "observed_before":True,"observed_after":True},
