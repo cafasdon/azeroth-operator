@@ -2703,6 +2703,14 @@ establishing the same NPC, dialogue, or current availability.
 
 ## Saved selected-recipe batch preparation
 
+Set `estimate_output_bag_space: true` in `review_forever_recipe` to
+compare each requested recipe's minimum and maximum base output with
+the captured carried bags. An explicit compatible inventory capture
+supplies both stack limits and free slots. Each recipe is evaluated
+independently against those bags before crafting. The estimate excludes
+bonus output and slots freed by consuming reagents. Hypothetical merges
+and actual placement remain unverified. Missing output ranges give null.
+
 Use `compare_snapshots.selected_recipe_preparation_crafts` with 1 to 1,000
 crafts to review the saved preparation on each side. The review uses each
 capture's own selected recipe, bags, visible banks, observed charges and

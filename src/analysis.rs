@@ -7113,6 +7113,27 @@ pub fn quest_item_reward_quantity_bag_space(
     item_id: u32,
     quantity: u64,
 ) -> Value {
+    let mut report = carried_item_quantity_bag_space(snapshot, item_id, quantity);
+    report["scope"] = json!("selected_target_item_rewards_only");
+    report["recorded_reward_quantity"] = json!(quantity);
+    report
+}
+
+pub fn recipe_output_bag_space(snapshot: &Snapshot, output: &Value) -> Option<Value> {
+    let item_id = u32::try_from(output["item_id"].as_u64()?).ok()?;
+    let minimum = output["minimum"].as_u64()?;
+    let maximum = output["maximum"].as_u64()?;
+    Some(json!({
+        "scope":"base_output_against_captured_bags_before_crafting",
+        "item_id":item_id,
+        "minimum_output":carried_item_quantity_bag_space(snapshot, item_id, minimum),
+        "maximum_output":carried_item_quantity_bag_space(snapshot, item_id, maximum),
+        "reagent_slots_freed_included":false,
+        "bonus_output_included":false,
+    }))
+}
+
+fn carried_item_quantity_bag_space(snapshot: &Snapshot, item_id: u32, quantity: u64) -> Value {
     let limit = reported_inventory_stack_limits(snapshot, false)
         .get(&item_id)
         .copied();
@@ -7146,8 +7167,7 @@ pub fn quest_item_reward_quantity_bag_space(
                 .div_ceil(u64::from(limit.get()))
         })
     };
-    json!({"scope":"selected_target_item_rewards_only","recorded_reward_quantity":quantity,
-        "reported_carried_stack_limit":limit,"estimated_new_stack_slots":slots,
+    json!({"reported_carried_stack_limit":limit,"estimated_new_stack_slots":slots,
         "recorded_general_free_slots":general_free,
         "fits_recorded_general_slots":slots.zip(general_free).map(|(needed, free)| needed <= free),
         "hypothetical_carried_stack_headroom":headroom,

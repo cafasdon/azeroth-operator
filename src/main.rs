@@ -1045,6 +1045,9 @@ struct RecipeReview {
     merchant_reagent_plan: bool,
     /// Optional merchant capture for the same character and exact client/build.
     merchant_snapshot_id: Option<String>,
+    /// Estimate space for each requested recipe's base output against the saved carried bags.
+    #[serde(default)]
+    estimate_output_bag_space: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -1875,8 +1878,15 @@ impl Operator {
             if let Some(id) = args.inventory_snapshot_id {
                 review["inventory_snapshot_id"] = serde_json::json!(id);
             }
+            let stock = inventory.as_ref().unwrap_or(&snapshot);
+            if args.estimate_output_bag_space {
+                review["output_bag_space_projection"] =
+                    serde_json::json!(azeroth_operator::analysis::recipe_output_bag_space(
+                        stock,
+                        &review["base_output_if_completed"]
+                    ));
+            }
             if !additional.is_empty() {
-                let stock = inventory.as_ref().unwrap_or(&snapshot);
                 let mut extra_reviews = Vec::new();
                 let mut recipe_ids =
                     std::collections::BTreeSet::from([review["recipe"]["recipe_id"].as_u64()]);
@@ -1894,6 +1904,13 @@ impl Operator {
                         "Duplicate recipe ID"
                     );
                     extra["snapshot_id"] = serde_json::json!(entry.snapshot_id);
+                    if args.estimate_output_bag_space {
+                        extra["output_bag_space_projection"] =
+                            serde_json::json!(azeroth_operator::analysis::recipe_output_bag_space(
+                                stock,
+                                &extra["base_output_if_completed"]
+                            ));
+                    }
                     extra_reviews.push(extra);
                 }
                 review["combined_materials"] =

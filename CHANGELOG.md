@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate carried bag space for captured profession recipe output ranges.
+
 - Estimate bag space for quest item rewards from affordable turn-ins.
 
 - Compare currency from affordable quest turn-ins with captured cap headroom.

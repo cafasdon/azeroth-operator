@@ -54,6 +54,12 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
             later = deepcopy(base)
             later['captured_at'] = '2025-01-02T00:00:00Z'
             later['sections']['bags']['0']['1']['count'] = 1
+            later['sections']['bags']['0']['2'] = {
+                'item_id': 10, 'count': 2, 'link': 'item:10:0', 'reported_stack_limit': 4}
+            later['sections']['bag_capacity'] = {
+                '0': {'total_slots': 16, 'free_slots': 1, 'family_mask': 0},
+                **{str(bag): {'total_slots': 0, 'free_slots': 0} for bag in range(1, 5)},
+            }
             later_id = store.ingest(later)
             conflicts = []
             selected = {'recipe_id': 103, 'name': 'PRIVATE_SELECTED_NAME', 'learned': True,
@@ -132,6 +138,15 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(target['requested_crafts'], 3)
                     self.assertEqual(target['base_output_if_completed'], {'item_id': 10, 'minimum': 3, 'maximum': 6})
                     self.assertIsNone(target['base_output_for_charge_covered_crafts_if_completed'])
+                    self.assertNotIn('output_bag_space_projection', target)
+                    output_space = (await call(crafts=3, inventory_snapshot_id=later_id,
+                                               estimate_output_bag_space=True))['output_bag_space_projection']
+                    self.assertEqual(output_space['item_id'], 10)
+                    self.assertEqual(output_space['minimum_output']['estimated_new_stack_slots'], 1)
+                    self.assertEqual(output_space['maximum_output']['estimated_new_stack_slots'], 2)
+                    self.assertEqual(output_space['maximum_output']['estimated_new_stack_slots_if_same_item_stacks_merge'], 1)
+                    self.assertFalse(output_space['reagent_slots_freed_included'])
+                    self.assertIsNone((await call(recipe_id=None, estimate_output_bag_space=True))['output_bag_space_projection'])
                     for charges, saved_id in charge_cases.items():
                         limited = await call(snapshot_id=saved_id, crafts=3)
                         supported = min(charges, 3)
@@ -150,6 +165,11 @@ class BulkRecipePlanningTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(batch['dependency_order']['suggested_recipe_numbers'], [3, 2, 1])
                     self.assertTrue(batch['dependency_order']['material_coverage']['bags'])
                     self.assertEqual([r['recipe']['recipe_id'] for r in batch['additional_recipe_reviews']], [102, 103])
+                    batch_space = await call(recipe_id=101, inventory_snapshot_id=later_id,
+                        estimate_output_bag_space=True, additional_recipes=[
+                            {'snapshot_id': key, 'recipe_id': 103, 'crafts': 3}])
+                    self.assertEqual(batch_space['additional_recipe_reviews'][0]['output_bag_space_projection'],
+                                     output_space)
                     quoted = await call(recipe_id=101, inventory_snapshot_id=later_id,
                         merchant_reagent_plan=True, suggest_dependency_order=True, additional_recipes=[
                             {'snapshot_id': key, 'recipe_id': 102, 'crafts': 1},
