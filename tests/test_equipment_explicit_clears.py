@@ -24,7 +24,9 @@ class ExplicitClearTests(unittest.IsolatedAsyncioTestCase):
         value['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
         value['sections']['stats'] = {'class':'HUNTER','race':'Orc','level':60,'client_version':'synthetic'}
         value['sections']['equipment'] = {str(slot):{'item_id':item,'link':f'item:{item}:0:0:0:0:0:0'}
-            for slot,item in [(11,4549),(12,4550)]}
+            for slot,item in [(5,7950),(11,4549),(12,4550)]}
+        value['sections']['bags'] = {'0': {'1': {'item_id': 7953, 'count': 1,
+            'link': 'item:7953:0:0:0:0:0:0'}}}
         with tempfile.TemporaryDirectory() as folder:
             key = SnapshotStore(Path(folder)).ingest(value)
             path = Path(folder)/f'{key}.json'
@@ -40,6 +42,16 @@ class ExplicitClearTests(unittest.IsolatedAsyncioTestCase):
                     _, baseline = await call(positional_simulator_equipment=True)
                     _, empty = await call(positional_simulator_equipment=True,clear_equipment_slots=[])
                     self.assertEqual(baseline,empty)
+                    self.assertEqual(baseline['checks']['catalogue_projected_set_changes']['changes'], [])
+                    _, replacement = await call(positional_simulator_equipment=True, clear_equipment_slots=[5],
+                        selections=[{'target_slot':1,'source':{'kind':'bag','bag':0,'slot':1},
+                                     'expected_item_id':7953}])
+                    self.assertEqual(replacement['checks']['catalogue_projected_set_changes'], {
+                        'changes': [{'set_id':221,'before_distinct_item_ids':[7950],
+                                     'projected_distinct_item_ids':[7953]}],
+                        'before_uncatalogued_equipped_slots':0,'projected_uncatalogued_equipped_slots':0,
+                        'native_set_bonuses_verified':False,
+                    })
                     _, cleared = await call(positional_simulator_equipment=True,clear_equipment_slots=[11])
                     spec = cleared['checks']['simulator_equipment_spec']
                     self.assertTrue(spec['preserveSlots'])

@@ -6873,6 +6873,7 @@ impl Operator {
                         "catalogue_two_hand_pairing":"unknown",
                         "catalogue_slot_fit":null,
                         "catalogue_projected_weapon_skills":null,
+                        "catalogue_projected_set_changes":null,
                         "catalogue_requirement_conflicts":null,
                         "catalogue_unique_item_duplicates":null,
                         "catalogue_shared_limit_categories":null,

@@ -3052,6 +3052,43 @@ pub fn review_equipment_catalogue_with_clears(
         }
     };
     let projected_item = |slot| projected_observation(slot)?.get("item_id")?.as_u64();
+    let collect_set_pieces = |ids: Vec<u64>| {
+        let mut sets = BTreeMap::<u64, BTreeSet<u64>>::new();
+        let mut unmatched = 0;
+        for id in ids {
+            if let Some(item) = find(id) {
+                if let Some(set_id) = recorded_set_id(item) {
+                    sets.entry(set_id).or_default().insert(id);
+                }
+            } else {
+                unmatched += 1;
+            }
+        }
+        (sets, unmatched)
+    };
+    let (before_sets, before_unmatched) = collect_set_pieces(
+        equipment
+            .values()
+            .filter_map(|item| item["item_id"].as_u64())
+            .collect(),
+    );
+    let (after_sets, after_unmatched) =
+        collect_set_pieces((1..=19).filter_map(projected_item).collect());
+    let set_changes: Vec<_> = before_sets
+        .keys()
+        .chain(after_sets.keys())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .filter_map(|id| {
+            let before = before_sets.get(id);
+            let after = after_sets.get(id);
+            (before != after).then(|| {
+                json!({"set_id":id,
+                "before_distinct_item_ids":before.cloned().unwrap_or_default(),
+                "projected_distinct_item_ids":after.cloned().unwrap_or_default()})
+            })
+        })
+        .collect();
     let native_slot_conflicts: Vec<_> = (1..=19)
         .filter(|slot| {
             snapshot.client.family == Family::Forever
@@ -3205,6 +3242,12 @@ pub fn review_equipment_catalogue_with_clears(
         "catalogue_two_hand_pairing":pairing,
         "catalogue_slot_fit":fit,
         "catalogue_projected_weapon_skills":projected_weapon_skills,
+        "catalogue_projected_set_changes":{
+            "changes":set_changes,
+            "before_uncatalogued_equipped_slots":before_unmatched,
+            "projected_uncatalogued_equipped_slots":after_unmatched,
+            "native_set_bonuses_verified":false
+        },
         "catalogue_requirement_conflicts":requirement_conflicts,
         "native_required_level_shortfalls":native_shortfalls,
         "native_slot_category_conflicts":native_slot_conflicts,

@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how a Forever equipment draft changes equipped catalogue set pieces.
+
 - Identify stored unequipped and unobserved catalogue set pieces in saved Forever gear reviews.
 
 - Break down observed Forever gear-set pieces by equipment, bags and banks.

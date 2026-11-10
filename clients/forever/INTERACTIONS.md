@@ -9,6 +9,11 @@ The set review lists `observed_stored_not_equipped_item_ids` when equipment
 was captured. It also lists `unobserved_catalogue_item_ids` for catalogue
 pieces absent from the capture. Unobserved pieces may be in unavailable storage.
 
+With the local catalogue, `review_equipment_selection` reports
+`checks.catalogue_projected_set_changes` for sets whose distinct equipped
+item IDs would change under the draft. Counts of unmatched equipment slots
+expose gaps in the projection. Native set bonuses are unverified.
+
 Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `available` or `active`. Optional `is_complete`, `repeatable`,
 `is_trivial` and `is_ignored` flags must match the same recorded row.
