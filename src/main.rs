@@ -82,6 +82,9 @@ struct QuestItemTarget {
     /// Count copies in the same capture's carried bags toward the requested total.
     #[serde(default)]
     count_carried: bool,
+    /// Estimate new general bag slots for the selected rewards of this item.
+    #[serde(default)]
+    estimate_bag_space: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -4707,7 +4710,7 @@ impl Operator {
                         || args
                             .quest_ready_item_target
                             .as_ref()
-                            .is_some_and(|target| target.count_carried)
+                            .is_some_and(|target| target.count_carried || target.estimate_bag_space)
                         || args.quest_list_renown_projection
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
@@ -5051,6 +5054,16 @@ impl Operator {
                                     if carried.is_none() && projection["covers_target"] == false {
                                         projection["covers_target"] = serde_json::Value::Null;
                                     }
+                                }
+                                if target.estimate_bag_space {
+                                    projection["bag_space_projection"] =
+                                        serde_json::json!(context.as_ref().and_then(|snapshot| {
+                                            azeroth_operator::analysis::quest_item_reward_bag_space(
+                                                snapshot,
+                                                item_id,
+                                                &projection["ready_turn_in_plan"],
+                                            )
+                                        }));
                                 }
                                 projection
                             });

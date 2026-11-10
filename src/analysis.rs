@@ -7047,6 +7047,33 @@ pub fn quest_ready_reward_projection(
     report
 }
 
+pub fn quest_item_reward_bag_space(
+    snapshot: &Snapshot,
+    item_id: u32,
+    plan: &Value,
+) -> Option<Value> {
+    let quantity = plan["recorded_total_quantity"]
+        .as_u64()
+        .or_else(|| plan["recorded_fixed_quantity"].as_u64())?;
+    let limit = reported_inventory_stack_limits(snapshot, false)
+        .get(&item_id)
+        .copied();
+    let slots = if quantity == 0 {
+        Some(0)
+    } else {
+        limit.map(|limit| quantity.div_ceil(u64::from(limit.get())))
+    };
+    let general_free =
+        carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
+    Some(
+        json!({"scope":"selected_target_item_rewards_only","recorded_reward_quantity":quantity,
+        "reported_carried_stack_limit":limit,"estimated_new_stack_slots":slots,
+        "recorded_general_free_slots":general_free,
+        "fits_recorded_general_slots":slots.zip(general_free).map(|(needed, free)| needed <= free),
+        "placement_verified":false,"live":false}),
+    )
+}
+
 pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

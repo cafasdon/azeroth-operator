@@ -3391,6 +3391,12 @@ rewards. If the bags already cover it, the plan is empty. If bags were not
 captured, the reward plan uses the full target and an otherwise unmet target
 has unknown coverage.
 
+Set `estimate_bag_space: true` to estimate new general bag slots for the
+selected rewards of the target item. It uses agreeing stack limits from
+carried copies and counts only recorded general free slots. The estimate
+assumes incoming copies use that limit and start in new stacks. Other
+rewards, existing stack headroom and actual placement are outside its scope.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

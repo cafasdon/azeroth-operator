@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate saved general bag space for selected quest rewards of a target item.
+
 - Optionally count recorded carried items toward saved quest item targets.
 
 - Plan saved ready quest turn-ins for item targets, with optional recorded reward choices.
