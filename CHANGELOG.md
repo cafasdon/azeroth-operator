@@ -1,5 +1,7 @@
 # Changelog
 
+- Index item quantities by exact saved character across explicit captures, with unique-latest selection, ambiguous ties and no pooled account-bank or cross-character total.
+
 - Quote explicitly selected saved bag stacks at captured vendor prices, with partial-price/overflow states and hypothetical wallet reserve projections.
 
 - Join saved local provider vendor/drop/quest references and scoped locations to single or joint recipe restock bag shortages.

@@ -4621,3 +4621,14 @@ partial amounts do not fund the hypothetical wallet projection. Recorded zero
 prices remain known zero values. Links and item GUIDs do not enter the quote.
 No sale recommendation, selling action or current funds credit occurs. Native
 eligibility and current locations remain unverified. See ADR-096. Offline only.
+
+## Item index across selected character captures
+
+Set `character_item_index:true` on `find_snapshot_item`, with up to seven
+`additional_snapshot_ids`, to group saved item counts by exact name and realm.
+Only a unique latest capture per character supplies counts. Latest timestamp
+ties remain ambiguous; missing storage never falls back to an older capture.
+Account-bank observations stay separate and no cross-character total is given.
+The primary input character appears first, independently of capture age. This
+does not identify the active character, cover every alt or reconcile transfers.
+Counts describe historical observations only. See ADR-097. Offline/source only.

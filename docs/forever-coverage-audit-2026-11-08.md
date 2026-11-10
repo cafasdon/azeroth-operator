@@ -1051,3 +1051,12 @@ Exact locations retain separate prices even for equal base IDs. The new quote
 does not copy private item text, spend money, sell items or establish current
 eligibility. No new capture, deployment or native evidence is added. See ADR-096
 and its dated offline evidence. Live work remains deferred.
+
+## Historical character item index (10 November)
+
+Explicit multi-capture item lookup can now summarise one unique latest saved
+observation per exact character identity. Ties and missing storage remain
+unknown, and account-bank counts never form a pooled cross-character total.
+This improves historical item discovery across the selected captures without
+claiming current inventory, every alt, transfer reconciliation or active identity.
+See ADR-097 and its dated offline evidence. Live qualification remains deferred.

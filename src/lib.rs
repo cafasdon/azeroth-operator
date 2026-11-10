@@ -31,6 +31,7 @@ pub mod recipe_restock_batch;
 pub mod recipe_restock_quote;
 pub mod recipe_restock_sources;
 pub mod bag_sale_quote;
+pub mod character_item_index;
 pub mod recipe_material_compare;
 pub mod recipe_stock_schedule;
 pub mod player_map_position;

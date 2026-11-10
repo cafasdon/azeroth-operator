@@ -1467,6 +1467,9 @@ struct RecipeSearch {
 struct FindItem {
     snapshot_id: String,
     item_id: std::num::NonZeroU32,
+    /// Index this item by exact saved character identity across the explicitly selected captures. Unique latest capture only; ties and missing storage stay unknown. Account banks are never added across characters.
+    #[serde(default)]
+    character_item_index: bool,
     offset: Option<usize>,
     limit: Option<usize>,
     /// Compare matching carried cooldowns with this reference time. Requires Forever.
@@ -2262,6 +2265,11 @@ impl Operator {
             };
             let primary = self.store.read(&args.snapshot_id)?;
             let mut found = query(&args.snapshot_id, &primary)?;
+            let mut indexed = Vec::new();
+            if args.character_item_index {
+                anyhow::ensure!(primary.client.family == Family::Forever, "Character item index requires Forever");
+                indexed.push(azeroth_operator::character_item_index::Observation::new(&args.snapshot_id,&primary,&found));
+            }
             if !additional.is_empty() {
                 let mut seen = std::collections::BTreeSet::from([args.snapshot_id.as_str()]);
                 let mut extra = Vec::new();
@@ -2269,9 +2277,16 @@ impl Operator {
                     anyhow::ensure!(seen.insert(id), "Duplicate snapshot ID");
                     let snapshot = self.store.read(id)?;
                     anyhow::ensure!(snapshot.client == primary.client, "Client/build mismatch");
-                    extra.push(query(id, &snapshot)?);
+                    let result = query(id, &snapshot)?;
+                    if args.character_item_index {
+                        indexed.push(azeroth_operator::character_item_index::Observation::new(id,&snapshot,&result));
+                    }
+                    extra.push(result);
                 }
                 found["additional_snapshot_results"] = serde_json::json!(extra);
+            }
+            if args.character_item_index {
+                found["character_item_index"] = azeroth_operator::character_item_index::review(indexed,args.item_id.get());
             }
             Ok::<_, anyhow::Error>(found)
         })();
