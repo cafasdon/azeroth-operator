@@ -783,6 +783,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     funded['sections']['quests']['10']['currency_choices']={
                         '1':{'currency_id':100,'quantity':20},'2':{'currency_id':100,'quantity':99},
                         '3':{'currency_id':100,'quantity':99},'4':{'currency_id':200,'quantity':200}}
+                    funded['sections']['quests']['10']['item_rewards']={'1':{'item_id':118,'quantity':3}}
+                    funded['sections']['quests']['10']['item_choices']={
+                        '1':{'item_id':118,'quantity':4},'2':{'item_id':118,'quantity':5}}
                     funded['sections']['currency_balances']={'coverage':'visible_currency_ids_only',
                         'entries':{'100':{'name':'Fixture Token','quantity':3,'max_quantity':10,
                                           'max_weekly_quantity':0,'earned_this_week':0,'total_earned':3,
@@ -808,6 +811,25 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'snapshot_id':currency_target_id,'section':'quests',
                         'quest_ready_currency_target':{'currency_id':100,'quantity':0}})
                     self.assertTrue(rejected.isError)
+                    for quantity,include_choices,covered,ids in [
+                            (5,False,True,[10,3]),(6,False,False,None),(7,True,True,[10])]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':currency_target_id,'section':'quests',
+                            'quest_ready_item_target':{'item_id':118,'quantity':quantity,
+                                                       'include_choices':include_choices}})
+                        self.assertFalse(reply.isError,reply)
+                        result=json.loads(reply.content[0].text)['quest_ready_item_projection']
+                        self.assertIs(result['covers_target'],covered)
+                        self.assertEqual(result['known_ready_fixed_quantity'],5)
+                        plan=result['ready_turn_in_plan']
+                        if ids:
+                            self.assertEqual(plan['quest_ids'],ids)
+                            self.assertNotIn('cap_projection',plan)
+                            if include_choices:
+                                self.assertEqual(plan['item_choices'],[{'quest_id':10,'position':2,'quantity':5}])
+                                self.assertEqual(plan['recorded_total_quantity'],8)
+                        else:
+                            self.assertIsNone(plan)
                     for quantity,covered in [(100,True),(109,None)]:
                         reply=await session.call_tool('inspect_snapshot',{
                             'snapshot_id':currency_target_id,'section':'quests',

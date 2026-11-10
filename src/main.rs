@@ -73,6 +73,16 @@ struct QuestCurrencyTarget {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct QuestItemTarget {
+    item_id: std::num::NonZeroU32,
+    quantity: std::num::NonZeroU64,
+    /// Consider one recorded optional reward for this item per quest.
+    #[serde(default)]
+    include_choices: bool,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
@@ -261,6 +271,8 @@ struct Inspect {
     quest_list_currency_projection: bool,
     /// Review fixed rewards from recorded ready quests against a currency target.
     quest_ready_currency_target: Option<QuestCurrencyTarget>,
+    /// Review fixed rewards from recorded ready quests against an item target.
+    quest_ready_item_target: Option<QuestItemTarget>,
     /// Combine renown rewards from retained quests against the same capture's faction progress.
     #[serde(default)]
     quest_list_renown_projection: bool,
@@ -3163,6 +3175,7 @@ impl Operator {
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
                 || args.quest_ready_currency_target.is_some()
+                || args.quest_ready_item_target.is_some()
                 || args.quest_list_renown_projection
                 || args.quest_list_item_rewards
                 || args.quest_list_timed_checklist
@@ -3247,6 +3260,7 @@ impl Operator {
             || args.quest_list_wallet_projection
             || args.quest_list_currency_projection
             || args.quest_ready_currency_target.is_some()
+            || args.quest_ready_item_target.is_some()
             || args.quest_list_renown_projection
             || args.quest_list_item_rewards)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
@@ -4667,6 +4681,7 @@ impl Operator {
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
                     || args.quest_ready_currency_target.is_some()
+                    || args.quest_ready_item_target.is_some()
                     || args.quest_list_renown_projection
                     || args.quest_list_item_rewards
                     || args.quest_list_timed_checklist
@@ -4979,10 +4994,25 @@ impl Operator {
                             .unwrap_or(&serde_json::Value::Null);
                         value["quest_ready_currency_projection"] =
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
-                                azeroth_operator::analysis::quest_ready_currency_projection(
+                                azeroth_operator::analysis::quest_ready_reward_projection(
                                     quests,
-                                    balances,
-                                    target.currency_id.get(),
+                                    azeroth_operator::analysis::QuestRewardTarget::Currency(
+                                        target.currency_id.get(),
+                                        balances,
+                                    ),
+                                    target.quantity.get(),
+                                    target.include_choices,
+                                )
+                            });
+                    }
+                    if let Some(target) = &args.quest_ready_item_target {
+                        value["quest_ready_item_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_ready_reward_projection(
+                                    quests,
+                                    azeroth_operator::analysis::QuestRewardTarget::Item(
+                                        target.item_id.get(),
+                                    ),
                                     target.quantity.get(),
                                     target.include_choices,
                                 )

@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved ready quest turn-ins for item targets, with optional recorded reward choices.
+
 - Optionally plan one recorded currency reward choice per saved ready quest.
 
 - Plan saved ready quest turn-ins against an explicit fixed currency reward target.

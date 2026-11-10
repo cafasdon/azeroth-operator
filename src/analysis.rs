@@ -6929,13 +6929,33 @@ pub fn quest_list_currency_projection(
     json!({"known_fixed_rewards":projections,"unknown_fixed_reward_list_count":unknown})
 }
 
-pub fn quest_ready_currency_projection(
+pub enum QuestRewardTarget<'a> {
+    Item(u32),
+    Currency(u32, &'a Value),
+}
+
+pub fn quest_ready_reward_projection(
     quests: &serde_json::Map<String, Value>,
-    balances: &Value,
-    currency_id: u32,
+    reward: QuestRewardTarget<'_>,
     target: u64,
     include_choices: bool,
 ) -> Value {
+    let (product_id, id_field, fixed_field, choice_field, coverage_field) = match reward {
+        QuestRewardTarget::Item(id) => (
+            id,
+            "item_id",
+            "item_rewards",
+            "item_choices",
+            "covers_target",
+        ),
+        QuestRewardTarget::Currency(id, _) => (
+            id,
+            "currency_id",
+            "currency_rewards",
+            "currency_choices",
+            "covers_target_before_caps",
+        ),
+    };
     let mut unknown_fixed = 0;
     let mut unknown_choices = 0;
     let mut fixed_total = 0;
@@ -6944,22 +6964,22 @@ pub fn quest_ready_currency_projection(
         if quest_readiness(quest) != QuestReadiness::Ready {
             continue;
         }
-        let fixed = quest["currency_rewards"].as_object();
+        let fixed = quest[fixed_field].as_object();
         unknown_fixed += usize::from(fixed.is_none());
         let fixed_quantity: u64 = fixed
             .into_iter()
             .flat_map(|rows| rows.values())
-            .filter(|row| row["currency_id"].as_u64() == Some(u64::from(currency_id)))
+            .filter(|row| row[id_field].as_u64() == Some(u64::from(product_id)))
             .filter_map(|row| row["quantity"].as_u64())
             .sum();
         fixed_total += fixed_quantity;
         let choice = if include_choices {
-            let choices = quest["currency_choices"].as_object();
+            let choices = quest[choice_field].as_object();
             unknown_choices += usize::from(choices.is_none());
             choices
                 .into_iter()
                 .flat_map(|rows| rows.iter())
-                .filter(|(_, row)| row["currency_id"].as_u64() == Some(u64::from(currency_id)))
+                .filter(|(_, row)| row[id_field].as_u64() == Some(u64::from(product_id)))
                 .filter_map(|(slot, row)| {
                     Some((row["quantity"].as_u64()?, slot.parse::<u32>().ok()?))
                 })
@@ -7000,22 +7020,23 @@ pub fn quest_ready_currency_projection(
                 break;
             }
         }
-        let key = currency_id.to_string();
-        let entry = &balances["entries"][&key];
-        let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
         let mut plan = json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
-            "truncated":ids.len()>20,"recorded_fixed_quantity":selected_fixed,
-            "cap_projection":currency_reward_projection(selected_quantity, entry, &caps)});
+            "truncated":ids.len()>20,"recorded_fixed_quantity":selected_fixed});
+        if let QuestRewardTarget::Currency(id, balances) = reward {
+            let entry = &balances["entries"][id.to_string()];
+            let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
+            plan["cap_projection"] = currency_reward_projection(selected_quantity, entry, &caps);
+        }
         if include_choices {
             plan["recorded_choice_quantity"] = json!(selected_quantity - selected_fixed);
             plan["recorded_total_quantity"] = json!(selected_quantity);
-            plan["currency_choices"] = json!(choices);
+            plan[choice_field] = json!(choices);
         }
         plan
     });
-    let mut report = json!({"currency_id":currency_id,"target_quantity":target,
+    let mut report = json!({(id_field):product_id,"target_quantity":target,
         "known_ready_fixed_quantity":fixed_total,"ready_quests_with_unknown_fixed_rewards":unknown_fixed,
-        "covers_target_before_caps":covers_target,
+        (coverage_field):covers_target,
         "shortfall_after_known_ready_fixed_rewards":target.saturating_sub(fixed_total),
         "ready_turn_in_plan":plan,"reward_eligibility_verified":false,"live":false});
     if include_choices {
