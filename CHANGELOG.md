@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved group count targets and identify threshold crossings.
+
 - Compare saved home and instance group counts against a member target.
 
 - Find saved Forever characters within a points distance of an exact PvP rank.

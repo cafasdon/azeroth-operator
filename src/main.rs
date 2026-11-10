@@ -831,6 +831,8 @@ struct Compare {
     /// Compare reported group categories across two saved Forever captures.
     #[serde(default)]
     group_context_changes: bool,
+    /// Compare reported group member counts against the same target in both captures.
+    group_member_target: Option<std::num::NonZeroU32>,
     /// Compare the reported personal PvP progression and cap distances in saved Forever captures.
     #[serde(default)]
     player_pvp_progression_changes: bool,
@@ -2351,6 +2353,7 @@ impl Operator {
                     equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
+                    group_member_target: args.group_member_target,
                     player_pvp_progression_changes: args.player_pvp_progression_changes,
                     pvp_target_rank: args.pvp_target_rank,
                     player_trade_offer_changes: args.player_trade_offer_changes,

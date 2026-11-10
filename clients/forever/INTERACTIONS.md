@@ -5,6 +5,10 @@ to compare the saved home and instance counts separately. It reports
 shortfall and excess against the target. Missing counts stay unknown.
 The result uses raw captured counts and leaves roster and current group
 membership unverified.
+The same selector on `compare_snapshots` shows the count and target
+projection on each side and flags crossings separately for home and
+instance. A crossing requires both counts and does not establish a
+membership event or group continuity.
 
 Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap

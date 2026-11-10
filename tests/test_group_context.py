@@ -127,6 +127,20 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                     await call('list_snapshots',error=True,family='retail',group_context={'category':'home'})
                     plain = await call('compare_snapshots',before_id=earlier,after_id=later)
                     self.assertNotIn('group_context_changes',plain)
+                    self.assertNotIn('group_member_target_comparison',plain)
+                    for a,b,up,down in [
+                        (valid[1][0],earlier,True,False),(earlier,later,False,True),
+                        (earlier,earlier,False,False),(valid[0][0],earlier,None,None),
+                    ]:
+                        result = await call('compare_snapshots',before_id=a,after_id=b,group_member_target=10)
+                        self.assertNotIn('group_context_changes',result)
+                        target = result['group_member_target_comparison']
+                        self.assertIs(target['categories']['home']['crossed_up'],up)
+                        self.assertIs(target['categories']['home']['crossed_down'],down)
+                        self.assertFalse(target['group_identity_verified'])
+                        self.assertFalse(target['membership_events_verified'])
+                    await call('compare_snapshots',error=True,before_id=retail_id,after_id=retail_id,
+                        group_member_target=10)
                     comparison = await call('compare_snapshots',before_id=earlier,after_id=later,group_context_changes=True)
                     group = comparison['group_context_changes']
                     self.assertEqual(group['categories']['home'], {

@@ -3356,6 +3356,7 @@ pub struct ComparisonSelectors<'a> {
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
+    pub group_member_target: Option<std::num::NonZeroU32>,
     pub player_pvp_progression_changes: bool,
     pub pvp_target_rank: Option<u32>,
     pub player_trade_offer_changes: bool,
@@ -3498,6 +3499,38 @@ pub fn group_member_target_projection(section: &Value, target: u32) -> Value {
         .collect::<BTreeMap<_, _>>();
     json!({"target_reported_member_count":target,"categories":categories,
         "complete_roster_verified":false,"current_group_verified":false,"live":false})
+}
+
+fn compare_group_member_target(before: &Snapshot, after: &Snapshot, target: u32) -> Value {
+    let project = |snapshot: &Snapshot| {
+        group_member_target_projection(
+            snapshot
+                .sections
+                .get("group_context")
+                .unwrap_or(&Value::Null),
+            target,
+        )
+    };
+    let old = project(before);
+    let new = project(after);
+    let categories = ["home", "instance"]
+        .map(|category| {
+            let before = &old["categories"][category];
+            let after = &new["categories"][category];
+            let met = before["target_met_at_capture"]
+                .as_bool()
+                .zip(after["target_met_at_capture"].as_bool());
+            (
+                category,
+                json!({"before":before,"after":after,
+            "crossed_up":met.map(|(old, new)| !old && new),
+            "crossed_down":met.map(|(old, new)| old && !new)}),
+            )
+        })
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+    json!({"target_reported_member_count":target,"categories":categories,
+        "group_identity_verified":false,"membership_events_verified":false,"live":false})
 }
 
 pub fn pvp_rank_target_projection(section: &Value, target: u32) -> Option<Value> {
@@ -3831,6 +3864,14 @@ pub fn compare_observations(
             "observed_next_threshold_change_with_matching_season_id":next_threshold_change,
             "observed_cap_changes_with_matching_season_id":cap_changes,
             "reported_season_ids_match":season_match,"same_season_verified":false,"earned_points_delta":null,"live":false});
+    }
+    if let Some(target) = selectors.group_member_target {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Group member target comparison requires Forever"
+        );
+        comparison["group_member_target_comparison"] =
+            compare_group_member_target(before, after, target.get());
     }
     if selectors.group_context_changes {
         ensure!(
