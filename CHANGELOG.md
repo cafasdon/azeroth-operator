@@ -1,5 +1,7 @@
 # Changelog
 
+- List cached item rewards from quest lookup.
+
 - List cached items associated with NPC drops, vendors and object drops.
 
 - Resolve item-started and related quests from the local Forever cache.

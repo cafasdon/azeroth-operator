@@ -94,3 +94,6 @@ requested together.
 For NPCs and objects, `include_item_sources=true` returns `sourced_items`.
 Each group lists distinct matching items in numeric item ID order. The same
 offset applies across groups, with up to 32 items per group.
+
+For quests, the same option lists items whose cached `questRewards` field
+references the quest. The page uses the same item ID order and offset.

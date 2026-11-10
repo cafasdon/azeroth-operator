@@ -184,15 +184,17 @@ class World:
         if include_item_sources:
             if kind == 'item':
                 result['item_sources'] = None if row is None else self.item_sources(row['fields'], item_source_offset)
-            elif kind in ('npc', 'object'):
-                result['sourced_items'] = None if row is None else self.sourced_items(kind, entity_id, item_source_offset)
             else:
-                raise ValueError('Item sources require an item, NPC or object record')
+                result['sourced_items'] = None if row is None else self.sourced_items(kind, entity_id, item_source_offset)
         encoded(result)
         return result
 
     def sourced_items(self, kind, entity_id, offset):
-        fields = ('npcDrops', 'vendors') if kind == 'npc' else ('objectDrops',)
+        fields = {
+            'npc': ('npcDrops', 'vendors'),
+            'object': ('objectDrops',),
+            'quest': ('questRewards',),
+        }[kind]
         matches = {field: [] for field in fields}
         for key, (row, _, _) in self.records.items():
             if key[0] != 'item':
