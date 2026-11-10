@@ -497,6 +497,10 @@ missing links, incomplete modifier values and unresolved enchant or suffix
 references. The counts describe saved observations and do not gate ranking.
 The report also breaks down the counts by storage. Observed empty sections
 have empty counts, and unavailable sections are omitted from the breakdown.
+Use `--unresolved-item-limit` with a value from 1 to 50 to include those
+counts plus the first unresolved locations returned by the MCP. The shortlist
+includes item IDs, numeric locations and resolution statuses, with a flag
+when more rows are available.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.

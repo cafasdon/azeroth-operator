@@ -243,7 +243,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 stage_count = len(captured)
                 gap = launch(['--snapshot-id',gap_key,'--journal',str(base/'gap.sqlite'),
                               '--simulation-journal',str(base/'gap-results'),
-                              '--require-catalogue-coverage','--include-item-resolution-counts'])
+                              '--require-catalogue-coverage','--unresolved-item-limit','1'])
                 self.assertEqual(gap['simulation_stop_reason'],'catalogue_unmatched_items')
                 self.assertTrue(gap['catalogue_coverage_required'])
                 self.assertEqual(gap['inventory_evidence']['catalogue_unmatched_item_ids'],[4294967295])
@@ -256,11 +256,21 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                     'catalogue_item_unavailable':1,'item_link_unresolved':1,'resolved':1})
                 self.assertEqual(by_storage['character_bank'], {})
                 self.assertNotIn('account_bank', by_storage)
+                self.assertEqual(gap['preflight_unresolved_item_locations'], {
+                    'total_locations':2,'has_more':True,'locations':[
+                        {'storage':'bags','container':0,'slot':2,'item_id':4294967295,
+                         'resolution':'catalogue_item_unavailable'}]})
                 self.assertIsNone(gap['simulation'])
                 self.assertEqual(captured[stage_count:], [])
                 self.assertEqual(gap['collection']['windows_attempted'], 0)
                 self.assertFalse((base/'gap.sqlite').exists())
                 self.assertFalse((base/'gap-results').exists())
+                complete_shortlist = launch(['--snapshot-id',gap_key,'--journal',str(base/'gap.sqlite'),
+                    '--simulation-journal',str(base/'gap-results'),'--require-catalogue-coverage',
+                    '--unresolved-item-limit','50'])['preflight_unresolved_item_locations']
+                self.assertFalse(complete_shortlist['has_more'])
+                self.assertEqual(complete_shortlist['locations'][1], {
+                    'storage':'bags','container':0,'slot':3,'item_id':4549,'resolution':'item_link_unresolved'})
                 del captured[stage_count:]
                 self.assertEqual(runs.call_count,calls)
                 all_storage = '--require-all-storage-sections'

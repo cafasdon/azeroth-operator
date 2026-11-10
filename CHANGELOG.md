@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally shortlist unresolved owned-gear locations before planning.
+
 - Break down owned-gear simulator resolution counts by observed storage.
 
 - Optionally report simulator item resolution counts before collecting owned-gear plans.

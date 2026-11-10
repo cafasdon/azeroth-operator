@@ -93,7 +93,41 @@ async def selected_snapshot(args, deadline):
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
-async def catalogue_preflight(args, deadline, *, include_resolution_counts):
+def unresolved_item_locations(result, preflight, counts, storage_counts, limit):
+    for field in ('snapshot_id', 'catalogue_source', 'inventory_evidence'):
+        require(result[field] == preflight[field])
+    total = sum(counts.values()) - counts.get('resolved', 0)
+    require(integer(result['filtered_item_locations'], 0, 2**64-1) == total)
+    items = result['items']
+    require(isinstance(items, list) and len(items) == min(total, limit)
+            and result['has_more'] is (total > limit))
+    locations = []
+    seen = set()
+    sampled = Counter()
+    for item in items:
+        storage, slot, container = item['storage'], item['slot'], item['container']
+        status = item['simulator_item_resolution']
+        require(storage in storage_counts and status in ITEM_RESOLUTION_STATUSES and status != 'resolved')
+        require(isinstance(slot, str) and slot.isascii() and slot.isdecimal()
+                and len(slot) <= 4 and not slot.startswith('0'))
+        slot = integer(int(slot), 1, 19 if storage == 'equipment' else 1024)
+        if storage == 'equipment':
+            require(container is None)
+        else:
+            require(isinstance(container, str) and container.isascii() and container.isdecimal()
+                    and len(container) <= 2 and (container == '0' or not container.startswith('0')))
+            container = integer(int(container), 0, 64)
+        key = (storage, container, slot)
+        require(key not in seen)
+        seen.add(key)
+        sampled[storage, status] += 1
+        require(sampled[storage, status] <= storage_counts[storage].get(status, 0))
+        locations.append({'storage':storage,'container':container,'slot':slot,
+            'item_id':integer(item['observed']['item_id'], 1, 2**32-1),'resolution':status})
+    return {'total_locations':total,'has_more':total > limit,'locations':locations}
+
+
+async def catalogue_preflight(args, deadline, *, include_resolution_counts, unresolved_limit):
     ranker = collection.ranker
     require(monotonic() < deadline)
     async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
@@ -110,6 +144,7 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts):
                     evidence = checked_inventory_evidence(result['inventory_evidence'])
                     require(result['snapshot_id'] == args.snapshot_id and evidence is not None)
                     counts = storage_counts = None
+                    unresolved = None
                     if include_resolution_counts:
                         counts = result['simulator_item_resolution_counts']
                         require(isinstance(counts, dict) and counts.keys() <= ITEM_RESOLUTION_STATUSES)
@@ -134,7 +169,18 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts):
                             storage_counts[section] = section_counts
                             combined.update(section_counts)
                         require(dict(combined) == counts)
-                    return evidence, counts, storage_counts
+                    if unresolved_limit is not None:
+                        if sum(counts.values()) == counts.get('resolved', 0):
+                            unresolved = {'total_locations':0,'has_more':False,'locations':[]}
+                        else:
+                            shortlist = await session.call_tool('review_forever_owned_gear',
+                                {'snapshot_id':args.snapshot_id,'limit':unresolved_limit,
+                                 'simulator_input_resolved':False})
+                            require(not shortlist.isError and len(shortlist.content) == 1)
+                            unresolved = unresolved_item_locations(
+                                parse_report(shortlist.content[0].text.encode()), result,
+                                counts, storage_counts, unresolved_limit)
+                    return evidence, counts, storage_counts, unresolved
 
 
 async def execute(args):
@@ -142,6 +188,10 @@ async def execute(args):
     require_catalogue_coverage = getattr(args, "require_catalogue_coverage", False)
     include_resolution_counts = getattr(args, "include_item_resolution_counts", False)
     require(type(require_catalogue_coverage) is bool and type(include_resolution_counts) is bool)
+    unresolved_limit = getattr(args, 'unresolved_item_limit', None)
+    if unresolved_limit is not None:
+        integer(unresolved_limit, 1, 50)
+        include_resolution_counts = True
     args.candidate_scan_limit = collection.ranker.validate_candidate_scan_limit(getattr(args, 'candidate_scan_limit', 256))
     objective = simulation.ranking_objective(args)
     floor = simulation.encounter_improvement_floor(args)
@@ -198,10 +248,10 @@ async def execute(args):
     for field in ['item_id', 'set_id', 'storage', 'max_swaps', 'minimum_required_level',
         'maximum_required_level', 'observed_enchant_effect_id', 'observed_random_suffix_id']:
         setattr(args, field, None)
-    preflight = resolution_counts = storage_resolution_counts = None
+    preflight = resolution_counts = storage_resolution_counts = unresolved_items = None
     if require_catalogue_coverage or include_resolution_counts:
-        preflight, resolution_counts, storage_resolution_counts = await catalogue_preflight(args, deadline,
-            include_resolution_counts=include_resolution_counts)
+        preflight, resolution_counts, storage_resolution_counts, unresolved_items = await catalogue_preflight(
+            args, deadline, include_resolution_counts=include_resolution_counts, unresolved_limit=unresolved_limit)
     catalogue_gap = bool(require_catalogue_coverage and preflight['catalogue_unmatched_item_locations'])
     collection_deadline = min(deadline, monotonic() + args.collection_seconds)
     try:
@@ -282,6 +332,8 @@ async def execute(args):
     if include_resolution_counts:
         report['preflight_simulator_item_resolution_counts'] = resolution_counts
         report['preflight_simulator_item_resolution_counts_by_storage'] = storage_resolution_counts
+    if unresolved_limit is not None:
+        report['preflight_unresolved_item_locations'] = unresolved_items
     require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
     return report
 
@@ -308,6 +360,8 @@ def parser():
                      help='Check observed item catalogue coverage before collecting plans and require saved coverage evidence before simulation')
     cli.add_argument('--include-item-resolution-counts', action='store_true',
                      help='Report a preflight count of observed item locations by simulator resolution status')
+    cli.add_argument('--unresolved-item-limit', type=int,
+                     help='Include resolution counts and up to 50 unresolved observed locations before collecting plans')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')
