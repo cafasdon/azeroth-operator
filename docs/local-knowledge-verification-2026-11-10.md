@@ -384,3 +384,61 @@ confidence 0.94, request
 `e4d3a5e866b41ae113ea2025fe716cce7c734ad101fe99283417296add46c0aa`,
 582 input and 44 output tokens, 0.274 seconds. Author accepted bounded offline
 completion; live game testing and installation remain deferred.
+
+## Exact public record lookup workflow
+
+The optional companion exposes `get_forever_knowledge_record` and CLI `get`
+for exact keys returned by search or resolved references. Known keys return
+one pinned source row/hash and source identity; unknown/noncanonical keys
+return found false/record null, without similarity fallback. Enchant hashed
+variants and encounter path keys remain exact. Reference paging and the
+256 KiB combined cap are preserved. Every lookup, including unknown keys,
+validates the complete source-derived SQLite/FTS/vector index; no query is
+encoded or ranked. Source/model pins and owner/public boundaries are unchanged.
+
+Author real offline MCP test
+`$env:PYTHONPATH='.;tests'; python -m unittest test_forever_knowledge.KnowledgeTests.test_real_model_mcp_offline_retrieval_and_exact_provenance`
+passed in 27.489 seconds with network connection attempts blocked. It exercises
+all nine sections, duplicate effect-ID enchant variants, exact raw rows/hashes,
+noncanonical/unknown keys, strict invalid input, 43 edges over multiple pages
+and potion-to-effect traversal. Existing search and immutable-index checks pass.
+Pure synthetic test `test_exact_record_lookup_bounds_copy_and_no_encoding`
+passed in 0.013 seconds: no model property exists, index validation is invoked
+even for unknown keys, nested data copies are isolated, oversized replies reject,
+invalid UTF-8 byte lengths reject and validation failure propagates. Its mocked
+index plumbing is not independent proof of index integrity; actual MCP tests
+exercise that path. Actual CLI `get --record-key consumables:118 --include-references`
+returned found true and exact target `spell_effects:679187`. It used the pinned
+local model/index and did not rebuild or sync them. `git diff --check` passed.
+
+The installed registration remains search-only. This source/offline feature
+does not claim installed availability, native behaviour or full graph coverage;
+connection refresh, tool enablement, deployment and game tests remain deferred.
+
+Two independent review rounds, failure and callers/security-data lenses,
+requested gpt-6-astra high; resolved models/usage were not exposed. Failure
+review passed three scoped tests in 27.262 seconds and independently exercised
+exact keys, pages, invalids, mutation isolation, no encoding and corrupt index
+refusal for both known and unknown keys (changed records, FTS rows/index,
+vector and missing integrity table). Actual CLI matched the source. Callers
+review passed three focused synthetic tests in 0.028 seconds, real CLI and
+independent pinned-data/model-free exact-key and corrupt-unknown probes. It
+read back the saved registration's search-only allowlist; source enablement
+was not mistaken for installation.
+
+Round one found the canonical operation-policy paragraph still saying only
+search was exposed. Author reproduced that exact stale statement and corrected
+only that paragraph to list both read-only source tools, bounded inputs and
+outputs, retaining deferred local enablement. Jev 1.14.0 triage selected fix,
+confidence 0.98, request
+`7ada9e3aee56ccea89bfa9a894400ccb78208965883a1578bae57d46003cae1a`,
+453 input/46 output tokens, 0.276 seconds. Both round-two lenses checked the
+policy/doc references and diff; no actionable findings remained. No runtime
+rerun after the prose-only correction, because implementation/tests did not
+change. No reviewer builds, source writes, downloads, deployment or game actions.
+
+Jev 1.14.0 advisory shipping judgement selected ready, confidence 0.97,
+request `c8be99eef77b2ffa49f8d2318e62ac1f46d67ef654b02107ce3fab5907504d35`,
+656 input/44 output tokens, 0.282 seconds. Author accepted the complete bounded
+offline lookup/traversal feature on the direct tests and clean independent
+round. Installed availability and native qualification remain unproven.

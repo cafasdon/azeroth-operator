@@ -20,13 +20,15 @@ Model sync is explicit. Build, search and MCP serving use local data.
 The local ICARUS registration is named `azeroth-knowledge`. It allows
 only `search_forever_knowledge`, sets a 60-second startup allowance and
 a 30-second tool timeout, and supplies offline model/telemetry flags.
-The saved entry was launched independently through stdio and returned the
+That saved registration predates exact lookup and does not yet enable
+`get_forever_knowledge_record`; enabling it in the installed client remains
+deferred with deployment. The saved entry was launched independently through stdio and returned the
 expected catalogue IDs. A client must refresh its MCP connections to
 discover a newly registered server.
 
 For another MCP client, launch the second command from this repository's root,
 using absolute paths for the interpreter and all three configured inputs.
-Its tool is `search_forever_knowledge`. Allowed section filters are
+Its search tool is `search_forever_knowledge`. Allowed section filters are
 `items`, `npcs`, `zones`, `factions`, `consumables`, `enchants`,
 `random_suffixes`, `spell_effects` and `encounters`. Limit is 1–20.
 Use returned section and record IDs with the main catalogue tools for
@@ -111,3 +113,28 @@ is a different namespace. The filter composes with item IDs, key, group and
 saved base-item presence, with normal 20-record pagination. It cannot be used
 with restock targets or other sections. Its evidence does not establish equal
 performance, native behaviour or current usability.
+
+## Exact record lookup and reference traversal
+
+The source companion also exposes `get_forever_knowledge_record`. Supply an
+exact `record_key` returned by search or a resolved reference. It returns
+`found: true` and one `record` containing the exact pinned catalogue row/hash,
+section, identity, name and document hash. No similarity score or name-based
+fallback is used. Unknown or noncanonical keys return `found: false` and
+`record: null`; an enchant effect ID alone cannot select a hashed variant.
+
+Use `include_references` and `reference_offset` with the same 32-edge pages,
+uint32 offsets and 256 KiB response limit as search. Each call validates the
+complete existing index, including unknown-key lookups, but does not encode a
+query. This is retrieval of public source records; ownership, legality,
+current availability and native behaviour remain unverified. No new index,
+sync or model download is required. Service startup still loads its local model.
+
+```powershell
+./.venv/Scripts/python.exe -m tools.forever_knowledge get --catalogue local-data/forever/catalogue.json --index local-data/knowledge/index.sqlite --model local-data/knowledge-model --record-key consumables:118 --include-references
+```
+
+For example, follow the resulting `spell_effects:679187` reference with another
+exact lookup. Use the source revision and record hashes to retain provenance
+across steps. Connection refresh and enabling the additional tool in an
+installed client's allowlist remain separate from source/offline verification.

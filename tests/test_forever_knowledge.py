@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -18,6 +19,31 @@ from test_snapshots import fixture
 
 
 class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_exact_record_lookup_bounds_copy_and_no_encoding(self):
+        instance=object.__new__(knowledge.Knowledge)
+        instance.rows=[];instance.index=Path('synthetic-unused.sqlite')
+        instance.source_records={'consumables:1':{'id':1,'name':'Public','effectIds':[7]},
+            'spell_effects:7':{'id':7,'spellId':99}}
+        rows=[('consumables:1','consumables',1,'Public','body','digest',b'')]
+        # Retrieval plumbing is mocked here; actual MCP test exercises pinned index validation.
+        with patch.object(knowledge,'connect',side_effect=lambda _:sqlite3.connect(':memory:')), \
+                patch.object(knowledge,'checked_records',return_value=rows) as validate:
+            result=instance.get_record('consumables:1',True)
+            self.assertTrue(result['found'])
+            self.assertEqual(result['record']['catalogue_references']['references'][0]['record_key'],'spell_effects:7')
+            result['record']['catalogue_record']['effectIds'][0]=99
+            self.assertEqual(instance.get_record('consumables:1')['record']['catalogue_record']['effectIds'],[7])
+            self.assertFalse(instance.get_record('consumables:01')['found'])
+            self.assertEqual(validate.call_count,3)
+            instance.source_records['consumables:1']['name']='x'*(256*1024)
+            with self.assertRaisesRegex(ValueError,'byte limit'):
+                instance.get_record('consumables:1')
+            validate.side_effect=ValueError('Corrupt index')
+            with self.assertRaisesRegex(ValueError,'Corrupt index'):
+                instance.get_record('unknown')
+        for key in [None,True,1,[],{},'', 'é'*257]:
+            with self.assertRaises(ValueError):instance.get_record(key)
+
     async def test_norm_validation_preserves_scalar_boundary_and_corruption_rejection(self):
         root = Path(__file__).resolve().parents[1]
         index = root / 'local-data/knowledge/index.sqlite'
@@ -85,10 +111,57 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                 async with ClientSession(read, write, read_timeout_seconds=None) as session:
                     await asyncio.wait_for(session.initialize(), 60)
                     tools = await session.list_tools()
-                    self.assertEqual([tool.name for tool in tools.tools], ['search_forever_knowledge'])
-                    tool = tools.tools[0]
+                    self.assertEqual({tool.name for tool in tools.tools},
+                        {'search_forever_knowledge','get_forever_knowledge_record'})
+                    tool = next(t for t in tools.tools if t.name == 'search_forever_knowledge')
                     self.assertTrue(tool.annotations.readOnlyHint)
                     self.assertFalse(tool.annotations.openWorldHint)
+                    exact_tool=next(t for t in tools.tools if t.name=='get_forever_knowledge_record')
+                    self.assertTrue(exact_tool.annotations.readOnlyHint)
+                    self.assertFalse(exact_tool.annotations.openWorldHint)
+                    exact_keys=[next(k for k,r in expected.items() if r[1]==section) for section in knowledge.SECTIONS]
+                    exact_keys.extend(k for k,r in expected.items() if r[1]=='enchants' and r[2]==41)
+                    exact_keys.extend(['consumables:118','spell_effects:679187'])
+                    for key in exact_keys:
+                        reply=await session.call_tool('get_forever_knowledge_record',{'record_key':key})
+                        self.assertFalse(reply.isError,reply)
+                        result=json.loads(reply.content[0].text)
+                        self.assertTrue(result['found']);self.assertFalse(result['live'])
+                        row=result['record'];self.assertEqual(row['record_key'],key)
+                        self.assertNotIn('retrieval_score',row);self.assertNotIn('catalogue_references',row)
+                        source_section,field=knowledge.SOURCES[row['section']]
+                        source=next(r for r in raw_catalogue[source_section]
+                            if knowledge.record_key(row['section'],r,field)==key)
+                        self.assertEqual(row['catalogue_record'],source)
+                        self.assertEqual(row['catalogue_record_sha256'],knowledge.digest(knowledge.encoded(source).encode()))
+                    for key in ['items:4294967295','items:0118','consumables:118 ', 'enchants:41','../../private']:
+                        reply=await session.call_tool('get_forever_knowledge_record',{'record_key':key})
+                        self.assertFalse(reply.isError,reply)
+                        result=json.loads(reply.content[0].text)
+                        self.assertFalse(result['found']);self.assertIsNone(result['record'])
+                    for args in [{'record_key':''},{'record_key':'x'*513},{'record_key':True},
+                            {'record_key':'items:14270','reference_offset':32},
+                            {'record_key':'items:14270','include_references':1},
+                            {'record_key':'items:14270','reference_offset':True},
+                            {'record_key':'items:14270','include_references':True,'reference_offset':-1}]:
+                        reply=await session.call_tool('get_forever_knowledge_record',args)
+                        self.assertTrue(reply.isError,reply)
+                    pages=[]
+                    for offset in [0,32,64]:
+                        reply=await session.call_tool('get_forever_knowledge_record',{
+                            'record_key':'items:14270','include_references':True,'reference_offset':offset})
+                        self.assertFalse(reply.isError,reply)
+                        row=json.loads(reply.content[0].text)['record']
+                        pages.extend(row['catalogue_references']['references'])
+                    self.assertEqual(len(pages),43)
+                    reply=await session.call_tool('get_forever_knowledge_record',{
+                        'record_key':'consumables:118','include_references':True})
+                    edge=json.loads(reply.content[0].text)['record']['catalogue_references']['references'][0]
+                    reply=await session.call_tool('get_forever_knowledge_record',{'record_key':edge['record_key']})
+                    self.assertFalse(reply.isError,reply)
+                    followed=json.loads(reply.content[0].text)['record']
+                    self.assertEqual(followed['catalogue_record'],edge['catalogue_record'])
+                    self.assertEqual(followed['catalogue_record_sha256'],edge['catalogue_record_sha256'])
                     for query, section in [('Garb of Thero-shan', 'items'), ('restore my health', 'consumables'),
                                            ('" OR * NOT (', 'zones'), ('Inferior Stamina', 'enchants'),
                                            ('of the Eagle', 'random_suffixes'), ('437', 'spell_effects'),

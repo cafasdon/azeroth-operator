@@ -357,14 +357,39 @@ class Knowledge:
                 raise ValueError('Source record response exceeds byte limit')
         return result
 
+    def get_record(self, key, include_references=False, reference_offset=0):
+        """Follow an exact returned public record key, without similarity fallback."""
+        if (type(key) is not str or not key or len(key.encode()) > 512
+                or type(include_references) is not bool
+                or type(reference_offset) is not int or not 0 <= reference_offset <= 2**32-1
+                or reference_offset and not include_references):
+            raise ValueError('Invalid public record lookup')
+        with closing(connect(self.index)) as database:
+            records = checked_records(database, self.rows)
+        row = next((row for row in records if row[0] == key), None)
+        result = {**metadata(), 'source_revision': PIN['revision'],
+                  'retrieval_only': True, 'live': False, 'found': row is not None, 'record': None}
+        if row is not None:
+            source = encoded(self.source_records[key])
+            record = {'section': row[1], 'record_id': row[2], 'record_key': key,
+                      'name': row[3], 'document_sha256': row[5],
+                      'catalogue_record': json.loads(source), 'catalogue_record_sha256': digest(source.encode())}
+            if include_references:
+                record['catalogue_references'] = self.references(key, reference_offset)
+            result['record'] = record
+        if len(encoded(result).encode()) > 256 * 1024:
+            raise ValueError('Source record response exceeds byte limit')
+        return result
+
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument('action', choices=('build', 'search', 'serve'))
+    cli.add_argument('action', choices=('build', 'search', 'get', 'serve'))
     cli.add_argument('--catalogue', type=Path, required=True)
     cli.add_argument('--index', type=Path, required=True)
     cli.add_argument('--model', type=Path, required=True)
     cli.add_argument('--query')
+    cli.add_argument('--record-key')
     cli.add_argument('--section', choices=SECTIONS)
     cli.add_argument('--limit', type=int, default=10)
     cli.add_argument('--include-records', action='store_true')
@@ -376,6 +401,9 @@ def main():
         print(encoded(build(args.catalogue, args.index, args.model)))
         return
     knowledge = Knowledge(args.catalogue, args.index, args.model)
+    if args.action == 'get':
+        print(encoded(knowledge.get_record(args.record_key, args.include_references, args.reference_offset)))
+        return
     if args.action == 'search':
         print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records, args.item_ids,
                                        args.include_references, args.reference_offset)))
@@ -384,6 +412,15 @@ def main():
     from mcp.types import ToolAnnotations
     from pydantic import StrictBool, StrictInt
     server = FastMCP('Azeroth Public Knowledge')
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False))
+    def get_forever_knowledge_record(record_key: str, include_references: StrictBool = False,
+                                     reference_offset: StrictInt = 0) -> dict:
+        """Get an exact public record_key returned by knowledge search or a resolved reference. No name or similarity fallback: unknown keys return found false and record null. Returns the exact pinned row and SHA-256. include_references adds up to 32 direct edges, paged by uint32 reference_offset; nonzero offset requires references. Reply capped at 256 KiB; public data only, no ownership, legality or live-state claim."""
+        try:
+            return knowledge.get_record(record_key, include_references, reference_offset)
+        except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
+            raise ValueError('Public knowledge index or query unavailable or invalid') from None
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False))
     def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10,

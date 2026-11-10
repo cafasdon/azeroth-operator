@@ -1,5 +1,7 @@
 # Changelog
 
+- Add exact public knowledge record lookup and paged reference traversal without similarity fallback.
+
 - Find consumable alternatives by exact shared catalogue effect record ID, with normal filters and paging.
 
 - Attach exact local spell-effect records to explicit consumable effect references in hybrid search.

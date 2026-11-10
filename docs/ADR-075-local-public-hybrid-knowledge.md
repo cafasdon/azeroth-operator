@@ -20,11 +20,21 @@ and all FTS shadow tables, including content row identities.
 Unrecognised or malformed index identity metadata is rejected, preserving
 the configured file. Additional model assets are rejected before loading.
 
-The optional stdio MCP companion exposes one read-only search tool.
+The optional stdio MCP companion exposes read-only search and exact-record tools.
 Paths are startup configuration, and queries cannot select files, models,
 network endpoints or snapshot stores. Retrieval returns candidate record
 IDs, names, provenance and retrieval scores. These scores do not estimate
 gear quality or establish any missing game facts.
+
+Exact lookup (10 November) follows returned `record_key` values through
+`get_forever_knowledge_record` or CLI `get`. It preserves hashed enchant
+variants and encounter path identities, validates the same complete index,
+and returns exact source rows/hashes without query encoding or ranking.
+Unknown keys return an explicit absent result without fuzzy fallback. Optional
+direct reference pages retain the same limits and unknowns as search.
+It adds no file-selection input or private-data ingestion. The previously
+saved local registration still enables search only; enabling the new tool
+in that client and any deployment remain deferred.
 
 The current corpus has names and catalogue source references. Rich quest
 text, guides, additional world records and user-specific text require
