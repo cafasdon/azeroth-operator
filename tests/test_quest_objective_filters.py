@@ -656,6 +656,24 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     duplicate=json.loads(reply.content[0].text)['merchant_currency_offer_comparison']['bundles'][0]
                     self.assertEqual(duplicate['after'],{'status':'ambiguous'})
                     self.assertIsNone(duplicate['price_copper_delta'])
+                    extended=deepcopy(merchant)
+                    offer=extended['sections']['merchant_stock']['1']
+                    item_cost={'item_id':858,'quantity':2}
+                    currency_cost={'currency_name':'Fixture Token','quantity':3}
+                    offer.update(extended_cost=True,cost_components={'1':currency_cost,'2':item_cost})
+                    extended_key=ingest_currency_fixture(extended)
+                    expected_costs=[currency_cost,item_cost]
+                    added=await compare_offer(merchant_key,extended_key,118)
+                    self.assertEqual(added['bundles'][0]['extended_cost_comparison'],{
+                        'before':[],'after':expected_costs,'recorded_components_changed':True})
+                    offer['cost_components']={'1':item_cost,'2':currency_cost}
+                    reordered=await compare_offer(extended_key,ingest_currency_fixture(extended),118)
+                    self.assertEqual(reordered['bundles'][0]['extended_cost_comparison'],{
+                        'before':expected_costs,'after':expected_costs,'recorded_components_changed':False})
+                    del offer['cost_components']
+                    unknown=await compare_offer(extended_key,ingest_currency_fixture(extended),118)
+                    self.assertEqual(unknown['bundles'][0]['extended_cost_comparison'],{
+                        'before':expected_costs,'after':None,'recorded_components_changed':None})
                     reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':9})
                     self.assertFalse(reply.isError,reply)
                     quantities=json.loads(reply.content[0].text)['quest_change']['objective_quantities_by_kind']

@@ -3251,6 +3251,12 @@ side. Merchant identity and current prices remain unverified.
 bundles in the same way. Item and currency selectors can be used together.
 Offers remain separate even when the IDs and bundle sizes match.
 
+If either unique offer reports an extended cost, the bundle comparison
+includes the recorded item and currency components on both sides. A
+copper-only offer has an empty component list. Missing, ambiguous or
+unreadable components remain unknown. Component ordering does not count
+as a change.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

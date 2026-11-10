@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare recorded item and currency costs in saved merchant bundles.
+
 - Compare saved Forever merchant bundle prices for a specific currency.
 
 - Compare saved Forever merchant bundle prices for a specific item.

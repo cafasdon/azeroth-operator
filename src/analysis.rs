@@ -6142,7 +6142,19 @@ fn compare_merchant_product_offers(
                 .as_i64()
                 .zip(current["price_copper"].as_i64())
                 .map(|(a, b)| b - a);
-            json!({"bundle_size":size,"before":previous,"after":current,"price_copper_delta":delta})
+            let mut bundle = json!({"bundle_size":size,"before":previous,"after":current,"price_copper_delta":delta});
+            if bundle["before"]["extended_cost"] == true || bundle["after"]["extended_cost"] == true {
+                let key = (kind, u64::from(id), size);
+                let before_costs = before.as_ref().and_then(|offers| offers.get(&key))
+                    .copied().flatten().and_then(merchant_offer_costs);
+                let after_costs = after.as_ref().and_then(|offers| offers.get(&key))
+                    .copied().flatten().and_then(merchant_offer_costs);
+                let changed = before_costs.as_ref().zip(after_costs.as_ref())
+                    .map(|(a,b)| a != b);
+                bundle["extended_cost_comparison"] =
+                    json!({"before":before_costs,"after":after_costs,"recorded_components_changed":changed});
+            }
+            bundle
         })
         .collect();
     json!({(format!("{kind}_id")):id,"before_observed":before.is_some(),"after_observed":after.is_some(),
@@ -6150,26 +6162,27 @@ fn compare_merchant_product_offers(
         "merchant_identity_verified":false,"current_price_verified":false})
 }
 
-fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Value)> {
-    fn costs(offer: &Value) -> Option<Vec<&Value>> {
-        if offer["extended_cost"] == false {
-            return Some(Vec::new());
-        }
-        let mut rows: Vec<_> = offer["cost_components"].as_object()?.values().collect();
-        rows.sort_unstable_by(|a, b| {
-            (
-                a["item_id"].as_u64(),
-                a["currency_name"].as_str(),
-                a["quantity"].as_u64(),
-            )
-                .cmp(&(
-                    b["item_id"].as_u64(),
-                    b["currency_name"].as_str(),
-                    b["quantity"].as_u64(),
-                ))
-        });
-        Some(rows)
+fn merchant_offer_costs(offer: &Value) -> Option<Vec<&Value>> {
+    if offer["extended_cost"] == false {
+        return Some(Vec::new());
     }
+    let mut rows: Vec<_> = offer["cost_components"].as_object()?.values().collect();
+    rows.sort_unstable_by(|a, b| {
+        (
+            a["item_id"].as_u64(),
+            a["currency_name"].as_str(),
+            a["quantity"].as_u64(),
+        )
+            .cmp(&(
+                b["item_id"].as_u64(),
+                b["currency_name"].as_str(),
+                b["quantity"].as_u64(),
+            ))
+    });
+    Some(rows)
+}
+
+fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Value)> {
     let previous = merchant_offers_by_product(before)?;
     let current = merchant_offers_by_product(after)?;
     let observed_only =
@@ -6186,7 +6199,7 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Valu
         let (old, new) = old.zip(current.get(&(kind, id, size)).copied().flatten())?;
         let old_price = old["price_copper"].as_i64()?;
         let new_price = new["price_copper"].as_i64()?;
-        let (old_costs, new_costs) = (costs(old), costs(new));
+        let (old_costs, new_costs) = (merchant_offer_costs(old), merchant_offer_costs(new));
         let components_changed = old_costs != new_costs;
         (old_price != new_price || old["available"] != new["available"]
             || old["extended_cost"] != new["extended_cost"] || components_changed).then(|| {
