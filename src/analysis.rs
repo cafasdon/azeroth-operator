@@ -11230,18 +11230,19 @@ pub fn quest_ready_waypoint_groups(
     quests: &serde_json::Map<String, Value>,
     include_wallet_projection: bool,
     wallet: Option<&Value>,
+    timed_at: Option<chrono::DateTime<chrono::Utc>>,
 ) -> Value {
     let mut by_map = BTreeMap::<u64, BTreeSet<u32>>::new();
     let mut without_map = BTreeSet::new();
-    let mut wallet_rows = BTreeMap::<Option<u64>, Vec<_>>::new();
+    let mut grouped_rows = BTreeMap::<Option<u64>, Vec<_>>::new();
     for (key, quest) in quests {
         if quest_readiness(quest) != QuestReadiness::Ready {
             continue;
         }
         let Ok(id) = key.parse::<u32>() else { continue };
         let map = quest["next_waypoint_map_id"].as_u64();
-        if include_wallet_projection {
-            wallet_rows.entry(map).or_default().push((key, quest));
+        if include_wallet_projection || timed_at.is_some() {
+            grouped_rows.entry(map).or_default().push((key, quest));
         }
         if let Some(map) = map {
             by_map.entry(map).or_default().insert(id);
@@ -11251,18 +11252,36 @@ pub fn quest_ready_waypoint_groups(
     }
     let mut result = json!({"quest_ids_by_waypoint_map":by_map,"quest_ids_without_waypoint_map":without_map,
         "turn_in_location_verified":false});
+    let without_map = grouped_rows.remove(&None);
     if include_wallet_projection {
-        let without_map = wallet_rows.remove(&None);
-        let by_map: BTreeMap<_, _> = wallet_rows
-            .into_iter()
+        let by_map: BTreeMap<_, _> = grouped_rows
+            .iter()
             .filter_map(|(map, rows)| {
-                Some((map?, quest_rows_wallet_projection(rows.into_iter(), wallet)))
+                Some((
+                    (*map)?,
+                    quest_rows_wallet_projection(rows.iter().copied(), wallet),
+                ))
             })
             .collect();
         result["wallet_projection"] = json!({
             "by_waypoint_map":by_map,
-            "without_waypoint_map":without_map.map(|rows| quest_rows_wallet_projection(rows.into_iter(), wallet)),
+            "without_waypoint_map":without_map.as_ref().map(|rows| quest_rows_wallet_projection(rows.iter().copied(), wallet)),
             "groups_evaluated_independently":true
+        });
+    }
+    if let Some(captured_at) = timed_at {
+        let by_map: BTreeMap<_, _> = grouped_rows
+            .into_iter()
+            .filter_map(|(map, rows)| {
+                Some((
+                    map?,
+                    timed_quest_rows_checklist(rows.into_iter(), captured_at),
+                ))
+            })
+            .collect();
+        result["timed_checklist"] = json!({
+            "by_waypoint_map":by_map,
+            "without_waypoint_map":without_map.map(|rows| timed_quest_rows_checklist(rows.into_iter(), captured_at))
         });
     }
     result
@@ -11292,8 +11311,15 @@ pub fn timed_quest_checklist(
     quests: &serde_json::Map<String, Value>,
     captured_at: chrono::DateTime<chrono::Utc>,
 ) -> Value {
+    timed_quest_rows_checklist(quests.iter(), captured_at)
+}
+
+fn timed_quest_rows_checklist<'a>(
+    quests: impl ExactSizeIterator<Item = (&'a String, &'a Value)>,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Value {
+    let quest_count = quests.len();
     let mut timed: Vec<_> = quests
-        .iter()
         .filter_map(|(id, quest)| {
             Some((
                 quest["timer"]["remaining_seconds"].as_i64()?,
@@ -11316,7 +11342,7 @@ pub fn timed_quest_checklist(
     let ready_count = usize::from(first_ready.is_some()) + ready.count();
     json!({"entries":entries,"recorded_timer_count":timed.len(),
         "ready_for_turn_in_at_capture_count":ready_count,"first_ready_for_turn_in_at_capture":first_ready,
-        "quest_count_without_recorded_timer":quests.len()-timed.len(),
+        "quest_count_without_recorded_timer":quest_count-timed.len(),
         "truncated":timed.len()>entries.len(),"current_status_verified":false})
 }
 

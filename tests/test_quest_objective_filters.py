@@ -362,6 +362,17 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(map_budget['known_required_copper'],2)
                     self.assertTrue(map_budget['all_costs_fit_wallet_without_rewards'])
                     self.assertEqual(map_budget['unknown_reward_count'],1)
+                    combined = await query(snapshot_id=tied_key,quest_list_ready_waypoint_groups=True,
+                        quest_list_timed_checklist=True,quest_list_wallet_projection=True)
+                    grouped = combined['quest_ready_waypoint_groups']
+                    self.assertEqual(grouped['wallet_projection'],grouped_budget)
+                    self.assertEqual(set(grouped['timed_checklist']['by_waypoint_map']),{'1414'})
+                    group_timer = grouped['timed_checklist']['by_waypoint_map']['1414']
+                    self.assertEqual(group_timer['entries'],[
+                        combined['timed_quest_checklist']['first_ready_for_turn_in_at_capture']])
+                    self.assertEqual(group_timer['entries'][0]['quest_id'],3)
+                    self.assertEqual(group_timer['recorded_timer_count'],1)
+                    self.assertIsNone(grouped['timed_checklist']['without_waypoint_map'])
                     unmapped = (await query(quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups']
                     self.assertEqual(unmapped['quest_ids_without_waypoint_map'],[3])
                     self.assertEqual(unmapped['quest_ids_by_waypoint_map'],{})
@@ -369,6 +380,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         quest_list_wallet_projection=True))['quest_ready_waypoint_groups']['wallet_projection']
                     self.assertEqual(unmapped_budget['by_waypoint_map'],{})
                     self.assertEqual(unmapped_budget['without_waypoint_map']['unknown_cost_count'],1)
+                    unmapped_timers = (await query(quest_list_ready_waypoint_groups=True,
+                        quest_list_timed_checklist=True))['quest_ready_waypoint_groups']['timed_checklist']
+                    self.assertEqual(unmapped_timers['by_waypoint_map'],{})
+                    self.assertEqual(unmapped_timers['without_waypoint_map']['entries'][0]['quest_id'],3)
                     self.assertIsNone((await query(snapshot_id=missing,
                         quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups'])
                     await query(error=True,quest_list_ready_waypoint_groups=True,quest_id=3)

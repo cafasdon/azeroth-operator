@@ -5844,18 +5844,23 @@ impl Operator {
                                 projected_expiries
                             }));
                     }
+                    let timed_at = args
+                        .quest_list_timed_checklist
+                        .then(|| {
+                            value["captured_at"]
+                                .as_str()?
+                                .parse::<chrono::DateTime<chrono::Utc>>()
+                                .ok()
+                        })
+                        .flatten();
                     if args.quest_list_timed_checklist {
                         value["timed_quest_checklist"] = serde_json::json!(
-                            data.as_object()
-                                .zip(value["captured_at"].as_str().and_then(|text| {
-                                    text.parse::<chrono::DateTime<chrono::Utc>>().ok()
-                                }))
-                                .map(|(quests, captured_at)| {
-                                    azeroth_operator::analysis::timed_quest_checklist(
-                                        quests,
-                                        captured_at,
-                                    )
-                                })
+                            data.as_object().zip(timed_at).map(|(quests, captured_at)| {
+                                azeroth_operator::analysis::timed_quest_checklist(
+                                    quests,
+                                    captured_at,
+                                )
+                            })
                         );
                     }
                     if args.quest_list_objective_checklist {
@@ -5874,6 +5879,7 @@ impl Operator {
                                     quests,
                                     args.quest_list_wallet_projection,
                                     wallet,
+                                    timed_at,
                                 )
                             }));
                     }

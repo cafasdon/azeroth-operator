@@ -8,6 +8,10 @@ The next waypoint is a map hint and does not verify the turn-in location.
 Combine it with `quest_list_wallet_projection` for saved coin costs,
 rewards and wallet projections per map and for the unmapped group.
 Each group starts from the same saved wallet balance.
+Combine the waypoint groups with `quest_list_timed_checklist` to see
+the earliest saved timers within each ready group, including unmapped
+quests. Each group shows at most 20 timers and counts ready quests
+without a recorded timer.
 
 Use `quest_readiness_changes` on `compare_snapshots` to see which shared
 quests switched between explicitly not ready and ready, or switched from
