@@ -1,5 +1,7 @@
 # Changelog
 
+- Retain saved condition readings for equipped replacement candidates during draft revalidation.
+
 - Compare saved equipped source-slot condition when revalidating an equipment draft.
 
 - Show captured source and target slot conditions in Forever equipment selection reviews.

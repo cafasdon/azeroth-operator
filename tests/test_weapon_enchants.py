@@ -267,6 +267,7 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     newer=deepcopy(value)
                     newer['captured_at']='2025-01-04T00:00:00Z'
                     newer['sections']['equipment_durability']['entries']['16']['current']=35
+                    newer['sections']['equipment_durability']['entries']['17']={'current':8,'maximum':40}
                     newer['sections']['weapon_enchants']['hands']['main_hand']['entries']={}
                     for item_id, status, expected in (
                         (123,'same_item_id_link_unknown',{'durability':{'current':35,'maximum':40},
@@ -285,6 +286,16 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(observation['status'],status)
                         self.assertEqual(observation['captured_source_slot_conditions'],
                                          {'before':main_hand,'after':expected})
+                        if status != 'same_item_id_link_unknown':
+                            candidates=observation['same_base_item_candidates']['locations']
+                            self.assertEqual({
+                                (row['storage'],row['slot']):row['observed_equipped_durability']
+                                for row in candidates if 'observed_equipped_durability' in row
+                            },{('equipment','17'):{'current':8,'maximum':40}})
+                            self.assertEqual({
+                                (row['storage'],row['slot']):row['observed_weapon_hand_enchants']
+                                for row in candidates if 'observed_weapon_hand_enchants' in row
+                            },{('equipment','17'):{'hand':'off_hand','entries':{}}})
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'weapon_enchants'})
                         self.assertTrue(response.isError);self.assertNotIn('PRIVATE',response.content[0].text)

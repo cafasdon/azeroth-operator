@@ -20,6 +20,9 @@ When revalidating a draft with `compare_source_locations_snapshot_id`,
 for an equipped source slot. A reading is attached only when the slot was
 occupied in that capture. The pair describes the slot, even if the item ID
 changed.
+Equipped rows in `same_base_item_candidates` also carry any observed
+durability and weapon-hand enchant data from the newer capture. These
+readings describe each candidate location.
 
 Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
 characters within an inclusive XP budget. Matching rows report their saved

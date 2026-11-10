@@ -151,11 +151,17 @@ pub fn compare_equipment_sources(
                             };
                             container.get(location["slot"].as_str()?)
                         });
-                        json!({
+                        let mut candidate = json!({
                             "storage":location["storage"],"container":location["container"],
                             "slot":location["slot"],"count":location["count"],
                             "saved_link_matches_original":compare_item_links(before, observed)
-                        })
+                        });
+                        for field in ["observed_equipped_durability", "observed_weapon_hand_enchants"] {
+                            if let Some(value) = location.get(field) {
+                                candidate[field] = value.clone();
+                            }
+                        }
+                        candidate
                     }).collect::<Vec<_>>(),
                     "matched_locations": matches["matched_locations"],
                     "exact_saved_link_location_count": matches["exact_saved_link_location_count"],
