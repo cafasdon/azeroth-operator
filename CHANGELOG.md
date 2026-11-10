@@ -1,5 +1,7 @@
 # Changelog
 
+- Check saved profession trainer lesson prices against wallet copper after a reserve.
+
 - Find saved professions within a rank-point budget or their recorded cap.
 
 - Page through unresolved gear locations in the standalone Forever inventory audit.

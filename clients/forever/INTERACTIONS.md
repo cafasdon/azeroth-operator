@@ -1,5 +1,11 @@
 # Forever interaction map
 
+With `profession_target_trainer_lessons` on a saved profession inspection,
+set `profession_target_trainer_reserve_copper` to check each projected
+lesson's saved quote against the saved wallet while preserving a reserve.
+Each quote is evaluated separately. Missing prices or wallet observations
+leave the combined shortfall unknown.
+
 Use `profession_target_max_remaining` on `list_snapshots` with a
 `profession_skill_line` and `profession_target_rank` to find saved
 professions within an inclusive rank-point budget. Add

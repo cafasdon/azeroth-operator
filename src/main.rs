@@ -433,6 +433,8 @@ struct Inspect {
     /// Include same-capture trainer thresholds between the saved profession rank and target.
     #[serde(default)]
     profession_target_trainer_lessons: bool,
+    /// Preserve this much saved wallet copper when pricing each projected profession lesson.
+    profession_target_trainer_reserve_copper: Option<u64>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Find this base or reported spell ID in the saved Forever spellbook section.
@@ -3543,6 +3545,16 @@ impl Operator {
                 "Profession trainer lesson review requires a profession rank target",
             )]);
         }
+        if args
+            .profession_target_trainer_reserve_copper
+            .is_some_and(|reserve| {
+                !args.profession_target_trainer_lessons || reserve > 9_999_999_999_999
+            })
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "A profession trainer reserve requires lesson review and a valid copper amount",
+            )]);
+        }
         if args.reputation_points_per_turn_in.is_some() && args.faction_id.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Reputation turn-in estimates require an exact faction",
@@ -6544,7 +6556,8 @@ impl Operator {
                                         snapshot
                                             .sections
                                             .get("wallet")
-                                            .and_then(|wallet| wallet["copper"].as_u64())
+                                            .and_then(|wallet| wallet["copper"].as_u64()),
+                                        args.profession_target_trainer_reserve_copper
                                     )
                                 );
                             }

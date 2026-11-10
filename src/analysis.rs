@@ -10471,6 +10471,7 @@ pub fn profession_target_trainer_lessons(
     target: u32,
     trainer: Option<&Value>,
     wallet_copper: Option<u64>,
+    reserve_copper: Option<u64>,
 ) -> Option<Vec<Value>> {
     let profession = profession?;
     let name = profession["name"]
@@ -10494,13 +10495,27 @@ pub fn profession_target_trainer_lessons(
         let slot = slot.parse::<u32>().ok()?;
         let quote = lesson["price_copper"].as_u64().zip(wallet_copper);
         (skill["name"].as_str() == Some(name) && rank < required && required <= u64::from(target))
-            .then(|| (required, slot, json!({"slot":slot,"name":lesson["name"],
+            .then(|| {
+                let mut result = json!({"slot":slot,"name":lesson["name"],
                 "required_rank":required,"points_to_required_rank":required-rank,
                 "required_rank_above_observed_cap":cap.map(|cap| required > cap),
                 "captured_status":lesson["status"],
                 "price_within_captured_wallet":quote.map(|(price, wallet)| price <= wallet),
                 "price_shortfall_copper":quote.map(|(price, wallet)| price.saturating_sub(wallet)),
-                "captured_skill_requirement_met":skill["met"],"price_copper":lesson["price_copper"]})))
+                "captured_skill_requirement_met":skill["met"],"price_copper":lesson["price_copper"]});
+                if let Some(reserve) = reserve_copper {
+                    let shortfall = quote.and_then(|(price, wallet)| reserved_balance_shortfall(price, wallet, reserve));
+                    let reserve_covered = wallet_copper.map(|wallet| wallet >= reserve);
+                    result["after_reserve"] = json!({
+                        "reserve_copper":reserve,
+                        "reserve_covered":reserve_covered,
+                        "price_affordable":if reserve_covered == Some(false) { Some(false) }
+                            else { shortfall.map(|amount| amount == 0) },
+                        "price_and_reserve_shortfall_copper":shortfall
+                    });
+                }
+                (required, slot, result)
+            })
     }).collect();
     lessons.sort_unstable_by_key(|(required, slot, _)| (*required, *slot));
     Some(lessons.into_iter().map(|(_, _, lesson)| lesson).collect())

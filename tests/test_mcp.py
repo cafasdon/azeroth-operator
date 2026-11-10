@@ -1002,6 +1002,27 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertFalse(response.isError, response)
                             self.assertEqual(json.loads(response.content[0].text)
                                              ["profession_target_trainer_lessons"], expected)
+                        reserved_lesson = {
+                            "snapshot_id": training_key, "section": "professions",
+                            "profession_skill_line": 165, "profession_target_rank": 80,
+                            "profession_target_trainer_lessons": True,
+                        }
+                        for reserve, covered, shortfall in [(0, True, 1), (10, True, 11), (12, False, 13)]:
+                            response = await session.call_tool("inspect_snapshot", {
+                                **reserved_lesson, "profession_target_trainer_reserve_copper": reserve,
+                            })
+                            self.assertFalse(response.isError, response)
+                            lesson = json.loads(response.content[0].text)["profession_target_trainer_lessons"][0]
+                            self.assertEqual(lesson["after_reserve"], {
+                                "reserve_copper":reserve, "reserve_covered":covered, "price_affordable":False,
+                                "price_and_reserve_shortfall_copper":shortfall,
+                            })
+                        for invalid in [{"profession_target_trainer_lessons": False}, {
+                            "profession_target_trainer_reserve_copper": 10_000_000_000_000,
+                        }]:
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                **reserved_lesson, "profession_target_trainer_reserve_copper": 0, **invalid,
+                            })).isError)
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         achievement_data = json.loads(achievement.content[0].text)
                         self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
