@@ -124,8 +124,18 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(separate_quote['merchant_snapshot_id'], merchant_capture_id)
                     self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal'], 7)
                     self.assertEqual(separate_quote['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'], 0)
+                    reserved = await review(separate_wallet_id, set_id=221,
+                        include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id,
+                        set_merchant_wallet_reserve_copper=4)
+                    self.assertEqual(reserved['set_observation']['unobserved_piece_acquisition']
+                                     ['captured_merchant_quote']['after_wallet_reserve'], {
+                        'wallet_reserve_copper': 4, 'spendable_copper': 5, 'reserve_shortfall_copper': 0,
+                        'quoted_subtotal_shortfall_copper': 2, 'complete_quote_shortfall_copper': None,
+                        'complete_quote_affordable': None,
+                    })
                     for options in [
                         {'set_merchant_snapshot_id': merchant_capture_id},
+                        {'set_merchant_wallet_reserve_copper': 0},
                         {'set_merchant_snapshot_id': wrong_merchant_id, 'include_unobserved_set_sources': True},
                     ]:
                         rejected = await session.call_tool('review_forever_owned_gear',

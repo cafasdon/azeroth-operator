@@ -33,6 +33,9 @@ window or an empty piece list gives a null quote.
 Use `set_merchant_snapshot_id` with set sources to quote from another
 capture for the same character and exact client build. Affordability uses
 the inventory capture's wallet. A quote identifies the merchant capture.
+Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
+shows the shortfall for priced pieces and reports complete affordability
+only when every requested piece has a supported copper quote and a wallet was captured.
 
 With the local catalogue, `review_equipment_selection` reports
 `checks.catalogue_projected_set_changes` for sets whose distinct equipped

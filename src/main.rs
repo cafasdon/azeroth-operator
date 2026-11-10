@@ -1135,6 +1135,8 @@ struct OwnedGearReview {
     include_unobserved_set_sources: bool,
     /// Optional saved merchant visit from the same character and exact client build.
     set_merchant_snapshot_id: Option<String>,
+    /// Copper to keep in the inventory capture's wallet when evaluating set offers.
+    set_merchant_wallet_reserve_copper: Option<u64>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
     /// Find observed copies of up to sixteen distinct base item IDs. Exclusive with item_id.
@@ -1715,8 +1717,10 @@ impl Operator {
                 .ok_or_else(|| anyhow::anyhow!("Catalogue unavailable"))?;
             let snapshot = self.store.read(&args.snapshot_id)?;
             anyhow::ensure!(
-                args.set_merchant_snapshot_id.is_none() || args.include_unobserved_set_sources,
-                "A set merchant snapshot requires set acquisition sources"
+                (args.set_merchant_snapshot_id.is_none()
+                    && args.set_merchant_wallet_reserve_copper.is_none())
+                    || args.include_unobserved_set_sources,
+                "Set merchant options require set acquisition sources"
             );
             let merchant = args
                 .set_merchant_snapshot_id
@@ -1771,6 +1775,30 @@ impl Operator {
                         .as_deref()
                         .unwrap_or(&args.snapshot_id)
                 );
+                if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
+                    let wallet = snapshot
+                        .sections
+                        .get("wallet")
+                        .and_then(|row| row["copper"].as_u64());
+                    let total = quote["copper_only_bundle_mix_total"].as_u64();
+                    let subtotal = quote["copper_only_bundle_mix_quoted_subtotal"].as_u64();
+                    let shortfall = |cost: Option<u64>| {
+                        cost.zip(wallet).and_then(|(cost, balance)| {
+                            azeroth_operator::analysis::reserved_balance_shortfall(
+                                cost, balance, reserve,
+                            )
+                        })
+                    };
+                    quote["after_wallet_reserve"] = serde_json::json!({
+                        "wallet_reserve_copper":reserve,
+                        "spendable_copper":wallet.map(|balance| balance.saturating_sub(reserve)),
+                        "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
+                        "quoted_subtotal_shortfall_copper":shortfall(subtotal),
+                        "complete_quote_shortfall_copper":shortfall(total),
+                        "complete_quote_affordable":total.zip(wallet).map(|(cost, balance)|
+                            balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
+                    });
+                }
             }
             Ok::<_, anyhow::Error>(review)
         })();

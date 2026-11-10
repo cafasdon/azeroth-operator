@@ -1,5 +1,7 @@
 # Changelog
 
+- Account for a wallet reserve in saved Forever set-piece merchant quotes.
+
 - Quote Forever set pieces from a separate saved visit by the same character.
 
 - Quote unobserved set pieces against a merchant window saved in the same capture.
