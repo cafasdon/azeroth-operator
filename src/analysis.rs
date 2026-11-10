@@ -8508,7 +8508,7 @@ pub fn quest_renown_projection(quest: Option<&Value>, reputation: &Value) -> Val
     )
 }
 
-fn xp_to_next_level(xp: &Value) -> Option<u64> {
+pub(crate) fn xp_to_next_level(xp: &Value) -> Option<u64> {
     xp["level_threshold_xp"]
         .as_u64()?
         .checked_sub(xp["current_xp"].as_u64()?)

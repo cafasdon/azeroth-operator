@@ -2045,6 +2045,7 @@ pub struct CaptureFilters<'a> {
     pub spellbook_spell: Option<SpellbookSpellFilter>,
     pub action_bar_spell_resources: Option<ActionBarSpellResourceFilter>,
     pub minimum_rested_xp: Option<u32>,
+    pub maximum_xp_to_next_level: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
@@ -2351,6 +2352,7 @@ impl Store {
             spellbook_spell,
             action_bar_spell_resources,
             minimum_rested_xp,
+            maximum_xp_to_next_level,
             xp_gain_enabled_only,
             quest_id,
             quest_title,
@@ -3012,7 +3014,9 @@ impl Store {
         let pet_food_key = pet_food
             .as_ref()
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
-        let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
+        let filter_experience = minimum_rested_xp.is_some()
+            || maximum_xp_to_next_level.is_some()
+            || xp_gain_enabled_only;
         ensure!(
             currency_balance
                 .as_ref()
@@ -4095,7 +4099,17 @@ impl Store {
                         }) else {
                             continue;
                         };
-                        Some(json!({"rested_xp":xp["rested_xp"],"xp_disabled":xp["xp_disabled"]}))
+                        let mut evidence =
+                            json!({"rested_xp":xp["rested_xp"],"xp_disabled":xp["xp_disabled"]});
+                        if let Some(maximum) = maximum_xp_to_next_level {
+                            let Some(remaining) = analysis::xp_to_next_level(xp)
+                                .filter(|remaining| *remaining <= u64::from(maximum))
+                            else {
+                                continue;
+                            };
+                            evidence["xp_to_next_level"] = json!(remaining);
+                        }
+                        Some(evidence)
                     } else {
                         None
                     };

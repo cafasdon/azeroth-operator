@@ -707,6 +707,8 @@ struct List {
     action_bar_spell_resources: Option<azeroth_operator::ActionBarSpellResourceFilter>,
     /// Minimum rested XP recorded in a saved Forever capture.
     minimum_rested_xp: Option<u32>,
+    /// Find saved Forever captures within this many XP of the next level.
+    maximum_xp_to_next_level: Option<u32>,
     /// Require an uncapped XP observation with XP gain explicitly enabled.
     #[serde(default)]
     xp_gain_enabled_only: bool,
@@ -2703,6 +2705,7 @@ impl Operator {
                 spellbook_spell: args.spellbook_spell,
                 action_bar_spell_resources: args.action_bar_spell_resources,
                 minimum_rested_xp: args.minimum_rested_xp,
+                maximum_xp_to_next_level: args.maximum_xp_to_next_level,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),

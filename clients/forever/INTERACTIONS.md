@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
+characters within an inclusive XP budget. Matching rows report their saved
+XP remaining. Combine it with `xp_gain_enabled_only` or `minimum_rested_xp`.
+Capped or unreadable progress does not match.
+
 Saved pet searches also support `active_pet.happiness` for the exact
 recorded value and `active_pet.loyalty` for the exact case-insensitive
 localized label, ignoring surrounding whitespace. Missing observations do not match, and matching results
