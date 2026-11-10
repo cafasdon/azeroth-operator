@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved shortcut keys alongside carried stock targets.
+
 - Report captured carried-stock shortfalls across saved item shortcuts.
 
 - Plan a carried cooldown quantity target from an exact saved action-bar item shortcut.

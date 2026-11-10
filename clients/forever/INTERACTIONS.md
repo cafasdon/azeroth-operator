@@ -1833,6 +1833,9 @@ Set `action_bar_item_stock_target_quantity` with the audit to show each
 shortcut item's captured bag shortfall against the same target. Missing
 bag observations leave the shortfall unknown. Equipment and bank stock
 do not count toward the target.
+Target rows include `observed_hotkeys_by_slot` for the retained shortcut
+slots. A missing hotkey section or slot observation is unknown. A captured
+button with no reported keys has an empty list.
 `action_bar_slot_observed` is false for an unobserved slot and null for an
 unavailable section. An observed empty slot has `empty: true`. You can
 include its spellbook match, but the reverse list requires the full capture.

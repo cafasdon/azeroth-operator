@@ -22,8 +22,13 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             value['sections']['equipment']={'11':{'item_id':100}}
             value['sections']['action_bar_observation']={
-                'coverage':'loaded_builtin_buttons_only','observed_buttons':2,'missing_buttons':0,'slots':{
-                    '1':{'empty':False,'kind':'item','id':100},'2':{'empty':False,'kind':'spell','id':101}}}
+                'coverage':'loaded_builtin_buttons_only','observed_buttons':4,'missing_buttons':0,'slots':{
+                    '1':{'empty':False,'kind':'item','id':100},'2':{'empty':False,'kind':'spell','id':101},
+                    '3':{'empty':False,'kind':'item','id':100},'4':{'empty':False,'kind':'item','id':100}},
+                'button_hotkeys':{
+                    '1':{'button':'ActionButton1','slot':1,'key1':'1','key2':'SHIFT-1'},
+                    '2':{'button':'ActionButton2','slot':2,'key1':'2'},
+                    '3':{'button':'ActionButton3','slot':3}}}
             value['sections']['bags']={'0':{str(slot):{'item_id':100,'count':slot} for slot in [1,2,3]},
                 '1':{'1':{'item_id':101,'count':99}}, '2':{}}
             value['sections']['character_bank']={'6':{'1':{'item_id':100,'count':20}}}
@@ -55,6 +60,7 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             changed_key=store.ingest(changed)
             retail_key=store.ingest(fixture())
             no_bags=deepcopy(legacy);del no_bags['sections']['bags']
+            del no_bags['sections']['action_bar_observation']['button_hotkeys']
             no_bags_key=store.ingest(no_bags)
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -77,12 +83,15 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(list(audit), ['100'])
                         self.assertEqual(audit['100']['bag_target_quantity'], target)
                         self.assertEqual(audit['100']['bag_quantity_shortfall'], expected)
+                        self.assertEqual(audit['100']['observed_hotkeys_by_slot'],
+                                         None if snapshot == no_bags_key else
+                                         {'1': ['1', 'SHIFT-1'], '3': [], '4': None})
                     reply = await session.call_tool('inspect_snapshot', {
                         **audit_request, 'snapshot_id': key,
                     })
                     self.assertFalse(reply.isError, reply)
                     self.assertEqual(json.loads(reply.content[0].text)['action_bar_item_stock_audit'],
-                                     {'100': {'slots': [1], 'equipment_quantity': 1, 'bag_quantity': 6}})
+                                     {'100': {'slots': [1, 3, 4], 'equipment_quantity': 1, 'bag_quantity': 6}})
                     for audit_enabled, target in [(False, 8), (True, 0)]:
                         reply = await session.call_tool('inspect_snapshot', {
                             **audit_request, 'snapshot_id': key,

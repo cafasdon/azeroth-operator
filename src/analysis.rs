@@ -4881,6 +4881,7 @@ pub fn action_bar_item_stock_audit(
                 .filter_map(|row| Some((row, row["count"].as_u64()?))),
         )
     });
+    let hotkeys = target.and_then(|_| observed_action_hotkeys_by_slot(actions));
     Some(json!(
         items
             .into_iter()
@@ -4897,6 +4898,8 @@ pub fn action_bar_item_stock_audit(
                     stock["bag_target_quantity"] = json!(target.get());
                     stock["bag_quantity_shortfall"] =
                         json!(bags.map(|quantity| target.get().saturating_sub(quantity)));
+                    stock["observed_hotkeys_by_slot"] =
+                        selected_action_hotkeys(&slots, hotkeys.as_ref());
                 }
                 (id, stock)
             })
