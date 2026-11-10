@@ -1,5 +1,7 @@
 # Changelog
 
+- Include assumed travel costs and a visit limit in saved set-piece shopping plans.
+
 - Plan a complete set-piece purchase across multiple saved merchant visits.
 
 - Compare saved quotes for unobserved Forever set pieces across up to four merchant visits.

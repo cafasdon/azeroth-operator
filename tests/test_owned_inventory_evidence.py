@@ -78,6 +78,11 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             second_visit = deepcopy(merchant_capture)
             second_visit['sections']['merchant_stock']['1'].update(item_id=7953, price_copper=3)
             second_visit_id = store.ingest(second_visit)
+            full_visit = deepcopy(merchant_capture)
+            full_visit['sections']['merchant_stock']['2'] = {
+                **second_visit['sections']['merchant_stock']['1'], 'price_copper': 5,
+            }
+            full_visit_id = store.ingest(full_visit)
             separate_wallet = deepcopy(base)
             separate_wallet['sections']['wallet'] = {'copper': 9}
             separate_wallet_id = store.ingest(separate_wallet)
@@ -145,6 +150,15 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(plan['after_wallet_reserve']['complete_quote_shortfall_copper'], 2)
                     self.assertEqual([(row['item_id'], row['merchant_snapshot_id']) for row in plan['items']],
                                      [(7950, merchant_capture_id), (7953, second_visit_id)])
+                    travel = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
+                        set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id, full_visit_id],
+                        set_merchant_visit_costs_copper=[3, 3, 1])
+                    travel_plan = travel['set_observation']['unobserved_piece_acquisition']['captured_merchant_combined_plan']
+                    self.assertEqual((travel_plan['complete_quote_copper'], travel_plan['assumed_visit_cost_copper']), (13, 1))
+                    self.assertEqual(travel_plan['merchant_visit_checklist'][0]['merchant_snapshot_id'], full_visit_id)
+                    capped = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
+                        set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id], set_merchant_max_visits=1)
+                    self.assertIsNone(capped['set_observation']['unobserved_piece_acquisition']['captured_merchant_combined_plan'])
                     reserved = await review(separate_wallet_id, set_id=221,
                         include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id,
                         set_merchant_wallet_reserve_copper=4)
@@ -161,6 +175,9 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         {'set_merchant_snapshot_ids': [merchant_capture_id, merchant_capture_id],
                          'include_unobserved_set_sources': True},
                         {'set_merchant_snapshot_ids': [merchant_capture_id, wrong_merchant_id],
+                         'include_unobserved_set_sources': True},
+                        {'set_merchant_visit_costs_copper': [0], 'include_unobserved_set_sources': True},
+                        {'set_merchant_snapshot_ids': [merchant_capture_id], 'set_merchant_max_visits': 0,
                          'include_unobserved_set_sources': True},
                     ]:
                         rejected = await session.call_tool('review_forever_owned_gear',

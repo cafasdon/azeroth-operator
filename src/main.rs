@@ -1137,6 +1137,10 @@ struct OwnedGearReview {
     set_merchant_snapshot_id: Option<String>,
     /// Compare one to four distinct saved visits. Exclusive with set_merchant_snapshot_id.
     set_merchant_snapshot_ids: Option<Vec<String>>,
+    /// Assumed copper travel cost for each selected visit, in snapshot ID order.
+    set_merchant_visit_costs_copper: Option<Vec<u64>>,
+    /// Maximum visits in the combined plan, from one to four.
+    set_merchant_max_visits: Option<u8>,
     /// Copper to keep in the inventory capture's wallet when evaluating set offers.
     set_merchant_wallet_reserve_copper: Option<u64>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
@@ -1734,6 +1738,19 @@ impl Operator {
                 "Expected one to four distinct merchant captures or one exact capture"
             );
             anyhow::ensure!(
+                args.set_merchant_visit_costs_copper
+                    .as_ref()
+                    .is_none_or(|costs| {
+                        args.set_merchant_snapshot_ids
+                            .as_ref()
+                            .is_some_and(|ids| costs.len() == ids.len())
+                    })
+                    && args.set_merchant_max_visits.is_none_or(|limit| {
+                        args.set_merchant_snapshot_ids.is_some() && (1..=4).contains(&limit)
+                    }),
+                "Set visit options require multiple-visit selection, matching costs and a limit from one to four"
+            );
+            anyhow::ensure!(
                 args.item_id.is_none() || args.item_ids.is_none(),
                 "Choose item_id or item_ids"
             );
@@ -1855,8 +1872,10 @@ impl Operator {
                             &demands,
                             ids,
                             &offers,
-                            &[0; 4][..ids.len()],
-                            4,
+                            args.set_merchant_visit_costs_copper
+                                .as_deref()
+                                .unwrap_or(&[0; 4][..ids.len()]),
+                            args.set_merchant_max_visits.unwrap_or(4),
                             wallet,
                         );
                         if let (Some(plan), Some(reserve)) =

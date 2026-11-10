@@ -37,8 +37,11 @@ Use `set_merchant_snapshot_ids` to compare up to four distinct visits in
 the supplied order. Each visit is quoted independently against the same
 inventory and wallet. The plural selector replaces the single-visit quote.
 It also returns a combined plan when the visits together quote every
-unobserved piece. The plan minimises recorded copper purchase cost,
-then visit count, with travel cost assumed zero.
+unobserved piece within the visit limit. The plan minimises purchase plus
+assumed travel copper, then visit count. Supply one
+`set_merchant_visit_costs_copper` value per visit in snapshot ID order,
+or omit costs to assume zero. Use `set_merchant_max_visits` to cap the
+combined plan at one to four visits.
 Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
 shows the shortfall for priced pieces and reports complete affordability
 only when every requested piece has a supported copper quote and a wallet was captured.
