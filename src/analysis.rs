@@ -4140,6 +4140,61 @@ pub fn compare_observations(
             });
         }
         if before.client.family == crate::Family::Forever {
+            let old_money =
+                quest_wallet_projection(previous.as_ref(), before.sections.get("wallet"));
+            let new_money = quest_wallet_projection(current.as_ref(), after.sections.get("wallet"));
+            let mut rewards = serde_json::Map::new();
+            for (field, old, new) in [
+                (
+                    "reward_xp",
+                    previous
+                        .as_ref()
+                        .and_then(|row| row["reward_amounts"]["xp"].as_i64()),
+                    current
+                        .as_ref()
+                        .and_then(|row| row["reward_amounts"]["xp"].as_i64()),
+                ),
+                (
+                    "reward_honor",
+                    previous
+                        .as_ref()
+                        .and_then(|row| row["reward_amounts"]["honor"].as_i64()),
+                    current
+                        .as_ref()
+                        .and_then(|row| row["reward_amounts"]["honor"].as_i64()),
+                ),
+                (
+                    "reward_copper",
+                    old_money["reward_copper"].as_i64(),
+                    new_money["reward_copper"].as_i64(),
+                ),
+                (
+                    "required_copper",
+                    old_money["required_copper"].as_i64(),
+                    new_money["required_copper"].as_i64(),
+                ),
+                (
+                    "net_copper",
+                    old_money["net_copper"].as_i64(),
+                    new_money["net_copper"].as_i64(),
+                ),
+                (
+                    "upfront_shortfall_copper",
+                    old_money["upfront_shortfall_copper"].as_i64(),
+                    new_money["upfront_shortfall_copper"].as_i64(),
+                ),
+            ] {
+                if old.is_some() || new.is_some() {
+                    rewards.insert(
+                        field.into(),
+                        json!({"before":old,"after":new,
+                        "delta":old.zip(new).map(|(a,b)| b-a)}),
+                    );
+                }
+            }
+            if !rewards.is_empty() {
+                comparison["quest_change"]["reward_and_cost_changes"] = json!(rewards);
+            }
             let old_objectives = previous
                 .as_ref()
                 .and_then(|quest| quest["objectives"].as_object());

@@ -3338,6 +3338,11 @@ title across both captures before comparing progress by ID. If the title
 matches multiple IDs, supply `quest_id` as well. A quest missing on one side
 does not establish completion, failure or abandonment.
 
+Selected quest comparisons report recorded XP, honor, copper reward,
+required copper, projected net copper and upfront shortfall where
+available. Shortfall uses each capture's wallet. A missing amount stays
+unknown, and a delta requires an amount on both sides.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

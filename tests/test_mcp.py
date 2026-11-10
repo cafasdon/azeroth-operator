@@ -1108,6 +1108,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(changed_travel.isError)
                         travel_changes = json.loads(changed_travel.content[0].text)
+                        economics = await session.call_tool("compare_snapshots", {
+                            "before_id":travel_before,"after_id":travel_after,"quest_title":"Another turn-in"})
+                        self.assertFalse(economics.isError,economics)
+                        amounts=json.loads(economics.content[0].text)["quest_change"]["reward_and_cost_changes"]
+                        self.assertEqual(amounts,{
+                            "reward_xp":{"before":50,"after":50,"delta":0},
+                            "reward_copper":{"before":2,"after":2,"delta":0},
+                            "required_copper":{"before":1,"after":1,"delta":0},
+                            "net_copper":{"before":1,"after":1,"delta":0},
+                            "upfront_shortfall_copper":{"before":0,"after":1,"delta":1},
+                        })
                         xp = travel_changes["experience_change"]
                         self.assertEqual(xp["within_level_xp_delta"], 30)
                         self.assertEqual(xp["rested_xp_delta"], -40)

@@ -689,4 +689,15 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(timer['before_projected_expiry_at'],'2025-01-01T00:01:00Z')
                     self.assertEqual(timer['after_projected_expiry_at'],timer['before_projected_expiry_at'])
                     self.assertFalse(timer['projected_expiry_changed'])
+                    economic_capture=deepcopy(changed)
+                    economic_capture['sections']['quests']['3'].update(required_copper=2,reward_amounts={'xp':100})
+                    economic_id=store.ingest(economic_capture)
+                    original[economic_id+'.json']=(Path(folder)/(economic_id+'.json')).read_bytes()
+                    amounts=await session.call_tool('compare_snapshots',{
+                        'before_id':key,'after_id':economic_id,'quest_id':3})
+                    self.assertFalse(amounts.isError,amounts)
+                    recorded=json.loads(amounts.content[0].text)['quest_change']['reward_and_cost_changes']
+                    self.assertEqual(recorded['reward_xp'],{'before':None,'after':100,'delta':None})
+                    self.assertEqual(recorded['required_copper'],{'before':None,'after':2,'delta':None})
+                    self.assertNotIn('net_copper',recorded)
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})
