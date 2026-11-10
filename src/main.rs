@@ -1850,8 +1850,15 @@ impl Operator {
                         Ok(serde_json::json!({"merchant_snapshot_id":id,"quote":quote_for_id(id)?}))
                     }).collect::<anyhow::Result<Vec<_>>>()?;
                     let mut combined = None;
+                    let mut unquoted = Vec::new();
+                    let max_visits = args.set_merchant_max_visits.unwrap_or(4);
+                    let mut status = if demands.is_empty() {
+                        "no_unobserved_pieces"
+                    } else {
+                        "truncated_piece_list"
+                    };
                     if !demands.is_empty() && acquisition["truncated"] == false {
-                        let offers: Vec<_> = quotes
+                        let offers: Vec<std::collections::BTreeMap<_, _>> = quotes
                             .iter()
                             .map(|visit| {
                                 visit["quote"]["items"]
@@ -1868,16 +1875,34 @@ impl Operator {
                                     .collect()
                             })
                             .collect();
-                        combined = azeroth_operator::analysis::restock_travel_adjusted_plan(
-                            &demands,
-                            ids,
-                            &offers,
-                            args.set_merchant_visit_costs_copper
-                                .as_deref()
-                                .unwrap_or(&[0; 4][..ids.len()]),
-                            args.set_merchant_max_visits.unwrap_or(4),
-                            wallet,
-                        );
+                        unquoted = demands
+                            .iter()
+                            .filter_map(|row| row["item_id"].as_u64())
+                            .filter(|id| !offers.iter().any(|offer| offer.contains_key(id)))
+                            .collect();
+                        let costs = args
+                            .set_merchant_visit_costs_copper
+                            .as_deref()
+                            .unwrap_or(&[0; 4][..ids.len()]);
+                        let plan_with_limit = |limit| {
+                            azeroth_operator::analysis::restock_travel_adjusted_plan(
+                                &demands, ids, &offers, costs, limit, wallet,
+                            )
+                        };
+                        status = if !unquoted.is_empty() {
+                            "unquoted_pieces"
+                        } else {
+                            combined = plan_with_limit(max_visits);
+                            if combined.is_some() {
+                                "quoted"
+                            } else if usize::from(max_visits) < ids.len()
+                                && plan_with_limit(4).is_some()
+                            {
+                                "visit_limit"
+                            } else {
+                                "unrepresentable_total"
+                            }
+                        };
                         if let (Some(plan), Some(reserve)) =
                             (&mut combined, args.set_merchant_wallet_reserve_copper)
                         {
@@ -1886,6 +1911,9 @@ impl Operator {
                         }
                     }
                     acquisition["captured_merchant_combined_plan"] = serde_json::json!(combined);
+                    acquisition["captured_merchant_combined_plan_status"] = serde_json::json!({
+                        "status":status, "unquoted_item_ids":unquoted, "maximum_visits":max_visits
+                    });
                     acquisition["captured_merchant_quotes"] = serde_json::json!(quotes);
                 } else {
                     acquisition["captured_merchant_quote"] =

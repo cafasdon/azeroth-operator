@@ -42,6 +42,9 @@ assumed travel copper, then visit count. Supply one
 `set_merchant_visit_costs_copper` value per visit in snapshot ID order,
 or omit costs to assume zero. Use `set_merchant_max_visits` to cap the
 combined plan at one to four visits.
+`captured_merchant_combined_plan_status` distinguishes missing supported
+quotes, an insufficient visit limit, an unrepresentable copper total,
+and a truncated or empty list. Missing quotes list the affected item IDs.
 Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
 shows the shortfall for priced pieces and reports complete affordability
 only when every requested piece has a supported copper quote and a wallet was captured.

@@ -141,6 +141,9 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         {'merchant_snapshot_id': merchant_capture_id, 'quote': separate_quote},
                     ])
                     self.assertIsNone(visit_acquisition['captured_merchant_combined_plan'])
+                    self.assertEqual(visit_acquisition['captured_merchant_combined_plan_status'], {
+                        'status': 'unquoted_pieces', 'unquoted_item_ids': [7953], 'maximum_visits': 4,
+                    })
                     split = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
                         set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id],
                         set_merchant_wallet_reserve_copper=1)
@@ -159,6 +162,13 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     capped = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
                         set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id], set_merchant_max_visits=1)
                     self.assertIsNone(capped['set_observation']['unobserved_piece_acquisition']['captured_merchant_combined_plan'])
+                    self.assertEqual(capped['set_observation']['unobserved_piece_acquisition']
+                                     ['captured_merchant_combined_plan_status']['status'], 'visit_limit')
+                    overflow = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
+                        set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id],
+                        set_merchant_visit_costs_copper=[2**64 - 1, 0])
+                    self.assertEqual(overflow['set_observation']['unobserved_piece_acquisition']
+                                     ['captured_merchant_combined_plan_status']['status'], 'unrepresentable_total')
                     reserved = await review(separate_wallet_id, set_id=221,
                         include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id,
                         set_merchant_wallet_reserve_copper=4)
