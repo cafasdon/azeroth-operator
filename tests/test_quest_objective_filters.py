@@ -691,13 +691,34 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(timer['projected_expiry_changed'])
                     economic_capture=deepcopy(changed)
                     economic_capture['sections']['quests']['3'].update(required_copper=2,reward_amounts={'xp':100})
+                    economic_quest=economic_capture['sections']['quests']['3']
+                    economic_quest['item_rewards']={'1':{'item_id':118,'quantity':4},
+                                                    '2':{'item_id':118,'quantity':1}}
+                    economic_quest['item_choices']={'2':{'item_id':118,'quantity':9}}
                     economic_id=store.ingest(economic_capture)
                     original[economic_id+'.json']=(Path(folder)/(economic_id+'.json')).read_bytes()
                     amounts=await session.call_tool('compare_snapshots',{
                         'before_id':key,'after_id':economic_id,'quest_id':3})
                     self.assertFalse(amounts.isError,amounts)
-                    recorded=json.loads(amounts.content[0].text)['quest_change']['reward_and_cost_changes']
+                    quest_change=json.loads(amounts.content[0].text)['quest_change']
+                    recorded=quest_change['reward_and_cost_changes']
                     self.assertEqual(recorded['reward_xp'],{'before':None,'after':100,'delta':None})
                     self.assertEqual(recorded['required_copper'],{'before':None,'after':2,'delta':None})
                     self.assertNotIn('net_copper',recorded)
+                    self.assertEqual(quest_change['reward_entry_changes'],{
+                        'item_rewards':{'before_observed':True,'after_observed':True,'changes':[
+                            {'item_id':118,'before_quantities':[2],'after_quantities':[1,4],'changed':True}]},
+                        'item_choices':{'before_observed':False,'after_observed':True,'changes':[
+                            {'item_id':118,'before_quantities':None,'after_quantities':[9],'changed':None}]},
+                    })
+                    entries=economic_quest['item_rewards']
+                    entries['1'],entries['2']=entries['2'],entries['1']
+                    reordered_id=store.ingest(economic_capture)
+                    original[reordered_id+'.json']=(Path(folder)/(reordered_id+'.json')).read_bytes()
+                    reordered=await session.call_tool('compare_snapshots',{
+                        'before_id':economic_id,'after_id':reordered_id,'quest_id':3})
+                    self.assertFalse(reordered.isError,reordered)
+                    unchanged=json.loads(reordered.content[0].text)['quest_change']['reward_entry_changes']
+                    self.assertEqual(unchanged['item_rewards']['changes'],[])
+                    self.assertEqual(unchanged['item_choices']['changes'],[])
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})

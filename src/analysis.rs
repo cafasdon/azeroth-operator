@@ -4195,6 +4195,25 @@ pub fn compare_observations(
             if !rewards.is_empty() {
                 comparison["quest_change"]["reward_and_cost_changes"] = json!(rewards);
             }
+            let mut reward_entries = serde_json::Map::new();
+            for (field, id_field) in [
+                ("item_rewards", "item_id"),
+                ("item_choices", "item_id"),
+                ("currency_rewards", "currency_id"),
+                ("currency_choices", "currency_id"),
+                ("renown_rewards", "faction_id"),
+            ] {
+                if let Some(change) = compare_quest_reward_entries(
+                    previous.as_ref().and_then(|quest| quest.get(field)),
+                    current.as_ref().and_then(|quest| quest.get(field)),
+                    id_field,
+                ) {
+                    reward_entries.insert(field.into(), change);
+                }
+            }
+            if !reward_entries.is_empty() {
+                comparison["quest_change"]["reward_entry_changes"] = json!(reward_entries);
+            }
             let old_objectives = previous
                 .as_ref()
                 .and_then(|quest| quest["objectives"].as_object());
@@ -6798,6 +6817,56 @@ pub fn currency_reward_projection(proposed: u64, entry: &Value, caps: &Value) ->
         "quantity_within_recorded_headroom":limit.map(|cap| proposed.min(cap)),
         "quantity_above_recorded_headroom":limit.map(|cap| proposed.saturating_sub(cap))
     })
+}
+
+fn compare_quest_reward_entries(
+    before: Option<&Value>,
+    after: Option<&Value>,
+    id_field: &str,
+) -> Option<Value> {
+    let quantities_by_id = |entries: &Value| {
+        let mut quantities = BTreeMap::<u64, Vec<u64>>::new();
+        for row in entries.as_object()?.values() {
+            quantities
+                .entry(row[id_field].as_u64()?)
+                .or_default()
+                .push(row["quantity"].as_u64()?);
+        }
+        for values in quantities.values_mut() {
+            values.sort_unstable();
+        }
+        Some(quantities)
+    };
+    let previous = before.and_then(quantities_by_id);
+    let current = after.and_then(quantities_by_id);
+    if previous.is_none() && current.is_none() {
+        return None;
+    }
+    let ids: BTreeSet<_> = previous
+        .iter()
+        .chain(&current)
+        .flat_map(|rows| rows.keys())
+        .collect();
+    let changes: Vec<_> = ids
+        .into_iter()
+        .filter_map(|id| {
+            let a = previous
+                .as_ref()
+                .map(|rows| rows.get(id).map(Vec::as_slice).unwrap_or_default());
+            let b = current
+                .as_ref()
+                .map(|rows| rows.get(id).map(Vec::as_slice).unwrap_or_default());
+            let changed = a.zip(b).map(|(a, b)| a != b);
+            (changed != Some(false)).then(|| {
+                json!({
+                    (id_field):id,"before_quantities":a,"after_quantities":b,"changed":changed
+                })
+            })
+        })
+        .collect();
+    Some(
+        json!({"before_observed":previous.is_some(),"after_observed":current.is_some(),"changes":changes}),
+    )
 }
 
 pub fn quest_list_item_rewards(quests: &serde_json::Map<String, Value>) -> Value {

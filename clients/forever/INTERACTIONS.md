@@ -3343,6 +3343,12 @@ required copper, projected net copper and upfront shortfall where
 available. Shortfall uses each capture's wallet. A missing amount stays
 unknown, and a delta requires an amount on both sides.
 
+`quest_change.reward_entry_changes` compares fixed items, fixed currencies,
+renown rewards and optional item or currency choices in separate groups.
+Quantities are grouped by reward ID and sorted, so reordering slots does
+not count as a change. Duplicate rows stay separate. A missing group on
+either side leaves changes unknown.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

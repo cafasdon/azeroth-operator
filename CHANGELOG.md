@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved quest item, currency and renown rewards separately from optional choices.
+
 - Compare recorded quest rewards, required copper and wallet shortfalls across saved Forever captures.
 
 - Compare saved Forever quest progress by exact quest title.
