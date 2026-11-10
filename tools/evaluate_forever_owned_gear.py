@@ -93,14 +93,14 @@ async def selected_snapshot(args, deadline):
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
-def unresolved_item_locations(result, preflight, counts, storage_counts, limit):
+def unresolved_item_locations(result, preflight, counts, storage_counts, limit, offset):
     for field in ('snapshot_id', 'catalogue_source', 'inventory_evidence'):
         require(result[field] == preflight[field])
     total = sum(counts.values()) - counts.get('resolved', 0)
     require(integer(result['filtered_item_locations'], 0, 2**64-1) == total)
     items = result['items']
-    require(isinstance(items, list) and len(items) == min(total, limit)
-            and result['has_more'] is (total > limit))
+    require(isinstance(items, list) and len(items) == min(max(0, total - offset), limit)
+            and result['has_more'] is (total > offset + limit))
     locations = []
     seen = set()
     sampled = Counter()
@@ -124,10 +124,10 @@ def unresolved_item_locations(result, preflight, counts, storage_counts, limit):
         require(sampled[storage, status] <= storage_counts[storage].get(status, 0))
         locations.append({'storage':storage,'container':container,'slot':slot,
             'item_id':integer(item['observed']['item_id'], 1, 2**32-1),'resolution':status})
-    return {'total_locations':total,'has_more':total > limit,'locations':locations}
+    return {'total_locations':total,'has_more':total > offset + limit,'locations':locations}
 
 
-async def catalogue_preflight(args, deadline, *, include_resolution_counts, unresolved_limit):
+async def catalogue_preflight(args, deadline, *, include_resolution_counts, unresolved_limit, unresolved_offset=0):
     ranker = collection.ranker
     require(monotonic() < deadline)
     async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
@@ -170,16 +170,17 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts, unre
                             combined.update(section_counts)
                         require(dict(combined) == counts)
                     if unresolved_limit is not None:
-                        if sum(counts.values()) == counts.get('resolved', 0):
-                            unresolved = {'total_locations':0,'has_more':False,'locations':[]}
+                        total = sum(counts.values()) - counts.get('resolved', 0)
+                        if unresolved_offset >= total:
+                            unresolved = {'total_locations':total,'has_more':False,'locations':[]}
                         else:
                             shortlist = await session.call_tool('review_forever_owned_gear',
-                                {'snapshot_id':args.snapshot_id,'limit':unresolved_limit,
+                                {'snapshot_id':args.snapshot_id,'limit':unresolved_limit,'offset':unresolved_offset,
                                  'simulator_input_resolved':False})
                             require(not shortlist.isError and len(shortlist.content) == 1)
                             unresolved = unresolved_item_locations(
                                 parse_report(shortlist.content[0].text.encode()), result,
-                                counts, storage_counts, unresolved_limit)
+                                counts, storage_counts, unresolved_limit, unresolved_offset)
                     return evidence, counts, storage_counts, unresolved
 
 

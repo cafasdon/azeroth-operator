@@ -285,10 +285,27 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                     audit = json.loads(audited.stdout)
                     self.assertEqual(audit['selection'],selection)
                     self.assertEqual(audit['snapshot_id'],gap_key)
-                    self.assertEqual(audit['preflight_unresolved_item_locations'],complete_shortlist)
+                    self.assertEqual(audit['preflight_unresolved_item_locations'],
+                                     {**complete_shortlist,'offset':0,'next_offset':None})
                     self.assertEqual(audit['preflight_simulator_item_resolution_counts_by_storage'],by_storage)
                     self.assertFalse(audit['simulation_performed'])
                     self.assertFalse(audit['active_character_verified'])
+                for offset in range(4):
+                    page = run_process([sys.executable,'-m','tools.audit_forever_owned_gear',
+                        '--mcp',str(binary),'--snapshot-id',gap_key,'--unresolved-item-limit','1',
+                        '--unresolved-item-offset',str(offset)],
+                        cwd=root,env=env,capture_output=True,text=True,timeout=30)
+                    self.assertEqual(page.returncode,0,page.stderr)
+                    self.assertEqual(json.loads(page.stdout)['preflight_unresolved_item_locations'],{
+                        'total_locations':2,'has_more':offset == 0,'offset':offset,
+                        'next_offset':1 if offset == 0 else None,
+                        'locations':complete_shortlist['locations'][offset:offset+1]})
+                for invalid in [['--unresolved-item-offset','0'],
+                                ['--unresolved-item-limit','1','--unresolved-item-offset','-1']]:
+                    rejected = run_process([sys.executable,'-m','tools.audit_forever_owned_gear',
+                        '--mcp',str(binary),'--snapshot-id',gap_key,*invalid],
+                        cwd=root,env=env,capture_output=True,text=True,timeout=30)
+                    self.assertEqual((rejected.returncode,rejected.stdout),(1,''))
                 self.assertEqual(set(base.iterdir()),existing_files)
                 del captured[stage_count:]
                 self.assertEqual(runs.call_count,calls)

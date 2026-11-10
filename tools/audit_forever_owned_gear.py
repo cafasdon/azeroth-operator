@@ -15,10 +15,15 @@ async def audit(args):
     require(args.mcp.is_file())
     if args.unresolved_item_limit is not None:
         integer(args.unresolved_item_limit, 1, 50)
+    offset = 0
+    if args.unresolved_item_offset is not None:
+        require(args.unresolved_item_limit is not None)
+        offset = integer(args.unresolved_item_offset, 0, 2**32-1)
     deadline = monotonic() + integer(args.time_budget_seconds, 1, 60)
     args.snapshot_id, selection = await selected_snapshot(args, deadline)
     evidence, counts, by_storage, unresolved = await catalogue_preflight(
-        args, deadline, include_resolution_counts=True, unresolved_limit=args.unresolved_item_limit)
+        args, deadline, include_resolution_counts=True, unresolved_limit=args.unresolved_item_limit,
+        unresolved_offset=offset)
     require(monotonic() <= deadline)
     report = {
         'mode': 'owned_gear_inventory_audit',
@@ -32,6 +37,8 @@ async def audit(args):
         'game_execution': False,
     }
     if unresolved is not None:
+        unresolved['offset'] = offset
+        unresolved['next_offset'] = offset + len(unresolved['locations']) if unresolved['has_more'] else None
         report['preflight_unresolved_item_locations'] = unresolved
     return report
 
@@ -41,6 +48,7 @@ def main(argv=None):
     cli.add_argument('--mcp', type=Path, required=True)
     add_snapshot_selector(cli)
     cli.add_argument('--unresolved-item-limit', type=int, help='Include up to 50 unresolved observed locations')
+    cli.add_argument('--unresolved-item-offset', type=int, help='Start after this many unresolved locations; requires --unresolved-item-limit')
     cli.add_argument('--time-budget-seconds', type=int, default=30)
     args = cli.parse_args(argv)
     try:

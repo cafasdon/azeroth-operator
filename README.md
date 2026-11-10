@@ -505,6 +505,9 @@ For diagnostics alone, run `python -m tools.audit_forever_owned_gear`
 with `--mcp` and the same saved snapshot or character selector. The audit
 reports the resolution counts and accepts `--unresolved-item-limit`.
 It runs without an engine, encounter, template or plan journal.
+To read the next page, pass its reported `next_offset` as
+`--unresolved-item-offset` with the same limit, exact snapshot ID and
+local catalogue revision.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.
