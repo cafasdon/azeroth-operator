@@ -22,6 +22,103 @@ from tools.merge_forever_gear_windows import merge_reports
 
 
 class CollectGearWindowTests(unittest.TestCase):
+    def test_one_real_process_matches_standalone_windows_and_closes_on_failure(self):
+        import mcp.client.stdio as sdk
+        root=Path(__file__).resolve().parents[1]
+        catalogue=root/'local-data/forever/catalogue.json'
+        if not catalogue.is_file():self.skipTest('Requires pinned local catalogue; no download')
+        binary=(root/'target/debug'/('azeroth-operator.exe' if os.name=='nt' else 'azeroth-operator')).resolve(strict=True)
+        with tempfile.TemporaryDirectory(dir=root/'local-data') as folder:
+            base=Path(folder);value=fixture()
+            value['client'].update(family='forever',build='70862',interface=16001)
+            value['sections']['bags']={'0':{str(i):{'item_id':item,'count':1,'link':f'item:{item}:0:0:0:0:0:0'}
+                for i,item in enumerate([4549,4550],1)}}
+            key=SnapshotStore(base).ingest(value);template,_,_=inputs()
+            template_path=base/'template.json';template_path.write_text(json.dumps(template))
+            originals={path:path.read_bytes() for path in [template_path,base/(key+'.json')]}
+            env={'AZEROTH_DATA_DIR':folder,'AZEROTH_FOREVER_CATALOGUE':str(catalogue.resolve())}
+            argv=['--mcp',str(binary),'--snapshot-id',key,'--slot','finger1','--template',str(template_path),
+                '--journal',str(base/'plans.sqlite'),'--collapse-identical-items','--retain-equipment-specs',
+                '--window-size','1','--max-windows','8']
+            processes=[];create=sdk._create_platform_compatible_process
+            async def tracked(*a,**kw):
+                process=await create(*a,**kw);processes.append(process);return process
+            async def run():return await controller.collect_windows(controller.parser().parse_args(argv))
+            with patch.dict(os.environ,env),patch.object(sdk,'_create_platform_compatible_process',tracked):
+                result=asyncio.run(run())
+                self.assertEqual(result['windows_inserted'],3)
+                self.assertTrue(result['progress']['reported_coordinate_coverage_complete'])
+                self.assertEqual(len(processes),1)
+                self.assertIsNotNone(processes[0].returncode)
+                repeated=asyncio.run(run())
+                self.assertEqual(repeated['windows_attempted'],0);self.assertEqual(len(processes),1)
+                with closing(sqlite3.connect(base/'plans.sqlite')) as db:
+                    windows=[json.loads(row[0]) for row in db.execute('SELECT report FROM windows ORDER BY start_key')]
+                with tempfile.TemporaryFile(mode='w+') as errlog:
+                    for offset,saved in enumerate(windows):
+                        async def standalone():
+                            return await controller.ranker.collect(binary,key,['finger1'],errlog,
+                                collapse_identical=True,can_dual_wield=True,combination_offset=offset,combination_limit=1)
+                        drafts,skipped,coverage,_,_,_,search=asyncio.run(standalone())
+                        expected=controller.ranker.plan_report(drafts,True,True)
+                        self.assertEqual(saved['resolved_drafts'],expected['resolved_drafts'])
+                        self.assertEqual(saved['gear_search'],search)
+                        self.assertEqual(saved['skipped'],skipped);self.assertEqual(saved['storage_coverage'],coverage)
+                self.assertEqual(len(processes),4)
+                self.assertTrue(all(process.returncode is not None for process in processes))
+                argv[argv.index('--journal')+1]=str(base/'interrupted.sqlite')
+                collect=controller.ranker.collect;calls=[0]
+                async def fail_second(*a,**kw):
+                    calls[0]+=1
+                    if calls[0]==2:raise ValueError('injected window failure')
+                    return await collect(*a,**kw)
+                with patch.object(controller.ranker,'collect',fail_second):
+                    with self.assertRaisesRegex(ValueError,'injected window failure'):asyncio.run(run())
+                self.assertEqual(journal_status(base/'interrupted.sqlite')['window_count'],1)
+                self.assertEqual(len(processes),5)
+                self.assertTrue(all(process.returncode is not None for process in processes))
+                resumed=asyncio.run(run())
+                self.assertEqual(resumed['windows_inserted'],2)
+                self.assertTrue(resumed['progress']['reported_coordinate_coverage_complete'])
+                self.assertEqual(len(processes),6)
+                self.assertTrue(all(process.returncode is not None for process in processes))
+                argv[argv.index('--journal')+1]=str(base/'startup.sqlite')
+                argv.extend(['--time-budget-seconds','1'])
+                handshake={'started':False,'cancelled':False}
+                async def stalled_initialize(*a,**kw):
+                    handshake['started']=True
+                    try:await asyncio.sleep(30)
+                    finally:handshake['cancelled']=True
+                with patch.object(controller.ranker.ClientSession,'initialize',stalled_initialize):
+                    with self.assertRaises(Exception):asyncio.run(run())
+                self.assertTrue(handshake['started']);self.assertTrue(handshake['cancelled'])
+                self.assertEqual(len(processes),7)
+                self.assertTrue(all(process.returncode is not None for process in processes))
+                self.assertEqual((base/'startup.sqlite').stat().st_size,0)
+                # Thirty seconds of handshake time leaves fifteen of the existing 45-second window cap.
+                argv[argv.index('--journal')+1]=str(base/'window-cap.sqlite')
+                argv.extend(['--time-budget-seconds','180','--max-windows','1'])
+                from contextlib import asynccontextmanager
+                clock=controller.monotonic;skew=[0.0];caps=[]
+                connection=controller.ranker.collection_connection;wait_for=asyncio.wait_for
+                @asynccontextmanager
+                async def delayed_connection(*a,**kw):
+                    async with connection(*a,**kw) as session:
+                        if len(a)<3 and kw.get('existing') is None:skew[0]+=30
+                        yield session
+                async def measured_wait(coroutine,timeout):
+                    if getattr(coroutine,'cr_code',None) is collect.__code__:caps.append(timeout)
+                    return await wait_for(coroutine,timeout=timeout)
+                with patch.object(controller,'monotonic',lambda:clock()+skew[0]), \
+                        patch.object(controller.ranker,'collection_connection',delayed_connection), \
+                        patch.object(asyncio,'wait_for',measured_wait):
+                    capped=asyncio.run(run())
+                self.assertEqual(capped['windows_inserted'],1)
+                self.assertEqual(len(caps),1);self.assertGreater(caps[0],14);self.assertLess(caps[0],16)
+                self.assertEqual(len(processes),8)
+                self.assertTrue(all(process.returncode is not None for process in processes))
+            self.assertEqual(originals,{path:path.read_bytes() for path in originals})
+
     def test_real_module_covers_product_above_old_request_limit(self):
         root = Path(__file__).resolve().parents[1]
         catalogue = Path(os.environ.get('AZEROTH_FOREVER_CATALOGUE') or root / 'local-data/forever/catalogue.json')

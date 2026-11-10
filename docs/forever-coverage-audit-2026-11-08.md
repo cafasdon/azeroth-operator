@@ -984,3 +984,12 @@ the existing personal upgrade keeps its separate exact owner pin. This closes
 an implicit-path setup risk, not OS ownership/authentication proof. Host paths,
 permissions and authentication need their own deployment evidence. No installed
 profile or private data changed. See ADR-089 and its offline evidence record.
+
+## Gear collection overhead (10 November)
+
+Run-local reader reuse removes repeated stdio initialization across gear windows
+without changing requested coordinates or result checks. A nine-window synthetic
+benchmark used one process instead of nine; it does not prove full-set/native
+coverage or general simulation speed. Source bindings and deadlines remain in
+force, and older source-bound journals are not migrated. See ADR-090 and its
+reproducible offline benchmark. Live work remains deferred.

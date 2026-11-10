@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from contextlib import asynccontextmanager
 import hashlib
 from itertools import combinations, product
 import json
@@ -271,11 +272,23 @@ def combination_window(options, max_swaps, offset, limit):
     return sum(counts), window()
 
 
+@asynccontextmanager
+async def collection_connection(binary, errlog, existing=None):
+    """Borrow an initialized run-local session, or own one standalone connection."""
+    if existing is not None:
+        yield existing
+        return
+    params = StdioServerParameters(command=str(binary), env=dict(os.environ))
+    async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
+        await session.initialize()
+        yield session
+
+
 async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, item_ids=None,
                   can_dual_wield=True, character=None, set_id=None, max_drafts=64, storage=None,
                   max_swaps=None, candidate_filters=None, combination_offset=0, combination_limit=None,
                   positional_equipment=False, include_empty_slots=False, candidate_scan_limit=256,
-                  candidate_page_cache=None):
+                  candidate_page_cache=None, session=None):
     validate_candidate_scan_limit(candidate_scan_limit)
     if candidate_page_cache is not None and (type(candidate_page_cache) is not OwnedGearPageCache
             or type(snapshot_id) is not str or not snapshot_id or character is not None
@@ -289,10 +302,7 @@ async def collect(binary, snapshot_id, slots, errlog, collapse_identical=False, 
             or (combination_limit is not None and (type(combination_limit) is not int
                 or not 1 <= combination_limit <= 1024 or character is not None))):
         raise ValueError("Combination windows require an explicit snapshot and a valid offset/limit")
-    params = StdioServerParameters(command=str(binary), env=dict(os.environ))
-    async with stdio_client(params, errlog=errlog) as (reader, writer), ClientSession(reader, writer) as session:
-        await session.initialize()
-
+    async with collection_connection(binary, errlog, session) as session:
         async def request(tool, **args):
             result = await session.call_tool(tool, args)
             if result.isError:

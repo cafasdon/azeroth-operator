@@ -4539,3 +4539,13 @@ maps and unknown observations return no geometry. This is not yards, a path,
 arrival or current location. character_summary retains saved position/capture
 status only. No waypoint, map opening, movement or polling occurs. Position data
 stays in the owner's private store. See ADR-088. Native testing remains deferred.
+
+## Gear collection connection reuse
+
+The offline gear-window collector reuses one initialized local MCP reader per
+run. Completed journals start no reader. Standalone collection keeps its existing
+connection behaviour. Source/config/template checks, total deadlines and committed
+journal progress remain in force. Changed collector source can invalidate an old
+collection binding; old journals are not relabelled or migrated. See ADR-090 and
+gear-connection-reuse-verification-2026-11-10.md for the bounded synthetic benchmark.
+This changes connection cost, not ownership, native legality or BiS evidence.

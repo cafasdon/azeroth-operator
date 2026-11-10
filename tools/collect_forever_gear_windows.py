@@ -1,6 +1,7 @@
 """Collect bounded offline gear-plan windows and resume an explicitly bound journal."""
 import argparse
 import asyncio
+from contextlib import AsyncExitStack
 import hashlib
 from importlib.metadata import version
 import json
@@ -121,7 +122,10 @@ async def collect_windows(args, *, deadline=None):
                'observed_enchant_effect_id', 'observed_random_suffix_id'] if getattr(args, name) is not None}
     inserted = attempted = 0
     stop = 'window_budget'
-    with tempfile.TemporaryFile(mode='w+') as errlog:
+    connections = AsyncExitStack()
+    try:
+        errlog = connections.enter_context(tempfile.TemporaryFile(mode='w+'))
+        session = None
         for _ in range(args.max_windows):
             if status and status['reported_coordinate_coverage_complete']:
                 stop = 'reported_coverage_complete'
@@ -139,6 +143,15 @@ async def collect_windows(args, *, deadline=None):
             can_dual_wield = ranker.player_spec(ranker.single_player(template['raid'])) in ranker.DUAL_WIELD_SPECS
             remaining = deadline - monotonic()
             require(remaining > 0)
+            window_deadline = min(deadline, monotonic() + 45)
+            if session is None:
+                # Enter and close SDK cancel scopes in this task; collection calls can use child tasks.
+                startup_remaining = window_deadline - monotonic()
+                require(startup_remaining > 0)
+                async with asyncio.timeout(startup_remaining):
+                    session = await connections.enter_async_context(ranker.collection_connection(args.mcp, errlog))
+            remaining = window_deadline - monotonic()
+            require(remaining > 0)
             collected = await asyncio.wait_for(ranker.collect(args.mcp, args.snapshot_id, args.slot, errlog,
                 collapse_identical=args.collapse_identical_items, item_ids=args.item_id,
                 can_dual_wield=can_dual_wield, set_id=args.set_id, max_drafts=args.max_drafts,
@@ -147,7 +160,7 @@ async def collect_windows(args, *, deadline=None):
                 positional_equipment=getattr(args,'positional_equipment',False),
                 include_empty_slots=getattr(args,'include_empty_slots',False),
                 candidate_scan_limit=args.candidate_scan_limit,
-                candidate_page_cache=candidate_page_cache), timeout=min(45, remaining))
+                candidate_page_cache=candidate_page_cache, session=session), timeout=min(45, remaining))
             drafts, skipped, coverage, stats, _, _, search = collected
             require(search['snapshot_id'] == args.snapshot_id and search['requested_slots'] == args.slot
                     and search['combination_window']['offset'] == offset
@@ -173,6 +186,9 @@ async def collect_windows(args, *, deadline=None):
             require(status.get('collection_binding_sha256') == binding and status['snapshot_id'] == args.snapshot_id)
         if status and status['reported_coordinate_coverage_complete']:
             stop = 'reported_coverage_complete'
+    finally:
+        # Close in the owning task without rewrapping controller errors in SDK task groups.
+        await connections.aclose()
     return {'mode': 'gear_window_collection', 'collection_binding_sha256': binding,
             'candidate_scan_limit': args.candidate_scan_limit,
             'candidate_page_cache': candidate_page_cache.stats(),
