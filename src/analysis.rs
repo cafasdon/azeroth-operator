@@ -4552,6 +4552,11 @@ pub fn compare_observations(
                     "after":new_objectives.map(quest_objective_quantities),
                     "objective_identity_verified":false
                 });
+                comparison["quest_change"]["objective_index_changes"] = json!(
+                    old_objectives
+                        .zip(new_objectives)
+                        .map(|(before, after)| compare_quest_objective_indices(before, after))
+                );
             }
         }
     }
@@ -10266,6 +10271,49 @@ pub fn quest_objective_quantities(objectives: &serde_json::Map<String, Value>) -
             )
             .collect::<BTreeMap<_, _>>()
     )
+}
+
+fn compare_quest_objective_indices(
+    before: &serde_json::Map<String, Value>,
+    after: &serde_json::Map<String, Value>,
+) -> Value {
+    let indices: BTreeSet<_> = before
+        .keys()
+        .chain(after.keys())
+        .filter_map(|key| key.parse::<u32>().ok())
+        .collect();
+    let changes: Vec<_> = indices
+        .into_iter()
+        .filter_map(|index| {
+            let key = index.to_string();
+            let old = before.get(&key);
+            let new = after.get(&key);
+            if old.zip(new).is_some_and(|(old, new)| {
+                ["kind", "finished", "required", "fulfilled"]
+                    .into_iter()
+                    .all(|field| old[field] == new[field])
+            }) {
+                return None;
+            }
+            let fulfilled_delta = old.zip(new).and_then(|(old, new)| {
+                let required = old["required"].as_u64()?;
+                (old["kind"] == new["kind"] && new["required"].as_u64() == Some(required))
+                    .then_some(())?;
+                Some(
+                    i128::from(new["fulfilled"].as_u64()?) - i128::from(old["fulfilled"].as_u64()?),
+                )
+            });
+            let project = |row: &Value| {
+                json!({"kind":row["kind"],"finished":row["finished"],
+            "required":row["required"],"fulfilled":row["fulfilled"]})
+            };
+            Some(
+                json!({"index":index,"before":old.map(project),"after":new.map(project),
+            "fulfilled_delta":fulfilled_delta}),
+            )
+        })
+        .collect();
+    json!({"changes":changes,"objective_identity_verified":false})
 }
 
 fn quest_objective_workload(quests: &serde_json::Map<String, Value>) -> Value {

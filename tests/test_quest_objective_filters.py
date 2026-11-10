@@ -735,6 +735,29 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(quantities['after']['monster'],{'fulfilled':2,'required':4,'remaining':3,
                         'counted_objectives':2,'unknown_objectives':0})
                     self.assertFalse(quantities['objective_identity_verified'])
+                    indices = json.loads(reply.content[0].text)['quest_change']['objective_index_changes']
+                    self.assertEqual(indices, {'objective_identity_verified':False,'changes':[{
+                        'index':2,'before':{'kind':'monster','finished':False,'required':None,'fulfilled':None},
+                        'after':{'kind':'monster','finished':False,'required':1,'fulfilled':2},
+                        'fulfilled_delta':None,
+                    }]})
+                    progressed = deepcopy(changed)
+                    progressed['sections']['quests']['9']['objectives']['1']['fulfilled'] = 2
+                    progressed['sections']['quests']['6']['objectives']['1'].update(required=None, fulfilled=None)
+                    progress_key = store.ingest(progressed)
+                    original[progress_key+'.json'] = (Path(folder)/(progress_key+'.json')).read_bytes()
+                    progress = await session.call_tool('compare_snapshots',{
+                        'before_id':changed_key,'after_id':progress_key,'quest_id':9,
+                    })
+                    self.assertFalse(progress.isError,progress)
+                    changes = json.loads(progress.content[0].text)['quest_change']['objective_index_changes']['changes']
+                    self.assertEqual([(row['index'],row['fulfilled_delta']) for row in changes], [(1,2)])
+                    unchanged = await session.call_tool('compare_snapshots',{
+                        'before_id':changed_key,'after_id':progress_key,'quest_id':6,
+                    })
+                    self.assertFalse(unchanged.isError,unchanged)
+                    self.assertEqual(json.loads(unchanged.content[0].text)
+                                     ['quest_change']['objective_index_changes']['changes'], [])
                     reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':3})
                     self.assertFalse(reply.isError,reply)
                     timer=json.loads(reply.content[0].text)['quest_change']['timer_change']

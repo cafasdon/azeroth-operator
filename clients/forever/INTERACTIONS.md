@@ -8,6 +8,10 @@ remaining counts stay unknown.
 The checklist also lists quests with a nonempty set of objectives all
 marked finished and captured readiness of `not_ready` or `unknown`.
 Completing the observed objectives alone does not establish turn-in readiness.
+Comparing an exact saved quest shows changed objective indices when both
+captures contain objective observations. Fulfilled-count deltas require
+the same captured kind and required count on both sides. Index matching
+does not establish objective identity.
 
 In `inspect_snapshot`, select a Forever `faction_id` in the reputation
 section and pass `reputation_points_per_turn_in` to estimate repetitions
