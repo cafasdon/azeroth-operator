@@ -1,5 +1,7 @@
 # Changelog
 
+- Report per-item slot bounds and exact-match feasibility for saved outgoing trade offers.
+
 - Compare readable outgoing trade slots across saved Forever captures, even when the rest of the offer is unreadable.
 
 - Compare saved quest log readiness for quests seen in both dialogue panels.

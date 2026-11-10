@@ -98,7 +98,9 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                         observed={1:0,2:9,4:6}[index]
                         self.assertEqual(review['items'],[{'item_id':10,'expected_quantity':quantity,
                             'observed_quantity':observed,'observed_shortfall':max(0,quantity-observed),
-                            'observed_excess':max(0,observed-quantity)}])
+                            'observed_excess':max(0,observed-quantity),
+                            'minimum_additional_snapshot_slots':int(quantity > observed)}])
+                        self.assertIs(review['exact_match_possible_in_snapshot_format'], match is not False)
                     for quantity, slots, fits in [
                         (9, 0, True), (9 + 4 * 4294967295, 4, True),
                         (10 + 4 * 4294967295, 5, False), (18446744073709551615, 4294967297, False),
@@ -107,7 +109,9 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                             section='player_trade_offer',trade_offer_requirements=[
                                 {'item_id':10,'quantity':quantity}]))['trade_offer_requirement_review']
                         self.assertEqual(review['minimum_additional_snapshot_slots'],slots)
+                        self.assertEqual(review['items'][0]['minimum_additional_snapshot_slots'],slots)
                         self.assertIs(review['snapshot_slots_can_fit_shortfalls'],fits)
+                        self.assertIs(review['exact_match_possible_in_snapshot_format'],fits)
                         self.assertIsNone(review['captured_offer_matches_expected'])
                     expected=[{'item_id':10,'quantity':9}]+[
                         {'item_id':i,'quantity':1} for i in range(11,16)]
@@ -121,6 +125,7 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                     review=(await call('inspect_snapshot',snapshot_id=valid[2][0],
                         section='player_trade_offer',trade_offer_requirements=expected))['trade_offer_requirement_review']
                     self.assertIs(review['captured_offer_matches_expected'],False)
+                    self.assertIs(review['exact_match_possible_in_snapshot_format'],False)
                     self.assertEqual(review['unexpected_observed_quantities'],{'10':9})
                     self.assertIsNone((await call('inspect_snapshot',snapshot_id=valid[0][0],
                         section='player_trade_offer',trade_offer_requirements=expected))['trade_offer_requirement_review'])

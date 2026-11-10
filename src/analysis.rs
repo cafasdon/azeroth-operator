@@ -3558,6 +3558,7 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
         return Value::Null;
     }
     let (slots, mut quantities) = observed_trade_offer_quantities(section);
+    let unreadable_slots = 6 - slots;
     let mut short_item_count = 0;
     let mut minimum_additional_snapshot_slots = 0;
     let mut excess = false;
@@ -3567,25 +3568,29 @@ pub fn review_trade_offer(section: &Value, requirements: &[LootRequirement]) -> 
             let expected = row.quantity.get();
             let observed = quantities.remove(&row.item_id.get()).unwrap_or_default();
             let shortfall = expected.saturating_sub(observed);
+            let minimum_slots = shortfall.div_ceil(u64::from(u32::MAX));
             short_item_count += usize::from(shortfall > 0);
-            minimum_additional_snapshot_slots += shortfall.div_ceil(u64::from(u32::MAX));
+            minimum_additional_snapshot_slots += minimum_slots;
             excess |= observed > expected;
             json!({"item_id":row.item_id,"expected_quantity":expected,
                 "observed_quantity":observed,"observed_shortfall":shortfall,
-                "observed_excess":observed.saturating_sub(expected)})
+                "observed_excess":observed.saturating_sub(expected),
+                "minimum_additional_snapshot_slots":minimum_slots})
         })
         .collect();
-    let unreadable_slots = 6 - slots;
     // Each unclassified normal slot can cover a shortfall for at most one item ID.
     let exact_match = if excess || !quantities.is_empty() || short_item_count > unreadable_slots {
         Some(false)
     } else {
         (unreadable_slots == 0).then_some(true)
     };
+    let snapshot_slots_can_fit_shortfalls =
+        minimum_additional_snapshot_slots <= unreadable_slots as u64;
     json!({"items":items,"unexpected_observed_quantities":quantities,
         "unreadable_or_empty_slots":unreadable_slots,"short_item_id_count":short_item_count,
         "minimum_additional_snapshot_slots":minimum_additional_snapshot_slots,
-        "snapshot_slots_can_fit_shortfalls":minimum_additional_snapshot_slots <= unreadable_slots as u64,
+        "snapshot_slots_can_fit_shortfalls":snapshot_slots_can_fit_shortfalls,
+        "exact_match_possible_in_snapshot_format":exact_match != Some(false) && snapshot_slots_can_fit_shortfalls,
         "captured_offer_matches_expected":exact_match,
         "current_offer_verified":false,"trade_completion_verified":false,"game_execution":false})
 }
