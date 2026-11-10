@@ -3269,6 +3269,11 @@ requirements where available. Each change flag requires that field on
 both sides and the same trainer kind. Reordering ability rows does not
 count as a change.
 
+`compare_snapshots.flight_destination_node_id` shows a saved destination's
+state, fare and affordability on each side. It uses each capture's own
+wallet and reports deltas only for the same map and origin. Missing
+panels, ambiguous maps and unlisted destinations remain distinct.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever fares and affordability for an exact flight destination.
+
 - Compare recorded prerequisites for named Forever trainer lessons.
 
 - Compare saved Forever trainer prices and availability for an exact lesson name.

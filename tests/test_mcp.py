@@ -1238,6 +1238,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(travel_changes["flight_map_changes"]["affordability_changes"], [
                             {"node_id": 14, "before_affordable": True, "after_affordable": False},
                         ])
+                        async def compare_flight(node, end=travel_after):
+                            reply=await session.call_tool("compare_snapshots",{
+                                "before_id":travel_before,"after_id":end,"flight_destination_node_id":node})
+                            self.assertFalse(reply.isError,reply)
+                            return json.loads(reply.content[0].text)["flight_destination_comparison"]
+                        destination=await compare_flight(14)
+                        self.assertTrue(destination["same_map_and_origin"])
+                        self.assertEqual(destination["fare_copper_delta"],0)
+                        self.assertTrue(destination["before"]["affordable"])
+                        self.assertFalse(destination["after"]["affordable"])
+                        self.assertTrue(destination["affordability_changed"])
+                        absent=await compare_flight(999999)
+                        self.assertEqual(absent["after"]["status"],"not_observed")
+                        self.assertIsNone(absent["same_map_and_origin"])
+                        no_panel=json.loads(json.dumps(travel))
+                        del no_panel["sections"]["flight_map"]
+                        no_panel_id=SnapshotStore(Path(folder)).ingest(no_panel)
+                        missing=await compare_flight(14,no_panel_id)
+                        self.assertEqual(missing["after"],{"status":"not_captured"})
+                        self.assertIsNone(missing["fare_copper_delta"])
                         context = travel_changes["travel_context_change"]
                         self.assertTrue(context["map_changed"])
                         self.assertTrue(context["hearthstone_bind_name_changed"])

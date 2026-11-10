@@ -3109,6 +3109,7 @@ pub struct ComparisonSelectors<'a> {
     pub merchant_offer_item_id: Option<std::num::NonZeroU32>,
     pub merchant_offer_currency_id: Option<std::num::NonZeroU32>,
     pub trainer_lesson_name: Option<&'a str>,
+    pub flight_destination_node_id: Option<std::num::NonZeroU32>,
     pub repair_quote_changes: bool,
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3768,12 +3769,24 @@ pub fn compare_observations(
             .and_then(|(old, new)| compare_trainer_services(old, new))
             .unwrap_or(Value::Null);
     }
+    let wallet = |snapshot: &Snapshot| snapshot.sections.get("wallet")?["copper"].as_u64();
+    if let Some(destination) = selectors.flight_destination_node_id {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Flight destination comparison requires Forever snapshots"
+        );
+        comparison["flight_destination_comparison"] = compare_flight_destination(
+            flight_before,
+            flight_after,
+            wallet(before),
+            wallet(after),
+            destination.get(),
+        );
+    }
     if flight_before.is_some() || flight_after.is_some() {
         comparison["flight_map_changes"] = flight_before
             .zip(flight_after)
             .map(|(old_map, new_map)| {
-                let wallet =
-                    |snapshot: &Snapshot| snapshot.sections.get("wallet")?["copper"].as_u64();
                 compare_flight_maps(old_map, new_map, wallet(before).zip(wallet(after)))
             })
             .unwrap_or(Value::Null);
@@ -7183,6 +7196,57 @@ fn captured_flight_fare_summary(map: &Value) -> Option<Value> {
     Some(json!({"map_id":map["map_id"],"origin_node_id":origin_id,
         "known_fare_count":known.len(),"unknown_fare_count":unknown_fares,
         "cheapest_destinations":cheapest}))
+}
+
+fn compare_flight_destination(
+    before: Option<&Value>,
+    after: Option<&Value>,
+    before_wallet: Option<u64>,
+    after_wallet: Option<u64>,
+    destination: u32,
+) -> Value {
+    let observation = |map: Option<&Value>, wallet| {
+        let Some(map) = map else {
+            return json!({"status":"not_captured"});
+        };
+        let Some((origin, nodes)) = flight_destinations(map) else {
+            return json!({"status":"origin_or_destinations_ambiguous","map_id":map["map_id"]});
+        };
+        let Some(row) = nodes
+            .get(&u64::from(destination))
+            .filter(|_| origin != u64::from(destination))
+        else {
+            return json!({"status":"not_observed","map_id":map["map_id"],"origin_node_id":origin});
+        };
+        let fare = row["fare_copper"].as_u64();
+        let affordable = fare
+            .zip(wallet)
+            .filter(|_| row["state"] == "reachable")
+            .map(|(fare, balance)| fare <= balance);
+        json!({"status":"observed","map_id":map["map_id"],"origin_node_id":origin,
+            "state":row["state"],"fare_copper":fare,"affordable":affordable})
+    };
+    let a = observation(before, before_wallet);
+    let b = observation(after, after_wallet);
+    let same_map_and_origin = a["map_id"]
+        .as_u64()
+        .zip(a["origin_node_id"].as_u64())
+        .zip(b["map_id"].as_u64().zip(b["origin_node_id"].as_u64()))
+        .filter(|_| a["status"] == "observed" && b["status"] == "observed")
+        .map(|(a, b)| a == b);
+    let fare_delta = a["fare_copper"]
+        .as_i64()
+        .zip(b["fare_copper"].as_i64())
+        .filter(|_| same_map_and_origin == Some(true))
+        .map(|(a, b)| b - a);
+    let affordability_changed = a["affordable"]
+        .as_bool()
+        .zip(b["affordable"].as_bool())
+        .filter(|_| same_map_and_origin == Some(true))
+        .map(|(a, b)| a != b);
+    json!({"destination_node_id":destination,"before":a,"after":b,
+        "same_map_and_origin":same_map_and_origin,"fare_copper_delta":fare_delta,
+        "affordability_changed":affordability_changed,"live":false})
 }
 
 fn compare_flight_maps(before: &Value, after: &Value, wallets: Option<(u64, u64)>) -> Value {
