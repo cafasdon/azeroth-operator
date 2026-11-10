@@ -10636,7 +10636,7 @@ pub fn quest_xp_wallet_projection(
     projection
 }
 
-fn quest_wallet_turn_in_order<'a>(
+pub(crate) fn quest_wallet_turn_in_order<'a>(
     quests: impl Iterator<Item = (&'a String, &'a Value)>,
     balance: Option<u64>,
 ) -> Option<Value> {

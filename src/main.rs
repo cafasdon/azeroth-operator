@@ -715,6 +715,9 @@ struct List {
     /// Require saved ready quest rewards to cover a positive next-level XP shortfall with XP gain enabled.
     #[serde(default)]
     ready_quest_xp_covers_next_level: bool,
+    /// Require the saved wallet to cover the selected ready quest XP turn-in plan.
+    #[serde(default)]
+    ready_quest_xp_affordable_only: bool,
     /// Match an exact quest ID in a saved Forever quest log.
     quest_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive title in the saved Forever quest log.
@@ -2711,6 +2714,7 @@ impl Operator {
                 maximum_xp_to_next_level: args.maximum_xp_to_next_level,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
                 ready_quest_xp_covers_next_level: args.ready_quest_xp_covers_next_level,
+                ready_quest_xp_affordable_only: args.ready_quest_xp_affordable_only,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),
                 quest_reward_item_id: args.quest_reward_item_id,

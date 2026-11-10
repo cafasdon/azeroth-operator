@@ -9,6 +9,11 @@ enabled XP gain and enough known XP from all quests marked ready in that
 capture. Matches show up to 20 quest IDs from the reward-based plan.
 This uses the saved quest log independently of any other quest filters and
 does not establish turn-in eligibility or affordability.
+Add `ready_quest_xp_affordable_only: true` to require known saved costs
+and rewards for the selected shortlist and enough recorded starting copper.
+Matching plans include the minimum starting copper and the first 20 quest
+IDs in wallet order. This checks the selected plan rather than searching
+alternate quest combinations.
 
 Saved pet searches also support `active_pet.happiness` for the exact
 recorded value and `active_pet.loyalty` for the exact case-insensitive

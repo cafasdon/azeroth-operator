@@ -2048,6 +2048,7 @@ pub struct CaptureFilters<'a> {
     pub maximum_xp_to_next_level: Option<u32>,
     pub xp_gain_enabled_only: bool,
     pub ready_quest_xp_covers_next_level: bool,
+    pub ready_quest_xp_affordable_only: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
@@ -2356,6 +2357,7 @@ impl Store {
             maximum_xp_to_next_level,
             xp_gain_enabled_only,
             ready_quest_xp_covers_next_level,
+            ready_quest_xp_affordable_only,
             quest_id,
             quest_title,
             quest_reward_item_id,
@@ -3020,6 +3022,10 @@ impl Store {
             || maximum_xp_to_next_level.is_some()
             || xp_gain_enabled_only
             || ready_quest_xp_covers_next_level;
+        ensure!(
+            !ready_quest_xp_affordable_only || ready_quest_xp_covers_next_level,
+            "Ready quest XP affordability requires the next-level ready quest XP filter"
+        );
         ensure!(
             currency_balance
                 .as_ref()
@@ -4132,6 +4138,37 @@ impl Store {
                                 "quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
                                 "truncated":ids.len()>20,
                             });
+                            if ready_quest_xp_affordable_only {
+                                let selected = ids
+                                    .iter()
+                                    .map(|id| quests.get_key_value(&id.as_u64()?.to_string()))
+                                    .collect::<Option<Vec<_>>>();
+                                let balance = s
+                                    .sections
+                                    .get("wallet")
+                                    .and_then(|wallet| wallet["copper"].as_u64());
+                                let Some(order) = selected
+                                    .and_then(|quests| {
+                                        analysis::quest_wallet_turn_in_order(
+                                            quests.into_iter(),
+                                            balance,
+                                        )
+                                    })
+                                    .filter(|order| order["shortfall_copper"].as_u64() == Some(0))
+                                else {
+                                    continue;
+                                };
+                                evidence["ready_quest_xp_plan"]["minimum_starting_copper"] =
+                                    order["minimum_starting_copper"].clone();
+                                evidence["ready_quest_xp_plan"]["wallet_turn_in_quest_ids"] = json!(
+                                    order["quest_ids"]
+                                        .as_array()
+                                        .unwrap()
+                                        .iter()
+                                        .take(20)
+                                        .collect::<Vec<_>>()
+                                );
+                            }
                         }
                         Some(evidence)
                     } else {

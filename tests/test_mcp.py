@@ -1727,6 +1727,30 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             **ready_xp_query, "family": "retail",
                         })).isError)
+                        store = SnapshotStore(Path(folder))
+                        affordable_keys = []
+                        for balance in (38, 39, None):
+                            capture = json.loads(json.dumps(store.read(travel_before)))
+                            if balance is None:
+                                capture["sections"].pop("wallet")
+                            else:
+                                capture["sections"]["wallet"]["copper"] = balance
+                            affordable_keys.append(store.ingest(capture))
+                        wallet_match = await session.call_tool("list_snapshots", {
+                            **ready_xp_query, "ready_quest_xp_affordable_only": True,
+                        })
+                        self.assertFalse(wallet_match.isError)
+                        wallet_rows = json.loads(wallet_match.content[0].text)["snapshots"]
+                        self.assertEqual([row["snapshot_id"] for row in wallet_rows], [affordable_keys[1]])
+                        self.assertEqual(wallet_rows[0]["experience_match"]["ready_quest_xp_plan"], {
+                            "quest_count": 2, "quest_ids": [2, 10], "truncated": False,
+                            "minimum_starting_copper": 39, "wallet_turn_in_quest_ids": ["2", "10"],
+                        })
+                        for temporary_id in affordable_keys:
+                            (Path(folder) / f"{temporary_id}.json").unlink()
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            "family": "forever", "ready_quest_xp_affordable_only": True,
+                        })).isError)
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             **rested_query, "family": "retail",
                         })).isError)
