@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved ready quest turn-ins against an explicit honour reward target.
+
 - Find and shortlist saved Forever quests by recorded honour reward.
 
 - Compare saved quest item, currency and renown rewards separately from optional choices.

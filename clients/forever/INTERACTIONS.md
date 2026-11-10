@@ -3354,6 +3354,12 @@ Use `quest_min_reward_honor` with `list_snapshots` or when inspecting the
 A zero threshold still requires a recorded amount. Combine it with XP,
 cost or objective filters to require those conditions on the same quest.
 
+Set `inspect_snapshot.quest_ready_honor_target` in the `quests` section
+to check an explicit honour reward target after quest filters. The plan
+uses quests recorded as ready, chooses the highest known rewards first,
+and breaks ties by quest ID. Unknown rewards may leave target coverage
+unknown. The plan does not convert honour rewards into PvP rank points.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

@@ -241,6 +241,8 @@ struct Inspect {
     /// Project combined observed XP for retained quests against the saved level threshold.
     #[serde(default)]
     quest_list_xp_projection: bool,
+    /// Review whether saved ready quests cover this explicit honor reward target.
+    quest_ready_honor_target: Option<std::num::NonZeroU64>,
     /// Project total costs and rewards for the retained quests using the same captured wallet.
     #[serde(default)]
     quest_list_wallet_projection: bool,
@@ -3145,6 +3147,7 @@ impl Operator {
                 || args.quest_min_reward_xp.is_some()
                 || args.quest_min_reward_honor.is_some()
                 || args.quest_list_xp_projection
+                || args.quest_ready_honor_target.is_some()
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
                 || args.quest_list_renown_projection
@@ -3227,6 +3230,7 @@ impl Operator {
             || args.quest_min_reward_xp.is_some()
             || args.quest_min_reward_honor.is_some()
             || args.quest_list_xp_projection
+            || args.quest_ready_honor_target.is_some()
             || args.quest_list_wallet_projection
             || args.quest_list_currency_projection
             || args.quest_list_renown_projection
@@ -4645,6 +4649,7 @@ impl Operator {
                     || args.quest_min_reward_xp.is_some()
                     || args.quest_min_reward_honor.is_some()
                     || args.quest_list_xp_projection
+                    || args.quest_ready_honor_target.is_some()
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
                     || args.quest_list_renown_projection
@@ -4900,6 +4905,15 @@ impl Operator {
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
                                 azeroth_operator::analysis::quest_list_xp_projection(
                                     quests, experience,
+                                )
+                            });
+                    }
+                    if let Some(target) = args.quest_ready_honor_target {
+                        value["quest_ready_honor_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_ready_honor_projection(
+                                    quests,
+                                    target.get(),
                                 )
                             });
                     }

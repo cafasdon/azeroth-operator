@@ -7093,6 +7093,50 @@ pub fn quest_list_xp_projection(
     })
 }
 
+pub fn quest_ready_honor_projection(quests: &serde_json::Map<String, Value>, target: u64) -> Value {
+    let mut unknown = 0;
+    let mut rewards = Vec::new();
+    for (id, quest) in quests {
+        if quest_readiness(quest) != QuestReadiness::Ready {
+            continue;
+        }
+        let Some(honor) = quest["reward_amounts"]["honor"].as_u64() else {
+            unknown += 1;
+            continue;
+        };
+        if honor > 0
+            && let Ok(id) = id.parse::<u32>()
+        {
+            rewards.push((std::cmp::Reverse(honor), id));
+        }
+    }
+    rewards.sort_unstable();
+    let known_total: u64 = rewards.iter().map(|(honor, _)| honor.0).sum();
+    let shortfall = target.saturating_sub(known_total);
+    let covers_target = if shortfall == 0 {
+        Some(true)
+    } else if unknown == 0 {
+        Some(false)
+    } else {
+        None
+    };
+    let plan = (shortfall == 0).then(|| {
+        let mut selected = Vec::new();
+        let mut total = 0;
+        for (honor, id) in rewards {
+            total += honor.0;
+            selected.push(id);
+            if total >= target { break; }
+        }
+        json!({"quest_count":selected.len(),"quest_ids":selected.iter().take(20).collect::<Vec<_>>(),
+            "truncated":selected.len()>20,"recorded_honor_total":total})
+    });
+    json!({"target_honor":target,"known_ready_reward_honor":known_total,
+        "ready_quests_with_unknown_honor":unknown,"covers_target":covers_target,
+        "shortfall_after_known_ready_rewards":shortfall,"ready_turn_in_plan":plan,
+        "rank_progress_verified":false,"live":false})
+}
+
 pub fn quest_xp_projection(quest: Option<&Value>, experience: Option<&Value>) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

@@ -257,6 +257,25 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     honor_report=json.loads(honor_view.content[0].text)
                     self.assertEqual(set(honor_report['data']),{'3','10'})
                     self.assertEqual(honor_report['quest_reward_honor_unknown_count'],8)
+                    for capture,target,covers,total,shortfall in [
+                        (tied_key,25,True,25,0),(tied_key,26,False,25,1),(key,25,None,0,25),
+                    ]:
+                        report=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':capture,'section':'quests','quest_ready_honor_target':target})
+                        self.assertFalse(report.isError,report)
+                        projection=json.loads(report.content[0].text)['quest_ready_honor_projection']
+                        self.assertIs(projection['covers_target'],covers)
+                        self.assertEqual(projection['known_ready_reward_honor'],total)
+                        self.assertEqual(projection['shortfall_after_known_ready_rewards'],shortfall)
+                        if covers:
+                            self.assertEqual(projection['ready_turn_in_plan'],{
+                                'quest_count':1,'quest_ids':[3],'truncated':False,'recorded_honor_total':25})
+                        else:
+                            self.assertIsNone(projection['ready_turn_in_plan'])
+                    for options in [{'section':'wallet'},{'quest_id':3},{'quest_ready_honor_target':0}]:
+                        invalid=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':tied_key,'section':'quests','quest_ready_honor_target':25,**options})
+                        self.assertTrue(invalid.isError)
                     await timed(error=True,family='retail',quest_min_reward_honor=0)
                     await timed(error=True,family='retail',quest_within_captured_wallet=True)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
