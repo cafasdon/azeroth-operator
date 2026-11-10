@@ -391,6 +391,9 @@ struct Inspect {
     reputation_turn_in_item_costs: Option<Vec<ItemCost>>,
     /// Include saved bank withdrawal suggestions, starting at this location offset.
     reputation_turn_in_bank_withdrawal_offset: Option<usize>,
+    /// Show pending saved mail quantities for residuals in a reputation bank plan.
+    #[serde(default)]
+    reputation_turn_in_pending_mail: bool,
     /// Check an assumed copper cost per reputation turn-in against the captured wallet.
     reputation_turn_in_copper_cost: Option<ReputationTurnInCopperCost>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
@@ -3475,6 +3478,13 @@ impl Operator {
             .reputation_turn_in_item_costs
             .as_deref()
             .unwrap_or_else(|| args.reputation_turn_in_item_cost.as_slice());
+        if args.reputation_turn_in_pending_mail
+            && args.reputation_turn_in_bank_withdrawal_offset.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation pending mail requires a bank withdrawal plan",
+            )]);
+        }
         if args.reputation_turn_in_bank_withdrawal_offset.is_some()
             && reputation_item_costs.is_empty()
         {
@@ -6235,6 +6245,18 @@ impl Operator {
                                         };
                                         requirements.review_observed_stock(snapshot, Some(offset))["bank_withdrawal_plan"].clone()
                                     }));
+                                    if args.reputation_turn_in_pending_mail {
+                                        let rows =
+                                            value["reputation_turn_in_bank_withdrawals"]["rows"]
+                                                .as_array();
+                                        value["reputation_turn_in_pending_mail_observations"] = serde_json::json!(rows.and_then(|rows| {
+                                            let residual = serde_json::json!({"items":rows.iter().map(|row| serde_json::json!({
+                                                "item_id":row["item_id"],
+                                                "shortfall_vs_observed":row["remaining_after_observed_withdrawals"]
+                                            })).collect::<Vec<_>>()});
+                                            azeroth_operator::analysis::restock_pending_mail(snapshot, &residual)
+                                        }));
+                                    }
                                 }
                                 let capacities: Vec<_> = reputation_item_costs
                                     .iter()

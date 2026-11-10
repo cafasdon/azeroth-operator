@@ -1081,6 +1081,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
                         turn_in_capture = json.loads(json.dumps(more_factions))
                         turn_in_capture["sections"]["bags"] = {"0":{"1":{"item_id":744,"count":4}}}
+                        turn_in_capture["sections"]["mail_attachments"] = {
+                            "coverage":"loaded_inbox_attachments","loaded_messages":1,"total_messages":2,
+                            "messages":{"1":{"1":{"kind":"item","item_id":744,"count":2}}},
+                        }
                         turn_in_key = SnapshotStore(Path(folder)).ingest(turn_in_capture)
                         costs = [{"item_id":744,"quantity":2},{"item_id":745,"quantity":1}]
                         request = {"snapshot_id":turn_in_key,"section":"reputation","faction_id":10,
@@ -1129,6 +1133,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         result = await session.call_tool("inspect_snapshot", {
                             **request,"reputation_turn_in_item_costs":costs,
                             "reputation_turn_in_bank_withdrawal_offset":0,
+                            "reputation_turn_in_pending_mail":True,
                         })
                         self.assertFalse(result.isError,result)
                         withdrawals = json.loads(result.content[0].text)["reputation_turn_in_bank_withdrawals"]
@@ -1137,6 +1142,16 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual([row["storage"] for row in
                                           withdrawals["suggested_locations"]["locations"]], ["character_bank"])
                         self.assertFalse(withdrawals["withdrawal_eligibility_verified"])
+                        mail = json.loads(result.content[0].text)["reputation_turn_in_pending_mail_observations"]
+                        self.assertFalse(mail["counts_toward_restock_stock"])
+                        self.assertFalse(mail["retrieval_eligibility_verified"])
+                        self.assertEqual(mail["unloaded_messages"], 1)
+                        self.assertEqual(mail["items"], [
+                            {"item_id":744,"shortfall_after_observed_bank_withdrawals":1,
+                             "known_pending_quantity":2,"known_attachment_slots":1},
+                            {"item_id":745,"shortfall_after_observed_bank_withdrawals":3,
+                             "known_pending_quantity":None,"known_attachment_slots":None},
+                        ])
                         result = await session.call_tool("inspect_snapshot", {
                             **request,"reputation_turn_in_item_costs":[{"item_id":744,"quantity":2}],
                         })
@@ -1148,6 +1163,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         for options in [
                             {"reputation_turn_in_item_costs":[]},
                             {"reputation_turn_in_bank_withdrawal_offset":0},
+                            {"reputation_turn_in_item_costs":costs,"reputation_turn_in_pending_mail":True},
                             {"reputation_turn_in_item_costs":[costs[0],costs[0]]},
                             {"reputation_turn_in_item_costs":costs,"reputation_turn_in_item_cost":costs[0]},
                         ]:

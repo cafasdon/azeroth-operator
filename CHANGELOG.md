@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved pending mail attachments for reputation turn-in materials still missing after bank planning.
+
 - Identify saved quests with objective completion flags that changed in either direction.
 
 - Find changed objective observations across two saved Forever quest logs.

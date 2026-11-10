@@ -41,6 +41,10 @@ to zero for the first page of saved withdrawal locations. The plan uses
 the same capture's bags and banks and leaves withdrawal eligibility
 unverified. Missing bags or an unknown or overflowing required total
 leave the plan unknown.
+Set `reputation_turn_in_pending_mail` with the bank withdrawal plan to
+check its remaining shortfalls against loaded attachments in the same
+capture. Only item quantities and coverage are reported. Pending mail
+does not count as owned stock, and retrieval eligibility stays unverified.
 With the same points estimate, `reputation_turn_in_copper_cost` accepts
 `copper_per_turn_in` and an optional `wallet_reserve_copper`. It reports
 the total cost, wallet shortfall and wallet-supported repetitions from
