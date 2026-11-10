@@ -4,6 +4,9 @@ In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside
 `flight_wallet_reserve_copper`. Each calculation is independent. Missing
 values or an insufficient balance leave the corresponding remainder unknown.
+Comparing an exact flight destination reports each captured reachable fare's
+wallet shortfall and remaining balance. Deltas require known values on
+both sides and the same map and departure node.
 
 In `inspect_snapshot`, select a saved profession with `section: "professions"`
 and `profession_skill_line`, then set `profession_target_rank` to check points

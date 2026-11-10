@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved wallet shortfall and remaining balance for an exact flight destination.
+
 - Show saved flight wallet balance after each fare and spending headroom after the reserve.
 
 - Check saved profession trainer quotes individually against the same captured wallet.

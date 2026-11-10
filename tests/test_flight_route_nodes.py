@@ -197,6 +197,10 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(route['before']['observed_route_node_ids'],path)
                         self.assertEqual(route['after'].get('observed_route_node_ids'),expected_path)
                         self.assertIs(route['observed_route_changed'],changed)
+                        self.assertEqual(route['before']['remaining_wallet_after_fare_copper'],100)
+                        self.assertEqual(route['after']['wallet_shortfall_copper'],0)
+                        for field in ['remaining_wallet_after_fare_copper_delta','wallet_shortfall_copper_delta']:
+                            self.assertEqual(route[field],0 if route['same_map_and_origin'] else None)
                     no_routes=await call('compare_snapshots',before_id=old,after_id=old,
                         flight_destination_node_id=20)
                     self.assertNotIn('observed_route_changed',no_routes['flight_destination_comparison'])

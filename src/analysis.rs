@@ -8417,12 +8417,12 @@ fn compare_flight_destination(
             return json!({"status":"not_observed","map_id":map["map_id"],"origin_node_id":origin});
         };
         let fare = row["fare_copper"].as_u64();
-        let affordable = fare
-            .zip(wallet)
-            .filter(|_| row["state"] == "reachable")
-            .map(|(fare, balance)| fare <= balance);
+        let quote = fare.zip(wallet).filter(|_| row["state"] == "reachable");
+        let affordable = quote.map(|(fare, balance)| fare <= balance);
         let mut observed = json!({"status":"observed","map_id":map["map_id"],"origin_node_id":origin,
-            "state":row["state"],"fare_copper":fare,"affordable":affordable});
+            "state":row["state"],"fare_copper":fare,"affordable":affordable,
+            "wallet_shortfall_copper":quote.map(|(fare, balance)| fare.saturating_sub(balance)),
+            "remaining_wallet_after_fare_copper":quote.and_then(|(fare, balance)| balance.checked_sub(fare))});
         if let Some(path) = row.get("observed_route_node_ids") {
             observed["observed_route_node_ids"] = path.clone();
         }
@@ -8453,9 +8453,19 @@ fn compare_flight_destination(
         .filter(|_| same_map_and_origin == Some(true))
         .map(|(a, b)| a != b);
     let has_route_evidence = route_before.is_some() || route_after.is_some();
+    let wallet_delta = |field: &str| {
+        a[field]
+            .as_u64()
+            .zip(b[field].as_u64())
+            .filter(|_| same_map_and_origin == Some(true))
+            .map(|(before, after)| i128::from(after) - i128::from(before))
+    };
     let mut comparison = json!({"destination_node_id":destination,"before":a,"after":b,
         "same_map_and_origin":same_map_and_origin,"fare_copper_delta":fare_delta,
-        "affordability_changed":affordability_changed,"live":false});
+        "affordability_changed":affordability_changed,
+        "wallet_shortfall_copper_delta":wallet_delta("wallet_shortfall_copper"),
+        "remaining_wallet_after_fare_copper_delta":wallet_delta("remaining_wallet_after_fare_copper"),
+        "live":false});
     if has_route_evidence {
         comparison["observed_route_changed"] = json!(route_changed);
     }
