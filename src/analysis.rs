@@ -4845,7 +4845,11 @@ fn compare_action_bar_hotkeys(before: &Snapshot, after: &Snapshot) -> Value {
     json!({"before_available":previous.is_some(),"after_available":current.is_some(),"changes":changes})
 }
 
-pub fn action_bar_item_stock_audit(actions: &Value, snapshot: &Snapshot) -> Option<Value> {
+pub fn action_bar_item_stock_audit(
+    actions: &Value,
+    snapshot: &Snapshot,
+    target: Option<std::num::NonZeroU64>,
+) -> Option<Value> {
     let slots = actions["slots"].as_object()?;
     let mut items = BTreeMap::<u64, BTreeSet<u32>>::new();
     for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == "item") {
@@ -4887,10 +4891,14 @@ pub fn action_bar_item_stock_audit(actions: &Value, snapshot: &Snapshot) -> Opti
                 let bags = carried
                     .as_ref()
                     .map(|counts| counts.get(&id).copied().unwrap_or(0));
-                (
-                    id,
-                    json!({"slots":slots,"equipment_quantity":equipment,"bag_quantity":bags}),
-                )
+                let mut stock =
+                    json!({"slots":slots,"equipment_quantity":equipment,"bag_quantity":bags});
+                if let Some(target) = target {
+                    stock["bag_target_quantity"] = json!(target.get());
+                    stock["bag_quantity_shortfall"] =
+                        json!(bags.map(|quantity| target.get().saturating_sub(quantity)));
+                }
+                (id, stock)
             })
             .collect::<BTreeMap<_, _>>()
     ))

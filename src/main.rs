@@ -439,6 +439,8 @@ struct Inspect {
     /// Show carried stock for every retained item shortcut in the same capture.
     #[serde(default)]
     action_bar_item_stock_audit: bool,
+    /// Report the captured carried-stock shortfall per item against this quantity. Requires the stock audit.
+    action_bar_item_stock_target_quantity: Option<std::num::NonZeroU64>,
     /// Cross-reference observed action-bar spell slots with the saved Forever mount collection.
     #[serde(default)]
     action_bar_mount_audit: bool,
@@ -3138,6 +3140,12 @@ impl Operator {
                 "Action bar item stock requires an item ID",
             )]);
         }
+        if args.action_bar_item_stock_target_quantity.is_some() && !args.action_bar_item_stock_audit
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Action bar stock targets require the item stock audit",
+            )]);
+        }
         let action_id_filter = args
             .action_bar_spell_id
             .map(|id| ("spell", id))
@@ -5759,7 +5767,8 @@ impl Operator {
                     value["action_bar_item_stock_audit"] =
                         serde_json::json!(azeroth_operator::analysis::action_bar_item_stock_audit(
                             &value["data"],
-                            &snapshot
+                            &snapshot,
+                            args.action_bar_item_stock_target_quantity
                         ));
                 }
                 if args.action_bar_item_stock {

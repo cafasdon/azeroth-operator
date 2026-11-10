@@ -61,6 +61,36 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    audit_request = {
+                        'section': 'action_bar_observation',
+                        'action_bar_item_stock_audit': True,
+                    }
+                    for snapshot, target, expected in [
+                        (key, 8, 2), (key, 4, 0), (no_bags_key, 8, None),
+                    ]:
+                        reply = await session.call_tool('inspect_snapshot', {
+                            **audit_request, 'snapshot_id': snapshot,
+                            'action_bar_item_stock_target_quantity': target,
+                        })
+                        self.assertFalse(reply.isError, reply)
+                        audit = json.loads(reply.content[0].text)['action_bar_item_stock_audit']
+                        self.assertEqual(list(audit), ['100'])
+                        self.assertEqual(audit['100']['bag_target_quantity'], target)
+                        self.assertEqual(audit['100']['bag_quantity_shortfall'], expected)
+                    reply = await session.call_tool('inspect_snapshot', {
+                        **audit_request, 'snapshot_id': key,
+                    })
+                    self.assertFalse(reply.isError, reply)
+                    self.assertEqual(json.loads(reply.content[0].text)['action_bar_item_stock_audit'],
+                                     {'100': {'slots': [1], 'equipment_quantity': 1, 'bag_quantity': 6}})
+                    for audit_enabled, target in [(False, 8), (True, 0)]:
+                        reply = await session.call_tool('inspect_snapshot', {
+                            **audit_request, 'snapshot_id': key,
+                            'action_bar_item_stock_audit': audit_enabled,
+                            'action_bar_item_stock_target_quantity': target,
+                        })
+                        self.assertTrue(reply.isError, reply)
+
                     async def find(snapshot=key,**extra):
                         reply=await session.call_tool('find_snapshot_item',{'snapshot_id':snapshot,'item_id':100,**extra})
                         self.assertFalse(reply.isError,reply)
