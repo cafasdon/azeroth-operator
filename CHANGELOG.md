@@ -1,5 +1,7 @@
 # Changelog
 
+- Cross-reference saved action-bar item slots with the filtered toy journal.
+
 - Cross-reference saved action-bar spell slots with collected mounts.
 
 - Find collected mounts by recorded spell ID in saved snapshots.

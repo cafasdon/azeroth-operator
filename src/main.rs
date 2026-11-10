@@ -440,6 +440,9 @@ struct Inspect {
     /// Cross-reference observed action-bar spell slots with the saved Forever mount collection.
     #[serde(default)]
     action_bar_mount_audit: bool,
+    /// Cross-reference observed action-bar item slots with the saved filtered toy journal.
+    #[serde(default)]
+    action_bar_toy_audit: bool,
     /// Filter saved tracked crafts and recrafts by observed learned status.
     tracked_recipe_learning: Option<azeroth_operator::RecipeLearning>,
     /// Compare an explicit basket of costs against one saved Forever inventory.
@@ -3130,6 +3133,7 @@ impl Operator {
         let review_action_bar = args.action_bar_spellbook
             || args.action_bar_item_stock_audit
             || args.action_bar_mount_audit
+            || args.action_bar_toy_audit
             || args.action_bar_shared_hotkeys
             || args.action_bar_slot.is_some()
             || action_id_filter.is_some()
@@ -5708,22 +5712,31 @@ impl Operator {
                         azeroth_operator::analysis::shared_action_bar_hotkeys(&value["data"])
                     );
                 }
-                if args.action_bar_mount_audit {
+                if args.action_bar_mount_audit || args.action_bar_toy_audit {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Could not read captured action bar mounts",
+                            "Could not read captured action bar collection context",
                         )]);
                     };
                     if snapshot.client.family != Family::Forever {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Action bar mount audit requires a saved Forever snapshot",
+                            "Action bar collection audits require a saved Forever snapshot",
                         )]);
                     }
-                    value["action_bar_mount_audit"] =
-                        serde_json::json!(azeroth_operator::analysis::action_bar_mount_audit(
-                            &value["data"],
-                            snapshot.sections.get("mount_collection")
-                        ));
+                    if args.action_bar_mount_audit {
+                        value["action_bar_mount_audit"] =
+                            serde_json::json!(azeroth_operator::analysis::action_bar_mount_audit(
+                                &value["data"],
+                                snapshot.sections.get("mount_collection")
+                            ));
+                    }
+                    if args.action_bar_toy_audit {
+                        value["action_bar_toy_audit"] =
+                            serde_json::json!(azeroth_operator::analysis::action_bar_toy_audit(
+                                &value["data"],
+                                snapshot.sections.get("toy_collection_view")
+                            ));
+                    }
                 }
                 if args.action_bar_item_stock_audit {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {

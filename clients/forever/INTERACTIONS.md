@@ -3384,6 +3384,10 @@ Set `action_bar_mount_audit: true` on `action_bar_observation` to match
 retained spell slots to collected mounts by exact spell ID in the same
 capture. The audit only covers captured spell rows and leaves current
 mount usability and complete action-bar coverage unverified.
+Set `action_bar_toy_audit: true` on the same section to match retained
+item slots to exact item IDs in the same capture's filtered toy journal.
+Matches preserve the recorded collected and favourite flags. Missing
+matches leave journal coverage and current toy usability unverified.
 
 Set `inspect_snapshot.toy_name` with the `toy_collection_view` section
 to look up an exact public toy name, ignoring case and surrounding spaces.

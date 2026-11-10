@@ -4896,15 +4896,20 @@ pub fn action_bar_item_stock_audit(actions: &Value, snapshot: &Snapshot) -> Opti
     ))
 }
 
-pub fn action_bar_mount_audit(actions: &Value, mounts: Option<&Value>) -> Option<Value> {
+fn action_slots_by_id(actions: &Value, kind: &str) -> Option<BTreeMap<u64, BTreeSet<u32>>> {
     let slots = actions["slots"].as_object()?;
-    let mounts = mounts?["entries"].as_object()?;
-    let mut slots_by_spell = BTreeMap::<u64, BTreeSet<u32>>::new();
-    for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == "spell") {
+    let mut slots_by_id = BTreeMap::<u64, BTreeSet<u32>>::new();
+    for (slot, row) in slots.iter().filter(|(_, row)| row["kind"] == kind) {
         if let (Ok(slot), Some(id)) = (slot.parse(), row["id"].as_u64()) {
-            slots_by_spell.entry(id).or_default().insert(slot);
+            slots_by_id.entry(id).or_default().insert(slot);
         }
     }
+    Some(slots_by_id)
+}
+
+pub fn action_bar_mount_audit(actions: &Value, mounts: Option<&Value>) -> Option<Value> {
+    let mounts = mounts?["entries"].as_object()?;
+    let slots_by_spell = action_slots_by_id(actions, "spell")?;
     let matches: BTreeMap<_, _> = mounts.iter().filter_map(|(id, row)| {
         let spell = row["spell_id"].as_u64()?;
         let slots = slots_by_spell.get(&spell)?;
@@ -4914,6 +4919,28 @@ pub fn action_bar_mount_audit(actions: &Value, mounts: Option<&Value>) -> Option
     Some(
         json!({"basis":"exact_saved_mount_spell_id","matches_by_mount_id":matches,
         "current_mount_usability_verified":false,"complete_action_bar_coverage_verified":false,"live":false}),
+    )
+}
+
+pub fn action_bar_toy_audit(actions: &Value, toys: Option<&Value>) -> Option<Value> {
+    let toys = toys?;
+    let entries = toys["entries"].as_object()?;
+    let slots_by_item = action_slots_by_id(actions, "item")?;
+    let matches: BTreeMap<_, _> = slots_by_item
+        .iter()
+        .filter_map(|(id, slots)| {
+            let row = entries.get(&id.to_string())?;
+            Some((
+                id,
+                json!({"name":row["name"],"observed_action_slots":slots,
+            "captured_collected":row["collected"],"captured_favorite":row["favorite"]}),
+            ))
+        })
+        .collect();
+    Some(
+        json!({"basis":"exact_saved_toy_item_id","journal_coverage":toys["coverage"],
+        "matches_by_item_id":matches,"current_toy_usability_verified":false,
+        "complete_action_bar_coverage_verified":false,"live":false}),
     )
 }
 

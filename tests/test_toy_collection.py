@@ -26,6 +26,10 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
             captured["sections"]["toy_collection_view"] = {"coverage": "filtered_journal", "displayed_count": 2,
                 "entries": {"1": {"name": "Owned", "collected": True, "favorite": False},
                             "2": {"name": "Not collected", "collected": False, "favorite": False}}}
+            captured['sections']['action_bar_observation']={
+                'coverage':'loaded_builtin_buttons_only','observed_buttons':4,'missing_buttons':0,'slots':{
+                    '1':{'empty':False,'kind':'item','id':1},'2':{'empty':False,'kind':'spell','id':1},
+                    '3':{'empty':False,'kind':'item','id':2},'10':{'empty':False,'kind':'item','id':1}}}
             key = store.ingest(captured)
             empty = copy.deepcopy(captured)
             empty["sections"]["toy_collection_view"].update(displayed_count=0, entries={})
@@ -67,6 +71,24 @@ class ToyCollectionTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
+                    for snapshot,extra,expected in [(key,{}, {'1':[1,10],'2':[3]}),
+                            (key,{'action_bar_slot':10},{'1':[10]}),(empty_key,{},{}),(missing_key,{},None)]:
+                        reply=await session.call_tool('inspect_snapshot',{'snapshot_id':snapshot,
+                            'section':'action_bar_observation','action_bar_toy_audit':True,**extra})
+                        self.assertFalse(reply.isError,reply)
+                        report=json.loads(reply.content[0].text)['action_bar_toy_audit']
+                        if expected is None:
+                            self.assertIsNone(report)
+                        else:
+                            self.assertEqual({key:row['observed_action_slots'] for key,row in report['matches_by_item_id'].items()},expected)
+                            self.assertEqual(report['journal_coverage'],'filtered_journal')
+                            self.assertFalse(report['current_toy_usability_verified'])
+                            if '2' in expected:
+                                self.assertFalse(report['matches_by_item_id']['2']['captured_collected'])
+                    for snapshot, section in [(key,'toy_collection_view'),(retail_key,'action_bar_observation')]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':snapshot,'section':section,'action_bar_toy_audit':True})
+                        self.assertTrue(reply.isError,reply)
                     for selector, expected in [
                         ({"item_id":1,"collected":True,"favorite":False},[key]),
                         ({"item_id":1,"collected":False,"favorite":True},[after_key]),
