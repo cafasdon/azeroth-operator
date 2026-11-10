@@ -3202,6 +3202,11 @@ IDs and quantities explicitly, since the saved objective counts do not
 identify required items. Quest bank withdrawal plans require a
 storage-wide bag review.
 
+`list_snapshots.collected_mount_name` searches recorded collected mounts
+by exact public name, ignoring case and surrounding spaces. Results show
+up to 20 matching mount IDs and their saved flags. Combine it with
+`collected_mount` to require the name, ID and any flags on the same mount.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

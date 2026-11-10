@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved collected Forever mounts by public mount name.
+
 - Require a storage-wide bag review for quest bank withdrawal plans.
 
 - Optionally use recorded bank stack limits in saved restocking estimates.

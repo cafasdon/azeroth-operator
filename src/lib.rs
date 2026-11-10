@@ -1926,6 +1926,7 @@ pub struct CaptureFilters<'a> {
     pub paragon: Option<ParagonFilter>,
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub collected_mount: Option<CollectedMountFilter>,
+    pub collected_mount_name: Option<&'a str>,
     pub toy_in_view: Option<ToyViewFilter>,
     pub saved_instance: Option<SavedInstanceFilter>,
     pub saved_world_boss: Option<SavedWorldBossFilter>,
@@ -2175,6 +2176,7 @@ impl Store {
             paragon,
             tracked_achievement,
             collected_mount,
+            collected_mount_name,
             toy_in_view,
             saved_instance,
             saved_world_boss,
@@ -2270,6 +2272,14 @@ impl Store {
             collected_mount.is_none() || family == Family::Forever,
             "Mount filtering requires Forever"
         );
+        let collected_mount_name = collected_mount_name.map(str::trim);
+        ensure!(
+            collected_mount_name.is_none_or(|name| family == Family::Forever
+                && !name.is_empty()
+                && name.len() <= 256),
+            "Mount name filtering requires Forever and a valid name"
+        );
+        let collected_mount_name = collected_mount_name.map(str::to_lowercase);
         ensure!(
             toy_in_view.is_none() || family == Family::Forever,
             "Toy view filtering requires Forever"
@@ -3346,6 +3356,36 @@ impl Store {
                     if collected_mount.is_some() && mount_match.is_none() {
                         continue;
                     }
+                    let mount_name_match = collected_mount_name.as_ref().and_then(|name| {
+                        let view = s.sections.get("mount_collection")?;
+                        let mut matches: Vec<_> = view["entries"]
+                            .as_object()?
+                            .iter()
+                            .filter_map(|(id, row)| {
+                                let id = id.parse::<u32>().ok()?;
+                                (collected_mount
+                                    .as_ref()
+                                    .is_none_or(|filter| filter.mount_id.get() == id)
+                                    && row["name"]
+                                        .as_str()
+                                        .is_some_and(|label| label.trim().to_lowercase() == *name))
+                                .then_some((id, row))
+                            })
+                            .collect();
+                        matches.sort_unstable_by_key(|(id, _)| *id);
+                        (!matches.is_empty()).then(|| {
+                            json!({
+                                "matched_count":matches.len(),"truncated":matches.len()>20,
+                                "mounts":matches.into_iter().take(20).map(|(id,row)| json!({
+                                    "mount_id":id,"name":row["name"],"spell_id":row["spell_id"],
+                                    "usable":row["usable"],"favorite":row["favorite"],
+                                })).collect::<Vec<_>>(),
+                            })
+                        })
+                    });
+                    if collected_mount_name.is_some() && mount_name_match.is_none() {
+                        continue;
+                    }
                     let toy_match = toy_in_view.as_ref().and_then(|filter| {
                         filter.match_view(s.sections.get("toy_collection_view")?)
                     });
@@ -4137,6 +4177,9 @@ impl Store {
                     }
                     if let Some(observation) = mount_match {
                         summary["collected_mount_match"] = observation;
+                    }
+                    if let Some(observation) = mount_name_match {
+                        summary["collected_mount_name_match"] = observation;
                     }
                     if let Some(observation) = toy_match {
                         summary["toy_in_view_match"] = observation;

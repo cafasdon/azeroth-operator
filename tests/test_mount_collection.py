@@ -173,6 +173,24 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([row["snapshot_id"] for row in matches], [after_key])
                     self.assertEqual(matches[0]["collected_mount_match"], {
                         "mount_id": 2, "spell_id": 40002, "usable": False, "favorite": True})
+                    async def by_name(name, **options):
+                        reply = await session.call_tool("list_snapshots", {
+                            "family":"forever","collected_mount_name":name,**options})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)["snapshots"]
+                    named = await by_name("  AfTeR OnLy ")
+                    self.assertEqual([row["snapshot_id"] for row in named], [after_key])
+                    report = named[0]["collected_mount_name_match"]
+                    self.assertEqual(report["matched_count"], 2)
+                    self.assertEqual([row["mount_id"] for row in report["mounts"]], [3,10])
+                    self.assertEqual(await by_name("After"), [])
+                    self.assertEqual(await by_name("After only",collected_mount={"mount_id":2}), [])
+                    self.assertEqual(await by_name("After only",collected_mount={"mount_id":3,"usable":False}), [])
+                    matched = await by_name("After only",collected_mount={"mount_id":3,"usable":True})
+                    self.assertEqual(matched[0]["collected_mount_name_match"]["matched_count"], 1)
+                    for family,name in [("retail","After only"),("forever"," "),("forever","é"*129)]:
+                        self.assertTrue((await session.call_tool("list_snapshots",{
+                            "family":family,"collected_mount_name":name})).isError)
                     older = await session.call_tool("list_snapshots", {
                         **query, "collected_mount": {"mount_id": 2, "favorite": False}})
                     self.assertEqual({row["snapshot_id"] for row in json.loads(older.content[0].text)["snapshots"]},
