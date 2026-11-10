@@ -3453,6 +3453,10 @@ pub fn review_owned(
     });
     let check_requirements = requirement_check(snapshot);
     let check_item_requirements = item_requirement_check(snapshot);
+    let durability = snapshot
+        .sections
+        .get("equipment_durability")
+        .and_then(|section| section["entries"].as_object());
     for storage in ["equipment", "bags", "character_bank", "account_bank"] {
         let Some(section) = snapshot.sections.get(storage).and_then(Value::as_object) else {
             unavailable_storage.push(storage);
@@ -3583,30 +3587,36 @@ pub fn review_owned(
                 let native_slot_conflict = draft_selection.as_ref().and_then(|selection| {
                     native_slot_category_conflict(item, selection.target_slot)
                 });
-                entries.push(json!({"storage":storage,"container":container,"slot":slot,"observed":item,
-                    "weapon_skill":weapon_skill,
-                    "catalogue_item_requirement_conflict":item_conflict,
-                    "catalogue_requirement_conflict":requirement_conflict,
-                    "native_required_level_shortfall":native_shortfall,
-                    "native_slot_category_conflict":native_slot_conflict,
-                    "draft_selection":draft_selection,
-                    "catalogue_modifier_candidates":candidates,
-                    "simulator_item_resolution":simulator_item_resolution,
-                    "link_modifiers":modifiers,
-                    "catalogue_base_item":reference.map(|item| json!({
-                        "id":item["id"],"name":item["name"],"type":item["type"],
-                        "armorType":item["armorType"],"weaponType":item["weaponType"],
-                        "handType":item["handType"],"rangedWeaponType":item["rangedWeaponType"],
-                        "reqLvl":item["reqLvl"],"classAllowlist":item["classAllowlist"],
-                        "factionRestriction":item["factionRestriction"],"requiredProfession":item["requiredProfession"],
-                        "unique":item["unique"],"limitCategory":item["limitCategory"],
-                        "setId":item["setId"],"setName":item["setName"],
-                        "randomSuffixOptions":item["randomSuffixOptions"],
-                        "simulator_default_scaling":item["scalingOptions"]["0"],
-                        "simulator_slots":simulator_slots(item),
-                        "weaponSpeed":item["weaponSpeed"],
-                        "itemEffects":item["itemEffects"]
-                    }))}));
+                let mut entry = json!({"storage":storage,"container":container,"slot":slot,"observed":item,
+                "weapon_skill":weapon_skill,
+                "catalogue_item_requirement_conflict":item_conflict,
+                "catalogue_requirement_conflict":requirement_conflict,
+                "native_required_level_shortfall":native_shortfall,
+                "native_slot_category_conflict":native_slot_conflict,
+                "draft_selection":draft_selection,
+                "catalogue_modifier_candidates":candidates,
+                "simulator_item_resolution":simulator_item_resolution,
+                "link_modifiers":modifiers,
+                "catalogue_base_item":reference.map(|item| json!({
+                    "id":item["id"],"name":item["name"],"type":item["type"],
+                    "armorType":item["armorType"],"weaponType":item["weaponType"],
+                    "handType":item["handType"],"rangedWeaponType":item["rangedWeaponType"],
+                    "reqLvl":item["reqLvl"],"classAllowlist":item["classAllowlist"],
+                    "factionRestriction":item["factionRestriction"],"requiredProfession":item["requiredProfession"],
+                    "unique":item["unique"],"limitCategory":item["limitCategory"],
+                    "setId":item["setId"],"setName":item["setName"],
+                    "randomSuffixOptions":item["randomSuffixOptions"],
+                    "simulator_default_scaling":item["scalingOptions"]["0"],
+                    "simulator_slots":simulator_slots(item),
+                    "weaponSpeed":item["weaponSpeed"],
+                    "itemEffects":item["itemEffects"]
+                }))});
+                if storage == "equipment"
+                    && let Some(condition) = durability.and_then(|slots| slots.get(slot))
+                {
+                    entry["observed_equipped_durability"] = condition.clone();
+                }
+                entries.push(entry);
             }
             included += 1;
         };

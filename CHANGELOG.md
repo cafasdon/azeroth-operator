@@ -1,5 +1,7 @@
 # Changelog
 
+- Show recorded equipped-slot durability in Forever owned-gear reviews.
+
 - Find saved Forever equipment at or below a durability threshold in a specific slot.
 
 - Preserve a copper reserve when finding affordable saved next-level quest plans.

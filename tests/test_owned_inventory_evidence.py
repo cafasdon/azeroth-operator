@@ -42,7 +42,11 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                                              for i in range(52)}}
             many_id = store.ingest(many)
             mixed = deepcopy(base)
-            mixed['sections']['bags']['0']['3'] = {'item_id': 4549, 'count': 1, 'link': 'item:4549:0:0:0:0:0:0'}
+            mixed['sections']['bags']['0']['11'] = {'item_id': 4549, 'count': 1, 'link': 'item:4549:0:0:0:0:0:0'}
+            mixed['sections']['equipment_durability'] = {
+                'coverage': 'readable_equipped_slots_only',
+                'entries': {'11': {'current': 0, 'maximum': 40}},
+            }
             mixed_id = store.ingest(mixed)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
@@ -54,6 +58,12 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
                     result = await review(partial)
+                    self.assertNotIn('observed_equipped_durability', result['items'][0])
+                    same_item = (await review(mixed_id, item_id=4549))['items']
+                    self.assertEqual([(row['storage'], row['slot']) for row in same_item],
+                                     [('equipment', '11'), ('bags', '11')])
+                    self.assertEqual(same_item[0]['observed_equipped_durability'], {'current': 0, 'maximum': 40})
+                    self.assertNotIn('observed_equipped_durability', same_item[1])
                     container_field = 'observed_container_occupied_slots'
                     self.assertEqual(result['coverage']['bags'][container_field], {'0': 2})
                     self.assertNotIn(container_field, result['coverage']['equipment'])

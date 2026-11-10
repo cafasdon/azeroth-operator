@@ -3,6 +3,9 @@
 On `list_snapshots`, combine `equipment_durability_slot` (1–19) with
 `equipment_durability_max_percent` to find saved captures where that
 specific slot meets the threshold. Missing readings do not match.
+Owned gear reviews include `observed_equipped_durability` when a readable
+condition was recorded for that equipped slot in the same capture. The
+reading describes the saved equipped location.
 
 Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
 characters within an inclusive XP budget. Matching rows report their saved
