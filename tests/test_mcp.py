@@ -1079,6 +1079,23 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "title": "Fixture reward", "level": 10, "ready_for_turn_in": True,
                         }
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
+                        turn_in_capture = json.loads(json.dumps(more_factions))
+                        turn_in_capture["sections"]["bags"] = {"0":{"1":{"item_id":744,"count":4}}}
+                        turn_in_key = SnapshotStore(Path(folder)).ingest(turn_in_capture)
+                        for quantity, required, overflow, shortfall in [
+                            (2, 6, False, 2), (1, 3, False, 0), (2**64-1, None, True, None),
+                        ]:
+                            result = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id":turn_in_key,"section":"reputation","faction_id":10,
+                                "reputation_points_per_turn_in":20,
+                                "reputation_turn_in_item_cost":{"item_id":744,"quantity":quantity},
+                            })
+                            self.assertFalse(result.isError,result)
+                            self.assertEqual(json.loads(result.content[0].text)["reputation_turn_in_item_plan"], {
+                                "item_id":744,"assumed_quantity_per_turn_in":quantity,"required_quantity":required,
+                                "required_quantity_overflow":overflow,"observed_carried_quantity":4,
+                                "shortfall_quantity":shortfall,
+                            })
                         for faction, points, expected in [
                             (10, 20, (50, 3, False)), (10, 25, (50, 2, False)),
                             (11, 20, (None, None, True)), (12, 20, (None, None, None)),
@@ -1097,6 +1114,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         for options in [
                             {"section":"reputation","reputation_points_per_turn_in":20},
                             {"section":"reputation","faction_id":10,"reputation_points_per_turn_in":0},
+                            {"section":"reputation","faction_id":10,
+                             "reputation_turn_in_item_cost":{"item_id":744,"quantity":1}},
                         ]:
                             self.assertTrue((await session.call_tool("inspect_snapshot", {
                                 "snapshot_id":more_key,**options,

@@ -5,6 +5,10 @@ section and pass `reputation_points_per_turn_in` to estimate repetitions
 to its observed next standard rank. The estimate uses a constant
 caller-supplied reward and rounds up. It leaves capped, unobserved,
 inconsistent and special reputation counts unknown.
+With that estimate, `reputation_turn_in_item_cost` accepts an exact item ID
+and assumed quantity per repetition. It shows the total needed and
+shortfall against the same capture's bags. Missing bags or an unknown
+total leave the shortfall unknown. An overflowing total is flagged.
 
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside

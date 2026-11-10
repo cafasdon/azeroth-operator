@@ -382,6 +382,8 @@ struct Inspect {
     faction_id: Option<std::num::NonZeroU32>,
     /// Estimate repetitions to the observed next standard reputation threshold at this many points each.
     reputation_points_per_turn_in: Option<std::num::NonZeroU32>,
+    /// One assumed item cost per reputation turn-in, checked against the same saved bags.
+    reputation_turn_in_item_cost: Option<ItemCost>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
     reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
@@ -3436,6 +3438,13 @@ impl Operator {
                 "Reputation turn-in estimates require an exact faction",
             )]);
         }
+        if args.reputation_turn_in_item_cost.is_some()
+            && args.reputation_points_per_turn_in.is_none()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation item costs require a points-per-turn-in estimate",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -6067,12 +6076,40 @@ impl Operator {
                         if let Some(points) = args.reputation_points_per_turn_in {
                             let points = u64::from(points.get());
                             let remaining = standard[&key]["remaining_to_next_rank"].as_u64();
+                            let turn_ins = remaining.map(|remaining| remaining.div_ceil(points));
                             value["reputation_turn_in_estimate"] = serde_json::json!({
                                 "assumed_points_per_turn_in":points,
                                 "remaining_to_next_rank":remaining,
-                                "turn_ins_to_next_rank":remaining.map(|remaining| remaining.div_ceil(points)),
+                                "turn_ins_to_next_rank":turn_ins,
                                 "capped":standard[&key]["capped"].as_bool()
                             });
+                            if let Some(cost) = args.reputation_turn_in_item_cost.as_ref() {
+                                let stock =
+                                    self.store.read(&args.snapshot_id).and_then(|snapshot| {
+                                        azeroth_operator::analysis::find_item(
+                                            &snapshot,
+                                            cost.item_id.get(),
+                                            0,
+                                            1,
+                                        )
+                                    });
+                                let Ok(stock) = stock else {
+                                    return CallToolResult::error(vec![ContentBlock::text(
+                                        "Could not read the captured reputation turn-in inventory",
+                                    )]);
+                                };
+                                let carried = stock["quantity_by_storage"]["bags"].as_u64();
+                                let required = turn_ins
+                                    .and_then(|count| count.checked_mul(cost.quantity.get()));
+                                value["reputation_turn_in_item_plan"] = serde_json::json!({
+                                    "item_id":cost.item_id,
+                                    "assumed_quantity_per_turn_in":cost.quantity,
+                                    "required_quantity":required,
+                                    "required_quantity_overflow":turn_ins.is_some() && required.is_none(),
+                                    "observed_carried_quantity":carried,
+                                    "shortfall_quantity":required.zip(carried).map(|(required, carried)| required.saturating_sub(carried))
+                                });
+                            }
                         }
                     } else {
                         value["standard_reputation_progress"] = standard;

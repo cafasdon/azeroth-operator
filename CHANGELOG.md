@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate carried item shortfalls for saved reputation turn-in plans.
+
 - Estimate repeat turn-ins to the next captured standard reputation threshold.
 
 - Compare reserve-adjusted flight affordability, shortfall and spendable copper.
