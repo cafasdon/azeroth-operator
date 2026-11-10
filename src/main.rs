@@ -1384,6 +1384,9 @@ struct RecipeRestock {
     /// Quote saved copper-only merchant offers for bag shortfalls. Uses this capture only; no purchases.
     #[serde(default)]
     merchant_quote: bool,
+    /// Join same-capture local provider references to positive bag shortfalls. No lookup, acquisition or routing action.
+    #[serde(default)]
+    captured_sources: bool,
     /// Exact bulk recipe ID; omit for the saved selected recipe.
     recipe_id: Option<std::num::NonZeroU32>,
     /// Desired final base-item quantity in observed carried bags, not new output.
@@ -2334,6 +2337,9 @@ impl Operator {
             }?;
             if args.merchant_quote {
                 plan["merchant_quote"] = azeroth_operator::recipe_restock_quote::quote(&plan, &snapshot);
+            }
+            if args.captured_sources {
+                plan["captured_sources"] = azeroth_operator::recipe_restock_sources::review(&plan, &snapshot)?;
             }
             Ok(plan)
         });

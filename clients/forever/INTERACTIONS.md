@@ -4598,3 +4598,14 @@ sections/profession mismatch stay unknown. Recipes seen only on one side do not
 prove learned/unlearned state. Cooldowns and craftable counts are excluded; use
 their separate reports. No recipe definition, coverage or native craftability
 claim follows from an observation difference. See ADR-094. Offline/source only.
+
+## Source hints for recipe restock shortages
+
+Set `captured_sources:true` on `plan_forever_recipe_restock` to review saved
+vendor, NPC/object/container drop and quest reward reference IDs for positive
+bag shortages. The same capture supplies all references; no lookup or refresh
+occurs. Joint targets use ordered shared shortages; single targets use gross
+inputs. Bank stock and per-craft recycling receive no credit. Unknown, partial
+and unavailable reference categories remain explicit. Captured provider-area
+locations stay separate from native maps and routes. These hints do not form a
+complete acquisition plan or establish current eligibility. See ADR-095.

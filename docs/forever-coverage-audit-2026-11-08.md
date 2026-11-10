@@ -1031,3 +1031,13 @@ the input/output comparison gap beside the existing cooldown/view reports.
 Unknown fields, missing sections and profession mismatch remain explicit. No
 unlearning, recipe-definition change, complete coverage or native craftability
 is inferred. See ADR-094 and its dated offline evidence. Live work stays deferred.
+
+## Restock material source references (10 November)
+
+Single/joint recipe restock can now join positive bag shortages to the same
+capture's local provider references and scoped area locations. This connects
+planned shared material demand with retained vendor/drop/quest hints without
+another source query. Missing, truncated and unknown references remain visible.
+Bank credit, per-craft recycling, current eligibility and complete acquisition
+coverage remain excluded. No native or external-source qualification is added.
+See ADR-095 and its dated offline evidence. Live work remains deferred.

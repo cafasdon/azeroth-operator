@@ -1,5 +1,7 @@
 # Changelog
 
+- Join saved local provider vendor/drop/quest references and scoped locations to single or joint recipe restock bag shortages.
+
 - Compare paged saved bulk recipe material, output and status observations without treating absent rows as unlearned recipes.
 
 - Quote saved copper-only merchant offers for single or joint recipe restock bag shortages, without bank credit or purchase actions.
