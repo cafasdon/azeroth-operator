@@ -1,5 +1,10 @@
 # Forever interaction map
 
+`character_summary.capture_coverage` lists all known snapshot sections
+with observed, reported-unavailable or not-recorded status and counts.
+Observed sections retain their declared coverage scope when present.
+An observed filtered panel still describes only that panel's saved data.
+
 Travel comparisons report `hearthstone_active_ready_at_delta_milliseconds`
 when both captures show a positive cooldown for the same Hearthstone item.
 Zero, missing and different-item cooldowns leave the delta unknown.

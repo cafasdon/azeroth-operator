@@ -20,6 +20,7 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                       ('azeroth-operator.exe' if os.name == 'nt' else 'azeroth-operator')).resolve(strict=True)
         base = fixture()
         base['client'] = {'family': 'forever', 'variant': 'live', 'build': '70862', 'interface': 16001}
+        base['unavailable'] = {'bags': 'api_unavailable'}
         section = {'coverage': 'visible_gossip_quest_lists', 'available': {'10': {'repeatable': False}, '2': {}},
                    'active': {'20': {'is_complete': True}, '21': {'is_complete': False}, '22': {}}}
         cases = [None, section, {'coverage': section['coverage'], 'available': {}},
@@ -88,7 +89,20 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                     followup_key = store.ingest(followup)
                     reply = await session.call_tool('character_summary', {'snapshot_id': followup_key})
                     self.assertFalse(reply.isError)
-                    observation = json.loads(reply.content[0].text)['gossip_quest_observations']
+                    summary = json.loads(reply.content[0].text)
+                    coverage = summary['capture_coverage']
+                    self.assertEqual(coverage['known_section_count'], 57)
+                    self.assertEqual(coverage['section_status_counts'], {
+                        'observed': 3, 'reported_unavailable': 1, 'not_recorded': 53,
+                    })
+                    self.assertEqual(coverage['sections']['equipment'], {'status': 'observed', 'reported_scope': None})
+                    self.assertEqual(coverage['sections']['gossip_quests'], {
+                        'status': 'observed', 'reported_scope': 'visible_gossip_quest_lists',
+                    })
+                    self.assertEqual(coverage['sections']['bags'], {'status': 'reported_unavailable', 'reported_scope': None})
+                    self.assertEqual(coverage['sections']['wallet'], {'status': 'not_recorded', 'reported_scope': None})
+                    self.assertFalse(coverage['complete_game_coverage_verified'])
+                    observation = summary['gossip_quest_observations']
                     self.assertEqual(observation['available']['quest_log_matches'], {
                         'matched_quest_count': 0, 'rows': [], 'truncated': False,
                     })

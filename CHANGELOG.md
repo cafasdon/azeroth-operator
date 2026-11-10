@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise all known capture sections and their reported scope for saved Forever characters.
+
 - Search saved map level ranges for an explicit planning level.
 
 - Find saved characters below, within or above their captured map level range.

@@ -11907,6 +11907,30 @@ pub fn summary(s: &Snapshot) -> Value {
       "carried_item_review":carried_items(s),
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]});
+    if is_forever {
+        let mut counts = BTreeMap::from([
+            ("observed", 0usize),
+            ("reported_unavailable", 0),
+            ("not_recorded", 0),
+        ]);
+        let sections: BTreeMap<_, _> = crate::SNAPSHOT_SECTIONS
+            .iter()
+            .map(|name| {
+                let status = s.section_capture_status(name);
+                *counts.get_mut(status).unwrap() += 1;
+                let scope = s
+                    .sections
+                    .get(*name)
+                    .and_then(|section| section["coverage"].as_str());
+                (*name, json!({"status":status,"reported_scope":scope}))
+            })
+            .collect();
+        summary["capture_coverage"] = json!({
+            "known_section_count":crate::SNAPSHOT_SECTIONS.len(),
+            "section_status_counts":counts,"sections":sections,
+            "complete_game_coverage_verified":false
+        });
+    }
     let mounts = s
         .sections
         .get("mount_collection")
