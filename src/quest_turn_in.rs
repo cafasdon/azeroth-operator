@@ -39,6 +39,9 @@ fn default_limit() -> usize {
 pub struct Page {
     #[serde(default)]
     pub include_reward_review: bool,
+    /// Estimate space for known fixed rewards only; requires include_reward_review.
+    #[serde(default)]
+    pub include_reward_bag_space: bool,
     pub ready_for_turn_in: Option<bool>,
     pub giver_kind: Option<GiverKind>,
     pub giver_id: Option<NonZeroU32>,
@@ -61,7 +64,17 @@ fn bounded_result(result: Value, include_rewards: bool) -> Result<Value> {
     Ok(result)
 }
 
-fn reward_review(snapshot: &Snapshot, ids: &BTreeSet<u32>) -> Value {
+pub fn argument<'de, D: serde::Deserializer<'de>>(input: D) -> Result<Option<Page>, D::Error> {
+    Option::<Value>::deserialize(input)?.map(|value| {
+        if !value.is_object() {
+            return Err(serde::de::Error::custom("Invalid quest turn-in review options"));
+        }
+        serde_json::from_value(value)
+            .map_err(|_| serde::de::Error::custom("Invalid quest turn-in review options"))
+    }).transpose()
+}
+
+fn reward_review(snapshot: &Snapshot, ids: &BTreeSet<u32>, include_bag_space: bool) -> Value {
     let quests = snapshot.sections["quests"].as_object().unwrap();
     let subset = ids
         .iter()
@@ -87,7 +100,7 @@ fn reward_review(snapshot: &Snapshot, ids: &BTreeSet<u32>) -> Value {
             None => unknown_currency_choices += 1,
         }
     }
-    json!({"scope":"saved_potential_numeric_and_fixed_item_rewards", "quest_ids":ids,"quest_count":ids.len(),
+    let mut report = json!({"scope":"saved_potential_numeric_and_fixed_item_rewards", "quest_ids":ids,"quest_count":ids.len(),
         "xp":analysis::quest_list_xp_projection(&subset,snapshot.sections.get("experience")),
         "wallet":analysis::quest_list_wallet_projection(&subset,snapshot.sections.get("wallet")),
         "fixed_items":analysis::quest_list_item_rewards(&subset),
@@ -97,11 +110,32 @@ fn reward_review(snapshot: &Snapshot, ids: &BTreeSet<u32>) -> Value {
         "currency_choices":{"quests_with_observed_currency_choices":currency_choices,
             "unknown_currency_choice_list_count":unknown_currency_choices,"choices_applied":false},
         "choices_applied":false,"spell_rewards_projected":false,"reward_delivery_verified":false,
-        "cross_quest_exclusivity_verified":false,"live":false})
+        "cross_quest_exclusivity_verified":false,"live":false});
+    if include_bag_space {
+        let quantities = report["fixed_items"]["known_fixed_quantity_by_item_id"].as_object().unwrap();
+        let mut space = analysis::incoming_items_bag_space(snapshot,
+            quantities.iter().map(|(id, quantity)|(id.parse().unwrap(),quantity.as_u64().unwrap())),
+            "known_fixed_rewards_before_turn_in_without_item_consumption_or_choices", "known_fixed_reward_quantity");
+        let complete = report["fixed_items"]["unknown_fixed_reward_list_count"] == 0;
+        space["all_fixed_reward_lists_observed"] = json!(complete);
+        space["unknown_fixed_reward_list_count"] = report["fixed_items"]["unknown_fixed_reward_list_count"].clone();
+        space["all_fixed_rewards_estimated_new_stack_slots"] = if complete {space["estimated_new_stack_slots"].clone()} else {Value::Null};
+        space["all_fixed_rewards_fit_recorded_general_slots"] = if complete {space["fits_recorded_general_slots"].clone()} else {Value::Null};
+        space["all_fixed_rewards_estimated_new_stack_slots_if_same_item_stacks_merge"] = if complete {space["estimated_new_stack_slots_if_same_item_stacks_merge"].clone()} else {Value::Null};
+        space["all_fixed_rewards_fit_recorded_general_slots_if_same_item_stacks_merge"] = if complete {space["fits_recorded_general_slots_if_same_item_stacks_merge"].clone()} else {Value::Null};
+        space["choice_rewards_included"] = json!(false);
+        space["quest_item_consumption_included"] = json!(false);
+        space["reward_delivery_verified"] = json!(false);
+        space["game_execution"] = json!(false);
+        report["fixed_reward_bag_space"] = space;
+    }
+    report
 }
 
 impl Page {
     pub fn validate(&self) -> Result<()> {
+        ensure!(!self.include_reward_bag_space || self.include_reward_review,
+            "Reward bag space requires reward review");
         ensure!(
             (1..=50).contains(&self.limit),
             "Limit must be between 1 and 50"
@@ -229,14 +263,14 @@ pub fn review(snapshot: &Snapshot, page: &Page) -> Result<Value> {
             .values()
             .flat_map(|ids| ids.iter().copied())
             .collect();
-        result["unique_quest_reward_review"] = reward_review(snapshot, &unique_ids);
+        result["unique_quest_reward_review"] = reward_review(snapshot, &unique_ids, page.include_reward_bag_space);
     }
     let rows: Vec<_> = groups.into_iter().skip(page.offset as usize).take(page.limit).map(|((kind,giver),ids)| {
         let by_ready = |ready| ids.iter().copied().filter(|id| selected[id] == ready).collect::<Vec<_>>();
         let mut group = json!({"giver_kind":kind.label(), "giver_id":giver, "quest_ids":ids,
             "ready_for_turn_in_quest_ids":by_ready(Some(true)), "not_ready_quest_ids":by_ready(Some(false)),
             "unknown_ready_quest_ids":by_ready(None)});
-        if page.include_reward_review { group["reward_review"] = reward_review(snapshot, &ids); }
+        if page.include_reward_review { group["reward_review"] = reward_review(snapshot, &ids, page.include_reward_bag_space); }
         group
     }).collect();
     result["status"] = json!("reviewed");
@@ -634,6 +668,9 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("256 KiB"));
+        let bag_error = review(&saved, &page(json!({"include_reward_review":true,
+            "include_reward_bag_space":true,"offset":u32::MAX}))).unwrap_err();
+        assert!(bag_error.to_string().contains("256 KiB"));
         // Paging affects group output size, while the unique union remains complete.
         let result = review(
             &saved,

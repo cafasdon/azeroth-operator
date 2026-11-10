@@ -1070,3 +1070,12 @@ runs. The original floor, source checks and total deadline remain in force.
 Incomplete saved work or bounded-analysis exhaustion stays unknown. No global
 frontier, statistical superiority, complete ownership or native eligibility is
 established. See ADR-098 and its dated offline evidence. Live work stays deferred.
+
+## Combined quest reward capacity (10 November)
+
+Grouped reward review can now model combined fixed-item bag space once per
+unique quest union, with separate non-additive finisher-group views. Known
+subsets stay distinct from unknown whole reward lists. General slots, unanimous
+carried stack limits and hypothetical merge headroom retain their existing
+unknown/native limits. Choices, consumed quest items and actual delivery remain
+excluded. See ADR-099 and its dated offline evidence. Live work stays deferred.

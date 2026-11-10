@@ -105,6 +105,7 @@ struct Inspect {
     #[serde(default, deserialize_with = "bag_sale_argument")]
     bag_sale_quote: Option<azeroth_operator::bag_sale_quote::Quote>,
     /// Group saved quests by retained provider finisher NPC/object IDs. include_reward_review adds saved reward/budget projections; quest_giver_references only, no action.
+    #[serde(default, deserialize_with = "azeroth_operator::quest_turn_in::argument")]
     quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
     /// Review saved mail header amounts against the captured wallet and reserve. mail_funds only; no actions.
     mail_funds_review: Option<azeroth_operator::mail_funds::Page>,
@@ -3359,7 +3360,7 @@ impl Operator {
                 || page.validate().is_err()
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Quest turn-in review requires quest_giver_references and valid bounded grouping options",
+                "Quest turn-in review requires quest_giver_references and valid bounded options; reward bag space also requires include_reward_review",
             )]);
         }
         if args.instance_group_size_max_cache_age_seconds.is_some()

@@ -4645,3 +4645,15 @@ or the shared deadline leaves membership unknown and returns no partial frontier
 Returned sets include the existing saved-loadout evidence. This is a point-
 estimate trade-off view, not statistical superiority or full owned best-in-slot.
 See ADR-098. Source/offline only; no game action or new MCP route.
+
+## Combined bag space for grouped quest rewards
+
+Set `include_reward_review:true` and `include_reward_bag_space:true` inside
+`quest_turn_in_review` on `inspect_snapshot`, section `quest_giver_references`.
+The unique reward union combines fixed items once across alternative finishers,
+before group paging. Per-group views are alternatives and cannot be added.
+Known fixed rewards receive carried-stack/general-slot estimates plus a separate
+unverified merge scenario. Unknown fixed lists keep whole-fixed-reward estimates
+unknown; known-subset figures remain visible. Choices and consumed quest items
+are excluded. No stacking, placement, turn-in eligibility or current state is
+verified. See ADR-099. Offline/source only.
