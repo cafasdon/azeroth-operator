@@ -714,6 +714,8 @@ struct Compare {
     currency_id: Option<std::num::NonZeroU32>,
     /// Optionally compare one captured Forever reputation faction by ID.
     faction_id: Option<std::num::NonZeroU32>,
+    /// Resolve a faction by exact saved name before comparing reputation.
+    faction_name: Option<String>,
     /// Optionally compare one captured quest by ID.
     quest_id: Option<std::num::NonZeroU32>,
     /// Compare next waypoint maps for quests present in both Forever captures.
@@ -2095,6 +2097,7 @@ impl Operator {
                     item_container_changes: args.item_container_changes,
                     currency_id: args.currency_id.map(|id| id.get()),
                     faction_id: args.faction_id.map(|id| id.get()),
+                    faction_name: args.faction_name.as_deref(),
                     quest_id: args.quest_id.map(|id| id.get()),
                     quest_waypoints: args.quest_waypoints,
                     quest_readiness_changes: args.quest_readiness_changes,

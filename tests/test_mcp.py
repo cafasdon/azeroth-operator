@@ -1297,6 +1297,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(standing["standing_delta"], 30)
                         self.assertEqual(standing["before"]["standing"], -50)
                         self.assertEqual(standing["after"]["standing"], -20)
+                        for fields, error in [
+                            ({"faction_name":"  fiXTURE faction "},False),
+                            ({"faction_name":"Fixture faction","faction_id":10},False),
+                            ({"faction_name":"Fixture faction","faction_id":20},True),
+                            ({"faction_name":"Fixture"},True),
+                            ({"faction_name":" "},True),
+                        ]:
+                            named=await session.call_tool("compare_snapshots",{
+                                "before_id":forever_key,"after_id":after_key,**fields})
+                            self.assertEqual(bool(named.isError),error,named)
+                            if not error:
+                                self.assertEqual(json.loads(named.content[0].text)["reputation_change"],standing)
                         self.assertEqual(json.loads(rep_diff.content[0].text)["wallet_change"], {
                             "before_copper": 5_000_000_001, "after_copper": 0, "delta_copper": -5_000_000_001})
                         reputation_after["sections"]["reputation"]["entries"]["10"]["kind"] = "renown"

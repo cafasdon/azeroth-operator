@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever reputation progress by exact faction name.
+
 - Find saved Forever standard reputation ranks by exact faction name.
 
 - Report the lowest fully recorded fare and budget shortfall for unsuccessful saved flight searches.

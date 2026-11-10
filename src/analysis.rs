@@ -3119,6 +3119,7 @@ pub struct ComparisonSelectors<'a> {
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub faction_id: Option<u32>,
+    pub faction_name: Option<&'a str>,
     pub quest_id: Option<u32>,
     pub quest_waypoints: bool,
     pub quest_readiness_changes: bool,
@@ -3995,7 +3996,31 @@ pub fn compare_observations(
         comparison["currency_balance_change"] = json!({"currency_id":currency_id,"before":previous,"after":current,"change":change,
                 "weekly_earned_delta":weekly_earned_delta,"weekly_headroom_change":weekly_headroom_change});
     }
-    if let Some(faction_id) = selectors.faction_id {
+    let faction_id = if let Some(name) = selectors.faction_name.map(str::trim) {
+        ensure!(
+            before.client.family == crate::Family::Forever && !name.is_empty() && name.len() <= 256,
+            "Faction name comparison requires Forever and a valid name"
+        );
+        let name = name.to_lowercase();
+        let ids: BTreeSet<_> = [before, after]
+            .into_iter()
+            .filter_map(|snapshot| snapshot.sections.get("reputation")?["entries"].as_object())
+            .flat_map(|entries| entries.iter())
+            .filter_map(|(key, row)| {
+                let id = key.parse::<u32>().ok()?;
+                (selectors.faction_id.is_none_or(|wanted| id == wanted)
+                    && row["name"]
+                        .as_str()
+                        .is_some_and(|label| label.trim().to_lowercase() == name))
+                .then_some(id)
+            })
+            .collect();
+        ensure!(ids.len() == 1, "Faction name is absent or ambiguous");
+        ids.first().copied()
+    } else {
+        selectors.faction_id
+    };
+    if let Some(faction_id) = faction_id {
         ensure!(
             before.client.family == crate::Family::Forever && faction_id > 0,
             "Reputation comparisons require a Forever faction ID"

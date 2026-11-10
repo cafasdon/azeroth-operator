@@ -3306,6 +3306,12 @@ faction name, ignoring case and surrounding spaces. Name-only searches
 require one matching standard faction before the reaction threshold is
 applied. Use `faction_id` with the name to disambiguate.
 
+`compare_snapshots.faction_name` resolves an exact saved faction name
+across the two captures before comparing progress by faction ID. The name
+must identify one ID across both captures. Supply `faction_id` to narrow
+the match. Once resolved, the ID is used on both sides, including when the
+recorded label changed or one side did not capture the faction.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
