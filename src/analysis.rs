@@ -25,6 +25,38 @@ pub fn equipment_durability_matching_slots(section: &Value, maximum: u8) -> Opti
     })
 }
 
+pub(crate) fn temporary_weapon_enchant_expiry(
+    row: &Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+) -> Option<chrono::DateTime<chrono::Utc>> {
+    (row["has_enchant"] == true && row["enchant_type"] == "temporary").then_some(())?;
+    let duration = chrono::TimeDelta::try_milliseconds(row["remaining_milliseconds"].as_i64()?)?;
+    captured_at.checked_add_signed(duration)
+}
+
+pub fn weapon_enchant_expiry_review(
+    section: &Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+    reference: chrono::DateTime<chrono::Utc>,
+) -> Option<Value> {
+    let hands = section["hands"].as_object()?;
+    let projections: BTreeMap<_, _> = ["main_hand", "off_hand", "ranged"].into_iter().map(|hand| {
+        let rows = hands.get(hand).and_then(|view| view["entries"].as_object()).map(|entries| {
+            entries.iter().filter(|(_, row)| row["has_enchant"] == true && row["enchant_type"] == "temporary")
+                .map(|(slot, row)| {
+                    let expiry = temporary_weapon_enchant_expiry(row, captured_at);
+                    (slot.parse::<u32>().unwrap(), json!({"enchant_id":row["enchant_id"],
+                        "reported_remaining_milliseconds":row["remaining_milliseconds"],
+                        "projected_expiry_at":expiry,"projected_expiry_at_or_before_reference":expiry.map(|expiry| expiry <= reference)}))
+                }).collect::<BTreeMap<_, _>>()
+        });
+        (hand, rows)
+    }).collect();
+    Some(
+        json!({"reference_at":reference,"hands":projections,"current_enchant_verified":false,"live":false}),
+    )
+}
+
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
 )]

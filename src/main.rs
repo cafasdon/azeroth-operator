@@ -107,6 +107,8 @@ struct Inspect {
     /// Review historical encounter progress and expiry for the saved instance lock warning.
     #[serde(default)]
     instance_lock_encounter_review: bool,
+    /// Compare projected temporary enchant expiries with this explicit reference timestamp.
+    weapon_enchant_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
@@ -2712,6 +2714,13 @@ impl Operator {
                 "Mail bag space requires mail_attachments and one to 64 distinct positive item IDs",
             )]);
         }
+        if args.weapon_enchant_reference_at.is_some()
+            && args.section.as_deref() != Some("weapon_enchants")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Weapon enchant expiry review requires weapon_enchants",
+            )]);
+        }
         if args.instance_lock_encounter_review
             && args.section.as_deref() != Some("instance_context")
         {
@@ -4183,6 +4192,25 @@ impl Operator {
                             )]);
                         }
                     }
+                }
+                if let Some(reference) = args.weapon_enchant_reference_at {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Weapon enchant expiry review requires a saved Forever snapshot",
+                        )]);
+                    }
+                    value["weapon_enchant_expiry_review"] = serde_json::json!(
+                        value["captured_at"]
+                            .as_str()
+                            .and_then(|text| text.parse::<chrono::DateTime<chrono::Utc>>().ok())
+                            .and_then(|captured_at| {
+                                azeroth_operator::analysis::weapon_enchant_expiry_review(
+                                    &value["data"],
+                                    captured_at,
+                                    reference,
+                                )
+                            })
+                    );
                 }
                 if args.instance_lock_encounter_review {
                     if value["client"]["family"] != "forever" {

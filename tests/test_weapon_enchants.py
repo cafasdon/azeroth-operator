@@ -188,6 +188,8 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     timed['character']['name'] = 'Timed'
                     timed['sections']['weapon_enchants']['hands']['main_hand']['entries']['10'][
                         'remaining_milliseconds'] = 1
+                    timed['sections']['weapon_enchants']['hands']['main_hand']['entries']['3'] = {
+                        'has_enchant':True,'enchant_type':'temporary','enchant_id':43}
                     timed_key = store.ingest(timed)
                     deadline = '2025-01-01T00:00:00.001Z'
                     expiring = await search('main_hand',projected_expiry_by=deadline)
@@ -196,6 +198,23 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await search('main_hand',projected_expiry_by='2025-01-01T00:00:00Z'), [])
                     self.assertEqual(await search('main_hand',projected_expiry_by=deadline,enchant_id=42), [])
                     self.assertEqual(await search('off_hand',projected_expiry_by=deadline), [])
+                    for reference, expired in [('2025-01-01T00:00:00Z',False),(deadline,True)]:
+                        result=await call('inspect_snapshot',snapshot_id=timed_key,section='weapon_enchants',
+                                          weapon_enchant_reference_at=reference)
+                        review=result['weapon_enchant_expiry_review']
+                        self.assertEqual(review['hands']['off_hand'],{})
+                        self.assertIsNone(review['hands']['ranged'])
+                        self.assertEqual(set(review['hands']['main_hand']),{'3','10'})
+                        self.assertEqual(review['hands']['main_hand']['10']['projected_expiry_at'],deadline)
+                        self.assertIs(review['hands']['main_hand']['10']['projected_expiry_at_or_before_reference'],expired)
+                        self.assertIsNone(review['hands']['main_hand']['3']['projected_expiry_at'])
+                        self.assertFalse(review['current_enchant_verified'])
+                    missing_review=await call('inspect_snapshot',snapshot_id=keys[1],section='weapon_enchants',
+                                              weapon_enchant_reference_at=deadline)
+                    self.assertIsNone(missing_review['weapon_enchant_expiry_review'])
+                    rejected=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':timed_key,'section':'equipment','weapon_enchant_reference_at':deadline})
+                    self.assertTrue(rejected.isError)
                     invalid_deadline = await session.call_tool('list_snapshots', {'family':'forever',
                         'weapon_enchant':{'hand':'main_hand','projected_expiry_by':'invalid'}})
                     self.assertTrue(invalid_deadline.isError)

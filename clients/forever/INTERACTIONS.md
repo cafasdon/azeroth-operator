@@ -3075,6 +3075,10 @@ Set `list_snapshots.weapon_enchant.projected_expiry_by` to an RFC 3339
 deadline. A match requires a temporary enchant and a timer reported on the
 same hand and row. The inclusive deadline uses the capture timestamp and
 recorded milliseconds. The result describes historical observations.
+Set `weapon_enchant_reference_at` in `inspect_snapshot` on
+`weapon_enchants` to see projected temporary enchant expiries per hand.
+The report compares each known expiry with the reference time. Missing
+timers and unobserved hands stay unknown. Current enchants remain unverified.
 
 ## Saved trainer affordability after a reserve
 

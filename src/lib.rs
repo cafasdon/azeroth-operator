@@ -1730,14 +1730,8 @@ impl WeaponEnchantFilter {
                             .is_some_and(|n| n <= u64::from(max))
                     })
                     && self.projected_expiry_by.is_none_or(|deadline| {
-                        row["enchant_type"] == "temporary"
-                            && row["remaining_milliseconds"]
-                                .as_i64()
-                                .and_then(chrono::TimeDelta::try_milliseconds)
-                                .and_then(|duration| {
-                                    snapshot.captured_at.checked_add_signed(duration)
-                                })
-                                .is_some_and(|expiry| expiry <= deadline)
+                        analysis::temporary_weapon_enchant_expiry(row, snapshot.captured_at)
+                            .is_some_and(|expiry| expiry <= deadline)
                     }))
                 .then(|| slot.parse::<u32>().unwrap())
             })
