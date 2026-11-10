@@ -3138,6 +3138,7 @@ pub struct ComparisonSelectors<'a> {
     pub pet_view_changes: bool,
     pub mail_attachment_changes: bool,
     pub achievement_id: Option<u32>,
+    pub achievement_name: Option<&'a str>,
     pub profession_skill_line: Option<u32>,
     pub wallet: bool,
     pub experience: bool,
@@ -4242,7 +4243,13 @@ pub fn compare_observations(
                 "achievement_ids_with_scope_changes":scope_changed})
         }));
     }
-    if let Some(achievement_id) = selectors.achievement_id {
+    if let Some(achievement_id) = resolve_comparison_id(
+        before,
+        after,
+        "tracked_achievements",
+        selectors.achievement_id,
+        selectors.achievement_name,
+    )? {
         ensure!(
             before.client.family == crate::Family::Forever && achievement_id > 0,
             "Tracked achievement comparisons require a Forever achievement ID"

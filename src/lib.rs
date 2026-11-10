@@ -2075,7 +2075,9 @@ pub struct ParagonFilter {
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TrackedAchievementFilter {
-    pub achievement_id: std::num::NonZeroU32,
+    pub achievement_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved tracked achievement name.
+    pub achievement_name: Option<String>,
     pub completed: Option<bool>,
     pub earned_by_character: Option<bool>,
 }
@@ -2865,12 +2867,25 @@ impl Store {
             .transpose()?
             .unwrap_or_default();
         ensure!(
-            tracked_achievement.is_none() || family == Family::Forever,
-            "Tracked achievement filtering requires Forever"
+            tracked_achievement
+                .as_ref()
+                .is_none_or(|filter| family == Family::Forever
+                    && (filter.achievement_id.is_some() || filter.achievement_name.is_some())
+                    && filter
+                        .achievement_name
+                        .as_deref()
+                        .map(str::trim)
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256)),
+            "Tracked achievement filtering requires Forever and an achievement ID or valid name"
         );
         let achievement_key = tracked_achievement
             .as_ref()
-            .map(|filter| filter.achievement_id.to_string());
+            .and_then(|filter| filter.achievement_id.map(|id| id.to_string()));
+        let achievement_name = tracked_achievement
+            .as_ref()
+            .and_then(|filter| filter.achievement_name.as_deref())
+            .map(str::trim)
+            .map(str::to_lowercase);
         let quest_title = quest_title.map(str::trim);
         ensure!(
             quest_title.is_none_or(|title| !title.is_empty() && title.len() <= 256),
@@ -3513,20 +3528,23 @@ impl Store {
                     if toy_name.is_some() && toy_name_match.is_none() {
                         continue;
                     }
-                    let achievement_match = tracked_achievement
-                        .as_ref()
-                        .zip(achievement_key.as_ref())
-                        .and_then(|(filter, key)| {
-                            let row =
-                                s.sections.get("tracked_achievements")?["entries"].get(key)?;
-                            (filter
-                                .completed
-                                .is_none_or(|value| row["completed"].as_bool() == Some(value))
-                                && filter.earned_by_character.is_none_or(|value| {
-                                    row["earned_by_character"].as_bool() == Some(value)
-                                }))
-                            .then_some(row)
-                        });
+                    let achievement_match = tracked_achievement.as_ref().and_then(|filter| {
+                        let entries =
+                            s.sections.get("tracked_achievements")?["entries"].as_object()?;
+                        let (id, row) = select_named_entry(
+                            entries,
+                            achievement_key.as_deref(),
+                            achievement_name.as_deref(),
+                            |_| true,
+                        )?;
+                        (filter
+                            .completed
+                            .is_none_or(|value| row["completed"].as_bool() == Some(value))
+                            && filter.earned_by_character.is_none_or(|value| {
+                                row["earned_by_character"].as_bool() == Some(value)
+                            }))
+                        .then_some((id, row))
+                    });
                     if tracked_achievement.is_some() && achievement_match.is_none() {
                         continue;
                     }
@@ -4086,10 +4104,9 @@ impl Store {
                     if let Some(matches) = missing_section_matches {
                         summary["missing_section_matches"] = json!(matches);
                     }
-                    if let Some((filter, row)) = tracked_achievement.as_ref().zip(achievement_match)
-                    {
+                    if let Some((id, row)) = achievement_match {
                         summary["tracked_achievement_match"] = json!({
-                            "achievement_id":filter.achievement_id,"completed":row["completed"],
+                            "achievement_id":id,"completed":row["completed"],
                             "earned_by_character":row["earned_by_character"],"account_wide":row["account_wide"],
                         });
                     }

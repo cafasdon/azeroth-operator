@@ -3326,6 +3326,13 @@ find an exact saved name within the corresponding reputation kind. Names
 must resolve before level, cap or reward filters are applied. Add
 `faction_id` to disambiguate.
 
+Use `list_snapshots.tracked_achievement.achievement_name` to find an exact
+saved achievement name before applying completion or character-credit
+filters. Use `compare_snapshots.achievement_name` to resolve the name to
+one ID across both captures and compare saved progress. Add an
+`achievement_id` to disambiguate. Only player-tracked achievements in
+the selected captures are covered.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

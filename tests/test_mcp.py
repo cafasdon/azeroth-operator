@@ -1552,6 +1552,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         for selection, expected_ids in [
                             ({"achievement_id": 101, "completed": True, "earned_by_character": False},
                              [new_freshness_id]),
+                            ({"achievement_name":"  fIXture ACHIEVEMENT ","completed":True},
+                             [new_freshness_id]),
+                            ({"achievement_name":"Fixture achievement","earned_by_character":True},[]),
+                            ({"achievement_name":"Fixture achievement","achievement_id":999},[]),
                             ({"achievement_id": 101, "earned_by_character": True}, []),
                             ({"achievement_id": 999, "completed": False}, []),
                         ]:
@@ -1690,6 +1694,18 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertEqual(quest["after"]["objectives"]["1"]["fulfilled"], 2)
                         achievement = progress_data["achievement_change"]
+                        for selection,error in [
+                            ({"achievement_name":"  fIXture ACHIEVEMENT "},False),
+                            ({"achievement_name":"Fixture achievement","achievement_id":101},False),
+                            ({"achievement_name":"Fixture achievement","achievement_id":999},True),
+                            ({"achievement_name":"Fixture"},True),
+                            ({"achievement_name":" "},True),
+                        ]:
+                            named=await session.call_tool("compare_snapshots",{
+                                "before_id":after_key,"after_id":progress_key,**selection})
+                            self.assertEqual(bool(named.isError),error,named)
+                            if not error:
+                                self.assertEqual(json.loads(named.content[0].text)["achievement_change"],achievement)
                         self.assertTrue(achievement["completed_changed"])
                         self.assertFalse(achievement["earned_by_character_changed"])
                         comparison = achievement["criterion_comparison"]

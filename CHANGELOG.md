@@ -1,5 +1,7 @@
 # Changelog
 
+- Find and compare saved tracked Forever achievements by exact name.
+
 - Find saved Forever renown and paragon progress by exact faction name.
 
 - Find saved Forever currency balances and cap headroom by exact currency name.

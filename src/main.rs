@@ -766,6 +766,8 @@ struct Compare {
     mail_attachment_changes: bool,
     /// Optionally compare one tracked Forever achievement by ID.
     achievement_id: Option<std::num::NonZeroU32>,
+    /// Resolve one tracked achievement by exact saved name before comparing progress.
+    achievement_name: Option<String>,
     /// Optionally compare one captured profession by its skill-line ID.
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Include a net change in captured Forever wallet copper.
@@ -2135,6 +2137,7 @@ impl Operator {
                     pet_view_changes: args.pet_view_changes,
                     mail_attachment_changes: args.mail_attachment_changes,
                     achievement_id: args.achievement_id.map(|id| id.get()),
+                    achievement_name: args.achievement_name.as_deref(),
                     profession_skill_line: args.profession_skill_line.map(|id| id.get()),
                     wallet: args.wallet,
                     experience: args.experience,
