@@ -82,6 +82,22 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(match['reported_warning_remaining_seconds'],60)
                             self.assertNotIn('Same name',json.dumps(row))
                             self.assertFalse(match['current_warning_verified'])
+                            self.assertNotIn('projected_warning_expiry_at',match)
+                    expiry='2025-01-02T00:00:00Z'
+                    for window, expected in [
+                        ({'projected_expiry_from':'2025-01-02T01:00:00+01:00',
+                          'projected_expiry_by':expiry},{encounters_id,counts_only_id}),
+                        ({'projected_expiry_by':'2025-01-01T23:59:59.999Z'},set()),
+                        ({'projected_expiry_from':'2025-01-02T00:00:00.001Z'},set()),
+                        ({'projected_expiry_by':expiry,'encounter_name':'Defeated'},{encounters_id}),
+                    ]:
+                        reply=await session.call_tool('list_snapshots',{
+                            'family':'forever','instance_lock_warning':window})
+                        self.assertFalse(reply.isError,reply)
+                        rows=json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual({row['snapshot_id'] for row in rows},expected)
+                        for row in rows:
+                            self.assertEqual(row['instance_lock_warning_match']['projected_warning_expiry_at'],expiry)
                     self.assertTrue((await session.call_tool('list_snapshots',{
                         'family':'retail','instance_lock_warning':{}})).isError)
                     for selector, count in [
@@ -102,6 +118,8 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                                     {'minimum_completed_encounters':2,'maximum_completed_encounters':1},
                                     {'minimum_remaining_encounters':3,'maximum_remaining_encounters':2},
                                     {'maximum_remaining_encounters':-1},
+                                    {'projected_expiry_from':'2025-01-03T00:00:00Z','projected_expiry_by':expiry},
+                                    {'projected_expiry_by':'2025-01-02'},
                                     {'maximum_completed_encounters':True}]:
                         reply=await session.call_tool('list_snapshots',{
                             'family':'forever','instance_lock_warning':invalid})

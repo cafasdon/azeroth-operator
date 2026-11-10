@@ -3549,7 +3549,10 @@ impl Store {
                     }
                     let instance_lock_warning_match =
                         instance_lock_warning.as_ref().and_then(|filter| {
-                            filter.match_observation(s.sections.get("instance_context")?)
+                            filter.match_observation(
+                                s.sections.get("instance_context")?,
+                                s.captured_at,
+                            )
                         });
                     if instance_lock_warning.is_some() && instance_lock_warning_match.is_none() {
                         continue;

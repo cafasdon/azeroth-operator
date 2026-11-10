@@ -1,5 +1,7 @@
 # Changelog
 
+- Search saved instance warnings by an inclusive projected expiry window.
+
 - Compare a saved instance warning's projected expiry with a caller-supplied timestamp.
 
 - Find saved instance warnings within an exact range of completed or remaining encounters.

@@ -76,6 +76,10 @@ pub struct InstanceLockWarningFilter {
     pub minimum_remaining_encounters: Option<u32>,
     pub maximum_remaining_encounters: Option<u32>,
     pub maximum_warning_seconds: Option<u32>,
+    /// Inclusive lower bound on projected expiry from the saved warning timer.
+    pub projected_expiry_from: Option<DateTime<Utc>>,
+    /// Inclusive upper bound on projected expiry from the saved warning timer.
+    pub projected_expiry_by: Option<DateTime<Utc>>,
     pub has_encounter_details: Option<bool>,
     /// Exact case-insensitive encounter name from the saved warning.
     pub encounter_name: Option<String>,
@@ -102,10 +106,20 @@ impl InstanceLockWarningFilter {
                     .is_none_or(|(min, max)| min <= max),
             "Encounter count bounds must be ordered"
         );
+        ensure!(
+            self.projected_expiry_from
+                .zip(self.projected_expiry_by)
+                .is_none_or(|(from, by)| from <= by),
+            "Projected warning expiry bounds must be ordered"
+        );
         Ok(())
     }
 
-    pub(crate) fn match_observation(&self, context: &Value) -> Option<Value> {
+    pub(crate) fn match_observation(
+        &self,
+        context: &Value,
+        captured_at: DateTime<Utc>,
+    ) -> Option<Value> {
         let warning = &context["lock_warning"];
         let completed = warning["encounters_completed"].as_u64()?;
         let remaining = warning["encounters_total"]
@@ -138,6 +152,15 @@ impl InstanceLockWarningFilter {
                 "encounters_completed":completed,"encounters_remaining":remaining,
                 "reported_warning_remaining_seconds":seconds,"has_encounter_details":has_details,
                 "current_warning_verified":false,"saved_lockout_identity_verified":false});
+        if self.projected_expiry_from.is_some() || self.projected_expiry_by.is_some() {
+            let expiry = projected_reset_at(i64::try_from(seconds).ok()?, captured_at)?;
+            if self.projected_expiry_from.is_some_and(|from| expiry < from)
+                || self.projected_expiry_by.is_some_and(|by| expiry > by)
+            {
+                return None;
+            }
+            report["projected_warning_expiry_at"] = json!(expiry);
+        }
         if let Some(name) = self.encounter_name.as_ref() {
             let name = name.trim().to_lowercase();
             let matches = warning["encounters"]

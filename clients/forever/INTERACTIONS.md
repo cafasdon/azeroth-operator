@@ -4,6 +4,10 @@ Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
 projected expiry falls at or before an explicit timestamp. The projection
 uses the saved timer and capture time. Current warning state remains unverified.
+On `list_snapshots`, use `instance_lock_warning.projected_expiry_from`
+and/or `projected_expiry_by` to match an inclusive window. Matching
+captures report the projected expiry and can also be filtered by encounter
+count or name.
 
 Use `instance_lock_warning.maximum_completed_encounters` or
 `maximum_remaining_encounters` on `list_snapshots` to find saved
