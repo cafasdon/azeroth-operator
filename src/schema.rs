@@ -2040,6 +2040,13 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "player_map_position" => {
+            object(value, &[("coverage", "text", true), ("map_id", "positive", true),
+                ("x", "unit_interval", true), ("y", "unit_interval", true)])?;
+            ensure!(value["coverage"] == "reported_player_map_position"
+                && value["map_id"].as_u64().is_some_and(|id| id <= u64::from(u32::MAX)),
+                "Invalid player map position");
+        }
         "player_pvp_flags" => {
             object(value, &[("coverage", "text", true), ("is_pvp", "bool", true),
                 ("is_free_for_all", "bool", true), ("is_sanctuary", "bool", true)])?;

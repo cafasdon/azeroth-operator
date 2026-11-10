@@ -27,6 +27,7 @@ pub mod talent_operation;
 pub mod upload;
 pub mod workflow_coverage;
 pub mod recipe_restock;
+pub mod player_map_position;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -87,6 +88,7 @@ pub const SNAPSHOT_SECTIONS: &[&str] = &[
     "battlefield_queue_slots",
     "player_life_state",
     "player_pvp_flags",
+    "player_map_position",
     "bag_item_cooldowns",
     "gossip_quests",
     "gossip_options",
@@ -150,6 +152,7 @@ pub const FOREVER_ONLY_OBSERVATIONS: &[&str] = &[
     "battlefield_queue_slots",
     "player_life_state",
     "player_pvp_flags",
+    "player_map_position",
     "bag_item_cooldowns",
     "gossip_quests",
     "gossip_options",

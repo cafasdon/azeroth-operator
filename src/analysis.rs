@@ -11956,6 +11956,7 @@ pub fn summary(s: &Snapshot) -> Value {
       "unspent_talent_points_reported":unspent,"available_sections":s.sections.keys().collect::<Vec<_>>(),
       "unavailable":s.unavailable,"limitations":["Counts describe exported entries, not item quality or optimal gear","No bank/mail inventory inferred","No enchant, socket or talent legality inferred from missing fields"]});
     if is_forever {
+        summary["player_map_position_observation"] = crate::player_map_position::observation(s);
         let mut counts = BTreeMap::from([
             ("observed", 0usize),
             ("reported_unavailable", 0),

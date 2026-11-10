@@ -966,3 +966,12 @@ review. Missing bags remain unknown; bank/mail output does not count toward
 current carried stock. Zero-craft, unsupported and bounded-overflow cases stay
 explicit. No native craft, variant equivalence, current eligibility or full
 ownership claim is added. See ADR-087 and its dated evidence. Offline only.
+
+## Private saved player map position (10 November)
+
+A manual player-only coordinate section and explicit same-map target preview
+extend local world context. Readers preserve unknown observations and reject
+restricted/invalid data. Normalised diagram geometry does not establish travel
+distance, reachability, arrival, active identity or current position. No map
+setter, polling or movement action is added. See ADR-088 and the dated map
+position evidence. Native capture, installation and live tests remain deferred.

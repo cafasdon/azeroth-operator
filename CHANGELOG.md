@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture private saved player map coordinates and preview explicit same-map targets as diagram geometry, without movement or travel-route claims.
+
 - Plan recipe restock toward a saved bag quantity, with conservative net yield, exact local recipe review and no craft actions.
 
 - Retain optional encounter-specific gear leaders across completed saved results, independently of the aggregate shortlist and without extra simulations.

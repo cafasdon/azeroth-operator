@@ -36,6 +36,7 @@ SECTIONS = SECTIONS | {"owned_auctions"}
 SECTIONS = SECTIONS | {"battlefield_queue_slots"}
 SECTIONS = SECTIONS | {"player_life_state"}
 SECTIONS = SECTIONS | {"player_pvp_flags"}
+SECTIONS = SECTIONS | {"player_map_position"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 SECTIONS = SECTIONS | {"quest_giver_references"}
 
@@ -941,6 +942,15 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "player_map_position" in sections:
+        position=sections['player_map_position']
+        if (c['family']!='forever' or not isinstance(position,dict)
+                or set(position)!={'coverage','map_id','x','y'}
+                or position['coverage']!='reported_player_map_position'
+                or type(position['map_id']) is not int or not 1<=position['map_id']<=4_294_967_295
+                or any(type(position[field]) not in (int,float) or not 0<=position[field]<=1
+                       for field in ('x','y'))):
+            raise ValueError('Invalid player map position')
     if "player_pvp_flags" in sections:
         pvp=sections['player_pvp_flags']
         flags={'is_pvp','is_free_for_all','is_sanctuary'}

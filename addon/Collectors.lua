@@ -1,5 +1,56 @@
 local _, AO = ...
 AO.collectors = {}
+-- Manual player-only map diagram observation. No waypoint, map opening or travel action.
+AO.collectors.player_map_position = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Map restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted map observation")
+        return value
+    end
+    local api=public(C_Map)
+    assert(type(api)=="table", "Map API unavailable")
+    local best=public(api.GetBestMapForUnit)
+    local position=public(api.GetPlayerMapPosition)
+    assert(type(best)=="function" and type(position)=="function", "Map getters unavailable")
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and public(C_Map)==api and public(api.GetBestMapForUnit)==best
+            and public(api.GetPlayerMapPosition)==position, "Map context changed")
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret)
+            and rawequal(rawget(_G,"C_Map"),api) and rawequal(rawget(api,"GetBestMapForUnit"),best)
+            and rawequal(rawget(api,"GetPlayerMapPosition"),position), "Map context changed")
+    end
+    local function coordinate(value)
+        value=public(value)
+        assert(type(value)=="number" and value==value and value>=0 and value<=1, "Invalid map coordinate")
+        return value
+    end
+    local function read()
+        fixed()
+        local map=public(best("player"))
+        assert(type(map)=="number" and map%1==0 and map>=1 and map<=4294967295, "Map unavailable")
+        fixed()
+        local vector=public(position(map,"player"))
+        assert(type(vector)=="table" or type(vector)=="userdata", "Map position unavailable")
+        local xy=public(vector.GetXY)
+        assert(type(xy)=="function", "Map vector unavailable")
+        local x,y=xy(vector)
+        x,y=coordinate(x),coordinate(y)
+        assert(public(vector.GetXY)==xy, "Map vector changed")
+        local againX,againY=xy(vector)
+        assert(coordinate(againX)==x and coordinate(againY)==y and public(vector.GetXY)==xy,
+            "Map vector changed")
+        fixed()
+        assert(public(best("player"))==map, "Player map changed")
+        fixed()
+        return {coverage="reported_player_map_position",map_id=map,x=x,y=y}
+    end
+    local first,second=read(),read()
+    assert(first.map_id==second.map_id and first.x==second.x and first.y==second.y, "Player position changed")
+    fixed()
+    return second
+end
 -- Player-only raw PvP flags, without combat eligibility or zone-safety inference.
 AO.collectors.player_pvp_flags = function()
     local secret=issecretvalue

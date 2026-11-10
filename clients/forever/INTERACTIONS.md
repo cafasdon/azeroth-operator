@@ -4527,3 +4527,15 @@ The material review uses gross batch inputs without intermediate output credit.
 Projected quantities are conditional; base IDs do not prove variant equivalence,
 current stock, crafting eligibility or bag placement. No crafting occurs.
 See ADR-087 and recipe-restock-verification-2026-11-10.md. Offline only.
+
+## Saved player map position
+
+Manual exports can retain player_map_position when public player-only map
+getters return stable readable values. Readers must be updated before exporter
+installation. Inspect the section directly, or give inspect_snapshot an optional
+player_map_target object with map_id and x/y from zero to one. Same-map previews
+report target-minus-saved diagram coordinates and normalised separation. Different
+maps and unknown observations return no geometry. This is not yards, a path,
+arrival or current location. character_summary retains saved position/capture
+status only. No waypoint, map opening, movement or polling occurs. Position data
+stays in the owner's private store. See ADR-088. Native testing remains deferred.

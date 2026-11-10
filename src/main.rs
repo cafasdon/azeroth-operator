@@ -105,6 +105,9 @@ struct Inspect {
     quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
     /// Review saved mail header amounts against the captured wallet and reserve. mail_funds only; no actions.
     mail_funds_review: Option<azeroth_operator::mail_funds::Page>,
+    /// Preview an explicit target against the saved player_map_position. Same-map diagram geometry only, not yards or a travel route.
+    #[serde(default, deserialize_with = "map_target_argument")]
+    player_map_target: Option<azeroth_operator::player_map_position::Target>,
     /// Compare each saved group category's reported member count against this target.
     group_member_target: Option<std::num::NonZeroU32>,
     /// Compare the saved instance group count with a uniquely matching saved lockout size reference.
@@ -1170,6 +1173,11 @@ fn player_pvp_flags_argument<'de, D: serde::Deserializer<'de>>(
 fn workflow_coverage_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
     serde_json::Value::deserialize(input)?.as_bool()
         .ok_or_else(|| serde::de::Error::custom("Invalid workflow input report flag"))
+}
+
+fn map_target_argument<'de, D: serde::Deserializer<'de>>(input: D) -> Result<Option<azeroth_operator::player_map_position::Target>, D::Error> {
+    Option::<azeroth_operator::player_map_position::Target>::deserialize(input)
+        .map_err(|_| serde::de::Error::custom("Invalid saved map target"))
 }
 
 fn player_life_state_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
@@ -3243,6 +3251,14 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.player_map_target.as_ref().is_some_and(|target| {
+            args.section.as_deref() != Some("player_map_position")
+                || args.coverage_sections.is_some() || target.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Map target requires player_map_position, a positive map ID and coordinates from zero to one",
+            )]);
+        }
         if args.mail_funds_review.as_ref().is_some_and(|page| {
             args.section.as_deref() != Some("mail_funds")
                 || args.coverage_sections.is_some()
@@ -4397,6 +4413,16 @@ impl Operator {
             args.coverage_sections.as_deref(),
         ) {
             Ok(mut value) => {
+                if let Some(target) = &args.player_map_target {
+                    let report = self.store.read(&args.snapshot_id)
+                        .and_then(|snapshot| azeroth_operator::player_map_position::preview(&snapshot,target));
+                    match report {
+                        Ok(report) => value["data"] = report,
+                        Err(_) => return CallToolResult::error(vec![ContentBlock::text(
+                            "Saved player map context unavailable or invalid",
+                        )]),
+                    }
+                }
                 if let Some(page) = &args.mail_funds_review {
                     let review = self.store.read(&args.snapshot_id)
                         .and_then(|snapshot| azeroth_operator::mail_funds::review(&snapshot, page));
