@@ -170,6 +170,9 @@ struct Inspect {
     /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
     #[serde(default, deserialize_with = "skill_line_argument")]
     skill_line_filter: Option<azeroth_operator::skill_line_filter::SkillLinePage>,
+    /// Filter and page numeric saved owned-auction rows; owned_auctions section only.
+    #[serde(default, deserialize_with = "owned_auction_argument")]
+    owned_auction_filter: Option<azeroth_operator::owned_auction_filter::OwnedAuctionPage>,
     /// Compare recorded fares with the wallet from the same Forever flight_map capture.
     #[serde(default)]
     flight_wallet_projection: bool,
@@ -680,6 +683,9 @@ struct List {
     pet_action_command: Option<azeroth_operator::PetActionCommandFilter>,
     /// Find saved Forever captures with matching observations in one explicit group category.
     group_context: Option<azeroth_operator::GroupContextFilter>,
+    /// Find saved loaded owned-auction rows by exact item ID, auction ID or raw status.
+    #[serde(default, deserialize_with = "owned_auction_argument")]
+    owned_auction: Option<azeroth_operator::owned_auction_filter::OwnedAuctionFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Find a recorded currency balance at or above the requested quantity.
@@ -1084,6 +1090,15 @@ fn skill_line_argument<'de, D: serde::Deserializer<'de>, T: serde::de::Deseriali
     serde_json::from_value(value)
         .map(Some)
         .map_err(|_| serde::de::Error::custom("Invalid skill-line filter"))
+}
+
+fn owned_auction_argument<'de, D: serde::Deserializer<'de>, T: serde::de::DeserializeOwned>(
+    input: D,
+) -> Result<Option<T>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() { return Ok(None); }
+    serde_json::from_value(value).map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid owned auction filter"))
 }
 
 fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
@@ -3003,6 +3018,7 @@ impl Operator {
                 pet_action_spell: args.pet_action_spell,
                 pet_action_command: args.pet_action_command,
                 group_context: args.group_context,
+                owned_auction: args.owned_auction,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
@@ -3235,6 +3251,13 @@ impl Operator {
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Bag cooldown filters require bag_item_cooldowns, a nonempty filter, distinct item IDs, ordered timer bounds and a limit from 1 to 50",
+            )]);
+        }
+        if args.owned_auction_filter.as_ref().is_some_and(|page| {
+            args.section.as_deref() != Some("owned_auctions") || page.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Owned auction review requires owned_auctions, a valid nonempty filter and limit from 1 to 50",
             )]);
         }
         if args.skill_line_filter.as_ref().is_some_and(|filter| {
@@ -4847,6 +4870,16 @@ impl Operator {
                         azeroth_operator::saved_resets::classify_at(&mut projected, reference);
                     }
                     value["saved_reset_projection"] = projected;
+                }
+                if let Some(page) = args.owned_auction_filter.as_ref() {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text("Owned auction review requires Forever")]);
+                    }
+                    let section = value["data"].take();
+                    match azeroth_operator::owned_auction_filter::inspect((!section.is_null()).then_some(&section),page) {
+                        Ok(review) => value["data"] = review,
+                        Err(_) => return CallToolResult::error(vec![ContentBlock::text("Invalid saved owned auction review")]),
+                    }
                 }
                 if let Some(filter) = args.skill_line_filter.as_ref() {
                     if value["client"]["family"] != "forever" {

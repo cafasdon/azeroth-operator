@@ -4312,3 +4312,14 @@ cancellation is invoked; no auction item or money is credited to inventory or
 wallet. Data remains in the owner-local snapshot store, outside public search.
 Update readers before installing the exporter. Native testing stays deferred.
 See docs/ADR-077-passive-owned-auctions.md.
+
+Find captures with list_snapshots.owned_auction using any nonempty combination
+of exact item_id, auction_id and reported_status. Predicates match the same
+row. Latest-per-character selection precedes matching. Results retain at most
+20 matching rows plus whole-match count, reported unit total and truncation.
+For inspection, use section owned_auctions and owned_auction_filter containing
+filter, offset and limit (default 20, maximum 50). Matching rows sort by numeric
+slot before paging; counts and reported unit totals cover all matches. These
+units never become stock or copper. Missing data remains null; observed empty
+or nonmatching data yields zero and an empty page. Raw status stays uninterpreted,
+and no filter preserves raw inspection. Search is owner-local and offline.

@@ -1,5 +1,7 @@
 # Changelog
 
+- Search saved owned-auction caches by exact item, auction ID and raw status, with bounded paged inspection.
+
 - Capture the player's loaded auction cache passively, with numeric-only rows and strict owner-local inspection.
 - Preserve JSON-safe integer precision in manual Lua exports.
 

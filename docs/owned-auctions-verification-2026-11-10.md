@@ -57,3 +57,36 @@ probability 0.57, insufficient_evidence 0.42), Jev 1.14.0, request
 feature or resolve native/policy uncertainty. The author accepted the bounded
 source-only change based on direct offline tests, packaging verification and
 both independent reviews, keeping installation/deployment/native gates parked.
+
+## Saved auction discovery and inspection — 2026-11-10
+
+Existing list_snapshots gains owned_auction same-row exact predicates;
+inspect_snapshot gains owned_auction_filter with bounded pages. No collector,
+transaction, deployment or native test changed. See ADR-077 for the contract.
+
+Author: cargo build --bin azeroth-operator succeeded. With PYTHONPATH=.;tests,
+python -m unittest test_owned_auction_filters test_owned_auctions passed two
+actual Rust stdio MCP tests in 1.402 seconds. Cases cover latest empty capture
+suppression, contradictory same-row predicates, uint53/u32 maxima, raw status
+zero, full 256-row aggregates, pre-page totals, numeric slots, huge offsets,
+missing/empty distinction, default raw inspection, malformed page/filter input,
+private canary redaction, foreign-owner/family refusal and no bag-stock credit.
+All synthetic snapshots remained byte-identical. git diff --check passed.
+
+One independent adversarial round: failure and security/data plus callers
+lenses; both requested gpt-6-astra high. Resolved model and token usage were
+not exposed. Neither review found a concrete flaw. Failure reviewer independently
+passed 180 paging/count/unit/same-row cases, 82 malformed/redaction cases and
+latest missing-section suppression, using the real MCP binary. Security/data
+reviewer passed 36 independent MCP probes of schema, null/default compatibility,
+malformed private input/snapshots and coverage conflict; traced root containment,
+family restrictions and latest-before-filter order. Both independently ran the
+new real-MCP test. No new inventory, wallet, public-index or execution input
+was introduced. Documentation matched the historical-cache boundary.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready with confidence 0.83,
+request df5ab1e7b4eea9f9bb35a3fc890e6dc51a2e0b8b548ae6c8930f1846fc83705c;
+570 input and 44 output tokens, 0.317 seconds. Author accepted the bounded
+source change based on direct tests and both clean independent reviews.
+Native availability/ownership/completeness remain unqualified; live testing,
+installation and deployment remain deferred.

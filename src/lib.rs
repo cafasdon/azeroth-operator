@@ -11,6 +11,7 @@ pub mod gossip_option_filter;
 pub mod import;
 pub mod loot_observation;
 pub mod macro_operation;
+pub mod owned_auction_filter;
 pub mod planning;
 pub mod saved_resets;
 mod schema;
@@ -2038,6 +2039,7 @@ pub struct CaptureFilters<'a> {
     pub pet_action_spell: Option<PetActionSpellFilter>,
     pub pet_action_command: Option<PetActionCommandFilter>,
     pub group_context: Option<GroupContextFilter>,
+    pub owned_auction: Option<owned_auction_filter::OwnedAuctionFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
@@ -2354,6 +2356,7 @@ impl Store {
             pet_action_spell,
             pet_action_command,
             group_context,
+            owned_auction,
             profession_spell_id,
             recipe: filters,
             tracked_recipe_id,
@@ -2741,6 +2744,10 @@ impl Store {
                 .is_none_or(|(min, max)| min <= max),
             "Reversed PvP rank bounds"
         );
+        if let Some(filter) = &owned_auction {
+            ensure!(family == Family::Forever, "Owned auction search requires Forever");
+            filter.validate()?;
+        }
         ensure!(
             group_context.is_none() || family == Family::Forever,
             "Group context filtering requires Forever"
@@ -3502,6 +3509,8 @@ impl Store {
                     {
                         continue;
                     }
+                    let owned_auction_match = owned_auction.as_ref().and_then(|filter| filter.observation_match(&s));
+                    if owned_auction.is_some() && owned_auction_match.is_none() { continue; }
                     let group_context_match = group_context
                         .as_ref()
                         .and_then(|filter| filter.observation_match(&s));
@@ -4955,6 +4964,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_command_match {
                         summary["pet_action_command_match"] = observation;
+                    }
+                    if let Some(observation) = owned_auction_match {
+                        summary["owned_auction_match"] = observation;
                     }
                     if let Some(observation) = group_context_match {
                         summary["group_context_match"] = observation;

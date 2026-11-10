@@ -50,3 +50,27 @@ Checked 10 November 2026. These are mirrored Blizzard UI/API source files, not
 policy approval. Existing project policy boundaries remain in force. Update
 both readers before installing the exporter. No installation, deployment or
 live game testing is part of this change.
+
+Saved-cache discovery and inspection (10 November): list_snapshots accepts
+owned_auction with one or more exact item_id, auction_id or reported_status
+predicates. All predicates match the same captured row. Missing/unreadable
+sections and observed sections with no match do not satisfy the filter.
+Latest-per-character resolution takes place before these predicates, so an
+old listing is not resurrected when a newer capture has no matching row.
+
+inspect_snapshot accepts owned_auction_filter containing filter, offset and
+limit (default 20, maximum 50) for section owned_auctions. Rows sort by numeric
+captured slot before paging. Matching counts and matching_reported_item_units
+cover the entire filtered capture, not just the returned page. The latter is
+a sum of reported quantity units; it is never inventory or money credit and
+may combine several base item IDs. Missing sections yield null rows/counts;
+known empty/no-match captures yield zero counts and an empty list.
+
+Filters require at least one non-null predicate, positive uint32 item IDs,
+positive JSON-safe auction IDs and raw uint32 status (zero valid). Unknown
+fields, malformed types and invalid paging reject through redacting MCP
+argument parsing. A listing match includes at most 20 rows, a full match
+count/unit total and a truncation flag. No filter preserves existing raw
+inspection. These are searches over historical numeric cache observations;
+no status meaning, current auction ownership, sale/delivery or native action
+is inferred. Existing owner/family boundaries remain.

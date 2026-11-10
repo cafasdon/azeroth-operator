@@ -858,3 +858,9 @@ query, refresh, transaction, third-party identity, inventory credit or wallet
 credit is introduced. Current ownership, cache freshness/completeness and
 native availability remain unverified. See ADR-077-passive-owned-auctions.md.
 Update readers before exporter installation; live testing remains deferred.
+
+Owned-auction discovery now supports exact same-row item, auction ID and raw
+status predicates plus bounded inspection pages. Latest-per-character selection
+precedes matching, numeric slots determine page order, and whole-match quantities
+remain historical reported units with no stock/copper credit. Missing sections
+remain unknown. No capture, transaction or native qualification is added.
