@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved flight paths when the starting budget is unknown or upfront expenses exceed it.
+
 - Show the saved flight legs behind unsuccessful route searches when a connection was observed.
 
 - Include the saved starting repair quote in manual flight itinerary budgets.

@@ -631,6 +631,22 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(too_expensive.isError)
                         self.assertEqual(json.loads(too_expensive.content[0].text)[
                             "flight_route_search"]["status"], "no_affordable_route")
+                        for departure, reserve, status, issue in [
+                            (no_wallet_id, 0, "starting_budget_unknown", "wallet_unobserved"),
+                            (no_quote_id, 0, "starting_budget_unknown", "repair_quote_unobserved"),
+                            (route_start_id, wallet_copper + 1, "no_affordable_route", "upfront_cost_exceeds_wallet"),
+                        ]:
+                            reply = await session.call_tool("inspect_snapshot", {
+                                **constrained_request, "snapshot_id": departure, "flight_wallet_reserve_copper": reserve})
+                            self.assertFalse(reply.isError, reply)
+                            report = json.loads(reply.content[0].text)["flight_route_search"]
+                            self.assertEqual(report["status"], status)
+                            self.assertEqual(report["starting_budget_issue"], issue)
+                            self.assertNotIn("legs", report)
+                            self.assertIsNone(report["saved_path_evidence"]["effective_fare_ceiling_copper"])
+                            self.assertEqual(report["saved_path_witness"]["total_fare_copper"], 3)
+                            self.assertEqual([leg["snapshot_id"] for leg in report["saved_path_witness"]["legs"]],
+                                             [departure, route_onward_id])
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
                             **fewest_request, "flight_route_search": {
                                 **route_request["flight_route_search"], "objective": "fastest",

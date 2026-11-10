@@ -2203,8 +2203,10 @@ When search evidence shows a reachable path despite no qualifying route,
 shows the cheapest fully quoted path if one exists outside the budget
 or fare ceiling. Otherwise it shows a shortest observed path and leaves
 the total fare unknown. Missing leg fares remain visible in the witness.
-Budget checks that stop the search before route discovery return without
-path evidence or a witness.
+When the starting budget cannot be established or upfront expenses exceed
+the wallet, `starting_budget_issue` identifies the cause. Path evidence
+and any witness remain available for diagnosis, with no effective fare
+ceiling or qualifying route.
 
 `compare_snapshots` compares flight maps only when the map ID and
 unambiguous current departure node agree. It reports availability

@@ -7738,28 +7738,34 @@ pub fn plan_saved_flights(
             })
             .collect::<Result<Vec<_>>>()
     };
-    let max_fare = if require_affordable {
+    let fare_budget = if require_affordable {
         let required_repair = if include_repair_quote {
             repair
         } else {
             Some(0)
         };
-        let Some((balance, repair_cost)) = wallet.zip(required_repair) else {
-            return Ok(status("starting_budget_unknown"));
-        };
-        let Some(spendable) = balance
-            .checked_sub(repair_cost)
-            .and_then(|remaining| remaining.checked_sub(reserve.unwrap_or_default()))
-        else {
-            return Ok(status("no_affordable_route"));
-        };
-        Some(maximum_total_fare_copper.map_or(spendable, |maximum| maximum.min(spendable)))
+        match (wallet, required_repair) {
+            (None, _) => Err(("starting_budget_unknown", "wallet_unobserved")),
+            (_, None) => Err(("starting_budget_unknown", "repair_quote_unobserved")),
+            (Some(balance), Some(repair_cost)) => balance
+                .checked_sub(repair_cost)
+                .and_then(|remaining| remaining.checked_sub(reserve.unwrap_or_default()))
+                .map(|spendable| {
+                    Some(
+                        maximum_total_fare_copper
+                            .map_or(spendable, |maximum| maximum.min(spendable)),
+                    )
+                })
+                .ok_or(("no_affordable_route", "upfront_cost_exceeds_wallet")),
+        }
     } else {
-        maximum_total_fare_copper
+        Ok(maximum_total_fare_copper)
     };
+    let max_fare = fare_budget.ok().flatten();
+    let search_legs = if fare_budget.is_ok() { max_legs } else { 0 };
     let mut frontier = BTreeMap::from([(start, (0u64, Vec::new()))]);
     let mut best = None;
-    for depth in 0..max_legs {
+    for depth in 0..search_legs {
         let mut next = BTreeMap::new();
         for (node, (cost, path)) in frontier {
             for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
@@ -7795,13 +7801,18 @@ pub fn plan_saved_flights(
         }
     }
     let Some((fare, _, path)) = best else {
-        let mut report = status(if require_affordable {
+        let mut report = status(if let Err((status, _)) = fare_budget {
+            status
+        } else if require_affordable {
             "no_affordable_route"
         } else if maximum_total_fare_copper.is_some() {
             "no_route_within_fare_ceiling"
         } else {
             "no_fully_priced_route"
         });
+        if let Err((_, issue)) = fare_budget {
+            report["starting_budget_issue"] = json!(issue);
+        }
         // Prefer quoted paths, then cheaper fares. For unquoted paths, prefer fewer legs.
         let mut witness = None;
         let mut frontier = BTreeMap::from([(start, (false, 0u64, Vec::new()))]);
