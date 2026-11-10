@@ -3241,6 +3241,12 @@ comparison for recorded item shortcuts. You can request both item and
 spell placement in one comparison. Each matches its own action kind,
 even when the numeric IDs coincide.
 
+`compare_snapshots.merchant_offer_item_id` compares recorded copper prices
+for the same item and bundle size across two saved Forever visits. It shows
+unchanged prices as well as changes, and distinguishes missing panels,
+unlisted bundles and duplicate offers. A delta requires one offer on each
+side. Merchant identity and current prices remain unverified.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

@@ -678,6 +678,8 @@ struct Compare {
     /// Compare saved Forever buyback entries without attributing transactions.
     #[serde(default)]
     merchant_buyback_changes: bool,
+    /// Compare recorded merchant bundle prices for this exact item ID.
+    merchant_offer_item_id: Option<std::num::NonZeroU32>,
     /// Compare saved Forever repair quotes and captured affordability.
     #[serde(default)]
     repair_quote_changes: bool,
@@ -2103,6 +2105,7 @@ impl Operator {
                     pet_action_bar_changes: args.pet_action_bar_changes,
                     bag_cooldown_item_id: args.bag_cooldown_item_id,
                     merchant_buyback_changes: args.merchant_buyback_changes,
+                    merchant_offer_item_id: args.merchant_offer_item_id,
                     repair_quote_changes: args.repair_quote_changes,
                     equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,

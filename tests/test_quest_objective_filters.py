@@ -606,6 +606,27 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         {'section': 'equipment', **options}, {'section': None, **options},
                         {'snapshot_id': retail, **options}, {'snapshot_id': '../PRIVATE', **options}]:
                         await query(error=True, **bad)
+                    async def compare_offer(before,after,item):
+                        reply=await session.call_tool('compare_snapshots',{
+                            'before_id':before,'after_id':after,'merchant_offer_item_id':item})
+                        self.assertFalse(reply.isError,reply)
+                        return json.loads(reply.content[0].text)['merchant_item_offer_comparison']
+                    price=await compare_offer(merchant_key,expensive_merchant_key,118)
+                    self.assertEqual(price['bundles'],[{
+                        'bundle_size':3,
+                        'before':{'status':'observed','price_copper':7,'available':-1,'extended_cost':False},
+                        'after':{'status':'observed','price_copper':9,'available':-1,'extended_cost':False},
+                        'price_copper_delta':2}])
+                    unchanged=await compare_offer(merchant_key,bundled_merchant_key,118)
+                    self.assertEqual(unchanged['bundles'][0]['price_copper_delta'],0)
+                    ambiguous=await compare_offer(merchant_key,bundled_merchant_key,858)
+                    self.assertEqual([(row['bundle_size'],row['before']['status'],row['after']['status'],
+                                       row['price_copper_delta']) for row in ambiguous['bundles']],
+                        [(1,'observed','not_observed',None),(3,'not_observed','ambiguous',None)])
+                    missing=await compare_offer(key,merchant_key,118)
+                    self.assertFalse(missing['before_observed'])
+                    self.assertEqual(missing['bundles'][0]['before'],{'status':'not_captured'})
+                    self.assertIsNone(missing['bundles'][0]['price_copper_delta'])
                     reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':9})
                     self.assertFalse(reply.isError,reply)
                     quantities=json.loads(reply.content[0].text)['quest_change']['objective_quantities_by_kind']

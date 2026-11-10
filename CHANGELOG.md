@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever merchant bundle prices for a specific item.
+
 - Compare where a specific item shortcut was recorded on saved Forever action bars.
 
 - Compare where a specific spell was recorded on saved Forever action bars.

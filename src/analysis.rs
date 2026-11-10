@@ -3106,6 +3106,7 @@ pub struct ComparisonSelectors {
     pub pet_action_bar_changes: bool,
     pub bag_cooldown_item_id: Option<std::num::NonZeroU32>,
     pub merchant_buyback_changes: bool,
+    pub merchant_offer_item_id: Option<std::num::NonZeroU32>,
     pub repair_quote_changes: bool,
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3729,6 +3730,14 @@ pub fn compare_observations(
     }
     let merchant_before = before.sections.get("merchant_stock");
     let merchant_after = after.sections.get("merchant_stock");
+    if let Some(id) = selectors.merchant_offer_item_id {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Merchant item comparisons require Forever snapshots"
+        );
+        comparison["merchant_item_offer_comparison"] =
+            compare_merchant_item_offers(merchant_before, merchant_after, id.get());
+    }
     if merchant_before.is_some() || merchant_after.is_some() {
         let (changes, coverage) = merchant_before
             .zip(merchant_after)
@@ -6074,23 +6083,62 @@ fn standard_reputation_workload(section: &Value) -> Option<Value> {
     )
 }
 
-fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Value)> {
-    type OfferKey = (&'static str, u64, u64);
-    fn by_product(panel: &Value) -> Option<BTreeMap<OfferKey, Option<&Value>>> {
-        let mut offers = BTreeMap::new();
-        for row in panel.as_object()?.values() {
-            let (kind, id) = row["item_id"]
-                .as_u64()
-                .map(|id| ("item", id))
-                .or_else(|| row["currency_id"].as_u64().map(|id| ("currency", id)))?;
-            let key = (kind, id, row["bundle_size"].as_u64()?);
-            offers
-                .entry(key)
-                .and_modify(|row| *row = None)
-                .or_insert(Some(row));
-        }
-        Some(offers)
+type MerchantOfferKey = (&'static str, u64, u64);
+
+fn merchant_offers_by_product(panel: &Value) -> Option<BTreeMap<MerchantOfferKey, Option<&Value>>> {
+    let mut offers = BTreeMap::new();
+    for row in panel.as_object()?.values() {
+        let (kind, id) = row["item_id"]
+            .as_u64()
+            .map(|id| ("item", id))
+            .or_else(|| row["currency_id"].as_u64().map(|id| ("currency", id)))?;
+        let key = (kind, id, row["bundle_size"].as_u64()?);
+        offers
+            .entry(key)
+            .and_modify(|row| *row = None)
+            .or_insert(Some(row));
     }
+    Some(offers)
+}
+
+fn compare_merchant_item_offers(before: Option<&Value>, after: Option<&Value>, id: u32) -> Value {
+    let before = before.and_then(merchant_offers_by_product);
+    let after = after.and_then(merchant_offers_by_product);
+    let sizes: BTreeSet<_> = before
+        .iter()
+        .chain(&after)
+        .flat_map(|offers| offers.keys())
+        .filter_map(|&(kind, item, size)| (kind == "item" && item == u64::from(id)).then_some(size))
+        .collect();
+    let observation =
+        |offers: Option<&BTreeMap<MerchantOfferKey, Option<&Value>>>, size| match offers
+            .map(|offers| offers.get(&("item", u64::from(id), size)))
+        {
+            None => json!({"status":"not_captured"}),
+            Some(None) => json!({"status":"not_observed"}),
+            Some(Some(None)) => json!({"status":"ambiguous"}),
+            Some(Some(Some(row))) => json!({"status":"observed","price_copper":row["price_copper"],
+                "available":row["available"],"extended_cost":row["extended_cost"]}),
+        };
+    let bundles: Vec<_> = sizes
+        .iter()
+        .take(20)
+        .map(|&size| {
+            let previous = observation(before.as_ref(), size);
+            let current = observation(after.as_ref(), size);
+            let delta = previous["price_copper"]
+                .as_i64()
+                .zip(current["price_copper"].as_i64())
+                .map(|(a, b)| b - a);
+            json!({"bundle_size":size,"before":previous,"after":current,"price_copper_delta":delta})
+        })
+        .collect();
+    json!({"item_id":id,"before_observed":before.is_some(),"after_observed":after.is_some(),
+        "matched_bundle_count":sizes.len(),"truncated":sizes.len()>bundles.len(),"bundles":bundles,
+        "merchant_identity_verified":false,"current_price_verified":false})
+}
+
+fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Value)> {
     fn costs(offer: &Value) -> Option<Vec<&Value>> {
         if offer["extended_cost"] == false {
             return Some(Vec::new());
@@ -6110,11 +6158,11 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Valu
         });
         Some(rows)
     }
-    let previous = by_product(before)?;
-    let current = by_product(after)?;
+    let previous = merchant_offers_by_product(before)?;
+    let current = merchant_offers_by_product(after)?;
     let observed_only =
-        |offers: &BTreeMap<OfferKey, Option<&Value>>,
-         other: &BTreeMap<OfferKey, Option<&Value>>| {
+        |offers: &BTreeMap<MerchantOfferKey, Option<&Value>>,
+         other: &BTreeMap<MerchantOfferKey, Option<&Value>>| {
             offers.iter().filter(|(key, _)| !other.contains_key(*key))
             .map(|((kind, id, size), row)| json!({
                 "product_kind":kind,"product_id":id,"bundle_size":size,"ambiguous":row.is_none()
