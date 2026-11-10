@@ -56,6 +56,10 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     'earned_this_week':0,'total_earned':0,'cap_uses_total_earned':False}
                 for item,quantity,cap,wide in [(720,8,10,True),(10,1,5,False)]}}
             with_mail=store.ingest(observed)
+            roomy=deepcopy(observed)
+            roomy['character']['name']='Roomy'
+            roomy['sections']['bag_capacity']['0']['free_slots']=2
+            roomy_id=store.ingest(roomy)
             empty=deepcopy(observed);empty['sections']['mail_attachments']=mail({});empty_id=store.ingest(empty)
             unsupported=deepcopy(observed);unsupported['sections']['selected_recipe'].update(requirements='unsupported_required_slots',reagents={})
             unsupported_id=store.ingest(unsupported)
@@ -84,6 +88,20 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(space['estimated_new_stack_slots'],2)
                     self.assertEqual(space['estimated_new_stack_slots_if_same_item_stacks_merge'],1)
                     self.assertTrue(space['fits_recorded_general_slots_if_same_item_stacks_merge'])
+                    matched=await session.call_tool('list_snapshots',{'family':'forever',
+                        'mail_attachment':{'kind':'item','id':10,'require_recorded_bag_space':True}})
+                    self.assertFalse(matched.isError,matched)
+                    rows=json.loads(matched.content[0].text)['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in rows],[roomy_id])
+                    fit=rows[0]['mail_attachment_match']
+                    self.assertEqual(fit['quantity'],7)
+                    self.assertTrue(fit['bag_space_projection']['fits_recorded_general_slots'])
+                    self.assertEqual(fit['unloaded_messages'],4)
+                    self.assertFalse(fit['retrieval_eligibility_verified'])
+                    for bad in [{'kind':'currency','id':720,'require_recorded_bag_space':True},
+                                {'kind':'item','id':10,'require_recorded_bag_space':1}]:
+                        self.assertTrue((await session.call_tool('list_snapshots',{
+                            'family':'forever','mail_attachment':bad})).isError)
                     self.assertIsNone((await mail_space(with_mail,[10,2]))['estimated_new_stack_slots'])
                     self.assertEqual((await mail_space(empty_id,[10]))['estimated_new_stack_slots'],0)
                     self.assertIsNone(await mail_space(no_mail,[10]))

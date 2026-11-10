@@ -2267,7 +2267,7 @@ pub fn loot_requirement_bag_space(snapshot: &Snapshot, review: &Value) -> Value 
     )
 }
 
-fn incoming_items_bag_space(
+pub(crate) fn incoming_items_bag_space(
     snapshot: &Snapshot,
     quantities: impl Iterator<Item = (u32, u64)>,
     scope: &str,

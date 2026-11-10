@@ -9,6 +9,10 @@ For saved inbox discovery, set
 `mail_attachment.maximum_quantity_above_recorded_headroom` with
 `kind: "currency"` on `list_snapshots`. Use zero to require the known
 loaded quantity to fit. Missing cap evidence cannot satisfy this filter.
+Set `mail_attachment.require_recorded_bag_space: true` with
+`kind: "item"` to require a known fit in the same capture's recorded
+general bag slots without stack merges. The estimate covers the selected
+item's known loaded quantities. Retrieval eligibility remains unverified.
 
 Set `quest_list_ready_waypoint_groups` when inspecting the saved quest
 list to group quests marked ready by their next waypoint map. Ready

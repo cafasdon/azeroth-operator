@@ -511,6 +511,9 @@ pub struct MailAttachmentFilter {
     pub minimum_quantity: Option<u64>,
     /// Currency only. Require a known hypothetical overflow no greater than this quantity.
     pub maximum_quantity_above_recorded_headroom: Option<u64>,
+    /// Items only. Require a known fit in recorded general bag slots without stack merges.
+    #[serde(default)]
+    pub require_recorded_bag_space: bool,
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -2606,6 +2609,13 @@ impl Store {
             "Mail cap headroom filtering requires a currency attachment"
         );
         ensure!(
+            mail_attachment.as_ref().is_none_or(|filter| {
+                !filter.require_recorded_bag_space
+                    || matches!(filter.kind, MailAttachmentKind::Item)
+            }),
+            "Mail bag space filtering requires an item attachment"
+        );
+        ensure!(
             pet_species.is_none() || family == Family::Forever,
             "Pet species view filtering requires Forever"
         );
@@ -3473,6 +3483,18 @@ impl Store {
                         } else {
                             None
                         };
+                        let bag_space = if filter.require_recorded_bag_space {
+                            let space = analysis::incoming_items_bag_space(
+                                &s, std::iter::once((filter.id.get(), quantity)),
+                                "matching_loaded_mail_items_only", "known_pending_quantity",
+                            );
+                            if space["fits_recorded_general_slots"] != true {
+                                return None;
+                            }
+                            Some(space)
+                        } else {
+                            None
+                        };
                         locations.sort_by_key(|(message,slot,_)| (*message,*slot));
                         let mut report = json!({"coverage":mail["coverage"],"loaded_messages":mail["loaded_messages"],
                             "total_messages":mail["total_messages"],"kind":filter.kind,"id":filter.id,
@@ -3484,6 +3506,10 @@ impl Store {
                         if let Some(projection) = projection {
                             report["hypothetical_cap_projection"] = projection;
                             report["mail_cap_application_verified"] = json!(false);
+                        }
+                        if let Some(space) = bag_space {
+                            report["bag_space_projection"] = space;
+                            report["retrieval_eligibility_verified"] = json!(false);
                         }
                         Some(report)
                     });

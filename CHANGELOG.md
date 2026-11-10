@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved item attachments that fit recorded general bag slots without stack merges.
+
 - Find saved currency attachments within a specified amount above recorded cap headroom.
 
 - Compare loaded mail currency attachments with recorded cap headroom in a saved Forever inbox.
