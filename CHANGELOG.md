@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve quest starters and finishers in the offline world cache by their original entity types.
+
 - Resolve direct QuestieDB quest references to local record names and hashes on request.
 
 - Sync and build a pinned local QuestieDB Forever cache, with offline MCP lookup and paged name search for quests, NPCs, objects and items.

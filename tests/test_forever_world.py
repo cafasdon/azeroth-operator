@@ -84,6 +84,14 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                     await call(get,error=True,kind='npc',entity_id=240,include_quest_links=True)
                     result = await call(get,kind='quest',entity_id=176)
                     record = result['record']
+                    contacts = (await call(get,kind='quest',entity_id=176,include_quest_links=True))['quest_contacts']
+                    self.assertEqual(contacts['startedBy']['2']['kind'],'object')
+                    finisher = contacts['finishedBy']['1']['references']['1']
+                    self.assertEqual(finisher['entity_id'],240)
+                    self.assertEqual(finisher['record'],{
+                        key: val for key, val in (await call(get,kind='npc',entity_id=240))['record'].items()
+                        if key != 'fields'
+                    })
                     self.assertEqual(record['name'],'WANTED: "Hogger"')
                     self.assertEqual(record['fields']['finishedBy'],{'1':{'1':240}})
                     self.assertEqual(result['record_counts'],{'quest':5682,'npc':15559,'object':7258,'item':23858})

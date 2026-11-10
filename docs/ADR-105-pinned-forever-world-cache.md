@@ -70,3 +70,6 @@ The exact MCP lookup accepts `include_quest_links=true` for quests. It
 preserves source positions for grouped and alternative prerequisites, child
 quests, group peers and exclusive quests. An unresolved ID retains a null
 record. The view covers direct links and leaves quest eligibility unevaluated.
+The same option adds `quest_contacts` for starters and finishers. It preserves
+the publisher's tuple positions and resolves IDs in their NPC, object or item
+namespace. Unresolved IDs retain a null record.

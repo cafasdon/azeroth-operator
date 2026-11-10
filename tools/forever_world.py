@@ -174,6 +174,7 @@ class World:
             if kind != 'quest':
                 raise ValueError('Quest links require a quest record')
             result['quest_links'] = None if row is None else self.quest_links(row['fields'])
+            result['quest_contacts'] = None if row is None else self.quest_contacts(row['fields'])
         encoded(result)
         return result
 
@@ -194,6 +195,32 @@ class World:
                     'record': self.summary(key) if key in self.records else None,
                 }
         return links
+
+    def quest_contacts(self, fields):
+        contacts = {}
+        kinds = {'1': 'npc', '2': 'object', '3': 'item'}
+        for field in ('startedBy', 'finishedBy'):
+            groups = fields.get(field)
+            if not isinstance(groups, dict):
+                continue
+            contacts[field] = {}
+            for position, entries in groups.items():
+                kind = kinds.get(position)
+                if kind is None or not isinstance(entries, dict):
+                    contacts[field][position] = {'status': 'unsupported_reference'}
+                    continue
+                references = {}
+                for slot, identity in entries.items():
+                    if type(identity) is not int or not 1 <= identity <= 2**32-1:
+                        references[slot] = {'status': 'unsupported_reference'}
+                        continue
+                    key = (kind, identity)
+                    references[slot] = {
+                        'entity_id': identity,
+                        'record': self.summary(key) if key in self.records else None,
+                    }
+                contacts[field][position] = {'kind': kind, 'references': references}
+        return contacts
 
     def search(self, query, kind=None, limit=10, offset=0):
         if (type(query) is not str or len(query.encode()) > 128 or not query.strip()
