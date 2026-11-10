@@ -152,6 +152,8 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                             expected_slots = [2] if mode in ('full','ambiguous') else list(range(1,1025)) if mode=='maximum' else None
                             expected = {} if expected_slots is None else {
                                 '101':{'action_slots':[2],'matching_spellbook_slots':expected_slots,
+                                       'nonmatching_spellbook_slots':[10] if mode in ('full','ambiguous') else [],
+                                       'unknown_spellbook_slots':[],
                                        'observed_hotkeys_by_slot':{'2':['2','SHIFT-2']}
                                        if mode in ('full','ambiguous') else None}}
                             self.assertEqual(matches['matches'],expected)

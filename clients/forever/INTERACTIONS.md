@@ -8,6 +8,9 @@ The result reports matching slots and leaves cast eligibility unverified.
 Matching slots include their captured hotkeys where available. An
 observed button with no keys has an empty list. Missing observations
 remain unknown.
+For each matched spell ID, the result also lists exact spellbook rows
+that failed a predicate or had insufficient readings. A matching row
+does not override other recorded observations for the same spell.
 
 Set `group_member_target` with `inspect_snapshot` on `group_context`
 to compare the saved home and instance counts separately. It reports

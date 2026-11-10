@@ -5454,24 +5454,33 @@ pub fn action_bar_spell_resource_matches(
     let action_slots = action_slots_by_id(actions, "spell")?;
     let entries = spellbook?["entries"].as_object()?;
     let hotkeys = observed_action_hotkeys_by_slot(actions);
-    let mut matching_spellbook_slots = BTreeMap::<u64, BTreeSet<u32>>::new();
+    let mut spellbook_slots = BTreeMap::<u64, (BTreeSet<u32>, BTreeSet<u32>, BTreeSet<u32>)>::new();
     for (slot, row) in entries {
         if let (Ok(slot), Some(id)) = (slot.parse(), row["spell_id"].as_u64())
             && action_slots.contains_key(&id)
-            && filter.matches(row) == Some(true)
         {
-            matching_spellbook_slots.entry(id).or_default().insert(slot);
+            let (matched, nonmatching, unknown) = spellbook_slots.entry(id).or_default();
+            match filter.matches(row) {
+                Some(true) => matched,
+                Some(false) => nonmatching,
+                None => unknown,
+            }
+            .insert(slot);
         }
     }
-    let matches: BTreeMap<_, _> = matching_spellbook_slots
+    let matches: BTreeMap<_, _> = spellbook_slots
         .into_iter()
-        .map(|(id, slots)| {
+        .filter_map(|(id, (matched, nonmatching, unknown))| {
+            if matched.is_empty() {
+                return None;
+            }
             let actions = &action_slots[&id];
-            (
+            Some((
                 id,
-                json!({"action_slots":actions,"matching_spellbook_slots":slots,
+                json!({"action_slots":actions,"matching_spellbook_slots":matched,
+                    "nonmatching_spellbook_slots":nonmatching,"unknown_spellbook_slots":unknown,
                     "observed_hotkeys_by_slot":selected_action_hotkeys(actions, hotkeys.as_ref())}),
-            )
+            ))
         })
         .collect();
     Some(
