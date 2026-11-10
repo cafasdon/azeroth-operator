@@ -105,6 +105,7 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(len(result['results']), min(5, sum(row[1] == section for row in expected.values())))
                         for row in result['results']:
                             self.assertNotIn('catalogue_record', row)
+                            self.assertNotIn('catalogue_references', row)
                             source = expected[row['record_key']]
                             self.assertEqual(row['section'], section)
                             self.assertEqual(row['name'], source[3])
@@ -162,6 +163,41 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(filtered['candidate_filter'], {
                             'requested_item_id_count':3,'catalogue_matched_item_id_count':2,
                         })
+                    rep_item=next(row for row in raw_catalogue['items'] if any('rep' in source for source in row.get('sources',[])))
+                    for section, query, ids in [('items','Earthshaker',[17073]),
+                            ('items','Furbolg Medicine Pouch',[16768]),('items','Thunderfury',[19019]),
+                            ('npcs','Ragnaros',None),('items',rep_item['name'],[rep_item['id']])]:
+                        arguments={'query':query,'section':section,'limit':1,'include_references':True}
+                        if ids is not None:arguments['item_ids']=ids
+                        reply=await session.call_tool('search_forever_knowledge',arguments)
+                        self.assertFalse(reply.isError,reply)
+                        result=json.loads(reply.content[0].text)
+                        row=result['results'][0];source=row['catalogue_record'];links=row['catalogue_references']
+                        self.assertFalse(links['complete_reference_graph_verified'])
+                        self.assertFalse(links['current_acquisition_availability_verified'])
+                        self.assertFalse(links['native_world_identity_verified'])
+                        self.assertEqual(links['returned_reference_count'],len(links['references']))
+                        for link in links['references']:
+                            value=source
+                            for token in link['source_path'].split('/')[1:]:
+                                token=token.replace('~1','/').replace('~0','~')
+                                value=value[int(token)] if isinstance(value,list) else value[token]
+                            self.assertEqual(value,link['record_id'])
+                            target=next((r for r in raw_catalogue[link['target_section']] if r['id']==value),None)
+                            if target is None:
+                                self.assertEqual(link['status'],'not_in_pinned_catalogue')
+                                self.assertNotIn('catalogue_record',link)
+                            else:
+                                self.assertEqual(link['status'],'resolved')
+                                self.assertEqual(link['catalogue_record'],target)
+                                self.assertEqual(link['catalogue_record_sha256'],knowledge.digest(knowledge.encoded(target).encode()))
+                        if ids==[17073]:
+                            self.assertEqual([(r['target_section'],r['record_id']) for r in links['references']],
+                                [('npcs',11982),('zones',2717)])
+                        if ids==[16768]:self.assertEqual(links['references'][0]['status'],'not_in_pinned_catalogue')
+                        if ids==[19019]:self.assertEqual(links['references'],[])
+                        if ids==[rep_item['id']]:self.assertTrue(any(link['target_section']=='factions' for link in links['references']))
+                        if section=='npcs':self.assertEqual(links['references'][0]['source_path'],'/zoneId')
                     for candidate_ids in [[], [4294967295]]:
                         reply = await session.call_tool('search_forever_knowledge', {
                             'query':'healing','section':'items','item_ids':candidate_ids,
@@ -178,7 +214,28 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                                  {'query':'x','section':'zones','item_ids':[7950]}]:
                         rejected = await session.call_tool('search_forever_knowledge', args)
                         self.assertTrue(rejected.isError)
+                    for value in [None,1,0,'true','false',[],{}]:
+                        reply=await session.call_tool('search_forever_knowledge',{'query':'x','limit':1,'include_references':value})
+                        self.assertTrue(reply.isError)
+                    rejected=await session.call_tool('search_forever_knowledge',{'query':'x','limit':6,'include_references':True})
+                    self.assertTrue(rejected.isError)
         self.assertEqual(hashlib.sha256(index.read_bytes()).hexdigest(), original)
+
+    async def test_direct_reference_bound_and_mutation_isolation(self):
+        # Exercise the pure public-row join independently of model/index loading.
+        instance=object.__new__(knowledge.Knowledge)
+        target={'id':1,'name':'Public NPC','zoneId':2}
+        base={'id':3,'sources':[{'drop':{'npcId':1,'zoneId':99}} for _ in range(20)]}
+        instance.source_records={'items:3':base,'npcs:1':target}
+        result=instance.references('items:3')
+        self.assertEqual(result['reference_count'],40);self.assertEqual(result['returned_reference_count'],32)
+        self.assertTrue(result['references_truncated'])
+        self.assertEqual(result['references'][1]['status'],'not_in_pinned_catalogue')
+        result['references'][0]['catalogue_record']['name']='PRIVATE'
+        self.assertEqual(instance.references('items:3')['references'][0]['catalogue_record']['name'],'Public NPC')
+        base['sources']=[{'drop':{'npcId':True}}]
+        invalid=instance.references('items:3')['references'][0]
+        self.assertEqual(invalid['status'],'invalid_reference_id');self.assertIsNone(invalid['record_id'])
 
     async def test_index_pin_integrity_and_noop_build(self):
         root = Path(__file__).resolve().parents[1]

@@ -239,12 +239,49 @@ class Knowledge:
         self.index = index
         self.model = load_model(model_path)
 
-    def search(self, query, section=None, limit=10, include_records=False, item_ids=None):
+    def references(self, key):
+        """One-hop exact public foreign keys; absence is not a world-data claim."""
+        source = self.source_records[key]
+        links = []
+        fields = [('npcId', 'npcs'), ('zoneId', 'zones'), ('repFactionId', 'factions')]
+        if 'zoneId' in source:
+            links.append(('/zoneId', 'zones', source['zoneId']))
+        for index, origin in enumerate(source.get('sources', [])):
+            for kind, value in sorted(origin.items()):
+                if not isinstance(value, dict):
+                    continue
+                kind = kind.replace('~', '~0').replace('/', '~1')
+                for field, section in fields:
+                    if field in value:
+                        links.append((f'/sources/{index}/{kind}/{field}', section, value[field]))
+        results = []
+        for path, section, identity in links[:32]:
+            row = {'source_path': path, 'target_section': section, 'record_id': identity}
+            if type(identity) is not int or not 1 <= identity <= 2**32-1:
+                row['record_id'] = None
+                row['status'] = 'invalid_reference_id'
+            else:
+                target_key = f'{section}:{identity}'
+                target = self.source_records.get(target_key)
+                if target is None:
+                    row['status'] = 'not_in_pinned_catalogue'
+                else:
+                    record = encoded(target)
+                    row.update(status='resolved', record_key=target_key,
+                               catalogue_record=json.loads(record), catalogue_record_sha256=digest(record.encode()))
+            results.append(row)
+        return {'scope': 'recognised_direct_public_fields_only', 'reference_count': len(links),
+                'returned_reference_count': len(results), 'references_truncated': len(links) > 32,
+                'references': results, 'complete_reference_graph_verified': False,
+                'current_acquisition_availability_verified': False, 'native_world_identity_verified': False}
+
+    def search(self, query, section=None, limit=10, include_records=False, item_ids=None, include_references=False):
         import numpy as np
         if (not isinstance(query, str) or not query.strip() or len(query.encode()) > 512
                 or section is not None and section not in SECTIONS
                 or type(limit) is not int or not 1 <= limit <= 20
-                or type(include_records) is not bool or include_records and limit > 5):
+                or type(include_records) is not bool or type(include_references) is not bool
+                or (include_records or include_references) and limit > 5):
             raise ValueError('Invalid public knowledge query')
         if item_ids is not None and (
                 section != 'items' or type(item_ids) is not list or len(item_ids) > 10000
@@ -296,11 +333,13 @@ class Knowledge:
                      'name': by_key[key][3],
                      'document_sha256': by_key[key][5], 'retrieval_score': ranks[key]}
                     for key in winners]
-        if include_records:
+        if include_records or include_references:
             for row in result['results']:
                 source = encoded(self.source_records[row['record_key']])
                 row['catalogue_record'] = json.loads(source)
                 row['catalogue_record_sha256'] = digest(source.encode())
+                if include_references:
+                    row['catalogue_references'] = self.references(row['record_key'])
             if len(encoded(result).encode()) > 256 * 1024:
                 raise ValueError('Source record response exceeds byte limit')
         return result
@@ -316,6 +355,7 @@ def main():
     cli.add_argument('--section', choices=SECTIONS)
     cli.add_argument('--limit', type=int, default=10)
     cli.add_argument('--include-records', action='store_true')
+    cli.add_argument('--include-references', action='store_true')
     cli.add_argument('--item-id', action='append', type=int, dest='item_ids')
     args = cli.parse_args()
     if args.action == 'build':
@@ -323,19 +363,21 @@ def main():
         return
     knowledge = Knowledge(args.catalogue, args.index, args.model)
     if args.action == 'search':
-        print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records, args.item_ids)))
+        print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records, args.item_ids,
+                                       args.include_references)))
         return
     from mcp.server.fastmcp import FastMCP
     from mcp.types import ToolAnnotations
-    from pydantic import StrictInt
+    from pydantic import StrictBool, StrictInt
     server = FastMCP('Azeroth Public Knowledge')
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False))
     def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10,
-                                 include_records: bool = False, item_ids: list[StrictInt] | None = None) -> dict:
-        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. Source-bearing replies are capped at 256 KiB. For items only, item_ids restricts retrieval to up to 10,000 distinct positive candidate IDs; an empty list returns no results. Supplied IDs do not verify ownership or equip legality."""
+                                 include_records: bool = False, item_ids: list[StrictInt] | None = None,
+                                 include_references: StrictBool = False) -> dict:
+        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. include_references also attaches the base row and up to 32 direct NPC/zone/faction reference edges per hit with exact target rows or explicit missing status; no recursive or guessed links. Source-bearing replies are capped at 256 KiB. For items only, item_ids restricts retrieval to up to 10,000 distinct positive candidate IDs; an empty list returns no results. Supplied IDs do not verify ownership or equip legality."""
         try:
-            return knowledge.search(query, section, limit, include_records, item_ids)
+            return knowledge.search(query, section, limit, include_records, item_ids, include_references)
         except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
             raise ValueError('Public knowledge index or query unavailable or invalid') from None
 

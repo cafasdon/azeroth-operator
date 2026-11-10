@@ -57,3 +57,18 @@ lower median lookup latency with identical replies; model startup is excluded.
 No query API, index format, model, persistent query cache or privacy boundary
 changed. See local-knowledge-validation-benchmark-2026-11-10.json for the scoped
 measurements and limitations.
+
+Set include_references: true (CLI --include-references) with limit 1..5 to attach
+the base row/hash plus direct NPC, zone and faction links. Each link identifies
+its exact source_path into the base row and either returns the target's exact
+public record/hash or not_in_pinned_catalogue. Unknown targets stay unknown;
+no remote lookup, name matching or recursive enrichment occurs.
+
+Supported links are top-level zoneId and npcId/zoneId/repFactionId inside source
+objects. Other relationship types are outside this projection. Up to 32 edges
+per hit are returned, with complete recognised-edge count and truncation flag;
+several edges may reference one entity. The combined base/related response
+retains the 256 KiB bound. References use catalogue IDs and do not verify native
+world identity, current acquisition availability or a complete reference graph.
+Private snapshots and the public index remain unchanged. Existing queries that
+omit the option keep their previous response shape.

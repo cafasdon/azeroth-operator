@@ -1,5 +1,7 @@
 # Changelog
 
+- Attach exact local NPC, zone and faction records to hybrid acquisition-reference results, retaining unresolved links explicitly.
+
 - Reduce local knowledge lookup overhead by combining norm-tolerance checks while retaining full per-request index validation.
 
 - Summarise, search and compare saved player life flags without classifying life state or inferring death/resurrection events.

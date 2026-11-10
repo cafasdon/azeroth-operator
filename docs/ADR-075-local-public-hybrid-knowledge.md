@@ -46,3 +46,33 @@ The same warm model and pinned index were used, startup excluded, responses
 identical and index unchanged. This small fixed-query result is not a general
 performance, relevance, simulation or BiS guarantee. See the recorded benchmark
 and verification evidence for inputs and acceptance-boundary tests.
+
+Direct public links (10 November): search_forever_knowledge accepts Boolean
+include_references. It implies the existing base source row/hash and requires
+limit 1..5. Each hit gains catalogue_references with recognised direct fields:
+top-level zoneId and npcId/zoneId/repFactionId inside source objects. These
+join only to the same pinned catalogue's npcs, zones and factions. This is not
+a recursive graph, name-based match, route calculation or external enrichment.
+
+Each edge retains its RFC6901 source_path into the attached base row (zero-based
+source array index), target section and record ID. A resolved edge includes
+exact target row/key/canonical SHA256. Missing rows are not_in_pinned_catalogue,
+not proof that an NPC/zone does not exist. Invalid IDs are explicitly marked
+invalid_reference_id with null record ID; the base row retains the source fact.
+Other source relationships, such as quest reward IDs, are not represented as
+missing supported targets. IDs stay in the catalogue's namespace; native world
+identity, current acquisition availability and full graph coverage stay false.
+
+The response reports recognised edge count and returned count, with at most
+32 edges per hit and explicit truncation. Counts are edges, not distinct entities;
+several source paths can reference the same target. The existing 256 KiB bound
+covers base and related records together. Returned rows are copies, not aliases
+into the process's verified public source map. Default queries and source-only
+queries keep their previous response shape. --include-references is the CLI
+flag. No index rebuild, model change, private snapshot access, network lookup,
+persisted query data, installation or native operation is introduced.
+
+The pinned corpus has 4,124 recognised edges across 7,749 records: 2,990 resolve
+and 1,134 lack a target row (882 NPC and 252 zone links). Maximum per record is
+22, so the current corpus is untruncated. This measures recognised local links
+only, not complete world/acquisition coverage.

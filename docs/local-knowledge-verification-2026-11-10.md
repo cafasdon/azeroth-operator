@@ -171,3 +171,58 @@ request b72b37a2dd44b40220ad0a46e01c3016ad685fd87f1e6de5e258c982532afaef;
 721 input and 44 output tokens, 0.309 seconds. Author accepted the bounded
 optimisation on direct measurements and both independent reviews. Live game
 testing and native qualification remain deferred.
+
+## Exact direct public references — 2026-11-10
+
+Optional include_references implies the base source row/hash and attaches
+recognised one-hop NPC, zone and faction foreign keys with JSONPointer source
+paths and exact target rows/hashes or explicit missing/invalid status. Limit
+1..5, at most 32 edges per hit, full edge count/truncation, combined 256KiB cap.
+No recursive/name-based enrichment, external lookup, private snapshot access,
+new index format, query persistence, model change or installation is introduced.
+Native world identity, current acquisition availability and graph completeness
+remain unverified. See ADR-075/local-knowledge contract.
+
+Author: PYTHONPATH=.;tests python -m unittest test_forever_knowledge passed four
+tests in 35.286 seconds. After adding the real faction join and native-identity
+boundary assertion, the scoped actual-model stdio test passed in 25.318 seconds.
+It covers exact Earthshaker NPC11982/zone2717 joins, missing vendor NPC11555,
+no invented quest link for Thunderfury, direct NPC zone links and faction rows;
+every target row/hash and base-row pointer is compared with the pinned source.
+Strict malformed Boolean flags and source-bearing limits reject. The pure
+helper fixture covers forty edges truncated to 32, missing and invalid IDs,
+and mutation isolation. Existing default source-free queries stay unchanged.
+Index bytes remain unchanged and external sockets stay blocked in the MCP test.
+
+The actual CLI with --include-references --section items --limit1 --item-id17073
+returned the exact Earthshaker source, NPC11982 and zone2717 rows and preserved
+index SHA256. This uses local model/data only. Diff check passed.
+
+A scan of every pinned source record found 4,124 recognised edges among 7,749
+records, maximum22 per record and zero truncated records. Resolved: 2,066 zone,
+625 NPC, 299 faction edges. Missing locally: 882 NPC and 252 zone edges. These
+are edge counts, not distinct entities or complete world coverage. Inline
+vendor names may remain in base rows even when no NPC target row exists; no
+replacement target record is fabricated from those labels.
+
+One independent adversarial round: failure and security/data plus callers,
+requested gpt-6-astra high; resolved model/usage not exposed. No concrete
+finding. Both independently verified every pinned edge and the documented
+counts. Failure review passed escaped pointers, nested mutation isolation,
+nonrecursive/unknown-field handling, ten invalid ID forms and 66-to-32 edge
+truncation. It used a real read-only index plus fixed synthetic query model for
+an oversized-target guard probe; default parity, implied base attachment and
+combined 256KiB refusal passed. It separately ran two real model/helper tests
+in 24.564 seconds. Data/callers review ran all four tests, checked baseline
+source-free/source-only response parity with the real model, and independently
+confirmed combined output-cap refusal, zero network attempts and unchanged
+index bytes. Both confirmed pin/namespace/privacy/unknown boundaries and docs.
+No source/index writes, installation, game or deployment operations occurred.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.91,
+request fc331e3518c697beeb42e853836f06baa963da53088c1a353591f521e1c6f964;
+708 input and 44 output tokens, 0.386 seconds. Author accepted the bounded
+feature based on exact corpus joins, direct CLI/MCP checks and both independent
+reviews. Native qualification, installation/deployment and live testing remain
+deferred. The earlier latency benchmark applies to its recorded predecessor
+source and default query workload, not a new reference-enrichment benchmark.
