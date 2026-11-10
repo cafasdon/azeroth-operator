@@ -1,5 +1,7 @@
 # Changelog
 
+- Limit the capture time span across saved Forever flight panels used for route planning.
+
 - Sort saved recipe batches by the smallest observed sole reagent shortfall.
 
 - Limit saved sole-reagent recipe shortfalls to a planned pickup quantity.

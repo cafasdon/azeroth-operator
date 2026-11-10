@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `flight_route_search.maximum_capture_skew_seconds` to require the
+earliest and latest of the selected saved flight panels to fall within
+an inclusive time span. This includes panels that the chosen route does
+not use. The result reports both capture times. The limit checks how far
+apart the captures were taken and does not verify current routes or fares.
+
 Set `material_filter.insufficient_only` on `search_forever_recipes` to
 find fixed-item recipes below the requested craft count in the selected
 observed storage. Each matching row lists the required, observed and

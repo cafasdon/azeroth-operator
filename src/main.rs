@@ -1128,6 +1128,8 @@ struct FlightRouteSearch {
     max_legs: Option<u8>,
     /// Inclusive total fare ceiling across all legs, before any repair quote or wallet reserve.
     maximum_total_fare_copper: Option<u64>,
+    /// Maximum elapsed seconds between the earliest and latest selected saved panels, inclusive.
+    maximum_capture_skew_seconds: Option<u32>,
     /// Rank by lowest fare (default) or fewest flight legs.
     objective: Option<azeroth_operator::analysis::FlightRouteObjective>,
     /// Check the route budget including the repair-all quote in the starting capture.
@@ -5098,7 +5100,25 @@ impl Operator {
                         let captures = ids
                             .map(|id| Ok((id, self.store.read(id)?)))
                             .collect::<anyhow::Result<Vec<_>>>()?;
-                        azeroth_operator::analysis::plan_saved_flights(
+                        let capture_window = search
+                            .maximum_capture_skew_seconds
+                            .map(|maximum| {
+                                let times = captures.iter().map(|(_, capture)| capture.captured_at);
+                                let earliest =
+                                    times.clone().min().expect("starting capture is present");
+                                let latest = times.max().expect("starting capture is present");
+                                anyhow::ensure!(
+                                    latest - earliest
+                                        <= chrono::TimeDelta::seconds(i64::from(maximum)),
+                                    "Selected flight panels exceed the capture time span"
+                                );
+                                Ok(serde_json::json!({
+                                    "earliest_captured_at":earliest,"latest_captured_at":latest,
+                                    "maximum_skew_seconds":maximum
+                                }))
+                            })
+                            .transpose()?;
+                        let mut plan = azeroth_operator::analysis::plan_saved_flights(
                             &captures,
                             search.destination_node_id.map(|id| id.get()),
                             search.destination_name.as_deref(),
@@ -5108,13 +5128,17 @@ impl Operator {
                             search.include_repair_quote,
                             search.require_affordable,
                             search.maximum_total_fare_copper,
-                        )
+                        )?;
+                        if let Some(window) = capture_window {
+                            plan["selected_capture_window"] = window;
+                        }
+                        Ok::<_, anyhow::Error>(plan)
                     })();
                     match result {
                         Ok(plan) => value["flight_route_search"] = plan,
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
-                                "Flight route search requires compatible Forever captures, unambiguous flight panels, a destination ID or an unambiguous name, and a limit of one to eight legs",
+                                "Flight route search requires compatible Forever captures within any requested capture time span, unambiguous flight panels, a destination ID or an unambiguous name, and a limit of one to eight legs",
                             )]);
                         }
                     }

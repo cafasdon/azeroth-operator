@@ -45,6 +45,9 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
             '1':{'node_id':20,'name':'Target','state':'current','map_transition':False},
             '2':{'node_id':40,'name':'Further','state':'reachable','map_transition':False,'fare_copper':50,
                  'observed_route_node_ids':{'1':20,'2':40}}}}
+        onward['captured_at']='2025-01-01T00:00:10Z'
+        fractional=deepcopy(onward)
+        fractional['captured_at']='2025-01-01T00:00:10.001Z'
         longest=deepcopy(base)
         longest_rows={str(i):{'node_id':i,'name':'Node','state':('current' if i==1 else 'reachable' if i==65 else 'unreachable'),
                              'map_transition':False} for i in range(1,66)}
@@ -53,6 +56,7 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
         longest['sections']['flight_map']['entries']=longest_rows
         with tempfile.TemporaryDirectory() as folder:
             store=SnapshotStore(Path(folder));key=store.ingest(base);old=store.ingest(legacy);next_key=store.ingest(onward)
+            fractional_key=store.ingest(fractional)
             longest_key=store.ingest(longest)
             bad_keys=[]
             for value in malformed:
@@ -101,6 +105,25 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(named_plan['destination_node_id'],40)
                     self.assertEqual(named_plan['total_fare_copper'],150)
                     self.assertEqual(len(named_plan['legs']),2)
+                    self.assertNotIn('selected_capture_window',named_plan)
+                    bounded={'destination_node_id':40,'onward_snapshot_ids':[next_key],
+                             'maximum_capture_skew_seconds':10}
+                    window=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search=bounded))['flight_route_search']['selected_capture_window']
+                    self.assertEqual(window,{'earliest_captured_at':base['captured_at'],
+                        'latest_captured_at':onward['captured_at'],'maximum_skew_seconds':10})
+                    single=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={'destination_node_id':20,'maximum_capture_skew_seconds':0}
+                        ))['flight_route_search']['selected_capture_window']
+                    self.assertEqual(single['earliest_captured_at'],single['latest_captured_at'])
+                    for rejected in [
+                        {**bounded,'maximum_capture_skew_seconds':9},
+                        {**bounded,'destination_node_id':20,'onward_snapshot_ids':[fractional_key]},
+                        {**bounded,'maximum_capture_skew_seconds':-1},
+                    ]:
+                        self.assertTrue((await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':'flight_map','flight_route_search':rejected,
+                        })).isError)
                     for destination in [{},{'destination_name':' '},{'destination_name':'é'*129},
                                         {'destination_name':'Target','destination_node_id':30}]:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
