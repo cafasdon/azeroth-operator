@@ -712,6 +712,9 @@ struct List {
     /// Require an uncapped XP observation with XP gain explicitly enabled.
     #[serde(default)]
     xp_gain_enabled_only: bool,
+    /// Require saved ready quest rewards to cover a positive next-level XP shortfall with XP gain enabled.
+    #[serde(default)]
+    ready_quest_xp_covers_next_level: bool,
     /// Match an exact quest ID in a saved Forever quest log.
     quest_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive title in the saved Forever quest log.
@@ -2707,6 +2710,7 @@ impl Operator {
                 minimum_rested_xp: args.minimum_rested_xp,
                 maximum_xp_to_next_level: args.maximum_xp_to_next_level,
                 xp_gain_enabled_only: args.xp_gain_enabled_only,
+                ready_quest_xp_covers_next_level: args.ready_quest_xp_covers_next_level,
                 quest_id: args.quest_id,
                 quest_title: args.quest_title.as_deref(),
                 quest_reward_item_id: args.quest_reward_item_id,

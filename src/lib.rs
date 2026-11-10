@@ -2047,6 +2047,7 @@ pub struct CaptureFilters<'a> {
     pub minimum_rested_xp: Option<u32>,
     pub maximum_xp_to_next_level: Option<u32>,
     pub xp_gain_enabled_only: bool,
+    pub ready_quest_xp_covers_next_level: bool,
     pub quest_id: Option<std::num::NonZeroU32>,
     pub quest_title: Option<&'a str>,
     pub quest_reward_item_id: Option<std::num::NonZeroU32>,
@@ -2354,6 +2355,7 @@ impl Store {
             minimum_rested_xp,
             maximum_xp_to_next_level,
             xp_gain_enabled_only,
+            ready_quest_xp_covers_next_level,
             quest_id,
             quest_title,
             quest_reward_item_id,
@@ -3016,7 +3018,8 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some()
             || maximum_xp_to_next_level.is_some()
-            || xp_gain_enabled_only;
+            || xp_gain_enabled_only
+            || ready_quest_xp_covers_next_level;
         ensure!(
             currency_balance
                 .as_ref()
@@ -4090,7 +4093,8 @@ impl Store {
                     let experience_match = if filter_experience {
                         let Some(xp) = s.sections.get("experience").filter(|xp| {
                             xp["status"] == "progress"
-                                && (!xp_gain_enabled_only || xp["xp_disabled"] == false)
+                                && (!(xp_gain_enabled_only || ready_quest_xp_covers_next_level)
+                                    || xp["xp_disabled"] == false)
                                 && minimum_rested_xp.is_none_or(|minimum| {
                                     xp["rested_xp"]
                                         .as_u64()
@@ -4108,6 +4112,26 @@ impl Store {
                                 continue;
                             };
                             evidence["xp_to_next_level"] = json!(remaining);
+                        }
+                        if ready_quest_xp_covers_next_level {
+                            let Some(quests) = s.sections.get("quests").and_then(Value::as_object)
+                            else {
+                                continue;
+                            };
+                            let projection = analysis::quest_list_xp_projection(quests, Some(xp));
+                            let Some(ids) =
+                                projection["ready_turn_in_plan"]["quest_ids_to_threshold"]
+                                    .as_array()
+                                    .filter(|ids| !ids.is_empty())
+                            else {
+                                continue;
+                            };
+                            evidence["xp_to_next_level"] = projection["xp_to_next_level"].clone();
+                            evidence["ready_quest_xp_plan"] = json!({
+                                "quest_count":ids.len(),
+                                "quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
+                                "truncated":ids.len()>20,
+                            });
                         }
                         Some(evidence)
                     } else {

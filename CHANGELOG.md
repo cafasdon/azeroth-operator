@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved Forever captures with enough recorded ready-quest XP for the next level.
+
 - Find saved Forever characters within an XP budget of the next level.
 
 - Find saved Forever pet captures by recorded happiness and loyalty.

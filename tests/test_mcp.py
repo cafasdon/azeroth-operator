@@ -1712,6 +1712,21 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             "family": "retail", "maximum_xp_to_next_level": 0,
                         })).isError)
+                        ready_xp_query = {"family": "forever", "ready_quest_xp_covers_next_level": True}
+                        for extra, expected in (({}, [travel_after, travel_before]),
+                                                ({"maximum_xp_to_next_level": 50}, [travel_after])):
+                            ready_xp = await session.call_tool("list_snapshots", {**ready_xp_query, **extra})
+                            self.assertFalse(ready_xp.isError)
+                            rows = json.loads(ready_xp.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows], expected)
+                            for row in rows:
+                                ids = [2] if row["snapshot_id"] == travel_after else [2, 10]
+                                self.assertEqual(row["experience_match"]["ready_quest_xp_plan"], {
+                                    "quest_count": len(ids), "quest_ids": ids, "truncated": False,
+                                })
+                        self.assertTrue((await session.call_tool("list_snapshots", {
+                            **ready_xp_query, "family": "retail",
+                        })).isError)
                         self.assertTrue((await session.call_tool("list_snapshots", {
                             **rested_query, "family": "retail",
                         })).isError)
