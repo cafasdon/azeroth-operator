@@ -16,10 +16,27 @@ from shared.snapshots import SnapshotStore
 from test_snapshots import fixture
 from test_simulator_level import inputs
 from tools.rank_forever_slot import collect, main as rank_main
-from tools.run_forever_sim import request_from, ConflictingNativeSlotCategory
+from tools.run_forever_sim import request_from, ConflictingCatalogueEquipLimits, ConflictingNativeSlotCategory
 
 
 class NativeSlotConflictTests(unittest.IsolatedAsyncioTestCase):
+    def test_adapter_rejects_retained_catalogue_equip_limit_conflicts(self):
+        template,review,encounter=inputs()
+        for field, conflict in [
+            ('catalogue_unique_item_duplicates',{'item_id':4549,'slots':[11,12]}),
+            ('catalogue_shared_limit_categories',{'limit_category':1,'items':[
+                {'slot':11,'item_id':4549},{'slot':12,'item_id':4550}]}),
+        ]:
+            with self.subTest(field=field):
+                saved=deepcopy(review)
+                saved['checks'][field]=[]
+                self.assertIn('raid',request_from(template,saved,encounter))
+                saved['checks'][field]=[conflict]
+                for spec in [saved['checks']['simulator_equipment_spec'],None]:
+                    saved['checks']['simulator_equipment_spec']=spec
+                    with self.assertRaisesRegex(ConflictingCatalogueEquipLimits,'catalogue equip-limit conflict'):
+                        request_from(template,saved,encounter)
+
     def test_direct_adapter_rejects_conflicts_even_with_copied_spec(self):
         template,review,encounter=inputs()
         original=deepcopy((template,review,encounter))
@@ -62,6 +79,13 @@ class NativeSlotConflictTests(unittest.IsolatedAsyncioTestCase):
                 '--encounter-lookup',str(root/'encounter.json')],capture_output=True,text=True,timeout=10)
             self.assertEqual(result.returncode,1);self.assertEqual(result.stdout,'')
             self.assertIn('Native slot-category conflicts',result.stderr)
+            self.assertNotIn('PRIVATE',result.stderr);self.assertNotIn(str(root),result.stderr)
+            review['checks']['native_slot_category_conflicts']=[]
+            review['checks']['catalogue_unique_item_duplicates']=[{'item_id':4549,'slots':[11,12],'private':'PRIVATE'}]
+            (root/'review.json').write_text(json.dumps(review))
+            result=subprocess.run(result.args,capture_output=True,text=True,timeout=10)
+            self.assertEqual((result.returncode,result.stdout),(1,''))
+            self.assertIn('catalogue equip-limit conflict',result.stderr)
             self.assertNotIn('PRIVATE',result.stderr);self.assertNotIn(str(root),result.stderr)
             command=['rank','--mcp',str(binary),'--snapshot-id','fixture','--slot','finger1',
                 '--template',str(root/'template.json'),'--plan-only']

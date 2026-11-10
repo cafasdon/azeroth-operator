@@ -43,6 +43,10 @@ class ConflictingNativeSlotCategory(ValueError):
     """Native item categories contradict the projected equipment placement."""
 
 
+class ConflictingCatalogueEquipLimits(ValueError):
+    """The review records duplicate unique items or a shared limit category."""
+
+
 # Mirrors planning::native_slot_category for legacy saved review metadata.
 NATIVE_CATEGORY_SLOTS = {
     'HEAD':{1},'NECK':{2},'SHOULDER':{3},'BODY':{4},'CHEST':{5},'ROBE':{5},'WAIST':{6},
@@ -477,7 +481,10 @@ def request_from(template, equipment_review, encounter_lookup):
         raise ValueError("Simulator template class and specialisation disagree")
     if player.get("enableItemSwap") or player.get("enable_item_swap"):
         raise ValueError("Disable template item swapping")
-    equipment = equipment_review["checks"]["simulator_equipment_spec"]
+    checks = equipment_review["checks"]
+    if checks.get("catalogue_unique_item_duplicates") or checks.get("catalogue_shared_limit_categories"):
+        raise ConflictingCatalogueEquipLimits("The equipment review records a catalogue equip-limit conflict")
+    equipment = checks["simulator_equipment_spec"]
     contract = equipment_review['checks'].get('simulator_equipment_contract')
     exact = equipment is not None and layout.positional(equipment)
     if (exact and contract != layout.CONTRACT) or (contract is not None and (not exact or contract != layout.CONTRACT)):
@@ -936,6 +943,8 @@ def main():
         parser.exit(1, "Simulator template class or race disagrees with the saved character observation. Match the template to that capture before simulation.\n")
     except ConflictingNativeSlotCategory:
         parser.exit(1, "Native slot-category conflicts require refreshed item observations or catalogue data before simulation.\n")
+    except ConflictingCatalogueEquipLimits as error:
+        parser.exit(1, f"{error}.\n")
     except UnsupportedSimulationPetLevel as error:
         parser.exit(1, f"{error}\n")
     except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError, sqlite3.Error, subprocess.SubprocessError) as error:

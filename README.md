@@ -520,6 +520,13 @@ The counts follow the requested filters and omit statuses and storage groups
 with zero matches. Use inventory evidence to check which storage was observed.
 [Offline selection evidence](docs/owned-character-selection-verification-2026-11-09.md).
 
+The simulator rejects saved equipment reviews that record duplicate unique
+items or a shared catalogue limit conflict, even if they include a simulator
+equipment spec. These checks use the local catalogue's recorded rules.
+This adapter revision changes the plan-collection and simulation-journal
+fingerprints. Continuing collection requires a journal created with the
+same collector and adapter revision.
+
 Ranked saved-journal gear results include `saved_loadout`: the exact retained
 equipment, selected source locations and cleared slots, tied to the snapshot
 and source report hash. Locations describe the saved plan; refresh observations

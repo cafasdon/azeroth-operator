@@ -1,5 +1,7 @@
 # Changelog
 
+- Reject simulator inputs whose saved equipment review records a unique-item or shared catalogue limit conflict.
+
 - Surface saved timers for ready quests within each waypoint map group.
 
 - Project saved ready-quest coin costs and rewards separately for each waypoint map.
