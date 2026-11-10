@@ -1097,6 +1097,21 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "required_copper_overflow":False,"wallet_shortfall_copper":1_000_000_000,
                             "supported_turn_ins":2,"turn_ins_shortfall_to_next_rank":1,
                         })
+                        for item_quantity, copper, capacity, limiting in [
+                            (2, 2_000_000_000, 2, ["bags", "wallet"]),
+                            (1, 2_000_000_000, 2, ["wallet"]),
+                            (2, 1, 2, ["bags"]),
+                        ]:
+                            result = await session.call_tool("inspect_snapshot", {
+                                **request,"reputation_turn_in_item_cost":{"item_id":744,"quantity":item_quantity},
+                                "reputation_turn_in_copper_cost":{"copper_per_turn_in":copper},
+                            })
+                            self.assertFalse(result.isError,result)
+                            self.assertEqual(json.loads(result.content[0].text)
+                                             ["reputation_turn_in_combined_capacity"], {
+                                "supported_turn_ins":capacity,"limiting_resources":limiting,
+                                "turn_ins_shortfall_to_next_rank":1,
+                            })
                         result = await session.call_tool("inspect_snapshot", {
                             **request,"reputation_turn_in_item_costs":costs,
                         })

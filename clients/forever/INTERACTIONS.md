@@ -23,7 +23,9 @@ leave the plan unknown.
 With the same points estimate, `reputation_turn_in_copper_cost` accepts
 `copper_per_turn_in` and an optional `wallet_reserve_copper`. It reports
 the total cost, wallet shortfall and wallet-supported repetitions from
-the same capture. The wallet and item plans measure separate constraints.
+the same capture. When both costs are provided, the combined capacity
+uses the lower limit, lists both resources if tied, and stays unknown
+unless both observations are available. Saved bank stock remains separate.
 
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside

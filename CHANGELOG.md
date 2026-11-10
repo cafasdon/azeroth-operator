@@ -1,5 +1,7 @@
 # Changelog
 
+- Show combined saved wallet and bag capacity for reputation turn-ins.
+
 - Budget assumed reputation turn-in copper costs against the saved wallet and reserve.
 
 - Suggest saved bank locations for reputation turn-in material shortfalls.
