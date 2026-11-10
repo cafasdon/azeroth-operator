@@ -1,5 +1,7 @@
 # Changelog
 
+- Make saved base-item presence and catalogue suffix-option evidence explicit in catalogue lookup responses.
+
 - Link listed random-suffix options to exact local records and page reference edges without implying owned variants.
 
 - Attach exact local NPC, zone and faction records to hybrid acquisition-reference results, retaining unresolved links explicitly.

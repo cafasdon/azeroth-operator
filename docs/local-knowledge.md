@@ -46,6 +46,15 @@ distinct positive IDs. An empty list gives no results. The CLI accepts
 repeated `--item-id` options. The index retains public reference records;
 supplied candidate IDs do not establish ownership or equip legality.
 
+When obtaining candidates with the main MCP's `lookup_forever_catalogue`,
+`observed_ownership` checks saved base item IDs. Its
+`ownership_filter_evidence` reports that scope and storage coverage; it does
+not verify the current inventory or a particular owned roll. Combining it
+with `item_random_suffix_id` finds base items listing that public suffix
+possibility. `random_suffix_filter_evidence` explicitly labels the relationship
+`catalogue_option_not_owned_variant`. Use the owned-gear review and exact
+modifier resolution before treating a candidate as a usable owned variant.
+
 The index contains public reference records. Its builder accepts the pinned
 catalogue and verifies its checksum. Search makes no source refresh or game
 call. Personal snapshot data stays in the existing owner-scoped store.

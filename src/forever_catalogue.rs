@@ -1227,6 +1227,27 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if let Some((wanted, _, complete)) = &ownership {
+        result["ownership_filter_evidence"] = json!({
+            "scope":"saved_base_item_id_presence",
+            "requested_presence":match wanted {
+                ObservedOwnership::Owned => "owned",
+                ObservedOwnership::Absent => "absent",
+                ObservedOwnership::Unknown => "unknown",
+            },
+            "all_storage_sections_observed":complete,
+            "owned_variant_verified":false,
+            "current_ownership_verified":false,
+            "equip_legality_verified":false
+        });
+    }
+    if let Some(id) = query.item_random_suffix_id {
+        result["random_suffix_filter_evidence"] = json!({
+            "suffix_id":id,
+            "relationship":"catalogue_option_not_owned_variant",
+            "owned_variant_verified":false
+        });
+    }
     if let Some((item, _)) = enchant_target {
         let base_stats = default_regular_stats(item).and_then(|base| {
             if let Some(suffix) = enchant_target_suffix {

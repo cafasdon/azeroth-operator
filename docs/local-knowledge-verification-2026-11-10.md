@@ -268,3 +268,36 @@ request 5d78638e2e3383dea87bd9b7382a2d746e291e80bdd5a1089dfb8fe1601b7c3d;
 feature on exhaustive pinned-data coverage, direct CLI/MCP checks and both
 independent reviews. Installation, deployment, native qualification and live
 testing remain deferred.
+
+## Saved ownership and suffix candidate boundary
+
+Main catalogue responses now expose `ownership_filter_evidence` when using
+`observed_ownership`: saved base item ID presence, requested state and whether
+all four storage sections were observed. Current ownership, owned variant and
+equip legality remain unverified. `item_random_suffix_id` independently emits
+`random_suffix_filter_evidence` with the exact requested ID and relationship
+`catalogue_option_not_owned_variant`. No filtering or variant resolution changed.
+
+Author verification: `cargo build --offline` passed; the real stdio MCP test
+`$env:PYTHONPATH='.;tests'; python -m unittest test_catalogue_ownership_evidence`
+passed (one test, latest run 0.674 seconds). Synthetic saved data exercises an
+owned base item with an unresolved private link, complete absent storage,
+incomplete unknown storage, incompatible presence requests returning no rows,
+missing snapshot refusal and opt-in metadata omission. Exact Gaea's Cloak and
+its pinned suffix option are checked, private link text is absent, and capture
+file bytes are unchanged. No private user capture or live game was used.
+`rustfmt --check --edition 2024 src/forever_catalogue.rs` passed.
+Repository-wide `cargo fmt --all -- --check` reported existing differences in
+unrelated files; those files were not modified. Live testing stays deferred.
+
+One independent failure-lens round (requested gpt-6-astra high, resolved model
+and usage not exposed) read collector, filter, caller and changed docs and ran
+`.venv/Scripts/python.exe -m unittest discover -s tests -p test_catalogue_ownership_evidence.py -v`:
+one test passed in 0.647 seconds, no actionable findings. Reviewer did not
+independently establish binary/source provenance; author built the tested
+binary immediately before the tests. Jev 1.14.0 advisory selected ready,
+confidence 0.82, request
+`0c0cafcbde8fdeec7d84b900e8ead1dbc39b56c1772336d2f69d847bbacc5d51`,
+504 input and 44 output tokens, 0.285 seconds. Author accepted the bounded
+metadata change on direct MCP evidence and the independent review; this is
+not evidence of native runtime qualification or complete owned-gear coverage.
