@@ -92,7 +92,12 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(any(link.get('quest_id') == 176 for link in npc['quest_links']['questEnds'].values()))
                     obj = await call(get,kind='object',entity_id=31,include_quest_links=True)
                     self.assertTrue(obj['quest_links']['questStarts'])
-                    await call(get,error=True,kind='item',entity_id=1931,include_quest_links=True)
+                    starter = await call(get,kind='item',entity_id=1307,include_quest_links=True)
+                    link = starter['quest_links']['startQuest']['1']
+                    self.assertEqual(link['quest_id'],starter['record']['fields']['startQuest'])
+                    self.assertEqual(link['record']['kind'],'quest')
+                    related = await call(get,kind='item',entity_id=159,include_quest_links=True)
+                    self.assertTrue(related['quest_links']['relatedQuests'])
                     result = await call(get,kind='quest',entity_id=176)
                     record = result['record']
                     targets = (await call(get,kind='quest',entity_id=176,include_quest_links=True))['quest_objective_targets']

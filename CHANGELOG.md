@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve item-started and related quests from the local Forever cache.
+
 - Resolve quest starters and finishers in reverse from cached NPC and object records.
 
 - Page cached item drop, vendor and quest reward references.

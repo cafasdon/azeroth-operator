@@ -85,3 +85,8 @@ any group reports `has_more`. Each group reports its total count.
 
 For NPCs and objects, `include_quest_links=true` resolves the cached
 `questStarts` and `questEnds` fields to quest summaries with source positions.
+
+For items, the same option resolves `startQuest` and `relatedQuests`.
+The scalar starter appears at position `1`. The related quest array retains
+its original positions. Item quest links and item acquisition pages can be
+requested together.
