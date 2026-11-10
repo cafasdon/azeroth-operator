@@ -940,3 +940,11 @@ Boolean discovery (including false) and before/after flag differences. Latest
 selection precedes search; missing sides retain unknown comparisons. No life
 classification, death/resurrection event, eligibility, gameplay action, new
 capture or native qualification is introduced.
+# 10 November: saved workflow input report
+
+An opt-in character_summary report groups saved inputs into 24 curated profiles.
+This is not an exhaustive feature count or a live readiness report. It separates
+absent sections from reported-unavailable sections, names read entrypoints and
+retains unchecked conditions. Active identity, complete ownership, simulator
+acceptance and native eligibility remain unproven. See ADR-085 and the dated
+workflow-input-report verification record. Installation and live tests are deferred.

@@ -1056,6 +1056,9 @@ struct Compare {
 #[serde(deny_unknown_fields)]
 struct Summary {
     snapshot_id: String,
+    /// Add saved-input profiles for Forever workflows. Presence is not execution, eligibility, complete ownership or active identity.
+    #[serde(default, deserialize_with = "workflow_coverage_flag")]
+    include_workflow_coverage: bool,
     /// Merge saved Forever dungeon, raid and world boss reset projections after this timestamp.
     saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Inclusive end of the saved reset schedule window. Requires saved_reset_reference_at.
@@ -1161,6 +1164,11 @@ fn player_pvp_flags_argument<'de, D: serde::Deserializer<'de>>(
     if value.is_null() { return Ok(None); }
     serde_json::from_value(value).map(Some)
         .map_err(|_| serde::de::Error::custom("Invalid player PvP flags filter"))
+}
+
+fn workflow_coverage_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
+    serde_json::Value::deserialize(input)?.as_bool()
+        .ok_or_else(|| serde::de::Error::custom("Invalid workflow input report flag"))
 }
 
 fn player_life_state_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
@@ -2888,6 +2896,15 @@ impl Operator {
         match self.store.read(&args.snapshot_id) {
             Ok(s) => {
                 let mut summary = azeroth_operator::analysis::summary(&s);
+                if args.include_workflow_coverage {
+                    let Ok(mut coverage) = azeroth_operator::workflow_coverage::report(&s) else {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Workflow input report requires a saved Forever snapshot",
+                        )]);
+                    };
+                    coverage["snapshot_id"] = serde_json::json!(args.snapshot_id);
+                    summary["workflow_coverage"] = coverage;
+                }
                 if let Some(reference) = args.saved_reset_reference_at {
                     let Ok(schedule) = azeroth_operator::saved_resets::combined_schedule(
                         &s,

@@ -4493,3 +4493,12 @@ after observations and up to four raw Boolean differences. A missing side keeps
 changes/count unknown; equal observations produce an empty map and zero.
 No death/resurrection event, life classification or action right is inferred.
 Existing owner/character/client/time gates remain; all analysis is saved-only.
+# Saved workflow input report
+
+Call `character_summary` with an explicit `snapshot_id` and
+`include_workflow_coverage: true` for 24 curated saved-input profiles.
+Required/helpful sections describe input coverage, not minimal tool parameters
+or live readiness. Observed empty sections do not prove ownership or eligibility.
+Read entrypoints can need more arguments; owned-gear review also needs a local
+catalogue. The report neither selects the active character nor executes actions.
+See [ADR-085](../../docs/ADR-085-workflow-input-report.md).

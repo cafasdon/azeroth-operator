@@ -1,5 +1,7 @@
 # Changelog
 
+- Add an opt-in saved-input report for 24 Forever workflows, with missing/unavailable inputs and explicit unchecked conditions.
+
 - Capture numeric pending mail funds/COD quotes and review selected quotes against the saved wallet without crediting mail money.
 
 - Capture, inspect, search and compare raw player PvP flags without toggles, safety or combat-eligibility inference.
