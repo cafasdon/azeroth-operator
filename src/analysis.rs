@@ -3516,6 +3516,7 @@ pub struct ComparisonSelectors<'a> {
     pub group_context_changes: bool,
     pub owned_auction_changes: bool,
     pub battlefield_queue_changes: bool,
+    pub player_life_state_changes: bool,
     pub instance_group_size_reference: bool,
     pub instance_group_size_max_cache_age_seconds: Option<u32>,
     pub group_member_target: Option<std::num::NonZeroU32>,
@@ -4189,6 +4190,11 @@ pub fn compare_observations(
         );
         comparison["group_member_target_comparison"] =
             compare_group_member_target(before, after, target.get());
+    }
+    if selectors.player_life_state_changes {
+        ensure!(before.client.family == crate::Family::Forever, "Player life-state comparison requires Forever");
+        comparison["player_life_state_changes"] = crate::player_life_state::compare(
+            before.sections.get("player_life_state"), after.sections.get("player_life_state"))?;
     }
     if selectors.battlefield_queue_changes {
         ensure!(before.client.family == crate::Family::Forever, "Battlefield queue comparison requires Forever");
@@ -12049,6 +12055,8 @@ pub fn summary(s: &Snapshot) -> Value {
             "positive_timer_item_locations":rows.iter().filter(|row| row["remaining_seconds"].as_u64().is_some_and(|n| n>0)).count(),
             "current_usability_verified":false,"game_execution":false})
     }).unwrap_or(Value::Null);
+    summary["player_life_state_observation"] = s.sections.get("player_life_state")
+        .map(crate::player_life_state::observation).unwrap_or(Value::Null);
     summary["battlefield_queue_observation"] = s.sections.get("battlefield_queue_slots").map(|section| {
         let mut slots = BTreeMap::from([("none",Vec::<u32>::new()),("queued",Vec::new()),
             ("confirm",Vec::new()),("active",Vec::new()),("locked",Vec::new())]);

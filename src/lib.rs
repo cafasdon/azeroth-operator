@@ -14,6 +14,7 @@ pub mod loot_observation;
 pub mod macro_operation;
 pub mod owned_auction_filter;
 pub mod planning;
+pub mod player_life_state;
 pub mod saved_resets;
 mod schema;
 pub mod skill_line_filter;
@@ -2046,6 +2047,7 @@ pub struct CaptureFilters<'a> {
     pub group_context: Option<GroupContextFilter>,
     pub owned_auction: Option<owned_auction_filter::OwnedAuctionFilter>,
     pub battlefield_queue: Option<battlefield_queue_filter::BattlefieldQueueFilter>,
+    pub player_life_state: Option<player_life_state::PlayerLifeStateFilter>,
     pub profession_spell_id: Option<std::num::NonZeroU32>,
     pub recipe: RecipeCaptureFilters,
     pub tracked_recipe_id: Option<std::num::NonZeroU32>,
@@ -2364,6 +2366,7 @@ impl Store {
             group_context,
             owned_auction,
             battlefield_queue,
+            player_life_state,
             profession_spell_id,
             recipe: filters,
             tracked_recipe_id,
@@ -2751,6 +2754,10 @@ impl Store {
                 .is_none_or(|(min, max)| min <= max),
             "Reversed PvP rank bounds"
         );
+        if let Some(filter) = &player_life_state {
+            ensure!(family == Family::Forever, "Player life-state search requires Forever");
+            filter.validate()?;
+        }
         if let Some(filter) = &battlefield_queue {
             ensure!(family == Family::Forever, "Battlefield queue search requires Forever");
             filter.validate()?;
@@ -3520,6 +3527,8 @@ impl Store {
                     {
                         continue;
                     }
+                    let player_life_state_match = player_life_state.as_ref().and_then(|filter| filter.observation_match(&s));
+                    if player_life_state.is_some() && player_life_state_match.is_none() { continue; }
                     let battlefield_queue_match = battlefield_queue.as_ref().and_then(|filter| filter.observation_match(&s));
                     if battlefield_queue.is_some() && battlefield_queue_match.is_none() { continue; }
                     let owned_auction_match = owned_auction.as_ref().and_then(|filter| filter.observation_match(&s));
@@ -4977,6 +4986,9 @@ impl Store {
                     }
                     if let Some(observation) = pet_command_match {
                         summary["pet_action_command_match"] = observation;
+                    }
+                    if let Some(observation) = player_life_state_match {
+                        summary["player_life_state_match"] = observation;
                     }
                     if let Some(observation) = battlefield_queue_match {
                         summary["battlefield_queue_match"] = observation;

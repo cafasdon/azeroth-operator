@@ -907,3 +907,9 @@ readers. Existing inspection and capture-status discovery apply. Unreadable
 flags never become false. No classification, present-state/eligibility proof,
 other-player observation, public indexing or release/resurrection action is
 introduced. See ADR-079-passive-player-life-state.md. Native testing deferred.
+
+Saved player life flags now support raw character summaries, same-capture
+Boolean discovery (including false) and before/after flag differences. Latest
+selection precedes search; missing sides retain unknown comparisons. No life
+classification, death/resurrection event, eligibility, gameplay action, new
+capture or native qualification is introduced.

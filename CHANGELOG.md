@@ -1,5 +1,7 @@
 # Changelog
 
+- Summarise, search and compare saved player life flags without classifying life state or inferring death/resurrection events.
+
 - Capture player-only raw dead, ghost and feign-death flags during manual Forever exports without resurrection actions.
 
 - Compare saved battlefield status positions and capacity while withholding queue continuity and join/leave inference.

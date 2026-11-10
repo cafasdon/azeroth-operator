@@ -33,3 +33,29 @@ and live game testing remain deferred.
 
 Reference checked 10 November 2026:
 [Mirrored Forever unit API declarations](https://raw.githubusercontent.com/Gethe/wow-ui-source/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/UnitDocumentation.lua).
+
+Saved analysis (10 November): character_summary.player_life_state_observation
+contains the four reported flags under reported_flags, coverage and explicit
+unverified current-state/continuity/resurrection-eligibility/event flags. Missing
+sections return null. No Boolean combination is normalised or classified.
+
+list_snapshots accepts player_life_state with any nonempty combination of the
+four exact Boolean predicates. All predicates, including false, match the same
+capture; null optional fields are ignored but an all-null/empty filter rejects.
+An omitted/null outer filter preserves ordinary listing. Existing latest-per-
+character selection precedes matching, so old matching observations do not
+replace newer missing or nonmatching captures. Other filters, time constraints
+and pagination retain their existing meaning. Matches return raw observed flags
+and false boundary flags, never inferred current life state or event histories.
+
+compare_snapshots accepts Boolean player_life_state_changes. Existing character,
+client, chronology and owner gates apply, plus the Forever restriction. It
+retains separate before/after observations; a missing section leaves that side
+null and changes/count unknown. With both captured, flag_changes lists only
+raw before/after Boolean differences and changed_flag_count counts them (0..4).
+Equal snapshots yield an empty map and zero. Omitted/false preserves comparison
+behaviour; non-Boolean/null flags reject through redacting parsing.
+
+No death, resurrection, alive classification, action right or continuity is
+inferred. This analysis adds no collector, gameplay call, monitoring, simulation
+input or public-index path. Native qualification remains deferred.

@@ -4391,3 +4391,16 @@ character continuity. No release, corpse retrieval, resurrection or other
 player action is invoked. Data stays owner-local, outside public indexing.
 Update readers before exporter installation. Native testing remains deferred.
 See ADR-079-passive-player-life-state.md.
+
+character_summary.player_life_state_observation exposes reported_flags and
+explicitly leaves current state, continuity, resurrection eligibility and life
+events unverified. Missing observations remain null. list_snapshots accepts
+player_life_state with at least one of the four exact Boolean predicates;
+false values matter, optional nulls are ignored, and all-null/empty filters
+reject. Predicates match the same capture after latest-per-character selection.
+
+Set compare_snapshots.player_life_state_changes to true to see separate before/
+after observations and up to four raw Boolean differences. A missing side keeps
+changes/count unknown; equal observations produce an empty map and zero.
+No death/resurrection event, life classification or action right is inferred.
+Existing owner/character/client/time gates remain; all analysis is saved-only.

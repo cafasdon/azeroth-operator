@@ -689,6 +689,9 @@ struct List {
     /// Find captured battlefield status slots, optionally by exact slot and minimum matching count.
     #[serde(default, deserialize_with = "battlefield_queue_argument")]
     battlefield_queue: Option<azeroth_operator::battlefield_queue_filter::BattlefieldQueueFilter>,
+    /// Find saved raw player life flags; all supplied Boolean predicates match the same capture.
+    #[serde(default, deserialize_with = "player_life_state_argument")]
+    player_life_state: Option<azeroth_operator::player_life_state::PlayerLifeStateFilter>,
     /// Find saved Forever captures that report this exact profession spell ID.
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Find a recorded currency balance at or above the requested quantity.
@@ -911,6 +914,9 @@ struct Compare {
     /// Compare saved battlefield slot positions/statuses; never queue identities or join/leave events.
     #[serde(default, deserialize_with = "battlefield_queue_change_flag")]
     battlefield_queue_changes: bool,
+    /// Compare raw saved life flags; no death/resurrection event or eligibility inference.
+    #[serde(default, deserialize_with = "player_life_state_change_flag")]
+    player_life_state_changes: bool,
     /// Compare saved instance group size references across both captures.
     #[serde(default)]
     instance_group_size_reference: bool,
@@ -1127,6 +1133,20 @@ fn battlefield_queue_argument<'de, D: serde::Deserializer<'de>>(
 fn battlefield_queue_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
     serde_json::Value::deserialize(input)?.as_bool()
         .ok_or_else(|| serde::de::Error::custom("Invalid battlefield queue comparison flag"))
+}
+
+fn player_life_state_argument<'de, D: serde::Deserializer<'de>>(
+    input: D,
+) -> Result<Option<azeroth_operator::player_life_state::PlayerLifeStateFilter>, D::Error> {
+    let value = serde_json::Value::deserialize(input)?;
+    if value.is_null() { return Ok(None); }
+    serde_json::from_value(value).map(Some)
+        .map_err(|_| serde::de::Error::custom("Invalid player life-state filter"))
+}
+
+fn player_life_state_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
+    serde_json::Value::deserialize(input)?.as_bool()
+        .ok_or_else(|| serde::de::Error::custom("Invalid player life-state comparison flag"))
 }
 
 fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
@@ -2762,6 +2782,7 @@ impl Operator {
                     group_context_changes: args.group_context_changes,
                     owned_auction_changes: args.owned_auction_changes,
                     battlefield_queue_changes: args.battlefield_queue_changes,
+                    player_life_state_changes: args.player_life_state_changes,
                     instance_group_size_reference: args.instance_group_size_reference,
                     instance_group_size_max_cache_age_seconds: args
                         .instance_group_size_max_cache_age_seconds,
@@ -3050,6 +3071,7 @@ impl Operator {
                 group_context: args.group_context,
                 owned_auction: args.owned_auction,
                 battlefield_queue: args.battlefield_queue,
+                player_life_state: args.player_life_state,
                 profession_spell_id: args.profession_spell_id,
                 currency_balance: args.currency_balance,
                 reputation_rank: args.reputation_rank,
