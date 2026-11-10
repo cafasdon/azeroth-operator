@@ -926,7 +926,10 @@ struct FlightLeg {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct FlightRouteSearch {
-    destination_node_id: std::num::NonZeroU32,
+    /// Exact destination ID. Can disambiguate a supplied destination name.
+    destination_node_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved destination name.
+    destination_name: Option<String>,
     onward_snapshot_ids: Option<Vec<String>>,
     /// Maximum flight legs, including the first leg. Defaults to eight.
     #[schemars(range(min = 1, max = 8))]
@@ -4365,7 +4368,8 @@ impl Operator {
                             .collect::<anyhow::Result<Vec<_>>>()?;
                         azeroth_operator::analysis::plan_saved_flights(
                             &captures,
-                            search.destination_node_id.get(),
+                            search.destination_node_id.map(|id| id.get()),
+                            search.destination_name.as_deref(),
                             args.flight_wallet_reserve_copper,
                             search.max_legs.unwrap_or(8),
                             search.objective.unwrap_or_default(),
@@ -4378,7 +4382,7 @@ impl Operator {
                         Ok(plan) => value["flight_route_search"] = plan,
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
-                                "Flight route search requires compatible Forever captures with unambiguous flight panels, a different destination and a limit of one to eight legs",
+                                "Flight route search requires compatible Forever captures, unambiguous flight panels, a destination ID or an unambiguous name, and a limit of one to eight legs",
                             )]);
                         }
                     }

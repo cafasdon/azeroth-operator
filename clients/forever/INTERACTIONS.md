@@ -3285,6 +3285,12 @@ one reachable destination in the captured panel. Supply
 `flight_destination_node_id` too when names collide. Fare, origin and
 wallet filters apply to the same saved route.
 
+`inspect_snapshot.flight_route_search.destination_name` accepts an exact
+name from the selected saved flight panels. Repeated observations of the
+same node ID agree. Different reachable node IDs with the same name need
+an explicit `destination_node_id`, even if only one fits the fare budget.
+The route search still uses recorded reachable legs with known fares.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

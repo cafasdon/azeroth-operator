@@ -79,6 +79,17 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(plan['legs']),1)
                     self.assertEqual(plan['legs'][0]['observed_route_node_ids'],path)
                     self.assertEqual(plan['total_fare_copper'],100)
+                    named_plan=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={'destination_name':'  FuRtHeR  ','onward_snapshot_ids':[next_key]}))[
+                            'flight_route_search']
+                    self.assertEqual(named_plan['destination_node_id'],40)
+                    self.assertEqual(named_plan['total_fare_copper'],150)
+                    self.assertEqual(len(named_plan['legs']),2)
+                    for destination in [{},{'destination_name':' '},{'destination_name':'é'*129},
+                                        {'destination_name':'Target','destination_node_id':30}]:
+                        response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
+                            'section':'flight_map','flight_route_search':destination})
+                        self.assertTrue(response.isError)
                     old_search=await call('inspect_snapshot',snapshot_id=old,section='flight_map',flight_route_search={'destination_node_id':20})
                     self.assertNotIn('observed_route_node_ids',old_search['flight_route_search']['legs'][0])
                     self.assertEqual(old_search['flight_route_search']['total_fare_copper'],100)
@@ -157,6 +168,13 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await call('list_snapshots',**scope))['snapshots'],[])
                     narrowed=await call('list_snapshots',**scope,flight_destination_node_id=20)
                     self.assertEqual([row['snapshot_id'] for row in narrowed['snapshots']],[ambiguous_key])
+                    route_scope={'destination_name':'Target','maximum_total_fare_copper':100}
+                    response=await session.call_tool('inspect_snapshot',{'snapshot_id':ambiguous_key,
+                        'section':'flight_map','flight_route_search':route_scope})
+                    self.assertTrue(response.isError)
+                    disambiguated=await call('inspect_snapshot',snapshot_id=ambiguous_key,section='flight_map',
+                        flight_route_search={**route_scope,'destination_node_id':20})
+                    self.assertEqual(disambiguated['flight_route_search']['destination_node_id'],20)
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'flight_map'})
                         self.assertTrue(response.isError)

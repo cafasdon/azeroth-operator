@@ -7034,7 +7034,8 @@ pub enum FlightRouteObjective {
 
 pub fn plan_saved_flights(
     captures: &[(&str, Snapshot)],
-    destination: u32,
+    destination: Option<u32>,
+    destination_name: Option<&str>,
     reserve: Option<u64>,
     max_legs: u8,
     objective: FlightRouteObjective,
@@ -7043,6 +7044,13 @@ pub fn plan_saved_flights(
     maximum_total_fare_copper: Option<u64>,
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
+    let destination_name = destination_name.map(str::trim);
+    ensure!(
+        (destination.is_some() || destination_name.is_some())
+            && destination_name.is_none_or(|name| !name.is_empty() && name.len() <= 256),
+        "Expected a destination ID or valid destination name"
+    );
+    let destination_name = destination_name.map(str::to_lowercase);
     let (_, first) = captures
         .first()
         .ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
@@ -7051,6 +7059,7 @@ pub fn plan_saved_flights(
         "Expected up to eight Forever captures"
     );
     let mut departures = BTreeMap::<u64, Vec<_>>::new();
+    let mut named_destinations = BTreeSet::new();
     let mut start = None;
     for (index, (_, capture)) in captures.iter().enumerate() {
         ensure_same_character_and_client(first, capture)?;
@@ -7065,11 +7074,27 @@ pub fn plan_saved_flights(
         let edges = departures.entry(origin).or_default();
         edges.extend(nodes.into_iter().filter_map(|(node, row)| {
             (row["state"] == "reachable").then_some(())?;
+            if destination_name.as_ref().is_some_and(|name| {
+                destination.is_none_or(|id| u64::from(id) == node)
+                    && row["name"]
+                        .as_str()
+                        .is_some_and(|label| label.trim().to_lowercase() == *name)
+            }) {
+                named_destinations.insert(node);
+            }
             Some((index, node, row["fare_copper"].as_u64()?))
         }));
     }
     let start = start.ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
-    let destination = u64::from(destination);
+    let destination = if destination_name.is_some() {
+        ensure!(
+            named_destinations.len() == 1,
+            "Destination name is absent or ambiguous"
+        );
+        *named_destinations.first().unwrap()
+    } else {
+        u64::from(destination.unwrap())
+    };
     ensure!(
         start != destination,
         "Already at the requested departure node"

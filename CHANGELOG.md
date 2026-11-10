@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved Forever flight routes by exact destination name.
+
 - Find saved Forever flight visits by exact reachable destination name.
 
 - Compare observed flight preview paths for saved Forever destinations.
