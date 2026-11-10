@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally plan one recorded currency reward choice per saved ready quest.
+
 - Plan saved ready quest turn-ins against an explicit fixed currency reward target.
 
 - Show wallet feasibility for selected saved quest honour turn-ins.

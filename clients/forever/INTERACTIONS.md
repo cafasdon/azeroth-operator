@@ -3372,6 +3372,12 @@ target coverage before caps from recorded cap headroom for the selected
 rewards. Optional choices are excluded, and missing fixed reward lists
 can leave coverage unknown.
 
+Set `include_choices: true` in the currency target to consider one
+recorded choice per quest. The plan takes the largest matching choice,
+breaking ties by recorded position, and reports the position alongside
+fixed rewards. Missing fixed or optional reward lists may leave a
+shortfall inconclusive. Choice eligibility remains unverified.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

@@ -66,6 +66,9 @@ struct RestockStackLimit {
 struct QuestCurrencyTarget {
     currency_id: std::num::NonZeroU32,
     quantity: std::num::NonZeroU64,
+    /// Consider one recorded optional reward for this currency per quest.
+    #[serde(default)]
+    include_choices: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -4981,6 +4984,7 @@ impl Operator {
                                     balances,
                                     target.currency_id.get(),
                                     target.quantity.get(),
+                                    target.include_choices,
                                 )
                             });
                     }

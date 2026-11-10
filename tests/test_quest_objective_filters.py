@@ -780,7 +780,9 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     funded['sections']['quests']['3']['currency_rewards']={
                         '1':{'currency_id':100,'quantity':2},'2':{'currency_id':100,'quantity':3}}
                     funded['sections']['quests']['10']['currency_rewards']={'1':{'currency_id':100,'quantity':4}}
-                    funded['sections']['quests']['10']['currency_choices']={'1':{'currency_id':100,'quantity':99}}
+                    funded['sections']['quests']['10']['currency_choices']={
+                        '1':{'currency_id':100,'quantity':20},'2':{'currency_id':100,'quantity':99},
+                        '3':{'currency_id':100,'quantity':99},'4':{'currency_id':200,'quantity':200}}
                     funded['sections']['currency_balances']={'coverage':'visible_currency_ids_only',
                         'entries':{'100':{'name':'Fixture Token','quantity':3,'max_quantity':10,
                                           'max_weekly_quantity':0,'earned_this_week':0,'total_earned':3,
@@ -806,4 +808,23 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'snapshot_id':currency_target_id,'section':'quests',
                         'quest_ready_currency_target':{'currency_id':100,'quantity':0}})
                     self.assertTrue(rejected.isError)
+                    for quantity,covered in [(100,True),(109,None)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':currency_target_id,'section':'quests',
+                            'quest_ready_currency_target':{
+                                'currency_id':100,'quantity':quantity,'include_choices':True}})
+                        self.assertFalse(reply.isError,reply)
+                        target=json.loads(reply.content[0].text)['quest_ready_currency_projection']
+                        self.assertEqual(target['known_ready_fixed_quantity'],9)
+                        self.assertEqual(target['known_ready_quantity_with_choices'],108)
+                        self.assertEqual(target['ready_quests_with_unknown_choices'],1)
+                        self.assertIs(target['covers_target_before_caps'],covered)
+                        if covered:
+                            plan=target['ready_turn_in_plan']
+                            self.assertEqual(plan['quest_ids'],[10])
+                            self.assertEqual(plan['recorded_fixed_quantity'],4)
+                            self.assertEqual(plan['recorded_choice_quantity'],99)
+                            self.assertEqual(plan['recorded_total_quantity'],103)
+                            self.assertEqual(plan['currency_choices'],[{'quest_id':10,'position':2,'quantity':99}])
+                            self.assertEqual(plan['cap_projection']['quantity_within_recorded_headroom'],7)
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})
