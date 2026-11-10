@@ -2780,16 +2780,9 @@ impl Store {
             "Flight filtering requires Forever"
         );
         ensure!(
-            [
-                merchant_item_id.is_some(),
-                merchant_currency_id.is_some(),
-                merchant_pet_food_snapshot_id.is_some()
-            ]
-            .into_iter()
-            .filter(|selected| *selected)
-            .count()
-                <= 1,
-            "Use one merchant product or pet food selector"
+            merchant_currency_id.is_none()
+                || (merchant_item_id.is_none() && merchant_pet_food_snapshot_id.is_none()),
+            "Merchant currency searches exclude item and pet food selectors"
         );
         let merchant_product = merchant_item_id
             .map(|id| ("item_id", id.get()))

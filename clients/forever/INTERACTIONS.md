@@ -1735,10 +1735,13 @@ classification.
 Use this for historical sourcing. Pet acceptance can change between captures.
 
 Use the same `merchant_pet_food_snapshot_id` in `list_snapshots` to
-search all compatible saved merchant visits. It replaces an exact item
-or currency selector and combines with the stock, price and affordability
+search all compatible saved merchant visits. It combines with an exact
+item ID and with the stock, price and affordability
 filters. A missing food classification returns an error. An observed
 empty classification returns no matches.
+With an exact item ID and a target quantity, use `merchant_combine_bundles`
+to find qualifying whole-bundle mixes within each saved visit. Currency
+selectors are separate from pet food searches.
 
 Add `merchant_target_quantity` (1–1,000 units) to a merchant listing
 with a pet food, item or currency selector. Each matching offer must

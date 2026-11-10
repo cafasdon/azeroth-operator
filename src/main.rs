@@ -762,7 +762,7 @@ struct List {
     merchant_item_id: Option<std::num::NonZeroU32>,
     /// Find Forever snapshots whose captured merchant offered this exact currency ID.
     merchant_currency_id: Option<std::num::NonZeroU32>,
-    /// Find merchant visits for the character and build of this saved pet food classification.
+    /// Find merchant visits for this saved pet food classification. May be combined with merchant_item_id.
     merchant_pet_food_snapshot_id: Option<String>,
     /// Require one unlimited copper-only offer to cover this quantity, up to 1000 units.
     merchant_target_quantity: Option<std::num::NonZeroU32>,

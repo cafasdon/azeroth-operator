@@ -2464,6 +2464,28 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue((await session.call_tool("inspect_snapshot", {
                             **quote_request, "merchant_currency_id": 117,
                         })).isError)
+                        exact_food_listing = {
+                            "family": "forever", "merchant_pet_food_snapshot_id": travel_before,
+                            "merchant_item_id": 117, "merchant_target_quantity": 8,
+                            "merchant_max_total_copper": 13, "merchant_affordable_only": True,
+                        }
+                        for combine in (False, True):
+                            found = await session.call_tool("list_snapshots", {
+                                **exact_food_listing, "merchant_combine_bundles": combine,
+                            })
+                            self.assertFalse(found.isError)
+                            rows = json.loads(found.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows],
+                                             [food_mix_id] if combine else [])
+                            if combine:
+                                self.assertEqual(rows[0]["merchant_match"]["lowest_cost_copper_only_bundle_mix"],
+                                                 {"required_copper": 13, "units": 8, "extra_units": 0,
+                                                  "bundles_by_slot": {"1": 1, "3": 1}})
+                        unaccepted = await session.call_tool("list_snapshots", {
+                            **exact_food_listing, "merchant_item_id": 999999, "merchant_combine_bundles": True,
+                        })
+                        self.assertFalse(unaccepted.isError)
+                        self.assertEqual(json.loads(unaccepted.content[0].text)["snapshots"], [])
                         (Path(folder) / f"{food_mix_id}.json").unlink()
                         food_listing = {"family": "forever", "merchant_pet_food_snapshot_id": travel_before,
                                         "merchant_affordable_only": True}
@@ -2488,7 +2510,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         self.assertFalse(over_budget.isError)
                         self.assertEqual(json.loads(over_budget.content[0].text)["snapshots"], [])
-                        for invalid_food in [{"merchant_item_id": 117},
+                        for invalid_food in [{"merchant_currency_id": 117},
                                              {"merchant_pet_food_snapshot_id": forever_key}]:
                             self.assertTrue((await session.call_tool("list_snapshots", {
                                 **food_listing, **invalid_food,

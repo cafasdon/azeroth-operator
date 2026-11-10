@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved merchant visits with qualifying mixed bundles of one accepted pet-food item.
+
 - Quote mixed merchant bundles of one item classified as accepted pet food.
 
 - Find saved Forever captures with low observed carried pet-food stock.
