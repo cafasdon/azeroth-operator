@@ -7,6 +7,11 @@ same source quest IDs/count/prefix. No provider database is bundled or synced;
 IDs do not establish native identity or current availability. See
 [offline verification](quest-giver-references-verification-2026-11-10.md).
 
+Saved turn-in grouping now uses those retained references with true/false/
+unknown readiness, namespace-qualified giver filters, numeric groups and
+bounded pages. It preserves unknowns and truncation rather than implying
+eligibility or routing. [Offline evidence](quest-turn-in-groups-verification-2026-11-10.md).
+
 Saved instance progress follow-up (10 November). The Forever RaidFrame uses
 the same passive saved-instance API, but does not interpret its two progress
 positions in Lua. Native interpretation remains pending.

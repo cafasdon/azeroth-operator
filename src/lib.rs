@@ -16,6 +16,7 @@ pub mod owned_auction_filter;
 pub mod planning;
 pub mod player_life_state;
 pub mod quest_references;
+pub mod quest_turn_in;
 pub mod saved_resets;
 mod schema;
 pub mod skill_line_filter;

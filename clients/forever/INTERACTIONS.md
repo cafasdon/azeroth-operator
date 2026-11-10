@@ -20,6 +20,19 @@ reward or movement is invoked. Data remains owner-local, outside public search.
 Readers must be updated before exporter installation. Deployment and native
 testing remain deferred. See ADR080 and the dated verification evidence.
 
+For a saved turn-in grouping, call `inspect_snapshot` with this section and
+`quest_turn_in_review: {}`. Optional `ready_for_turn_in: true` selects captured
+true flags; false selects only explicit false, never unknown. Optional
+`quest_ids` accepts 1..64 distinct positive IDs; `giver_kind` accepts `npc` or
+`object`, and a `giver_id` requires its kind. All predicates compose. The
+review replaces `data` only for the opt-in and groups retained references by
+kind/numeric giver ID, with separate ready/not-ready/unknown quest ID lists.
+Limit 1..50 defaults to 20; uint32 offset pages groups after filtering.
+Ungrouped counts/first-64 IDs, reference-status counts and truncation remain
+visible. Unknown source sections yield null groups; known empty yields [].
+This does not establish current readiness, eligibility, a native location or
+an optimal route, and never submits quests. See ADR081.
+
 `character_summary.capture_coverage` lists all known snapshot sections
 with observed, reported-unavailable or not-recorded status and counts.
 Observed sections retain their declared coverage scope when present.

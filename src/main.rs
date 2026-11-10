@@ -100,6 +100,8 @@ struct QuestRenownTarget {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Group saved quests by retained provider finisher NPC/object IDs. quest_giver_references only; no route or turn-in action.
+    quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
     /// Compare each saved group category's reported member count against this target.
     group_member_target: Option<std::num::NonZeroU32>,
     /// Compare the saved instance group count with a uniquely matching saved lockout size reference.
@@ -3170,6 +3172,15 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.quest_turn_in_review.as_ref().is_some_and(|page| {
+            args.section.as_deref() != Some("quest_giver_references")
+                || args.coverage_sections.is_some()
+                || page.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest turn-in review requires quest_giver_references and valid bounded grouping options",
+            )]);
+        }
         if args.instance_group_size_max_cache_age_seconds.is_some()
             && !args.instance_group_size_reference
         {
@@ -4306,6 +4317,16 @@ impl Operator {
             args.coverage_sections.as_deref(),
         ) {
             Ok(mut value) => {
+                if let Some(page) = &args.quest_turn_in_review {
+                    let review = self.store.read(&args.snapshot_id)
+                        .and_then(|snapshot| azeroth_operator::quest_turn_in::review(&snapshot, page));
+                    match review {
+                        Ok(review) => value["data"] = review,
+                        Err(_) => return CallToolResult::error(vec![ContentBlock::text(
+                            "Saved quest turn-in context unavailable or invalid",
+                        )]),
+                    }
+                }
                 if let Some(requirements) = bag_restock {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
