@@ -4513,3 +4513,17 @@ improvement floor and keeps the existing partial/full saved-result scope.
 Saved numeric loadouts retain source locations and bank retrievals; they do not
 prove current locations or native eligibility. No extra simulation runs or game
 actions occur. See ADR-086 and the dated encounter-gear-leaders evidence record.
+
+## Saved recipe restock
+
+`plan_forever_recipe_restock` accepts `snapshot_id`, positive
+`target_bag_quantity` and optional exact bulk `recipe_id`. Without a recipe ID,
+it uses the saved selected recipe. The target includes current saved bag stock;
+it is not a request for that many new output units. Existing bank/mail output
+stock does not reduce the target shortfall. Fixed inputs and known yield are
+necessary. Plans use minimum net output after same-item reagent consumption,
+retain the 1,000-craft bound and return zero crafts if saved stock meets the target.
+The material review uses gross batch inputs without intermediate output credit.
+Projected quantities are conditional; base IDs do not prove variant equivalence,
+current stock, crafting eligibility or bag placement. No crafting occurs.
+See ADR-087 and recipe-restock-verification-2026-11-10.md. Offline only.

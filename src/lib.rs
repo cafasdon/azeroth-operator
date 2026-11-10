@@ -26,6 +26,7 @@ pub mod sync;
 pub mod talent_operation;
 pub mod upload;
 pub mod workflow_coverage;
+pub mod recipe_restock;
 use anyhow::{Result, ensure};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

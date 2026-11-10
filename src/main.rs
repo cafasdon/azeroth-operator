@@ -21,6 +21,7 @@ const OFFLINE_TOOLS: &[&str] = &[
     "lookup_forever_catalogue",
     "review_forever_owned_gear",
     "review_forever_recipe",
+    "plan_forever_recipe_restock",
     "search_forever_recipes",
     "find_snapshot_item",
 ];
@@ -1367,6 +1368,16 @@ struct RecipeReview {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct RecipeRestock {
+    snapshot_id: String,
+    /// Exact bulk recipe ID; omit for the saved selected recipe.
+    recipe_id: Option<std::num::NonZeroU32>,
+    /// Desired final base-item quantity in observed carried bags, not new output.
+    target_bag_quantity: std::num::NonZeroU32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct RecipeBatchEntry {
     snapshot_id: String,
     /// Select an exact bulk-observed recipe; omit for this capture's selected schematic.
@@ -2271,6 +2282,25 @@ impl Operator {
             )]),
         }
     }
+    #[tool(
+        description = "Plan crafts to reach a target base-item quantity in saved Forever bags. Uses one owner-local snapshot and a selected or exact bulk recipe with fixed inputs and known output yield. Existing bank/mail stock is not credited to the bag target. At most 1000 crafts; no crafting, acquisition, live eligibility or variant equivalence guarantee.",
+        annotations(read_only_hint = true, destructive_hint = false, open_world_hint = false)
+    )]
+    fn plan_forever_recipe_restock(&self, Parameters(args): Parameters<RecipeRestock>) -> CallToolResult {
+        let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+            azeroth_operator::recipe_restock::plan(&snapshot, args.recipe_id, args.target_bag_quantity)
+        });
+        match result {
+            Ok(mut plan) => {
+                plan["snapshot_id"] = serde_json::json!(args.snapshot_id);
+                CallToolResult::success(vec![ContentBlock::text(plan.to_string())])
+            }
+            Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                "Recipe restock needs a valid owner-local Forever snapshot, observed bags, fixed recipe inputs and a known output item/yield. A positive shortfall needs positive minimum net output and at most 1000 crafts.",
+            )]),
+        }
+    }
+
     #[tool(
         description = "Compare saved Forever recipes with observed bags/banks for 1 to 1000 crafts each. An exact standalone bulk recipe can suggest a bounded reagent chain with explicit producer choices and optional external-material references from the local catalogue or owner-captured provider data. Modeled stock is shared; unsupported evidence still blocks. Offline drafts only, no crafting actions.",
         annotations(

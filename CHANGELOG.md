@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan recipe restock toward a saved bag quantity, with conservative net yield, exact local recipe review and no craft actions.
+
 - Retain optional encounter-specific gear leaders across completed saved results, independently of the aggregate shortlist and without extra simulations.
 
 - Add an opt-in saved-input report for 24 Forever workflows, with missing/unavailable inputs and explicit unchecked conditions.

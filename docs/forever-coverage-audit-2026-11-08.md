@@ -957,3 +957,12 @@ complete in every supplied encounter enter this view, after the same improvement
 floor. Partial scope stays explicit; saved loadouts retain historical source
 locations. No extra simulations, equip actions or statistical/BiS proof is added.
 See ADR-086 and encounter-gear-leaders-verification-2026-11-10.md. Offline only.
+
+## Saved recipe restock (10 November)
+
+A read-only tool now plans an explicit base-item bag target from the same saved
+recipe/inventory capture, using conservative net yield and existing material
+review. Missing bags remain unknown; bank/mail output does not count toward
+current carried stock. Zero-craft, unsupported and bounded-overflow cases stay
+explicit. No native craft, variant equivalence, current eligibility or full
+ownership claim is added. See ADR-087 and its dated evidence. Offline only.

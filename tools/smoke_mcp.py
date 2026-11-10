@@ -16,7 +16,7 @@ async def smoke(command):
             await session.initialize()
             tools = await session.list_tools()
             expected = {"capabilities", "list_snapshots", "inspect_snapshot", "resolve_character",
-                        "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "search_forever_recipes", "find_snapshot_item"}
+                        "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "search_forever_recipes", "find_snapshot_item", "plan_forever_recipe_restock"}
             if os.environ.get("AZEROTH_FOREVER_CATALOGUE"):
                 expected.update({"lookup_forever_catalogue", "review_forever_owned_gear"})
             assert {tool.name for tool in tools.tools} == expected
@@ -44,6 +44,7 @@ async def smoke(command):
                 "character_summary": {"snapshot_id": "0" * 64},
                 "captured_talent_loadout": {"snapshot_id": "0" * 64},
                 "review_forever_recipe": {"snapshot_id": "0" * 64, "crafts": 1},
+                "plan_forever_recipe_restock": {"snapshot_id": "0" * 64, "target_bag_quantity": 1},
                 "search_forever_recipes": {"snapshot_id": "0" * 64},
                 "find_snapshot_item": {"snapshot_id": "0" * 64, "item_id": 1},
                 "compare_snapshots": {"before_id": "0" * 64, "after_id": "0" * 64},

@@ -4,7 +4,7 @@ import json
 import re
 
 TOOLS = ["capabilities", "inspect_snapshot", "list_snapshots", "resolve_character",
-         "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "search_forever_recipes", "find_snapshot_item"]
+         "compare_snapshots", "character_summary", "review_equipment_selection", "captured_talent_loadout", "review_forever_recipe", "search_forever_recipes", "find_snapshot_item", "plan_forever_recipe_restock"]
 STORE = "/var/lib/azeroth-operator/rodrigo/snapshots"
 
 
