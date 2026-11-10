@@ -6228,6 +6228,22 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Valu
     Some((json!(changes), coverage))
 }
 
+fn trainer_requirements(row: &Value) -> Value {
+    let abilities = row["ability_requirements"].as_object().map(|rows| {
+        let mut observed: Vec<_> = rows
+            .values()
+            .filter_map(|row| Some((row["name"].as_str()?, row["met"].as_bool()?)))
+            .collect();
+        observed.sort_unstable();
+        observed
+            .into_iter()
+            .map(|(name, met)| json!({"name":name,"met":met}))
+            .collect::<Vec<_>>()
+    });
+    json!({"required_level":row["required_level"],"skill_requirement":row["skill_requirement"],
+        "ability_requirements":abilities})
+}
+
 fn compare_named_trainer_lesson(
     before: Option<&Value>,
     after: Option<&Value>,
@@ -6259,24 +6275,32 @@ fn compare_named_trainer_lesson(
         .chain(&current)
         .flat_map(|rows| rows.keys().copied())
         .collect();
-    let observation = |rows: Option<&BTreeMap<Option<&str>, Option<&Value>>>,
-                       rank,
-                       panel: Option<&Value>| {
-        match rows.map(|rows| rows.get(&rank)) {
-            None => json!({"status":"not_captured"}),
-            Some(None) => json!({"status":"not_observed"}),
-            Some(Some(None)) => json!({"status":"ambiguous"}),
-            Some(Some(Some(row))) => {
-                let pet = panel.is_some_and(|panel| panel["kind"] == "pet");
-                let (field, unit) = if pet {
-                    ("price_training_points", "training_points")
-                } else {
-                    ("price_copper", "copper")
-                };
-                json!({"status":"observed","lesson_status":row["status"],"price":row[field],"price_unit":unit})
+    let observation =
+        |rows: Option<&BTreeMap<Option<&str>, Option<&Value>>>, rank, panel: Option<&Value>| {
+            match rows.map(|rows| rows.get(&rank)) {
+                None => json!({"status":"not_captured"}),
+                Some(None) => json!({"status":"not_observed"}),
+                Some(Some(None)) => json!({"status":"ambiguous"}),
+                Some(Some(Some(row))) => {
+                    let pet = panel.is_some_and(|panel| panel["kind"] == "pet");
+                    let (field, unit) = if pet {
+                        ("price_training_points", "training_points")
+                    } else {
+                        ("price_copper", "copper")
+                    };
+                    let mut observation = json!({"status":"observed","lesson_status":row["status"],
+                    "price":row[field],"price_unit":unit});
+                    let requirements = trainer_requirements(row);
+                    if requirements
+                        .as_object()
+                        .is_some_and(|fields| fields.values().any(|value| !value.is_null()))
+                    {
+                        observation["requirements"] = requirements;
+                    }
+                    observation
+                }
             }
-        }
-    };
+        };
     let before_kind = before.and_then(|panel| panel["kind"].as_str());
     let after_kind = after.and_then(|panel| panel["kind"].as_str());
     let same_kind = before_kind.zip(after_kind).map(|(a, b)| a == b);
@@ -6291,7 +6315,21 @@ fn compare_named_trainer_lesson(
                 .zip(b["price"].as_i64())
                 .filter(|_| same_kind == Some(true))
                 .map(|(a, b)| b - a);
-            json!({"rank_label":rank,"before":a,"after":b,"price_delta":delta})
+            let mut lesson = json!({"rank_label":rank,"before":a,"after":b,"price_delta":delta});
+            let previous = &lesson["before"]["requirements"];
+            let current = &lesson["after"]["requirements"];
+            if !previous.is_null() || !current.is_null() {
+                let changed = |field: &str| {
+                    let (a, b) = (&previous[field], &current[field]);
+                    (same_kind == Some(true) && !a.is_null() && !b.is_null()).then(|| a != b)
+                };
+                lesson["requirement_changes"] = json!({
+                    "required_level":changed("required_level"),
+                    "skill_requirement":changed("skill_requirement"),
+                    "ability_requirements":changed("ability_requirements"),
+                });
+            }
+            lesson
         })
         .collect();
     json!({"before_kind":before_kind,"after_kind":after_kind,"same_kind":same_kind,
@@ -6339,21 +6377,6 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
     let mut status_changes = Vec::new();
     let mut price_changes = Vec::new();
     let mut requirement_changes = Vec::new();
-    let requirements = |row: &Value| {
-        let abilities = row["ability_requirements"].as_object().map(|rows| {
-            let mut observed: Vec<_> = rows
-                .values()
-                .filter_map(|row| Some((row["name"].as_str()?, row["met"].as_bool()?)))
-                .collect();
-            observed.sort_unstable();
-            observed
-                .into_iter()
-                .map(|(name, met)| json!({"name":name,"met":met}))
-                .collect::<Vec<_>>()
-        });
-        json!({"required_level":row["required_level"],"skill_requirement":row["skill_requirement"],
-            "ability_requirements":abilities})
-    };
     for ((name, rank), old) in previous {
         let Some((old, new)) = old.zip(current.get(&(name, rank)).copied().flatten()) else {
             continue;
@@ -6369,7 +6392,8 @@ fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {
                 "after_price":new_price,"price_delta":old_price.zip(new_price).map(|(a,b)| b-a)}),
             );
         }
-        let (before_requirements, after_requirements) = (requirements(old), requirements(new));
+        let (before_requirements, after_requirements) =
+            (trainer_requirements(old), trainer_requirements(new));
         if before_requirements != after_requirements {
             requirement_changes.push(json!({"name":name,"rank_label":rank,
                 "before":before_requirements,"after":after_requirements}));

@@ -3264,6 +3264,11 @@ Duplicate ranks are ambiguous. A price delta needs unique rows with
 recorded prices from the same trainer kind. Copper and training points
 are reported separately. Current price and trainer identity remain unknown.
 
+Named lesson comparisons also show recorded level, skill and ability
+requirements where available. Each change flag requires that field on
+both sides and the same trainer kind. Reordering ability rows does not
+count as a change.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

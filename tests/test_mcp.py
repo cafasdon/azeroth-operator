@@ -1567,6 +1567,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         }])
                         self.assertEqual((await compare_lesson("Fixture"))["matched_rank_count"],0)
                         self.assertIsNone((await compare_lesson("Expensive Lesson"))["lessons"][0]["price_delta"])
+                        blocked=(await compare_lesson("Blocked Lesson"))["lessons"][0]
+                        self.assertEqual(blocked["requirement_changes"],{
+                            "required_level":None,"skill_requirement":True,"ability_requirements":False})
+                        self.assertFalse(blocked["before"]["requirements"]["skill_requirement"]["met"])
+                        self.assertTrue(blocked["after"]["requirements"]["skill_requirement"]["met"])
                         self.assertEqual((await compare_lesson("Other Lesson"))["lessons"][0]["after"],
                             {"status":"not_observed"})
                         for invalid in (" ", "é"*129, True):

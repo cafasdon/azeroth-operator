@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare recorded prerequisites for named Forever trainer lessons.
+
 - Compare saved Forever trainer prices and availability for an exact lesson name.
 
 - Compare recorded item and currency costs in saved merchant bundles.
