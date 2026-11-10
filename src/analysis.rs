@@ -10537,12 +10537,11 @@ pub fn profession_trainer_quote_budget(
         .collect();
     let subtotal = priced.iter().map(|(price, _)| price).sum();
     let unknown_count = lessons.len() - priced.len();
-    let cheapest = wallet
-        .and_then(|wallet| wallet.checked_sub(reserve))
-        .map(|spendable| {
-            let (slots, cost) = cheapest_affordable_rows(priced, spendable);
-            json!({"lesson_slots":slots,"lesson_count":slots.len(),"quote_subtotal_copper":cost})
-        });
+    let spendable = wallet.and_then(|wallet| wallet.checked_sub(reserve));
+    let cheapest = spendable.map(|spendable| {
+        let (slots, cost) = cheapest_affordable_rows(priced, spendable);
+        json!({"lesson_slots":slots,"lesson_count":slots.len(),"quote_subtotal_copper":cost})
+    });
     let known_shortfall =
         wallet.and_then(|wallet| reserved_balance_shortfall(subtotal, wallet, reserve));
     let affordable = known_shortfall.and_then(|shortfall| {
@@ -10565,7 +10564,40 @@ pub fn profession_trainer_quote_budget(
         "all_quotes_and_reserve_shortfall_copper":(unknown_count == 0).then_some(known_shortfall).flatten(),
         "all_quotes_fit_wallet_with_reserve":affordable,
         "cheapest_affordable_known_quotes":cheapest,
+        "rank_order_quote_budget":spendable.map(|balance| profession_rank_order_quote_budget(lessons, balance)),
         "training_eligibility_verified":false
+    })
+}
+
+fn profession_rank_order_quote_budget(lessons: &[Value], mut remaining: u64) -> Value {
+    let mut covered = 0;
+    let mut first_uncovered = None;
+    for tier in lessons.chunk_by(|left, right| left["required_rank"] == right["required_rank"]) {
+        let subtotal: u64 = tier
+            .iter()
+            .filter_map(|lesson| lesson["price_copper"].as_u64())
+            .sum();
+        let unknown = tier
+            .iter()
+            .filter(|lesson| lesson["price_copper"].is_null())
+            .count();
+        if subtotal > remaining || unknown > 0 {
+            first_uncovered = Some(json!({
+                "required_rank":tier[0]["required_rank"],
+                "lesson_count":tier.len(),
+                "unknown_price_count":unknown,
+                "known_quote_subtotal_copper":subtotal,
+                "known_shortfall_copper":subtotal.saturating_sub(remaining)
+            }));
+            break;
+        }
+        remaining -= subtotal;
+        covered += tier.len();
+    }
+    json!({
+        "covered_prefix_lessons":covered,
+        "remaining_spendable_copper":remaining,
+        "first_uncovered_rank":first_uncovered
     })
 }
 

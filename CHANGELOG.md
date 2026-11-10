@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how far saved trainer quotes fit the wallet in profession rank order.
+
 - Show the cheapest subset of projected profession trainer quotes within the saved wallet budget.
 
 - Report a combined saved profession trainer quote budget, including missing prices and any wallet reserve.

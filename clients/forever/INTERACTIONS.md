@@ -12,6 +12,10 @@ to saved prices and does not establish training eligibility.
 The budget also shows the largest count of individually quoted rows that
 fits after the reserve, taking the cheapest prices first and breaking ties
 by saved slot number. Missing prices are excluded from this shortlist.
+`rank_order_quote_budget` checks the quoted rows in ascending required
+rank and groups lessons at the same rank. It stops at the first group
+with an unknown quote or a known shortfall. The projection requires a
+saved wallet that covers the reserve and does not establish a training path.
 
 Use `profession_target_max_remaining` on `list_snapshots` with a
 `profession_skill_line` and `profession_target_rank` to find saved

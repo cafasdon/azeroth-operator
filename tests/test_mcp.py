@@ -1035,6 +1035,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 extra.pop("price_copper")
                             else:
                                 extra["price_copper"] = extra_price
+                            if extra_price == 4:
+                                extra["skill_requirement"] = dict(extra["skill_requirement"], required_rank=79)
                             second_slot = len(entries) + 1
                             entries[str(second_slot)] = extra
                             group["sections"]["wallet"]["copper"] = wallet
@@ -1045,6 +1047,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             })
                             self.assertFalse(result.isError, result)
                             budget = json.loads(result.content[0].text)["profession_target_trainer_quote_budget"]
+                            covered = 2 if affordable else 1 if extra_price == 4 else 0
+                            rank_budget = {
+                                "covered_prefix_lessons":covered,
+                                "remaining_spendable_copper":wallet - 1 - (22 if covered == 2 else 4 if covered == 1 else 0),
+                                "first_uncovered_rank":None if covered == 2 else {
+                                    "required_rank":80, "lesson_count":1 if covered == 1 else 2,
+                                    "unknown_price_count":int(extra_price is None),
+                                    "known_quote_subtotal_copper":11 + (11 if extra_price == 11 else 0),
+                                    "known_shortfall_copper":known_shortfall,
+                                },
+                            }
                             self.assertEqual(budget, {
                                 "scope":"projected_trainer_rows", "lesson_count":2,
                                 "unknown_price_count":int(extra_price is None),
@@ -1057,6 +1070,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "lesson_slots":[4 if name == "first" else second_slot for name in picked],
                                     "lesson_count":len(picked), "quote_subtotal_copper":picked_cost,
                                 },
+                                "rank_order_quote_budget":rank_budget,
                                 "training_eligibility_verified":False,
                             })
                             (Path(folder) / f"{group_key}.json").unlink()
