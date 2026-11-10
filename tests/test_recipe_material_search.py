@@ -117,6 +117,12 @@ class RecipeMaterialSearchTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(sole['material_support_insufficient_observed_count'],4)
                     self.assertEqual(sole['records'][0]['observed_reagent_shortfalls'],
                                      {'11':{'required':4,'observed':1,'missing':3}})
+                    for maximum, expected in [(0, []), (2, []), (3, [2]), (4294967296, [2])]:
+                        bounded = await search({**only_item,'maximum_sole_shortfall_quantity':maximum})
+                        self.assertEqual(ids(bounded),expected)
+                        self.assertEqual(bounded['material_support_insufficient_observed_count'],4)
+                    await search({**short_filter,'maximum_sole_shortfall_quantity':3},error=True)
+                    await search({**only_item,'maximum_sole_shortfall_quantity':-1},error=True)
                     self.assertEqual(ids(await search({**only_item,'minimum_crafts':3})),[])
                     self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1)),[1])
                     self.assertEqual(ids(await search({**only_item,'sole_shortfall_item_id':10},limit=1,offset=1)),[8])

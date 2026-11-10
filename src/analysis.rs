@@ -177,6 +177,9 @@ pub struct RecipeMaterialFilter {
     /// Match only recipes whose sole observed reagent shortfall is this item. Requires insufficient_only.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sole_shortfall_item_id: Option<std::num::NonZeroU32>,
+    /// Inclusive missing quantity limit for the selected sole shortfall item.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum_sole_shortfall_quantity: Option<u64>,
 }
 
 #[derive(Clone, Copy, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
@@ -523,6 +526,11 @@ pub fn search_recipe_materials_ordered(
         "A sole reagent shortfall requires insufficient_only"
     );
     ensure!(
+        material_filter.is_none_or(|filter| filter.maximum_sole_shortfall_quantity.is_none()
+            || filter.sole_shortfall_item_id.is_some()),
+        "A sole shortfall quantity limit requires a sole shortfall item ID"
+    );
+    ensure!(
         order != RecipeSearchOrder::ReportedBaseOutputPerReagentDesc
             || (output_item_id.is_some() && reagent_item_id.is_some()),
         "Reagent efficiency ordering requires output and reagent item IDs"
@@ -639,7 +647,14 @@ pub fn search_recipe_materials_ordered(
                         }
                         if let Some(item) = filter.sole_shortfall_item_id {
                             let shortfalls = stock.shortfalls(row, filter.minimum_crafts.get())?;
-                            if shortfalls.len() != 1 || !shortfalls.contains_key(&item.get()) {
+                            if shortfalls.len() != 1 {
+                                return None;
+                            }
+                            let missing = shortfalls.get(&item.get())?["missing"].as_u64()?;
+                            if filter
+                                .maximum_sole_shortfall_quantity
+                                .is_some_and(|maximum| missing > maximum)
+                            {
                                 return None;
                             }
                         }

@@ -10,6 +10,9 @@ Add `material_filter.sole_shortfall_item_id` with `insufficient_only: true`
 to find recipes where that exact item is the only observed reagent gap
 for the requested batch. The count of insufficient recipes still includes
 all observed gaps before applying the sole-item filter.
+Set `material_filter.maximum_sole_shortfall_quantity` with that item ID
+to keep only gaps at or below a planned pickup quantity. Each recipe is
+evaluated independently against the saved inventory.
 
 With `profession_target_trainer_lessons` on a saved profession inspection,
 set `profession_target_trainer_reserve_copper` to check each projected

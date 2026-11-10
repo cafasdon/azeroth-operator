@@ -1,5 +1,7 @@
 # Changelog
 
+- Limit saved sole-reagent recipe shortfalls to a planned pickup quantity.
+
 - Find saved recipes blocked by a specific sole reagent shortfall.
 
 - Find saved recipes with observed reagent shortfalls for a requested batch size.
