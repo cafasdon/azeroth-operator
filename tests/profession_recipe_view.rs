@@ -17,7 +17,12 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
         ProfessionsFrame={CraftingPage={IsVisible=function() return mode~='hidden' end,SchematicForm={}}}
         Professions={InLocalCraftingMode=function() return mode~='nonlocal' end,
             IsViewingExternalCraftingList=function() return mode=='linked' or mode=='guild' end,
-            GetProfessionInfo=function() return {professionID=mode=='profession_changed' and reads>1 and 165 or 164} end}
+            GetProfessionInfo=function()
+                local rank=mode=='rank_secret' and 'PRIVATE-SOURCE' or (mode=='rank_changed' and reads>1 and 101 or 100)
+                if mode=='rank_missing' then rank=nil end
+                return {professionID=mode=='profession_changed' and reads>1 and 165 or 164,
+                    skillLevel=rank,maxSkillLevel=mode=='rank_invalid' and 99 or 150}
+            end}
         C_TradeSkillUI={IsNPCCrafting=function() return mode=='npc' end,
             IsDataSourceChanging=function()
                 if mode=='secret_source' then return 'PRIVATE-SOURCE' end
@@ -63,6 +68,22 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
         saved.sections["profession_recipe_view"]["profession_id"],
         164
     );
+    assert_eq!(
+        saved.sections["profession_recipe_view"]["rank_observation"],
+        serde_json::json!({"rank":100,"max_rank":150})
+    );
+    for mode in [
+        "rank_secret",
+        "rank_missing",
+        "rank_invalid",
+        "rank_changed",
+    ] {
+        lua.globals().set("mode", mode)?;
+        let observed = capture()?;
+        let view = &observed.sections["profession_recipe_view"];
+        assert_eq!(view["profession_id"], 164, "{mode}");
+        assert!(view.get("rank_observation").is_none(), "{mode}");
+    }
     assert_eq!(
         saved.sections["profession_recipe_view"]["entries"]["9"],
         serde_json::json!({})

@@ -1,5 +1,13 @@
 # Forever interaction map
 
+The saved recipe view and its skill-up candidate summary can include
+`rank_observation` for the same open profession. The addon retains readable
+rank and cap values when they agree across the capture. Older captures
+omit the observation. Update strict readers before rolling out the addon.
+These are the reported base values, separate from skill modifiers and
+account restrictions.
+[Forever profession rank bar](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ProfessionsTemplates/Blizzard_ProfessionsRankBar.lua)
+
 Use `order: "reported_skill_ups_per_reagent_desc"` with a
 `reagent_item_id` on `search_forever_recipes`. It orders the saved
 skill-up count divided by the recipe's required units of that reagent.

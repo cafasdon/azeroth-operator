@@ -843,8 +843,19 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                     ("coverage", "text", true),
                     ("profession_id", "positive", true),
                     ("entries", "map", true),
+                    ("rank_observation", "map", false),
                 ],
             )?;
+            if let Some(rank) = value.get("rank_observation") {
+                object(
+                    rank,
+                    &[("rank", "uint", true), ("max_rank", "positive", true)],
+                )?;
+                ensure!(
+                    rank["rank"].as_u64().unwrap() <= rank["max_rank"].as_u64().unwrap(),
+                    "Invalid profession recipe view rank"
+                );
+            }
             ensure!(
                 value["coverage"] == "filtered_local_recipe_list",
                 "Invalid profession recipe coverage"

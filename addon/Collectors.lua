@@ -2064,7 +2064,15 @@ AO.collectors.profession_recipe_view = function()
             and readable(api.IsNPCCrafting())==false, "Nonlocal recipe list")
         local info=readable(Professions.GetProfessionInfo())
         assert(type(info)=="table", "Profession unavailable")
-        return positive(info.professionID)
+        local profession=positive(info.professionID)
+        local rank,maximum=info.skillLevel,info.maxSkillLevel
+        if not issecretvalue or (not issecretvalue(rank) and not issecretvalue(maximum)) then
+            if type(rank)=="number" and type(maximum)=="number" and rank%1==0 and maximum%1==0
+                and rank>=0 and rank<=maximum and maximum>0 and maximum<=4294967295 then
+                return profession,rank,maximum
+            end
+        end
+        return profession
     end
     local function ids()
         local values=readable(api.GetFilteredRecipeIDs())
@@ -2079,7 +2087,7 @@ AO.collectors.profession_recipe_view = function()
         assert(count==#values, "Incomplete recipe list")
         return result
     end
-    local profession=context()
+    local profession,rank,maximum=context()
     local list=ids()
     local rows={}
     for _,id in ipairs(list) do
@@ -2119,9 +2127,14 @@ AO.collectors.profession_recipe_view = function()
         rows[tostring(id)]=row
     end
     local final=ids()
-    assert(context()==profession and #final==#list, "Recipe list context changed")
+    local finalProfession,finalRank,finalMaximum=context()
+    assert(finalProfession==profession and #final==#list, "Recipe list context changed")
     for index,id in ipairs(list) do assert(final[index]==id, "Recipe list changed") end
-    return {coverage="filtered_local_recipe_list",profession_id=profession,entries=rows}
+    local result={coverage="filtered_local_recipe_list",profession_id=profession,entries=rows}
+    if rank~=nil and rank==finalRank and maximum==finalMaximum then
+        result.rank_observation={rank=rank,max_rank=maximum}
+    end
+    return result
 end
 AO.collectors.tracked_recipes = function()
     local api=C_TradeSkillUI

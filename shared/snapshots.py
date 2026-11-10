@@ -419,11 +419,18 @@ def validate_snapshot(value):
     if "profession_recipe_view" in sections:
         view = sections["profession_recipe_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)
-                or set(view) != {"coverage", "profession_id", "entries"}
+                or set(view) - {"coverage", "profession_id", "entries", "rank_observation"}
+                or not {"coverage", "profession_id", "entries"} <= set(view)
                 or view["coverage"] != "filtered_local_recipe_list"
                 or type(view["profession_id"]) is not int or not 1 <= view["profession_id"] <= 4_294_967_295
                 or not isinstance(view["entries"], dict) or len(view["entries"]) > 4096):
             raise ValueError("Invalid profession recipe view")
+        if "rank_observation" in view:
+            rank = view["rank_observation"]
+            if (not isinstance(rank, dict) or set(rank) != {"rank", "max_rank"}
+                    or type(rank["rank"]) is not int or type(rank["max_rank"]) is not int
+                    or not 0 <= rank["rank"] <= rank["max_rank"] <= 4_294_967_295 or rank["max_rank"] == 0):
+                raise ValueError("Invalid profession recipe view rank")
         for key, row in view["entries"].items():
             if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()
                     or str(int(key)) != key or not 1 <= int(key) <= 4_294_967_295

@@ -1,5 +1,7 @@
 # Changelog
 
+- Capture the visible profession recipe view's reported rank and cap.
+
 - Order saved Forever recipes by reported skill-up count per selected reagent unit.
 
 - Filter saved recipe skill-up ranges and match difficulty in character discovery.

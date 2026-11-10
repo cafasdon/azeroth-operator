@@ -11956,12 +11956,16 @@ pub fn summary(s: &Snapshot) -> Value {
         let rows=view["entries"].as_object().unwrap();
         let mut candidates:Vec<_>=rows.iter().filter(|(_,row)|row["learned"]==true && row["can_skill_up"]==true).collect();
         candidates.sort_by_key(|(id,_)|id.parse::<u32>().unwrap());
-        json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
+        let mut report = json!({"coverage":view["coverage"],"profession_id":view["profession_id"],
             "candidate_count":candidates.len(),"truncated":candidates.len()>50,
             "learned_rows_with_unknown_skill_up_flag":rows.values().filter(|row|row["learned"]==true && row["can_skill_up"].as_bool().is_none()).count(),
             "eligibility_verified":false,
             "recipes":candidates.into_iter().take(50).map(|(id,row)|json!({"recipe_id":id.parse::<u32>().unwrap(),
-                "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()})
+                "relative_difficulty":row["relative_difficulty"],"skill_ups_reported":row["skill_ups_reported"]})).collect::<Vec<_>>()});
+        if let Some(rank) = view.get("rank_observation") {
+            report["rank_observation"] = rank.clone();
+        }
+        report
     }).unwrap_or(Value::Null);
     summary["merchant_buyback_observations"] = s.sections.get("merchant_buyback").map(|section| {
         let rows=section["entries"].as_object().unwrap();

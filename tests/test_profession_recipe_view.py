@@ -22,6 +22,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             value=fixture()
             value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             view={'coverage':'filtered_local_recipe_list','profession_id':164,
+                  'rank_observation':{'rank':100,'max_rank':150},
                   'entries':{'7':{'name':'Recipe','learned':True},'8':{'learned':False},'9':{}}}
             value['sections']['profession_recipe_view']=view
             key=store.ingest(value)
@@ -31,9 +32,10 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             empty_key=store.ingest(empty)
             missing=copy.deepcopy(value)
             missing['sections'].pop('profession_recipe_view')
+            missing['captured_at']='2025-01-02T00:00:00Z'
             missing_key=store.ingest(missing)
             later=copy.deepcopy(missing)
-            later['captured_at']='2025-01-02T00:00:00Z'
+            later['captured_at']='2025-01-03T00:00:00Z'
             store.ingest(later)
             nullable=copy.deepcopy(value)
             nullable['character']['name']='Null'
@@ -44,6 +46,9 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                 lambda x:x['client'].update(family='retail'),
                 lambda x:x['sections']['profession_recipe_view'].update(coverage='all_known_recipes'),
                 lambda x:x['sections']['profession_recipe_view'].update(profession_id=True),
+                lambda x:x['sections']['profession_recipe_view'].update(rank_observation=None),
+                lambda x:x['sections']['profession_recipe_view'].update(rank_observation={'rank':151,'max_rank':150}),
+                lambda x:x['sections']['profession_recipe_view'].update(rank_observation={'rank':0,'max_rank':0}),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(crafter='private'),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(learned=1),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(name='é'*129),
@@ -61,6 +66,10 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    summary=await session.call_tool('character_summary',{'snapshot_id':key})
+                    self.assertFalse(summary.isError)
+                    self.assertEqual(json.loads(summary.content[0].text)['profession_skill_up_candidates']['rank_observation'],
+                                     {'rank':100,'max_rank':150})
                     async def search(**arguments):
                         response=await session.call_tool('list_snapshots',{'family':'forever',**arguments})
                         self.assertFalse(response.isError)
