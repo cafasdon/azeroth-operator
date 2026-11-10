@@ -92,6 +92,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     result = await review(partial)
                     set_review = await review(set_capture_id, set_id=221, storage='account_bank', offset=99)
                     self.assertEqual(set_review['items'], [])
+                    named_owned = await review(set_capture_id, set_name='  THERO-shan ', storage='bags', limit=1)
+                    self.assertEqual(named_owned['filtered_item_locations'], 3)
+                    self.assertTrue(named_owned['has_more'])
+                    self.assertEqual(named_owned['items'][0]['observed']['item_id'], 7950)
+                    self.assertEqual((await review(set_capture_id, set_name='thero-shan', set_id=162))['items'], [])
+                    invalid_name = await session.call_tool('review_forever_owned_gear',
+                        {'snapshot_id': set_capture_id, 'set_name': ' '})
+                    self.assertTrue(invalid_name.isError)
                     self.assertEqual(set_review['set_observation']['observed_distinct_pieces'], 2)
                     self.assertEqual(set_review['set_observation']['observed_distinct_pieces_by_storage'],
                                      {'equipment': 1, 'bags': 2, 'character_bank': 0, 'account_bank': None})

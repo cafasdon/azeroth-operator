@@ -1,5 +1,7 @@
 # Changelog
 
+- Filter saved Forever owned gear by catalogue set name across equipment, bags and banks.
+
 - Find local Forever catalogue gear pieces by their set name.
 
 - Revalidate saved gear-set projections against the original snapshot before preparing simulator requests.

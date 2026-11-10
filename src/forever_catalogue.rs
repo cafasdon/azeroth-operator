@@ -727,14 +727,7 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     if let Some(key) = key {
         ensure!(!key.is_empty() && key.len() <= 160, "Invalid catalogue key");
     }
-    let set_name = query.set_name.as_deref().map(str::trim);
-    if let Some(name) = set_name {
-        ensure!(
-            !name.is_empty() && name.len() <= 160,
-            "Invalid catalogue set name"
-        );
-    }
-    let set_name = set_name.map(str::to_lowercase);
+    let set_name = normalize_set_name(query.set_name.as_deref())?;
     let consumable_group = query.consumable_group_key.as_deref().map(str::trim);
     if let Some(group) = consumable_group {
         ensure!(
@@ -1083,12 +1076,9 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
             let matches_set = query
                 .set_id
                 .is_none_or(|id| recorded_set_id(row) == Some(u64::from(id.get())))
-                && set_name.as_deref().is_none_or(|name| {
-                    recorded_set_id(row).is_some()
-                        && row["setName"]
-                            .as_str()
-                            .is_some_and(|recorded| recorded.to_lowercase().contains(name))
-                })
+                && set_name
+                    .as_deref()
+                    .is_none_or(|name| matches_set_name(row, name))
                 && protected_set.is_none_or(|id| recorded_set_id(row) == Some(id));
             let matches_drop =
                 !drop_filter
@@ -1458,6 +1448,25 @@ fn regular_stat_delta(
 
 fn recorded_set_id(item: &Value) -> Option<u64> {
     item["setId"].as_u64().filter(|id| *id > 0)
+}
+
+fn normalize_set_name(name: Option<&str>) -> Result<Option<String>> {
+    name.map(|name| {
+        let name = name.trim();
+        ensure!(
+            !name.is_empty() && name.len() <= 160,
+            "Invalid catalogue set name"
+        );
+        Ok(name.to_lowercase())
+    })
+    .transpose()
+}
+
+fn matches_set_name(item: &Value, name: &str) -> bool {
+    recorded_set_id(item).is_some()
+        && item["setName"]
+            .as_str()
+            .is_some_and(|recorded| recorded.to_lowercase().contains(name))
 }
 
 fn equipped_slot(catalogue: &[Value], snapshot: &Snapshot, slot: SimulatorSlot) -> EquippedSlot {
@@ -3448,6 +3457,7 @@ pub fn review_owned(
     limit: usize,
     item_type: Option<GearType>,
     set_id: Option<std::num::NonZeroU32>,
+    set_name: Option<&str>,
     observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
     required_levels: (Option<u32>, Option<u32>),
@@ -3474,6 +3484,7 @@ pub fn review_owned(
         .map(|id| u64::from(id.get()))
         .collect();
     let matches_required_level = required_level_check(required_levels.0, required_levels.1)?;
+    let set_name = normalize_set_name(set_name)?;
     ensure!(
         container_filter
             .is_none_or(|id| id <= 64 && !matches!(storage_filter, Some(GearStorage::Equipment))),
@@ -3562,6 +3573,9 @@ pub fn review_owned(
             });
             if wrong_type
                 || wrong_set
+                || set_name
+                    .as_deref()
+                    .is_some_and(|name| !reference.is_some_and(|item| matches_set_name(item, name)))
                 || wrong_item
                 || wrong_slot
                 || catalogue_matched.is_some_and(|expected| reference.is_some() != expected)

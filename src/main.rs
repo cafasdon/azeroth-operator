@@ -1128,6 +1128,8 @@ struct OwnedGearReview {
     item_type: Option<azeroth_operator::forever_catalogue::GearType>,
     /// Filter by the pinned catalogue's setId before paging.
     set_id: Option<std::num::NonZeroU32>,
+    /// Filter by a case-insensitive substring of the recorded set name before paging.
+    set_name: Option<String>,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
     /// Find observed copies of up to sixteen distinct base item IDs. Exclusive with item_id.
@@ -1726,6 +1728,7 @@ impl Operator {
                 args.limit.unwrap_or(20),
                 args.item_type,
                 args.set_id,
+                args.set_name.as_deref(),
                 item_ids,
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),

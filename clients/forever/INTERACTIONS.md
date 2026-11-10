@@ -3,6 +3,8 @@
 Use `lookup_forever_catalogue` with `section: "items"` and `set_name`
 to find pieces by a case-insensitive set-name substring. Combine it with
 `set_id` or other item filters to narrow the same catalogue records.
+The same `set_name` filter works on `review_forever_owned_gear` before
+paging. The detailed set observation still uses an explicit `set_id`.
 
 In `review_forever_owned_gear`, a `set_id` review reports distinct
 catalogue-matched set pieces separately for equipment, bags, character
