@@ -261,6 +261,30 @@ class WeaponEnchantTests(unittest.IsolatedAsyncioTestCase):
                     invalid_deadline = await session.call_tool('list_snapshots', {'family':'forever',
                         'weapon_enchant':{'hand':'main_hand','projected_expiry_by':'invalid'}})
                     self.assertTrue(invalid_deadline.isError)
+                    revalidation={'snapshot_id':keys[0],'selections':[
+                        {'target_slot':16,'source':{'kind':'equipment','slot':16},'expected_item_id':123},
+                    ]}
+                    newer=deepcopy(value)
+                    newer['captured_at']='2025-01-04T00:00:00Z'
+                    newer['sections']['equipment_durability']['entries']['16']['current']=35
+                    newer['sections']['weapon_enchants']['hands']['main_hand']['entries']={}
+                    for item_id, status, expected in (
+                        (123,'same_item_id_link_unknown',{'durability':{'current':35,'maximum':40},
+                            'weapon_hand_enchants':{'hand':'main_hand','entries':{}}}),
+                        (124,'different_item_id',{'durability':{'current':35,'maximum':40},
+                            'weapon_hand_enchants':{'hand':'main_hand','entries':{}}}),
+                        (None,'not_observed',None),
+                    ):
+                        if item_id is None:
+                            newer['sections']['equipment'].pop('16')
+                        else:
+                            newer['sections']['equipment']['16']['item_id']=item_id
+                        report=await call('review_equipment_selection',**revalidation,
+                                          compare_source_locations_snapshot_id=store.ingest(newer))
+                        observation,=report['source_location_comparison']['selections']
+                        self.assertEqual(observation['status'],status)
+                        self.assertEqual(observation['captured_source_slot_conditions'],
+                                         {'before':main_hand,'after':expected})
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'weapon_enchants'})
                         self.assertTrue(response.isError);self.assertNotIn('PRIVATE',response.content[0].text)

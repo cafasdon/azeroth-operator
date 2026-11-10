@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved equipped source-slot condition when revalidating an equipment draft.
+
 - Show captured source and target slot conditions in Forever equipment selection reviews.
 
 - Show recorded weapon-hand enchant observations in Forever owned gear and item lookup.

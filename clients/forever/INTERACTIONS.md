@@ -15,6 +15,11 @@ verify enchant identity on an item outside that location or current duration.
 Equipment selection reviews show saved durability and enchant observations
 for the equipped source and occupied target slots when available. Both
 describe the capture before the proposed change.
+When revalidating a draft with `compare_source_locations_snapshot_id`,
+`captured_source_slot_conditions` reports the original and newer readings
+for an equipped source slot. A reading is attached only when the slot was
+occupied in that capture. The pair describes the slot, even if the item ID
+changed.
 
 Set `maximum_xp_to_next_level` on `list_snapshots` to match saved Forever
 characters within an inclusive XP budget. Matching rows report their saved

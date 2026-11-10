@@ -87,6 +87,16 @@ fn compare_item_links(before: Option<&Value>, after: Option<&Value>) -> Option<b
     (!before.trim().is_empty() && !after.trim().is_empty()).then_some(before == after)
 }
 
+fn captured_equipped_slot_condition(snapshot: &Snapshot, slot: &str) -> Option<Value> {
+    let durability = snapshot
+        .sections
+        .get("equipment_durability")
+        .and_then(|section| section["entries"].get(slot));
+    let enchants = crate::analysis::equipped_weapon_hand_enchants(snapshot, slot);
+    (durability.is_some() || enchants.is_some())
+        .then(|| json!({"durability":durability,"weapon_hand_enchants":enchants}))
+}
+
 pub fn compare_equipment_sources(
     original: &Snapshot,
     newer: &Snapshot,
@@ -110,6 +120,14 @@ pub fn compare_equipment_sources(
             let mut row = json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"observed_item_id":observed_id,
             "status":status});
+            if let ItemLocation::Equipment { slot } = selection.source {
+                let slot = slot.to_string();
+                let before = before.and_then(|_| captured_equipped_slot_condition(original, &slot));
+                let after = after.and_then(|_| captured_equipped_slot_condition(newer, &slot));
+                if before.is_some() || after.is_some() {
+                    row["captured_source_slot_conditions"] = json!({"before":before,"after":after});
+                }
+            }
             if matches!(
                 status,
                 "not_observed" | "different_item_id" | "same_item_id_different_link"
@@ -162,16 +180,6 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
         .get("equipment")
         .and_then(Value::as_object)
         .ok_or_else(|| anyhow::anyhow!("Equipment observation unavailable"))?;
-    let durability = snapshot
-        .sections
-        .get("equipment_durability")
-        .and_then(|section| section["entries"].as_object());
-    let slot_condition = |slot: &str| {
-        let condition = durability.and_then(|entries| entries.get(slot));
-        let enchants = crate::analysis::equipped_weapon_hand_enchants(snapshot, slot);
-        (condition.is_some() || enchants.is_some())
-            .then(|| json!({"durability":condition,"weapon_hand_enchants":enchants}))
-    };
     let mut targets = BTreeSet::new();
     let mut sources = BTreeSet::new();
     let mut moved_equipment = BTreeSet::new();
@@ -223,12 +231,12 @@ pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) 
             "native_slot_category":if snapshot.client.family==crate::Family::Forever {native_slot_category(item,selection.target_slot)} else {Value::Null},
             "status":if same_location {"already_selected"} else {"requested_change"}});
         if let ItemLocation::Equipment { slot } = selection.source
-            && let Some(condition) = slot_condition(&slot.to_string())
+            && let Some(condition) = captured_equipped_slot_condition(snapshot, &slot.to_string())
         {
             change["captured_source_slot_condition"] = condition;
         }
         if previous.is_some()
-            && let Some(condition) = slot_condition(&target_slot)
+            && let Some(condition) = captured_equipped_slot_condition(snapshot, &target_slot)
         {
             change["captured_target_slot_condition"] = condition;
         }
