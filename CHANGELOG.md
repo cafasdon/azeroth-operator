@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan the cheapest saved trainer lessons after a reserve without filtering out other lessons.
+
 - Preserve saved trainer prerequisite candidates when lesson filters hide them.
 
 - Show pet lesson level gaps against the separately observed active pet.

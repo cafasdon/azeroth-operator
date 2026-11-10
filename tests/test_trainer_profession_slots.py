@@ -106,6 +106,11 @@ class TrainerProfessionSlotTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(context['spendable_points_observations_agree'],agree)
                         self.assertFalse(context['same_pet_verified'])
                         self.assertEqual(projection['training_point_shortfall'],max(0,5-points))
+                        reserved=(await inspect(key,trainer_points_projection=True,trainer_balance_reserve=2))[
+                            'trainer_points_projection']['after_reserve']
+                        expected=({'lesson_slots':['1'],'lesson_count':1,'total_price':5} if points>=7 else
+                                  {'lesson_slots':[],'lesson_count':0,'total_price':0} if points>=2 else None)
+                        self.assertEqual(reserved['cheapest_affordable_known_lessons'],expected)
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'trainer_services',
                                                                           'trainer_requirements_review':True})

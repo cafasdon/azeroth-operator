@@ -2750,9 +2750,13 @@ impl Operator {
                 args.trainer_max_price_points
                     .map(|amount| ("price_training_points", u64::from(amount)))
             });
-        if args.trainer_balance_reserve.is_some() && !args.trainer_affordable_only {
+        if args.trainer_balance_reserve.is_some()
+            && !(args.trainer_affordable_only
+                || args.trainer_wallet_projection
+                || args.trainer_points_projection)
+        {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Trainer balance reserve requires the affordability filter",
+                "Trainer balance reserve requires the affordability filter or a budget projection",
             )]);
         }
         let filter_trainer = args.trainer_affordable_only
@@ -4263,6 +4267,11 @@ impl Operator {
                             trainer_spendable,
                         )
                     });
+                    let cheapest = azeroth_operator::analysis::trainer_cheapest_affordable(
+                        &value["data"],
+                        trainer_balance_field,
+                        trainer_spendable,
+                    );
                     let (projection_key, total_key) =
                         if trainer_balance_field == "price_training_points" {
                             ("trainer_points_projection", "total_price_points")
@@ -4283,7 +4292,8 @@ impl Operator {
                             "spendable_balance":trainer_spendable,
                             "retained_lessons_affordable":if reserve_covered == Some(false) { Some(false) }
                                 else { budget.map(|(cost, balance)| cost <= balance) },
-                            "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance))
+                            "retained_lessons_shortfall":budget.map(|(cost,balance)| cost.saturating_sub(balance)),
+                            "cheapest_affordable_known_lessons":cheapest
                         }));
                         if let Some(ordered_budget) = ordered_budget {
                             projection["after_reserve"]["ordered_lesson_budget"] = ordered_budget;

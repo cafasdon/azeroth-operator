@@ -8320,7 +8320,7 @@ fn trainer_lesson_affordability(trainer: &Value, price_field: &str, balance: Opt
         }).collect::<BTreeMap<_, _>>())
 }
 
-fn trainer_cheapest_affordable(
+pub fn trainer_cheapest_affordable(
     trainer: &Value,
     price_field: &str,
     balance: Option<u64>,

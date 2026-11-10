@@ -260,12 +260,14 @@ Use `trainer_affordable_only` to compare each known lesson price with the
 saved copper or pet training-point balance. A missing balance leaves the
 shortlist unknown. Apply the availability filter separately to select
 lessons reported available at capture.
-Set `trainer_balance_reserve` with the affordability filter to reserve
+Set `trainer_balance_reserve` with an affordability filter or budget projection to reserve
 copper for general trainers or training points for pet trainers. The reserve
-affects shortlist selection. Budget projections still report against the
+affects shortlist selection when the filter is enabled. Budget projections still report against the
 original recorded balance and add an `after_reserve` breakdown when a
 reserve is supplied. This checks whether all retained available lessons
-fit together after the reserve.
+fit together after the reserve and lists the cheapest known lessons that
+fit the remaining balance. Without the affordability filter, the reserve
+does not remove lessons from the review.
 With `trainer_service_slots`, the after-reserve breakdown also reports how
 many lessons fit in the requested order and identifies the first blocker.
 A slot excluded by the shortlist is reported as `lesson_not_retained`.
