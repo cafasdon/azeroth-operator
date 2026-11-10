@@ -6949,6 +6949,21 @@ pub(crate) fn captured_flight_route(map: &Value, destination_id: u32) -> Option<
     Some(route)
 }
 
+pub(crate) fn named_flight_destination(map: &Value, name: &str) -> Option<u32> {
+    let (_, nodes) = flight_destinations(map)?;
+    let mut matches = nodes.into_iter().filter(|(_, row)| {
+        row["state"] == "reachable"
+            && row["name"]
+                .as_str()
+                .is_some_and(|label| label.trim().to_lowercase() == name)
+    });
+    let (id, _) = matches.next()?;
+    if matches.next().is_some() {
+        return None;
+    }
+    u32::try_from(id).ok()
+}
+
 pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> {
     let (_, first, _) = legs
         .first()

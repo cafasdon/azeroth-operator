@@ -639,6 +639,8 @@ struct List {
     trainer_balance_reserve: Option<u64>,
     /// Find Forever captures with this reachable flight destination and an unambiguous origin.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
+    /// Find an unambiguous reachable flight destination by exact saved name.
+    flight_destination_name: Option<String>,
     /// Narrow the flight destination search to this captured departure node.
     flight_origin_node_id: Option<std::num::NonZeroU32>,
     /// Keep saved routes with a recorded fare at or below this copper amount.
@@ -2421,6 +2423,7 @@ impl Operator {
                 trainer_balance_reserve: args.trainer_balance_reserve,
                 flight_destination_node_id: args.flight_destination_node_id,
                 flight_origin_node_id: args.flight_origin_node_id,
+                flight_destination_name: args.flight_destination_name.as_deref(),
                 flight_max_fare_copper: args.flight_max_fare_copper,
                 flight_departure_map_id: args.flight_departure_map_id,
                 flight_affordable_only: args.flight_affordable_only,

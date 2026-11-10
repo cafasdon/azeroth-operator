@@ -91,6 +91,18 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(listed['snapshots']),2)
                     match=next(row for row in listed['snapshots'] if row['snapshot_id']==key)['flight_match']
                     self.assertEqual(match['observed_route_node_ids'],path)
+                    named=await call('list_snapshots',family='forever',flight_destination_name='  tArGeT  ',
+                        flight_origin_node_id=10,flight_wallet_reserve_copper=100)
+                    self.assertEqual({row['snapshot_id'] for row in named['snapshots']},{key,old})
+                    self.assertEqual(next(row for row in named['snapshots'] if row['snapshot_id']==key)
+                        ['flight_match']['observed_route_node_ids'],path)
+                    for name in ['Tar','Transit','Origin']:
+                        rejected=await call('list_snapshots',family='forever',flight_destination_name=name)
+                        self.assertEqual(rejected['snapshots'],[])
+                    for family,name in [('retail','Target'),('forever',' '),('forever','é'*129)]:
+                        response=await session.call_tool('list_snapshots',{
+                            'family':family,'flight_destination_name':name})
+                        self.assertTrue(response.isError)
                     no_wallet = deepcopy(base)
                     no_wallet['sections'].pop('wallet')
                     no_fare = deepcopy(legacy)
@@ -135,6 +147,16 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     no_routes=await call('compare_snapshots',before_id=old,after_id=old,
                         flight_destination_node_id=20)
                     self.assertNotIn('observed_route_changed',no_routes['flight_destination_comparison'])
+                    ambiguous=deepcopy(base)
+                    ambiguous['character']['name']='Ambiguous'
+                    ambiguous['sections']['flight_map']['entries']['4']={
+                        'node_id':99,'name':'TARGET','state':'reachable','map_transition':False,'fare_copper':150}
+                    ambiguous_key=store.ingest(ambiguous)
+                    scope={'family':'forever','flight_destination_name':'Target',
+                           'character':ambiguous['character'],'flight_max_fare_copper':100}
+                    self.assertEqual((await call('list_snapshots',**scope))['snapshots'],[])
+                    narrowed=await call('list_snapshots',**scope,flight_destination_node_id=20)
+                    self.assertEqual([row['snapshot_id'] for row in narrowed['snapshots']],[ambiguous_key])
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'flight_map'})
                         self.assertTrue(response.isError)

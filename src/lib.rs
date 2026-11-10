@@ -1981,6 +1981,7 @@ pub struct CaptureFilters<'a> {
     pub trainer_affordable_only: bool,
     pub trainer_balance_reserve: Option<u64>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
+    pub flight_destination_name: Option<&'a str>,
     pub flight_origin_node_id: Option<std::num::NonZeroU32>,
     pub flight_max_fare_copper: Option<u64>,
     pub flight_departure_map_id: Option<std::num::NonZeroU32>,
@@ -2232,6 +2233,7 @@ impl Store {
             trainer_affordable_only,
             trainer_balance_reserve,
             flight_destination_node_id,
+            flight_destination_name,
             flight_origin_node_id,
             flight_max_fare_copper,
             flight_departure_map_id,
@@ -2584,32 +2586,39 @@ impl Store {
             "Trainer filtering requires Forever and valid lesson filters"
         );
         let trainer_service_name = trainer_service_name.map(str::to_lowercase);
+        let flight_destination_name = flight_destination_name.map(str::trim);
         ensure!(
-            flight_departure_map_id.is_none() || flight_destination_node_id.is_some(),
+            flight_destination_name.is_none_or(|name| !name.is_empty() && name.len() <= 256),
+            "Flight destination name requires one to 256 bytes after trimming"
+        );
+        let flight_destination_name = flight_destination_name.map(str::to_lowercase);
+        let filter_flight_destination =
+            flight_destination_node_id.is_some() || flight_destination_name.is_some();
+        ensure!(
+            flight_departure_map_id.is_none() || filter_flight_destination,
             "Flight departure map filtering requires a destination"
         );
         ensure!(
-            !flight_affordable_only || flight_destination_node_id.is_some(),
+            !flight_affordable_only || filter_flight_destination,
             "Flight affordability filtering requires a destination"
         );
         ensure!(
             flight_wallet_reserve_copper.is_none_or(|reserve| {
-                flight_destination_node_id.is_some() && reserve <= 9_999_999_999_999
+                filter_flight_destination && reserve <= 9_999_999_999_999
             }),
             "Flight wallet reserve requires a destination and a valid copper amount"
         );
         ensure!(
-            flight_max_fare_copper.is_none_or(|fare| {
-                flight_destination_node_id.is_some() && fare <= 9_999_999_999_999
-            }),
+            flight_max_fare_copper
+                .is_none_or(|fare| { filter_flight_destination && fare <= 9_999_999_999_999 }),
             "Flight fare filtering requires a destination and a valid copper amount"
         );
         ensure!(
-            flight_origin_node_id.is_none() || flight_destination_node_id.is_some(),
+            flight_origin_node_id.is_none() || filter_flight_destination,
             "Flight origin filtering requires a destination"
         );
         ensure!(
-            flight_destination_node_id.is_none() || family == Family::Forever,
+            !filter_flight_destination || family == Family::Forever,
             "Flight filtering requires Forever"
         );
         ensure!(
@@ -3936,7 +3945,10 @@ impl Store {
                     if filter_trainer && trainer_match.is_none() {
                         continue;
                     }
-                    let flight_match = flight_destination_node_id.and_then(|node| {
+                    let flight_match = (|| {
+                        if !filter_flight_destination {
+                            return None;
+                        }
                         let player_map = s
                             .sections
                             .get("stats")
@@ -3946,10 +3958,22 @@ impl Store {
                         {
                             return None;
                         }
-                        let mut route = analysis::captured_flight_route(
-                            s.sections.get("flight_map")?,
-                            node.get(),
-                        )?;
+                        let map = s.sections.get("flight_map")?;
+                        let node = match flight_destination_node_id {
+                            Some(id) => id.get(),
+                            None => analysis::named_flight_destination(
+                                map,
+                                flight_destination_name.as_deref()?,
+                            )?,
+                        };
+                        let mut route = analysis::captured_flight_route(map, node)?;
+                        if flight_destination_name.as_ref().is_some_and(|name| {
+                            !route["destination_name"]
+                                .as_str()
+                                .is_some_and(|label| label.trim().to_lowercase() == *name)
+                        }) {
+                            return None;
+                        }
                         let fare = route["fare_copper"].as_u64();
                         if flight_origin_node_id.is_some_and(|origin| {
                             route["origin_node_id"].as_u64() != Some(u64::from(origin.get()))
@@ -3974,8 +3998,8 @@ impl Store {
                             route["captured_departure_map_id"] = json!(player_map);
                         }
                         Some(route)
-                    });
-                    if flight_destination_node_id.is_some() && flight_match.is_none() {
+                    })();
+                    if filter_flight_destination && flight_match.is_none() {
                         continue;
                     }
                     // Retain metadata only: listing must not hold every inventory payload.
