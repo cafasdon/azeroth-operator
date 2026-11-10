@@ -805,6 +805,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                             wallet_plan=plan.pop('selected_quests_wallet_projection')
                             self.assertEqual(wallet_plan['minimum_starting_copper'],1)
                             self.assertIsNone(wallet_plan['currency_from_affordable_prefix_before_caps'])
+                            self.assertIsNone(wallet_plan['affordable_prefix_cap_projection'])
                             self.assertEqual(plan,{
                                 'quest_count':2,'quest_ids':[3,10],'truncated':False,'recorded_fixed_quantity':9,
                                 'cap_projection':{'proposed_quantity':9,'quantity_within_recorded_headroom':7,
@@ -828,6 +829,25 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         wallet_plan=plan['selected_quests_wallet_projection']
                         self.assertEqual(wallet_plan['currency_from_affordable_prefix_before_caps'],prefix)
                         self.assertEqual(wallet_plan['currency_shortfall_after_affordable_prefix_before_caps'],shortfall)
+                        self.assertEqual(wallet_plan['affordable_prefix_cap_projection'],{
+                            'proposed_quantity':prefix,'quantity_within_recorded_headroom':min(prefix,7),
+                            'quantity_above_recorded_headroom':max(0,prefix-7)})
+                        self.assertEqual(wallet_plan['currency_shortfall_after_affordable_prefix_within_recorded_headroom'],
+                            quantity-min(prefix,7))
+                    for max_quantity,headroom,shortfall in [(0,None,None),(3,0,8)]:
+                        cap_fixture=deepcopy(currency_wallet)
+                        cap_fixture['sections']['currency_balances']['entries']['100']['max_quantity']=max_quantity
+                        cap_id=store.ingest(cap_fixture)
+                        original[cap_id+'.json']=(Path(folder)/(cap_id+'.json')).read_bytes()
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':cap_id,'section':'quests',
+                            'quest_ready_currency_target':{'currency_id':100,'quantity':8}})
+                        self.assertFalse(reply.isError,reply)
+                        plan=json.loads(reply.content[0].text)['quest_ready_currency_projection']['ready_turn_in_plan']
+                        wallet_plan=plan['selected_quests_wallet_projection']
+                        self.assertEqual(wallet_plan['currency_from_affordable_prefix_before_caps'],4)
+                        self.assertEqual(wallet_plan['affordable_prefix_cap_projection']['quantity_within_recorded_headroom'],headroom)
+                        self.assertEqual(wallet_plan['currency_shortfall_after_affordable_prefix_within_recorded_headroom'],shortfall)
                     for quantity,include_choices,covered,ids in [
                             (5,False,True,[10,3]),(6,False,False,None),(7,True,True,[10])]:
                         reply=await session.call_tool('inspect_snapshot',{

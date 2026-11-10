@@ -7027,11 +7027,14 @@ pub fn quest_ready_reward_projection(
         }
         let mut plan = json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).map(|(id, _)| id).collect::<Vec<_>>(),
             "truncated":ids.len()>20,"recorded_fixed_quantity":selected_fixed});
-        if let QuestRewardTarget::Currency(id, balances, _) = reward {
+        let currency_caps = if let QuestRewardTarget::Currency(id, balances, _) = reward {
             let entry = &balances["entries"][id.to_string()];
             let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
             plan["cap_projection"] = currency_reward_projection(selected_quantity, entry, &caps);
-        }
+            Some((entry, caps))
+        } else {
+            None
+        };
         if let QuestRewardTarget::Renown(_, faction, _) = reward {
             plan["renown_projection"] = renown_reward_projection(selected_quantity, faction);
         }
@@ -7061,6 +7064,15 @@ pub fn quest_ready_reward_projection(
                 order[quantity_field] = json!(prefix_points);
                 order[shortfall_field] =
                     json!(prefix_points.map(|points| target.saturating_sub(points)));
+                if let Some((entry, caps)) = currency_caps {
+                    let projection = prefix_points.map(|points| currency_reward_projection(points, entry, &caps));
+                    let within_headroom = projection.as_ref().and_then(|value| {
+                        value["quantity_within_recorded_headroom"].as_u64()
+                    });
+                    order["affordable_prefix_cap_projection"] = json!(projection);
+                    order["currency_shortfall_after_affordable_prefix_within_recorded_headroom"] =
+                        json!(within_headroom.map(|quantity| target.saturating_sub(quantity)));
+                }
                 order
             }));
         if let Some(choice_field) = choice_field {

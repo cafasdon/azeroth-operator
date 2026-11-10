@@ -3383,6 +3383,9 @@ projection shows the minimum starting copper and the currency from the
 affordable prefix, including selected choices. Prefix quantities are
 before caps. A missing wallet leaves the prefix unknown. The estimate
 covers the selected quests and uses the wallet from the same capture.
+The affordable prefix also has a separate cap projection and target
+shortfall within the recorded headroom. Unknown headroom leaves that
+shortfall unknown. Actual currency credit remains unverified.
 
 `inspect_snapshot.quest_ready_item_target` accepts an `item_id` and
 positive `quantity` in the `quests` section. It selects ready quests

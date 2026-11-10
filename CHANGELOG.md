@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare currency from affordable quest turn-ins with captured cap headroom.
+
 - Estimate captured wallet affordability for selected quest item rewards.
 
 - Estimate captured wallet affordability for selected currency reward turn-ins.
