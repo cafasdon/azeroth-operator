@@ -350,7 +350,13 @@ def serve(world):
                                  include_quest_links: StrictBool = False,
                                  include_item_sources: StrictBool = False,
                                  item_source_offset: Annotated[StrictInt, Field(ge=0, le=4294967295)] = 0) -> dict:
-        """Read one exact quest, NPC, object or item from the pinned local QuestieDB Forever export. Static corrections and derived data only; no character-specific eligibility, routing or current availability."""
+        """Read an exact record from the pinned local QuestieDB Forever export.
+
+        Enable include_quest_links for related quests and for quest contacts and objective targets.
+        Enable include_item_sources for acquisition sources, container contents, quest rewards,
+        or items from NPCs and objects. Advance item_source_offset by 32 to page those results.
+        Records describe static world data. Live availability and character eligibility are unknown.
+        """
         return world.get(kind, entity_id, include_quest_links=include_quest_links,
                          include_item_sources=include_item_sources, item_source_offset=item_source_offset)
 
@@ -376,8 +382,13 @@ def main(argv=None):
     cli.add_argument('--query')
     cli.add_argument('--limit', type=int, default=10)
     cli.add_argument('--offset', type=int, default=0)
+    cli.add_argument('--include-quest-links', action='store_true', help='Include related quests, contacts and targets in get')
+    cli.add_argument('--include-item-sources', action='store_true', help='Include acquisition sources or sourced items in get')
+    cli.add_argument('--item-source-offset', type=int, default=0, help='Offset for each item source group in get')
     args = cli.parse_args(argv)
     try:
+        if args.action != 'get' and (args.include_quest_links or args.include_item_sources or args.item_source_offset):
+            raise ValueError('Record enrichment options require get')
         if args.action == 'sync-source' and args.source is not None:
             result = sync_source(args.source)
         elif args.action == 'build' and args.source is not None and args.cache is not None:
@@ -387,8 +398,12 @@ def main(argv=None):
             if args.action == 'serve':
                 serve(world)
                 return
-            result = world.get(args.kind, args.entity_id) if args.action == 'get' else world.search(
-                args.query, args.kind, args.limit, args.offset)
+            if args.action == 'get':
+                result = world.get(args.kind, args.entity_id, include_quest_links=args.include_quest_links,
+                                   include_item_sources=args.include_item_sources,
+                                   item_source_offset=args.item_source_offset)
+            else:
+                result = world.search(args.query, args.kind, args.limit, args.offset)
         else:
             raise ValueError('Required explicit paths unavailable')
         print(encoded(result))

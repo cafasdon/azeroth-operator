@@ -108,3 +108,6 @@ and `disabledByQuest`. Scalar references appear at position `1`.
 `quest_objective_targets` also exposes named groups for `sourceItemId` and
 `requiredSourceItems`. These retain the distinction between the item supplied
 by the quest starter and additional items required by the quest.
+
+The CLI get action supports the same views with --include-quest-links,
+--include-item-sources and --item-source-offset.

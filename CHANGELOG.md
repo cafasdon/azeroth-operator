@@ -1,5 +1,7 @@
 # Changelog
 
+- Expose offline quest and item lookup options through the world CLI.
+
 - Resolve cached quest starter supplies and required source items.
 
 - Resolve cached quest chain, parent, breadcrumb and availability references.
