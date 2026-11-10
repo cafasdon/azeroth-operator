@@ -11077,6 +11077,7 @@ pub fn quest_objective_checklist(quests: &serde_json::Map<String, Value>) -> Val
     let mut missing = Vec::new();
     let mut entries = BTreeMap::new();
     let mut finished_without_ready = BTreeMap::new();
+    let mut unfinished_order = Vec::new();
     for (key, quest) in quests {
         let Ok(id) = key.parse::<u32>() else { continue };
         let readiness = quest_readiness(quest);
@@ -11087,6 +11088,7 @@ pub fn quest_objective_checklist(quests: &serde_json::Map<String, Value>) -> Val
         match unfinished.as_object() {
             None => missing.push(id),
             Some(rows) if !rows.is_empty() => {
+                unfinished_order.push((rows.len(), id));
                 entries.insert(
                     id,
                     json!({"readiness":readiness,"unfinished_objectives":unfinished}),
@@ -11106,8 +11108,14 @@ pub fn quest_objective_checklist(quests: &serde_json::Map<String, Value>) -> Val
         }
     }
     missing.sort_unstable();
+    unfinished_order.sort_unstable();
+    let by_unfinished_count: Vec<_> = unfinished_order
+        .into_iter()
+        .map(|(count, id)| json!({"quest_id":id,"unfinished_objective_count":count}))
+        .collect();
     json!({"quests":entries,"quest_ids_without_objective_observations":missing,
-        "all_observed_objectives_finished_without_ready_status":finished_without_ready})
+        "all_observed_objectives_finished_without_ready_status":finished_without_ready,
+        "by_unfinished_objective_count":by_unfinished_count})
 }
 
 #[derive(

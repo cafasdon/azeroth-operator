@@ -1,5 +1,7 @@
 # Changelog
 
+- Order the saved quest objective checklist by the number of unfinished objectives.
+
 - Avoid selected flyover nodes when planning flights with saved route previews.
 
 - Avoid selected landing nodes when planning routes across saved Forever flight panels.

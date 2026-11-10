@@ -355,8 +355,13 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'readiness':'ready','unfinished_objectives':{'1':{'kind':'monster','remaining_count':1}},
                     })
                     self.assertIsNone(work['quests']['5']['unfinished_objectives']['1']['remaining_count'])
+                    self.assertEqual(work['by_unfinished_objective_count'], [
+                        {'quest_id':quest,'unfinished_objective_count':count}
+                        for quest,count in [(3,1),(5,1),(6,1),(7,1),(8,1),(9,2),(10,2)]])
                     filtered = await query(quest_list_objective_checklist=True,quest_reward_item_id=118)
                     self.assertEqual(filtered['quest_objective_checklist']['quests'], {'3':work['quests']['3']})
+                    self.assertEqual(filtered['quest_objective_checklist']['by_unfinished_objective_count'],
+                                     [{'quest_id':3,'unfinished_objective_count':1}])
                     self.assertEqual(filtered['quest_objective_checklist']
                                      ['all_observed_objectives_finished_without_ready_status'], {})
                     self.assertIsNone((await query(snapshot_id=missing,

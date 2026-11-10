@@ -1,5 +1,11 @@
 # Forever interaction map
 
+The saved quest objective checklist includes
+`by_unfinished_objective_count`, ordered by the number of explicitly
+unfinished objectives and then by numeric quest ID. It follows the
+quest filters. It counts objective rows, even when their remaining
+quantities are unknown, and does not estimate completion time.
+
 Set `flight_route_search.excluded_landing_node_ids` to avoid up to 32
 distinct connections in a saved route. The planner and its fallback
 evidence exclude those landing nodes. The start and destination cannot
