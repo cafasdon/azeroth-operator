@@ -927,7 +927,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         **{str(bag):{'total_slots':0,'free_slots':0} for bag in range(2,5)}}
                     for stack in space_fixture['sections']['bags']['0'].values():
                         stack.update(link='item:118:0',reported_stack_limit=5)
-                    async def reward_space(capture,quantity,**options):
+                    async def reward_space(capture,quantity,*,field='bag_space_projection',**options):
                         snapshot_id=store.ingest(capture)
                         original[snapshot_id+'.json']=(Path(folder)/(snapshot_id+'.json')).read_bytes()
                         reply=await session.call_tool('inspect_snapshot',{
@@ -935,7 +935,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                             'quest_ready_item_target':{'item_id':118,'quantity':quantity,
                                 'include_choices':True,'estimate_bag_space':True,**options}})
                         self.assertFalse(reply.isError,reply)
-                        return json.loads(reply.content[0].text)['quest_ready_item_projection']['bag_space_projection']
+                        return json.loads(reply.content[0].text)['quest_ready_item_projection'][field]
                     space=await reward_space(space_fixture,7)
                     self.assertEqual(space,{
                         'scope':'selected_target_item_rewards_only','recorded_reward_quantity':8,
@@ -946,6 +946,16 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         'fits_recorded_general_slots_if_same_item_stacks_merge':True,
                         'same_item_stack_merge_verified':False,
                         'placement_verified':False,'live':False})
+                    prefix_field='affordable_prefix_bag_space_projection'
+                    self.assertIsNone(await reward_space(space_fixture,9,field=prefix_field))
+                    affordable_space=deepcopy(space_fixture)
+                    affordable_space['sections']['wallet']={'copper':0}
+                    prefix=await reward_space(affordable_space,9,field=prefix_field)
+                    self.assertEqual(prefix['recorded_reward_quantity'],8)
+                    self.assertEqual(prefix['estimated_new_stack_slots'],2)
+                    self.assertEqual(prefix['estimated_new_stack_slots_if_same_item_stacks_merge'],1)
+                    whole=await reward_space(affordable_space,9)
+                    self.assertEqual(whole['recorded_reward_quantity'],10)
                     already=await reward_space(space_fixture,4,count_carried=True)
                     self.assertEqual(already['estimated_new_stack_slots'],0)
                     self.assertEqual(already['estimated_new_stack_slots_if_same_item_stacks_merge'],0)

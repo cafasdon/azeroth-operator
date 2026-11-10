@@ -3413,6 +3413,11 @@ a separate estimate if the incoming copies can merge into carried stacks
 of the same item ID. Other rewards are outside its scope. Merge eligibility
 and actual placement remain unverified.
 
+The same request reports `affordable_prefix_bag_space_projection` for
+target item rewards from the selected turn-ins the saved wallet could
+fund. It is null when the affordable quantity is unknown or there is no
+wallet turn-in order. The full selected-plan estimate remains separate.
+
 `inspect_snapshot.quest_ready_renown_target` accepts a `faction_id` in the
 `quests` section. Supply a positive `quantity` or use the recorded
 distance to the next rank. The planner considers recorded fixed renown

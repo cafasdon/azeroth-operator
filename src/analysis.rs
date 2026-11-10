@@ -7103,6 +7103,16 @@ pub fn quest_item_reward_bag_space(
     let quantity = plan["recorded_total_quantity"]
         .as_u64()
         .or_else(|| plan["recorded_fixed_quantity"].as_u64())?;
+    Some(quest_item_reward_quantity_bag_space(
+        snapshot, item_id, quantity,
+    ))
+}
+
+pub fn quest_item_reward_quantity_bag_space(
+    snapshot: &Snapshot,
+    item_id: u32,
+    quantity: u64,
+) -> Value {
     let limit = reported_inventory_stack_limits(snapshot, false)
         .get(&item_id)
         .copied();
@@ -7136,8 +7146,7 @@ pub fn quest_item_reward_bag_space(
                 .div_ceil(u64::from(limit.get()))
         })
     };
-    Some(
-        json!({"scope":"selected_target_item_rewards_only","recorded_reward_quantity":quantity,
+    json!({"scope":"selected_target_item_rewards_only","recorded_reward_quantity":quantity,
         "reported_carried_stack_limit":limit,"estimated_new_stack_slots":slots,
         "recorded_general_free_slots":general_free,
         "fits_recorded_general_slots":slots.zip(general_free).map(|(needed, free)| needed <= free),
@@ -7146,8 +7155,7 @@ pub fn quest_item_reward_bag_space(
         "fits_recorded_general_slots_if_same_item_stacks_merge":slots_with_merges.zip(general_free)
             .map(|(needed, free)| needed <= free),
         "same_item_stack_merge_verified":false,
-        "placement_verified":false,"live":false}),
-    )
+        "placement_verified":false,"live":false})
 }
 
 pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Value {

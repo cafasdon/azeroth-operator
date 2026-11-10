@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate bag space for quest item rewards from affordable turn-ins.
+
 - Compare currency from affordable quest turn-ins with captured cap headroom.
 
 - Estimate captured wallet affordability for selected quest item rewards.

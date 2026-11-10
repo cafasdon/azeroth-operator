@@ -5073,14 +5073,24 @@ impl Operator {
                                     }
                                 }
                                 if target.estimate_bag_space {
+                                    let plan = &projection["ready_turn_in_plan"];
+                                    let affordable_quantity = plan["selected_quests_wallet_projection"]
+                                        ["items_from_affordable_prefix"].as_u64();
                                     projection["bag_space_projection"] =
                                         serde_json::json!(context.as_ref().and_then(|snapshot| {
                                             azeroth_operator::analysis::quest_item_reward_bag_space(
                                                 snapshot,
                                                 item_id,
-                                                &projection["ready_turn_in_plan"],
+                                                plan,
                                             )
                                         }));
+                                    projection["affordable_prefix_bag_space_projection"] = serde_json::json!(
+                                        context.as_ref().zip(affordable_quantity).map(|(snapshot, quantity)| {
+                                            azeroth_operator::analysis::quest_item_reward_quantity_bag_space(
+                                                snapshot, item_id, quantity,
+                                            )
+                                        })
+                                    );
                                 }
                                 projection
                             });
