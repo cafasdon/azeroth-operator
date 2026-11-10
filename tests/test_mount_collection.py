@@ -113,6 +113,8 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                         (after_key, {"mount_usable":True}, {"3","10"}),
                         (after_key, {"mount_usable":False,"mount_favorite":True}, {"2"}),
                         (after_key, {"mount_usable":True,"mount_favorite":True}, set()),
+                        (after_key, {"mount_spell_id":40002,"mount_usable":False}, {"2"}),
+                        (after_key, {"mount_spell_id":40002,"mount_usable":True}, set()),
                         (missing_key, {"mount_favorite":False}, None),
                     ]:
                         filtered=await session.call_tool("inspect_snapshot",{"snapshot_id":source,
@@ -188,6 +190,20 @@ class MountCollectionTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await by_name("After only",collected_mount={"mount_id":3,"usable":False}), [])
                     matched = await by_name("After only",collected_mount={"mount_id":3,"usable":True})
                     self.assertEqual(matched[0]["collected_mount_name_match"]["matched_count"], 1)
+                    for selectors, expected in [
+                        ({"collected_mount_spell_id":40010},{after_key}),
+                        ({"collected_mount_spell_id":40010,"collected_mount_name":"After only"},{after_key}),
+                        ({"collected_mount_spell_id":40010,"collected_mount":{"mount_id":3}},set()),
+                        ({"collected_mount_spell_id":40010,"collected_mount_name":"Translated name"},set()),
+                    ]:
+                        reply=await session.call_tool("list_snapshots",{"family":"forever",**selectors})
+                        self.assertFalse(reply.isError,reply)
+                        rows=json.loads(reply.content[0].text)["snapshots"]
+                        self.assertEqual({row["snapshot_id"] for row in rows},expected)
+                        if expected:
+                            self.assertEqual([mount["mount_id"] for mount in rows[0]["collected_mount_spell_match"]["mounts"]],[10])
+                    self.assertTrue((await session.call_tool("list_snapshots",{
+                        "family":"retail","collected_mount_spell_id":40010})).isError)
                     for family,name in [("retail","After only"),("forever"," "),("forever","é"*129)]:
                         self.assertTrue((await session.call_tool("list_snapshots",{
                             "family":family,"collected_mount_name":name})).isError)

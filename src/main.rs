@@ -391,6 +391,8 @@ struct Inspect {
     mount_usable: Option<bool>,
     /// Keep saved mount rows with this reported favourite flag.
     mount_favorite: Option<bool>,
+    /// Keep collected mounts with this recorded mount spell ID.
+    mount_spell_id: Option<std::num::NonZeroU32>,
     /// Select one item from a captured filtered toy view; absent items have unknown collection state.
     toy_item_id: Option<std::num::NonZeroU32>,
     /// Keep only saved toy rows with this recorded collection flag.
@@ -597,6 +599,8 @@ struct List {
     collected_mount: Option<azeroth_operator::CollectedMountFilter>,
     /// Find collected mounts by exact case-insensitive saved public name.
     collected_mount_name: Option<String>,
+    /// Find a collected mount by exact saved spell ID.
+    collected_mount_spell_id: Option<std::num::NonZeroU32>,
     /// Find an exact toy ID in the saved filtered journal with optional recorded flags.
     toy_in_view: Option<azeroth_operator::ToyViewFilter>,
     /// Find an exact case-insensitive public name in saved filtered toy journals.
@@ -2524,6 +2528,7 @@ impl Operator {
                 tracked_achievement: args.tracked_achievement,
                 collected_mount: args.collected_mount,
                 collected_mount_name: args.collected_mount_name.as_deref(),
+                collected_mount_spell_id: args.collected_mount_spell_id,
                 toy_in_view: args.toy_in_view,
                 toy_name: args.toy_name.as_deref(),
                 saved_instance: args.saved_instance,
@@ -2637,14 +2642,16 @@ impl Operator {
                 "Pet row filtering requires the pet_collection_view section without an exact species selector",
             )]);
         }
-        let filter_mounts = args.mount_usable.is_some() || args.mount_favorite.is_some();
+        let filter_mounts = args.mount_usable.is_some()
+            || args.mount_favorite.is_some()
+            || args.mount_spell_id.is_some();
         if filter_mounts
             && (args.section.as_deref() != Some("mount_collection")
                 || args.mount_id.is_some()
                 || args.collected_mount.is_some())
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Mount flag filtering requires the mount_collection section without an exact mount selector",
+                "Mount filtering requires the mount_collection section without an exact mount selector",
             )]);
         }
         let toy_name = args.toy_name.as_deref().map(str::trim);
@@ -4075,7 +4082,7 @@ impl Operator {
                 if filter_mounts {
                     if value["client"]["family"] != "forever" {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Mount flag filtering requires a saved Forever snapshot",
+                            "Mount filtering requires a saved Forever snapshot",
                         )]);
                     }
                     let count = value["data"]
@@ -4088,6 +4095,9 @@ impl Operator {
                                     && args
                                         .mount_favorite
                                         .is_none_or(|flag| row["favorite"].as_bool() == Some(flag))
+                                    && args.mount_spell_id.is_none_or(|id| {
+                                        row["spell_id"].as_u64() == Some(u64::from(id.get()))
+                                    })
                             });
                             entries.len()
                         });

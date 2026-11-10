@@ -1923,6 +1923,7 @@ pub struct CaptureFilters<'a> {
     pub tracked_achievement: Option<TrackedAchievementFilter>,
     pub collected_mount: Option<CollectedMountFilter>,
     pub collected_mount_name: Option<&'a str>,
+    pub collected_mount_spell_id: Option<std::num::NonZeroU32>,
     pub toy_in_view: Option<ToyViewFilter>,
     pub toy_name: Option<&'a str>,
     pub saved_instance: Option<SavedInstanceFilter>,
@@ -2214,6 +2215,7 @@ impl Store {
             tracked_achievement,
             collected_mount,
             collected_mount_name,
+            collected_mount_spell_id,
             toy_in_view,
             toy_name,
             saved_instance,
@@ -2310,7 +2312,8 @@ impl Store {
             filter.validate(&family)?;
         }
         ensure!(
-            collected_mount.is_none() || family == Family::Forever,
+            (collected_mount.is_none() && collected_mount_spell_id.is_none())
+                || family == Family::Forever,
             "Mount filtering requires Forever"
         );
         let collected_mount_name = collected_mount_name.map(str::trim);
@@ -3486,34 +3489,43 @@ impl Store {
                     if collected_mount.is_some() && mount_match.is_none() {
                         continue;
                     }
-                    let mount_name_match = collected_mount_name.as_ref().and_then(|name| {
-                        let view = s.sections.get("mount_collection")?;
-                        let mut matches: Vec<_> = view["entries"]
-                            .as_object()?
-                            .iter()
-                            .filter_map(|(id, row)| {
-                                let id = id.parse::<u32>().ok()?;
-                                (collected_mount
-                                    .as_ref()
-                                    .is_none_or(|filter| filter.mount_id.get() == id)
-                                    && row["name"]
-                                        .as_str()
-                                        .is_some_and(|label| label.trim().to_lowercase() == *name))
-                                .then_some((id, row))
-                            })
-                            .collect();
-                        matches.sort_unstable_by_key(|(id, _)| *id);
-                        (!matches.is_empty()).then(|| {
-                            json!({
-                                "matched_count":matches.len(),"truncated":matches.len()>20,
-                                "mounts":matches.into_iter().take(20).map(|(id,row)| json!({
-                                    "mount_id":id,"name":row["name"],"spell_id":row["spell_id"],
-                                    "usable":row["usable"],"favorite":row["favorite"],
-                                })).collect::<Vec<_>>(),
+                    let search_mount_description =
+                        collected_mount_name.is_some() || collected_mount_spell_id.is_some();
+                    let mount_description_match = search_mount_description
+                        .then(|| {
+                            let view = s.sections.get("mount_collection")?;
+                            let mut matches: Vec<_> = view["entries"]
+                                .as_object()?
+                                .iter()
+                                .filter_map(|(id, row)| {
+                                    let id = id.parse::<u32>().ok()?;
+                                    (collected_mount
+                                        .as_ref()
+                                        .is_none_or(|filter| filter.mount_id.get() == id)
+                                        && collected_mount_name.as_ref().is_none_or(|name| {
+                                            row["name"].as_str().is_some_and(|label| {
+                                                label.trim().to_lowercase() == *name
+                                            })
+                                        })
+                                        && collected_mount_spell_id.is_none_or(|id| {
+                                            row["spell_id"].as_u64() == Some(u64::from(id.get()))
+                                        }))
+                                    .then_some((id, row))
+                                })
+                                .collect();
+                            matches.sort_unstable_by_key(|(id, _)| *id);
+                            (!matches.is_empty()).then(|| {
+                                json!({
+                                    "matched_count":matches.len(),"truncated":matches.len()>20,
+                                    "mounts":matches.into_iter().take(20).map(|(id,row)| json!({
+                                        "mount_id":id,"name":row["name"],"spell_id":row["spell_id"],
+                                        "usable":row["usable"],"favorite":row["favorite"],
+                                    })).collect::<Vec<_>>(),
+                                })
                             })
                         })
-                    });
-                    if collected_mount_name.is_some() && mount_name_match.is_none() {
+                        .flatten();
+                    if search_mount_description && mount_description_match.is_none() {
                         continue;
                     }
                     let toy_match = toy_in_view.as_ref().and_then(|filter| {
@@ -4367,8 +4379,13 @@ impl Store {
                     if let Some(observation) = mount_match {
                         summary["collected_mount_match"] = observation;
                     }
-                    if let Some(observation) = mount_name_match {
-                        summary["collected_mount_name_match"] = observation;
+                    if let Some(observation) = mount_description_match {
+                        if collected_mount_name.is_some() {
+                            summary["collected_mount_name_match"] = observation.clone();
+                        }
+                        if collected_mount_spell_id.is_some() {
+                            summary["collected_mount_spell_match"] = observation;
+                        }
                     }
                     if let Some(observation) = toy_match {
                         summary["toy_in_view_match"] = observation;

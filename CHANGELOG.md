@@ -1,5 +1,7 @@
 # Changelog
 
+- Find collected mounts by recorded spell ID in saved snapshots.
+
 - Plan exact-item cooldowns for a target carried quantity.
 
 - Total exact-item bag quantities by projected cooldown end before paging.

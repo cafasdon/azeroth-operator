@@ -3375,6 +3375,11 @@ storage-wide bag review.
 by exact public name, ignoring case and surrounding spaces. Results show
 up to 20 matching mount IDs and their saved flags. Combine it with
 `collected_mount` to require the name, ID and any flags on the same mount.
+Use `collected_mount_spell_id` in `list_snapshots` to find a mount by its
+saved spell ID. A mount name or exact mount ID supplied with it must
+match the same row. In `inspect_snapshot`, `mount_spell_id` filters
+`mount_collection` and can be combined with recorded usability or
+favourite flags. Results describe the saved collection.
 
 Set `inspect_snapshot.toy_name` with the `toy_collection_view` section
 to look up an exact public toy name, ignoring case and surrounding spaces.
