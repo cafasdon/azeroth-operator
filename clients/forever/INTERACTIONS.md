@@ -3296,6 +3296,11 @@ reports whether the selected captures contain a reachable path within the
 leg limit and whether any such path has all fares recorded before budget
 filters. Unknown fares are never treated as zero.
 
+The evidence also reports the lowest fully recorded fare across paths
+within the leg limit. When a fare ceiling applies, it shows the effective
+ceiling and how much the lowest fare exceeds it. This diagnostic uses the
+lowest fare even when the route search prefers fewer legs.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

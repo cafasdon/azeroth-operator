@@ -1,5 +1,7 @@
 # Changelog
 
+- Report the lowest fully recorded fare and budget shortfall for unsuccessful saved flight searches.
+
 - Explain saved Forever flight search failures using observed reachability and fare coverage.
 
 - Plan saved Forever flight routes by exact destination name.

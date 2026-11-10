@@ -7177,33 +7177,42 @@ pub fn plan_saved_flights(
             "no_fully_priced_route"
         });
         let mut reachable = false;
-        let mut fully_priced = false;
-        let mut frontier = BTreeSet::from([(start, true)]);
+        let mut minimum_fare = None::<u64>;
+        let mut frontier = BTreeMap::from([(start, Some(0u64))]);
         for depth in 0..max_legs {
-            let mut next = BTreeSet::new();
-            for (node, priced_so_far) in frontier {
+            let mut next = BTreeMap::new();
+            for (node, fare_so_far) in frontier {
                 for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
                     if target == start || (depth == 0 && index != 0) {
                         continue;
                     }
-                    let priced = priced_so_far && fare.is_some();
+                    let total = fare_so_far.zip(fare).map(|(a, b)| a + b);
                     if target == destination {
                         reachable = true;
-                        fully_priced |= priced;
+                        if let Some(total) = total {
+                            minimum_fare = Some(minimum_fare.map_or(total, |best| best.min(total)));
+                        }
                     } else {
-                        next.insert((target, priced));
+                        let previous = next.entry(target).or_insert(total);
+                        if let Some(total) = total {
+                            *previous = Some(previous.map_or(total, |best| best.min(total)));
+                        }
                     }
                 }
             }
-            if fully_priced || next.is_empty() {
+            if next.is_empty() {
                 break;
             }
             frontier = next;
         }
         report["saved_path_evidence"] = json!({
             "reachable_path_observed":reachable,
-            "fully_priced_path_observed_without_budget":fully_priced,
-            "maximum_legs":max_legs
+            "fully_priced_path_observed_without_budget":minimum_fare.is_some(),
+            "maximum_legs":max_legs,
+            "minimum_fully_priced_fare_copper":minimum_fare,
+            "effective_fare_ceiling_copper":max_fare,
+            "shortfall_vs_effective_ceiling_copper":minimum_fare.zip(max_fare)
+                .map(|(fare,ceiling)| fare.saturating_sub(ceiling))
         });
         return Ok(report);
     };

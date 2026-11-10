@@ -79,7 +79,9 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         if limit==99:
                             self.assertEqual(bounded['flight_route_search']['saved_path_evidence'],{
                                 'reachable_path_observed':True,
-                                'fully_priced_path_observed_without_budget':True,'maximum_legs':8})
+                                'fully_priced_path_observed_without_budget':True,'maximum_legs':8,
+                                'minimum_fully_priced_fare_copper':100,'effective_fare_ceiling_copper':99,
+                                'shortfall_vs_effective_ceiling_copper':1})
                     self.assertEqual(len(plan['legs']),1)
                     self.assertEqual(plan['legs'][0]['observed_route_node_ids'],path)
                     self.assertEqual(plan['total_fare_copper'],100)
@@ -131,13 +133,17 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(unknown_fare['status'],'no_fully_priced_route')
                     self.assertEqual(unknown_fare['saved_path_evidence'],{
                         'reachable_path_observed':True,
-                        'fully_priced_path_observed_without_budget':False,'maximum_legs':8})
+                        'fully_priced_path_observed_without_budget':False,'maximum_legs':8,
+                        'minimum_fully_priced_fare_copper':None,'effective_fare_ceiling_copper':None,
+                        'shortfall_vs_effective_ceiling_copper':None})
                     capped_path=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
                         flight_route_search={'destination_name':'Further','onward_snapshot_ids':[next_key],
                                              'max_legs':1}))['flight_route_search']
                     self.assertEqual(capped_path['saved_path_evidence'],{
                         'reachable_path_observed':False,
-                        'fully_priced_path_observed_without_budget':False,'maximum_legs':1})
+                        'fully_priced_path_observed_without_budget':False,'maximum_legs':1,
+                        'minimum_fully_priced_fare_copper':None,'effective_fare_ceiling_copper':None,
+                        'shortfall_vs_effective_ceiling_copper':None})
                     for reserve, expected in [(0, {key,old}), (100, {key,old}), (101, set())]:
                         result = await call('list_snapshots', family='forever',
                             flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)
@@ -191,6 +197,17 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     disambiguated=await call('inspect_snapshot',snapshot_id=ambiguous_key,section='flight_map',
                         flight_route_search={**route_scope,'destination_node_id':20})
                     self.assertEqual(disambiguated['flight_route_search']['destination_node_id'],20)
+                    expensive_direct=deepcopy(base)
+                    expensive_direct['sections']['flight_map']['entries']['4']={
+                        'node_id':40,'name':'Further','state':'reachable','map_transition':False,'fare_copper':180}
+                    budgeted=await call('inspect_snapshot',snapshot_id=store.ingest(expensive_direct),
+                        section='flight_map',flight_wallet_reserve_copper=70,
+                        flight_route_search={'destination_name':'Further','onward_snapshot_ids':[next_key],
+                            'objective':'fewest_legs','require_affordable':True})
+                    evidence=budgeted['flight_route_search']['saved_path_evidence']
+                    self.assertEqual(evidence['minimum_fully_priced_fare_copper'],150)
+                    self.assertEqual(evidence['effective_fare_ceiling_copper'],130)
+                    self.assertEqual(evidence['shortfall_vs_effective_ceiling_copper'],20)
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'flight_map'})
                         self.assertTrue(response.isError)
