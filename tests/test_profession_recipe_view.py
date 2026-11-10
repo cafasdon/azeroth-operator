@@ -115,6 +115,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     changed=copy.deepcopy(value)
                     changed['captured_at']='2025-01-02T00:00:00Z'
                     changed_view=changed['sections']['profession_recipe_view']
+                    changed_view['rank_observation']={'rank':110,'max_rank':175}
                     changed_view['entries']['7']['learned']=False
                     changed_view['entries']['9']['learned']=True
                     changed_view['entries']['9'].update(can_skill_up=False,skill_ups_reported=0)
@@ -127,6 +128,11 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                         return json.loads(response.content[0].text)
                     delta=(await compare(key,changed_key,profession_recipe_changes=True))['profession_recipe_changes']
                     self.assertTrue(delta['same_profession'])
+                    self.assertEqual(delta['rank_observation_change'],{
+                        'before':{'rank':100,'max_rank':150,'rank_points_to_observed_cap':50},
+                        'after':{'rank':110,'max_rank':175,'rank_points_to_observed_cap':65},
+                        'rank_delta':10,'max_rank_delta':25,'rank_points_to_observed_cap_delta':15,
+                    })
                     self.assertEqual(delta['learning_observation_changes'],[
                         {'recipe_id':7,'before_learned':True,'after_learned':False},
                         {'recipe_id':9,'before_learned':None,'after_learned':True}])
@@ -140,7 +146,8 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     other_key=store.ingest(other_profession)
                     delta=(await compare(key,other_key,profession_recipe_changes=True))['profession_recipe_changes']
                     self.assertFalse(delta['same_profession'])
-                    for field in ['observed_only_before','observed_only_after','learning_observation_changes','skill_up_observation_changes']:
+                    for field in ['observed_only_before','observed_only_after','learning_observation_changes',
+                                  'skill_up_observation_changes','rank_observation_change']:
                         self.assertIsNone(delta[field])
                     renamed=copy.deepcopy(value)
                     renamed['sections']['profession_recipe_view']['entries']['7']['name']='Translated'
@@ -149,6 +156,11 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     delta=(await compare(key,renamed_key,profession_recipe_changes=True))['profession_recipe_changes']
                     self.assertEqual(delta['learning_observation_changes'],[])
                     self.assertEqual(delta['skill_up_observation_changes'],[])
+                    self.assertEqual(delta['rank_observation_change']['rank_delta'],0)
+                    legacy=copy.deepcopy(changed)
+                    legacy['sections']['profession_recipe_view'].pop('rank_observation')
+                    delta=(await compare(key,store.ingest(legacy),profession_recipe_changes=True))['profession_recipe_changes']
+                    self.assertIsNone(delta['rank_observation_change'])
                     self.assertIsNone((await compare(key,missing_key,profession_recipe_changes=True))['profession_recipe_changes'])
                     self.assertNotIn('profession_recipe_changes',await compare(key,changed_key))
                     retail_key=store.ingest(fixture())

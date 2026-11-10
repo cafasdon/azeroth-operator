@@ -10,6 +10,9 @@ Use `list_snapshots.profession_recipe.maximum_rank_points_to_cap` for an
 inclusive distance from the same recipe view's recorded cap. Results show
 the recorded pair and the remaining points. Recipe search shows the pair
 when the view and saved material schematics have the same profession ID.
+With `profession_recipe_changes` on `compare_snapshots`, rank, cap and
+remaining points are compared only when both views report a rank pair for
+the same profession. The differences describe saved observations.
 [Forever profession rank bar](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_ProfessionsTemplates/Blizzard_ProfessionsRankBar.lua)
 
 Use `order: "reported_skill_ups_per_reagent_desc"` with a

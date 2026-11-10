@@ -6783,9 +6783,24 @@ fn compare_profession_recipe_views(before: &Value, after: &Value) -> Value {
         "before_profession_id":before["profession_id"],"after_profession_id":after["profession_id"],
         "before_observed_rows":old.len(),"after_observed_rows":new.len(),
         "observed_only_before":null,"observed_only_after":null,"learning_observation_changes":null,
-        "skill_up_observation_changes":null});
+        "skill_up_observation_changes":null,"rank_observation_change":null});
     if !same_profession {
         return result;
+    }
+    let rank_observation = |view: &Value| {
+        let rank = view["rank_observation"]["rank"].as_i64()?;
+        let cap = view["rank_observation"]["max_rank"].as_i64()?;
+        Some((rank, cap, cap.checked_sub(rank)?))
+    };
+    if let Some(((old_rank, old_cap, old_remaining), (new_rank, new_cap, new_remaining))) =
+        rank_observation(before).zip(rank_observation(after))
+    {
+        result["rank_observation_change"] = json!({
+            "before":{"rank":old_rank,"max_rank":old_cap,"rank_points_to_observed_cap":old_remaining},
+            "after":{"rank":new_rank,"max_rank":new_cap,"rank_points_to_observed_cap":new_remaining},
+            "rank_delta":new_rank-old_rank,"max_rank_delta":new_cap-old_cap,
+            "rank_points_to_observed_cap_delta":new_remaining-old_remaining,
+        });
     }
     let ids: BTreeSet<u32> = old
         .keys()

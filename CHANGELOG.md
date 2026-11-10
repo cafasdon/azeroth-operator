@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved recipe-view rank, cap and remaining points for the same profession.
+
 - Find saved recipe captures near the reported profession cap and show compatible rank context in recipe search.
 
 - Capture the visible profession recipe view's reported rank and cap.
