@@ -90,3 +90,7 @@ For items, the same option resolves `startQuest` and `relatedQuests`.
 The scalar starter appears at position `1`. The related quest array retains
 its original positions. Item quest links and item acquisition pages can be
 requested together.
+
+For NPCs and objects, `include_item_sources=true` returns `sourced_items`.
+Each group lists distinct matching items in numeric item ID order. The same
+offset applies across groups, with up to 32 items per group.

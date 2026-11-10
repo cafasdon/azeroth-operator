@@ -79,6 +79,11 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                     drops = item['item_sources']['npcDrops']
                     self.assertEqual(drops['kind'],'npc')
                     self.assertTrue(drops['references'])
+                    hogger = await call(get,kind='npc',entity_id=448,include_item_sources=True)
+                    self.assertIn(1931,[row['id'] for row in hogger['sourced_items']['npcDrops']['items']])
+                    past = await call(get,kind='npc',entity_id=448,include_item_sources=True,
+                                      item_source_offset=hogger['sourced_items']['npcDrops']['count'])
+                    self.assertEqual(past['sourced_items']['npcDrops']['items'],[])
                     end = await call(get,kind='item',entity_id=1931,include_item_sources=True,item_source_offset=drops['count'])
                     self.assertEqual(end['item_sources']['npcDrops']['references'],{})
                     await call(get,error=True,kind='item',entity_id=1931,item_source_offset=1)

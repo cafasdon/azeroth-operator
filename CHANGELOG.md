@@ -1,5 +1,7 @@
 # Changelog
 
+- List cached items associated with NPC drops, vendors and object drops.
+
 - Resolve item-started and related quests from the local Forever cache.
 
 - Resolve quest starters and finishers in reverse from cached NPC and object records.

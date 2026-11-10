@@ -182,11 +182,32 @@ class World:
                 or item_source_offset and not include_item_sources):
             raise ValueError('Invalid item source offset')
         if include_item_sources:
-            if kind != 'item':
-                raise ValueError('Item sources require an item record')
-            result['item_sources'] = None if row is None else self.item_sources(row['fields'], item_source_offset)
+            if kind == 'item':
+                result['item_sources'] = None if row is None else self.item_sources(row['fields'], item_source_offset)
+            elif kind in ('npc', 'object'):
+                result['sourced_items'] = None if row is None else self.sourced_items(kind, entity_id, item_source_offset)
+            else:
+                raise ValueError('Item sources require an item, NPC or object record')
         encoded(result)
         return result
+
+    def sourced_items(self, kind, entity_id, offset):
+        fields = ('npcDrops', 'vendors') if kind == 'npc' else ('objectDrops',)
+        matches = {field: [] for field in fields}
+        for key, (row, _, _) in self.records.items():
+            if key[0] != 'item':
+                continue
+            for field in fields:
+                entries = row['fields'].get(field)
+                if isinstance(entries, dict) and any(
+                    type(value) is int and value == entity_id for value in entries.values()
+                ):
+                    matches[field].append(key)
+        return {
+            field: {'count': len(keys), 'offset': offset, 'has_more': offset + 32 < len(keys),
+                    'items': [self.summary(key) for key in sorted(keys)[offset:offset+32]]}
+            for field, keys in matches.items()
+        }
 
     def item_sources(self, fields, offset):
         sources = {}
