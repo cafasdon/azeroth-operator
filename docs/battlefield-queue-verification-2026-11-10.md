@@ -112,3 +112,39 @@ request ef8ab5c614a2039885b899d9fbf4dd9b908931bffa7051aa1c9e01f8516688a5;
 source change based on direct tests and both independent reviews. Current
 membership, complete coverage and native qualification remain unproven;
 installation, deployment and live testing remain deferred.
+
+## Historical positional battlefield comparison — 2026-11-10
+
+Added optional battlefield_queue_changes to existing snapshot comparison.
+Reported capacities stay independent, missing sections retain unknown changes,
+and unrecorded slots retain null rather than none. Full changed-slot details
+are numerically ordered within 32 slots. Slot identity, queue continuity and
+join/leave events remain unverified. No collector, action or deployment changed.
+See ADR-078 for the contract.
+
+Author: cargo build --bin azeroth-operator succeeded. With PYTHONPATH=.;tests,
+python -m unittest test_battlefield_queue_compare passed one actual Rust stdio
+MCP test in 0.447 seconds. Covered all captured status kinds, changed capacity,
+missing/zero observations, null unrecorded slots, full 32-slot ordering,
+self-comparison, malformed/null flags with redaction, default equality and
+owner/character/family/chronology rejection. Snapshot bytes remained unchanged.
+Diff check passed.
+
+One independent adversarial round: failure and security/data plus callers
+lenses, requested gpt-6-astra high; resolved model and token usage not exposed.
+No concrete findings. Failure review passed 180 independent positional reference
+cases including all 25 token transitions, capacity boundaries, missing data,
+reversed/reused positions and seeded rows. Sixteen malformed flag/time/identity
+cases rejected; omitted and false flags matched. Security/data review passed
+fourteen fresh MCP probes covering exact build/variant/interface/realm gates,
+private corrupt rows and nested flag redaction, missing capacity, unrecorded
+slot nulls, positional reorder, schema/composition and unchanged defaults.
+Both reviewers independently ran the real MCP test and confirmed the docs'
+historical/uncertainty boundary. No source edits, game or deployment operations
+were performed by reviewers.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.86,
+request 9d4fae6d5f2239986ae63d066cace744c92987ee09843858c07943090e8368de;
+655 input and 44 output tokens, 0.288 seconds. Author accepted the bounded
+source change on direct tests and both independent reviews. Installation,
+deployment, native qualification and live testing remain deferred.

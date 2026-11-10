@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved battlefield status positions and capacity while withholding queue continuity and join/leave inference.
+
 - Find saved battlefield status observations by exact token, slot and minimum matching-slot count.
 
 - Summarise saved battlefield slot statuses with per-token counts and numeric slot lists.

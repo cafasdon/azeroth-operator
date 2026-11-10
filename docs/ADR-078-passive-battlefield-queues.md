@@ -67,3 +67,24 @@ It explicitly withholds current membership, full queue coverage, queue identity,
 acceptance, live and execution verification. Strict redacting parsing rejects
 unknown fields and invalid types/tokens/bounds. Owner/family gates remain.
 This adds no capture, queue action, timer or public-data indexing path.
+
+Saved positional comparison (10 November): compare_snapshots accepts boolean
+battlefield_queue_changes. Existing same-character, exact client, chronology
+and owner checks apply; the option requires Forever. Omitted/false preserves
+existing output and non-boolean/null flags reject through redacting parsing.
+
+Each side's reported_slot_count is retained independently; missing sections
+leave their capacity null and every comparison result unknown. Known zero
+capacity remains zero. With both sections, the output reports capacity change,
+changed_slot_count, unchanged_recorded_slot_count and every changed slot in
+numeric order (at most 32). A token difference is reported_status_changed.
+A slot recorded only on one side is observed_only_before/observed_only_after,
+with null for its unrecorded token. An unrecorded slot is never rewritten as
+none. Comparing an unchanged snapshot retains unchanged-slot counts.
+
+These are positional saved observations. Same slot number does not establish
+the same queue, and reordered/reused positions can produce token differences
+without any known membership event. Flags explicitly leave slot identity,
+same-queue continuity, current membership, complete coverage and acceptance
+unverified; join_or_leave_inferred, game_execution and live stay false. No
+queue action, polling, timer inference or new capture is introduced.

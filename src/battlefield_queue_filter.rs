@@ -66,3 +66,58 @@ impl BattlefieldQueueFilter {
             "acceptance_eligibility_verified":false,"game_execution":false,"live":false}))
     }
 }
+
+/// Compare recorded positions, not persistent queue identities or join/leave events.
+pub fn compare(before: Option<&Value>, after: Option<&Value>) -> Result<Value> {
+    for section in [before, after].into_iter().flatten() {
+        crate::schema::validate("battlefield_queue_slots", section)?;
+    }
+    let capacity = |section: Option<&Value>| {
+        section.map(|section| section["reported_slot_count"].as_u64().unwrap())
+    };
+    let mut result = json!({"basis":"saved_battlefield_slot_observations_only",
+        "before_reported_slot_count":capacity(before),"after_reported_slot_count":capacity(after),
+        "slot_identity_verified":false,"same_queue_continuity_verified":false,
+        "current_queue_membership_verified":false,"complete_queue_coverage_verified":false,
+        "acceptance_eligibility_verified":false,"join_or_leave_inferred":false,
+        "game_execution":false,"live":false});
+    let (Some(before), Some(after)) = (before, after) else {
+        for field in [
+            "reported_slot_capacity_changed",
+            "changed_slot_count",
+            "unchanged_recorded_slot_count",
+            "slot_changes",
+        ] {
+            result[field] = Value::Null;
+        }
+        return Ok(result);
+    };
+    let old_count = before["reported_slot_count"].as_u64().unwrap();
+    let new_count = after["reported_slot_count"].as_u64().unwrap();
+    let mut changed = Vec::new();
+    let mut unchanged = 0;
+    for slot in 1..=old_count.max(new_count) {
+        let key = slot.to_string();
+        let old = before["entries"]
+            .get(&key)
+            .map(|row| row["reported_status"].as_str().unwrap());
+        let new = after["entries"]
+            .get(&key)
+            .map(|row| row["reported_status"].as_str().unwrap());
+        if old == new {
+            unchanged += 1;
+            continue;
+        }
+        let kind = match (old, new) {
+            (Some(_), None) => "observed_only_before",
+            (None, Some(_)) => "observed_only_after",
+            _ => "reported_status_changed",
+        };
+        changed.push(json!({"slot":slot,"kind":kind,"before_reported_status":old,"after_reported_status":new}));
+    }
+    result["reported_slot_capacity_changed"] = json!(old_count != new_count);
+    result["changed_slot_count"] = json!(changed.len());
+    result["unchanged_recorded_slot_count"] = json!(unchanged);
+    result["slot_changes"] = json!(changed);
+    Ok(result)
+}

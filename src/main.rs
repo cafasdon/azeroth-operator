@@ -908,6 +908,9 @@ struct Compare {
     /// Compare numeric IDs and fields in two saved owned-auction caches; no sale inference.
     #[serde(default, deserialize_with = "owned_auction_change_flag")]
     owned_auction_changes: bool,
+    /// Compare saved battlefield slot positions/statuses; never queue identities or join/leave events.
+    #[serde(default, deserialize_with = "battlefield_queue_change_flag")]
+    battlefield_queue_changes: bool,
     /// Compare saved instance group size references across both captures.
     #[serde(default)]
     instance_group_size_reference: bool,
@@ -1119,6 +1122,11 @@ fn battlefield_queue_argument<'de, D: serde::Deserializer<'de>>(
     if value.is_null() { return Ok(None); }
     serde_json::from_value(value).map(Some)
         .map_err(|_| serde::de::Error::custom("Invalid battlefield queue filter"))
+}
+
+fn battlefield_queue_change_flag<'de, D: serde::Deserializer<'de>>(input: D) -> Result<bool, D::Error> {
+    serde_json::Value::deserialize(input)?.as_bool()
+        .ok_or_else(|| serde::de::Error::custom("Invalid battlefield queue comparison flag"))
 }
 
 fn gossip_option_argument<'de, D: serde::Deserializer<'de>>(
@@ -2753,6 +2761,7 @@ impl Operator {
                     player_aura_spell_id: args.player_aura_spell_id,
                     group_context_changes: args.group_context_changes,
                     owned_auction_changes: args.owned_auction_changes,
+                    battlefield_queue_changes: args.battlefield_queue_changes,
                     instance_group_size_reference: args.instance_group_size_reference,
                     instance_group_size_max_cache_age_seconds: args
                         .instance_group_size_max_cache_age_seconds,

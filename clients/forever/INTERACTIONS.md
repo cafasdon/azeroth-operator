@@ -4367,3 +4367,13 @@ precedes filtering, so older matches do not replace newer nonmatching captures.
 The filter composes with other saved-snapshot predicates and time bounds.
 Null/omitted filter preserves ordinary listing. These are historical records,
 not present membership, acceptance eligibility or complete queue coverage.
+
+Set compare_snapshots.battlefield_queue_changes to true to compare saved
+positions and raw status tokens. Each side retains its reported capacity;
+missing sections leave differences unknown, while known zero remains zero.
+Changes are ordered by numeric slot, up to 32. Unrecorded slots use null and
+observed_only_before/observed_only_after; token differences use
+reported_status_changed. Capacity changes and unchanged recorded slots are
+counted. Positional equality does not establish queue identity or continuity;
+no join, leave, acceptance or current membership event is inferred. Existing
+character/client/time/owner gates apply and default output stays unchanged.

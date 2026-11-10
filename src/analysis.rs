@@ -3515,6 +3515,7 @@ pub struct ComparisonSelectors<'a> {
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
     pub owned_auction_changes: bool,
+    pub battlefield_queue_changes: bool,
     pub instance_group_size_reference: bool,
     pub instance_group_size_max_cache_age_seconds: Option<u32>,
     pub group_member_target: Option<std::num::NonZeroU32>,
@@ -4188,6 +4189,11 @@ pub fn compare_observations(
         );
         comparison["group_member_target_comparison"] =
             compare_group_member_target(before, after, target.get());
+    }
+    if selectors.battlefield_queue_changes {
+        ensure!(before.client.family == crate::Family::Forever, "Battlefield queue comparison requires Forever");
+        comparison["battlefield_queue_changes"] = crate::battlefield_queue_filter::compare(
+            before.sections.get("battlefield_queue_slots"), after.sections.get("battlefield_queue_slots"))?;
     }
     if selectors.owned_auction_changes {
         ensure!(before.client.family == crate::Family::Forever, "Owned auction comparison requires Forever");

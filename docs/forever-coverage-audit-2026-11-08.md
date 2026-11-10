@@ -892,3 +892,9 @@ minimum matching count. Latest-per-character selection precedes matching;
 missing/empty/nonmatching captures do not resurrect old observations. Matches
 retain source capacity and all bounded numeric slot matches. No new capture,
 queue action, current-membership proof or native qualification is introduced.
+
+Battlefield comparisons now show positional token differences and reported
+capacity changes, keeping missing/unrecorded separate from none and known zero.
+All changed numeric slots are retained within the existing 32-slot bound.
+Slot identity/continuity and join/leave events are explicitly unverified; no
+new capture, action, membership proof or native qualification was introduced.
