@@ -1,5 +1,7 @@
 # Changelog
 
+- Show observed owned and equipped piece counts alongside matching set names.
+
 - Show catalogue set names next to IDs in owned-gear search results.
 
 - Resolve unique Forever set-name searches to full owned-set summaries.

@@ -3538,6 +3538,7 @@ pub fn review_owned(
     let mut resolution_counts_by_storage =
         BTreeMap::<&str, BTreeMap<SimulatorItemResolution, usize>>::new();
     let mut set_locations = BTreeMap::<u64, BTreeMap<&str, usize>>::new();
+    let mut matched_set_pieces = BTreeMap::<u64, BTreeMap<u64, bool>>::new();
     let target_slot = simulator_slot.and_then(|target| {
         (1..=19).find(|slot| simulator_slot_for_equipment(*slot) == Some(target))
     });
@@ -3575,15 +3576,26 @@ pub fn review_owned(
             let wrong_set = set_id.is_some_and(|id| {
                 reference.and_then(|item| item["setId"].as_u64()) != Some(u64::from(id.get()))
             });
-            if summary_set_id
-                .is_some_and(|id| reference.and_then(|item| recorded_set_id(item)) == Some(id))
-                && let Some(id) = item_id
+            if let Some((id, recorded_set)) =
+                item_id.zip(reference.and_then(|item| recorded_set_id(item)))
             {
-                *set_locations
-                    .entry(id)
-                    .or_default()
-                    .entry(storage)
-                    .or_default() += 1;
+                if summary_set_id == Some(recorded_set) {
+                    *set_locations
+                        .entry(id)
+                        .or_default()
+                        .entry(storage)
+                        .or_default() += 1;
+                }
+                if matching_sets
+                    .as_ref()
+                    .is_some_and(|sets| sets.contains_key(&recorded_set))
+                {
+                    *matched_set_pieces
+                        .entry(recorded_set)
+                        .or_default()
+                        .entry(id)
+                        .or_default() |= storage == "equipment";
+                }
             }
             let wrong_item =
                 !item_filter.is_empty() && !item_id.is_some_and(|id| item_filter.contains(&id));
@@ -3763,7 +3775,13 @@ pub fn review_owned(
             "matched_set_ids":sets.keys().take(50).collect::<Vec<_>>(),
             "matched_set_ids_truncated":sets.len() > 50,
             "matched_sets":sets.iter().take(50)
-                .map(|(id, name)| json!({"set_id":id,"set_name":name}))
+                .map(|(id, name)| {
+                    let pieces = matched_set_pieces.get(id);
+                    json!({"set_id":id,"set_name":name,
+                        "observed_distinct_pieces":pieces.map_or(0, BTreeMap::len),
+                        "observed_equipped_distinct_pieces":snapshot.sections.contains_key("equipment")
+                            .then(|| pieces.map_or(0, |items| items.values().filter(|equipped| **equipped).count()))})
+                })
                 .collect::<Vec<_>>()
         });
     }

@@ -8,6 +8,10 @@ paging. Without an explicit `set_id`, it reports how many catalogue set
 IDs match and lists up to 50 of them with their catalogue names. A unique match supplies the same
 whole-capture set observation as an explicit ID. An ambiguous match
 leaves the set observation absent.
+Each name match also shows the number of distinct pieces observed anywhere
+in the saved inventory and the number observed equipped. The equipped
+count is null when equipment was unavailable. Item filters and paging do
+not change these counts.
 
 In `review_forever_owned_gear`, a `set_id` review reports distinct
 catalogue-matched set pieces separately for equipment, bags, character
