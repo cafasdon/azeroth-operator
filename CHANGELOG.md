@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved instance warnings within an exact range of completed or remaining encounters.
+
 - Compare recorded completion flags for uniquely matched tracked achievement criteria.
 
 - Identify tracked achievements with increased or decreased remaining criterion quantities across saved captures.

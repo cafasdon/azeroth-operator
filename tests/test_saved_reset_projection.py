@@ -64,6 +64,11 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         ({'minimum_completed_encounters':1,'minimum_remaining_encounters':2,
                           'maximum_warning_seconds':60,'has_encounter_details':True},{encounters_id}),
                         ({'has_encounter_details':False},{counts_only_id}),
+                        ({'minimum_completed_encounters':1,'maximum_completed_encounters':1,
+                          'minimum_remaining_encounters':2,'maximum_remaining_encounters':2},
+                         {encounters_id,counts_only_id}),
+                        ({'maximum_completed_encounters':0},set()),
+                        ({'maximum_remaining_encounters':1},set()),
                         ({'minimum_remaining_encounters':3},set()),({'maximum_warning_seconds':59},set()),
                     ]:
                         reply=await session.call_tool('list_snapshots',{
@@ -93,7 +98,11 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         if count:
                             self.assertEqual(matches[0]['instance_lock_warning_match']['matching_encounter_count'],count)
                             self.assertNotIn('Same name',json.dumps(matches))
-                    for invalid in [{'encounter_defeated':False},{'encounter_name':' '},{'encounter_name':'é'*129}]:
+                    for invalid in [{'encounter_defeated':False},{'encounter_name':' '},{'encounter_name':'é'*129},
+                                    {'minimum_completed_encounters':2,'maximum_completed_encounters':1},
+                                    {'minimum_remaining_encounters':3,'maximum_remaining_encounters':2},
+                                    {'maximum_remaining_encounters':-1},
+                                    {'maximum_completed_encounters':True}]:
                         reply=await session.call_tool('list_snapshots',{
                             'family':'forever','instance_lock_warning':invalid})
                         self.assertTrue(reply.isError,reply)

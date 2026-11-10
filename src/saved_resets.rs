@@ -67,7 +67,9 @@ pub(crate) fn matches_projected_window(
 #[serde(deny_unknown_fields)]
 pub struct InstanceLockWarningFilter {
     pub minimum_completed_encounters: Option<u32>,
+    pub maximum_completed_encounters: Option<u32>,
     pub minimum_remaining_encounters: Option<u32>,
+    pub maximum_remaining_encounters: Option<u32>,
     pub maximum_warning_seconds: Option<u32>,
     pub has_encounter_details: Option<bool>,
     /// Exact case-insensitive encounter name from the saved warning.
@@ -85,6 +87,16 @@ impl InstanceLockWarningFilter {
                 && (self.encounter_defeated.is_none() || self.encounter_name.is_some()),
             "Encounter state requires a valid named encounter"
         );
+        ensure!(
+            self.minimum_completed_encounters
+                .zip(self.maximum_completed_encounters)
+                .is_none_or(|(min, max)| min <= max)
+                && self
+                    .minimum_remaining_encounters
+                    .zip(self.maximum_remaining_encounters)
+                    .is_none_or(|(min, max)| min <= max),
+            "Encounter count bounds must be ordered"
+        );
         Ok(())
     }
 
@@ -100,8 +112,14 @@ impl InstanceLockWarningFilter {
             .minimum_completed_encounters
             .is_none_or(|min| completed >= u64::from(min))
             && self
+                .maximum_completed_encounters
+                .is_none_or(|max| completed <= u64::from(max))
+            && self
                 .minimum_remaining_encounters
                 .is_none_or(|min| remaining >= u64::from(min))
+            && self
+                .maximum_remaining_encounters
+                .is_none_or(|max| remaining <= u64::from(max))
             && self
                 .maximum_warning_seconds
                 .is_none_or(|max| seconds <= u64::from(max))

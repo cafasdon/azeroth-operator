@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Use `instance_lock_warning.maximum_completed_encounters` or
+`maximum_remaining_encounters` on `list_snapshots` to find saved
+warnings within an inclusive encounter-count range. Set the minimum and
+maximum to the same value for an exact count.
+
 Use `achievement_filter.maximum_unfinished_criteria` when inspecting
 `tracked_achievements` to find achievements within a limit on explicitly
 unfinished captured criteria. A missing achievement section stays unknown. Combine it
