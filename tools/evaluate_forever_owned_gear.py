@@ -9,7 +9,9 @@ from time import monotonic
 
 from tools import collect_forever_gear_windows as collection
 from tools import run_forever_saved_journal as simulation
-from tools.merge_forever_gear_windows import MAX_REPORT_BYTES, MAX_TOTAL_BYTES, digest, integer, parse_report, require
+from tools.merge_forever_gear_windows import (
+    MAX_REPORT_BYTES, MAX_TOTAL_BYTES, checked_inventory_evidence, digest, integer, parse_report, require,
+)
 from tools.prepare_forever_gear_window import encoded
 from tools.sync_exports import ordinary
 from tools import role_metrics as roles
@@ -85,6 +87,24 @@ async def selected_snapshot(args, deadline):
                     return digest(result['selection']['snapshot_id']), 'explicit_saved_character'
 
 
+async def catalogue_preflight(args, deadline):
+    ranker = collection.ranker
+    require(monotonic() < deadline)
+    async with asyncio.timeout(max(.001, min(15, deadline - monotonic()))):
+        with tempfile.TemporaryFile(mode='w+') as errlog:
+            params = ranker.StdioServerParameters(command=str(args.mcp), env=dict(os.environ))
+            async with ranker.stdio_client(params, errlog=errlog) as (reader, writer):
+                async with ranker.ClientSession(reader, writer) as session:
+                    await session.initialize()
+                    reply = await session.call_tool('review_forever_owned_gear',
+                        {'snapshot_id': args.snapshot_id, 'limit': 1})
+                    require(not reply.isError and len(reply.content) == 1)
+                    result = parse_report(reply.content[0].text.encode())
+                    evidence = checked_inventory_evidence(result['inventory_evidence'])
+                    require(result['snapshot_id'] == args.snapshot_id and evidence is not None)
+                    return evidence
+
+
 async def execute(args):
     args = copy(args)
     require_catalogue_coverage = getattr(args, "require_catalogue_coverage", False)
@@ -145,9 +165,17 @@ async def execute(args):
     for field in ['item_id', 'set_id', 'storage', 'max_swaps', 'minimum_required_level',
         'maximum_required_level', 'observed_enchant_effect_id', 'observed_random_suffix_id']:
         setattr(args, field, None)
+    preflight = await catalogue_preflight(args, deadline) if require_catalogue_coverage else None
+    catalogue_gap = bool(preflight and preflight['catalogue_unmatched_item_locations'])
     collection_deadline = min(deadline, monotonic() + args.collection_seconds)
     try:
-        collected = await collection.collect_windows(copy(args), deadline=collection_deadline)
+        if catalogue_gap:
+            collected = {'mode':'gear_window_collection','candidate_scan_limit':args.candidate_scan_limit,
+                'windows_attempted':0,'windows_inserted':0,'stop_reason':'catalogue_unmatched_items',
+                'progress':None,'best_in_slot_verified':False,'feasible_set_coverage_verified':False,
+                'simulation_performed':False,'game_execution':False}
+        else:
+            collected = await collection.collect_windows(copy(args), deadline=collection_deadline)
     except Exception as failure:
         # Stdio cancellation can surface as an ExceptionGroup, not TimeoutError.
         # Only expiry of this stage permits recovery; early failures still reject.
@@ -169,12 +197,14 @@ async def execute(args):
             'best_in_slot_verified':False,'feasible_set_coverage_verified':False,
             'simulation_performed':False,'game_execution':False}
     progress = collected['progress']
-    inventory_evidence = progress.get('inventory_evidence') if progress else None
+    saved_evidence = progress.get('inventory_evidence') if progress else None
+    require(preflight is None or saved_evidence is None or preflight == saved_evidence)
+    inventory_evidence = saved_evidence if saved_evidence is not None else preflight
     ranked = None
-    reason = 'no_saved_windows'
+    reason = 'catalogue_unmatched_items' if catalogue_gap else 'no_saved_windows'
     if progress and progress['window_count']:
         reason = 'time_budget'
-        if require_catalogue_coverage and inventory_evidence is None:
+        if require_catalogue_coverage and saved_evidence is None:
             reason = 'catalogue_coverage_unavailable'
         elif require_catalogue_coverage and inventory_evidence['catalogue_unmatched_item_locations']:
             reason = 'catalogue_unmatched_items'
@@ -236,7 +266,7 @@ def parser():
     cli.add_argument('--require-all-storage-sections', action='store_true',
                      help='Require equipment, bags, character bank and account bank in the selected capture')
     cli.add_argument('--require-catalogue-coverage', action='store_true',
-                     help='Skip simulation if catalogue evidence is missing or an observed item has no catalogue match')
+                     help='Check observed item catalogue coverage before collecting plans and require saved coverage evidence before simulation')
     cli.add_argument('--engine-sha256', required=True)
     cli.add_argument('--encounter-lookup', type=Path, action='append', required=True)
     cli.add_argument('--encounter-weight', type=float, action='append')

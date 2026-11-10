@@ -486,10 +486,11 @@ A missing section stops the run before journal writes.
 Use `--require-all-storage-sections` with either selector to require observed
 equipment, bags, character bank and account bank. Observed sections may be
 empty or partial. This check does not verify complete ownership.
-Use `--require-catalogue-coverage` to skip simulation when saved plan windows
-have missing catalogue evidence or unmatched observed item locations. The
-report explains the stop and keeps collected windows for inspection. This
-checks base-item matches independently of storage and modifier coverage.
+Use `--require-catalogue-coverage` to check the selected capture before
+collecting plans. An unmatched observed item stops collection and simulation
+before the plan journal is opened. The report shows the catalogue gap.
+Simulation also requires matching evidence from the saved plan windows.
+This checks base-item matches independently of storage and modifier coverage.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.

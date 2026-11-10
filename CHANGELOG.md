@@ -1,5 +1,7 @@
 # Changelog
 
+- Check strict owned-gear catalogue coverage before enumerating builds or opening a plan journal.
+
 - Report an incomplete owned-gear search when its collection budget expires before the first journal is created. New collection uses a new source fingerprint.
 
 - Find saved Forever captures with an exact spell shortcut and matching recorded resources.

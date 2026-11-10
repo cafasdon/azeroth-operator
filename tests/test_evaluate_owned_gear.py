@@ -223,6 +223,11 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(runs.call_count,calls)
                 self.assertEqual(journal.read_bytes(),before)
                 self.assertFalse(cached['catalogue_coverage_required'])
+                strict_cached = launch(['--checkpoint-only','--require-catalogue-coverage'])
+                self.assertEqual(strict_cached['inventory_evidence'], cached['inventory_evidence'])
+                self.assertEqual(strict_cached['simulation']['ranked_gear_sets'],
+                                 cached['simulation']['ranked_gear_sets'])
+                self.assertEqual(strict_cached['simulation']['new_runs'], 0)
                 with_gap = deepcopy(value)
                 with_gap["character"]["name"] = "CatalogueGap"
                 with_gap['sections']['bags']['0']['2'] = {'item_id':4294967295,'count':1}
@@ -235,7 +240,10 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertTrue(gap['catalogue_coverage_required'])
                 self.assertEqual(gap['inventory_evidence']['catalogue_unmatched_item_ids'],[4294967295])
                 self.assertIsNone(gap['simulation'])
-                self.assertEqual([stage[0] for stage in captured[stage_count:]], ['collection'])
+                self.assertEqual(captured[stage_count:], [])
+                self.assertEqual(gap['collection']['windows_attempted'], 0)
+                self.assertFalse((base/'gap.sqlite').exists())
+                self.assertFalse((base/'gap-results').exists())
                 del captured[stage_count:]
                 self.assertEqual(runs.call_count,calls)
                 all_storage = '--require-all-storage-sections'
