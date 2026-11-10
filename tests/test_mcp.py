@@ -1475,6 +1475,24 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                     "weekly_remaining": 30, "maximum_remaining": 40,
                                     "maximum_basis": "total_earned",
                                 })
+                        for selector,expected in [
+                            ({"currency_name":"  fIXTURE cURRENCY ","minimum_weekly_remaining":30},[new_freshness_id]),
+                            ({"currency_name":"Fixture currency","minimum_weekly_remaining":31},[]),
+                            ({"currency_name":"Fixture currency","currency_id":100},[new_freshness_id]),
+                            ({"currency_name":"Fixture currency","currency_id":999},[]),
+                            ({"currency_name":"Fixture"},[]),
+                        ]:
+                            named=await session.call_tool("list_snapshots",{
+                                **latest_query,"currency_balance":{"minimum_quantity":0,**selector}})
+                            self.assertFalse(named.isError,named)
+                            rows=json.loads(named.content[0].text)["snapshots"]
+                            self.assertEqual([row["snapshot_id"] for row in rows],expected)
+                            for row in rows:
+                                self.assertEqual(row["currency_balance_match"]["currency_id"],100)
+                        for selector in [{},{"currency_name":" "},{"currency_name":"é"*129}]:
+                            rejected=await session.call_tool("list_snapshots",{
+                                **latest_query,"currency_balance":{"minimum_quantity":0,**selector}})
+                            self.assertTrue(rejected.isError)
                         for reaction, expected_ids in [(4, [new_freshness_id]), (5, [])]:
                             ranked = await session.call_tool("list_snapshots", {
                                 **latest_query, "reputation_rank": {

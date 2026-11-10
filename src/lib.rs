@@ -2001,7 +2001,9 @@ pub struct PetFoodCaptureFilter {
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CurrencyBalanceFilter {
-    pub currency_id: std::num::NonZeroU32,
+    pub currency_id: Option<std::num::NonZeroU32>,
+    /// Exact case-insensitive saved currency name.
+    pub currency_name: Option<String>,
     /// Inclusive minimum recorded quantity.
     pub minimum_quantity: u64,
     /// Inclusive minimum room below an observed weekly cap.
@@ -2019,6 +2021,33 @@ pub struct ReputationRankFilter {
     /// Inclusive minimum standard reputation reaction, from 1 to 8.
     #[schemars(range(min = 1, max = 8))]
     pub minimum_reaction: u8,
+}
+
+fn select_named_entry<'a>(
+    entries: &'a serde_json::Map<String, Value>,
+    key: Option<&str>,
+    name: Option<&str>,
+    in_scope: impl Fn(&Value) -> bool,
+) -> Option<(u32, &'a Value)> {
+    let matches = |row: &Value| {
+        in_scope(row)
+            && name.is_none_or(|name| {
+                row["name"]
+                    .as_str()
+                    .is_some_and(|label| label.trim().to_lowercase() == name)
+            })
+    };
+    let (id, row) = if let Some(key) = key {
+        entries.get_key_value(key).filter(|(_, row)| matches(row))?
+    } else {
+        let mut matching = entries.iter().filter(|(_, row)| matches(row));
+        let first = matching.next()?;
+        if matching.next().is_some() {
+            return None;
+        }
+        first
+    };
+    Some((id.parse().ok()?, row))
 }
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -2771,12 +2800,25 @@ impl Store {
             .and_then(|filter| filter.item_id.map(|id| id.to_string()));
         let filter_experience = minimum_rested_xp.is_some() || xp_gain_enabled_only;
         ensure!(
-            currency_balance.is_none() || family == Family::Forever,
-            "Currency balance filtering requires Forever"
+            currency_balance
+                .as_ref()
+                .is_none_or(|filter| family == Family::Forever
+                    && (filter.currency_id.is_some() || filter.currency_name.is_some())
+                    && filter
+                        .currency_name
+                        .as_deref()
+                        .map(str::trim)
+                        .is_none_or(|name| !name.is_empty() && name.len() <= 256)),
+            "Currency balance filtering requires Forever and a currency ID or valid name"
         );
         let currency_key = currency_balance
             .as_ref()
-            .map(|filter| filter.currency_id.to_string());
+            .and_then(|filter| filter.currency_id.map(|id| id.to_string()));
+        let currency_name = currency_balance
+            .as_ref()
+            .and_then(|filter| filter.currency_name.as_deref())
+            .map(str::trim)
+            .map(str::to_lowercase);
         ensure!(
             reputation_rank.as_ref().is_none_or(|filter| {
                 family == Family::Forever
@@ -3520,55 +3562,44 @@ impl Store {
                     }
                     let reputation_match = reputation_rank.as_ref().and_then(|filter| {
                         let entries = s.sections.get("reputation")?["entries"].as_object()?;
-                        let matches_faction = |row: &Value| {
-                            row["kind"] == "standard"
-                                && reputation_name.as_ref().is_none_or(|name| {
-                                    row["name"]
-                                        .as_str()
-                                        .is_some_and(|label| label.trim().to_lowercase() == *name)
-                                })
-                        };
-                        let (id, row) = if let Some(key) = &reputation_key {
-                            entries
-                                .get_key_value(key)
-                                .filter(|(_, row)| matches_faction(row))?
-                        } else {
-                            let mut matches =
-                                entries.iter().filter(|(_, row)| matches_faction(row));
-                            let first = matches.next()?;
-                            if matches.next().is_some() {
-                                return None;
-                            }
-                            first
-                        };
+                        let (id, row) = select_named_entry(
+                            entries,
+                            reputation_key.as_deref(),
+                            reputation_name.as_deref(),
+                            |row| row["kind"] == "standard",
+                        )?;
                         if row["reaction"].as_u64()? < u64::from(filter.minimum_reaction) {
                             return None;
                         }
-                        Some((id.parse::<u32>().ok()?, row))
+                        Some((id, row))
                     });
                     if reputation_rank.is_some() && reputation_match.is_none() {
                         continue;
                     }
-                    let currency_match = currency_balance
-                        .as_ref()
-                        .zip(currency_key.as_ref())
-                        .and_then(|(filter, key)| {
-                            let row = s.sections.get("currency_balances")?["entries"].get(key)?;
-                            let headroom =
-                                analysis::currency_entry_cap_headroom(row).unwrap_or(Value::Null);
-                            (row["quantity"].as_u64()? >= filter.minimum_quantity
-                                && filter.minimum_weekly_remaining.is_none_or(|minimum| {
-                                    headroom["weekly_remaining"]
-                                        .as_u64()
-                                        .is_some_and(|room| room >= minimum)
-                                })
-                                && filter.minimum_maximum_remaining.is_none_or(|minimum| {
-                                    headroom["maximum_remaining"]
-                                        .as_u64()
-                                        .is_some_and(|room| room >= minimum)
-                                }))
-                            .then_some(row)
-                        });
+                    let currency_match = currency_balance.as_ref().and_then(|filter| {
+                        let entries =
+                            s.sections.get("currency_balances")?["entries"].as_object()?;
+                        let (id, row) = select_named_entry(
+                            entries,
+                            currency_key.as_deref(),
+                            currency_name.as_deref(),
+                            |_| true,
+                        )?;
+                        let headroom =
+                            analysis::currency_entry_cap_headroom(row).unwrap_or(Value::Null);
+                        (row["quantity"].as_u64()? >= filter.minimum_quantity
+                            && filter.minimum_weekly_remaining.is_none_or(|minimum| {
+                                headroom["weekly_remaining"]
+                                    .as_u64()
+                                    .is_some_and(|room| room >= minimum)
+                            })
+                            && filter.minimum_maximum_remaining.is_none_or(|minimum| {
+                                headroom["maximum_remaining"]
+                                    .as_u64()
+                                    .is_some_and(|room| room >= minimum)
+                            }))
+                        .then_some((id, row))
+                    });
                     if currency_balance.is_some() && currency_match.is_none() {
                         continue;
                     }
@@ -4070,9 +4101,10 @@ impl Store {
                             "account_wide":row["account_wide"],
                         });
                     }
-                    if let Some((filter, row)) = currency_balance.as_ref().zip(currency_match) {
+                    if let Some((filter, (id, row))) = currency_balance.as_ref().zip(currency_match)
+                    {
                         summary["currency_balance_match"] = json!({
-                            "currency_id":filter.currency_id,"quantity":row["quantity"],
+                            "currency_id":id,"quantity":row["quantity"],
                             "account_wide":row["account_wide"],"inactive":row["inactive"],
                         });
                         if filter.minimum_weekly_remaining.is_some()

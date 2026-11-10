@@ -3317,6 +3317,10 @@ across both captures before comparing balances by ID. A name alone must
 resolve to one ID. Supply `currency_id` to narrow the match. Existing
 account-scope checks still apply to balance and cap differences.
 
+`list_snapshots.currency_balance.currency_name` searches exact saved
+currency names. It resolves a unique matching ID in each capture before
+applying quantity or cap filters. Add `currency_id` to disambiguate.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
