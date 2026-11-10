@@ -100,6 +100,8 @@ struct QuestRenownTarget {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Compare each saved group category's reported member count against this target.
+    group_member_target: Option<std::num::NonZeroU32>,
     /// Return only capture statuses for these distinct section names instead of section data.
     coverage_sections: Option<Vec<String>>,
     /// Compare a target PvP rank with saved rank thresholds and caps.
@@ -2711,6 +2713,11 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.group_member_target.is_some() && args.section.as_deref() != Some("group_context") {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Group member targets require the group_context section",
+            )]);
+        }
         if args.repair_include_equipment_condition
             && args.section.as_deref() != Some("repair_quote")
         {
@@ -4464,6 +4471,18 @@ impl Operator {
                                 )
                             })
                     );
+                }
+                if let Some(target) = args.group_member_target {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "Group member targets require Forever",
+                        )]);
+                    }
+                    value["group_member_target_projection"] =
+                        azeroth_operator::analysis::group_member_target_projection(
+                            &value["data"],
+                            target.get(),
+                        );
                 }
                 if let Some(rank) = args.pvp_target_rank {
                     if value["client"]["family"] != "forever" {

@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `group_member_target` with `inspect_snapshot` on `group_context`
+to compare the saved home and instance counts separately. It reports
+shortfall and excess against the target. Missing counts stay unknown.
+The result uses raw captured counts and leaves roster and current group
+membership unverified.
+
 Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap
 observations. Crossings use captured ranks and require matching reported

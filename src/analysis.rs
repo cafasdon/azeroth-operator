@@ -3481,6 +3481,25 @@ const PVP_CAP_FIELDS: [&str; 3] = [
     "previous_week_max_rank",
 ];
 
+pub fn group_member_target_projection(section: &Value, target: u32) -> Value {
+    let target = u64::from(target);
+    let categories = ["home", "instance"]
+        .map(|category| {
+            let count = section["categories"][category]["reported_member_count"].as_u64();
+            (
+                category,
+                json!({"reported_member_count":count,
+            "shortfall":count.map(|count| target.saturating_sub(count)),
+            "excess":count.map(|count| count.saturating_sub(target)),
+            "target_met_at_capture":count.map(|count| count >= target)}),
+            )
+        })
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+    json!({"target_reported_member_count":target,"categories":categories,
+        "complete_roster_verified":false,"current_group_verified":false,"live":false})
+}
+
 pub fn pvp_rank_target_projection(section: &Value, target: u32) -> Option<Value> {
     let rank = section["rank"].as_u64()?;
     let points = section["rank_points"].as_u64()?;

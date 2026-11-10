@@ -77,6 +77,27 @@ class GroupContextTests(unittest.IsolatedAsyncioTestCase):
                             for flag in ['current_group_verified','group_identity_verified','complete_roster_verified','social_action_eligibility_verified','game_execution']:
                                 self.assertIs(summary[flag],False)
                     earlier, later = valid[4][0], valid[5][0]
+                    for index, home, instance in [
+                        (0,(None,None,None,None),(None,None,None,None)),
+                        (1,(5,5,0,False),(None,None,None,None)),
+                        (2,(5,5,0,False),(40,0,30,True)),
+                        (3,(None,None,None,None),(0,10,0,False)),
+                    ]:
+                        response = await call('inspect_snapshot',snapshot_id=valid[index][0],
+                            section='group_context',group_member_target=10)
+                        target = response['group_member_target_projection']
+                        self.assertEqual(target['target_reported_member_count'],10)
+                        self.assertFalse(target['complete_roster_verified'])
+                        for category, expected in [('home',home),('instance',instance)]:
+                            self.assertEqual(target['categories'][category],dict(zip((
+                                'reported_member_count','shortfall','excess','target_met_at_capture',
+                            ),expected,strict=True)))
+                    await call('inspect_snapshot',error=True,snapshot_id=retail_id,
+                        section='group_context',group_member_target=10)
+                    await call('inspect_snapshot',error=True,snapshot_id=earlier,
+                        section='stats',group_member_target=10)
+                    await call('inspect_snapshot',error=True,snapshot_id=earlier,
+                        section='group_context',group_member_target=0)
                     async def search(**fields):
                         return (await call('list_snapshots',family='forever',group_context=fields))['snapshots']
                     leader = await search(category='instance',in_raid=True,player_is_leader=True,minimum_reported_member_count=40)
