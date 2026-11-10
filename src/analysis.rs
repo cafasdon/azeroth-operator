@@ -10295,13 +10295,17 @@ fn compare_quest_objective_indices(
             }) {
                 return None;
             }
-            let fulfilled_delta = old.zip(new).and_then(|(old, new)| {
+            let deltas = old.zip(new).and_then(|(old, new)| {
                 let required = old["required"].as_u64()?;
                 (old["kind"] == new["kind"] && new["required"].as_u64() == Some(required))
                     .then_some(())?;
-                Some(
-                    i128::from(new["fulfilled"].as_u64()?) - i128::from(old["fulfilled"].as_u64()?),
-                )
+                let old = old["fulfilled"].as_u64()?;
+                let new = new["fulfilled"].as_u64()?;
+                Some((
+                    i128::from(new) - i128::from(old),
+                    i128::from(required.saturating_sub(new))
+                        - i128::from(required.saturating_sub(old)),
+                ))
             });
             let project = |row: &Value| {
                 json!({"kind":row["kind"],"finished":row["finished"],
@@ -10309,7 +10313,8 @@ fn compare_quest_objective_indices(
             };
             Some(
                 json!({"index":index,"before":old.map(project),"after":new.map(project),
-            "fulfilled_delta":fulfilled_delta}),
+            "fulfilled_delta":deltas.map(|(fulfilled, _)| fulfilled),
+            "remaining_count_delta":deltas.map(|(_, remaining)| remaining)}),
             )
         })
         .collect();

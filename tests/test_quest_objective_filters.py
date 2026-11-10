@@ -739,7 +739,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(indices, {'objective_identity_verified':False,'changes':[{
                         'index':2,'before':{'kind':'monster','finished':False,'required':None,'fulfilled':None},
                         'after':{'kind':'monster','finished':False,'required':1,'fulfilled':2},
-                        'fulfilled_delta':None,
+                        'fulfilled_delta':None,'remaining_count_delta':None,
                     }]})
                     progressed = deepcopy(changed)
                     progressed['sections']['quests']['9']['objectives']['1']['fulfilled'] = 2
@@ -751,7 +751,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     })
                     self.assertFalse(progress.isError,progress)
                     changes = json.loads(progress.content[0].text)['quest_change']['objective_index_changes']['changes']
-                    self.assertEqual([(row['index'],row['fulfilled_delta']) for row in changes], [(1,2)])
+                    self.assertEqual([(row['index'],row['fulfilled_delta'],row['remaining_count_delta'])
+                                      for row in changes], [(1,2,-2)])
                     unchanged = await session.call_tool('compare_snapshots',{
                         'before_id':changed_key,'after_id':progress_key,'quest_id':6,
                     })

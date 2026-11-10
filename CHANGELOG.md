@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare changes in remaining work for saved quest objectives.
+
 - Compare changed objective indices for an exact saved quest.
 
 - Flag saved quests with all observed objectives finished and no confirmed turn-in readiness.
