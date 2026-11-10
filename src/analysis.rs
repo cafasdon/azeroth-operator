@@ -3351,6 +3351,7 @@ pub struct ComparisonSelectors<'a> {
     pub merchant_offer_currency_id: Option<std::num::NonZeroU32>,
     pub trainer_lesson_name: Option<&'a str>,
     pub flight_destination_node_id: Option<std::num::NonZeroU32>,
+    pub flight_wallet_reserve_copper: Option<u64>,
     pub repair_quote_changes: bool,
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -4117,6 +4118,14 @@ pub fn compare_observations(
             .unwrap_or(Value::Null);
     }
     let wallet = |snapshot: &Snapshot| snapshot.sections.get("wallet")?["copper"].as_u64();
+    ensure!(
+        selectors
+            .flight_wallet_reserve_copper
+            .is_none_or(|reserve| {
+                reserve <= 9_999_999_999_999 && selectors.flight_destination_node_id.is_some()
+            }),
+        "Flight wallet reserves require an exact destination and a valid copper amount"
+    );
     if let Some(destination) = selectors.flight_destination_node_id {
         ensure!(
             before.client.family == crate::Family::Forever,
@@ -4128,6 +4137,7 @@ pub fn compare_observations(
             wallet(before),
             wallet(after),
             destination.get(),
+            selectors.flight_wallet_reserve_copper,
         );
     }
     if flight_before.is_some() || flight_after.is_some() {
@@ -8402,6 +8412,7 @@ fn compare_flight_destination(
     before_wallet: Option<u64>,
     after_wallet: Option<u64>,
     destination: u32,
+    reserve: Option<u64>,
 ) -> Value {
     let observation = |map: Option<&Value>, wallet| {
         let Some(map) = map else {
@@ -8425,6 +8436,15 @@ fn compare_flight_destination(
             "remaining_wallet_after_fare_copper":quote.and_then(|(fare, balance)| balance.checked_sub(fare))});
         if let Some(path) = row.get("observed_route_node_ids") {
             observed["observed_route_node_ids"] = path.clone();
+        }
+        if let Some(reserve) = reserve {
+            let budget =
+                quote.and_then(|(fare, wallet)| Some((fare.checked_add(reserve)?, wallet)));
+            observed["wallet_reserve_projection"] = json!({
+                "affordable":budget.map(|(cost, wallet)| cost <= wallet),
+                "shortfall_copper":budget.map(|(cost, wallet)| cost.saturating_sub(wallet)),
+                "spendable_copper":budget.and_then(|(cost, wallet)| wallet.checked_sub(cost))
+            });
         }
         observed
     };
@@ -8468,6 +8488,9 @@ fn compare_flight_destination(
         "live":false});
     if has_route_evidence {
         comparison["observed_route_changed"] = json!(route_changed);
+    }
+    if let Some(reserve) = reserve {
+        comparison["required_wallet_reserve_copper"] = json!(reserve);
     }
     comparison
 }

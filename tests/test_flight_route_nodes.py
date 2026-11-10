@@ -204,6 +204,22 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     no_routes=await call('compare_snapshots',before_id=old,after_id=old,
                         flight_destination_node_id=20)
                     self.assertNotIn('observed_route_changed',no_routes['flight_destination_comparison'])
+                    for reserve, affordable, shortfall, spendable in [(0,True,0,100),(100,True,0,0),(101,False,1,None)]:
+                        result = await call('compare_snapshots', before_id=key, after_id=old,
+                            flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)
+                        route = result['flight_destination_comparison']
+                        self.assertEqual(route['required_wallet_reserve_copper'],reserve)
+                        for side in ('before','after'):
+                            self.assertTrue(route[side]['affordable'])
+                            self.assertEqual(route[side]['wallet_reserve_projection'], {
+                                'affordable':affordable,'shortfall_copper':shortfall,'spendable_copper':spendable,
+                            })
+                    for invalid in [{'flight_wallet_reserve_copper':0},
+                                    {'flight_destination_node_id':20,'flight_wallet_reserve_copper':10**13}]:
+                        reply = await session.call_tool('compare_snapshots', {
+                            'before_id':key,'after_id':old,**invalid,
+                        })
+                        self.assertTrue(reply.isError,reply)
                     ambiguous=deepcopy(base)
                     ambiguous['character']['name']='Ambiguous'
                     ambiguous['sections']['flight_map']['entries']['4']={

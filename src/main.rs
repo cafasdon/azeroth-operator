@@ -790,6 +790,8 @@ struct Compare {
     trainer_lesson_name: Option<String>,
     /// Compare saved flight fares and affordability for this exact destination node.
     flight_destination_node_id: Option<std::num::NonZeroU32>,
+    /// Set aside this much copper in each capture's flight destination wallet check.
+    flight_wallet_reserve_copper: Option<u64>,
     /// Compare saved Forever repair quotes and captured affordability.
     #[serde(default)]
     repair_quote_changes: bool,
@@ -2295,6 +2297,7 @@ impl Operator {
                     merchant_offer_currency_id: args.merchant_offer_currency_id,
                     trainer_lesson_name: args.trainer_lesson_name.as_deref(),
                     flight_destination_node_id: args.flight_destination_node_id,
+                    flight_wallet_reserve_copper: args.flight_wallet_reserve_copper,
                     repair_quote_changes: args.repair_quote_changes,
                     equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,

@@ -7,6 +7,9 @@ values or an insufficient balance leave the corresponding remainder unknown.
 Comparing an exact flight destination reports each captured reachable fare's
 wallet shortfall and remaining balance. Deltas require known values on
 both sides and the same map and departure node.
+With an exact destination, set `flight_wallet_reserve_copper` to also
+check affordability, shortfall and spendable copper after the reserve in
+each capture. The existing fare-only comparison remains available.
 
 In `inspect_snapshot`, select a saved profession with `section: "professions"`
 and `profession_skill_line`, then set `profession_target_rank` to check points
