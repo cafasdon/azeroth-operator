@@ -51,6 +51,9 @@ visit limit. Its costs and affordability apply only to the included pieces.
 Each planned stop shows the merchant capture time and, when recorded,
 the player map ID from that capture. The map describes the saved player
 location and does not establish a merchant identity or current location.
+When a wallet reserve is supplied, each stop reports affordability,
+remaining spendable copper and any shortfall against cumulative costs,
+including assumed travel. An uncaptured wallet leaves those values null.
 Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
 shows the shortfall for priced pieces and reports complete affordability
 only when every requested piece has a supported copper quote and a wallet was captured.

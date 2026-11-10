@@ -160,6 +160,10 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(plan['complete_quote_copper'], 10)
                     self.assertEqual(plan['visit_count'], 2)
                     self.assertEqual(plan['after_wallet_reserve']['complete_quote_shortfall_copper'], 2)
+                    self.assertEqual([stop['after_wallet_reserve'] for stop in plan['merchant_visit_checklist']], [
+                        {'remaining_spendable_copper': 1, 'shortfall_copper': 0, 'affordable': True},
+                        {'remaining_spendable_copper': None, 'shortfall_copper': 2, 'affordable': False},
+                    ])
                     self.assertEqual([(row['item_id'], row['merchant_snapshot_id']) for row in plan['items']],
                                      [(7950, merchant_capture_id), (7953, second_visit_id)])
                     self.assertEqual([(stop['captured_player_map_id'], stop['merchant_captured_at'])

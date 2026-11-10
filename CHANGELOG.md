@@ -1,5 +1,7 @@
 # Changelog
 
+- Show remaining spendable copper after each saved set-shopping stop.
+
 - Show the saved capture time and player map for set-shopping stops.
 
 - Return a partial set shopping plan when saved visits can quote only some pieces.

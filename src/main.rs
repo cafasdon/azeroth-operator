@@ -1932,6 +1932,18 @@ impl Operator {
                             }
                             if let Some(stops) = plan["merchant_visit_checklist"].as_array_mut() {
                                 for stop in stops {
+                                    if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
+                                        let budget =
+                                            stop["cumulative_cost_copper"].as_u64().zip(wallet);
+                                        stop["after_wallet_reserve"] = serde_json::json!({
+                                            "remaining_spendable_copper":budget.and_then(|(cost, balance)|
+                                                balance.checked_sub(reserve)?.checked_sub(cost)),
+                                            "shortfall_copper":budget.and_then(|(cost, balance)|
+                                                azeroth_operator::analysis::reserved_balance_shortfall(cost, balance, reserve)),
+                                            "affordable":budget.map(|(cost, balance)|
+                                                balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
+                                        });
+                                    }
                                     if let Some(visit) = quotes.iter().find(|visit| {
                                         visit["merchant_snapshot_id"]
                                             == stop["merchant_snapshot_id"]
