@@ -97,6 +97,34 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                             for flag in ['current_progression_verified','rank_eligibility_verified','reward_eligibility_verified','game_execution']:
                                 self.assertIs(report[flag],False)
                     old, new = valid[6][0], valid[10][0]
+                    async def target(key, rank):
+                        return (await call('inspect_snapshot',snapshot_id=key,section='player_pvp_progression',
+                            pvp_target_rank=rank))['pvp_rank_target_projection']
+                    next_rank=await target(old,4)
+                    self.assertEqual(next_rank['remaining_points_using_total_threshold'],90)
+                    self.assertEqual(next_rank['remaining_points_using_next_rank_threshold'],90)
+                    self.assertEqual(next_rank['target_above_reported_caps'],{
+                        'max_rank':False,'current_week_max_rank':False,'previous_week_max_rank':False})
+                    higher=await target(old,14)
+                    self.assertEqual(higher['remaining_points_using_total_threshold'],890)
+                    self.assertIsNone(higher['remaining_points_using_next_rank_threshold'])
+                    self.assertTrue(higher['target_above_reported_caps']['current_week_max_rank'])
+                    self.assertIsNone((await target(old,6))['remaining_points_using_total_threshold'])
+                    missing_caps=await target(valid[1][0],4)
+                    self.assertEqual(missing_caps['remaining_points_using_next_rank_threshold'],90)
+                    self.assertTrue(all(value is None for value in missing_caps['target_above_reported_caps'].values()))
+                    disagreement=await target(valid[15][0],4)
+                    self.assertEqual(disagreement['remaining_points_using_total_threshold'],120)
+                    self.assertEqual(disagreement['remaining_points_using_next_rank_threshold'],110)
+                    zero_target=await target(valid[7][0],0)
+                    self.assertTrue(zero_target['captured_rank_at_or_above_target'])
+                    self.assertIsNone(zero_target['remaining_points_using_total_threshold'])
+                    self.assertTrue((await target(valid[7][0],1))['target_above_reported_caps']['max_rank'])
+                    maximum_target=await target(valid[8][0],4294967295)
+                    self.assertEqual(maximum_target['reported_total_rank_points'],8589934590)
+                    self.assertEqual(maximum_target['remaining_points_using_total_threshold'],0)
+                    self.assertIsNone(await target(valid[0][0],4))
+                    await call('inspect_snapshot',error=True,snapshot_id=old,section='bags',pvp_target_rank=4)
                     zero_rank = await call('list_snapshots',family='forever',maximum_pvp_rank=0)
                     self.assertEqual({row['snapshot_id'] for row in zero_rank['snapshots']}, {valid[4][0],valid[7][0]})
                     highest = await call('list_snapshots',family='forever',minimum_pvp_rank=4294967295,limit=1)

@@ -3279,6 +3279,37 @@ const PVP_CAP_FIELDS: [&str; 3] = [
     "previous_week_max_rank",
 ];
 
+pub fn pvp_rank_target_projection(section: &Value, target: u32) -> Option<Value> {
+    let rank = section["rank"].as_u64()?;
+    let points = section["rank_points"].as_u64()?;
+    let totals = &section["total_points_by_rank"];
+    let target_total = totals[target.to_string()].as_u64();
+    let current_total = totals[rank.to_string()]
+        .as_u64()
+        .and_then(|base| base.checked_add(points));
+    let total_distance = current_total
+        .zip(target_total.filter(|threshold| *threshold > 0))
+        .map(|(current, threshold)| threshold.saturating_sub(current));
+    let next_distance = (rank.checked_add(1) == Some(u64::from(target)))
+        .then(|| remaining_pvp_points_to_next_threshold(section))
+        .flatten();
+    let caps: BTreeMap<_, _> = PVP_CAP_FIELDS
+        .into_iter()
+        .map(|field| {
+            (
+                field,
+                section[field].as_u64().map(|cap| u64::from(target) > cap),
+            )
+        })
+        .collect();
+    Some(json!({"target_rank":target,"captured_rank":rank,
+        "captured_rank_at_or_above_target":rank >= u64::from(target),
+        "reported_total_rank_points":current_total,"reported_target_total_points":target_total,
+        "remaining_points_using_total_threshold":total_distance,
+        "remaining_points_using_next_rank_threshold":next_distance,
+        "target_above_reported_caps":caps,"rank_eligibility_verified":false,"live":false}))
+}
+
 pub(crate) fn player_pvp_progression_observation(section: &Value) -> Value {
     let mut report = section.clone();
     report["remaining_points_to_reported_next_threshold"] =

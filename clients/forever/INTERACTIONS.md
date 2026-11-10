@@ -2912,6 +2912,13 @@ their overlap is unknown. Missing bags leave the carried comparison unknown.
 
 ## Personal PvP progression (2026-11-09)
 
+Use `pvp_target_rank` in `inspect_snapshot` on `player_pvp_progression`
+to compare a rank with the saved current rank and reported caps. The
+report keeps distances from the captured total threshold table and the
+reported next-rank threshold separate. Missing thresholds leave the
+corresponding distance unknown. The comparison leaves rank eligibility
+unverified.
+
 Manual Forever exports can capture the numeric rank progression reported for
 faction 2800. Inspect player_pvp_progression or read
 player_pvp_progression_observation from character_summary. Rank, points and

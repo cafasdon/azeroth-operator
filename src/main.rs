@@ -102,6 +102,8 @@ struct Inspect {
     section: Option<String>,
     /// Return only capture statuses for these distinct section names instead of section data.
     coverage_sections: Option<Vec<String>>,
+    /// Compare a target PvP rank with saved rank thresholds and caps.
+    pvp_target_rank: Option<u32>,
     /// Shortlist equipped slots at or below this whole durability percentage (0 to 100).
     #[schemars(range(min = 0, max = 100))]
     equipment_durability_max_percent: Option<u8>,
@@ -2657,6 +2659,13 @@ impl Operator {
                 "Mail bag space requires mail_attachments and one to 64 distinct positive item IDs",
             )]);
         }
+        if args.pvp_target_rank.is_some()
+            && args.section.as_deref() != Some("player_pvp_progression")
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "PvP rank targets require player_pvp_progression",
+            )]);
+        }
         if args.loot_estimate_bag_space && args.loot_requirements.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Loot bag space requires loot requirements",
@@ -4089,6 +4098,18 @@ impl Operator {
                             )]);
                         }
                     }
+                }
+                if let Some(rank) = args.pvp_target_rank {
+                    if value["client"]["family"] != "forever" {
+                        return CallToolResult::error(vec![ContentBlock::text(
+                            "PvP rank targets require a saved Forever snapshot",
+                        )]);
+                    }
+                    value["pvp_rank_target_projection"] =
+                        serde_json::json!(azeroth_operator::analysis::pvp_rank_target_projection(
+                            &value["data"],
+                            rank
+                        ));
                 }
                 if let Some(ids) = &args.mail_attachment_bag_space_item_ids {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {

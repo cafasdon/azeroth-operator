@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare a selected PvP rank with saved thresholds and rank caps.
+
 - Show the combined trainer reserve and lesson shortfall, including when some prices are unknown.
 
 - Show per-lesson affordability and shortfalls after a trainer budget reserve.
