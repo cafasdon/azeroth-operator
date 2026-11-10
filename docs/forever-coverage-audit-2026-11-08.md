@@ -1088,3 +1088,13 @@ reports. Joint bag/wallet capacities retain unknowns and checked arithmetic.
 Special progression units, actual reward rates/costs, repeatability, caps and
 native target eligibility remain outside the estimate. No reward or payment is
 executed. See ADR-100 and its dated offline evidence. Live work remains deferred.
+
+## Exact public reference walks (10 November)
+
+The public knowledge companion can now traverse recognised pinned links to depth
+two or three through exact record keys. Compact nodes carry source hashes; missing
+targets, cycles, depth boundaries and exhausted budgets remain explicit. This
+adds local cross-consultation without private character data or external queries.
+It does not establish complete world data, current acquisition availability,
+owned item variants or travel routes. See ADR-101 and the dated offline evidence.
+Installation and live tests remain deferred.

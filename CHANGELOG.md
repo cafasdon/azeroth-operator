@@ -1,5 +1,7 @@
 # Changelog
 
+- Follow bounded exact multi-hop links in the pinned public catalogue, with source hashes, explicit missing targets and partial-budget states.
+
 - Plan explicit standard-reputation standing targets with constant assumed gains, joint captured item/copper budgets, signed bounds and explicit cap/rate uncertainty.
 
 - Estimate combined bag space for grouped fixed quest rewards, deduplicating alternative finishers and preserving unknown reward lists, stack limits and capacity.
