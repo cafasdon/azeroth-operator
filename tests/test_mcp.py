@@ -1079,6 +1079,28 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "title": "Fixture reward", "level": 10, "ready_for_turn_in": True,
                         }
                         more_key = SnapshotStore(Path(folder)).ingest(more_factions)
+                        for faction, points, expected in [
+                            (10, 20, (50, 3, False)), (10, 25, (50, 2, False)),
+                            (11, 20, (None, None, True)), (12, 20, (None, None, None)),
+                            (13, 20, (None, None, None)), (999, 20, (None, None, None)),
+                        ]:
+                            result = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id":more_key,"section":"reputation","faction_id":faction,
+                                "reputation_points_per_turn_in":points,
+                            })
+                            self.assertFalse(result.isError,result)
+                            estimate = json.loads(result.content[0].text)["reputation_turn_in_estimate"]
+                            self.assertEqual(estimate, {
+                                "assumed_points_per_turn_in":points,"remaining_to_next_rank":expected[0],
+                                "turn_ins_to_next_rank":expected[1],"capped":expected[2],
+                            })
+                        for options in [
+                            {"section":"reputation","reputation_points_per_turn_in":20},
+                            {"section":"reputation","faction_id":10,"reputation_points_per_turn_in":0},
+                        ]:
+                            self.assertTrue((await session.call_tool("inspect_snapshot", {
+                                "snapshot_id":more_key,**options,
+                            })).isError)
                         reward_summary = await session.call_tool("character_summary", {"snapshot_id": more_key})
                         self.assertFalse(reward_summary.isError)
                         paragon = json.loads(reward_summary.content[0].text)["paragon_reward_summary"]

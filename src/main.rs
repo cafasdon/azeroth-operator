@@ -380,6 +380,8 @@ struct Inspect {
     currency_reward_quantity: Option<std::num::NonZeroU64>,
     /// Select one saved Forever faction by ID. Requires section "reputation".
     faction_id: Option<std::num::NonZeroU32>,
+    /// Estimate repetitions to the observed next standard reputation threshold at this many points each.
+    reputation_points_per_turn_in: Option<std::num::NonZeroU32>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
     reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
@@ -3429,6 +3431,11 @@ impl Operator {
                 "Profession trainer lesson review requires a profession rank target",
             )]);
         }
+        if args.reputation_points_per_turn_in.is_some() && args.faction_id.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation turn-in estimates require an exact faction",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -6057,6 +6064,16 @@ impl Operator {
                             standard.get(&key).cloned().unwrap_or_default();
                         value["special_reputation_progress"] =
                             special.get(&key).cloned().unwrap_or_default();
+                        if let Some(points) = args.reputation_points_per_turn_in {
+                            let points = u64::from(points.get());
+                            let remaining = standard[&key]["remaining_to_next_rank"].as_u64();
+                            value["reputation_turn_in_estimate"] = serde_json::json!({
+                                "assumed_points_per_turn_in":points,
+                                "remaining_to_next_rank":remaining,
+                                "turn_ins_to_next_rank":remaining.map(|remaining| remaining.div_ceil(points)),
+                                "capped":standard[&key]["capped"].as_bool()
+                            });
+                        }
                     } else {
                         value["standard_reputation_progress"] = standard;
                         value["special_reputation_progress"] = special;

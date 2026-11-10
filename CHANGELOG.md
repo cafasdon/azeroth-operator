@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate repeat turn-ins to the next captured standard reputation threshold.
+
 - Compare reserve-adjusted flight affordability, shortfall and spendable copper.
 
 - Compare saved flight fares against each captured wallet after a shared copper reserve.

@@ -1,5 +1,11 @@
 # Forever interaction map
 
+In `inspect_snapshot`, select a Forever `faction_id` in the reputation
+section and pass `reputation_points_per_turn_in` to estimate repetitions
+to its observed next standard rank. The estimate uses a constant
+caller-supplied reward and rounds up. It leaves capped, unobserved,
+inconsistent and special reputation counts unknown.
+
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside
 `flight_wallet_reserve_copper`. Each calculation is independent. Missing
