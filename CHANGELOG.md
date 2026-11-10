@@ -1,5 +1,7 @@
 # Changelog
 
+- Carry projected set-piece changes into offline gear plans and encounter rankings.
+
 - Show how a Forever equipment draft changes equipped catalogue set pieces.
 
 - Identify stored unequipped and unobserved catalogue set pieces in saved Forever gear reviews.

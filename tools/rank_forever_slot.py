@@ -573,6 +573,8 @@ def plan_report(drafts, include_gear_hashes=False, include_equipment_specs=False
              "cleared_equipment_slots": draft["checks"].get("simulator_cleared_equipment_slots", [])}
             | ({'explicit_clear_equipment_slots': [row['slot'] for row in draft['explicitly_cleared_equipment']]}
                 if draft.get('explicitly_cleared_equipment') else {})
+            | ({"projected_set_changes": draft["checks"]["catalogue_projected_set_changes"]}
+                if draft["checks"].get("catalogue_projected_set_changes") is not None else {})
             for index, (selections, draft) in enumerate(drafts, 1)
         ],
     }
@@ -682,6 +684,9 @@ def rank_encounter(args, template, encounter, drafts, set_piece_ids=None, finali
         weapon_skills = checks.get("catalogue_projected_weapon_skills")
         if weapon_skills is not None:
             row["projected_weapon_skills"] = weapon_skills
+        set_changes = checks.get("catalogue_projected_set_changes")
+        if set_changes is not None:
+            row["projected_set_changes"] = set_changes
         cleared = checks.get("simulator_cleared_equipment_slots")
         if cleared:
             row["cleared_equipment_slots"] = cleared
@@ -741,7 +746,7 @@ def weighted_ranking(rankings, weights):
     first_rows = {row["review"]: row for row in rankings[0]["results"]}
     for row in results:
         first = first_rows[row["review"]]
-        for field in ("selected_set_equipped_pieces", "projected_weapon_skills"):
+        for field in ("selected_set_equipped_pieces", "projected_weapon_skills", "projected_set_changes"):
             if field in first:
                 row[field] = first[field]
     results.sort(key=lambda row: (-row["weighted_dps_gain_pct"], row["review"]))

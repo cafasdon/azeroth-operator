@@ -3,13 +3,16 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from shared.snapshots import SnapshotStore
 from test_snapshots import fixture
 from test_simulator_level import inputs
+from tools.rank_forever_slot import plan_report, rank_encounter, weighted_ranking
 from tools.run_forever_sim import request_from
 
 
@@ -52,6 +55,22 @@ class ExplicitClearTests(unittest.IsolatedAsyncioTestCase):
                         'before_uncatalogued_equipped_slots':0,'projected_uncatalogued_equipped_slots':0,
                         'native_set_bonuses_verified':False,
                     })
+                    template, _, encounter = inputs()
+                    _, set_clear = await call(positional_simulator_equipment=True, clear_equipment_slots=[5])
+                    drafts = [([], baseline), ([], set_clear)]
+                    expected = set_clear['checks']['catalogue_projected_set_changes']
+                    self.assertEqual(plan_report(drafts)['resolved_drafts'][1]['projected_set_changes'], expected)
+                    args = SimpleNamespace(rank_by='dps', bulk_engine=None, engine=None,
+                        engine_sha256=None, paired=False, confirm_leading_seed=None, slot=['head', 'chest'])
+                    scores = {'baseline_review': 1, 'results': [
+                        {'review': 1, 'mean_dps': 10, 'mean_dps_delta_from_baseline': 0},
+                        {'review': 2, 'mean_dps': 11, 'mean_dps_delta_from_baseline': 1},
+                    ]}
+                    with patch('tools.rank_forever_slot.compare', return_value=scores):
+                        ranked = rank_encounter(args, template, encounter, drafts)
+                    self.assertEqual(ranked['results'][0]['projected_set_changes'], expected)
+                    weighted = weighted_ranking([ranked, ranked], [0.5, 0.5])
+                    self.assertEqual(weighted['results'][0]['projected_set_changes'], expected)
                     _, cleared = await call(positional_simulator_equipment=True,clear_equipment_slots=[11])
                     spec = cleared['checks']['simulator_equipment_spec']
                     self.assertTrue(spec['preserveSlots'])
