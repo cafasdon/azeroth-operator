@@ -1,6 +1,7 @@
 """Collect all-slot owned gear windows and simulate saved plans in one resumable offline run."""
 import argparse
 import asyncio
+from collections import Counter
 from copy import copy
 import os
 from pathlib import Path
@@ -108,7 +109,7 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts):
                     result = parse_report(reply.content[0].text.encode())
                     evidence = checked_inventory_evidence(result['inventory_evidence'])
                     require(result['snapshot_id'] == args.snapshot_id and evidence is not None)
-                    counts = None
+                    counts = storage_counts = None
                     if include_resolution_counts:
                         counts = result['simulator_item_resolution_counts']
                         require(isinstance(counts, dict) and counts.keys() <= ITEM_RESOLUTION_STATUSES)
@@ -117,7 +118,23 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts):
                         require(sum(counts.values()) == integer(result['observed_item_locations'], 0, 2**64-1)
                             and counts.get('catalogue_item_unavailable', 0)
                                 == evidence['catalogue_unmatched_item_locations'])
-                    return evidence, counts
+                        observed = evidence['observed_storage_sections']
+                        raw_storage = result['simulator_item_resolution_counts_by_storage']
+                        require(isinstance(raw_storage, dict) and raw_storage.keys() <= set(observed))
+                        storage_counts = {}
+                        combined = Counter()
+                        for section in observed:
+                            section_counts = raw_storage.get(section, {})
+                            require(isinstance(section_counts, dict) and section_counts.keys() <= counts.keys())
+                            for count in section_counts.values():
+                                integer(count, 1, 2**64-1)
+                            coverage = result['coverage'][section]
+                            require(coverage['status'] == 'observed' and sum(section_counts.values())
+                                == integer(coverage['occupied_slots'], 0, 2**64-1))
+                            storage_counts[section] = section_counts
+                            combined.update(section_counts)
+                        require(dict(combined) == counts)
+                    return evidence, counts, storage_counts
 
 
 async def execute(args):
@@ -181,9 +198,9 @@ async def execute(args):
     for field in ['item_id', 'set_id', 'storage', 'max_swaps', 'minimum_required_level',
         'maximum_required_level', 'observed_enchant_effect_id', 'observed_random_suffix_id']:
         setattr(args, field, None)
-    preflight, resolution_counts = (None, None)
+    preflight = resolution_counts = storage_resolution_counts = None
     if require_catalogue_coverage or include_resolution_counts:
-        preflight, resolution_counts = await catalogue_preflight(args, deadline,
+        preflight, resolution_counts, storage_resolution_counts = await catalogue_preflight(args, deadline,
             include_resolution_counts=include_resolution_counts)
     catalogue_gap = bool(require_catalogue_coverage and preflight['catalogue_unmatched_item_locations'])
     collection_deadline = min(deadline, monotonic() + args.collection_seconds)
@@ -264,6 +281,7 @@ async def execute(args):
         report['empty_slot_choices_included'] = True
     if include_resolution_counts:
         report['preflight_simulator_item_resolution_counts'] = resolution_counts
+        report['preflight_simulator_item_resolution_counts_by_storage'] = storage_resolution_counts
     require(len(encoded(report)) <= MAX_TOTAL_BYTES and monotonic() <= deadline + 5)
     return report
 

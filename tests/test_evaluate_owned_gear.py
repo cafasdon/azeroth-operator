@@ -238,6 +238,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 with_gap["character"]["name"] = "CatalogueGap"
                 with_gap['sections']['bags']['0']['2'] = {'item_id':4294967295,'count':1}
                 with_gap['sections']['bags']['0']['3'] = {'item_id':4549,'count':1}
+                with_gap['sections']['character_bank'] = {}
                 gap_key = SnapshotStore(base).ingest(with_gap)
                 stage_count = len(captured)
                 gap = launch(['--snapshot-id',gap_key,'--journal',str(base/'gap.sqlite'),
@@ -250,6 +251,11 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(counts['catalogue_item_unavailable'], 1)
                 self.assertGreaterEqual(counts['item_link_unresolved'], 1)
                 self.assertGreaterEqual(counts['resolved'], 1)
+                by_storage = gap['preflight_simulator_item_resolution_counts_by_storage']
+                self.assertEqual(by_storage['bags'], {
+                    'catalogue_item_unavailable':1,'item_link_unresolved':1,'resolved':1})
+                self.assertEqual(by_storage['character_bank'], {})
+                self.assertNotIn('account_bank', by_storage)
                 self.assertIsNone(gap['simulation'])
                 self.assertEqual(captured[stage_count:], [])
                 self.assertEqual(gap['collection']['windows_attempted'], 0)

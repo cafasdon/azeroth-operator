@@ -1,5 +1,7 @@
 # Changelog
 
+- Break down owned-gear simulator resolution counts by observed storage.
+
 - Optionally report simulator item resolution counts before collecting owned-gear plans.
 
 - Check strict owned-gear catalogue coverage before enumerating builds or opening a plan journal.
