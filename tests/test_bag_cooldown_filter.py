@@ -45,8 +45,8 @@ class BagCooldownFilterTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
-                    async def query(filter=None,snapshot=key,section='bag_item_cooldowns',error=False):
-                        arguments={'snapshot_id':snapshot,'section':section}
+                    async def query(filter=None,snapshot=key,section='bag_item_cooldowns',error=False,**options):
+                        arguments={'snapshot_id':snapshot,'section':section,**options}
                         if filter is not None: arguments['bag_cooldown_filter']=filter
                         reply=await session.call_tool('inspect_snapshot',arguments)
                         self.assertEqual(bool(reply.isError),error,reply)
@@ -54,6 +54,18 @@ class BagCooldownFilterTests(unittest.IsolatedAsyncioTestCase):
                     raw=await query()
                     self.assertEqual(raw['data'],value['sections']['bag_item_cooldowns'])
                     all_rows=(await query({'limit':50}))['data']
+                    reference='2025-01-01T00:00:30Z'
+                    projected=(await query({'limit':4},bag_cooldown_reference_at=reference))['data']
+                    self.assertEqual(projected['reference_at'],reference)
+                    self.assertEqual([row['projected_cooldown_end_at'] for row in projected['rows']],
+                                     ['2025-01-01T00:00:00Z',None,None,reference])
+                    self.assertEqual([row['projected_end_at_or_before_reference'] for row in projected['rows']],
+                                     [True,None,None,True])
+                    self.assertEqual(projected['rows'][1]['remaining_seconds'],60)
+                    self.assertFalse(projected['current_usability_verified'])
+                    missing=(await query({'limit':1},snapshot=legacy_key,bag_cooldown_reference_at=reference))['data']
+                    self.assertIsNone(missing['rows'])
+                    await query(error=True,bag_cooldown_reference_at=reference)
                     self.assertEqual([(row['bag'],row['slot']) for row in all_rows['rows']],[(row[0],row[1]) for row in rows])
                     cases=[({'item_ids':[100]},[0,2,4],0,3),({'enabled':True},[0,3,4],2,1),
                         ({'maximum_remaining_seconds':0},[0],2,3),

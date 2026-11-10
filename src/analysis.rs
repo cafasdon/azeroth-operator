@@ -2379,6 +2379,22 @@ pub fn filter_bag_cooldowns(section: Option<&Value>, filter: &BagCooldownFilter)
     Ok(result)
 }
 
+pub fn project_bag_cooldown_reference(
+    review: &mut Value,
+    captured_at: chrono::DateTime<chrono::Utc>,
+    reference: chrono::DateTime<chrono::Utc>,
+) {
+    review["reference_at"] = json!(reference);
+    for row in review["rows"].as_array_mut().into_iter().flatten() {
+        let end = (row["enabled"] == true)
+            .then(|| row["remaining_seconds"].as_i64())
+            .flatten()
+            .and_then(|seconds| crate::saved_resets::projected_reset_at(seconds, captured_at));
+        row["projected_cooldown_end_at"] = json!(end);
+        row["projected_end_at_or_before_reference"] = json!(end.map(|end| end <= reference));
+    }
+}
+
 #[cfg(test)]
 mod bag_cooldown_filter_tests {
     use super::*;

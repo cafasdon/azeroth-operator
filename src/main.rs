@@ -148,6 +148,8 @@ struct Inspect {
     profession_spell_id: Option<std::num::NonZeroU32>,
     /// Filter and page historical carried-item cooldown rows; requires section bag_item_cooldowns.
     bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
+    /// Project retained saved cooldown timers against this timestamp. Requires bag_cooldown_filter.
+    bag_cooldown_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
     #[serde(default, deserialize_with = "skill_line_argument")]
     skill_line_filter: Option<azeroth_operator::skill_line_filter::SkillLinePage>,
@@ -2687,6 +2689,11 @@ impl Operator {
                 "Reset projection requires a saved reset section",
             )]);
         }
+        if args.bag_cooldown_reference_at.is_some() && args.bag_cooldown_filter.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Bag cooldown reference requires a cooldown filter",
+            )]);
+        }
         if args.bag_cooldown_filter.as_ref().is_some_and(|filter| {
             args.section.as_deref() != Some("bag_item_cooldowns") || filter.validate().is_err()
         }) {
@@ -4185,7 +4192,25 @@ impl Operator {
                         (!section.is_null()).then_some(&section),
                         filter,
                     ) {
-                        Ok(review) => value["data"] = review,
+                        Ok(mut review) => {
+                            if let Some(reference) = args.bag_cooldown_reference_at {
+                                let Some(captured_at) =
+                                    value["captured_at"].as_str().and_then(|text| {
+                                        text.parse::<chrono::DateTime<chrono::Utc>>().ok()
+                                    })
+                                else {
+                                    return CallToolResult::error(vec![ContentBlock::text(
+                                        "Invalid saved cooldown capture timestamp",
+                                    )]);
+                                };
+                                azeroth_operator::analysis::project_bag_cooldown_reference(
+                                    &mut review,
+                                    captured_at,
+                                    reference,
+                                );
+                            }
+                            value["data"] = review;
+                        }
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
                                 "Invalid captured bag cooldown review",

@@ -1,5 +1,7 @@
 # Changelog
 
+- Project saved carried-item cooldown ends against an explicit reference time.
+
 - Compare projected expiry timestamps across saved temporary weapon enchant observations.
 
 - Review projected expiry of saved temporary weapon enchants at an explicit time.
