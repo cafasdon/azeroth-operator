@@ -65,6 +65,9 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             }}
             set_capture['sections']['character_bank'] = {'6': {}}
             set_capture_id = store.ingest(set_capture)
+            missing_equipment = deepcopy(set_capture)
+            del missing_equipment['sections']['equipment']
+            missing_equipment_id = store.ingest(missing_equipment)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -80,6 +83,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(set_review['set_observation']['observed_distinct_pieces'], 2)
                     self.assertEqual(set_review['set_observation']['observed_distinct_pieces_by_storage'],
                                      {'equipment': 1, 'bags': 2, 'character_bank': 0, 'account_bank': None})
+                    self.assertEqual(set_review['set_observation']['observed_stored_not_equipped_item_ids'], [7953])
+                    self.assertEqual(set_review['set_observation']['unobserved_catalogue_item_ids'], [])
+                    unknown_equipment = (await review(missing_equipment_id, set_id=221))['set_observation']
+                    self.assertIsNone(unknown_equipment['observed_stored_not_equipped_item_ids'])
+                    self.assertEqual(unknown_equipment['unobserved_catalogue_item_ids'], [])
+                    unobserved_set = (await review(partial, set_id=221))['set_observation']
+                    self.assertEqual(unobserved_set['observed_stored_not_equipped_item_ids'], [])
+                    self.assertEqual(unobserved_set['unobserved_catalogue_item_ids'], [7950, 7953])
                     self.assertNotIn('observed_equipped_durability', result['items'][0])
                     same_item = (await review(mixed_id, item_id=4549))['items']
                     self.assertEqual([(row['storage'], row['slot']) for row in same_item],

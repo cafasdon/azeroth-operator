@@ -5,6 +5,9 @@ catalogue-matched set pieces separately for equipment, bags, character
 bank and account bank. Duplicate copies within one storage count once.
 The counts use the whole saved capture before other filters or pagination.
 Unavailable storage is null and observed storage with no matches is zero.
+The set review lists `observed_stored_not_equipped_item_ids` when equipment
+was captured. It also lists `unobserved_catalogue_item_ids` for catalogue
+pieces absent from the capture. Unobserved pieces may be in unavailable storage.
 
 Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `available` or `active`. Optional `is_complete`, `repeatable`,

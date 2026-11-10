@@ -1,5 +1,7 @@
 # Changelog
 
+- Identify stored unequipped and unobserved catalogue set pieces in saved Forever gear reviews.
+
 - Break down observed Forever gear-set pieces by equipment, bags and banks.
 
 - Report per-item slot bounds and exact-match feasibility for saved outgoing trade offers.

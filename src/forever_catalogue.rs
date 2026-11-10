@@ -3686,9 +3686,24 @@ pub fn review_owned(
                     "observed_locations_by_storage":set_locations.get(id).cloned().unwrap_or_default()})
             })
             .collect();
+        let observed_stored_not_equipped_item_ids =
+            snapshot.sections.contains_key("equipment").then(|| {
+                set_locations
+                    .iter()
+                    .filter(|(_, locations)| !locations.contains_key("equipment"))
+                    .map(|(id, _)| *id)
+                    .collect::<Vec<_>>()
+            });
+        let unobserved_catalogue_item_ids: Vec<_> = pieces
+            .iter()
+            .filter(|piece| piece["observed"] == false)
+            .map(|piece| &piece["item_id"])
+            .collect();
         result["set_observation"] = json!({"set_id":set_id.get(),"catalogue_pieces":pieces,
             "observed_distinct_pieces":set_locations.len(),
-            "observed_distinct_pieces_by_storage":distinct_pieces_by_storage});
+            "observed_distinct_pieces_by_storage":distinct_pieces_by_storage,
+            "observed_stored_not_equipped_item_ids":observed_stored_not_equipped_item_ids,
+            "unobserved_catalogue_item_ids":unobserved_catalogue_item_ids});
     }
     Ok(result)
 }
