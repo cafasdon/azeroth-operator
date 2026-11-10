@@ -1,5 +1,17 @@
 # Forever coverage audit — 8 November 2026
 
+Saved instance progress follow-up (10 November). The Forever RaidFrame uses
+the same passive saved-instance API, but does not interpret its two progress
+positions in Lua. Native interpretation remains pending.
+[Forever RaidFrame source](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_RaidFrame/Mainline/RaidFrame.lua#L226)
+
+The Lua fixture and Rust MCP stdio readback passed with readable progress,
+and the fixture preserved the base row with missing or restricted progress.
+Both readers rejected malformed pairs. Jev's advisory scope check was
+inconclusive (0.47, `jev-1.14.0`, 400 input and 20 output tokens,
+0.318 seconds, request
+`662f9090faff357c4c55f7f99a723162f10e2240d363ae9a0b90857e7a37b731`).
+
 This is a source audit of the user's requested end state: broad local MCP
 coverage, the active character by default, private owner-bound data, and complete
 owned-gear optimisation. It is not a live qualification or a claim of completeness.

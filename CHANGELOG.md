@@ -1,5 +1,6 @@
 # Changelog
 
+- Retain reported encounter totals and progress in saved Forever instance cache rows.
 - Search saved instance warnings by an inclusive projected expiry window.
 
 - Compare a saved instance warning's projected expiry with a caller-supplied timestamp.

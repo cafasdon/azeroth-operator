@@ -1,5 +1,13 @@
 # Forever interaction map
 
+Saved instance inspection includes `encounter_total` and
+`reported_encounter_progress` when both cache values are readable and
+consistent. Older captures and rows with missing or restricted values omit
+the pair. The reported progress value does not establish which encounters
+were defeated or whether loot is currently available.
+Update strict snapshot readers before installing an addon that emits the
+pair. Native Forever readback remains pending.
+
 Set `instance_lock_warning_reference_at` with
 `instance_lock_encounter_review` to check whether the saved warning's
 projected expiry falls at or before an explicit timestamp. The projection

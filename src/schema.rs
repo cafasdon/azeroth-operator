@@ -947,8 +947,24 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                         ("is_raid", "bool", true),
                         ("max_players", "uint", true),
                         ("difficulty_name", "text", false),
+                        ("encounter_total", "uint", false),
+                        ("reported_encounter_progress", "uint", false),
                     ],
                 )?;
+                match (
+                    row.get("encounter_total"),
+                    row.get("reported_encounter_progress"),
+                ) {
+                    (None, None) => {}
+                    (Some(total), Some(progress)) => ensure!(
+                        total
+                            .as_u64()
+                            .zip(progress.as_u64())
+                            .is_some_and(|(total, progress)| progress <= total),
+                        "Invalid saved instance encounter progress"
+                    ),
+                    _ => anyhow::bail!("Incomplete saved instance encounter progress"),
+                }
                 for field in ["name", "difficulty_name"] {
                     ensure!(
                         row[field].is_null()

@@ -25,7 +25,8 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
             value["client"] = {"family": "forever", "variant": "live", "build": "70862", "interface": 16001}
             value["sections"]["saved_instances"] = {"coverage": "updated_cache", "update_age_seconds": 10, "entries": {
                 "1": {"name": "Raid", "difficulty_id": 3, "reset_seconds": 124, "locked": True,
-                      "extended": False, "is_raid": True, "max_players": 40},
+                      "extended": False, "is_raid": True, "max_players": 40,
+                      "encounter_total": 10, "reported_encounter_progress": 4},
                 "2": {"name": "Dungeon", "difficulty_id": 1, "reset_seconds": -1, "locked": False,
                       "extended": False, "is_raid": False, "max_players": 5}}}
             key = store.ingest(value)
@@ -60,6 +61,9 @@ class SavedInstancesTests(unittest.IsolatedAsyncioTestCase):
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(lockout_id="private"),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(locked=1),
                 lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reset_seconds=0.5),
+                lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reported_encounter_progress=11),
+                lambda x: x["sections"]["saved_instances"]["entries"]["1"].update(reported_encounter_progress=None),
+                lambda x: x["sections"]["saved_instances"]["entries"]["1"].pop("encounter_total"),
                 lambda x: x["sections"]["saved_instances"]["entries"].pop("1"),
             ):
                 bad = copy.deepcopy(value)

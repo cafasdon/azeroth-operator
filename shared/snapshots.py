@@ -459,7 +459,8 @@ def validate_snapshot(value):
             raise ValueError("Invalid saved instance coverage")
         required = {"name", "reset_seconds", "difficulty_id", "locked", "extended", "is_raid", "max_players"}
         for row in saved["entries"].values():
-            if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - {"difficulty_name"}
+            if (not isinstance(row, dict) or not required <= set(row)
+                    or set(row) - required - {"difficulty_name", "encounter_total", "reported_encounter_progress"}
                     or type(row["reset_seconds"]) is not int or not -(2**31) <= row["reset_seconds"] < 2**31
                     or any(type(row[field]) is not int or not 0 <= row[field] <= 4_294_967_295 for field in ("difficulty_id", "max_players"))
                     or any(type(row[field]) is not bool for field in ("locked", "extended", "is_raid"))
@@ -467,6 +468,11 @@ def validate_snapshot(value):
                     or (row.get("difficulty_name") is not None and (not isinstance(row["difficulty_name"], str)
                         or not 1 <= len(row["difficulty_name"].encode()) <= 256))):
                 raise ValueError("Invalid saved instance row")
+            if "encounter_total" in row or "reported_encounter_progress" in row:
+                total = row.get("encounter_total")
+                progress = row.get("reported_encounter_progress")
+                if type(total) is not int or type(progress) is not int or not 0 <= progress <= total <= 4_294_967_295:
+                    raise ValueError("Invalid saved instance encounter progress")
     if "toy_collection_view" in sections:
         view = sections["toy_collection_view"]
         if (c["family"] != "forever" or not isinstance(view, dict)

@@ -27,7 +27,9 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
         end
         function GetSavedInstanceInfo()
             local reset=mode=='negative' and -1 or (mode=='bad_reset' and 'bad' or 123.25)
-            return 'Raid','PRIVATE-LOCKOUT',reset,3,true,false,'PRIVATE-LOCKOUT',true,40,'40 Player'
+            local progress=mode=='secret_progress' and 'PRIVATE-LOCKOUT' or (mode=='bad_progress' and 11 or 4)
+            if mode=='missing_progress' then progress=nil end
+            return 'Raid','PRIVATE-LOCKOUT',reset,3,true,false,'PRIVATE-LOCKOUT',true,40,'40 Player',10,progress
         end
         function RequestRaidInfo() error('refresh forbidden') end
         function SetSavedInstanceExtend() error('extension forbidden') end
@@ -54,6 +56,17 @@ fn saved_instances_wait_for_update_and_omit_private_ids() -> Result<(), Box<dyn 
         124
     );
     assert!(!serde_json::to_string(&saved)?.contains("PRIVATE-LOCKOUT"));
+    let row = &saved.sections["saved_instances"]["entries"]["1"];
+    assert_eq!(row["encounter_total"], 10);
+    assert_eq!(row["reported_encounter_progress"], 4);
+    for mode in ["secret_progress", "bad_progress", "missing_progress"] {
+        lua.globals().set("mode", mode)?;
+        let snapshot = capture()?;
+        let row = &snapshot.sections["saved_instances"]["entries"]["1"];
+        assert_eq!(row["name"], "Raid", "{mode}");
+        assert!(row.get("encounter_total").is_none(), "{mode}");
+        assert!(row.get("reported_encounter_progress").is_none(), "{mode}");
+    }
     assert_eq!(
         azeroth_operator::analysis::summary(&saved)["locked_instances_observed"],
         1
