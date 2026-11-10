@@ -11,6 +11,9 @@ Use `mail_attachment_headroom_currency_ids` when inspecting a saved
 the same capture's currency caps. Missing attachment or cap observations
 stay unknown. The comparison is hypothetical and does not establish
 whether mailbox retrieval applies the recorded caps.
+Use `mail_attachment_headroom_message_slot` to check a single loaded
+message, with optional currency IDs to narrow the result. Unknown slots
+are counted for that message and unloaded message slots return unknown.
 For saved inbox discovery, set
 `mail_attachment.maximum_quantity_above_recorded_headroom` with
 `kind: "currency"` on `list_snapshots`. Use zero to require the known

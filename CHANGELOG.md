@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare currency attachments in one loaded saved message with recorded cap headroom.
+
 - Estimate carried bag space for one loaded message in a saved Forever inbox.
 
 - Optionally require all messages loaded and no unknown attachment slots when searching saved inboxes.

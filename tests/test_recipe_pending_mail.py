@@ -154,6 +154,33 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                         await mail_headroom(with_mail,invalid,error=True)
                     await mail_headroom(with_mail,[720],section='bags',error=True)
                     await mail_headroom(retail_id,[720],error=True)
+                    split=deepcopy(observed)
+                    split['sections']['mail_attachments']['messages']['2']['4']={
+                        'kind':'currency','currency_id':720,'count':1}
+                    split_key=store.ingest(split)
+                    async def message_headroom(slot, ids=None, section='mail_attachments', error=False):
+                        args={'snapshot_id':split_key,'section':section,
+                              'mail_attachment_headroom_message_slot':slot}
+                        if ids is not None:
+                            args['mail_attachment_headroom_currency_ids']=ids
+                        reply=await session.call_tool('inspect_snapshot',args)
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['mail_attachment_currency_headroom']
+                    self.assertEqual((await mail_headroom(split_key,[720]))['currencies'][0]['known_pending_quantity'],1000)
+                    small=await message_headroom(2)
+                    self.assertEqual((small['message_slot'],small['unknown_attachment_slots'],small['unloaded_messages']),(2,0,4))
+                    self.assertEqual([row['currency_id'] for row in small['currencies']],[720])
+                    self.assertEqual(small['currencies'][0]['hypothetical_cap_projection'],{
+                        'proposed_quantity':1,'quantity_within_recorded_headroom':1,
+                        'quantity_above_recorded_headroom':0})
+                    scoped=await message_headroom(1,[10,720])
+                    self.assertEqual([row['known_pending_quantity'] for row in scoped['currencies']],[None,999])
+                    self.assertEqual(scoped['unknown_attachment_slots'],1)
+                    self.assertIsNone(await message_headroom(3))
+                    await message_headroom(0,error=True)
+                    await message_headroom(101,error=True)
+                    await message_headroom(1,section='bags',error=True)
                     async def review(key,**arguments):
                         response=await session.call_tool('review_forever_recipe',{'snapshot_id':key,'crafts':2,**arguments})
                         self.assertFalse(response.isError)

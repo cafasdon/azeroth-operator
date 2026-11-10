@@ -6387,33 +6387,49 @@ pub fn restock_pending_mail(snapshot: &Snapshot, residual: &Value) -> Option<Val
     }))
 }
 
+fn mail_attachment_scope_totals(
+    mail: &Value,
+    message_slot: Option<u32>,
+) -> Option<(KnownMailTotals, u32)> {
+    Some(if let Some(slot) = message_slot {
+        let message = mail["messages"].get(slot.to_string())?.as_object()?;
+        mail_attachment_rows_totals(message.values())
+    } else {
+        mail_attachment_totals(mail)
+    })
+}
+
+fn mail_attachment_ids(
+    totals: &KnownMailTotals,
+    kind: &str,
+    ids: Option<&[std::num::NonZeroU32]>,
+) -> Vec<u32> {
+    ids.map_or_else(
+        || {
+            totals
+                .keys()
+                .filter_map(|&(observed_kind, id)| (observed_kind == kind).then_some(id as u32))
+                .collect()
+        },
+        |ids| ids.iter().map(|id| id.get()).collect(),
+    )
+}
+
 pub fn mail_attachment_bag_space(
     snapshot: &Snapshot,
     ids: Option<&[std::num::NonZeroU32]>,
     message_slot: Option<u32>,
 ) -> Option<Value> {
     let mail = snapshot.sections.get("mail_attachments")?;
-    let (totals, unknown_slots) = if let Some(slot) = message_slot {
-        let message = mail["messages"].get(slot.to_string())?.as_object()?;
-        mail_attachment_rows_totals(message.values())
-    } else {
-        mail_attachment_totals(mail)
-    };
-    let items = ids.map_or_else(
-        || {
-            totals
-                .keys()
-                .filter_map(|&(kind, id)| (kind == "item").then_some(id as u32))
-                .collect::<Vec<_>>()
-        },
-        |ids| ids.iter().map(|id| id.get()).collect(),
-    );
-    let quantities = items.into_iter().map(|id| {
-        let quantity = totals
-            .get(&("item", u64::from(id)))
-            .map_or(0, |(quantity, _)| *quantity);
-        (id, quantity)
-    });
+    let (totals, unknown_slots) = mail_attachment_scope_totals(mail, message_slot)?;
+    let quantities = mail_attachment_ids(&totals, "item", ids)
+        .into_iter()
+        .map(|id| {
+            let quantity = totals
+                .get(&("item", u64::from(id)))
+                .map_or(0, |(quantity, _)| *quantity);
+            (id, quantity)
+        });
     let mut report = incoming_items_bag_space(
         snapshot,
         quantities,
@@ -6435,15 +6451,16 @@ pub fn mail_attachment_bag_space(
 
 pub fn mail_attachment_currency_headroom(
     snapshot: &Snapshot,
-    ids: &[std::num::NonZeroU32],
+    ids: Option<&[std::num::NonZeroU32]>,
+    message_slot: Option<u32>,
 ) -> Option<Value> {
     let mail = snapshot.sections.get("mail_attachments")?;
-    let (totals, unknown_slots) = mail_attachment_totals(mail);
+    let (totals, unknown_slots) = mail_attachment_scope_totals(mail, message_slot)?;
     let balances = snapshot.sections.get("currency_balances");
-    let currencies: Vec<_> = ids
-        .iter()
+    let currencies: Vec<_> = mail_attachment_ids(&totals, "currency", ids)
+        .into_iter()
         .map(|id| {
-            let pending = totals.get(&("currency", u64::from(id.get())));
+            let pending = totals.get(&("currency", u64::from(id)));
             let balance = balances.and_then(|rows| rows["entries"].get(id.to_string()));
             let caps = balance.and_then(currency_entry_cap_headroom);
             let projection =
@@ -6460,11 +6477,13 @@ pub fn mail_attachment_currency_headroom(
             "recorded_headroom":caps,"hypothetical_cap_projection":projection})
         })
         .collect();
-    Some(
-        json!({"currencies":currencies,"unloaded_messages":unloaded_mail_messages(mail),
+    let mut report = json!({"currencies":currencies,"unloaded_messages":unloaded_mail_messages(mail),
         "unknown_attachment_slots":unknown_slots,"mail_cap_application_verified":false,
-        "retrieval_eligibility_verified":false,"live":false}),
-    )
+        "retrieval_eligibility_verified":false,"live":false});
+    if let Some(slot) = message_slot {
+        report["message_slot"] = json!(slot);
+    }
+    Some(report)
 }
 
 fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {

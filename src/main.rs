@@ -150,6 +150,8 @@ struct Inspect {
     mail_attachment_bag_space_message_slot: Option<std::num::NonZeroU32>,
     /// Compare known loaded mail quantities for these distinct currency IDs with recorded cap headroom.
     mail_attachment_headroom_currency_ids: Option<Vec<std::num::NonZeroU32>>,
+    /// Compare known currency attachments in one loaded saved message with recorded cap headroom.
+    mail_attachment_headroom_message_slot: Option<std::num::NonZeroU32>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Compare the expected outgoing items with carried stock from the same saved capture.
@@ -2914,14 +2916,16 @@ impl Operator {
                 "Mail projections require mail_attachments and one to 64 distinct positive IDs per list",
             )]);
         }
-        if args
-            .mail_attachment_bag_space_message_slot
-            .is_some_and(|slot| {
-                args.section.as_deref() != Some("mail_attachments") || slot.get() > 100
-            })
+        if [
+            args.mail_attachment_bag_space_message_slot,
+            args.mail_attachment_headroom_message_slot,
+        ]
+        .into_iter()
+        .flatten()
+        .any(|slot| args.section.as_deref() != Some("mail_attachments") || slot.get() > 100)
         {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Mail message bag space requires mail_attachments and a message slot from 1 to 100",
+                "Mail message projections require mail_attachments and a message slot from 1 to 100",
             )]);
         }
         if args.weapon_enchant_reference_at.is_some()
@@ -4612,6 +4616,7 @@ impl Operator {
                 if args.mail_attachment_bag_space_item_ids.is_some()
                     || args.mail_attachment_bag_space_message_slot.is_some()
                     || args.mail_attachment_headroom_currency_ids.is_some()
+                    || args.mail_attachment_headroom_message_slot.is_some()
                 {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
@@ -4635,10 +4640,15 @@ impl Operator {
                             )
                         );
                     }
-                    if let Some(ids) = &args.mail_attachment_headroom_currency_ids {
+                    if args.mail_attachment_headroom_currency_ids.is_some()
+                        || args.mail_attachment_headroom_message_slot.is_some()
+                    {
                         value["mail_attachment_currency_headroom"] = serde_json::json!(
                             azeroth_operator::analysis::mail_attachment_currency_headroom(
-                                &snapshot, ids
+                                &snapshot,
+                                args.mail_attachment_headroom_currency_ids.as_deref(),
+                                args.mail_attachment_headroom_message_slot
+                                    .map(|slot| slot.get()),
                             )
                         );
                     }
