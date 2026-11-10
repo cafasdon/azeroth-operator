@@ -4577,3 +4577,13 @@ Static cycle status and existing whole-recipe material ledgers remain unchanged.
 A witness checks resource arithmetic only, not current stock, cooldowns, charges,
 conditions, variants, bag space or native craftability. No game action occurs.
 See ADR-092 and stock-craft-schedule-verification-2026-11-10.md. Offline only.
+
+## Saved merchant quote for recipe restock
+
+Request `merchant_quote:true` on `plan_forever_recipe_restock` to price bag
+shortfalls from the same capture's merchant offers and wallet. Joint targets
+quote combined ordered starting materials once. Single targets quote gross
+inputs. No bank withdrawal or pending mail money is assumed. Cyclic whole-recipe
+orders return an unavailable status, even with a separate stock-schedule witness.
+Quotes are conditional saved copper-only arithmetic, not purchases, native
+eligibility, complete acquisition optimisation or current prices. See ADR-093.

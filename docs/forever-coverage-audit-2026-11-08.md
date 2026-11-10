@@ -1012,3 +1012,12 @@ Witness pages are complete-model evidence only; budget exhaustion remains unknow
 and exhaustive failure refers to the fixed captured-stock model. Conditions,
 charges, native legality, variants and current ownership remain unproven.
 No craft action or deployment occurred. See ADR-092 and its dated evidence.
+
+## Saved restock merchant quotes (10 November)
+
+Single/joint restock targets can request same-capture merchant prices for bag
+shortfalls. Shared ordered materials are quoted once with captured producer
+output credit. Banks and mail money never offset this quote. Single-recipe gross
+inputs and cyclic-order limits remain explicit; no per-craft quotation or native
+purchase eligibility is established. This adds no action, source sync or live
+evidence. See ADR-093 and its offline evidence.

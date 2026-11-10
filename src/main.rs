@@ -1378,6 +1378,9 @@ struct RecipeReview {
 #[serde(deny_unknown_fields)]
 struct RecipeRestock {
     snapshot_id: String,
+    /// Quote saved copper-only merchant offers for bag shortfalls. Uses this capture only; no purchases.
+    #[serde(default)]
+    merchant_quote: bool,
     /// Exact bulk recipe ID; omit for the saved selected recipe.
     recipe_id: Option<std::num::NonZeroU32>,
     /// Desired final base-item quantity in observed carried bags, not new output.
@@ -2311,13 +2314,18 @@ impl Operator {
             return CallToolResult::error(vec![ContentBlock::text("Stock schedule requires valid bounded page options")]);
         }
         let result = self.store.read(&args.snapshot_id).and_then(|snapshot| {
+            let mut plan =
             if let Some(additional) = &args.additional_targets {
                 azeroth_operator::recipe_restock_batch::plan_with_stock_schedule(&snapshot,args.recipe_id,args.target_bag_quantity,additional,args.stock_schedule.as_ref())
             } else if let Some(page)=&args.stock_schedule {
                 azeroth_operator::recipe_restock::plan_with_stock_schedule(&snapshot,args.recipe_id,args.target_bag_quantity,page)
             } else {
                 azeroth_operator::recipe_restock::plan(&snapshot, args.recipe_id, args.target_bag_quantity)
+            }?;
+            if args.merchant_quote {
+                plan["merchant_quote"] = azeroth_operator::recipe_restock_quote::quote(&plan, &snapshot);
             }
+            Ok(plan)
         });
         match result {
             Ok(mut plan) => {

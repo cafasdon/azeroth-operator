@@ -28,6 +28,7 @@ pub mod upload;
 pub mod workflow_coverage;
 pub mod recipe_restock;
 pub mod recipe_restock_batch;
+pub mod recipe_restock_quote;
 pub mod recipe_stock_schedule;
 pub mod player_map_position;
 use anyhow::{Result, ensure};
