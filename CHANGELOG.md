@@ -1,5 +1,7 @@
 # Changelog
 
+- Group ready quests by their captured next waypoint map.
+
 - Summarise explicit turn-in readiness and failure transitions across saved quest logs.
 
 - Find saved quests whose comparable objectives have increased or decreased remaining counts.

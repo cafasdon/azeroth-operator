@@ -11219,6 +11219,24 @@ pub fn quest_objective_matches(
     if unknown { None } else { Some(false) }
 }
 
+pub fn quest_ready_waypoint_groups(quests: &serde_json::Map<String, Value>) -> Value {
+    let mut by_map = BTreeMap::<u64, BTreeSet<u32>>::new();
+    let mut without_map = BTreeSet::new();
+    for (key, quest) in quests {
+        if quest_readiness(quest) != QuestReadiness::Ready {
+            continue;
+        }
+        let Ok(id) = key.parse::<u32>() else { continue };
+        if let Some(map) = quest["next_waypoint_map_id"].as_u64() {
+            by_map.entry(map).or_default().insert(id);
+        } else {
+            without_map.insert(id);
+        }
+    }
+    json!({"quest_ids_by_waypoint_map":by_map,"quest_ids_without_waypoint_map":without_map,
+        "turn_in_location_verified":false})
+}
+
 pub fn quest_checklist(quests: &serde_json::Map<String, Value>) -> Value {
     let (mut ready, mut not_ready, mut failed, mut unknown) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new());

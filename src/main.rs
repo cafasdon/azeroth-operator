@@ -341,6 +341,9 @@ struct Inspect {
     /// List unfinished captured objectives by quest, after applying quest filters.
     #[serde(default)]
     quest_list_objective_checklist: bool,
+    /// Group quests marked ready in the saved log by their next waypoint map.
+    #[serde(default)]
+    quest_list_ready_waypoint_groups: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -3641,6 +3644,7 @@ impl Operator {
                 || args.quest_list_item_rewards
                 || args.quest_list_timed_checklist
                 || args.quest_list_objective_checklist
+                || args.quest_list_ready_waypoint_groups
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -3712,6 +3716,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Objective quest checklist requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_list_ready_waypoint_groups
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Ready quest waypoint groups require the quests section without a quest ID",
             )]);
         }
         if (args.quest_max_required_copper.is_some() || args.quest_within_captured_wallet)
@@ -5404,6 +5415,7 @@ impl Operator {
                     || args.quest_list_item_rewards
                     || args.quest_list_timed_checklist
                     || args.quest_list_objective_checklist
+                    || args.quest_list_ready_waypoint_groups
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -5850,6 +5862,12 @@ impl Operator {
                         value["quest_objective_checklist"] = serde_json::json!(
                             data.as_object()
                                 .map(azeroth_operator::analysis::quest_objective_checklist)
+                        );
+                    }
+                    if args.quest_list_ready_waypoint_groups {
+                        value["quest_ready_waypoint_groups"] = serde_json::json!(
+                            data.as_object()
+                                .map(azeroth_operator::analysis::quest_ready_waypoint_groups)
                         );
                     }
                     value["data"] = data;

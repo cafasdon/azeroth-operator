@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `quest_list_ready_waypoint_groups` when inspecting the saved quest
+list to group quests marked ready by their next waypoint map. Ready
+quests without a recorded map are listed separately. Use
+`quest_on_captured_map` to narrow the list to the saved player map.
+The next waypoint is a map hint and does not verify the turn-in location.
+
 Use `quest_readiness_changes` on `compare_snapshots` to see which shared
 quests switched between explicitly not ready and ready, or switched from
 either state to failed. Changes involving unknown observations remain in

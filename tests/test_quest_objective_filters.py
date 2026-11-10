@@ -345,6 +345,21 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone((await query(snapshot_id=missing,
                         quest_list_timed_checklist=True))['timed_quest_checklist'])
                     self.assertNotIn('timed_quest_checklist',default)
+                    self.assertNotIn('quest_ready_waypoint_groups',default)
+                    groups = (await query(snapshot_id=tied_key,
+                        quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups']
+                    self.assertEqual(groups,{
+                        'quest_ids_by_waypoint_map':{'1414':[3]},
+                        'quest_ids_without_waypoint_map':[], 'turn_in_location_verified':False})
+                    self.assertEqual((await query(snapshot_id=tied_key,quest_on_captured_map=True,
+                        quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups'],groups)
+                    unmapped = (await query(quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups']
+                    self.assertEqual(unmapped['quest_ids_without_waypoint_map'],[3])
+                    self.assertEqual(unmapped['quest_ids_by_waypoint_map'],{})
+                    self.assertIsNone((await query(snapshot_id=missing,
+                        quest_list_ready_waypoint_groups=True))['quest_ready_waypoint_groups'])
+                    await query(error=True,quest_list_ready_waypoint_groups=True,quest_id=3)
+                    await query(error=True,quest_list_ready_waypoint_groups=True,snapshot_id=retail)
                     work = (await query(quest_list_objective_checklist=True))['quest_objective_checklist']
                     self.assertEqual(work['quest_ids_without_objective_observations'], [1])
                     self.assertNotIn('2', work['quests'])
