@@ -253,11 +253,9 @@ class Knowledge:
         self.index = index
         self.model = load_model(model_path)
 
-    def references(self, key, offset=0):
-        """One-hop exact public foreign keys; absence is not a world-data claim."""
-        if type(offset) is not int or not 0 <= offset <= 2**32-1:
-            raise ValueError('Invalid public reference offset')
-        source = self.source_records[key]
+    @staticmethod
+    def reference_links(source):
+        """Recognised raw public foreign keys, in stable source-field order."""
         links = []
         fields = [('npcId', 'npcs'), ('zoneId', 'zones'), ('repFactionId', 'factions')]
         if 'zoneId' in source:
@@ -274,6 +272,13 @@ class Knowledge:
             links.append((f'/randomSuffixOptions/{index}', 'random_suffixes', identity))
         for index, identity in enumerate(source.get('effectIds', [])):
             links.append((f'/effectIds/{index}', 'spell_effects', identity))
+        return links
+
+    def references(self, key, offset=0):
+        """One-hop exact public foreign keys; absence is not a world-data claim."""
+        if type(offset) is not int or not 0 <= offset <= 2**32-1:
+            raise ValueError('Invalid public reference offset')
+        links = self.reference_links(self.source_records[key])
         results = []
         for path, section, identity in links[offset:offset+32]:
             row = {'source_path': path, 'target_section': section, 'record_id': identity}
@@ -444,11 +449,47 @@ class Knowledge:
             result.update(status='analysis_time_budget_exhausted', traversal_complete_within_requested_depth=False)
         return result
 
+    def incoming_references(self, key, offset):
+        """Exact reverse references over this pinned public source map only."""
+        deadline = monotonic() + 5
+        count, results = 0, []
+        for source_key in sorted(self.source_records):
+            if monotonic() >= deadline:
+                raise ValueError('Public incoming reference analysis exceeds time limit')
+            source = self.source_records[source_key]
+            for path, section, identity in self.reference_links(source):
+                if type(identity) is not int or not 1 <= identity <= 2**32-1 or f'{section}:{identity}' != key:
+                    continue
+                if offset <= count < offset + 32:
+                    edge = {'source_record_key': source_key, 'source_path': path,
+                        'source_section': source_key.split(':', 1)[0],
+                        'catalogue_record_sha256': digest(encoded(source).encode()),
+                        'target_record_key': key}
+                    if section == 'random_suffixes':
+                        edge['relationship'] = 'catalogue_option_not_owned_variant'
+                    results.append(edge)
+                count += 1
+        if monotonic() >= deadline:
+            raise ValueError('Public incoming reference analysis exceeds time limit')
+        return {'scope': 'recognised_incoming_pinned_public_fields_only',
+            'reference_count': count, 'returned_reference_count': len(results),
+            'reference_offset': offset, 'reference_limit': 32,
+            'has_more_references': offset + len(results) < count,
+            'references_truncated': len(results) < count, 'references': results,
+            'complete_world_graph_verified': False, 'current_acquisition_availability_verified': False,
+            'owned_variant_verified': False, 'native_world_identity_verified': False,
+            'game_execution': False, 'live': False}
+
     def get_record(self, key, include_references=False, reference_offset=0, *,
-                   reference_depth=1, reference_node_budget=64, reference_edge_budget=256):
+                   reference_depth=1, reference_node_budget=64, reference_edge_budget=256,
+                   include_incoming_references=False, incoming_reference_offset=0):
         """Follow an exact returned public record key, without similarity fallback."""
         _validate_lookup(key, include_references, reference_offset, reference_depth,
                          reference_node_budget, reference_edge_budget)
+        if (type(include_incoming_references) is not bool or type(incoming_reference_offset) is not int
+                or not 0 <= incoming_reference_offset <= 2**32-1
+                or incoming_reference_offset and not include_incoming_references):
+            raise ValueError('Invalid public incoming reference lookup')
         with closing(connect(self.index)) as database:
             records = checked_records(database, self.rows)
         row = next((row for row in records if row[0] == key), None)
@@ -465,6 +506,8 @@ class Knowledge:
                 else:
                     record['catalogue_reference_walk'] = self._reference_walk(key, reference_depth,
                         reference_node_budget, reference_edge_budget)
+            if include_incoming_references:
+                record['incoming_catalogue_references'] = self.incoming_references(key, incoming_reference_offset)
             result['record'] = record
         if len(encoded(result).encode()) > 256 * 1024:
             raise ValueError('Source record response exceeds byte limit')
@@ -487,8 +530,14 @@ def main():
     cli.add_argument('--reference-depth', type=int, default=1)
     cli.add_argument('--reference-node-budget', type=int, default=64)
     cli.add_argument('--reference-edge-budget', type=int, default=256)
+    cli.add_argument('--include-incoming-references', action='store_true')
+    cli.add_argument('--incoming-reference-offset', type=int, default=0)
     cli.add_argument('--item-id', action='append', type=int, dest='item_ids')
     args = cli.parse_args()
+    if (args.action != 'get' and (args.include_incoming_references or args.incoming_reference_offset)
+            or not 0 <= args.incoming_reference_offset <= 2**32-1
+            or args.incoming_reference_offset and not args.include_incoming_references):
+        cli.error('Incoming reference options require get and include-incoming-references')
     if args.action != 'get' and (args.reference_depth != 1 or args.reference_node_budget != 64
                                 or args.reference_edge_budget != 256):
         cli.error('Reference walk options require the get action')
@@ -502,7 +551,9 @@ def main():
     if args.action == 'get':
         print(encoded(knowledge.get_record(args.record_key, args.include_references, args.reference_offset,
             reference_depth=args.reference_depth, reference_node_budget=args.reference_node_budget,
-            reference_edge_budget=args.reference_edge_budget)))
+            reference_edge_budget=args.reference_edge_budget,
+            **({'include_incoming_references': True, 'incoming_reference_offset': args.incoming_reference_offset}
+               if args.include_incoming_references else {}))))
         return
     if args.action == 'search':
         print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records, args.item_ids,
@@ -519,12 +570,17 @@ def main():
                                      reference_offset: StrictInt = 0,
                                      reference_depth: Annotated[StrictInt, Field(ge=1, le=3)] = 1,
                                      reference_node_budget: Annotated[StrictInt, Field(ge=1, le=256)] = 64,
-                                     reference_edge_budget: Annotated[StrictInt, Field(ge=1, le=1024)] = 256) -> dict:
-        """Get an exact pinned public record and SHA-256; unknown keys return found false. include_references defaults to a paged 32-edge direct preview. reference_depth 2 or 3 instead returns catalogue_reference_walk: bounded breadth-first exact links, node identities/hashes, explicit missing targets and partial-budget status; requires include_references and offset zero. Walk node/edge budgets apply only at depth above one; five-second analysis bound. No inferred joins, private snapshots, ownership, route or current availability claim. Replies capped at 256 KiB without silent truncation."""
+                                     reference_edge_budget: Annotated[StrictInt, Field(ge=1, le=1024)] = 256,
+                                     include_incoming_references: StrictBool = False,
+                                     incoming_reference_offset: Annotated[StrictInt, Field(ge=0, le=4294967295)] = 0) -> dict:
+        """Get an exact pinned public record and SHA-256; unknown keys return found false. include_references defaults to a paged 32-edge direct preview. reference_depth 2 or 3 instead returns catalogue_reference_walk: bounded breadth-first exact links, node identities/hashes, explicit missing targets and partial-budget status; requires include_references and offset zero. Walk node/edge budgets apply only at depth above one; five-second analysis bound. No inferred joins, private snapshots, ownership, route or current availability claim. include_incoming_references adds incoming_catalogue_references: 32 exact reverse edges per page, with incoming_reference_offset (uint32, requires the option), total count and has_more_references. Incoming scan fails closed after five seconds; no partial count. Replies capped at 256 KiB without silent truncation."""
+        # Incoming references are exact reverse edges, paged 32 at a time; no acquisition or ownership inference.
         try:
             return knowledge.get_record(record_key, include_references, reference_offset,
                 reference_depth=reference_depth, reference_node_budget=reference_node_budget,
-                reference_edge_budget=reference_edge_budget)
+                reference_edge_budget=reference_edge_budget,
+                include_incoming_references=include_incoming_references,
+                incoming_reference_offset=incoming_reference_offset)
         except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
             raise ValueError('Public knowledge index or query unavailable or invalid') from None
 

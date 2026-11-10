@@ -1,5 +1,7 @@
 # Changelog
 
+- Page exact incoming public catalogue references by target, with source pointers/hashes and no inferred acquisition or ownership claims.
+
 - Follow bounded exact multi-hop links in the pinned public catalogue, with source hashes, explicit missing targets and partial-budget states.
 
 - Plan explicit standard-reputation standing targets with constant assumed gains, joint captured item/copper budgets, signed bounds and explicit cap/rate uncertainty.

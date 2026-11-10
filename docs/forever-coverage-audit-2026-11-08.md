@@ -1098,3 +1098,8 @@ adds local cross-consultation without private character data or external queries
 It does not establish complete world data, current acquisition availability,
 owned item variants or travel routes. See ADR-101 and the dated offline evidence.
 Installation and live tests remain deferred.
+
+Exact incoming reference pages now answer which public cached records point to
+a selected target, with source keys, JSON pointers and row hashes (ADR-102).
+Counts cover recognised fields in the pinned corpus only. This supports local
+acquisition research without claiming current availability or full world data.

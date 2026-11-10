@@ -64,6 +64,21 @@ class KnowledgeWalkMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError), error, reply)
                         return None if error else json.loads(reply.content[0].text)
                     old = await call(include_references=True)
+                    self.assertNotIn('incoming_catalogue_references', old['record'])
+                    reverse = await call(record_key=f"npcs:{npc['id']}", include_incoming_references=True)
+                    incoming = reverse['record']['incoming_catalogue_references']
+                    all_edges = list(incoming['references'])
+                    offset = 32
+                    while incoming['has_more_references']:
+                        incoming = (await call(record_key=f"npcs:{npc['id']}", include_incoming_references=True,
+                                              incoming_reference_offset=offset))['record']['incoming_catalogue_references']
+                        all_edges.extend(incoming['references']); offset += 32
+                    self.assertEqual(len(all_edges), incoming['reference_count'])
+                    self.assertTrue(any(edge['source_record_key'] == key for edge in all_edges))
+                    self.assertTrue(all(edge['target_record_key'] == f"npcs:{npc['id']}" for edge in all_edges))
+                    await call(error=True, incoming_reference_offset=1)
+                    await call(error=True, include_incoming_references=1)
+                    await call(error=True, include_incoming_references=True, incoming_reference_offset=-1)
                     self.assertNotIn('catalogue_reference_walk', old['record'])
                     self.assertEqual(old, await call(include_references=True, reference_depth=1))
                     result = await call(include_references=True, reference_depth=3)
