@@ -75,6 +75,12 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         return None if error else json.loads(reply.content[0].text)
                     get, search = 'get_forever_world_record', 'search_forever_world_records'
+                    local = await call(search,query='Hogger',kind='npc',spawn_area_id=12)
+                    self.assertEqual(local['results'][0]['id'],448)
+                    area = await call(search,spawn_area_id=12,limit=1)
+                    self.assertGreater(area['match_count'],1)
+                    self.assertTrue(area['has_more'])
+                    await call(search,error=True,kind='item',spawn_area_id=12)
                     chain = await call(get,kind='quest',entity_id=5,include_quest_links=True)
                     next_link = chain['quest_links']['nextQuestInChain']['1']
                     self.assertEqual(next_link['quest_id'],chain['record']['fields']['nextQuestInChain'])

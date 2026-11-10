@@ -320,20 +320,33 @@ class World:
                 contacts[field][position] = {'kind': kind, 'references': references}
         return contacts
 
-    def search(self, query, kind=None, limit=10, offset=0):
-        if (type(query) is not str or len(query.encode()) > 128 or not query.strip()
+    def search(self, query, kind=None, limit=10, offset=0, *, spawn_area_id=None):
+        if (spawn_area_id is not None and
+                (type(spawn_area_id) is not int or not 1 <= spawn_area_id <= 2**32-1
+                 or kind not in (None, 'npc', 'object'))):
+            raise ValueError('Invalid spawn area filter')
+        if (type(query) is not str or len(query.encode()) > 128
+                or not query.strip() and spawn_area_id is None
                 or kind is not None and kind not in KINDS or type(limit) is not int or not 1 <= limit <= 20
                 or type(offset) is not int or not 0 <= offset <= 2**32-1):
             raise ValueError('Invalid world name query')
         words = query.casefold().split()
         phrase = ' '.join(words)
+        area_key = None if spawn_area_id is None else str(spawn_area_id)
         hits = []
-        for key, (_, _, name) in self.records.items():
+        for key, (row, _, name) in self.records.items():
+            if area_key is not None:
+                spawns = row['fields'].get('spawns')
+                points = spawns.get(area_key) if isinstance(spawns, dict) else None
+                if key[0] not in ('npc', 'object') or not isinstance(points, dict) or not points:
+                    continue
             if (kind is None or key[0] == kind) and all(word in name for word in words):
                 hits.append((0 if name == phrase else 1 if name.startswith(phrase) else 2, name, key))
         hits.sort()
         result = {**self.metadata(), 'match_count': len(hits), 'offset': offset, 'limit': limit,
             'has_more': offset+limit < len(hits), 'results': [self.summary(key) for _, _, key in hits[offset:offset+limit]]}
+        if spawn_area_id is not None:
+            result['spawn_area_id'] = spawn_area_id
         encoded(result)
         return result
 
@@ -361,12 +374,17 @@ def serve(world):
                          include_item_sources=include_item_sources, item_source_offset=item_source_offset)
 
     @server.tool(annotations=readonly)
-    def search_forever_world_records(query: str, kind: Kind | None = None,
+    def search_forever_world_records(query: str = '', kind: Kind | None = None,
             limit: Annotated[StrictInt, Field(ge=1, le=20)] = 10,
-            offset: Annotated[StrictInt, Field(ge=0, le=4294967295)] = 0) -> dict:
-        """Search local Forever entity names by literal case-insensitive terms, with stable pages and exact record keys. Max query 128 UTF-8 bytes. No external lookup or character data."""
+            offset: Annotated[StrictInt, Field(ge=0, le=4294967295)] = 0,
+            spawn_area_id: Annotated[StrictInt, Field(ge=1, le=4294967295)] | None = None) -> dict:
+        """Search local Forever names by literal terms and optionally filter by cached spawn area ID.
+
+        Omit the name query to list NPCs and objects with spawn entries in that area.
+        Area IDs use the provider namespace. Results have stable pages and exact record keys.
+        """
         try:
-            return world.search(query, kind, limit, offset)
+            return world.search(query, kind, limit, offset, spawn_area_id=spawn_area_id)
         except ValueError:
             raise ValueError('Invalid or oversized world name query') from None
     server.run(transport='stdio')
@@ -380,6 +398,7 @@ def main(argv=None):
     cli.add_argument('--kind', choices=KINDS)
     cli.add_argument('--entity-id', type=int)
     cli.add_argument('--query')
+    cli.add_argument('--spawn-area-id', type=int, help='Filter search by a cached NPC or object spawn area ID')
     cli.add_argument('--limit', type=int, default=10)
     cli.add_argument('--offset', type=int, default=0)
     cli.add_argument('--include-quest-links', action='store_true', help='Include related quests, contacts and targets in get')
@@ -387,6 +406,8 @@ def main(argv=None):
     cli.add_argument('--item-source-offset', type=int, default=0, help='Offset for each item source group in get')
     args = cli.parse_args(argv)
     try:
+        if args.action != 'search' and args.spawn_area_id is not None:
+            raise ValueError('Spawn area filter requires search')
         if args.action != 'get' and (args.include_quest_links or args.include_item_sources or args.item_source_offset):
             raise ValueError('Record enrichment options require get')
         if args.action == 'sync-source' and args.source is not None:
@@ -403,7 +424,8 @@ def main(argv=None):
                                    include_item_sources=args.include_item_sources,
                                    item_source_offset=args.item_source_offset)
             else:
-                result = world.search(args.query, args.kind, args.limit, args.offset)
+                result = world.search(args.query if args.query is not None else '',
+                                      args.kind, args.limit, args.offset, spawn_area_id=args.spawn_area_id)
         else:
             raise ValueError('Required explicit paths unavailable')
         print(encoded(result))

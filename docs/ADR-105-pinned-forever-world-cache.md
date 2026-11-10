@@ -111,3 +111,7 @@ by the quest starter and additional items required by the quest.
 
 The CLI get action supports the same views with --include-quest-links,
 --include-item-sources and --item-source-offset.
+
+Search accepts spawn_area_id to filter NPCs and objects by nonempty cached
+spawn groups. A name query is optional with this filter. The CLI flag is
+--spawn-area-id. IDs belong to the provider area namespace.
