@@ -6932,6 +6932,7 @@ pub fn quest_list_currency_projection(
 pub enum QuestRewardTarget<'a> {
     Item(u32),
     Currency(u32, &'a Value),
+    Renown(u32, &'a Value),
 }
 
 pub fn quest_ready_reward_projection(
@@ -6945,17 +6946,21 @@ pub fn quest_ready_reward_projection(
             id,
             "item_id",
             "item_rewards",
-            "item_choices",
+            Some("item_choices"),
             "covers_target",
         ),
         QuestRewardTarget::Currency(id, _) => (
             id,
             "currency_id",
             "currency_rewards",
-            "currency_choices",
+            Some("currency_choices"),
             "covers_target_before_caps",
         ),
+        QuestRewardTarget::Renown(id, _) => {
+            (id, "faction_id", "renown_rewards", None, "covers_target")
+        }
     };
+    let choice_field = choice_field.filter(|_| include_choices);
     let mut unknown_fixed = 0;
     let mut unknown_choices = 0;
     let mut fixed_total = 0;
@@ -6973,7 +6978,7 @@ pub fn quest_ready_reward_projection(
             .filter_map(|row| row["quantity"].as_u64())
             .sum();
         fixed_total += fixed_quantity;
-        let choice = if include_choices {
+        let choice = if let Some(choice_field) = choice_field {
             let choices = quest[choice_field].as_object();
             unknown_choices += usize::from(choices.is_none());
             choices
@@ -7027,7 +7032,10 @@ pub fn quest_ready_reward_projection(
             let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
             plan["cap_projection"] = currency_reward_projection(selected_quantity, entry, &caps);
         }
-        if include_choices {
+        if let QuestRewardTarget::Renown(_, faction) = reward {
+            plan["renown_projection"] = renown_reward_projection(selected_quantity, faction);
+        }
+        if let Some(choice_field) = choice_field {
             plan["recorded_choice_quantity"] = json!(selected_quantity - selected_fixed);
             plan["recorded_total_quantity"] = json!(selected_quantity);
             plan[choice_field] = json!(choices);
@@ -7039,7 +7047,7 @@ pub fn quest_ready_reward_projection(
         (coverage_field):covers_target,
         "shortfall_after_known_ready_fixed_rewards":target.saturating_sub(fixed_total),
         "ready_turn_in_plan":plan,"reward_eligibility_verified":false,"live":false});
-    if include_choices {
+    if choice_field.is_some() {
         report["known_ready_quantity_with_choices"] = json!(total);
         report["ready_quests_with_unknown_choices"] = json!(unknown_choices);
         report["shortfall_after_known_ready_rewards"] = json!(shortfall);
@@ -7168,6 +7176,33 @@ pub fn quest_list_renown_projection(
         })
         .collect();
     json!({"known_rewards_by_faction":projections,"unknown_reward_list_count":unknown})
+}
+
+pub fn quest_ready_renown_projection(
+    quests: &serde_json::Map<String, Value>,
+    reputation: &Value,
+    faction_id: u32,
+    quantity: Option<u64>,
+) -> Value {
+    let faction = &reputation["entries"][faction_id.to_string()];
+    let observed = renown_reward_projection(0, faction);
+    let target = quantity.or_else(|| observed["points_to_next_rank"].as_u64());
+    let Some(target) = target else {
+        return json!({"faction_id":faction_id,"status":"next_rank_target_unknown",
+            "capped":observed["capped"],"live":false});
+    };
+    let mut report = quest_ready_reward_projection(
+        quests,
+        QuestRewardTarget::Renown(faction_id, faction),
+        target,
+        false,
+    );
+    report["target_basis"] = json!(if quantity.is_some() {
+        "requested_quantity"
+    } else {
+        "recorded_next_rank"
+    });
+    report
 }
 
 fn renown_reward_projection(quantity: u64, faction: &Value) -> Value {

@@ -3399,6 +3399,13 @@ a separate estimate if the incoming copies can merge into carried stacks
 of the same item ID. Other rewards are outside its scope. Merge eligibility
 and actual placement remain unverified.
 
+`inspect_snapshot.quest_ready_renown_target` accepts a `faction_id` in the
+`quests` section. Supply a positive `quantity` or use the recorded
+distance to the next rank. The planner considers recorded fixed renown
+rewards from ready quests and shows the selected rewards against the
+captured faction progress. An unobserved next-rank threshold leaves a
+derived target unknown.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

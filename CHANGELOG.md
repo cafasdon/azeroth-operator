@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved ready quest turn-ins for a renown quantity or the recorded next rank.
+
 - Show hypothetical carried stack headroom for saved quest reward bag-space estimates.
 
 - Estimate saved general bag space for selected quest rewards of a target item.

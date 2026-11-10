@@ -89,6 +89,14 @@ struct QuestItemTarget {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct QuestRenownTarget {
+    faction_id: std::num::NonZeroU32,
+    /// Points to target. Omit to use the captured distance to the next rank.
+    quantity: Option<std::num::NonZeroU64>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
@@ -282,6 +290,8 @@ struct Inspect {
     /// Combine renown rewards from retained quests against the same capture's faction progress.
     #[serde(default)]
     quest_list_renown_projection: bool,
+    /// Plan ready quest turn-ins toward a renown target for one faction.
+    quest_ready_renown_target: Option<QuestRenownTarget>,
     /// Total fixed item rewards and identify item choices across retained Forever quests.
     #[serde(default)]
     quest_list_item_rewards: bool,
@@ -3183,6 +3193,7 @@ impl Operator {
                 || args.quest_ready_currency_target.is_some()
                 || args.quest_ready_item_target.is_some()
                 || args.quest_list_renown_projection
+                || args.quest_ready_renown_target.is_some()
                 || args.quest_list_item_rewards
                 || args.quest_list_timed_checklist
                 || args.quest_within_captured_wallet
@@ -3268,6 +3279,7 @@ impl Operator {
             || args.quest_ready_currency_target.is_some()
             || args.quest_ready_item_target.is_some()
             || args.quest_list_renown_projection
+            || args.quest_ready_renown_target.is_some()
             || args.quest_list_item_rewards)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
         {
@@ -4689,6 +4701,7 @@ impl Operator {
                     || args.quest_ready_currency_target.is_some()
                     || args.quest_ready_item_target.is_some()
                     || args.quest_list_renown_projection
+                    || args.quest_ready_renown_target.is_some()
                     || args.quest_list_item_rewards
                     || args.quest_list_timed_checklist
                     || args.quest_within_captured_wallet
@@ -4712,6 +4725,7 @@ impl Operator {
                             .as_ref()
                             .is_some_and(|target| target.count_carried || target.estimate_bag_space)
                         || args.quest_list_renown_projection
+                        || args.quest_ready_renown_target.is_some()
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
                             Ok(snapshot) => snapshot,
@@ -5077,6 +5091,21 @@ impl Operator {
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
                                 azeroth_operator::analysis::quest_list_renown_projection(
                                     quests, reputation,
+                                )
+                            });
+                    }
+                    if let Some(target) = &args.quest_ready_renown_target {
+                        let reputation = context
+                            .as_ref()
+                            .and_then(|snapshot| snapshot.sections.get("reputation"))
+                            .unwrap_or(&serde_json::Value::Null);
+                        value["quest_ready_renown_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_ready_renown_projection(
+                                    quests,
+                                    reputation,
+                                    target.faction_id.get(),
+                                    target.quantity.map(|quantity| quantity.get()),
                                 )
                             });
                     }

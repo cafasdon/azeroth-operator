@@ -907,4 +907,43 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(conflicting['hypothetical_carried_stack_headroom'])
                     self.assertIsNone(conflicting['estimated_new_stack_slots_if_same_item_stacks_merge'])
                     self.assertIsNone(await reward_space(space_fixture,100))
+                    renown_capture=deepcopy(funded)
+                    for quest_id,points in [('3',7),('10',4)]:
+                        renown_capture['sections']['quests'][quest_id]['renown_rewards']={
+                            '1':{'faction_id':55,'quantity':points}}
+                    renown_capture['sections']['reputation']={'coverage':'visible_faction_rows_only','entries':{
+                        '55':{'name':'Fixture Renown','kind':'renown','account_wide':False,
+                              'reaction':4,'standing':0,'threshold':0,'next_threshold':0,
+                              'renown':{'level':5,'earned_in_level':12,'level_threshold':20,'capped':False}}}}
+                    renown_id=store.ingest(renown_capture)
+                    original[renown_id+'.json']=(Path(folder)/(renown_id+'.json')).read_bytes()
+                    for target,expected,ids,basis in [
+                            ({'faction_id':55},8,[3,10],'recorded_next_rank'),
+                            ({'faction_id':55,'quantity':6},6,[3],'requested_quantity')]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':renown_id,'section':'quests','quest_ready_renown_target':target})
+                        self.assertFalse(reply.isError,reply)
+                        plan=json.loads(reply.content[0].text)['quest_ready_renown_projection']
+                        self.assertEqual(plan['target_quantity'],expected)
+                        self.assertEqual(plan['target_basis'],basis)
+                        self.assertEqual(plan['ready_turn_in_plan']['quest_ids'],ids)
+                        self.assertIs(plan['ready_turn_in_plan']['renown_projection']['reaches_next_rank'],
+                            basis=='recorded_next_rank')
+                    reply=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':renown_id,'section':'quests','quest_ready_renown_target':{'faction_id':999}})
+                    self.assertFalse(reply.isError,reply)
+                    self.assertEqual(json.loads(reply.content[0].text)['quest_ready_renown_projection']['status'],
+                        'next_rank_target_unknown')
+                    reply=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':renown_id,'section':'quests','quest_id':3,
+                        'quest_ready_renown_target':{'faction_id':55}})
+                    self.assertTrue(reply.isError,reply)
+                    renown_capture['sections']['reputation']['entries']['55']['renown']['capped']=True
+                    capped_id=store.ingest(renown_capture)
+                    original[capped_id+'.json']=(Path(folder)/(capped_id+'.json')).read_bytes()
+                    reply=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':capped_id,'section':'quests','quest_ready_renown_target':{'faction_id':55}})
+                    self.assertFalse(reply.isError,reply)
+                    self.assertEqual(json.loads(reply.content[0].text)['quest_ready_renown_projection'],
+                        {'faction_id':55,'status':'next_rank_target_unknown','capped':True,'live':False})
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})
