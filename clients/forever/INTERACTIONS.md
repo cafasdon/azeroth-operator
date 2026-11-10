@@ -3247,6 +3247,10 @@ unchanged prices as well as changes, and distinguishes missing panels,
 unlisted bundles and duplicate offers. A delta requires one offer on each
 side. Merchant identity and current prices remain unverified.
 
+`compare_snapshots.merchant_offer_currency_id` compares recorded currency
+bundles in the same way. Item and currency selectors can be used together.
+Offers remain separate even when the IDs and bundle sizes match.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

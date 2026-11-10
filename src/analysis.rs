@@ -3107,6 +3107,7 @@ pub struct ComparisonSelectors {
     pub bag_cooldown_item_id: Option<std::num::NonZeroU32>,
     pub merchant_buyback_changes: bool,
     pub merchant_offer_item_id: Option<std::num::NonZeroU32>,
+    pub merchant_offer_currency_id: Option<std::num::NonZeroU32>,
     pub repair_quote_changes: bool,
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3730,13 +3731,17 @@ pub fn compare_observations(
     }
     let merchant_before = before.sections.get("merchant_stock");
     let merchant_after = after.sections.get("merchant_stock");
-    if let Some(id) = selectors.merchant_offer_item_id {
+    for (kind, id) in [
+        ("item", selectors.merchant_offer_item_id),
+        ("currency", selectors.merchant_offer_currency_id),
+    ] {
+        let Some(id) = id else { continue };
         ensure!(
             before.client.family == crate::Family::Forever,
-            "Merchant item comparisons require Forever snapshots"
+            "Merchant offer comparisons require Forever snapshots"
         );
-        comparison["merchant_item_offer_comparison"] =
-            compare_merchant_item_offers(merchant_before, merchant_after, id.get());
+        comparison[format!("merchant_{kind}_offer_comparison")] =
+            compare_merchant_product_offers(merchant_before, merchant_after, kind, id.get());
     }
     if merchant_before.is_some() || merchant_after.is_some() {
         let (changes, coverage) = merchant_before
@@ -6101,18 +6106,25 @@ fn merchant_offers_by_product(panel: &Value) -> Option<BTreeMap<MerchantOfferKey
     Some(offers)
 }
 
-fn compare_merchant_item_offers(before: Option<&Value>, after: Option<&Value>, id: u32) -> Value {
+fn compare_merchant_product_offers(
+    before: Option<&Value>,
+    after: Option<&Value>,
+    kind: &'static str,
+    id: u32,
+) -> Value {
     let before = before.and_then(merchant_offers_by_product);
     let after = after.and_then(merchant_offers_by_product);
     let sizes: BTreeSet<_> = before
         .iter()
         .chain(&after)
         .flat_map(|offers| offers.keys())
-        .filter_map(|&(kind, item, size)| (kind == "item" && item == u64::from(id)).then_some(size))
+        .filter_map(|&(product_kind, product_id, size)| {
+            (product_kind == kind && product_id == u64::from(id)).then_some(size)
+        })
         .collect();
     let observation =
         |offers: Option<&BTreeMap<MerchantOfferKey, Option<&Value>>>, size| match offers
-            .map(|offers| offers.get(&("item", u64::from(id), size)))
+            .map(|offers| offers.get(&(kind, u64::from(id), size)))
         {
             None => json!({"status":"not_captured"}),
             Some(None) => json!({"status":"not_observed"}),
@@ -6133,7 +6145,7 @@ fn compare_merchant_item_offers(before: Option<&Value>, after: Option<&Value>, i
             json!({"bundle_size":size,"before":previous,"after":current,"price_copper_delta":delta})
         })
         .collect();
-    json!({"item_id":id,"before_observed":before.is_some(),"after_observed":after.is_some(),
+    json!({(format!("{kind}_id")):id,"before_observed":before.is_some(),"after_observed":after.is_some(),
         "matched_bundle_count":sizes.len(),"truncated":sizes.len()>bundles.len(),"bundles":bundles,
         "merchant_identity_verified":false,"current_price_verified":false})
 }

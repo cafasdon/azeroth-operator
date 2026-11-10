@@ -627,6 +627,35 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(missing['before_observed'])
                     self.assertEqual(missing['bundles'][0]['before'],{'status':'not_captured'})
                     self.assertIsNone(missing['bundles'][0]['price_copper_delta'])
+                    currency_before=deepcopy(merchant)
+                    currency_before['sections']['merchant_stock']['3']={
+                        'currency_id':118,'bundle_size':3,'price_copper':6,'available':-1,'extended_cost':False}
+                    currency_after=deepcopy(currency_before)
+                    currency_after['sections']['merchant_stock']['3']['price_copper']=3
+                    currency_after['sections']['merchant_stock']['1']['price_copper']=9
+                    def ingest_currency_fixture(snapshot):
+                        snapshot_id=store.ingest(snapshot)
+                        original[snapshot_id+'.json']=(Path(folder)/(snapshot_id+'.json')).read_bytes()
+                        return snapshot_id
+                    currency_query={'before_id':ingest_currency_fixture(currency_before),
+                                    'after_id':ingest_currency_fixture(currency_after),
+                                    'merchant_offer_currency_id':118,'merchant_offer_item_id':118}
+                    reply=await session.call_tool('compare_snapshots',currency_query)
+                    self.assertFalse(reply.isError,reply)
+                    report=json.loads(reply.content[0].text)
+                    self.assertEqual(report['merchant_item_offer_comparison'],price)
+                    currency=report['merchant_currency_offer_comparison']
+                    self.assertEqual(currency['currency_id'],118)
+                    self.assertEqual(currency['matched_bundle_count'],1)
+                    self.assertEqual(currency['bundles'][0]['price_copper_delta'],-3)
+                    currency_after['sections']['merchant_stock']['4']=deepcopy(
+                        currency_after['sections']['merchant_stock']['3'])
+                    reply=await session.call_tool('compare_snapshots',{
+                        **currency_query,'after_id':ingest_currency_fixture(currency_after)})
+                    self.assertFalse(reply.isError,reply)
+                    duplicate=json.loads(reply.content[0].text)['merchant_currency_offer_comparison']['bundles'][0]
+                    self.assertEqual(duplicate['after'],{'status':'ambiguous'})
+                    self.assertIsNone(duplicate['price_copper_delta'])
                     reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':9})
                     self.assertFalse(reply.isError,reply)
                     quantities=json.loads(reply.content[0].text)['quest_change']['objective_quantities_by_kind']
