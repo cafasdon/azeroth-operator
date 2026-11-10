@@ -20,8 +20,11 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
             GetProfessionInfo=function()
                 local rank=mode=='rank_secret' and 'PRIVATE-SOURCE' or (mode=='rank_changed' and reads>1 and 101 or 100)
                 if mode=='rank_missing' then rank=nil end
+                local modifier=mode=='modifier_secret' and 'PRIVATE-SOURCE'
+                    or (mode=='modifier_changed' and reads>1 and -6 or -5)
+                if mode=='modifier_zero' then modifier=0 end
                 return {professionID=mode=='profession_changed' and reads>1 and 165 or 164,
-                    skillLevel=rank,maxSkillLevel=mode=='rank_invalid' and 99 or 150}
+                    skillLevel=rank,maxSkillLevel=mode=='rank_invalid' and 99 or 150,skillModifier=modifier}
             end}
         C_TradeSkillUI={IsNPCCrafting=function() return mode=='npc' end,
             IsDataSourceChanging=function()
@@ -70,8 +73,19 @@ fn local_filtered_recipe_view_preserves_unknowns_and_rejects_external_contexts()
     );
     assert_eq!(
         saved.sections["profession_recipe_view"]["rank_observation"],
-        serde_json::json!({"rank":100,"max_rank":150})
+        serde_json::json!({"rank":100,"max_rank":150,"skill_modifier":-5})
     );
+    for mode in ["modifier_secret", "modifier_changed", "modifier_zero"] {
+        lua.globals().set("mode", mode)?;
+        let observed = capture()?;
+        let rank = &observed.sections["profession_recipe_view"]["rank_observation"];
+        assert_eq!(rank["rank"], 100, "{mode}");
+        if mode == "modifier_zero" {
+            assert_eq!(rank["skill_modifier"], 0);
+        } else {
+            assert!(rank.get("skill_modifier").is_none(), "{mode}");
+        }
+    }
     for mode in [
         "rank_secret",
         "rank_missing",

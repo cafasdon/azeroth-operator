@@ -22,7 +22,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
             value=fixture()
             value['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
             view={'coverage':'filtered_local_recipe_list','profession_id':164,
-                  'rank_observation':{'rank':100,'max_rank':150},
+                  'rank_observation':{'rank':100,'max_rank':150,'skill_modifier':-5},
                   'entries':{'7':{'name':'Recipe','learned':True},'8':{'learned':False},'9':{}}}
             value['sections']['profession_recipe_view']=view
             key=store.ingest(value)
@@ -50,6 +50,9 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                 lambda x:x['sections']['profession_recipe_view'].update(rank_observation=None),
                 lambda x:x['sections']['profession_recipe_view'].update(rank_observation={'rank':151,'max_rank':150}),
                 lambda x:x['sections']['profession_recipe_view'].update(rank_observation={'rank':0,'max_rank':0}),
+                lambda x:x['sections']['profession_recipe_view']['rank_observation'].update(skill_modifier=None),
+                lambda x:x['sections']['profession_recipe_view']['rank_observation'].update(skill_modifier=True),
+                lambda x:x['sections']['profession_recipe_view']['rank_observation'].update(skill_modifier=2**31),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(crafter='private'),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(learned=1),
                 lambda x:x['sections']['profession_recipe_view']['entries']['7'].update(name='é'*129),
@@ -70,7 +73,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                     summary=await session.call_tool('character_summary',{'snapshot_id':key})
                     self.assertFalse(summary.isError)
                     self.assertEqual(json.loads(summary.content[0].text)['profession_skill_up_candidates']['rank_observation'],
-                                     {'rank':100,'max_rank':150})
+                                     view['rank_observation'])
                     async def search(**arguments):
                         response=await session.call_tool('list_snapshots',{'family':'forever',**arguments})
                         self.assertFalse(response.isError)
@@ -94,7 +97,7 @@ class ProfessionRecipeViewTests(unittest.IsolatedAsyncioTestCase):
                         if rows:
                             self.assertEqual(rows[0]['snapshot_id'],key)
                             match=rows[0]['profession_recipe_match']
-                            self.assertEqual(match['rank_observation'],{'rank':100,'max_rank':150})
+                            self.assertEqual(match['rank_observation'],view['rank_observation'])
                             self.assertEqual(match['rank_points_to_observed_cap'],50)
                     self.assertEqual((await search(**args,latest_per_character=True))['snapshots'],[])
                     self.assertEqual(len((await search(**args,latest_per_character=True,

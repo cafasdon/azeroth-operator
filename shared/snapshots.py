@@ -427,9 +427,12 @@ def validate_snapshot(value):
             raise ValueError("Invalid profession recipe view")
         if "rank_observation" in view:
             rank = view["rank_observation"]
-            if (not isinstance(rank, dict) or set(rank) != {"rank", "max_rank"}
+            if (not isinstance(rank, dict) or set(rank) - {"rank", "max_rank", "skill_modifier"}
+                    or not {"rank", "max_rank"} <= set(rank)
                     or type(rank["rank"]) is not int or type(rank["max_rank"]) is not int
-                    or not 0 <= rank["rank"] <= rank["max_rank"] <= 4_294_967_295 or rank["max_rank"] == 0):
+                    or not 0 <= rank["rank"] <= rank["max_rank"] <= 4_294_967_295 or rank["max_rank"] == 0
+                    or ("skill_modifier" in rank and (type(rank["skill_modifier"]) is not int
+                        or not -(2**31) <= rank["skill_modifier"] < 2**31))):
                 raise ValueError("Invalid profession recipe view rank")
         for key, row in view["entries"].items():
             if (not isinstance(key, str) or not key.isascii() or not key.isdecimal()

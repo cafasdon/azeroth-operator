@@ -849,10 +849,15 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
             if let Some(rank) = value.get("rank_observation") {
                 object(
                     rank,
-                    &[("rank", "uint", true), ("max_rank", "positive", true)],
+                    &[
+                        ("rank", "uint", true),
+                        ("max_rank", "positive", true),
+                        ("skill_modifier", "int", false),
+                    ],
                 )?;
                 ensure!(
-                    rank["rank"].as_u64().unwrap() <= rank["max_rank"].as_u64().unwrap(),
+                    rank["rank"].as_u64().unwrap() <= rank["max_rank"].as_u64().unwrap()
+                        && rank.get("skill_modifier").is_none_or(Value::is_i64),
                     "Invalid profession recipe view rank"
                 );
             }

@@ -2069,6 +2069,11 @@ AO.collectors.profession_recipe_view = function()
         if not issecretvalue or (not issecretvalue(rank) and not issecretvalue(maximum)) then
             if type(rank)=="number" and type(maximum)=="number" and rank%1==0 and maximum%1==0
                 and rank>=0 and rank<=maximum and maximum>0 and maximum<=4294967295 then
+                local modifier=info.skillModifier
+                if (not issecretvalue or not issecretvalue(modifier)) and type(modifier)=="number"
+                    and modifier%1==0 and modifier>=-2147483648 and modifier<=2147483647 then
+                    return profession,rank,maximum,modifier
+                end
                 return profession,rank,maximum
             end
         end
@@ -2087,7 +2092,7 @@ AO.collectors.profession_recipe_view = function()
         assert(count==#values, "Incomplete recipe list")
         return result
     end
-    local profession,rank,maximum=context()
+    local profession,rank,maximum,modifier=context()
     local list=ids()
     local rows={}
     for _,id in ipairs(list) do
@@ -2127,12 +2132,15 @@ AO.collectors.profession_recipe_view = function()
         rows[tostring(id)]=row
     end
     local final=ids()
-    local finalProfession,finalRank,finalMaximum=context()
+    local finalProfession,finalRank,finalMaximum,finalModifier=context()
     assert(finalProfession==profession and #final==#list, "Recipe list context changed")
     for index,id in ipairs(list) do assert(final[index]==id, "Recipe list changed") end
     local result={coverage="filtered_local_recipe_list",profession_id=profession,entries=rows}
     if rank~=nil and rank==finalRank and maximum==finalMaximum then
         result.rank_observation={rank=rank,max_rank=maximum}
+        if modifier~=nil and modifier==finalModifier then
+            result.rank_observation.skill_modifier=modifier
+        end
     end
     return result
 end
