@@ -249,6 +249,9 @@ struct Inspect {
     merchant_pet_food_target_carried_quantity: Option<std::num::NonZeroU32>,
     /// Select one saved quest by ID. Requires section "quests".
     quest_id: Option<std::num::NonZeroU32>,
+    /// Show this quest's observations in the same saved dialogue panel.
+    #[serde(default)]
+    quest_gossip_observation: bool,
     /// Compare captured quest currency rewards against caps from the same snapshot.
     #[serde(default)]
     quest_currency_projection: bool,
@@ -3427,6 +3430,13 @@ impl Operator {
             )]);
         }
         let spellbook_name = spellbook_name.map(str::to_lowercase);
+        if args.quest_gossip_observation
+            && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Quest dialogue review requires a quest ID and the quests section",
+            )]);
+        }
         if args.quest_xp_projection
             && (args.quest_id.is_none() || args.section.as_deref() != Some("quests"))
         {
@@ -5317,6 +5327,7 @@ impl Operator {
                         );
                     }
                     let review_snapshot = if args.quest_item_catalogue
+                        || args.quest_gossip_observation
                         || args.quest_inventory_requirements.is_some()
                         || args.quest_currency_projection
                         || args.quest_wallet_projection
@@ -5339,6 +5350,14 @@ impl Operator {
                     } else {
                         None
                     };
+                    if args.quest_gossip_observation {
+                        value["quest_gossip_observation"] =
+                            serde_json::json!(review_snapshot.as_ref().and_then(|snapshot| {
+                                azeroth_operator::gossip_option_filter::quest_dialogue_observation(
+                                    snapshot, id,
+                                )
+                            }));
+                    }
                     let inventory_override = if let Some(id) = &args.quest_inventory_snapshot_id {
                         let inventory = self.store.read(id).and_then(|inventory| {
                             azeroth_operator::analysis::ensure_comparable(

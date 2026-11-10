@@ -1,5 +1,7 @@
 # Changelog
 
+- Show same-capture dialogue evidence when inspecting a saved Forever quest.
+
 - Join saved dialogue quest matches with same-capture quest log readiness.
 
 - Find saved dialogue captures by quest ID, list and reported quest flags.

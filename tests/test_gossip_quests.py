@@ -101,6 +101,32 @@ class GossipQuestTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(partial['available']['observed_only_before'], [2, 10])
                     self.assertIsNone(partial['active'])
                     self.assertNotIn('gossip_quest_changes', await compare(followup_key, False))
+                    for snapshot_id, quest_id, in_log, available, active in (
+                        (followup_key,20,True,{'present_in_saved_list':False,'observation':None},
+                         {'present_in_saved_list':True,'observation':{'is_complete':False}}),
+                        (followup_key,3,False,{'present_in_saved_list':True,'observation':{}},
+                         {'present_in_saved_list':False,'observation':None}),
+                        (valid[2][0],2,None,{'present_in_saved_list':False,'observation':None},None),
+                        (valid[0][0],2,None,None,None),
+                    ):
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':snapshot_id,'section':'quests','quest_id':quest_id,
+                            'quest_gossip_observation':True,
+                        })
+                        self.assertFalse(reply.isError)
+                        result=json.loads(reply.content[0].text)
+                        self.assertIs(result['quest_observed'],in_log)
+                        observation=result['quest_gossip_observation']
+                        if snapshot_id == valid[0][0]:
+                            self.assertIsNone(observation)
+                        else:
+                            self.assertEqual(observation['available'],available)
+                            self.assertEqual(observation['active'],active)
+                            self.assertFalse(observation['turn_in_eligibility_verified'])
+                    invalid=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':followup_key,'section':'quests','quest_gossip_observation':True,
+                    })
+                    self.assertTrue(invalid.isError)
                     for query, expected in (
                         ({'quest_id':10,'list':'available','repeatable':False},[valid[1][0]]),
                         ({'quest_id':10,'list':'active'},[followup_key,valid[3][0]]),

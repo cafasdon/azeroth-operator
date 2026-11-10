@@ -267,6 +267,21 @@ pub(crate) fn compare_quest_lists(before: Option<&Value>, after: Option<&Value>)
         "turn_in_eligibility_verified":false,"live":false})
 }
 
+pub fn quest_dialogue_observation(snapshot: &Snapshot, quest_id: NonZeroU32) -> Option<Value> {
+    let section = snapshot.sections.get("gossip_quests")?;
+    let key = quest_id.get().to_string();
+    let observation = |list: &str| {
+        let rows = section[list].as_object()?;
+        let row = rows.get(&key);
+        Some(json!({"present_in_saved_list":row.is_some(),"observation":row}))
+    };
+    Some(
+        json!({"available":observation("available"),"active":observation("active"),
+        "npc_identity_verified":false,"acceptance_eligibility_verified":false,
+        "turn_in_eligibility_verified":false,"live":false}),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

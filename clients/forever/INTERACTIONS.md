@@ -9,6 +9,11 @@ When the same quest ID also appears in the saved quest log, matches show
 `quest_log_readiness`. Use it as an optional filter independently of the
 panel's `is_complete` flag. An unknown readiness requires a recorded log
 row. A missing row does not match any readiness predicate.
+On `inspect_snapshot`, set `section: "quests"`, a `quest_id` and
+`quest_gossip_observation: true` to see that quest in the same capture's
+dialogue lists. An observed list can show that the ID was absent. A missing
+list stays unknown, and the dialogue observation can exist without a quest
+log row.
 
 Set `gossip_quest_changes` on `compare_snapshots` to compare the saved
 available and active quest lists separately by quest ID. Each list shows
