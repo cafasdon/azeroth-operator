@@ -1060,3 +1060,13 @@ unknown, and account-bank counts never form a pooled cross-character total.
 This improves historical item discovery across the selected captures without
 claiming current inventory, every alt, transfer reconciliation or active identity.
 See ADR-097 and its dated offline evidence. Live qualification remains deferred.
+
+## Saved encounter trade-off frontier (10 November)
+
+The saved-journal and owned-gear companion tools can now page non-dominated gear
+across all requested completed encounter results. This retains trade-offs and
+tied point-estimate vectors beyond aggregate top selection, without new engine
+runs. The original floor, source checks and total deadline remain in force.
+Incomplete saved work or bounded-analysis exhaustion stays unknown. No global
+frontier, statistical superiority, complete ownership or native eligibility is
+established. See ADR-098 and its dated offline evidence. Live work stays deferred.

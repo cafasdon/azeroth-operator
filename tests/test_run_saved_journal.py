@@ -208,6 +208,17 @@ class SavedJournalTests(unittest.TestCase):
                     self.assertEqual(result['all_saved_resolved_results_complete'],index == 5)
                 self.assertEqual(calls.call_count,6)
                 per_encounter=launch(['--checkpoint-only','--top','1','--include-encounter-leaders'])
+                frontier_pages = [launch(['--checkpoint-only', '--include-encounter-frontier', '--top', '1',
+                    '--encounter-frontier-offset', str(offset)])['encounter_frontier'] for offset in [0, 1]]
+                self.assertEqual(calls.call_count, 6)
+                self.assertEqual([page['frontier_gear_set_count'] for page in frontier_pages], [2, 2])
+                self.assertEqual(frontier_pages[0]['frontier_point_estimates_sha256'],
+                    frontier_pages[1]['frontier_point_estimates_sha256'])
+                self.assertTrue(frontier_pages[0]['has_more']); self.assertFalse(frontier_pages[1]['has_more'])
+                self.assertEqual({page['gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id']
+                    for page in frontier_pages}, {4549, 4550})
+                self.assertFalse(frontier_pages[0]['statistical_superiority_verified'])
+                self.assertNotIn('encounter_frontier', result)
                 self.assertEqual(calls.call_count,6)
                 self.assertEqual(len(per_encounter['ranked_gear_sets']),1)
                 detail=per_encounter['encounter_leaders']
@@ -338,7 +349,11 @@ class SavedJournalTests(unittest.TestCase):
                 def available(instance, key):
                     return None if key in hidden else original_get(instance, key)
                 with patch.object(SimulationJournal, 'key', request_key), patch.object(SimulationJournal, 'get', available):
-                    subset = launch(['--checkpoint-only','--page-limit','3','--include-encounter-leaders'])
+                    subset = launch(['--checkpoint-only','--page-limit','3','--include-encounter-leaders',
+                        '--include-encounter-frontier'])
+                self.assertEqual(subset['encounter_frontier']['status'], 'incomplete_saved_results')
+                self.assertIsNone(subset['encounter_frontier']['frontier_gear_set_count'])
+                self.assertEqual(subset['encounter_frontier']['gear_sets'], [])
                 self.assertEqual(subset['ranking_scope'],'completed_candidates_across_all_requested_encounters')
                 self.assertEqual(subset['incomplete_page_completed_candidate_count'],2)
                 self.assertFalse(subset['all_saved_resolved_results_complete'])

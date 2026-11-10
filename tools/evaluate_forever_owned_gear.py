@@ -186,6 +186,7 @@ async def catalogue_preflight(args, deadline, *, include_resolution_counts, unre
 
 async def execute(args):
     args = copy(args)
+    simulation.encounter_frontier.options(args)
     require_catalogue_coverage = getattr(args, "require_catalogue_coverage", False)
     include_resolution_counts = getattr(args, "include_item_resolution_counts", False)
     require(type(require_catalogue_coverage) is bool and type(include_resolution_counts) is bool)
@@ -378,6 +379,9 @@ def parser():
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--include-encounter-leaders', action='store_true',
         help='Include encounter-specific point-estimate leaders from the saved-journal evaluation')
+    cli.add_argument('--include-encounter-frontier', action='store_true',
+        help='Include paged non-dominated saved gear across encounters; complete point estimates only')
+    cli.add_argument('--encounter-frontier-offset', type=int, default=0)
     cli.add_argument('--positional-equipment',action='store_true',help='Use the qualified hash/capability-checked exact-slot engine')
     cli.add_argument('--include-empty-slots',action='store_true',help='Include occupied-slot removal choices; requires positional equipment')
     cli.add_argument('--checkpoint-only', action='store_true', help='Reuse simulation checkpoints only; collection may add plan windows')

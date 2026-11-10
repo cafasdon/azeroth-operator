@@ -4632,3 +4632,16 @@ Account-bank observations stay separate and no cross-character total is given.
 The primary input character appears first, independently of capture age. This
 does not identify the active character, cover every alt or reconcile transfers.
 Counts describe historical observations only. See ADR-097. Offline/source only.
+
+## Encounter trade-offs in saved gear results
+
+Use `--include-encounter-frontier` with the saved-journal runner or owned-gear
+evaluator to show sets that no other eligible saved set beats across every
+encounter. `--top` sets page size and `--encounter-frontier-offset` selects the
+page. Equal vectors retain distinct gear hashes. Existing encounter floors
+apply; encounter weights do not change dominance. The report reuses completed
+saved results without extra simulations. Incomplete work, a 4096-candidate bound
+or the shared deadline leaves membership unknown and returns no partial frontier.
+Returned sets include the existing saved-loadout evidence. This is a point-
+estimate trade-off view, not statistical superiority or full owned best-in-slot.
+See ADR-098. Source/offline only; no game action or new MCP route.

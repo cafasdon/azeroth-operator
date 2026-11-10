@@ -13,6 +13,7 @@ from tools.prepare_forever_gear_window import encoded
 from tools.prepare_forever_gear_window import selections_for_review, cleared_for_review
 from tools.merge_forever_gear_windows import retained_equipment
 from tools import role_metrics as roles
+from tools import encounter_frontier
 
 RANKING_OBJECTIVES = ('weighted_gain', 'worst_encounter_gain')
 
@@ -134,6 +135,7 @@ def retain_encounter_leaders(leaders, row, gain_field):
 
 
 async def execute(args, *, deadline=None):
+    include_frontier, frontier_offset = encounter_frontier.options(args)
     include_encounter_leaders = getattr(args, 'include_encounter_leaders', False)
     require(type(include_encounter_leaders) is bool)
     encounter_leaders = {}
@@ -159,6 +161,7 @@ async def execute(args, *, deadline=None):
         require(type(deadline) in (int, float) and isfinite(deadline) and deadline > monotonic())
     deadline = min(monotonic() + args.time_budget_seconds, deadline) if deadline is not None else monotonic() + args.time_budget_seconds
     source = journal.journal_status(args.journal, deadline=deadline)
+    frontier = encounter_frontier.Frontier(len(weights), gain_field, deadline=deadline) if include_frontier else None
     require(not source['window_count'] or source['equipment_specs_retained'] is True)
     cursor = None
     leaders, contexts, baselines = {}, {}, {}
@@ -259,6 +262,8 @@ async def execute(args, *, deadline=None):
                 floor_excluded += 1
                 continue
             row['ranking_score'] = score if objective == 'weighted_gain' else row[minimum_field]
+            if frontier is not None and page_complete:
+                frontier.add(row)
             if include_encounter_leaders:
                 retain_encounter_leaders(encounter_leaders, row, gain_field)
             if gear in leaders:
@@ -279,6 +284,11 @@ async def execute(args, *, deadline=None):
         next_cursor = int(next_cursor)
         require(cursor is None or next_cursor > cursor)
         cursor = next_cursor
+    frontier_report = frontier.report(complete=exhausted and completed == source['window_count'] and completed > 0,
+        offset=frontier_offset, limit=args.top) if frontier is not None else None
+    if frontier_report is not None:
+        attach_saved_loadouts(args.journal,
+            {row['simulator_gear_sha256']: row for row in frontier_report['gear_sets']}, source, deadline + 5)
     attach_saved_loadouts(args.journal, leaders, source, deadline + 5)
     if include_encounter_leaders:
         # At most eight distinct sets; preserve the existing bounded join.
@@ -315,6 +325,11 @@ async def execute(args, *, deadline=None):
         'new_runs': new_runs, 'new_iterations': new_iterations, 'checkpoint_hits': hits,
         'simulation_performed': new_runs > 0, 'global_ranking_verified': False,
         'best_in_slot_verified': False, 'feasible_set_coverage_verified': False, 'game_execution': False}
+    if frontier_report is not None:
+        frontier_report.update(ranking_scope=report['ranking_scope'], rank_by=metric,
+            improvement_unit=roles.UNITS[metric], minimum_encounter_improvement=floor,
+            all_saved_resolved_results_complete=complete)
+        report['encounter_frontier'] = frontier_report
     if include_encounter_leaders:
         report['encounter_leaders'] = {
             'basis': 'completed_candidate_point_estimates_after_encounter_floor',
@@ -349,6 +364,10 @@ def main(argv=None):
     cli.add_argument('--paired', action='store_true')
     cli.add_argument('--include-encounter-leaders', action='store_true',
         help='Retain the best completed point-estimate set per encounter after the same improvement floor, without extra simulations')
+    cli.add_argument('--include-encounter-frontier', action='store_true',
+        help='Page non-dominated gear across complete saved encounter results; point estimates only, no extra simulations')
+    cli.add_argument('--encounter-frontier-offset', type=int, default=0,
+        help='Skip this many frontier sets in gear-hash order (requires --include-encounter-frontier)')
     cli.add_argument('--checkpoint-only', action='store_true')
     cli.add_argument('--max-new-runs', type=int, default=16)
     cli.add_argument('--iteration-budget', type=int, default=100000)

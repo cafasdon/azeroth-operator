@@ -229,7 +229,12 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertEqual(strict_cached['simulation']['ranked_gear_sets'],
                                  cached['simulation']['ranked_gear_sets'])
                 self.assertEqual(strict_cached['simulation']['new_runs'], 0)
-                diagnostic = launch(['--checkpoint-only','--include-item-resolution-counts','--include-encounter-leaders'])
+                diagnostic = launch(['--checkpoint-only','--include-item-resolution-counts','--include-encounter-leaders',
+                    '--include-encounter-frontier'])
+                frontier = diagnostic['simulation']['encounter_frontier']
+                self.assertEqual(frontier['status'], 'complete_for_saved_point_estimates')
+                self.assertEqual(frontier['frontier_gear_set_count'], 1)
+                self.assertEqual(frontier['gear_sets'][0]['saved_loadout']['selections'][0]['expected_item_id'], 4549)
                 self.assertEqual(len(diagnostic['simulation']['encounter_leaders']['leaders']),2)
                 self.assertFalse(diagnostic['simulation']['encounter_leaders']['statistical_superiority_verified'])
                 self.assertEqual(runs.call_count,calls)

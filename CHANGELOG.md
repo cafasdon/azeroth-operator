@@ -1,5 +1,7 @@
 # Changelog
 
+- Page non-dominated saved gear across requested encounters, retaining tied sets and exact point-estimate membership without extra simulations; incomplete or over-budget analysis stays unknown.
+
 - Align the gateway probe with the twelve-tool default reader contract, reject duplicate/unsafe discovery entries, keep security checks active under Python optimisation, and close HTTP error responses.
 
 - Index item quantities by exact saved character across explicit captures, with unique-latest selection, ambiguous ties and no pooled account-bank or cross-character total.
