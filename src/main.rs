@@ -5104,6 +5104,9 @@ impl Operator {
                                 azeroth_operator::analysis::quest_ready_renown_projection(
                                     quests,
                                     reputation,
+                                    context
+                                        .as_ref()
+                                        .and_then(|snapshot| snapshot.sections.get("wallet")),
                                     target.faction_id.get(),
                                     target.quantity.map(|quantity| quantity.get()),
                                 )

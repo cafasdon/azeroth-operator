@@ -3406,6 +3406,12 @@ rewards from ready quests and shows the selected rewards against the
 captured faction progress. An unobserved next-rank threshold leaves a
 derived target unknown.
 
+For a selected renown plan with recorded copper costs and rewards, the
+wallet projection estimates the minimum starting copper and the renown
+from the affordable prefix. A missing wallet leaves the prefix unknown.
+The projection evaluates the selected quests and leaves other possible
+quest combinations and live affordability unverified.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

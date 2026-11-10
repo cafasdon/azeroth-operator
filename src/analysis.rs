@@ -6932,7 +6932,7 @@ pub fn quest_list_currency_projection(
 pub enum QuestRewardTarget<'a> {
     Item(u32),
     Currency(u32, &'a Value),
-    Renown(u32, &'a Value),
+    Renown(u32, &'a Value, Option<&'a Value>),
 }
 
 pub fn quest_ready_reward_projection(
@@ -6956,7 +6956,7 @@ pub fn quest_ready_reward_projection(
             Some("currency_choices"),
             "covers_target_before_caps",
         ),
-        QuestRewardTarget::Renown(id, _) => {
+        QuestRewardTarget::Renown(id, _, _) => {
             (id, "faction_id", "renown_rewards", None, "covers_target")
         }
     };
@@ -7023,17 +7023,37 @@ pub fn quest_ready_reward_projection(
             if ids.len() < 20 && let Some((quantity, position)) = choice {
                 choices.push(json!({"quest_id":id,"position":position,"quantity":quantity}));
             }
-            ids.push(id);
+            ids.push((id, quantity.0));
         }
-        let mut plan = json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
+        let mut plan = json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).map(|(id, _)| id).collect::<Vec<_>>(),
             "truncated":ids.len()>20,"recorded_fixed_quantity":selected_fixed});
         if let QuestRewardTarget::Currency(id, balances) = reward {
             let entry = &balances["entries"][id.to_string()];
             let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
             plan["cap_projection"] = currency_reward_projection(selected_quantity, entry, &caps);
         }
-        if let QuestRewardTarget::Renown(_, faction) = reward {
+        if let QuestRewardTarget::Renown(_, faction, wallet) = reward {
             plan["renown_projection"] = renown_reward_projection(selected_quantity, faction);
+            let selected: BTreeMap<_, _> = ids.iter().map(|(id, points)| (id.to_string(), points)).collect();
+            let balance = wallet.and_then(|wallet| wallet["copper"].as_u64());
+            plan["selected_quests_wallet_projection"] = json!(quest_wallet_turn_in_order(
+                selected.keys().filter_map(|id| quests.get_key_value(id)), balance,
+            ).map(|mut order| {
+                let prefix_points = order["captured_wallet_progress"]["affordable_prefix_count"]
+                    .as_u64().and_then(|count| {
+                        order["quest_ids"].as_array()?.iter().take(usize::try_from(count).ok()?)
+                            .try_fold(0u64, |total, id| total.checked_add(**selected.get(id.as_str()?)?))
+                    });
+                if let Some(ordered_ids) = order["quest_ids"].as_array_mut() {
+                    let truncated = ordered_ids.len() > 20;
+                    ordered_ids.truncate(20);
+                    order["quest_ids_truncated"] = json!(truncated);
+                }
+                order["renown_from_affordable_prefix"] = json!(prefix_points);
+                order["renown_shortfall_after_affordable_prefix"] =
+                    json!(prefix_points.map(|points| target.saturating_sub(points)));
+                order
+            }));
         }
         if let Some(choice_field) = choice_field {
             plan["recorded_choice_quantity"] = json!(selected_quantity - selected_fixed);
@@ -7181,6 +7201,7 @@ pub fn quest_list_renown_projection(
 pub fn quest_ready_renown_projection(
     quests: &serde_json::Map<String, Value>,
     reputation: &Value,
+    wallet: Option<&Value>,
     faction_id: u32,
     quantity: Option<u64>,
 ) -> Value {
@@ -7193,7 +7214,7 @@ pub fn quest_ready_renown_projection(
     };
     let mut report = quest_ready_reward_projection(
         quests,
-        QuestRewardTarget::Renown(faction_id, faction),
+        QuestRewardTarget::Renown(faction_id, faction, wallet),
         target,
         false,
     );

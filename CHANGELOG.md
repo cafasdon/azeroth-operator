@@ -1,5 +1,7 @@
 # Changelog
 
+- Show how much renown a selected quest plan can fund from the captured wallet.
+
 - Plan saved ready quest turn-ins for a renown quantity or the recorded next rank.
 
 - Show hypothetical carried stack headroom for saved quest reward bag-space estimates.

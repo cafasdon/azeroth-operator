@@ -908,6 +908,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone(conflicting['estimated_new_stack_slots_if_same_item_stacks_merge'])
                     self.assertIsNone(await reward_space(space_fixture,100))
                     renown_capture=deepcopy(funded)
+                    renown_capture['sections']['wallet']={'copper':0}
                     for quest_id,points in [('3',7),('10',4)]:
                         renown_capture['sections']['quests'][quest_id]['renown_rewards']={
                             '1':{'faction_id':55,'quantity':points}}
@@ -929,6 +930,19 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(plan['ready_turn_in_plan']['quest_ids'],ids)
                         self.assertIs(plan['ready_turn_in_plan']['renown_projection']['reaches_next_rank'],
                             basis=='recorded_next_rank')
+                        wallet_plan=plan['ready_turn_in_plan']['selected_quests_wallet_projection']
+                        self.assertEqual(wallet_plan['renown_from_affordable_prefix'],4 if expected==8 else 0)
+                        self.assertEqual(wallet_plan['renown_shortfall_after_affordable_prefix'],4 if expected==8 else 6)
+                    del renown_capture['sections']['wallet']
+                    no_wallet_id=store.ingest(renown_capture)
+                    original[no_wallet_id+'.json']=(Path(folder)/(no_wallet_id+'.json')).read_bytes()
+                    reply=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':no_wallet_id,'section':'quests','quest_ready_renown_target':{'faction_id':55}})
+                    self.assertFalse(reply.isError,reply)
+                    wallet_plan=json.loads(reply.content[0].text)['quest_ready_renown_projection'][
+                        'ready_turn_in_plan']['selected_quests_wallet_projection']
+                    self.assertEqual(wallet_plan['minimum_starting_copper'],1)
+                    self.assertIsNone(wallet_plan['renown_from_affordable_prefix'])
                     reply=await session.call_tool('inspect_snapshot',{
                         'snapshot_id':renown_id,'section':'quests','quest_ready_renown_target':{'faction_id':999}})
                     self.assertFalse(reply.isError,reply)
