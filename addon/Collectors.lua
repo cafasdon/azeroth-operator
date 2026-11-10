@@ -1,5 +1,55 @@
 local _, AO = ...
 AO.collectors = {}
+-- Player-requested status-only projection; never queue, accept, leave or refresh.
+AO.collectors.battlefield_queue_slots = function()
+    local secret=issecretvalue
+    assert(secret==nil or type(secret)=="function", "Queue restriction API unavailable")
+    local function public(value)
+        assert(not secret or not secret(value), "Restricted queue observation")
+        return value
+    end
+    assert(public(AO.family)=="forever", "Battlefield queue slots unavailable")
+    local count=public(GetMaxBattlefieldID)
+    local info=public(GetBattlefieldStatus)
+    assert(type(count)=="function" and type(info)=="function", "Battlefield queue API unavailable")
+    local function fixed()
+        assert(public(AO.family)=="forever" and public(issecretvalue)==secret
+            and public(GetMaxBattlefieldID)==count and public(GetBattlefieldStatus)==info,
+            "Battlefield queue API changed")
+        assert(rawequal(rawget(AO,"family"),"forever") and rawequal(rawget(_G,"issecretvalue"),secret)
+            and rawequal(rawget(_G,"GetMaxBattlefieldID"),count)
+            and rawequal(rawget(_G,"GetBattlefieldStatus"),info), "Battlefield queue context changed")
+    end
+    local function capacity()
+        fixed()
+        local total=public(count())
+        assert(type(total)=="number" and total%1==0 and total>=0 and total<=32,
+            "Invalid battlefield queue slot capacity")
+        fixed()
+        return total
+    end
+    local allowed={none=true,queued=true,confirm=true,active=true,locked=true}
+    local function projection()
+        local total=capacity()
+        local rows={}
+        for slot=1,total do
+            local status=public(info(slot))
+            assert(type(status)=="string" and allowed[status], "Unknown battlefield queue status")
+            rows[tostring(slot)]={reported_status=status}
+            fixed()
+        end
+        assert(capacity()==total, "Battlefield queue slot capacity changed")
+        return rows,total
+    end
+    local first,total=projection()
+    local second,again=projection()
+    assert(total==again, "Battlefield queue slot capacity changed")
+    for slot,row in pairs(first) do
+        assert(second[slot].reported_status==row.reported_status, "Battlefield queue status changed")
+    end
+    fixed()
+    return {coverage="reported_battlefield_queue_slots",reported_slot_count=total,entries=second}
+end
 -- Only read the player's already-loaded owned-auction cache in an open panel.
 AO.collectors.owned_auctions = function()
     local secret=issecretvalue

@@ -2038,6 +2038,19 @@ pub fn validate(name: &str, value: &Value) -> Result<()> {
                 }
             }
         }
+        "battlefield_queue_slots" => {
+            object(value, &[("coverage", "text", true), ("reported_slot_count", "uint", true), ("entries", "map", true)])?;
+            ensure!(value["coverage"] == "reported_battlefield_queue_slots", "Invalid queue coverage");
+            let total = value["reported_slot_count"].as_u64().unwrap();
+            let entries = value["entries"].as_object().unwrap();
+            ensure!(total <= 32 && entries.len() as u64 == total, "Invalid queue slot count");
+            for (slot,row) in entries {
+                index(slot, 1, total as u32)?;
+                object(row, &[("reported_status", "text", true)])?;
+                ensure!(matches!(row["reported_status"].as_str(), Some("none"|"queued"|"confirm"|"active"|"locked")),
+                    "Invalid battlefield queue status");
+            }
+        }
         "owned_auctions" => {
             object(value, &[("coverage", "text", true), ("entries", "map", true)])?;
             ensure!(value["coverage"] == "loaded_player_owned_auction_cache", "Invalid auction coverage");

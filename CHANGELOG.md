@@ -1,5 +1,7 @@
 # Changelog
 
+- Observe personal battlefield queue slot status during manual exports, without queue actions or third-party data.
+
 - Compare saved owned-auction cache identities, quantities and raw status without inferring sales or inventory credit.
 
 - Search saved owned-auction caches by exact item, auction ID and raw status, with bounded paged inspection.

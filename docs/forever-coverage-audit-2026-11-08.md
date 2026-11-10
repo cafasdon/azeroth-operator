@@ -870,3 +870,14 @@ field changes on common IDs, full counts and bounded ordered detail. Missing
 cache observations keep differences unknown. Slot reordering is ignored;
 disappearance does not prove a sale/cancellation and totals never establish
 stock or proceeds. Existing identity/client/owner gates remain. Offline only.
+
+## Passive battlefield slot status (2026-11-10)
+
+The manual Forever exporter supports a status-only battlefield_queue_slots
+observation from two passive getters. Existing owner-local inspection and
+capture-status discovery apply. Only reported capacity and allowlisted raw
+status tokens are retained, with bounded two-pass agreement and strict readers.
+It is not full queue coverage, current membership, eligibility or acceptance
+proof. No join/accept/leave/query/refresh, polling, names, timers, teams or
+scoreboard data is introduced. Other queue systems and native qualification
+remain open. See ADR-078-passive-battlefield-queues.md. Live testing deferred.

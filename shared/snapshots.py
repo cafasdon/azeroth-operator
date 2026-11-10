@@ -32,6 +32,7 @@ SECTIONS = SECTIONS | {"player_trade_offer"}
 SECTIONS = SECTIONS | {"player_pvp_progression"}
 SECTIONS = SECTIONS | {"group_context"}
 SECTIONS = SECTIONS | {"owned_auctions"}
+SECTIONS = SECTIONS | {"battlefield_queue_slots"}
 SECTIONS = SECTIONS | {"bag_item_cooldowns"}
 
 
@@ -855,6 +856,20 @@ def validate_snapshot(value):
             if (not isinstance(key,str) or not re.fullmatch(r"[1-9][0-9]{0,9}",key)
                     or int(key)>4_294_967_295 or not isinstance(row,dict) or row):
                 raise ValueError("Invalid profession spell ID")
+    if "battlefield_queue_slots" in sections:
+        queues=sections['battlefield_queue_slots']
+        if (c['family']!='forever' or not isinstance(queues,dict)
+                or set(queues)!={'coverage','reported_slot_count','entries'}
+                or queues['coverage']!='reported_battlefield_queue_slots'
+                or type(queues['reported_slot_count']) is not int or not 0<=queues['reported_slot_count']<=32
+                or not isinstance(queues['entries'],dict)
+                or set(queues['entries'])!={str(i) for i in range(1,queues['reported_slot_count']+1)}):
+            raise ValueError('Invalid battlefield queue slots')
+        for row in queues['entries'].values():
+            if (not isinstance(row,dict) or set(row)!={'reported_status'}
+                    or not isinstance(row['reported_status'],str)
+                    or row['reported_status'] not in {'none','queued','confirm','active','locked'}):
+                raise ValueError('Invalid battlefield queue status')
     if "owned_auctions" in sections:
         auctions=sections['owned_auctions']
         if (c['family']!='forever' or not isinstance(auctions,dict)

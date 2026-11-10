@@ -119,3 +119,13 @@ credit. Repeated agreement does not establish freshness, complete ownership or
 current transaction eligibility. This is conservative source support, not
 Blizzard approval or native qualification. Auction transaction routes remain
 disabled. See ADR-077-passive-owned-auctions.md.
+
+## Passive battlefield slot status (2026-11-10)
+
+Source may observe the reported battlefield slot capacity and raw status tokens
+during a manual out-of-combat export. No queue query, join, acceptance, leave,
+refresh, polling, UI loading or scoreboard request is added. Only status tokens
+are retained; all other API returns remain excluded. Historical confirm/active
+readings authorise no action. Owner-local storage and strict readers apply;
+source fixtures do not establish native availability or Blizzard approval.
+All queue-management and automation routes remain excluded. See ADR-078.

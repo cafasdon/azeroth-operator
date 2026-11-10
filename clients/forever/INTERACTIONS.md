@@ -4334,3 +4334,19 @@ changes unknown, distinct from an observed empty map. Disappearance never
 establishes a sale or cancellation; quantity/status changes establish no
 proceeds, delivery, stock credit or current listing identity. Defaults preserve
 existing comparison output. Same-character/client/time/owner gates apply.
+
+## Passive battlefield queue slots (2026-11-10)
+
+Manual Forever exports can record battlefield_queue_slots: the reported slot
+capacity (at most 32) and only each slot's reported_status token. Accepted raw
+tokens are none, queued, confirm, active and locked. All reported slots remain
+present, including none; capacity is not an active-queue count. Two matching
+projections and stable getter/context checks are required. Unknown/restricted/
+changing/missing/invalid data becomes unavailable. A known zero-slot report
+remains distinct from unavailable. Inspect the section or find captures with
+the existing section-status filters. Names, IDs, timers, teams and scores are
+excluded. No queue query, join, acceptance, leave, refresh or UI action is
+invoked. Saved statuses do not prove current membership or acceptance rights.
+This covers battlefield slots only; other queue systems remain separate.
+Data stays owner-local, outside public search. Update readers before exporter
+installation. Native testing/deployment remain deferred. See ADR-078.
