@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved links for alternative gear locations with the original selection.
+
 - Find alternative saved locations by base item ID when a gear selection's source no longer matches.
 
 - Compare saved Forever equipment selections with a newer capture's exact source locations.

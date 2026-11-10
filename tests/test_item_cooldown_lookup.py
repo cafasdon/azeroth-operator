@@ -75,6 +75,8 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                 later = deepcopy(value)
                 later['captured_at'] = '2025-01-03T00:00:00Z'
                 later['sections']['character_bank']['6'] = {'1':item} if item else {}
+                later['sections']['bags']['0']['1']['link'] = 'item:100:0:0:0:0:0:0'
+                later['sections']['bags']['0']['2']['link'] = 'item:100:1:0:0:0:0:0'
                 location_captures.append((store.ingest(later), status, item))
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
@@ -102,9 +104,11 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(candidates['quantity_by_storage'],
                                              {'equipment':1,'bags':6,'character_bank':0,'account_bank':None})
                             self.assertEqual(candidates['locations'], [
-                                {'storage':'equipment','container':None,'slot':'11','count':1},
-                                *[{'storage':'bags','container':'0','slot':str(slot),'count':slot}
-                                  for slot in [1,2,3]],
+                                {'storage':'equipment','container':None,'slot':'11','count':1,
+                                 'saved_link_matches_original':None},
+                                *[{'storage':'bags','container':'0','slot':str(slot),'count':slot,
+                                   'saved_link_matches_original':link_matches}
+                                  for slot, link_matches in [(1,True),(2,False),(3,None)]],
                             ])
                         else:
                             self.assertIsNone(candidates)

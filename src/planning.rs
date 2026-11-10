@@ -81,6 +81,12 @@ pub struct EquipmentSelection {
     pub expected_item_id: u32,
 }
 
+fn compare_item_links(before: Option<&Value>, after: Option<&Value>) -> Option<bool> {
+    let before = before?.get("link")?.as_str()?;
+    let after = after?.get("link")?.as_str()?;
+    (!before.trim().is_empty() && !after.trim().is_empty()).then_some(before == after)
+}
+
 pub fn compare_equipment_sources(
     original: &Snapshot,
     newer: &Snapshot,
@@ -95,13 +101,9 @@ pub fn compare_equipment_sources(
             let status = match observed_id {
                 None => "not_observed",
                 Some(id) if id != u64::from(selection.expected_item_id) => "different_item_id",
-                Some(_) => match before
-                    .and_then(|row| row["link"].as_str())
-                    .zip(after.and_then(|row| row["link"].as_str()))
-                    .filter(|(old, new)| !old.trim().is_empty() && !new.trim().is_empty())
-                {
-                    Some((old, new)) if old == new => "same_item_id_and_link",
-                    Some(_) => "same_item_id_different_link",
+                Some(_) => match compare_item_links(before, after) {
+                    Some(true) => "same_item_id_and_link",
+                    Some(false) => "same_item_id_different_link",
                     None => "same_item_id_link_unknown",
                 },
             };
@@ -111,10 +113,21 @@ pub fn compare_equipment_sources(
             if observed_id != Some(u64::from(selection.expected_item_id)) {
                 let matches = crate::analysis::find_item(newer, selection.expected_item_id, 0, 10)?;
                 row["same_base_item_candidates"] = json!({
-                    "locations": matches["locations"].as_array().unwrap().iter().map(|location| json!({
-                        "storage":location["storage"],"container":location["container"],
-                        "slot":location["slot"],"count":location["count"]
-                    })).collect::<Vec<_>>(),
+                    "locations": matches["locations"].as_array().unwrap().iter().map(|location| {
+                        let observed = location["storage"].as_str().and_then(|storage| {
+                            let section = newer.sections.get(storage)?;
+                            let container = match location["container"].as_str() {
+                                Some(container) => section.get(container)?,
+                                None => section,
+                            };
+                            container.get(location["slot"].as_str()?)
+                        });
+                        json!({
+                            "storage":location["storage"],"container":location["container"],
+                            "slot":location["slot"],"count":location["count"],
+                            "saved_link_matches_original":compare_item_links(before, observed)
+                        })
+                    }).collect::<Vec<_>>(),
                     "matched_locations": matches["matched_locations"],
                     "has_more": matches["has_more"],
                     "quantity_by_storage": matches["quantity_by_storage"]

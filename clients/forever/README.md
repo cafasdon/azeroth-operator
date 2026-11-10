@@ -312,8 +312,10 @@ the same Forever character and exact client build. The primary draft reports
 which exact locations show the same item ID and link, a changed or unknown
 link, a different ID, or no observation. For a different or unobserved ID,
 `same_base_item_candidates` lists up to ten matching locations from the newer
-capture, with total matches and quantities by observed storage. A base ID
-match leaves modifiers and replacement suitability unverified. The
+capture, with total matches and quantities by observed storage.
+Each listed location's `saved_link_matches_original` compares the exact
+recorded strings and is null when either link is missing or blank. This
+leaves modifiers and replacement suitability unverified. The
 comparison leaves item continuity and current locations unverified.
 The join checks the referenced saved row and winning gear hash. These are
 historical locations; `current_locations_verified` and
