@@ -1041,3 +1041,13 @@ another source query. Missing, truncated and unknown references remain visible.
 Bank credit, per-craft recycling, current eligibility and complete acquisition
 coverage remain excluded. No native or external-source qualification is added.
 See ADR-095 and its dated offline evidence. Live work remains deferred.
+
+## Explicit saved sale-value quotes (10 November)
+
+Saved bag inspection can now quote player-selected locations and quantities at
+captured per-item vendor prices. Separate unknown-price and overflow states
+prevent partial amounts from funding hypothetical wallet/reserve arithmetic.
+Exact locations retain separate prices even for equal base IDs. The new quote
+does not copy private item text, spend money, sell items or establish current
+eligibility. No new capture, deployment or native evidence is added. See ADR-096
+and its dated offline evidence. Live work remains deferred.

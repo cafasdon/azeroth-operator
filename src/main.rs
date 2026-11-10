@@ -101,6 +101,9 @@ struct QuestRenownTarget {
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
+    /// Quote exact saved bag locations and quantities at recorded per-item copper prices. Hypothetical only; no sale or current funds credit.
+    #[serde(default, deserialize_with = "bag_sale_argument")]
+    bag_sale_quote: Option<azeroth_operator::bag_sale_quote::Quote>,
     /// Group saved quests by retained provider finisher NPC/object IDs. include_reward_review adds saved reward/budget projections; quest_giver_references only, no action.
     quest_turn_in_review: Option<azeroth_operator::quest_turn_in::Page>,
     /// Review saved mail header amounts against the captured wallet and reserve. mail_funds only; no actions.
@@ -1409,6 +1412,15 @@ fn recipe_material_page_argument<'de,D:serde::Deserializer<'de>>(input:D)->Resul
     Option::<serde_json::Value>::deserialize(input)?.map(|value| {
         if !value.is_object() {return Err(serde::de::Error::custom("Invalid recipe material comparison options"));}
         serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid recipe material comparison options"))
+    }).transpose()
+}
+
+fn bag_sale_argument<'de,D:serde::Deserializer<'de>>(input:D)->Result<Option<azeroth_operator::bag_sale_quote::Quote>,D::Error> {
+    Option::<serde_json::Value>::deserialize(input)?.map(|value| {
+        if !value.is_object() || value["selections"].as_array().is_some_and(|rows|rows.iter().any(|row|!row.is_object())) {
+            return Err(serde::de::Error::custom("Invalid bag sale quote options"));
+        }
+        serde_json::from_value(value).map_err(|_|serde::de::Error::custom("Invalid bag sale quote options"))
     }).transpose()
 }
 
@@ -3303,6 +3315,12 @@ impl Operator {
         )
     )]
     fn inspect_snapshot(&self, Parameters(args): Parameters<Inspect>) -> CallToolResult {
+        if args.bag_sale_quote.as_ref().is_some_and(|quote| {
+            args.section.as_deref() != Some("bags") || args.coverage_sections.is_some()
+                || quote.validate().is_err()
+        }) {
+            return CallToolResult::error(vec![ContentBlock::text("Bag sale quote requires bags and valid bounded selections")]);
+        }
         if args.player_map_target.as_ref().is_some_and(|target| {
             args.section.as_deref() != Some("player_map_position")
                 || args.coverage_sections.is_some() || target.validate().is_err()
@@ -4465,6 +4483,14 @@ impl Operator {
             args.coverage_sections.as_deref(),
         ) {
             Ok(mut value) => {
+                if let Some(quote) = &args.bag_sale_quote {
+                    let report = self.store.read(&args.snapshot_id)
+                        .and_then(|snapshot| azeroth_operator::bag_sale_quote::review(&snapshot,quote));
+                    match report {
+                        Ok(report) => value["data"] = report,
+                        Err(_) => return CallToolResult::error(vec![ContentBlock::text("Saved bag sale quote unavailable or invalid")]),
+                    }
+                }
                 if let Some(target) = &args.player_map_target {
                     let report = self.store.read(&args.snapshot_id)
                         .and_then(|snapshot| azeroth_operator::player_map_position::preview(&snapshot,target));

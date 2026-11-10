@@ -1,5 +1,7 @@
 # Changelog
 
+- Quote explicitly selected saved bag stacks at captured vendor prices, with partial-price/overflow states and hypothetical wallet reserve projections.
+
 - Join saved local provider vendor/drop/quest references and scoped locations to single or joint recipe restock bag shortages.
 
 - Compare paged saved bulk recipe material, output and status observations without treating absent rows as unlearned recipes.

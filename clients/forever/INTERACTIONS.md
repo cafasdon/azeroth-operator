@@ -4609,3 +4609,15 @@ inputs. Bank stock and per-craft recycling receive no credit. Unknown, partial
 and unavailable reference categories remain explicit. Captured provider-area
 locations stay separate from native maps and routes. These hints do not form a
 complete acquisition plan or establish current eligibility. See ADR-095.
+
+## Selected saved bag sale-value quote
+
+Use `inspect_snapshot` with `section:"bags"` and
+`bag_sale_quote:{"selections":[{"container":0,"slot":1,"item_id":10,"quantity":2}],"reserve_copper":100}`.
+The quote uses each exact location's captured unit sell price. It rejects
+missing/mismatched/insufficient stacks and duplicate locations. Up to 20 stacks
+can be quoted. Missing prices and arithmetic overflow remain separate unknowns;
+partial amounts do not fund the hypothetical wallet projection. Recorded zero
+prices remain known zero values. Links and item GUIDs do not enter the quote.
+No sale recommendation, selling action or current funds credit occurs. Native
+eligibility and current locations remain unverified. See ADR-096. Offline only.
