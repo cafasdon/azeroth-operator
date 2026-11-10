@@ -5,6 +5,9 @@ Use `achievement_filter.maximum_unfinished_criteria` when inspecting
 unfinished captured criteria. A missing achievement section stays unknown. Combine it
 with `criterion_completed: false` to require at least one unfinished
 criterion, or with `completed: false` to restrict achievement status.
+On `list_snapshots`, use `tracked_achievement.maximum_unfinished_criteria`
+with an exact tracked achievement ID or name to find matching saved
+characters. The result includes the captured unfinished count.
 
 Use `mail_attachment_bag_space_message_slot` when inspecting saved mail
 to estimate space for known item attachments in one loaded message.

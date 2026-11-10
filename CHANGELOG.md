@@ -1,5 +1,7 @@
 # Changelog
 
+- Find saved characters whose selected tracked achievement is within an unfinished-criteria limit.
+
 - Filter saved tracked achievements by the number of unfinished criteria.
 
 - Compare currency attachments in one loaded saved message with recorded cap headroom.

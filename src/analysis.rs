@@ -10825,13 +10825,9 @@ fn tracked_achievement_workload(section: &Value) -> Option<Value> {
         if achievement["completed"] == true && achievement["earned_by_character"] == false {
             completed_without_credit.push(id);
         }
-        let Some(criteria) = achievement["criteria"].as_object() else {
+        let Some(count) = unfinished_achievement_criteria_count(achievement) else {
             continue;
         };
-        let count = criteria
-            .values()
-            .filter(|row| row["completed"] == false)
-            .count();
         if count > 0 {
             unfinished.push((count, id, achievement));
         }
@@ -10853,6 +10849,16 @@ fn tracked_achievement_workload(section: &Value) -> Option<Value> {
         json!({"achievements_with_unfinished_criteria":unfinished.len(),
         "achievements_with_most_unfinished_criteria":rows,
         "completed_without_character_credit_ids":completed_without_credit}),
+    )
+}
+
+pub(crate) fn unfinished_achievement_criteria_count(achievement: &Value) -> Option<usize> {
+    Some(
+        achievement["criteria"]
+            .as_object()?
+            .values()
+            .filter(|row| row["completed"] == false)
+            .count(),
     )
 }
 
@@ -10899,11 +10905,7 @@ impl AchievementFilter {
         }
         let criteria = achievement["criteria"].as_object()?;
         if let Some(maximum) = self.maximum_unfinished_criteria {
-            let unfinished = criteria
-                .values()
-                .filter(|row| row["completed"] == false)
-                .count();
-            if unfinished > maximum as usize {
+            if unfinished_achievement_criteria_count(achievement)? > maximum as usize {
                 return Some(false);
             }
         }

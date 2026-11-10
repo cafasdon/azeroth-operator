@@ -75,6 +75,22 @@ class AchievementFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(set(workload['data']['entries']),ids)
                     short = await query(achievement_filter={'maximum_unfinished_criteria':1,**filters})
                     self.assertEqual(set(short['data']['entries']),{'2','7'})
+                    for selector, maximum, count in [
+                        ({'achievement_id':1},0,0), ({'achievement_id':2},0,None),
+                        ({'achievement_name':' aChIeVeMeNt 10 '},1,None),
+                        ({'achievement_name':' aChIeVeMeNt 10 '},2,2),
+                    ]:
+                        reply = await session.call_tool('list_snapshots', {'family':'forever',
+                            'tracked_achievement':{**selector,'maximum_unfinished_criteria':maximum}})
+                        self.assertFalse(reply.isError,reply)
+                        rows = json.loads(reply.content[0].text)['snapshots']
+                        self.assertEqual([row['snapshot_id'] for row in rows],[key] if count is not None else [])
+                        if rows:
+                            self.assertEqual(rows[0]['tracked_achievement_match']['unfinished_criteria'],count)
+                    for filter in [{'maximum_unfinished_criteria':1},
+                                   {'achievement_id':1,'maximum_unfinished_criteria':-1}]:
+                        self.assertTrue((await session.call_tool('list_snapshots',{
+                            'family':'forever','tracked_achievement':filter})).isError)
                     for maximum in [-1, True, 4294967296]:
                         await query(error=True,achievement_filter={'maximum_unfinished_criteria':maximum})
                     credited = await query(achievement_filter={'completed': True, 'earned_by_character': False,

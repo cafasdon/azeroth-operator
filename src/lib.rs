@@ -2133,6 +2133,8 @@ pub struct TrackedAchievementFilter {
     pub achievement_name: Option<String>,
     pub completed: Option<bool>,
     pub earned_by_character: Option<bool>,
+    /// Inclusive limit on unfinished criteria for the selected saved achievement.
+    pub maximum_unfinished_criteria: Option<u32>,
 }
 
 impl Store {
@@ -3724,13 +3726,22 @@ impl Store {
                             achievement_name.as_deref(),
                             |_| true,
                         )?;
+                        let unfinished = if let Some(maximum) = filter.maximum_unfinished_criteria {
+                            let count = analysis::unfinished_achievement_criteria_count(row)?;
+                            if count > maximum as usize {
+                                return None;
+                            }
+                            Some(count)
+                        } else {
+                            None
+                        };
                         (filter
                             .completed
                             .is_none_or(|value| row["completed"].as_bool() == Some(value))
                             && filter.earned_by_character.is_none_or(|value| {
                                 row["earned_by_character"].as_bool() == Some(value)
                             }))
-                        .then_some((id, row))
+                        .then_some((id, row, unfinished))
                     });
                     if tracked_achievement.is_some() && achievement_match.is_none() {
                         continue;
@@ -4315,11 +4326,15 @@ impl Store {
                     if let Some(matches) = missing_section_matches {
                         summary["missing_section_matches"] = json!(matches);
                     }
-                    if let Some((id, row)) = achievement_match {
+                    if let Some((id, row, unfinished)) = achievement_match {
                         summary["tracked_achievement_match"] = json!({
                             "achievement_id":id,"completed":row["completed"],
                             "earned_by_character":row["earned_by_character"],"account_wide":row["account_wide"],
                         });
+                        if let Some(count) = unfinished {
+                            summary["tracked_achievement_match"]["unfinished_criteria"] =
+                                json!(count);
+                        }
                     }
                     if let Some((id, row)) = renown_match {
                         summary["renown_match"] = json!({
