@@ -1,5 +1,7 @@
 # Changelog
 
+- Quote unobserved set pieces against a merchant window saved in the same capture.
+
 - Review local acquisition sources for unobserved Forever set pieces.
 
 - Show total and unobserved catalogue pieces for each matching Forever set.

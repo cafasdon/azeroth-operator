@@ -68,6 +68,13 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             missing_equipment = deepcopy(set_capture)
             del missing_equipment['sections']['equipment']
             missing_equipment_id = store.ingest(missing_equipment)
+            merchant_capture = deepcopy(base)
+            merchant_capture['sections']['wallet'] = {'copper': 5}
+            merchant_capture['sections']['merchant_stock'] = {'1': {
+                'item_id': 7950, 'bundle_size': 1, 'price_copper': 7,
+                'available': -1, 'extended_cost': False,
+            }}
+            merchant_capture_id = store.ingest(merchant_capture)
             env = {**os.environ, 'AZEROTH_DATA_DIR': folder,
                    'AZEROTH_FOREVER_CATALOGUE': str(catalogue.resolve())}
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
@@ -96,6 +103,14 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                                      sourced['set_observation']['unobserved_catalogue_item_ids'])
                     self.assertTrue(any(row['item_id'] == 6473 for row in acquisition['source_references']))
                     self.assertFalse(acquisition['truncated'])
+                    self.assertIsNone(acquisition['captured_merchant_quote'])
+                    merchant = await review(merchant_capture_id, set_id=221, include_unobserved_set_sources=True)
+                    quote = merchant['set_observation']['unobserved_piece_acquisition']['captured_merchant_quote']
+                    self.assertEqual(quote['copper_only_bundle_mix_quoted_subtotal'], 7)
+                    self.assertEqual(quote['copper_only_bundle_mix_quoted_subtotal_wallet_shortfall'], 2)
+                    self.assertEqual(quote['copper_only_bundle_mix_unquoted_item_ids'], [7953])
+                    self.assertIsNone(quote['copper_only_bundle_mix_total'])
+                    self.assertFalse(quote['current_offers_verified'])
                     complete_set = await review(set_capture_id, set_name='thero-shan',
                                                 include_unobserved_set_sources=True)
                     self.assertEqual(complete_set['set_observation']['unobserved_piece_acquisition']['records'], [])

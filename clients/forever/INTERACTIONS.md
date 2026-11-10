@@ -26,6 +26,10 @@ pieces absent from the capture. Unobserved pieces may be in unavailable storage.
 Set `include_unobserved_set_sources: true` with an explicit set ID or unique
 set name to see local catalogue sources and saved acquisition observations
 for up to 50 unobserved pieces in item-ID order.
+When that capture includes a merchant window, the acquisition review can
+quote one unit per unobserved piece against those recorded offers and
+compare supported copper totals with the saved wallet. A missing merchant
+window or an empty piece list gives a null quote.
 
 With the local catalogue, `review_equipment_selection` reports
 `checks.catalogue_projected_set_changes` for sets whose distinct equipped
