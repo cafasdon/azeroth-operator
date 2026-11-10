@@ -777,4 +777,33 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(order['minimum_starting_copper'],1)
                         self.assertEqual(order['honor_from_affordable_prefix'],prefix)
                         self.assertEqual(order['honor_shortfall_after_affordable_prefix'],shortfall)
+                    funded['sections']['quests']['3']['currency_rewards']={
+                        '1':{'currency_id':100,'quantity':2},'2':{'currency_id':100,'quantity':3}}
+                    funded['sections']['quests']['10']['currency_rewards']={'1':{'currency_id':100,'quantity':4}}
+                    funded['sections']['quests']['10']['currency_choices']={'1':{'currency_id':100,'quantity':99}}
+                    funded['sections']['currency_balances']={'coverage':'visible_currency_ids_only',
+                        'entries':{'100':{'name':'Fixture Token','quantity':3,'max_quantity':10,
+                                          'max_weekly_quantity':0,'earned_this_week':0,'total_earned':3,
+                                          'cap_uses_total_earned':False,'account_wide':False,'inactive':False}}}
+                    currency_target_id=store.ingest(funded)
+                    original[currency_target_id+'.json']=(Path(folder)/(currency_target_id+'.json')).read_bytes()
+                    for capture,quantity,covered in [
+                            (currency_target_id,8,True),(currency_target_id,10,False),(key,8,None)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':capture,'section':'quests',
+                            'quest_ready_currency_target':{'currency_id':100,'quantity':quantity}})
+                        self.assertFalse(reply.isError,reply)
+                        target=json.loads(reply.content[0].text)['quest_ready_currency_projection']
+                        self.assertIs(target['covers_target_before_caps'],covered)
+                        if covered:
+                            self.assertEqual(target['ready_turn_in_plan'],{
+                                'quest_count':2,'quest_ids':[3,10],'truncated':False,'recorded_fixed_quantity':9,
+                                'cap_projection':{'proposed_quantity':9,'quantity_within_recorded_headroom':7,
+                                                  'quantity_above_recorded_headroom':2}})
+                        else:
+                            self.assertIsNone(target['ready_turn_in_plan'])
+                    rejected=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':currency_target_id,'section':'quests',
+                        'quest_ready_currency_target':{'currency_id':100,'quantity':0}})
+                    self.assertTrue(rejected.isError)
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})

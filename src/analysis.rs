@@ -6929,6 +6929,66 @@ pub fn quest_list_currency_projection(
     json!({"known_fixed_rewards":projections,"unknown_fixed_reward_list_count":unknown})
 }
 
+pub fn quest_ready_currency_projection(
+    quests: &serde_json::Map<String, Value>,
+    balances: &Value,
+    currency_id: u32,
+    target: u64,
+) -> Value {
+    let mut unknown = 0;
+    let mut rewards = Vec::new();
+    for (id, quest) in quests {
+        if quest_readiness(quest) != QuestReadiness::Ready {
+            continue;
+        }
+        let Some(fixed) = quest["currency_rewards"].as_object() else {
+            unknown += 1;
+            continue;
+        };
+        let quantity: u64 = fixed
+            .values()
+            .filter(|row| row["currency_id"].as_u64() == Some(u64::from(currency_id)))
+            .filter_map(|row| row["quantity"].as_u64())
+            .sum();
+        if quantity > 0
+            && let Ok(id) = id.parse::<u32>()
+        {
+            rewards.push((std::cmp::Reverse(quantity), id));
+        }
+    }
+    rewards.sort_unstable();
+    let total: u64 = rewards.iter().map(|(quantity, _)| quantity.0).sum();
+    let shortfall = target.saturating_sub(total);
+    let covers_target = if shortfall == 0 {
+        Some(true)
+    } else if unknown == 0 {
+        Some(false)
+    } else {
+        None
+    };
+    let plan = (shortfall == 0).then(|| {
+        let mut ids = Vec::new();
+        let mut selected_quantity = 0;
+        for (quantity, id) in rewards {
+            selected_quantity += quantity.0;
+            ids.push(id);
+            if selected_quantity >= target {
+                break;
+            }
+        }
+        let key = currency_id.to_string();
+        let entry = &balances["entries"][&key];
+        let caps = currency_entry_cap_headroom(entry).unwrap_or(Value::Null);
+        json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
+            "truncated":ids.len()>20,"recorded_fixed_quantity":selected_quantity,
+            "cap_projection":currency_reward_projection(selected_quantity, entry, &caps)})
+    });
+    json!({"currency_id":currency_id,"target_quantity":target,
+        "known_ready_fixed_quantity":total,"ready_quests_with_unknown_fixed_rewards":unknown,
+        "covers_target_before_caps":covers_target,"shortfall_after_known_ready_fixed_rewards":shortfall,
+        "ready_turn_in_plan":plan,"reward_eligibility_verified":false,"live":false})
+}
+
 pub fn quest_currency_projection(quest: Option<&Value>, balances: &Value) -> Value {
     let Some(quest) = quest else {
         return Value::Null;

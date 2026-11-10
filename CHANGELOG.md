@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan saved ready quest turn-ins against an explicit fixed currency reward target.
+
 - Show wallet feasibility for selected saved quest honour turn-ins.
 
 - Plan saved ready quest turn-ins against an explicit honour reward target.

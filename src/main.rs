@@ -63,6 +63,13 @@ struct RestockStackLimit {
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+struct QuestCurrencyTarget {
+    currency_id: std::num::NonZeroU32,
+    quantity: std::num::NonZeroU64,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct Inspect {
     snapshot_id: String,
     section: Option<String>,
@@ -249,6 +256,8 @@ struct Inspect {
     /// Combine fixed currency rewards from retained quests against recorded currency cap headroom.
     #[serde(default)]
     quest_list_currency_projection: bool,
+    /// Review fixed rewards from recorded ready quests against a currency target.
+    quest_ready_currency_target: Option<QuestCurrencyTarget>,
     /// Combine renown rewards from retained quests against the same capture's faction progress.
     #[serde(default)]
     quest_list_renown_projection: bool,
@@ -3150,6 +3159,7 @@ impl Operator {
                 || args.quest_ready_honor_target.is_some()
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
+                || args.quest_ready_currency_target.is_some()
                 || args.quest_list_renown_projection
                 || args.quest_list_item_rewards
                 || args.quest_list_timed_checklist
@@ -3233,6 +3243,7 @@ impl Operator {
             || args.quest_ready_honor_target.is_some()
             || args.quest_list_wallet_projection
             || args.quest_list_currency_projection
+            || args.quest_ready_currency_target.is_some()
             || args.quest_list_renown_projection
             || args.quest_list_item_rewards)
             && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
@@ -4652,6 +4663,7 @@ impl Operator {
                     || args.quest_ready_honor_target.is_some()
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
+                    || args.quest_ready_currency_target.is_some()
                     || args.quest_list_renown_projection
                     || args.quest_list_item_rewards
                     || args.quest_list_timed_checklist
@@ -4670,6 +4682,7 @@ impl Operator {
                         || args.quest_ready_honor_target.is_some()
                         || args.quest_list_wallet_projection
                         || args.quest_list_currency_projection
+                        || args.quest_ready_currency_target.is_some()
                         || args.quest_list_renown_projection
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
@@ -4953,6 +4966,21 @@ impl Operator {
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
                                 azeroth_operator::analysis::quest_list_currency_projection(
                                     quests, balances,
+                                )
+                            });
+                    }
+                    if let Some(target) = &args.quest_ready_currency_target {
+                        let balances = context
+                            .as_ref()
+                            .and_then(|snapshot| snapshot.sections.get("currency_balances"))
+                            .unwrap_or(&serde_json::Value::Null);
+                        value["quest_ready_currency_projection"] =
+                            data.as_object().map_or(serde_json::Value::Null, |quests| {
+                                azeroth_operator::analysis::quest_ready_currency_projection(
+                                    quests,
+                                    balances,
+                                    target.currency_id.get(),
+                                    target.quantity.get(),
                                 )
                             });
                     }

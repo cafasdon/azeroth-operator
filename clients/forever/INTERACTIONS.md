@@ -3365,6 +3365,13 @@ plan also shows a wallet-friendly order for that selection. It reports
 the minimum starting copper, the affordable prefix and its honour total
 when a wallet is captured. It does not search alternative quest sets.
 
+`inspect_snapshot.quest_ready_currency_target` accepts a `currency_id`
+and positive `quantity` in the `quests` section. It selects recorded
+ready quests by their fixed rewards for that currency. The report separates
+target coverage before caps from recorded cap headroom for the selected
+rewards. Optional choices are excluded, and missing fixed reward lists
+can leave coverage unknown.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
