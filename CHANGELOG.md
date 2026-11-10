@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate saved bag space for each side of an exact mail item comparison.
+
 - Project loaded saved currency attachments against each capture's recorded cap headroom.
 
 - Compare recorded currency balances alongside exact saved mail currency observations.

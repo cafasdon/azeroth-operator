@@ -43,8 +43,16 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
             huge=capture({str(message):{str(slot):item(2**32-1,2**32-1) for slot in range(1,17)}
                           for message in range(1,101)})
             tiny=capture({'1':{'1':item(2**32-1,1)}})
-            carried_before=capture(old,sections={'bags':{'0':{'1':{'item_id':720,'count':1}}}})
-            carried_after=capture(new,sections={'bags':{'0':{'1':{'item_id':720,'count':3}}}})
+            def carried_capture(messages, count):
+                return capture(messages,sections={
+                    'bags':{'0':{'1':{'item_id':720,'count':count,'link':'item:720:0','reported_stack_limit':4}}},
+                    'bag_capacity':{
+                        '0':{'total_slots':16,'free_slots':1,'family_mask':0},
+                        **{str(bag):{'total_slots':0,'free_slots':0} for bag in range(1,5)},
+                    },
+                })
+            carried_before=carried_capture(old,1)
+            carried_after=carried_capture(new,3)
             def balance_capture(messages, quantity, account_wide):
                 return capture(messages,sections={'currency_balances':{
                     'coverage':'visible_currency_ids_only','entries':{'720':{
@@ -78,6 +86,13 @@ class MailComparisonTests(unittest.IsolatedAsyncioTestCase):
                         'before_quantity':1,'after_quantity':3,'quantity_delta':2,
                         'mail_counts_toward_carried_stock':False,'inventory_transfers_verified':False,
                     })
+                    space = focused['hypothetical_bag_space']
+                    self.assertFalse(space['retrieval_eligibility_verified'])
+                    for side, pending, merge_slots in [('before',7,1),('after',6,2)]:
+                        self.assertEqual(space[side]['estimated_new_stack_slots'],2)
+                        self.assertEqual(space[side]['items'][0]['known_pending_quantity'],pending)
+                        self.assertEqual(space[side]['estimated_new_stack_slots_if_same_item_stacks_merge'],merge_slots)
+                        self.assertIs(space[side]['fits_recorded_general_slots_if_same_item_stacks_merge'], merge_slots == 1)
                     rejected = await session.call_tool('compare_snapshots',{
                         'before_id':before,'after_id':after,'mail_attachment_currency_id':720,
                         'mail_attachment_compare_carried_item':True,

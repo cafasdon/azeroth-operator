@@ -19,6 +19,9 @@ applies those caps remains unverified.
 With the item selector, set `mail_attachment_compare_carried_item` to
 compare the same captures' bag quantities separately. Pending mail
 does not count toward carried stock and changes do not prove transfers.
+The same option estimates bag space for the known loaded attachment
+quantity on each side, using that capture's reported stacks and free
+slots. It leaves retrieval and placement unverified.
 
 Set `quest_list_objective_checklist` in saved quest-list inspection to
 see explicitly unfinished objectives and remaining counts for matching

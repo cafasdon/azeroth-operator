@@ -4074,6 +4074,20 @@ pub fn compare_observations(
                 "quantity_delta":old.zip(new).map(|(old, new)| i128::from(new) - i128::from(old)),
                 "mail_counts_toward_carried_stock":false,"inventory_transfers_verified":false
             });
+            let project = |snapshot: &Snapshot, side: &Value| {
+                let quantity = side["known_quantity"].as_u64()?;
+                Some(incoming_items_bag_space(
+                    snapshot,
+                    std::iter::once((id.get(), quantity)),
+                    "matching_loaded_mail_items_only",
+                    "known_pending_quantity",
+                ))
+            };
+            attachment["hypothetical_bag_space"] = json!({
+                "before":project(before, &attachment["before"]),
+                "after":project(after, &attachment["after"]),
+                "retrieval_eligibility_verified":false
+            });
         }
         if kind == "currency" && selectors.mail_attachment_compare_currency_balance {
             attachment["balance_comparison"] =
