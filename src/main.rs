@@ -2206,7 +2206,7 @@ impl Operator {
                     "snapshot_id": id, "captured_at": newer.captured_at,
                     "current_locations_verified": false,
                     "selections": azeroth_operator::planning::compare_equipment_sources(
-                        &snapshot, &newer, &args.selections)
+                        &snapshot, &newer, &args.selections)?
                 });
             }
             if !additional.is_empty() {

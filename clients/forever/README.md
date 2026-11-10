@@ -310,8 +310,11 @@ To check those locations again, pass the loadout's original `snapshot_id` and
 `compare_source_locations_snapshot_id` set to a strictly newer capture of
 the same Forever character and exact client build. The primary draft reports
 which exact locations show the same item ID and link, a changed or unknown
-link, a different ID, or no observation. It leaves item continuity and
-current locations unverified.
+link, a different ID, or no observation. For a different or unobserved ID,
+`same_base_item_candidates` lists up to ten matching locations from the newer
+capture, with total matches and quantities by observed storage. A base ID
+match leaves modifiers and replacement suitability unverified. The
+comparison leaves item continuity and current locations unverified.
 The join checks the referenced saved row and winning gear hash. These are
 historical locations; `current_locations_verified` and
 `native_equip_eligibility_verified` remain false. No equip action is generated.

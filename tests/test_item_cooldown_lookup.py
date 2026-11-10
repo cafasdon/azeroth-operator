@@ -91,9 +91,23 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         comparison = json.loads(reply.content[0].text)['source_location_comparison']
                         self.assertEqual(comparison['snapshot_id'], later_key)
                         self.assertFalse(comparison['current_locations_verified'])
-                        self.assertEqual(comparison['selections'], [{
+                        row, = comparison['selections']
+                        candidates = row.pop('same_base_item_candidates', None)
+                        self.assertEqual(row, {
                             **equipment_request['selections'][0], 'status':status,
-                            'observed_item_id':item['item_id'] if item else None}])
+                            'observed_item_id':item['item_id'] if item else None})
+                        if status in ('different_item_id', 'not_observed'):
+                            self.assertEqual(candidates['matched_locations'], 4)
+                            self.assertFalse(candidates['has_more'])
+                            self.assertEqual(candidates['quantity_by_storage'],
+                                             {'equipment':1,'bags':6,'character_bank':0,'account_bank':None})
+                            self.assertEqual(candidates['locations'], [
+                                {'storage':'equipment','container':None,'slot':'11','count':1},
+                                *[{'storage':'bags','container':'0','slot':str(slot),'count':slot}
+                                  for slot in [1,2,3]],
+                            ])
+                        else:
+                            self.assertIsNone(candidates)
                     for invalid_key in [key, alt_key, retail_key]:
                         reply = await session.call_tool('review_equipment_selection', {
                             **equipment_request, 'compare_source_locations_snapshot_id':invalid_key})

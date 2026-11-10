@@ -85,7 +85,7 @@ pub fn compare_equipment_sources(
     original: &Snapshot,
     newer: &Snapshot,
     selections: &[EquipmentSelection],
-) -> Vec<Value> {
+) -> Result<Vec<Value>> {
     selections
         .iter()
         .map(|selection| {
@@ -105,9 +105,22 @@ pub fn compare_equipment_sources(
                     None => "same_item_id_link_unknown",
                 },
             };
-            json!({"target_slot":selection.target_slot,"source":selection.source,
+            let mut row = json!({"target_slot":selection.target_slot,"source":selection.source,
             "expected_item_id":selection.expected_item_id,"observed_item_id":observed_id,
-            "status":status})
+            "status":status});
+            if observed_id != Some(u64::from(selection.expected_item_id)) {
+                let matches = crate::analysis::find_item(newer, selection.expected_item_id, 0, 10)?;
+                row["same_base_item_candidates"] = json!({
+                    "locations": matches["locations"].as_array().unwrap().iter().map(|location| json!({
+                        "storage":location["storage"],"container":location["container"],
+                        "slot":location["slot"],"count":location["count"]
+                    })).collect::<Vec<_>>(),
+                    "matched_locations": matches["matched_locations"],
+                    "has_more": matches["has_more"],
+                    "quantity_by_storage": matches["quantity_by_storage"]
+                });
+            }
+            Ok(row)
         })
         .collect()
 }
