@@ -236,17 +236,32 @@ class Knowledge:
         self.index = index
         self.model = load_model(model_path)
 
-    def search(self, query, section=None, limit=10, include_records=False):
+    def search(self, query, section=None, limit=10, include_records=False, item_ids=None):
         import numpy as np
         if (not isinstance(query, str) or not query.strip() or len(query.encode()) > 512
                 or section is not None and section not in SECTIONS
                 or type(limit) is not int or not 1 <= limit <= 20
                 or type(include_records) is not bool or include_records and limit > 5):
             raise ValueError('Invalid public knowledge query')
+        if item_ids is not None and (
+                section != 'items' or type(item_ids) is not list or len(item_ids) > 10000
+                or any(type(item) is not int or not 1 <= item <= 2**32 - 1 for item in item_ids)
+                or len(set(item_ids)) != len(item_ids)):
+            raise ValueError('Expected distinct positive candidate item IDs for the items section')
+        candidates = set(item_ids) if item_ids is not None else None
         query = query.strip()
+        result = {**metadata(), 'model_revision': MODEL_LOCK['revision'], 'source_revision': PIN['revision'],
+                  'retrieval_only': True, 'live': False, 'results': []}
         with closing(connect(self.index)) as database:
             records = checked_records(database, self.rows)
-            selected = [row for row in records if section is None or row[1] == section]
+            selected = [row for row in records if (section is None or row[1] == section)
+                        and (candidates is None or row[2] in candidates)]
+            if candidates is not None:
+                result['candidate_filter'] = {
+                    'requested_item_id_count': len(candidates), 'catalogue_matched_item_id_count': len(selected),
+                }
+            if not selected:
+                return result
             vectors = np.stack([np.frombuffer(row[6], dtype='<f4') for row in selected])
             if vectors.shape != (len(selected), MODEL_LOCK['dimensions']) or not np.isfinite(vectors).all():
                 raise ValueError('Invalid index vectors')
@@ -257,10 +272,15 @@ class Knowledge:
             lexical = []
             if terms:
                 expression = ' OR '.join('"' + term + '"' for term in terms)
+                candidate_sql = ''
+                parameters = [expression, section, section]
+                if candidates is not None:
+                    candidate_sql = ' AND documents.record_id IN (' + ','.join('?' for _ in candidates) + ')'
+                    parameters.extend(sorted(candidates))
                 lexical = database.execute(
                     'SELECT keywords.key FROM keywords JOIN documents ON documents.key=keywords.key '
                     'WHERE keywords MATCH ? AND (? IS NULL OR documents.section=?) '
-                    'ORDER BY bm25(keywords),keywords.key LIMIT 100', (expression, section, section)).fetchall()
+                    + candidate_sql + ' ORDER BY bm25(keywords),keywords.key LIMIT 100', parameters).fetchall()
         ranks = {}
         for rank, index in enumerate(semantic, 1):
             ranks[selected[index][0]] = 1 / (60 + rank)
@@ -268,12 +288,11 @@ class Knowledge:
             ranks[key] = ranks.get(key, 0) + 1 / (60 + rank)
         by_key = {row[0]: row for row in selected}
         winners = sorted(ranks, key=lambda key: (-ranks[key], key))[:limit]
-        result = {**metadata(), 'model_revision': MODEL_LOCK['revision'], 'source_revision': PIN['revision'],
-                'retrieval_only': True, 'live': False, 'results': [
+        result['results'] = [
                     {'section': by_key[key][1], 'record_id': by_key[key][2], 'record_key':key,
                      'name': by_key[key][3],
                      'document_sha256': by_key[key][5], 'retrieval_score': ranks[key]}
-                    for key in winners]}
+                    for key in winners]
         if include_records:
             for row in result['results']:
                 source = encoded(self.source_records[row['record_key']])
@@ -294,24 +313,26 @@ def main():
     cli.add_argument('--section', choices=SECTIONS)
     cli.add_argument('--limit', type=int, default=10)
     cli.add_argument('--include-records', action='store_true')
+    cli.add_argument('--item-id', action='append', type=int, dest='item_ids')
     args = cli.parse_args()
     if args.action == 'build':
         print(encoded(build(args.catalogue, args.index, args.model)))
         return
     knowledge = Knowledge(args.catalogue, args.index, args.model)
     if args.action == 'search':
-        print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records)))
+        print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records, args.item_ids)))
         return
     from mcp.server.fastmcp import FastMCP
     from mcp.types import ToolAnnotations
+    from pydantic import StrictInt
     server = FastMCP('Azeroth Public Knowledge')
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False))
     def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10,
-                                 include_records: bool = False) -> dict:
-        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. Source-bearing replies are capped at 256 KiB."""
+                                 include_records: bool = False, item_ids: list[StrictInt] | None = None) -> dict:
+        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. Source-bearing replies are capped at 256 KiB. For items only, item_ids restricts retrieval to up to 10,000 distinct positive candidate IDs; an empty list returns no results. Supplied IDs do not verify ownership or equip legality."""
         try:
-            return knowledge.search(query, section, limit, include_records)
+            return knowledge.search(query, section, limit, include_records, item_ids)
         except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
             raise ValueError('Public knowledge index or query unavailable or invalid') from None
 

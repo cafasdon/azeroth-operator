@@ -93,3 +93,23 @@ using Jev 1.14.0, request
 `f3b2d08d9ce23c9eb5a6933111ae0a96d59c8ea1f515cf8217f9aae208cec9c2`.
 Usage was 570 input and 45 output tokens in 0.293 seconds.
 The author accepted the scoped feature after both independent reviews.
+
+Candidate item allowlists passed two scoped offline tests in 28.903 seconds,
+including an actual Rust owned-gear response feeding the local knowledge MCP.
+The public index remains unchanged; no private inventory is persisted there.
+Empty or unknown-only candidates return no results. Candidates are restricted
+before lexical and vector ranking, with a maximum of 10,000 unique uint32 IDs.
+Independent failure review recomputed ranking for 3,022 candidates, verified
+the CLI and bounds, and confirmed unchanged index bytes. Independent data
+review found MCP integer coercion; StrictInt now rejects booleans, strings,
+floats and mixed lists at the actual MCP boundary. Both reviewers cleared the
+fix, with external connections blocked. Live game testing remains deferred.
+
+Finding triage selected fix with confidence 0.98 using Jev 1.14.0, request
+`cda23cd3f6472bbdfe3259a3804455d1a75b4a80d2ab12207374b9a360ccf36f`;
+475 input and 46 output tokens, 0.311 seconds.
+Shipping judgement selected ready with confidence 0.92 using Jev 1.14.0,
+request `c82ba07d10ec158d22ce9621db878508135b2f72e8d2244927f4272281fb6fd9`;
+539 input and 44 output tokens, 0.376 seconds. The author accepted the scoped
+change based on direct tests and both independent reviews. Retrieval ranking
+is not a simulation score or proof of best-in-slot gear.

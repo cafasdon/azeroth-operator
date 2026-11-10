@@ -13,6 +13,8 @@ import unittest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from tools import forever_knowledge as knowledge
+from shared.snapshots import SnapshotStore
+from test_snapshots import fixture
 
 
 class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
@@ -95,8 +97,47 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(row['catalogue_record_sha256'], hashlib.sha256(canonical).hexdigest())
                             if section == 'enchants':
                                 self.assertTrue(row['record_key'].endswith(row['catalogue_record_sha256']))
+                    binary = root / 'target/debug/azeroth-operator.exe'
+                    with tempfile.TemporaryDirectory() as folder:
+                        capture = fixture()
+                        capture['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
+                        capture['sections']['equipment'] = {'5': {'item_id':7950}}
+                        capture['sections']['bags'] = {'0': {
+                            '1': {'item_id':7953,'count':1}, '2': {'item_id':4294967295,'count':1},
+                        }}
+                        snapshot_id = SnapshotStore(Path(folder)).ingest(capture)
+                        async with stdio_client(StdioServerParameters(command=str(binary),
+                                env={**os.environ, 'AZEROTH_DATA_DIR':folder,
+                                     'AZEROTH_FOREVER_CATALOGUE':str(catalogue)}), errlog=errors) as (gear_read, gear_write):
+                            async with ClientSession(gear_read, gear_write) as gear_session:
+                                await gear_session.initialize()
+                                owned = await gear_session.call_tool('review_forever_owned_gear', {'snapshot_id':snapshot_id})
+                                self.assertFalse(owned.isError)
+                                owned_rows = json.loads(owned.content[0].text)['items']
+                                candidate_ids = sorted({row['observed']['item_id'] for row in owned_rows})
+                        reply = await session.call_tool('search_forever_knowledge', {
+                            'query':'Thunderfury','section':'items','item_ids':candidate_ids,'limit':5,
+                        })
+                        self.assertFalse(reply.isError, reply)
+                        filtered = json.loads(reply.content[0].text)
+                        self.assertEqual({row['record_id'] for row in filtered['results']}, {7950,7953})
+                        self.assertEqual(filtered['candidate_filter'], {
+                            'requested_item_id_count':3,'catalogue_matched_item_id_count':2,
+                        })
+                    for candidate_ids in [[], [4294967295]]:
+                        reply = await session.call_tool('search_forever_knowledge', {
+                            'query':'healing','section':'items','item_ids':candidate_ids,
+                        })
+                        self.assertFalse(reply.isError)
+                        self.assertEqual(json.loads(reply.content[0].text)['results'], [])
                     for args in [{'query':''}, {'query':'x'*513}, {'query':'x','limit':21},
-                                 {'query':'x','section':'snapshots'}, {'query':'x','limit':6,'include_records':True}]:
+                                 {'query':'x','section':'snapshots'}, {'query':'x','limit':6,'include_records':True},
+                                 {'query':'x','section':'items','item_ids':[7950,7950]},
+                                 {'query':'x','section':'items','item_ids':[0]},
+                                 {'query':'x','section':'items','item_ids':[True]},
+                                 {'query':'x','section':'items','item_ids':['7950']},
+                                 {'query':'x','section':'items','item_ids':[7950.0]},
+                                 {'query':'x','section':'zones','item_ids':[7950]}]:
                         rejected = await session.call_tool('search_forever_knowledge', args)
                         self.assertTrue(rejected.isError)
         self.assertEqual(hashlib.sha256(index.read_bytes()).hexdigest(), original)

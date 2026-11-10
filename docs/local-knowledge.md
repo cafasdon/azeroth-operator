@@ -39,6 +39,12 @@ Set `include_records: true` with a limit of 1–5 to include the exact
 pinned catalogue row and its canonical SHA-256 with each candidate.
 The combined response is bounded to 256 KiB. The CLI equivalent is
 `--include-records --limit 5`.
+For `section: "items"`, supply `item_ids` to search only an explicit
+candidate list, such as IDs obtained from the owned-gear review. Filtering
+applies before both retrieval rankings. Lists may contain up to 10,000
+distinct positive IDs. An empty list gives no results. The CLI accepts
+repeated `--item-id` options. The index retains public reference records;
+supplied candidate IDs do not establish ownership or equip legality.
 
 The index contains public reference records. Its builder accepts the pinned
 catalogue and verifies its checksum. Search makes no source refresh or game

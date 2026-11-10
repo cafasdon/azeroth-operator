@@ -1,5 +1,7 @@
 # Changelog
 
+- Restrict local hybrid item search to explicit candidate IDs without indexing personal inventory.
+
 - Return optional exact public source records alongside hybrid search candidates.
 
 - Extend public hybrid search to enchants, suffixes, spell effects and encounter presets.
