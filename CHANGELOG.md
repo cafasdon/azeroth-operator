@@ -1,5 +1,7 @@
 # Changelog
 
+- Explain saved Forever flight search failures using observed reachability and fare coverage.
+
 - Plan saved Forever flight routes by exact destination name.
 
 - Find saved Forever flight visits by exact reachable destination name.

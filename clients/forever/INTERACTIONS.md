@@ -3291,6 +3291,11 @@ same node ID agree. Different reachable node IDs with the same name need
 an explicit `destination_node_id`, even if only one fits the fare budget.
 The route search still uses recorded reachable legs with known fares.
 
+When the search runs and finds no qualifying route, `saved_path_evidence`
+reports whether the selected captures contain a reachable path within the
+leg limit and whether any such path has all fares recorded before budget
+filters. Unknown fares are never treated as zero.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

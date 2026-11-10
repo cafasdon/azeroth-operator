@@ -7082,7 +7082,7 @@ pub fn plan_saved_flights(
             }) {
                 named_destinations.insert(node);
             }
-            Some((index, node, row["fare_copper"].as_u64()?))
+            Some((index, node, row["fare_copper"].as_u64()))
         }));
     }
     let start = start.ok_or_else(|| anyhow::anyhow!("Missing departure"))?;
@@ -7137,6 +7137,7 @@ pub fn plan_saved_flights(
         let mut next = BTreeMap::new();
         for (node, (cost, path)) in frontier {
             for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
+                let Some(fare) = fare else { continue };
                 let total = cost + fare;
                 if target == start
                     || (depth == 0 && index != 0)
@@ -7168,13 +7169,43 @@ pub fn plan_saved_flights(
         }
     }
     let Some((fare, _, path)) = best else {
-        return Ok(status(if require_affordable {
+        let mut report = status(if require_affordable {
             "no_affordable_route"
         } else if maximum_total_fare_copper.is_some() {
             "no_route_within_fare_ceiling"
         } else {
             "no_fully_priced_route"
-        }));
+        });
+        let mut reachable = false;
+        let mut fully_priced = false;
+        let mut frontier = BTreeSet::from([(start, true)]);
+        for depth in 0..max_legs {
+            let mut next = BTreeSet::new();
+            for (node, priced_so_far) in frontier {
+                for &(index, target, fare) in departures.get(&node).into_iter().flatten() {
+                    if target == start || (depth == 0 && index != 0) {
+                        continue;
+                    }
+                    let priced = priced_so_far && fare.is_some();
+                    if target == destination {
+                        reachable = true;
+                        fully_priced |= priced;
+                    } else {
+                        next.insert((target, priced));
+                    }
+                }
+            }
+            if fully_priced || next.is_empty() {
+                break;
+            }
+            frontier = next;
+        }
+        report["saved_path_evidence"] = json!({
+            "reachable_path_observed":reachable,
+            "fully_priced_path_observed_without_budget":fully_priced,
+            "maximum_legs":max_legs
+        });
+        return Ok(report);
     };
     let legs = path
         .into_iter()

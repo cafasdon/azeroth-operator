@@ -76,6 +76,10 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                         bounded=await call('inspect_snapshot',snapshot_id=key,section='flight_map',
                             flight_route_search={'destination_node_id':20,'maximum_total_fare_copper':limit})
                         self.assertEqual(bounded['flight_route_search']['status'],status)
+                        if limit==99:
+                            self.assertEqual(bounded['flight_route_search']['saved_path_evidence'],{
+                                'reachable_path_observed':True,
+                                'fully_priced_path_observed_without_budget':True,'maximum_legs':8})
                     self.assertEqual(len(plan['legs']),1)
                     self.assertEqual(plan['legs'][0]['observed_route_node_ids'],path)
                     self.assertEqual(plan['total_fare_copper'],100)
@@ -122,6 +126,18 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     poor['sections']['wallet']['copper'] = 99
                     for capture in [no_wallet, no_fare, poor]:
                         store.ingest(capture)
+                    unknown_fare=(await call('inspect_snapshot',snapshot_id=store.ingest(no_fare),
+                        section='flight_map',flight_route_search={'destination_name':'Target'}))['flight_route_search']
+                    self.assertEqual(unknown_fare['status'],'no_fully_priced_route')
+                    self.assertEqual(unknown_fare['saved_path_evidence'],{
+                        'reachable_path_observed':True,
+                        'fully_priced_path_observed_without_budget':False,'maximum_legs':8})
+                    capped_path=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={'destination_name':'Further','onward_snapshot_ids':[next_key],
+                                             'max_legs':1}))['flight_route_search']
+                    self.assertEqual(capped_path['saved_path_evidence'],{
+                        'reachable_path_observed':False,
+                        'fully_priced_path_observed_without_budget':False,'maximum_legs':1})
                     for reserve, expected in [(0, {key,old}), (100, {key,old}), (101, set())]:
                         result = await call('list_snapshots', family='forever',
                             flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)
