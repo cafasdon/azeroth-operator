@@ -258,6 +258,8 @@ class Knowledge:
                         links.append((f'/sources/{index}/{kind}/{field}', section, value[field]))
         for index, identity in enumerate(source.get('randomSuffixOptions', [])):
             links.append((f'/randomSuffixOptions/{index}', 'random_suffixes', identity))
+        for index, identity in enumerate(source.get('effectIds', [])):
+            links.append((f'/effectIds/{index}', 'spell_effects', identity))
         results = []
         for path, section, identity in links[offset:offset+32]:
             row = {'source_path': path, 'target_section': section, 'record_id': identity}
@@ -387,7 +389,7 @@ def main():
     def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10,
                                  include_records: bool = False, item_ids: list[StrictInt] | None = None,
                                  include_references: StrictBool = False, reference_offset: StrictInt = 0) -> dict:
-        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. include_references also attaches the base row and up to 32 direct NPC/zone/faction and listed random-suffix-option edges per hit, with exact rows or explicit missing status. reference_offset (uint32) pages these edges and requires include_references when nonzero; no recursive or guessed links. Source-bearing replies are capped at 256 KiB. For items only, item_ids restricts retrieval to up to 10,000 distinct positive candidate IDs; an empty list returns no results. Supplied IDs and suffix options do not verify ownership, exact modifiers or equip legality."""
+        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. include_references also attaches the base row and up to 32 direct NPC/zone/faction, listed random-suffix-option and spell-effect-ID edges per hit, with exact rows or explicit missing status. reference_offset (uint32) pages these edges and requires include_references when nonzero; no recursive or guessed links. Source-bearing replies are capped at 256 KiB. For items only, item_ids restricts retrieval to up to 10,000 distinct positive candidate IDs; an empty list returns no results. Supplied IDs and suffix options do not verify ownership, exact modifiers or equip legality."""
         try:
             return knowledge.search(query, section, limit, include_records, item_ids, include_references, reference_offset)
         except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):

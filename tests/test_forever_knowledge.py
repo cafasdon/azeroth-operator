@@ -163,6 +163,18 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(filtered['candidate_filter'], {
                             'requested_item_id_count':3,'catalogue_matched_item_id_count':2,
                         })
+                    reply=await session.call_tool('search_forever_knowledge', {
+                        'query':'Minor Healing Potion','section':'consumables','limit':1,'include_references':True})
+                    self.assertFalse(reply.isError,reply)
+                    potion=json.loads(reply.content[0].text)['results'][0]
+                    self.assertEqual(potion['record_id'],118)
+                    effect=potion['catalogue_references']['references'][0]
+                    self.assertEqual(effect['source_path'],'/effectIds/0')
+                    self.assertEqual(effect['target_section'],'spell_effects')
+                    self.assertEqual(effect['record_id'],679187)
+                    expected_effect=next(r for r in raw_catalogue['spellEffects'] if r['id']==679187)
+                    self.assertEqual(effect['catalogue_record'],expected_effect)
+                    self.assertEqual(effect['catalogue_record_sha256'],knowledge.digest(knowledge.encoded(expected_effect).encode()))
                     rep_item=next(row for row in raw_catalogue['items'] if any('rep' in source for source in row.get('sources',[])))
                     for section, query, ids in [('items','Earthshaker',[17073]),
                             ('items','Furbolg Medicine Pouch',[16768]),('items','Thunderfury',[19019]),
@@ -282,6 +294,46 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(instance.references('items:4')['references'][0]['catalogue_record']['stats'],[1,2])
         for offset in [None,True,-1,1.0,'1',4294967296]:
             with self.assertRaises(ValueError):instance.references('items:4',offset)
+
+    async def test_pinned_consumable_effect_references(self):
+        instance=object.__new__(knowledge.Knowledge)
+        cache=Path(__file__).resolve().parents[1]/'local-data/forever/catalogue.json'
+        if not cache.is_file():
+            self.skipTest('Optional pinned catalogue required')
+        raw=knowledge.read_catalogue(cache)
+        instance.source_records={knowledge.record_key(section,row,field):row
+            for section,(source_section,field) in knowledge.SOURCES.items() for row in raw[source_section]}
+        effects={r['id']:r for r in raw['spellEffects']}
+        count=0
+        for row in raw['consumables']:
+            links=instance.references(f"consumables:{row['id']}")['references']
+            links=[link for link in links if link['target_section']=='spell_effects']
+            self.assertEqual([link['record_id'] for link in links],row.get('effectIds',[]))
+            for index,link in enumerate(links):
+                count+=1
+                self.assertEqual(link['source_path'],f'/effectIds/{index}')
+                self.assertEqual(link['status'],'resolved')
+                self.assertEqual(link['catalogue_record'],effects[link['record_id']])
+                self.assertEqual(link['catalogue_record_sha256'],
+                    knowledge.digest(knowledge.encoded(effects[link['record_id']]).encode()))
+        self.assertEqual(count,83)
+
+    async def test_effect_references_exact_namespace_pages_and_unknowns(self):
+        instance=object.__new__(knowledge.Knowledge)
+        instance.source_records={'consumables:1':{'id':1,'effectIds':[7]*33+[99,True,0,-1,2**32,'7',None]},
+            'spell_effects:7':{'id':7,'spellId':123,'stats':[1]},
+            'items:99':{'id':99,'name':'Wrong namespace'},
+            'spell_effects:123':{'id':123,'spellId':7}}
+        first=instance.references('consumables:1')
+        second=instance.references('consumables:1',32)
+        self.assertEqual(first['reference_count'],40)
+        self.assertTrue(first['has_more_references']);self.assertFalse(second['has_more_references'])
+        self.assertEqual([r['source_path'] for r in first['references']+second['references']],
+            [f'/effectIds/{i}' for i in range(40)])
+        self.assertEqual(second['references'][1]['status'],'not_in_pinned_catalogue')
+        self.assertTrue(all(r['status']=='invalid_reference_id' for r in second['references'][2:]))
+        first['references'][0]['catalogue_record']['stats'][0]=99
+        self.assertEqual(instance.references('consumables:1')['references'][0]['catalogue_record']['stats'],[1])
 
     async def test_index_pin_integrity_and_noop_build(self):
         root = Path(__file__).resolve().parents[1]

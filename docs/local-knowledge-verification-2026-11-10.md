@@ -301,3 +301,50 @@ confidence 0.82, request
 504 input and 44 output tokens, 0.285 seconds. Author accepted the bounded
 metadata change on direct MCP evidence and the independent review; this is
 not evidence of native runtime qualification or complete owned-gear coverage.
+
+## Explicit consumable effect references
+
+Hybrid `include_references` now joins each explicit `effectIds` element to the
+exact `spell_effects` record ID (not its separate `spellId`), after existing
+world and suffix edges. Exact rows/hashes, missing/invalid states, 32-edge
+pagination and combined 256 KiB response bound use the existing mechanism.
+No recursive enrichment, remote lookup or ownership/usability claim was added;
+the index contents and format are unchanged and need no rebuild.
+
+Author scoped command:
+`$env:PYTHONPATH='.;tests'; python -m unittest test_forever_knowledge.KnowledgeTests.test_effect_references_exact_namespace_pages_and_unknowns test_forever_knowledge.KnowledgeTests.test_real_model_mcp_offline_retrieval_and_exact_provenance`.
+Both tests passed in 23.429 seconds. The pure join test checks all 83 pinned
+consumable effect edges against exact source rows and hashes, plus 40 synthetic
+edges over two pages, a missing effect sharing an item ID in a different
+namespace, boolean/zero/negative/oversized/string/null IDs and nested copy
+isolation. The real model stdio MCP returned Minor Healing Potion (118),
+`/effectIds/0` -> `spell_effects:679187`, with exact source/hash. Its existing
+offline-network and immutable-index checks remained in force. These results
+qualify local source retrieval, not native consumable behaviour or simulation.
+
+The actual offline CLI search returned item 118 -> effect 679187, spell 439,
+status resolved at `/effectIds/0`. Independent failure review found one test
+portability defect: the new test required an ignored optional catalogue.
+Author reproduced `FileNotFoundError` with a synthetic empty checkout and split
+the pinned-data test from the always-runnable synthetic test, guarding the
+former with `skipTest`. The same empty-checkout probe then passed synthetic
+checks and skipped the optional-data test. Both split tests passed in 0.070
+seconds with the local catalogue. Jev 1.14.0 advisory triage selected fix,
+confidence 0.97, request
+`278e89a0df266d8a7b7fc3bba71e0cab5f18aaa204633edf642166172cac7468`,
+425 input and 46 output tokens, 0.357 seconds.
+
+Two failure-lens rounds requested gpt-6-astra high (resolved model/usage not
+exposed). First round independently verified mixed edge ordering, escaped
+pointers, paging, uint32 limits, exact namespaces without spellId inference,
+hashes and nonrecursive projection; a mocked retrieval test rejected expansion
+above 256 KiB and accepted 12,952 bytes. That cap probe did not use the model.
+Second round passed the two split tests plus existing reference isolation:
+three tests, 0.072 seconds. Empty-checkout repetition passed two synthetic tests
+and skipped only pinned data, 0.027 seconds. No remaining actionable finding;
+no caller lens was added because the fix only split the existing test.
+Jev 1.14.0 advisory shipping judgement selected ready, confidence 0.94, request
+`54ea20c55546917005583b45e43101e477a3f008d71b7efbf9757e9df36d15ab`,
+589 input and 44 output tokens, 0.326 seconds. Author accepted this bounded
+retrieval feature on direct offline and independent evidence. Native testing,
+installation and deployment remain deferred.

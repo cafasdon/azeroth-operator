@@ -74,7 +74,8 @@ public record/hash or not_in_pinned_catalogue. Unknown targets stay unknown;
 no remote lookup, name matching or recursive enrichment occurs.
 
 Supported links are top-level zoneId and npcId/zoneId/repFactionId inside source
-objects. Other relationship types are outside this projection. Up to 32 edges
+objects, listed randomSuffixOptions and explicit effectIds. Other relationship
+types are outside this projection. Up to 32 edges
 per hit are returned, with complete recognised-edge count and truncation flag;
 several edges may reference one entity. The combined base/related response
 retains the 256 KiB bound. References use catalogue IDs and do not verify native
@@ -93,5 +94,11 @@ to every hit. Keep query/filter/base key/hash and pinned source unchanged, and
 advance by 32 while has_more_references is true. Beyond-end pages are empty.
 references_truncated can stay true on the last page because earlier edges are
 omitted from that response; use has_more_references to continue. World links
-come first, then suffix options in their original array order. The combined
+come first, then suffix options, then effect IDs in their original array order. The combined
 256KiB bound, exact records/hashes and privacy boundary remain unchanged.
+
+Explicit effectIds link to spell_effects by their effect record ID, independently
+of spellId. These expose exact pinned simulator effects for consumables, including
+healing and resource effects where provided. Missing records stay unresolved;
+an effect reference does not establish native behaviour, current usability or
+a simulation result. The existing index needs no rebuild for these joins.
