@@ -3514,6 +3514,7 @@ pub struct ComparisonSelectors<'a> {
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
     pub group_context_changes: bool,
+    pub owned_auction_changes: bool,
     pub instance_group_size_reference: bool,
     pub instance_group_size_max_cache_age_seconds: Option<u32>,
     pub group_member_target: Option<std::num::NonZeroU32>,
@@ -4187,6 +4188,11 @@ pub fn compare_observations(
         );
         comparison["group_member_target_comparison"] =
             compare_group_member_target(before, after, target.get());
+    }
+    if selectors.owned_auction_changes {
+        ensure!(before.client.family == crate::Family::Forever, "Owned auction comparison requires Forever");
+        comparison["owned_auction_changes"] = crate::owned_auction_filter::compare(
+            before.sections.get("owned_auctions"), after.sections.get("owned_auctions"))?;
     }
     if selectors.group_context_changes {
         ensure!(

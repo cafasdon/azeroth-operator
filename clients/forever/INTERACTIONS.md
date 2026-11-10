@@ -4323,3 +4323,14 @@ slot before paging; counts and reported unit totals cover all matches. These
 units never become stock or copper. Missing data remains null; observed empty
 or nonmatching data yields zero and an empty page. Raw status stays uninterpreted,
 and no filter preserves raw inspection. Search is owner-local and offline.
+
+Set compare_snapshots.owned_auction_changes to true to compare two saved
+Forever caches. only_before/only_after report numeric auction IDs seen on
+only one side. Common IDs show recorded item, quantity and raw status changes;
+slot reordering is ignored. Each category gives the full count and at most
+50 rows in numeric auction-ID order, with explicit truncation. Before/after
+counts and reported unit totals cover each full cache. A missing section leaves
+changes unknown, distinct from an observed empty map. Disappearance never
+establishes a sale or cancellation; quantity/status changes establish no
+proceeds, delivery, stock credit or current listing identity. Defaults preserve
+existing comparison output. Same-character/client/time/owner gates apply.

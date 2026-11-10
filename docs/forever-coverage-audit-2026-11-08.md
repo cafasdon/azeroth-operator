@@ -864,3 +864,9 @@ status predicates plus bounded inspection pages. Latest-per-character selection
 precedes matching, numeric slots determine page order, and whole-match quantities
 remain historical reported units with no stock/copper credit. Missing sections
 remain unknown. No capture, transaction or native qualification is added.
+
+Saved auction comparison now reports numeric IDs observed on only one side,
+field changes on common IDs, full counts and bounded ordered detail. Missing
+cache observations keep differences unknown. Slot reordering is ignored;
+disappearance does not prove a sale/cancellation and totals never establish
+stock or proceeds. Existing identity/client/owner gates remain. Offline only.

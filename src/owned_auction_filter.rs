@@ -138,3 +138,97 @@ pub fn inspect(section: Option<&Value>, page: &OwnedAuctionPage) -> Result<Value
     );
     Ok(result)
 }
+
+/// Compare numeric cache identities only; disappearance never proves a sale.
+pub fn compare(before: Option<&Value>, after: Option<&Value>) -> Result<Value> {
+    use std::collections::BTreeMap;
+    let index = |section: Option<&Value>| -> Result<Option<BTreeMap<u64, Value>>> {
+        section
+            .map(|section| {
+                crate::schema::validate("owned_auctions", section)?;
+                Ok(section["entries"]
+                    .as_object()
+                    .unwrap()
+                    .values()
+                    .map(|row| (row["auction_id"].as_u64().unwrap(), row.clone()))
+                    .collect())
+            })
+            .transpose()
+    };
+    let before = index(before)?;
+    let after = index(after)?;
+    let summary = |rows: &Option<BTreeMap<u64, Value>>| {
+        rows.as_ref().map(|rows| json!({
+        "captured_auction_count":rows.len(),
+        "reported_item_units":rows.values().map(|row|row["quantity"].as_u64().unwrap()).sum::<u64>()
+    }))
+    };
+    let mut result = metadata();
+    result["numeric_auction_identity_verified"] = json!(false);
+    result["slot_reordering_ignored"] = json!(true);
+    result["before"] = json!(summary(&before));
+    result["after"] = json!(summary(&after));
+    let (Some(before), Some(after)) = (before, after) else {
+        for field in [
+            "only_before",
+            "only_after",
+            "changed",
+            "unchanged_auction_id_count",
+            "reported_item_unit_delta",
+        ] {
+            result[field] = Value::Null;
+        }
+        return Ok(result);
+    };
+    let bounded = |rows: Vec<Value>| {
+        json!({"count":rows.len(),"truncated":rows.len()>50,
+        "rows":rows.into_iter().take(50).collect::<Vec<_>>()})
+    };
+    result["only_before"] = bounded(
+        before
+            .iter()
+            .filter(|(id, _)| !after.contains_key(id))
+            .map(|(_, row)| row.clone())
+            .collect(),
+    );
+    result["only_after"] = bounded(
+        after
+            .iter()
+            .filter(|(id, _)| !before.contains_key(id))
+            .map(|(_, row)| row.clone())
+            .collect(),
+    );
+    let mut changed = Vec::new();
+    let mut unchanged = 0;
+    for (id, old) in &before {
+        let Some(new) = after.get(id) else {
+            continue;
+        };
+        let mut fields = serde_json::Map::new();
+        for field in ["item_id", "quantity", "reported_status"] {
+            if old[field] != new[field] {
+                let mut change = json!({"before":old[field],"after":new[field]});
+                if field == "quantity" {
+                    change["delta"] = json!(
+                        new[field].as_u64().unwrap() as i64 - old[field].as_u64().unwrap() as i64
+                    );
+                }
+                fields.insert(field.into(), change);
+            }
+        }
+        if fields.is_empty() {
+            unchanged += 1;
+        } else {
+            changed.push(json!({"auction_id":id,"fields":fields}));
+        }
+    }
+    result["changed"] = bounded(changed);
+    result["unchanged_auction_id_count"] = json!(unchanged);
+    let total = |rows: &BTreeMap<u64, Value>| {
+        rows.values()
+            .map(|row| row["quantity"].as_u64().unwrap())
+            .sum::<u64>()
+    };
+    result["reported_item_unit_delta"] = json!(total(&after) as i64 - total(&before) as i64);
+    Ok(result)
+}

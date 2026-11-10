@@ -90,3 +90,39 @@ request df5ab1e7b4eea9f9bb35a3fc890e6dc51a2e0b8b548ae6c8930f1846fc83705c;
 source change based on direct tests and both clean independent reviews.
 Native availability/ownership/completeness remain unqualified; live testing,
 installation and deployment remain deferred.
+
+## Saved auction comparison — 2026-11-10
+
+Optional owned_auction_changes reuses the existing compare_snapshots route and
+identity/client/time/owner gates. Numeric-ID joins ignore slot ordering. The
+contract retains missing-side uncertainty, observed-empty zeroes, complete
+category counts and bounded details; it never infers transactions or credit.
+See ADR-077. No collector, installation, deployment or native testing changed.
+
+Author: cargo build --bin azeroth-operator succeeded. With PYTHONPATH=.;tests,
+python -m unittest test_owned_auction_compare passed one actual Rust stdio MCP
+test in 0.747 seconds. Cases include changed item/quantity/raw status on common
+IDs, disappearance/appearance, slot reordering, both/one missing cache, empty
+maps, safe maximum IDs, 256-row sums and 50-row detail limits, negative deltas,
+strict/redacted flags, default equality and foreign character/owner/family
+refusal. All synthetic snapshot bytes remained unchanged. Diff check passed.
+
+One independent adversarial round, failure and security/data plus callers
+lenses, requested gpt-6-astra high; resolved model and usage not exposed.
+No concrete findings. Failure reviewer passed 100 seeded comparisons against
+an independent Python reference, including 49/50/51/255/256-row boundaries,
+item-ID conflicts, reordered rows, missing/empty, safe/u32 bounds and signed
+aggregates. Seventeen further flag/time/client/character/default/self checks
+passed. Explicit null flags reject. Security/data review passed seventeen fresh
+MCP probes covering exact build/variant/interface/name/realm/time gates,
+malformed private snapshots/flags, missing observations, negative quantity
+delta and unchanged defaults. Both independently ran the real MCP test and
+checked the docs against the historical cache contract. No game, network or
+deployment actions occurred. Numeric equality is not native listing identity;
+aggregate unit changes are not sale, stock, delivery or currency evidence.
+
+Advisory shipping judgement: Jev 1.14.0 selected ready, confidence 0.92,
+request 426f5c1470b1b87e2fd4debe5be0352438cda45eb35e5e98c7d89ef5ba493683;
+612 input and 44 output tokens, 0.351 seconds. Author accepted the bounded
+source feature on direct tests and both clean independent reviews. Native
+qualification and live testing remain deferred.

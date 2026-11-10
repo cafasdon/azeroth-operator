@@ -74,3 +74,22 @@ count/unit total and a truncation flag. No filter preserves existing raw
 inspection. These are searches over historical numeric cache observations;
 no status meaning, current auction ownership, sale/delivery or native action
 is inferred. Existing owner/family boundaries remain.
+
+Saved-cache comparison (10 November): compare_snapshots accepts the optional
+boolean owned_auction_changes. Existing same-character/client/time/owner gates
+apply and the option requires Forever. An omitted/false flag preserves existing
+output. The comparison has independent before/after cache counts and reported
+item-unit totals. Missing sections leave their summary null and all differences
+unknown; observed empty caches retain known zero counts.
+
+When both sections exist, rows are joined by numeric auction ID, independent
+of slot order. only_before and only_after describe IDs observed on one side,
+not acquisition, sales or cancellation. changed compares recorded item ID,
+quantity and raw status on common IDs; quantity changes include a signed
+arithmetic delta. Numeric equality does not verify native listing identity.
+Each category has a full count, first 50 rows in numeric auction-ID order and
+an explicit truncation flag. Unchanged numeric IDs are counted separately.
+Reported aggregate item-unit delta covers the full cache and may combine
+unrelated base items. It is not an earned/sold/delivered quantity, stock balance
+or currency amount. Item-ID conflicts on common auction IDs remain visible.
+No transaction, new capture, native qualification or public-index input is added.
