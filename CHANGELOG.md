@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reported pet diet category labels across saved Forever captures.
+
 - Find saved Forever pet captures by a reported food category.
 
 - Show saved pet training-point balances and total accepted food in pet-care comparisons.

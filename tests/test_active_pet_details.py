@@ -65,6 +65,8 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(delta['before']['level'],17)
                     self.assertEqual(delta['after']['level'],18)
                     self.assertNotIn('level_delta',delta)
+                    self.assertEqual(delta['food_type_changes'],
+                                     {'observed_only_before':[], 'observed_only_after':[]})
                     for filters, expected in (
                         ({'food_type_name':'  mEAT ', 'family_id':1}, [cases[0][0]]),
                         ({'food_type_name':'poisson', 'minimum_level':18}, [later_key]),
@@ -84,6 +86,18 @@ class ActivePetDetailsTests(unittest.IsolatedAsyncioTestCase):
                     for key in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':key,'section':'pet_care'})
                         self.assertTrue(response.isError)
+                    changed=deepcopy(later)
+                    changed['sections']['pet_care']['food_types']={'1':'Poisson','2':'Fruit','3':'Fruit'}
+                    changed_key=store.ingest(changed)
+                    for after, expected in (
+                        (changed_key, {'observed_only_before':['Meat'], 'observed_only_after':['Fruit']}),
+                        (cases[1][0], None),
+                        (cases[2][0], {'observed_only_before':['Meat','Poisson'], 'observed_only_after':[]}),
+                    ):
+                        reply=await session.call_tool('compare_snapshots',{'before_id':cases[0][0],'after_id':after})
+                        self.assertFalse(reply.isError)
+                        self.assertEqual(json.loads(reply.content[0].text)['pet_care_change']['food_type_changes'],
+                                         expected)
 
 
 if __name__=='__main__':unittest.main()

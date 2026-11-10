@@ -4,6 +4,10 @@ Use `active_pet.food_type_name` on `list_snapshots` to match an exact
 case-insensitive localized food category from a saved pet capture. The
 result retains the recorded category spelling. Missing or empty diet
 observations cannot match. This does not establish acceptance of an individual item.
+In pet-care comparisons, `food_type_changes` lists the exact localized
+labels observed on only one side. Order and duplicate labels are ignored.
+Both captures must contain a diet list. A missing list leaves the comparison
+unknown, and the captures can describe different pets or client locales.
 
 Find saved pet-food restock candidates with `list_snapshots.pet_food`.
 Set `minimum_quantity: 0` and an inclusive `maximum_quantity` to look

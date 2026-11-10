@@ -1718,6 +1718,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "after_accepted_carried_food_item_count":1,
                             "before_accepted_carried_food_quantity":3,
                             "after_accepted_carried_food_quantity":1,
+                            "food_type_changes":None,
                             "accepted_carried_food_changes": {
                                 "117": {"before_quantity": 3, "after_quantity": 1, "quantity_delta": -2,
                                         "observed_before":True,"observed_after":True},

@@ -7051,6 +7051,21 @@ pub fn pet_training_points_balance(pet: &Value) -> Option<i64> {
 }
 
 fn compare_pet_care(before: &Value, after: &Value) -> Value {
+    let food_types = |pet: &Value| {
+        pet["food_types"].as_object().map(|types| {
+            types
+                .values()
+                .filter_map(Value::as_str)
+                .map(str::to_owned)
+                .collect::<BTreeSet<_>>()
+        })
+    };
+    let food_type_changes = food_types(before).zip(food_types(after)).map(|(old, new)| {
+        json!({
+            "observed_only_before":old.difference(&new).collect::<Vec<_>>(),
+            "observed_only_after":new.difference(&old).collect::<Vec<_>>(),
+        })
+    });
     let observation = |pet: &Value| {
         pet.as_object().map(|_| {
             let mut observed = json!({
@@ -7098,6 +7113,7 @@ fn compare_pet_care(before: &Value, after: &Value) -> Value {
         "before_accepted_carried_food_quantity":old_food.map(total_food),
         "after_accepted_carried_food_quantity":new_food.map(total_food),
         "accepted_carried_food_changes":food_changes,
+        "food_type_changes":food_type_changes,
     })
 }
 
