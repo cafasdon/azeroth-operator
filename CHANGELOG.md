@@ -1,5 +1,7 @@
 # Changelog
 
+- Show catalogue set names next to IDs in owned-gear search results.
+
 - Resolve unique Forever set-name searches to full owned-set summaries.
 
 - Filter saved Forever owned gear by catalogue set name across equipment, bags and banks.

@@ -99,10 +99,15 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(named_owned['set_observation'], set_review['set_observation'])
                     self.assertEqual(named_owned['set_name_resolution'], {
                         'matched_set_count': 1, 'matched_set_ids': [221], 'matched_set_ids_truncated': False,
+                        'matched_sets': [{'set_id': 221, 'set_name': 'Garb of Thero-shan'}],
                     })
                     ambiguous = await review(set_capture_id, set_name='of', limit=1)
                     self.assertNotIn('set_observation', ambiguous)
                     self.assertGreater(ambiguous['set_name_resolution']['matched_set_count'], 1)
+                    resolution = ambiguous['set_name_resolution']
+                    self.assertEqual([row['set_id'] for row in resolution['matched_sets']],
+                                     resolution['matched_set_ids'])
+                    self.assertTrue(all('of' in row['set_name'].lower() for row in resolution['matched_sets']))
                     no_match = await review(set_capture_id, set_name='no-matching-set-zzzz')
                     self.assertNotIn('set_observation', no_match)
                     self.assertEqual(no_match['set_name_resolution']['matched_set_count'], 0)

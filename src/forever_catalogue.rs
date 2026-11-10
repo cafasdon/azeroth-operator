@@ -3507,19 +3507,24 @@ pub fn review_owned(
         catalogue.len() == items.len(),
         "Catalogue IDs are missing or ambiguous"
     );
-    let matching_set_ids = set_name
+    let matching_sets = set_name
         .as_deref()
         .filter(|_| set_id.is_none())
         .map(|name| {
-            items
-                .iter()
+            let mut sets = BTreeMap::new();
+            for item in catalogue
+                .values()
                 .filter(|item| matches_set_name(item, name))
-                .filter_map(recorded_set_id)
-                .collect::<BTreeSet<_>>()
+            {
+                if let Some((id, label)) = recorded_set_id(item).zip(item["setName"].as_str()) {
+                    sets.entry(id).or_insert(label);
+                }
+            }
+            sets
         });
     let summary_set_id = set_id.map(|id| u64::from(id.get())).or_else(|| {
-        let matches = matching_set_ids.as_ref()?;
-        (matches.len() == 1).then(|| *matches.first().unwrap())
+        let matches = matching_sets.as_ref()?;
+        (matches.len() == 1).then(|| *matches.first_key_value().unwrap().0)
     });
     let mut entries = Vec::new();
     let mut coverage = serde_json::Map::new();
@@ -3752,11 +3757,14 @@ pub fn review_owned(
         "complete_simulator_resolution_verified":false,
         "best_in_slot_verified":false
     });
-    if let Some(ids) = matching_set_ids {
+    if let Some(sets) = matching_sets {
         result["set_name_resolution"] = json!({
-            "matched_set_count":ids.len(),
-            "matched_set_ids":ids.iter().take(50).collect::<Vec<_>>(),
-            "matched_set_ids_truncated":ids.len() > 50
+            "matched_set_count":sets.len(),
+            "matched_set_ids":sets.keys().take(50).collect::<Vec<_>>(),
+            "matched_set_ids_truncated":sets.len() > 50,
+            "matched_sets":sets.iter().take(50)
+                .map(|(id, name)| json!({"set_id":id,"set_name":name}))
+                .collect::<Vec<_>>()
         });
     }
     if let Some(set_id) = summary_set_id {

@@ -5,7 +5,7 @@ to find pieces by a case-insensitive set-name substring. Combine it with
 `set_id` or other item filters to narrow the same catalogue records.
 The same `set_name` filter works on `review_forever_owned_gear` before
 paging. Without an explicit `set_id`, it reports how many catalogue set
-IDs match and lists up to 50 of them. A unique match supplies the same
+IDs match and lists up to 50 of them with their catalogue names. A unique match supplies the same
 whole-capture set observation as an explicit ID. An ambiguous match
 leaves the set observation absent.
 
