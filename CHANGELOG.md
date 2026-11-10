@@ -1,5 +1,7 @@
 # Changelog
 
+- Estimate carried bag space for requested items visible in saved loot windows.
+
 - Show saved flight paths when the starting budget is unknown or upfront expenses exceed it.
 
 - Show the saved flight legs behind unsuccessful route searches when a connection was observed.

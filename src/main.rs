@@ -122,6 +122,9 @@ struct Inspect {
     saved_reset_reference_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Compare 1..64 distinct base-item requirements with readable saved loot; no acquisition or stock credit.
     loot_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
+    /// Estimate carried space for the requested quantities visible in the saved loot window.
+    #[serde(default)]
+    loot_estimate_bag_space: bool,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Check one exact spell ID against the saved Forever profession_spells observation.
@@ -2630,6 +2633,11 @@ impl Operator {
                 "Skill-line inspection requires skill_lines, a nonempty ordered filter and limit from 1 to 50",
             )]);
         }
+        if args.loot_estimate_bag_space && args.loot_requirements.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Loot bag space requires loot requirements",
+            )]);
+        }
         if let Some(requirements) = args.loot_requirements.as_ref() {
             if args.section.as_deref() != Some("loot_window")
                 || azeroth_operator::analysis::validate_loot_requirements(requirements).is_err()
@@ -4025,10 +4033,17 @@ impl Operator {
                 }
                 if let Some(requirements) = args.loot_requirements.as_ref() {
                     let reviewed = self.store.read(&args.snapshot_id).and_then(|snapshot| {
-                        azeroth_operator::analysis::review_loot_requirements(
+                        let mut review = azeroth_operator::analysis::review_loot_requirements(
                             &snapshot,
                             requirements,
-                        )
+                        )?;
+                        if args.loot_estimate_bag_space && review.is_object() {
+                            review["bag_space_projection"] =
+                                azeroth_operator::analysis::loot_requirement_bag_space(
+                                    &snapshot, &review,
+                                );
+                        }
+                        Ok(review)
                     });
                     match reviewed {
                         Ok(review) => value["loot_requirement_review"] = review,

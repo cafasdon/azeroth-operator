@@ -419,6 +419,13 @@ Use `list_snapshots` with `loot_observation: {"kind":"unreadable_or_non_item"}`
 to find captures with at least one such slot. Results identify the saved
 slot numbers without assigning items or quantities to them.
 
+Set `loot_estimate_bag_space: true` alongside `loot_requirements` in
+`inspect_snapshot` to estimate bag space for the readable portion of
+those requests. The report uses one pool of general free slots and stack
+limits from the same capture. Unrequested or unreadable loot is outside
+the estimate. Same-item merges are hypothetical, and loot eligibility
+and placement remain unverified.
+
 Saved profession recipe-view comparisons report changes in the client-reported
 skill-up flag, count and relative difficulty for recipe IDs seen in both
 captures of the same profession. Missing observations remain null, and the

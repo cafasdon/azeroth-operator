@@ -16,7 +16,10 @@ class LootRequirementTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_mcp_conditional_coverage_unknowns_limits_and_no_stock_credit(self):
         binary=(Path(__file__).resolve().parents[1]/'target/debug/azeroth-operator.exe').resolve(strict=True)
         base=fixture();base['client']={'family':'forever','variant':'live','build':'70862','interface':16001}
-        base['sections']['bags']={'0':{'1':{'item_id':10,'count':2}}}
+        base['sections']['bags']={'0':{'1':{'item_id':10,'count':2,'link':'item:10:0','reported_stack_limit':6}}}
+        base['sections']['bag_capacity']={
+            '0':{'total_slots':16,'free_slots':1,'family_mask':0},
+            **{str(bag):{'total_slots':0,'free_slots':0} for bag in range(1,5)}}
         base['sections']['selected_recipe']={'recipe_id':101,'name':'Fixture','learned':True,
             'requirements':'fixed_items','reagents':{'10':3}}
         entries={str(i):{'status':'unreadable_or_non_item'} for i in range(1,11)}
@@ -52,6 +55,20 @@ class LootRequirementTests(unittest.IsolatedAsyncioTestCase):
                         if demands is not None:args['loot_requirements']=demands
                         return await call('inspect_snapshot',**args)
                     keys = {mode:key for mode,key,_ in cases}
+                    space=(await inspect(keys['mixed'],requirements,loot_estimate_bag_space=True))[
+                        'loot_requirement_review']['bag_space_projection']
+                    self.assertEqual([row['readable_requested_quantity'] for row in space['items']],[0,10,0])
+                    self.assertEqual(space['estimated_new_stack_slots'],2)
+                    self.assertFalse(space['fits_recorded_general_slots'])
+                    self.assertEqual(space['estimated_new_stack_slots_if_same_item_stacks_merge'],1)
+                    self.assertTrue(space['fits_recorded_general_slots_if_same_item_stacks_merge'])
+                    unknown=(await inspect(keys['distinct'],requirements,loot_estimate_bag_space=True))[
+                        'loot_requirement_review']['bag_space_projection']
+                    self.assertIsNone(unknown['estimated_new_stack_slots'])
+                    self.assertIsNone((await inspect(keys['missing'],requirements,loot_estimate_bag_space=True))[
+                        'loot_requirement_review'])
+                    await call('inspect_snapshot',error=True,snapshot_id=keys['mixed'],section='loot_window',
+                               loot_estimate_bag_space=True)
                     restock = {'snapshot_id':keys['missing'],'section':'bags',
                         'bag_restock_requirements':[{'item_id':10,'quantity':10},{'item_id':20,'quantity':1}]}
                     plain = await call('inspect_snapshot',**restock)

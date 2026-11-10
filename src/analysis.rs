@@ -2141,6 +2141,38 @@ pub fn review_loot_requirements(
     Ok(report)
 }
 
+pub fn loot_requirement_bag_space(snapshot: &Snapshot, review: &Value) -> Value {
+    let items: Vec<_> = review["items"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let item_id = u32::try_from(row["item_id"].as_u64()?).ok()?;
+            let quantity = row["covered_quantity_if_readable_items_acquired"].as_u64()?;
+            let mut estimate = carried_item_quantity_bag_space(snapshot, item_id, quantity);
+            estimate["item_id"] = json!(item_id);
+            estimate["readable_requested_quantity"] = json!(quantity);
+            Some(estimate)
+        })
+        .collect();
+    let free =
+        carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
+    let total = |field: &str| {
+        items
+            .iter()
+            .try_fold(0u64, |sum, row| sum.checked_add(row[field].as_u64()?))
+    };
+    let slots = total("estimated_new_stack_slots");
+    let merged = total("estimated_new_stack_slots_if_same_item_stacks_merge");
+    json!({"scope":"readable_requested_loot_only","items":items,
+        "recorded_general_free_slots":free,"estimated_new_stack_slots":slots,
+        "fits_recorded_general_slots":slots.zip(free).map(|(needed, free)| needed <= free),
+        "estimated_new_stack_slots_if_same_item_stacks_merge":merged,
+        "fits_recorded_general_slots_if_same_item_stacks_merge":merged.zip(free)
+            .map(|(needed, free)| needed <= free),
+        "same_item_stack_merge_verified":false,"placement_verified":false,"live":false})
+}
+
 #[derive(
     Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
 )]
