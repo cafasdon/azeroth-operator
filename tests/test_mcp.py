@@ -962,6 +962,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertTrue(result.isError, result)
                         for skill, target, expected in [
                             (165, 80, [{"slot": 4, "name": "Blocked Lesson", "required_rank": 80,
+                                        "points_to_required_rank": 5,
+                                        "required_rank_above_observed_cap": True,
                                         "captured_status": "unavailable",
                                         "captured_skill_requirement_met": False, "price_copper": None}]),
                             (165, 79, []),

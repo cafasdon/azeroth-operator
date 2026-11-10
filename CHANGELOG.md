@@ -1,5 +1,7 @@
 # Changelog
 
+- Show points to saved trainer thresholds and whether each exceeds the observed profession cap.
+
 - Show saved trainer lesson thresholds along a profession rank target.
 
 - Compare saved profession progress and target crossings between captures.

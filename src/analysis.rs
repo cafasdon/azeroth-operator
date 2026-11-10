@@ -9941,12 +9941,16 @@ pub fn profession_rank_progress(profession: &Value) -> Value {
     json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining})
 }
 
+fn observed_profession_cap(profession: &Value, rank: Option<u64>) -> Option<u64> {
+    profession["max_rank"]
+        .as_u64()
+        .filter(|cap| *cap > 0 && rank.is_none_or(|rank| rank <= *cap))
+}
+
 pub fn profession_target_progress(profession: Option<&Value>, target: u32) -> Value {
     let target = u64::from(target);
     let rank = profession.and_then(|row| row["rank"].as_u64());
-    let cap = profession
-        .and_then(|row| row["max_rank"].as_u64())
-        .filter(|cap| *cap > 0 && rank.is_none_or(|rank| rank <= *cap));
+    let cap = profession.and_then(|row| observed_profession_cap(row, rank));
     json!({
         "target_rank": target,
         "points_to_target": rank.map(|rank| target.saturating_sub(rank)),
@@ -9967,6 +9971,7 @@ pub fn profession_target_trainer_lessons(
         .as_str()
         .filter(|name| !name.trim().is_empty())?;
     let rank = profession["rank"].as_u64()?;
+    let cap = observed_profession_cap(profession, Some(rank));
     if professions
         .as_object()?
         .values()
@@ -9983,7 +9988,9 @@ pub fn profession_target_trainer_lessons(
         let slot = slot.parse::<u32>().ok()?;
         (skill["name"].as_str() == Some(name) && rank < required && required <= u64::from(target))
             .then(|| (required, slot, json!({"slot":slot,"name":lesson["name"],
-                "required_rank":required,"captured_status":lesson["status"],
+                "required_rank":required,"points_to_required_rank":required-rank,
+                "required_rank_above_observed_cap":cap.map(|cap| required > cap),
+                "captured_status":lesson["status"],
                 "captured_skill_requirement_met":skill["met"],"price_copper":lesson["price_copper"]})))
     }).collect();
     lessons.sort_unstable_by_key(|(required, slot, _)| (*required, *slot));
