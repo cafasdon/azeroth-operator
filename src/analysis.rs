@@ -3367,6 +3367,7 @@ pub struct ComparisonSelectors<'a> {
     pub quest_title: Option<&'a str>,
     pub quest_waypoints: bool,
     pub quest_readiness_changes: bool,
+    pub quest_objective_changes: bool,
     pub achievement_status_changes: bool,
     pub selected_recipe_changes: bool,
     pub selected_recipe_preparation_crafts: Option<u32>,
@@ -4559,6 +4560,19 @@ pub fn compare_observations(
                 );
             }
         }
+    }
+    if selectors.quest_objective_changes {
+        ensure!(
+            before.client.family == crate::Family::Forever,
+            "Quest objective comparison requires Forever"
+        );
+        let logs = before
+            .sections
+            .get("quests")
+            .and_then(Value::as_object)
+            .zip(after.sections.get("quests").and_then(Value::as_object));
+        comparison["quest_objective_changes"] =
+            json!(logs.map(|(before, after)| { compare_quest_log_objectives(before, after) }));
     }
     if selectors.quest_readiness_changes {
         ensure!(
@@ -10273,6 +10287,43 @@ pub fn quest_objective_quantities(objectives: &serde_json::Map<String, Value>) -
     )
 }
 
+fn quest_objective_observations_equal(before: &Value, after: &Value) -> bool {
+    ["kind", "finished", "required", "fulfilled"]
+        .into_iter()
+        .all(|field| before[field] == after[field])
+}
+
+fn compare_quest_log_objectives(
+    before: &serde_json::Map<String, Value>,
+    after: &serde_json::Map<String, Value>,
+) -> Value {
+    let mut changed = BTreeSet::new();
+    let mut unavailable = BTreeSet::new();
+    let mut compared = 0;
+    for (key, old) in before {
+        let Some(new) = after.get(key) else { continue };
+        let Ok(id) = key.parse::<u32>() else { continue };
+        let Some((old, new)) = old["objectives"]
+            .as_object()
+            .zip(new["objectives"].as_object())
+        else {
+            unavailable.insert(id);
+            continue;
+        };
+        compared += 1;
+        if old.len() != new.len()
+            || old.iter().any(|(index, row)| {
+                !new.get(index)
+                    .is_some_and(|other| quest_objective_observations_equal(row, other))
+            })
+        {
+            changed.insert(id);
+        }
+    }
+    json!({"compared_quest_count":compared,"changed_quest_ids":changed,
+        "quest_ids_with_unavailable_objectives":unavailable,"objective_identity_verified":false})
+}
+
 fn compare_quest_objective_indices(
     before: &serde_json::Map<String, Value>,
     after: &serde_json::Map<String, Value>,
@@ -10288,11 +10339,10 @@ fn compare_quest_objective_indices(
             let key = index.to_string();
             let old = before.get(&key);
             let new = after.get(&key);
-            if old.zip(new).is_some_and(|(old, new)| {
-                ["kind", "finished", "required", "fulfilled"]
-                    .into_iter()
-                    .all(|field| old[field] == new[field])
-            }) {
+            if old
+                .zip(new)
+                .is_some_and(|(old, new)| quest_objective_observations_equal(old, new))
+            {
                 return None;
             }
             let deltas = old.zip(new).and_then(|(old, new)| {

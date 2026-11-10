@@ -1,5 +1,7 @@
 # Changelog
 
+- Find changed objective observations across two saved Forever quest logs.
+
 - Compare changes in remaining work for saved quest objectives.
 
 - Compare changed objective indices for an exact saved quest.

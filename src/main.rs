@@ -853,6 +853,9 @@ struct Compare {
     /// Compare recorded readiness across both Forever quest logs.
     #[serde(default)]
     quest_readiness_changes: bool,
+    /// Identify quests with objective changes across two saved Forever quest logs.
+    #[serde(default)]
+    quest_objective_changes: bool,
     /// Compare completion and character credit across both saved Forever tracked lists.
     #[serde(default)]
     achievement_status_changes: bool,
@@ -2295,6 +2298,7 @@ impl Operator {
                     quest_title: args.quest_title.as_deref(),
                     quest_waypoints: args.quest_waypoints,
                     quest_readiness_changes: args.quest_readiness_changes,
+                    quest_objective_changes: args.quest_objective_changes,
                     achievement_status_changes: args.achievement_status_changes,
                     selected_recipe_changes: args.selected_recipe_changes,
                     selected_recipe_preparation_crafts: args.selected_recipe_preparation_crafts,

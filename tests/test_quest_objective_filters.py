@@ -676,10 +676,10 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual([(row['bundle_size'],row['before']['status'],row['after']['status'],
                                        row['price_copper_delta']) for row in ambiguous['bundles']],
                         [(1,'observed','not_observed',None),(3,'not_observed','ambiguous',None)])
-                    missing=await compare_offer(key,merchant_key,118)
-                    self.assertFalse(missing['before_observed'])
-                    self.assertEqual(missing['bundles'][0]['before'],{'status':'not_captured'})
-                    self.assertIsNone(missing['bundles'][0]['price_copper_delta'])
+                    missing_offer=await compare_offer(key,merchant_key,118)
+                    self.assertFalse(missing_offer['before_observed'])
+                    self.assertEqual(missing_offer['bundles'][0]['before'],{'status':'not_captured'})
+                    self.assertIsNone(missing_offer['bundles'][0]['price_copper_delta'])
                     currency_before=deepcopy(merchant)
                     currency_before['sections']['merchant_stock']['3']={
                         'currency_id':118,'bundle_size':3,'price_copper':6,'available':-1,'extended_cost':False}
@@ -759,6 +759,23 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertFalse(unchanged.isError,unchanged)
                     self.assertEqual(json.loads(unchanged.content[0].text)
                                      ['quest_change']['objective_index_changes']['changes'], [])
+                    summary = await session.call_tool('compare_snapshots',{
+                        'before_id':changed_key,'after_id':progress_key,'quest_objective_changes':True,
+                    })
+                    self.assertFalse(summary.isError,summary)
+                    self.assertEqual(json.loads(summary.content[0].text)['quest_objective_changes'], {
+                        'compared_quest_count':9,'changed_quest_ids':[9],
+                        'quest_ids_with_unavailable_objectives':[1],'objective_identity_verified':False,
+                    })
+                    unavailable = await session.call_tool('compare_snapshots',{
+                        'before_id':missing,'after_id':changed_key,'quest_objective_changes':True,
+                    })
+                    self.assertFalse(unavailable.isError,unavailable)
+                    self.assertIsNone(json.loads(unavailable.content[0].text)['quest_objective_changes'])
+                    rejected = await session.call_tool('compare_snapshots',{
+                        'before_id':retail,'after_id':retail,'quest_objective_changes':True,
+                    })
+                    self.assertTrue(rejected.isError,rejected)
                     reply=await session.call_tool('compare_snapshots',{'before_id':key,'after_id':changed_key,'quest_id':3})
                     self.assertFalse(reply.isError,reply)
                     timer=json.loads(reply.content[0].text)['quest_change']['timer_change']

@@ -14,6 +14,9 @@ the same captured kind and required count on both sides. The remaining-count
 delta uses the same checks and treats overfulfilled objectives as zero
 remaining. Index matching
 does not establish objective identity.
+Set `quest_objective_changes` on `compare_snapshots` to list changed
+quest IDs across both logs. It compares only quests present in both logs
+and reports shared quests with unavailable objectives separately.
 
 In `inspect_snapshot`, select a Forever `faction_id` in the reputation
 section and pass `reputation_points_per_turn_in` to estimate repetitions
