@@ -105,6 +105,21 @@ class RecipeCapacityOrderTests(unittest.IsolatedAsyncioTestCase):
                     mismatch = await search(snapshot_id=mismatched_key,order='reported_skill_ups_desc')
                     self.assertEqual([r['recipe_id'] for r in mismatch['records']],[1,2,3,4,5,6,10,11])
                     self.assertTrue(all('recipe_view_observation' not in row for row in mismatch['records']))
+                    skill_efficiency={'order':'reported_skill_ups_per_reagent_desc','reagent_item_id':10}
+                    ranked=await search(**skill_efficiency)
+                    self.assertEqual([r['recipe_id'] for r in ranked['records']],[10,6,1])
+                    self.assertEqual(ranked['ordering_basis'],
+                                     'captured_same_profession_skill_ups_per_selected_required_reagent')
+                    self.assertFalse(ranked['skill_gain_prediction_performed'])
+                    self.assertEqual([r['recipe_view_observation']['skill_ups_reported']
+                                      for r in ranked['records']],[2,0,None])
+                    page=await search(**skill_efficiency,offset=1,limit=1)
+                    self.assertEqual([r['recipe_id'] for r in page['records']],[6])
+                    self.assertEqual(page['next_offset'],2)
+                    ranked_mismatch=await search(snapshot_id=mismatched_key,**skill_efficiency)
+                    self.assertEqual([r['recipe_id'] for r in ranked_mismatch['records']],[1,6,10])
+                    self.assertTrue(all('recipe_view_observation' not in row for row in ranked_mismatch['records']))
+                    await search(error=True,order=skill_efficiency['order'])
                     ordered=await search(**args,order='observed_item_capacity_desc')
                     self.assertEqual([r['recipe_id'] for r in ordered['records']],[10,1,2,11,3])
                     self.assertEqual([r['material_support']['supported_crafts'] for r in ordered['records']],[10,5,3,3,None])

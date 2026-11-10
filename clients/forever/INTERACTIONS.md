@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `order: "reported_skill_ups_per_reagent_desc"` with a
+`reagent_item_id` on `search_forever_recipes`. It orders the saved
+skill-up count divided by the recipe's required units of that reagent.
+Unknown ratios sort last, with ties ordered by recipe ID. The ratio uses
+reported values from the same profession and does not predict skill gains.
+
 Use `maximum_skill_ups_reported` on a saved recipe view filter or
 `list_snapshots.profession_recipe` for an inclusive upper bound. Combine
 it with the minimum for an exact count. Saved character discovery can

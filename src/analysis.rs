@@ -79,6 +79,7 @@ pub enum RecipeSearchOrder {
     ObservedItemCapacityDesc,
     ObservedSoleShortfallAsc,
     ReportedSkillUpsDesc,
+    ReportedSkillUpsPerReagentDesc,
     ReportedCooldownRemainingAsc,
     ReportedBaseOutputMinimumDesc,
     ReportedBaseOutputPerReagentDesc,
@@ -560,6 +561,10 @@ pub fn search_recipe_materials_ordered(
         "Reagent efficiency ordering requires output and reagent item IDs"
     );
     ensure!(
+        order != RecipeSearchOrder::ReportedSkillUpsPerReagentDesc || reagent_item_id.is_some(),
+        "Skill-up efficiency ordering requires a reagent item ID"
+    );
+    ensure!(
         snapshot.client.family == crate::Family::Forever,
         "Expected a Forever snapshot"
     );
@@ -744,27 +749,36 @@ pub fn search_recipe_materials_ordered(
                 id.parse::<u32>().unwrap(),
             )
         });
-    } else if order == RecipeSearchOrder::ReportedBaseOutputPerReagentDesc {
+    } else if matches!(
+        order,
+        RecipeSearchOrder::ReportedBaseOutputPerReagentDesc
+            | RecipeSearchOrder::ReportedSkillUpsPerReagentDesc
+    ) {
         let reagent_key = reagent_item_id.unwrap().to_string();
-        let ratio = |row: &Value| {
-            row["base_output_quantity"]["minimum"]
-                .as_u64()
-                .zip(row["reagents"][&reagent_key].as_u64())
-        };
-        matches.sort_unstable_by(|(left_id, left, _, _), (right_id, right, _, _)| {
-            let order = match (ratio(left), ratio(right)) {
-                (Some((left_output, left_cost)), Some((right_output, right_cost))) => {
-                    (right_output * left_cost).cmp(&(left_output * right_cost))
-                }
-                (left, right) => right.is_some().cmp(&left.is_some()),
+        let ratio = |row: &Value, observation: Option<&Value>| {
+            let reported = if order == RecipeSearchOrder::ReportedSkillUpsPerReagentDesc {
+                observation.and_then(|view| view["skill_ups_reported"].as_u64())
+            } else {
+                row["base_output_quantity"]["minimum"].as_u64()
             };
-            order.then_with(|| {
-                left_id
-                    .parse::<u32>()
-                    .unwrap()
-                    .cmp(&right_id.parse::<u32>().unwrap())
-            })
-        });
+            reported.zip(row["reagents"][&reagent_key].as_u64())
+        };
+        matches.sort_unstable_by(
+            |(left_id, left, _, left_view), (right_id, right, _, right_view)| {
+                let order = match (ratio(left, *left_view), ratio(right, *right_view)) {
+                    (Some((left_output, left_cost)), Some((right_output, right_cost))) => {
+                        (right_output * left_cost).cmp(&(left_output * right_cost))
+                    }
+                    (left, right) => right.is_some().cmp(&left.is_some()),
+                };
+                order.then_with(|| {
+                    left_id
+                        .parse::<u32>()
+                        .unwrap()
+                        .cmp(&right_id.parse::<u32>().unwrap())
+                })
+            },
+        );
     } else if order == RecipeSearchOrder::ReportedBaseOutputMinimumDesc {
         matches.sort_unstable_by_key(|(id, row, _, _)| {
             let minimum = row["base_output_quantity"]["minimum"].as_u64();
@@ -791,7 +805,8 @@ pub fn search_recipe_materials_ordered(
             if insufficient_only && let Some((stock, filter)) = stock.as_ref().zip(material_filter) {
                 record["observed_reagent_shortfalls"] = json!(stock.shortfalls(row, filter.minimum_crafts.get()));
             }
-            if let Some(observation) = observation.filter(|_| recipe_view_filter.is_some() || order == RecipeSearchOrder::ReportedSkillUpsDesc) {
+            if let Some(observation) = observation.filter(|_| recipe_view_filter.is_some() || matches!(order,
+                RecipeSearchOrder::ReportedSkillUpsDesc | RecipeSearchOrder::ReportedSkillUpsPerReagentDesc)) {
                 record["recipe_view_observation"] = json!({"source":"profession_recipe_view",
                     "learned":observation.get("learned"),"can_skill_up":observation.get("can_skill_up"),
                     "skill_ups_reported":observation.get("skill_ups_reported"),
@@ -825,6 +840,8 @@ pub fn search_recipe_materials_ordered(
             RecipeSearchOrder::ReportedCooldownRemainingAsc =>
                 "captured_cooldown_remaining_seconds_only",
             RecipeSearchOrder::ReportedSkillUpsDesc => "captured_same_profession_skill_ups_only",
+            RecipeSearchOrder::ReportedSkillUpsPerReagentDesc =>
+                "captured_same_profession_skill_ups_per_selected_required_reagent",
             RecipeSearchOrder::ReportedBaseOutputMinimumDesc =>
                 "captured_base_output_minimum_per_craft_only",
             RecipeSearchOrder::ReportedBaseOutputPerReagentDesc =>
