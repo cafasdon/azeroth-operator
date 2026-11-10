@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `player_trade_offer_item_id` on `compare_snapshots` to limit saved
+outgoing trade comparisons to one base item, even if the general trade
+comparison flag is also set. Missing or incomplete offer observations
+stay unknown where appropriate. Deltas require fully readable offers
+in both captures and do not establish trade continuity or completion.
+
 Set `mail_attachment_item_id` on `compare_snapshots` to compare one
 item's saved loaded inbox quantities and attachment counts. A missing
 inbox is unknown, and an item absent from the loaded rows has no known

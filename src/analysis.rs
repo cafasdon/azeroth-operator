@@ -3358,6 +3358,7 @@ pub struct ComparisonSelectors<'a> {
     pub group_context_changes: bool,
     pub player_pvp_progression_changes: bool,
     pub player_trade_offer_changes: bool,
+    pub player_trade_offer_item_id: Option<std::num::NonZeroU32>,
     pub item_id: Option<u32>,
     pub currency_id: Option<u32>,
     pub currency_name: Option<&'a str>,
@@ -3619,7 +3620,7 @@ pub fn compare_observations(
     let mut comparison = json!({"client":after.client,"character":after.character,
         "before_captured_at":before.captured_at,"after_captured_at":after.captured_at,
         "live":false,"sections":sections});
-    if selectors.player_trade_offer_changes {
+    if selectors.player_trade_offer_changes || selectors.player_trade_offer_item_id.is_some() {
         ensure!(
             before.client.family == crate::Family::Forever,
             "Trade offer comparison requires Forever"
@@ -3632,11 +3633,15 @@ pub fn compare_observations(
             .sections
             .get("player_trade_offer")
             .map(observed_trade_offer_quantities);
-        let ids: BTreeSet<_> = old
-            .iter()
-            .chain(new.iter())
-            .flat_map(|(_, quantities)| quantities.keys().copied())
-            .collect();
+        let ids: BTreeSet<_> = selectors.player_trade_offer_item_id.map_or_else(
+            || {
+                old.iter()
+                    .chain(new.iter())
+                    .flat_map(|(_, quantities)| quantities.keys().copied())
+                    .collect()
+            },
+            |id| BTreeSet::from([id.get()]),
+        );
         let quantity = |side: &Option<(usize, BTreeMap<u32, u64>)>, id| {
             let (slots, quantities) = side.as_ref()?;
             quantities

@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare one exact base item in saved outgoing trade offers.
+
 - Estimate saved bag space for each side of an exact mail item comparison.
 
 - Project loaded saved currency attachments against each capture's recorded cap headroom.

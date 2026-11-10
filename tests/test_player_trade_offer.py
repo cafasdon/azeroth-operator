@@ -179,6 +179,22 @@ class PlayerTradeOfferTests(unittest.IsolatedAsyncioTestCase):
                     ])
                     for flag in ['same_trade_verified','trade_completion_verified','live']:
                         self.assertIs(exact[flag],False)
+                    for a,b,item_id,expected in [
+                        (maximum_id,full_id,4294967295,(25769803770,0,-25769803770)),
+                        (full_id,full_id,99,(0,0,0)),
+                        (mixed_id,full_id,99,(None,0,None)),
+                    ]:
+                        focused = await call('compare_snapshots',before_id=a,after_id=b,
+                            player_trade_offer_item_id=item_id)
+                        self.assertEqual(focused[selector]['items'], [{
+                            'item_id':item_id,'before_observed_quantity':expected[0],
+                            'after_observed_quantity':expected[1],'quantity_delta':expected[2],
+                        }])
+                    focused = await call('compare_snapshots',before_id=maximum_id,after_id=full_id,
+                        player_trade_offer_item_id=10,player_trade_offer_changes=True)
+                    self.assertEqual(focused[selector]['items'], exact['items'][:1])
+                    await call('compare_snapshots',error=True,before_id=full_id,after_id=full_id,
+                        player_trade_offer_item_id=0)
                     partial = await compare(mixed_id,full_id)
                     self.assertEqual(partial['items'], [{'item_id':10,'before_observed_quantity':9,
                         'after_observed_quantity':6,'quantity_delta':None}])
