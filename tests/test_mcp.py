@@ -494,6 +494,53 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                   "map_transition": False, "fare_copper": 3},
                         }
                         route_onward_id = SnapshotStore(Path(folder)).ingest(route_onward)
+                        itinerary_request = {"snapshot_id": route_start_id, "section": "flight_map",
+                                             "flight_node_id": 14, "flight_onward_legs": [
+                                                 {"snapshot_id": route_onward_id, "destination_node_id": 15}]}
+                        wallet_copper = route_start["sections"]["wallet"]["copper"]
+                        for reserve, affordable, shortfall, prefix in [
+                                (None, None, None, None), (0, True, 0, 2),
+                                (wallet_copper - 3, True, 0, 2), (wallet_copper, False, 3, 1),
+                                (wallet_copper - 2, False, 1, 1), (wallet_copper + 1, False, 4, 0)]:
+                            request = dict(itinerary_request)
+                            if reserve is not None:
+                                request["flight_wallet_reserve_copper"] = reserve
+                            reply = await session.call_tool("inspect_snapshot", request)
+                            self.assertFalse(reply.isError, reply)
+                            itinerary = json.loads(reply.content[0].text)["flight_itinerary"]
+                            self.assertTrue(itinerary["affordable_from_starting_wallet"])
+                            if reserve is None:
+                                self.assertNotIn("wallet_reserve_projection", itinerary)
+                            else:
+                                self.assertEqual(itinerary["wallet_reserve_projection"], {
+                                    "reserve_copper": reserve, "affordable_with_reserve": affordable,
+                                    "shortfall_copper": shortfall, "affordable_prefix_legs": prefix})
+                        for invalid in [
+                            {**itinerary_request, "flight_wallet_reserve_copper": 10_000_000_000_000},
+                            {**itinerary_request, "flight_wallet_reserve_copper": 1, "flight_affordable_only": True},
+                            {"snapshot_id": route_start_id, "section": "flight_map",
+                             "flight_node_id": 14, "flight_wallet_reserve_copper": 1},
+                        ]:
+                            self.assertTrue((await session.call_tool("inspect_snapshot", invalid)).isError)
+                        no_wallet = json.loads(json.dumps(route_start))
+                        del no_wallet["sections"]["wallet"]
+                        no_wallet_id = SnapshotStore(Path(folder)).ingest(no_wallet)
+                        reply = await session.call_tool("inspect_snapshot", {
+                            **itinerary_request, "snapshot_id": no_wallet_id, "flight_wallet_reserve_copper": 1})
+                        self.assertFalse(reply.isError, reply)
+                        self.assertEqual(json.loads(reply.content[0].text)["flight_itinerary"]["wallet_reserve_projection"], {
+                            "reserve_copper": 1, "affordable_with_reserve": None,
+                            "shortfall_copper": None, "affordable_prefix_legs": None})
+                        no_fare = json.loads(json.dumps(route_onward))
+                        del no_fare["sections"]["flight_map"]["entries"]["2"]["fare_copper"]
+                        no_fare_id = SnapshotStore(Path(folder)).ingest(no_fare)
+                        reply = await session.call_tool("inspect_snapshot", {
+                            **itinerary_request, "flight_wallet_reserve_copper": wallet_copper,
+                            "flight_onward_legs": [{"snapshot_id": no_fare_id, "destination_node_id": 15}]})
+                        self.assertFalse(reply.isError, reply)
+                        self.assertEqual(json.loads(reply.content[0].text)["flight_itinerary"]["wallet_reserve_projection"], {
+                            "reserve_copper": wallet_copper, "affordable_with_reserve": None,
+                            "shortfall_copper": None, "affordable_prefix_legs": 1})
                         route_request = {"snapshot_id": route_start_id, "section": "flight_map",
                                          "flight_route_search": {"destination_node_id": 15,
                                                                  "onward_snapshot_ids": [route_onward_id]}}

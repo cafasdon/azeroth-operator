@@ -1,5 +1,7 @@
 # Changelog
 
+- Check a starting-wallet reserve for manually selected saved flight itineraries.
+
 - Estimate shared carried bag space for combined profession batch outputs.
 
 - Estimate carried bag space for captured profession recipe output ranges.

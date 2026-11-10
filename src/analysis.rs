@@ -7544,7 +7544,10 @@ pub(crate) fn named_flight_destination(map: &Value, name: &str) -> Option<u32> {
     u32::try_from(id).ok()
 }
 
-pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> {
+pub fn review_flight_itinerary(
+    legs: &[(&str, Snapshot, u32)],
+    reserve: Option<u64>,
+) -> Result<Value> {
     let (_, first, _) = legs
         .first()
         .ok_or_else(|| anyhow::anyhow!("Missing first leg"))?;
@@ -7579,7 +7582,7 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         .get("wallet")
         .and_then(|wallet| wallet["copper"].as_u64());
     let budget = total.zip(starting_wallet);
-    let affordable_prefix = starting_wallet.map(|balance| {
+    let count_affordable_legs = |balance: u64| {
         routes
             .iter()
             .scan(balance, |remaining, route| {
@@ -7587,7 +7590,8 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
                 Some(())
             })
             .count()
-    });
+    };
+    let affordable_prefix = starting_wallet.map(count_affordable_legs);
     let first_uncovered_leg = affordable_prefix.and_then(|index| {
         let route = routes.get(index)?;
         let reason = if route["fare_copper"].is_null() {
@@ -7597,11 +7601,23 @@ pub fn review_flight_itinerary(legs: &[(&str, Snapshot, u32)]) -> Result<Value> 
         };
         Some(json!({"leg_number":index + 1,"reason":reason}))
     });
-    Ok(json!({"legs":routes,"total_fare_copper":total,
+    let mut itinerary = json!({"legs":routes,"total_fare_copper":total,
         "affordable_from_starting_wallet":budget.map(|(fare, balance)| fare <= balance),
         "starting_wallet_shortfall_copper":budget.map(|(fare, balance)| fare.saturating_sub(balance)),
         "starting_wallet_affordable_prefix_legs":affordable_prefix,
-        "starting_wallet_first_uncovered_leg":first_uncovered_leg}))
+        "starting_wallet_first_uncovered_leg":first_uncovered_leg});
+    if let Some(reserve) = reserve {
+        let budget_with_reserve = total
+            .and_then(|fare| fare.checked_add(reserve))
+            .zip(starting_wallet);
+        itinerary["wallet_reserve_projection"] = json!({"reserve_copper":reserve,
+        "affordable_with_reserve":budget_with_reserve.map(|(cost, wallet)| cost <= wallet),
+        "shortfall_copper":budget_with_reserve.map(|(cost, wallet)| cost.saturating_sub(wallet)),
+        "affordable_prefix_legs":starting_wallet.map(|balance| {
+            balance.checked_sub(reserve).map_or(0, count_affordable_legs)
+        })});
+    }
+    Ok(itinerary)
 }
 
 #[derive(Clone, Copy, Default, serde::Deserialize, schemars::JsonSchema)]

@@ -2833,10 +2833,11 @@ impl Operator {
             reserve > 9_999_999_999_999
                 || !(args.flight_wallet_projection
                     || args.flight_affordable_only
-                    || args.flight_route_search.is_some())
+                    || args.flight_route_search.is_some()
+                    || args.flight_onward_legs.is_some())
         }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Flight reserve requires an affordability filter, wallet projection or route search and a valid copper amount",
+                "Flight reserve requires an affordability filter, wallet projection, route search or itinerary and a valid copper amount",
             )]);
         }
         if args.flight_route_search.as_ref().is_some_and(|search| {
@@ -4436,7 +4437,10 @@ impl Operator {
                                 leg.destination_node_id.get(),
                             ));
                         }
-                        azeroth_operator::analysis::review_flight_itinerary(&legs)
+                        azeroth_operator::analysis::review_flight_itinerary(
+                            &legs,
+                            args.flight_wallet_reserve_copper,
+                        )
                     })();
                     match result {
                         Ok(itinerary) => value["flight_itinerary"] = itinerary,

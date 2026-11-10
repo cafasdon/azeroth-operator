@@ -2121,6 +2121,10 @@ budget. A missing starting wallet leaves the count unknown.
 `starting_wallet_first_uncovered_leg` gives the one-based leg number and
 whether the fare was unknown or exceeded the remaining copper. It is null
 when every leg fits or the starting wallet was unavailable.
+Set `flight_wallet_reserve_copper` on the itinerary to check full-route
+affordability, copper shortfall and consecutive affordable legs while
+preserving that amount in the starting wallet. The fare-only checks
+remain available separately.
 Set `flight_departure_map_id` with a destination ID to match the player's
 map when the flight panel was captured. This can use a quest waypoint
 map ID to look for departures from that area. The filter requires an
