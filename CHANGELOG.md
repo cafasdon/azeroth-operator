@@ -1,5 +1,7 @@
 # Changelog
 
+- Retain validated set-piece projections in loadouts from saved-window rankings.
+
 - Carry projected set-piece changes into offline gear plans and encounter rankings.
 
 - Show how a Forever equipment draft changes equipped catalogue set pieces.

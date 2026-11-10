@@ -44,6 +44,32 @@ def ranking_objective(args):
     return objective
 
 
+def saved_set_projection(value):
+    """Validate the optional, numeric catalogue evidence before reporting it."""
+    before_count = 'before_uncatalogued_equipped_slots'
+    after_count = 'projected_uncatalogued_equipped_slots'
+    require(type(value) is dict and set(value) == {
+        'changes', before_count, after_count, 'native_set_bonuses_verified'})
+    require(value['native_set_bonuses_verified'] is False)
+    changes = value['changes']
+    require(type(changes) is list and len(changes) <= 38)
+    seen_sets = []
+    for change in changes:
+        before_ids = 'before_distinct_item_ids'
+        after_ids = 'projected_distinct_item_ids'
+        require(type(change) is dict and set(change) == {'set_id', before_ids, after_ids})
+        seen_sets.append(integer(change['set_id'], 1, 2**64 - 1))
+        for field in (before_ids, after_ids):
+            ids = change[field]
+            require(type(ids) is list and len(ids) <= 19)
+            require(ids == sorted({integer(item, 1, 2**64 - 1) for item in ids}))
+        require(change[before_ids] != change[after_ids])
+    require(seen_sets == sorted(set(seen_sets)))
+    integer(value[before_count], 0, 19)
+    integer(value[after_count], 0, 19)
+    return value
+
+
 def attach_saved_loadouts(path, leaders, source, deadline):
     """Join bounded ranking references to checked historical plans, never equip."""
     require(isinstance(leaders, dict) and len(leaders) <= 20)
@@ -86,6 +112,8 @@ def attach_saved_loadouts(path, leaders, source, deadline):
                 'game_execution':False}
             if draft.get('explicit_clear_equipment_slots'):
                 leader['saved_loadout']['explicit_clear_equipment_slots'] = draft['explicit_clear_equipment_slots']
+            if 'projected_set_changes' in draft:
+                leader['saved_loadout']['projected_set_changes'] = saved_set_projection(draft['projected_set_changes'])
     finally:
         connection.close()
 

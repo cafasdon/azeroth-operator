@@ -61,6 +61,22 @@ class SavedJournalTests(unittest.TestCase):
             self.assertEqual(evidence['interval_basis'], 'marginal_death_fraction' if metric == 'death'
                 else 'not_available' if metric == 'oom' else 'candidate_minus_baseline')
 
+    def test_saved_set_projection_rejects_untrusted_metadata(self):
+        valid = {'changes': [{'set_id': 221, 'before_distinct_item_ids': [7950],
+                             'projected_distinct_item_ids': [7950, 7953]}],
+                 'before_uncatalogued_equipped_slots': 0,
+                 'projected_uncatalogued_equipped_slots': 0,
+                 'native_set_bonuses_verified': False}
+        self.assertEqual(runner.saved_set_projection(valid), valid)
+        for field, bad in [('set_id', True), ('projected_distinct_item_ids', [7953, 7953]),
+                           ('before_distinct_item_ids', ['PRIVATE']), ('private', 'PRIVATE')]:
+            invalid = deepcopy(valid)
+            invalid['changes'][0][field] = bad
+            with self.assertRaises(ValueError):
+                runner.saved_set_projection(invalid)
+        with self.assertRaises(ValueError):
+            runner.saved_set_projection({**valid, 'native_set_bonuses_verified': True})
+
     def test_objective_validation_precedes_journal_access(self):
         for value in [None,True,1,[],{},'unknown']:
             with patch.object(runner.journal,'journal_status') as read:
@@ -230,6 +246,9 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertTrue(all(row['iterations']==3 and row['dps_standard_deviation']==1 for row in evidence))
                 self.assertTrue(all('paired_dps_delta_interval_approx_95' not in row for row in evidence))
                 saved=winner['saved_loadout']
+                self.assertEqual(saved['projected_set_changes'], {
+                    'changes': [], 'before_uncatalogued_equipped_slots': 0,
+                    'projected_uncatalogued_equipped_slots': 0, 'native_set_bonuses_verified': False})
                 self.assertEqual(saved['snapshot_id'],key)
                 self.assertEqual(saved['basis'],'validated_saved_plan')
                 self.assertEqual(saved['selections'],[{'target_slot':11,

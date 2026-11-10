@@ -15,6 +15,8 @@ item IDs would change under the draft. Counts of unmatched equipment slots
 expose gaps in the projection. Native set bonuses are unverified.
 The offline slot ranker retains this evidence as `projected_set_changes`
 in resolved gear plans, per-encounter results and weighted DPS rankings.
+Saved-window rankings also report it under `saved_loadout` when the
+retained plan includes the projection.
 
 Use `list_snapshots.gossip_quest` with a `quest_id` and `list` of
 `available` or `active`. Optional `is_complete`, `repeatable`,
