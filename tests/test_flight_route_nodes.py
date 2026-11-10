@@ -204,6 +204,20 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     no_routes=await call('compare_snapshots',before_id=old,after_id=old,
                         flight_destination_node_id=20)
                     self.assertNotIn('observed_route_changed',no_routes['flight_destination_comparison'])
+                    self.assertNotIn('wallet_reserve_changes',no_routes['flight_destination_comparison'])
+                    tight = deepcopy(base)
+                    tight['sections']['wallet']['copper'] = 180
+                    tight_key = store.ingest(tight)
+                    for target, reserve, expected in [
+                        (tight_key, 50, (False, 0, -20)),
+                        (tight_key, 100, (True, 20, None)),
+                        (store.ingest(other_map), 50, (None, None, None)),
+                    ]:
+                        result = await call('compare_snapshots', before_id=key, after_id=target,
+                            flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)
+                        self.assertEqual(result['flight_destination_comparison']['wallet_reserve_changes'],
+                            dict(zip(('affordability_changed','shortfall_copper_delta','spendable_copper_delta'),
+                                     expected, strict=True)))
                     for reserve, affordable, shortfall, spendable in [(0,True,0,100),(100,True,0,0),(101,False,1,None)]:
                         result = await call('compare_snapshots', before_id=key, after_id=old,
                             flight_destination_node_id=20, flight_wallet_reserve_copper=reserve)

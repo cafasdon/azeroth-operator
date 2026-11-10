@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare reserve-adjusted flight affordability, shortfall and spendable copper.
+
 - Compare saved flight fares against each captured wallet after a shared copper reserve.
 
 - Compare saved wallet shortfall and remaining balance for an exact flight destination.

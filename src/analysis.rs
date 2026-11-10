@@ -8473,24 +8473,34 @@ fn compare_flight_destination(
         .filter(|_| same_map_and_origin == Some(true))
         .map(|(a, b)| a != b);
     let has_route_evidence = route_before.is_some() || route_after.is_some();
-    let wallet_delta = |field: &str| {
-        a[field]
+    let wallet_delta = |before: &Value, after: &Value, field: &str| {
+        before[field]
             .as_u64()
-            .zip(b[field].as_u64())
+            .zip(after[field].as_u64())
             .filter(|_| same_map_and_origin == Some(true))
             .map(|(before, after)| i128::from(after) - i128::from(before))
     };
     let mut comparison = json!({"destination_node_id":destination,"before":a,"after":b,
         "same_map_and_origin":same_map_and_origin,"fare_copper_delta":fare_delta,
         "affordability_changed":affordability_changed,
-        "wallet_shortfall_copper_delta":wallet_delta("wallet_shortfall_copper"),
-        "remaining_wallet_after_fare_copper_delta":wallet_delta("remaining_wallet_after_fare_copper"),
+        "wallet_shortfall_copper_delta":wallet_delta(&a, &b, "wallet_shortfall_copper"),
+        "remaining_wallet_after_fare_copper_delta":wallet_delta(&a, &b, "remaining_wallet_after_fare_copper"),
         "live":false});
     if has_route_evidence {
         comparison["observed_route_changed"] = json!(route_changed);
     }
     if let Some(reserve) = reserve {
+        let before = &a["wallet_reserve_projection"];
+        let after = &b["wallet_reserve_projection"];
         comparison["required_wallet_reserve_copper"] = json!(reserve);
+        comparison["wallet_reserve_changes"] = json!({
+            "affordability_changed":before["affordable"].as_bool()
+                .zip(after["affordable"].as_bool())
+                .filter(|_| same_map_and_origin == Some(true))
+                .map(|(before, after)| before != after),
+            "shortfall_copper_delta":wallet_delta(before, after, "shortfall_copper"),
+            "spendable_copper_delta":wallet_delta(before, after, "spendable_copper")
+        });
     }
     comparison
 }

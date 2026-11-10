@@ -10,6 +10,8 @@ both sides and the same map and departure node.
 With an exact destination, set `flight_wallet_reserve_copper` to also
 check affordability, shortfall and spendable copper after the reserve in
 each capture. The existing fare-only comparison remains available.
+Reserve-adjusted changes require known values on both sides and the same
+map and departure node, just like the fare-only comparison.
 
 In `inspect_snapshot`, select a saved profession with `section: "professions"`
 and `profession_skill_line`, then set `profession_target_rank` to check points
