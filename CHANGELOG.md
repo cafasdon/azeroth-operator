@@ -1,5 +1,7 @@
 # Changelog
 
+- Avoid selected landing nodes when planning routes across saved Forever flight panels.
+
 - Limit the capture time span across saved Forever flight panels used for route planning.
 
 - Sort saved recipe batches by the smallest observed sole reagent shortfall.

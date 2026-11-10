@@ -1123,6 +1123,8 @@ struct FlightRouteSearch {
     /// Exact case-insensitive saved destination name.
     destination_name: Option<String>,
     onward_snapshot_ids: Option<Vec<String>>,
+    /// Exclude up to 32 distinct landing node IDs. Flyover preview nodes are outside this filter.
+    excluded_landing_node_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Maximum flight legs, including the first leg. Defaults to eight.
     #[schemars(range(min = 1, max = 8))]
     max_legs: Option<u8>,
@@ -5128,6 +5130,10 @@ impl Operator {
                             search.include_repair_quote,
                             search.require_affordable,
                             search.maximum_total_fare_copper,
+                            search
+                                .excluded_landing_node_ids
+                                .as_deref()
+                                .unwrap_or_default(),
                         )?;
                         if let Some(window) = capture_window {
                             plan["selected_capture_window"] = window;
@@ -5138,7 +5144,7 @@ impl Operator {
                         Ok(plan) => value["flight_route_search"] = plan,
                         Err(_) => {
                             return CallToolResult::error(vec![ContentBlock::text(
-                                "Flight route search requires compatible Forever captures within any requested capture time span, unambiguous flight panels, a destination ID or an unambiguous name, and a limit of one to eight legs",
+                                "Flight route search requires compatible Forever captures within any requested capture time span, unambiguous flight panels, a destination ID or an unambiguous name, one to eight legs, and up to 32 distinct excluded landing nodes other than the endpoints",
                             )]);
                         }
                     }

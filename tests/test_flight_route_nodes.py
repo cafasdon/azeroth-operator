@@ -285,6 +285,29 @@ class FlightRouteNodesTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(evidence['minimum_fully_priced_fare_copper'],150)
                     self.assertEqual(evidence['effective_fare_ceiling_copper'],130)
                     self.assertEqual(evidence['shortfall_vs_effective_ceiling_copper'],20)
+                    avoid={'destination_name':'Further','onward_snapshot_ids':[next_key],
+                           'excluded_landing_node_ids':[20]}
+                    rerouted=(await call('inspect_snapshot',snapshot_id=store.ingest(expensive_direct),
+                        section='flight_map',flight_route_search=avoid))['flight_route_search']
+                    self.assertEqual(rerouted['excluded_landing_node_ids'],[20])
+                    self.assertEqual((rerouted['total_fare_copper'],len(rerouted['legs'])),(180,1))
+                    constrained=(await call('inspect_snapshot',snapshot_id=store.ingest(expensive_direct),
+                        section='flight_map',flight_route_search={**avoid,'maximum_total_fare_copper':160}
+                        ))['flight_route_search']
+                    self.assertEqual(constrained['saved_path_witness']['total_fare_copper'],180)
+                    blocked=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search=avoid))['flight_route_search']
+                    self.assertFalse(blocked['saved_path_evidence']['reachable_path_observed'])
+                    self.assertNotIn('saved_path_witness',blocked)
+                    flyover=(await call('inspect_snapshot',snapshot_id=key,section='flight_map',
+                        flight_route_search={'destination_node_id':20,'excluded_landing_node_ids':[30]}
+                        ))['flight_route_search']
+                    self.assertEqual(flyover['legs'][0]['observed_route_node_ids'],path)
+                    for ids in [[10],[40],[20,20],[0],list(range(100,133))]:
+                        self.assertTrue((await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':'flight_map',
+                            'flight_route_search':{**avoid,'excluded_landing_node_ids':ids},
+                        })).isError)
                     for bad in bad_keys:
                         response=await session.call_tool('inspect_snapshot',{'snapshot_id':bad,'section':'flight_map'})
                         self.assertTrue(response.isError)

@@ -1,5 +1,10 @@
 # Forever interaction map
 
+Set `flight_route_search.excluded_landing_node_ids` to avoid up to 32
+distinct connections in a saved route. The planner and its fallback
+evidence exclude those landing nodes. The start and destination cannot
+be excluded. A preview may still show an excluded node as a flyover.
+
 Use `flight_route_search.maximum_capture_skew_seconds` to require the
 earliest and latest of the selected saved flight panels to fall within
 an inclusive time span. This includes panels that the chosen route does

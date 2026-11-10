@@ -8652,8 +8652,21 @@ pub fn plan_saved_flights(
     include_repair_quote: bool,
     require_affordable: bool,
     maximum_total_fare_copper: Option<u64>,
+    excluded_landing_node_ids: &[std::num::NonZeroU32],
 ) -> Result<Value> {
     ensure!((1..=8).contains(&max_legs), "Invalid flight leg limit");
+    ensure!(
+        excluded_landing_node_ids.len() <= 32,
+        "Too many excluded flight landings"
+    );
+    let excluded: BTreeSet<_> = excluded_landing_node_ids
+        .iter()
+        .map(|id| u64::from(id.get()))
+        .collect();
+    ensure!(
+        excluded.len() == excluded_landing_node_ids.len(),
+        "Duplicate excluded flight landing"
+    );
     let destination_name = destination_name.map(str::trim);
     ensure!(
         (destination.is_some() || destination_name.is_some())
@@ -8692,6 +8705,9 @@ pub fn plan_saved_flights(
             }) {
                 named_destinations.insert(node);
             }
+            if excluded.contains(&node) {
+                return None;
+            }
             Some((index, node, row["fare_copper"].as_u64()))
         }));
     }
@@ -8709,6 +8725,10 @@ pub fn plan_saved_flights(
         start != destination,
         "Already at the requested departure node"
     );
+    ensure!(
+        !excluded.contains(&start) && !excluded.contains(&destination),
+        "Cannot exclude a route endpoint"
+    );
     let wallet = first
         .sections
         .get("wallet")
@@ -8718,9 +8738,13 @@ pub fn plan_saved_flights(
         .get("repair_quote")
         .and_then(|row| row["copper"].as_u64());
     let status = |status: &str| {
-        json!({
+        let mut report = json!({
             "status":status,"origin_node_id":start,"destination_node_id":destination,
-        })
+        });
+        if !excluded.is_empty() {
+            report["excluded_landing_node_ids"] = json!(excluded);
+        }
+        report
     };
     let render_legs = |path: Vec<(usize, u64)>| {
         path.into_iter()
@@ -8871,9 +8895,10 @@ pub fn plan_saved_flights(
         return Ok(report);
     };
     let legs = render_legs(path)?;
-    let mut plan = json!({"status":"found","origin_node_id":start,"destination_node_id":destination,
-        "legs":legs,"total_fare_copper":fare,
-        "affordable_from_starting_wallet":wallet.map(|balance| fare <= balance)});
+    let mut plan = status("found");
+    plan["legs"] = json!(legs);
+    plan["total_fare_copper"] = json!(fare);
+    plan["affordable_from_starting_wallet"] = json!(wallet.map(|balance| fare <= balance));
     if let Some(reserve) = reserve {
         plan["affordable_with_reserve"] = json!(wallet.map(|balance| {
             balance
