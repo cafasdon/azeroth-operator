@@ -3349,6 +3349,11 @@ Quantities are grouped by reward ID and sorted, so reordering slots does
 not count as a change. Duplicate rows stay separate. A missing group on
 either side leaves changes unknown.
 
+Use `quest_min_reward_honor` with `list_snapshots` or when inspecting the
+`quests` section to find quests with at least that much recorded honour.
+A zero threshold still requires a recorded amount. Combine it with XP,
+cost or objective filters to require those conditions on the same quest.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

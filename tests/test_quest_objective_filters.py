@@ -93,8 +93,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
             tied['sections']['quests']['3']['renown_rewards'] = {'1':{'faction_id':60,'quantity':1}}
             tied['sections']['quests']['3'].update(elite=True,suggested_group_size=3)
             tied['sections']['quests']['10'].update(elite=False,suggested_group_size=2)
-            tied['sections']['quests']['3'].update(required_copper=2,reward_amounts={'xp':100})
-            tied['sections']['quests']['10'].update(required_copper=3,reward_amounts={'xp':200})
+            tied['sections']['quests']['3'].update(required_copper=2,reward_amounts={'xp':100,'honor':25})
+            tied['sections']['quests']['10'].update(required_copper=3,reward_amounts={'xp':200,'honor':0})
             tied_key = store.ingest(tied)
             many_local = deepcopy(tied)
             many_local['character']['name'] = 'ManyLocal'
@@ -243,6 +243,21 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await timed(quest_min_reward_xp=200,quest_within_captured_wallet=True),[])
                     self.assertEqual(await timed(quest_max_required_copper=0),[])
                     self.assertEqual(await timed(quest_id=7,quest_min_reward_xp=0),[])
+                    honor=await timed(quest_min_reward_honor=25,character=tied['character'])
+                    self.assertEqual([row['snapshot_id'] for row in honor],[tied_key])
+                    self.assertEqual([(row['quest_id'],row['reward_honor']) for row in
+                        honor[0]['quest_match']['matching_quests']],[(3,25)])
+                    self.assertEqual(await timed(quest_min_reward_honor=25,quest_min_reward_xp=200,
+                        character=tied['character']),[])
+                    self.assertEqual(await timed(quest_min_reward_honor=0,quest_id=7,
+                        character=tied['character']),[])
+                    honor_view=await session.call_tool('inspect_snapshot',{
+                        'snapshot_id':tied_key,'section':'quests','quest_min_reward_honor':0})
+                    self.assertFalse(honor_view.isError,honor_view)
+                    honor_report=json.loads(honor_view.content[0].text)
+                    self.assertEqual(set(honor_report['data']),{'3','10'})
+                    self.assertEqual(honor_report['quest_reward_honor_unknown_count'],8)
+                    await timed(error=True,family='retail',quest_min_reward_honor=0)
                     await timed(error=True,family='retail',quest_within_captured_wallet=True)
                     objective_search = await timed(quest_title='Quest 3',quest_objective_kind='monster',
                         quest_objective_finished=False,quest_objective_min_remaining=1,

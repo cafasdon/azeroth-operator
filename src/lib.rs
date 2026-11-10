@@ -1949,6 +1949,7 @@ pub struct CaptureFilters<'a> {
     pub quest_difficulty: Option<analysis::QuestDifficulty>,
     pub quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
     pub quest_min_reward_xp: Option<u64>,
+    pub quest_min_reward_honor: Option<u64>,
     pub quest_max_required_copper: Option<u64>,
     pub quest_within_captured_wallet: bool,
     pub quest_objective_kind: Option<&'a str>,
@@ -2238,6 +2239,7 @@ impl Store {
             quest_difficulty,
             quest_max_suggested_group_size,
             quest_min_reward_xp,
+            quest_min_reward_honor,
             quest_max_required_copper,
             quest_within_captured_wallet,
             quest_objective_kind,
@@ -2907,6 +2909,7 @@ impl Store {
         let filter_quest_group =
             quest_difficulty.is_some() || quest_max_suggested_group_size.is_some();
         let filter_quest_budget = quest_min_reward_xp.is_some()
+            || quest_min_reward_honor.is_some()
             || quest_max_required_copper.is_some()
             || quest_within_captured_wallet;
         let filter_quest_timer =
@@ -3701,6 +3704,11 @@ impl Store {
                                     .as_u64()
                                     .is_some_and(|xp| xp >= minimum)
                             })
+                            && quest_min_reward_honor.is_none_or(|minimum| {
+                                quest["reward_amounts"]["honor"]
+                                    .as_u64()
+                                    .is_some_and(|honor| honor >= minimum)
+                            })
                             && quest_max_required_copper.is_none_or(|maximum| {
                                 quest["required_copper"]
                                     .as_u64()
@@ -4231,6 +4239,9 @@ impl Store {
                                 }
                                 if filter_quest_budget || local_quest_highest_xp_first {
                                     row["reward_xp"] = json!(quest["reward_amounts"]["xp"].as_u64());
+                                }
+                                if quest_min_reward_honor.is_some() {
+                                    row["reward_honor"] = json!(quest["reward_amounts"]["honor"].as_u64());
                                 }
                                 if filter_quest_budget {
                                     row["required_copper"] = json!(quest["required_copper"].as_u64());

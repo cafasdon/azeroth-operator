@@ -284,6 +284,8 @@ struct Inspect {
     quest_max_required_copper: Option<u64>,
     /// Keep saved Forever quests with at least this much recorded XP reward.
     quest_min_reward_xp: Option<u64>,
+    /// Keep saved Forever quests with at least this much recorded honor reward.
+    quest_min_reward_honor: Option<u64>,
     /// Keep quests whose recorded copper cost fits the wallet in the same saved Forever snapshot.
     #[serde(default)]
     quest_within_captured_wallet: bool,
@@ -563,6 +565,8 @@ struct List {
     quest_max_suggested_group_size: Option<std::num::NonZeroU32>,
     /// Match a known quest XP reward at or above this value.
     quest_min_reward_xp: Option<u64>,
+    /// Match a known quest honor reward at or above this value.
+    quest_min_reward_honor: Option<u64>,
     /// Match a known quest copper requirement at or below this value.
     quest_max_required_copper: Option<u64>,
     /// Match a known quest copper requirement covered by the same captured wallet.
@@ -2402,6 +2406,7 @@ impl Operator {
                 quest_difficulty: args.quest_difficulty,
                 quest_max_suggested_group_size: args.quest_max_suggested_group_size,
                 quest_min_reward_xp: args.quest_min_reward_xp,
+                quest_min_reward_honor: args.quest_min_reward_honor,
                 quest_max_required_copper: args.quest_max_required_copper,
                 quest_within_captured_wallet: args.quest_within_captured_wallet,
                 quest_objective_kind: args.quest_objective_kind.as_deref(),
@@ -3138,6 +3143,7 @@ impl Operator {
                 || filter_quest_timer
                 || args.quest_max_required_copper.is_some()
                 || args.quest_min_reward_xp.is_some()
+                || args.quest_min_reward_honor.is_some()
                 || args.quest_list_xp_projection
                 || args.quest_list_wallet_projection
                 || args.quest_list_currency_projection
@@ -3219,6 +3225,7 @@ impl Operator {
         }
         if (filter_rewards
             || args.quest_min_reward_xp.is_some()
+            || args.quest_min_reward_honor.is_some()
             || args.quest_list_xp_projection
             || args.quest_list_wallet_projection
             || args.quest_list_currency_projection
@@ -4636,6 +4643,7 @@ impl Operator {
                     || filter_quest_timer
                     || args.quest_max_required_copper.is_some()
                     || args.quest_min_reward_xp.is_some()
+                    || args.quest_min_reward_honor.is_some()
                     || args.quest_list_xp_projection
                     || args.quest_list_wallet_projection
                     || args.quest_list_currency_projection
@@ -4822,15 +4830,19 @@ impl Operator {
                                 unknown
                             }));
                     }
-                    if let Some(minimum) = args.quest_min_reward_xp {
-                        value["quest_min_reward_xp"] = serde_json::json!(minimum);
-                        value["quest_reward_xp_unknown_count"] =
+                    for (reward, minimum) in [
+                        ("xp", args.quest_min_reward_xp),
+                        ("honor", args.quest_min_reward_honor),
+                    ] {
+                        let Some(minimum) = minimum else { continue };
+                        value[format!("quest_min_reward_{reward}")] = serde_json::json!(minimum);
+                        value[format!("quest_reward_{reward}_unknown_count")] =
                             serde_json::json!(data.as_object_mut().map(|quests| {
                                 let mut unknown = 0;
                                 quests.retain(|_, quest| {
-                                    let xp = quest["reward_amounts"]["xp"].as_u64();
-                                    unknown += usize::from(xp.is_none());
-                                    xp.is_some_and(|xp| xp >= minimum)
+                                    let amount = quest["reward_amounts"][reward].as_u64();
+                                    unknown += usize::from(amount.is_none());
+                                    amount.is_some_and(|amount| amount >= minimum)
                                 });
                                 unknown
                             }));

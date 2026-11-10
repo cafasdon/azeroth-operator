@@ -1,5 +1,7 @@
 # Changelog
 
+- Find and shortlist saved Forever quests by recorded honour reward.
+
 - Compare saved quest item, currency and renown rewards separately from optional choices.
 
 - Compare recorded quest rewards, required copper and wallet shortfalls across saved Forever captures.
