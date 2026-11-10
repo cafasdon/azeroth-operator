@@ -75,6 +75,13 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         return None if error else json.loads(reply.content[0].text)
                     get, search = 'get_forever_world_record', 'search_forever_world_records'
+                    item = await call(get,kind='item',entity_id=1931,include_item_sources=True)
+                    drops = item['item_sources']['npcDrops']
+                    self.assertEqual(drops['kind'],'npc')
+                    self.assertTrue(drops['references'])
+                    end = await call(get,kind='item',entity_id=1931,include_item_sources=True,item_source_offset=drops['count'])
+                    self.assertEqual(end['item_sources']['npcDrops']['references'],{})
+                    await call(get,error=True,kind='item',entity_id=1931,item_source_offset=1)
                     linked = await call(get,kind='quest',entity_id=2,include_quest_links=True)
                     prerequisite = linked['quest_links']['preQuestSingle']['1']
                     exact = await call(get,kind='quest',entity_id=6383)

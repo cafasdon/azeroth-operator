@@ -1,5 +1,7 @@
 # Changelog
 
+- Page cached item drop, vendor and quest reward references.
+
 - Resolve cached creature, object and item quest objective targets.
 
 - Resolve quest starters and finishers in the offline world cache by their original entity types.

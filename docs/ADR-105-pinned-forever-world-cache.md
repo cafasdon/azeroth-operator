@@ -77,3 +77,8 @@ namespace. Unresolved IDs retain a null record.
 `quest_objective_targets` resolves the creature, object and item groups from
 the original objective tuples. The raw fields retain quantities and other
 objective data.
+
+For items, `include_item_sources=true` resolves NPC drops, object drops,
+container items, quest rewards and vendors. Each group has up to 32 entries
+in numeric source-position order. Advance `item_source_offset` by 32 while
+any group reports `has_more`. Each group reports its total count.

@@ -163,7 +163,8 @@ class World:
         return {'kind': key[0], 'id': key[1], 'record_key': f'questiedb:{key[0]}:{key[1]}',
                 'name': row['fields']['name'], 'record_sha256': sha}
 
-    def get(self, kind, entity_id, *, include_quest_links=False):
+    def get(self, kind, entity_id, *, include_quest_links=False, include_item_sources=False,
+            item_source_offset=0):
         if kind not in KINDS or type(entity_id) is not int or not 1 <= entity_id <= 2**32-1:
             raise ValueError('Invalid world record key')
         key = (kind, entity_id)
@@ -176,8 +177,39 @@ class World:
             result['quest_links'] = None if row is None else self.quest_links(row['fields'])
             result['quest_contacts'] = None if row is None else self.quest_contacts(row['fields'])
             result['quest_objective_targets'] = None if row is None else self.quest_objective_targets(row['fields'])
+        if (type(item_source_offset) is not int or not 0 <= item_source_offset <= 2**32-1
+                or item_source_offset and not include_item_sources):
+            raise ValueError('Invalid item source offset')
+        if include_item_sources:
+            if kind != 'item':
+                raise ValueError('Item sources require an item record')
+            result['item_sources'] = None if row is None else self.item_sources(row['fields'], item_source_offset)
         encoded(result)
         return result
+
+    def item_sources(self, fields, offset):
+        sources = {}
+        for field, kind in (
+            ('npcDrops', 'npc'), ('objectDrops', 'object'), ('itemDrops', 'item'),
+            ('questRewards', 'quest'), ('vendors', 'npc'),
+        ):
+            entries = fields.get(field)
+            if not isinstance(entries, dict):
+                continue
+            references = {}
+            page = sorted(entries.items(), key=lambda entry: int(entry[0]))[offset:offset+32]
+            for position, identity in page:
+                if type(identity) is not int or not 1 <= identity <= 2**32-1:
+                    references[position] = {'status': 'unsupported_reference'}
+                    continue
+                key = (kind, identity)
+                references[position] = {
+                    'entity_id': identity,
+                    'record': self.summary(key) if key in self.records else None,
+                }
+            sources[field] = {'kind': kind, 'references': references, 'count': len(entries),
+                              'offset': offset, 'has_more': offset+32 < len(entries)}
+        return sources
 
     def quest_objective_targets(self, fields):
         objectives = fields.get('objectives', {})
@@ -271,9 +303,12 @@ def serve(world):
 
     @server.tool(annotations=readonly)
     def get_forever_world_record(kind: Kind, entity_id: Annotated[StrictInt, Field(ge=1, le=4294967295)],
-                                 include_quest_links: StrictBool = False) -> dict:
+                                 include_quest_links: StrictBool = False,
+                                 include_item_sources: StrictBool = False,
+                                 item_source_offset: Annotated[StrictInt, Field(ge=0, le=4294967295)] = 0) -> dict:
         """Read one exact quest, NPC, object or item from the pinned local QuestieDB Forever export. Static corrections and derived data only; no character-specific eligibility, routing or current availability."""
-        return world.get(kind, entity_id, include_quest_links=include_quest_links)
+        return world.get(kind, entity_id, include_quest_links=include_quest_links,
+                         include_item_sources=include_item_sources, item_source_offset=item_source_offset)
 
     @server.tool(annotations=readonly)
     def search_forever_world_records(query: str, kind: Kind | None = None,
