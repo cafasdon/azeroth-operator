@@ -3507,6 +3507,20 @@ pub fn review_owned(
         catalogue.len() == items.len(),
         "Catalogue IDs are missing or ambiguous"
     );
+    let matching_set_ids = set_name
+        .as_deref()
+        .filter(|_| set_id.is_none())
+        .map(|name| {
+            items
+                .iter()
+                .filter(|item| matches_set_name(item, name))
+                .filter_map(recorded_set_id)
+                .collect::<BTreeSet<_>>()
+        });
+    let summary_set_id = set_id.map(|id| u64::from(id.get())).or_else(|| {
+        let matches = matching_set_ids.as_ref()?;
+        (matches.len() == 1).then(|| *matches.first().unwrap())
+    });
     let mut entries = Vec::new();
     let mut coverage = serde_json::Map::new();
     let mut total = 0usize;
@@ -3556,8 +3570,8 @@ pub fn review_owned(
             let wrong_set = set_id.is_some_and(|id| {
                 reference.and_then(|item| item["setId"].as_u64()) != Some(u64::from(id.get()))
             });
-            if set_id.is_some()
-                && !wrong_set
+            if summary_set_id
+                .is_some_and(|id| reference.and_then(|item| recorded_set_id(item)) == Some(id))
                 && let Some(id) = item_id
             {
                 *set_locations
@@ -3738,7 +3752,14 @@ pub fn review_owned(
         "complete_simulator_resolution_verified":false,
         "best_in_slot_verified":false
     });
-    if let Some(set_id) = set_id {
+    if let Some(ids) = matching_set_ids {
+        result["set_name_resolution"] = json!({
+            "matched_set_count":ids.len(),
+            "matched_set_ids":ids.iter().take(50).collect::<Vec<_>>(),
+            "matched_set_ids_truncated":ids.len() > 50
+        });
+    }
+    if let Some(set_id) = summary_set_id {
         let distinct_pieces_by_storage: BTreeMap<_, _> =
             ["equipment", "bags", "character_bank", "account_bank"]
                 .into_iter()
@@ -3754,7 +3775,7 @@ pub fn review_owned(
                 .collect();
         let pieces: Vec<_> = catalogue
             .iter()
-            .filter(|(_, item)| item["setId"].as_u64() == Some(u64::from(set_id.get())))
+            .filter(|(_, item)| recorded_set_id(item) == Some(set_id))
             .map(|(id, item)| {
                 json!({"item_id":id,"name":item["name"],"observed":set_locations.contains_key(id),
                     "observed_locations_by_storage":set_locations.get(id).cloned().unwrap_or_default()})
@@ -3773,7 +3794,7 @@ pub fn review_owned(
             .filter(|piece| piece["observed"] == false)
             .map(|piece| &piece["item_id"])
             .collect();
-        result["set_observation"] = json!({"set_id":set_id.get(),"catalogue_pieces":pieces,
+        result["set_observation"] = json!({"set_id":set_id,"catalogue_pieces":pieces,
             "observed_distinct_pieces":set_locations.len(),
             "observed_distinct_pieces_by_storage":distinct_pieces_by_storage,
             "observed_stored_not_equipped_item_ids":observed_stored_not_equipped_item_ids,

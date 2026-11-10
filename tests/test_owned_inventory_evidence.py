@@ -96,6 +96,16 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(named_owned['filtered_item_locations'], 3)
                     self.assertTrue(named_owned['has_more'])
                     self.assertEqual(named_owned['items'][0]['observed']['item_id'], 7950)
+                    self.assertEqual(named_owned['set_observation'], set_review['set_observation'])
+                    self.assertEqual(named_owned['set_name_resolution'], {
+                        'matched_set_count': 1, 'matched_set_ids': [221], 'matched_set_ids_truncated': False,
+                    })
+                    ambiguous = await review(set_capture_id, set_name='of', limit=1)
+                    self.assertNotIn('set_observation', ambiguous)
+                    self.assertGreater(ambiguous['set_name_resolution']['matched_set_count'], 1)
+                    no_match = await review(set_capture_id, set_name='no-matching-set-zzzz')
+                    self.assertNotIn('set_observation', no_match)
+                    self.assertEqual(no_match['set_name_resolution']['matched_set_count'], 0)
                     self.assertEqual((await review(set_capture_id, set_name='thero-shan', set_id=162))['items'], [])
                     invalid_name = await session.call_tool('review_forever_owned_gear',
                         {'snapshot_id': set_capture_id, 'set_name': ' '})
