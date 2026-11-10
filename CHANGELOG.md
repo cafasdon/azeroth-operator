@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare where a specific item shortcut was recorded on saved Forever action bars.
+
 - Compare where a specific spell was recorded on saved Forever action bars.
 
 - Find saved Forever action-bar spell slots by exact spellbook name.

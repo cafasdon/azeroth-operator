@@ -76,11 +76,12 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
             previous_bar['observed_buttons']=7
             previous_bar['slots'].update({
                 str(slot):{'empty':False,'kind':'spell','id':101} for slot in [6,7]})
+            previous_bar['slots']['3']={'empty':False,'kind':'item','id':101}
             placement_after=deepcopy(placement_before)
             placement_after['captured_at']='2025-01-02T00:00:00Z'
             after_slots=placement_after['sections']['action_bar_observation']['slots']
-            after_slots['2']={'empty':True}
-            after_slots['3']['id']=101
+            after_slots['2']={'empty':False,'kind':'item','id':101}
+            after_slots['3']={'empty':False,'kind':'spell','id':101}
             del after_slots['6']
             del after_slots['7']['id']
             after_slots['8']={'empty':False,'kind':'spell','id':101}
@@ -118,6 +119,16 @@ class SpellResourceTests(unittest.IsolatedAsyncioTestCase):
                         **placement_query,'after_id':missing_bar_key}))['action_bar_spell_placement_change']
                     self.assertIsNone(unavailable['after_matching_slots'])
                     self.assertIsNone(unavailable['changes'])
+                    both=await call('compare_snapshots',**placement_query,action_bar_item_id=101)
+                    self.assertEqual(both['action_bar_spell_placement_change'],placement)
+                    item=both['action_bar_item_placement_change']
+                    self.assertEqual(item['item_id'],101)
+                    self.assertEqual(item['before_matching_slots'],[3])
+                    self.assertEqual(item['after_matching_slots'],[2])
+                    self.assertEqual(item['changes'],{
+                        'gained_slots':[2],'lost_slots':[3],
+                        'matching_after_with_unknown_before_slots':[],
+                        'matching_before_with_unknown_after_slots':[]})
                     for invalid in [
                         {'action_bar_item_id':101}, {'section':'spellbook'}, {'action_bar_spell_name':' '},
                     ]:

@@ -768,6 +768,8 @@ struct Compare {
     action_bar_slots: bool,
     /// Compare placement of this exact reported spell ID across saved action bars.
     action_bar_spell_id: Option<std::num::NonZeroU32>,
+    /// Compare placement of this exact reported item ID across saved action bars.
+    action_bar_item_id: Option<std::num::NonZeroU32>,
 }
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -2116,6 +2118,7 @@ impl Operator {
                     spellbook: args.spellbook,
                     action_bar_slots: args.action_bar_slots,
                     action_bar_spell_id: args.action_bar_spell_id,
+                    action_bar_item_id: args.action_bar_item_id,
                 },
             )
         })();

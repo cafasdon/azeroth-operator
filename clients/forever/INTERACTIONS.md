@@ -3236,6 +3236,11 @@ loss requires comparable observations of the same slot. Missing slots and
 spell rows with unreadable IDs stay unknown. These differences describe
 saved placement and do not establish that a shortcut was moved.
 
+`compare_snapshots.action_bar_item_id` provides the same placement
+comparison for recorded item shortcuts. You can request both item and
+spell placement in one comparison. Each matches its own action kind,
+even when the numeric IDs coincide.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

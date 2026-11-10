@@ -3138,6 +3138,7 @@ pub struct ComparisonSelectors {
     pub spellbook: bool,
     pub action_bar_slots: bool,
     pub action_bar_spell_id: Option<std::num::NonZeroU32>,
+    pub action_bar_item_id: Option<std::num::NonZeroU32>,
 }
 
 pub(crate) fn observed_trade_offer_quantities(section: &Value) -> (usize, BTreeMap<u32, u64>) {
@@ -4207,13 +4208,17 @@ pub fn compare_observations(
         );
         comparison["action_bar_slot_changes"] = compare_action_bar_slots(before, after);
     }
-    if let Some(id) = selectors.action_bar_spell_id {
+    for (kind, id) in [
+        ("spell", selectors.action_bar_spell_id),
+        ("item", selectors.action_bar_item_id),
+    ] {
+        let Some(id) = id else { continue };
         ensure!(
             before.client.family == crate::Family::Forever,
-            "Action bar spell placement comparisons require Forever snapshots"
+            "Action bar placement comparisons require Forever snapshots"
         );
-        comparison["action_bar_spell_placement_change"] =
-            compare_action_bar_spell_placement(before, after, id.get());
+        comparison[format!("action_bar_{kind}_placement_change")] =
+            compare_action_bar_placement(before, after, kind, id.get());
     }
     if selectors.spellbook {
         ensure!(
@@ -4296,11 +4301,11 @@ fn observed_action_bar_slots(snapshot: &Snapshot) -> Option<BTreeMap<u32, &Value
         .collect()
 }
 
-fn compare_action_bar_spell_placement(before: &Snapshot, after: &Snapshot, id: u32) -> Value {
+fn compare_action_bar_placement(before: &Snapshot, after: &Snapshot, kind: &str, id: u32) -> Value {
     let previous = observed_action_bar_slots(before);
     let current = observed_action_bar_slots(after);
     let matches = |row: &Value| {
-        if row["kind"] == "spell" {
+        if row["kind"] == kind {
             row["id"].as_u64().map(|value| value == u64::from(id))
         } else {
             Some(false)
@@ -4340,7 +4345,7 @@ fn compare_action_bar_spell_placement(before: &Snapshot, after: &Snapshot, id: u
             "matching_after_with_unknown_before_slots":unknown_before,
             "matching_before_with_unknown_after_slots":unknown_after})
         });
-    json!({"spell_id":id,"before_matching_slots":before_matches,
+    json!({(format!("{kind}_id")):id,"before_matching_slots":before_matches,
         "after_matching_slots":after_matches,"changes":placement_change,"live":false})
 }
 
