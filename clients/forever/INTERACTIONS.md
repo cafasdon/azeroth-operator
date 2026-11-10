@@ -13,6 +13,9 @@ recorded status and price. Each lesson shows points to its required rank
 and whether that rank exceeds the observed profession cap. The cap check
 is unknown for a zero or inconsistent cap. Missing or ambiguous context
 returns null.
+Each lesson's quoted price is compared separately with the wallet in that
+capture. Missing quotes or wallet data leave affordability and shortfall
+unknown. The comparison does not establish eligibility or combined cost.
 For cross-character discovery, use `list_snapshots` with the same skill
 line and optional target. Inclusive `profession_min_rank` and
 `profession_max_rank` filter the observed rank. Results require a unique

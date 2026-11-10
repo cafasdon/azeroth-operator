@@ -9965,6 +9965,7 @@ pub fn profession_target_trainer_lessons(
     profession: Option<&Value>,
     target: u32,
     trainer: Option<&Value>,
+    wallet_copper: Option<u64>,
 ) -> Option<Vec<Value>> {
     let profession = profession?;
     let name = profession["name"]
@@ -9986,11 +9987,14 @@ pub fn profession_target_trainer_lessons(
         let skill = &lesson["skill_requirement"];
         let required = skill["required_rank"].as_u64()?;
         let slot = slot.parse::<u32>().ok()?;
+        let quote = lesson["price_copper"].as_u64().zip(wallet_copper);
         (skill["name"].as_str() == Some(name) && rank < required && required <= u64::from(target))
             .then(|| (required, slot, json!({"slot":slot,"name":lesson["name"],
                 "required_rank":required,"points_to_required_rank":required-rank,
                 "required_rank_above_observed_cap":cap.map(|cap| required > cap),
                 "captured_status":lesson["status"],
+                "price_within_captured_wallet":quote.map(|(price, wallet)| price <= wallet),
+                "price_shortfall_copper":quote.map(|(price, wallet)| price.saturating_sub(wallet)),
                 "captured_skill_requirement_met":skill["met"],"price_copper":lesson["price_copper"]})))
     }).collect();
     lessons.sort_unstable_by_key(|(required, slot, _)| (*required, *slot));

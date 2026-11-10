@@ -6165,7 +6165,11 @@ impl Operator {
                                         &section,
                                         row,
                                         target.get(),
-                                        snapshot.sections.get("trainer_services")
+                                        snapshot.sections.get("trainer_services"),
+                                        snapshot
+                                            .sections
+                                            .get("wallet")
+                                            .and_then(|wallet| wallet["copper"].as_u64())
                                     )
                                 );
                             }

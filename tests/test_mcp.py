@@ -877,6 +877,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "4": {"name": "Fixture inconsistent", "rank": 76, "max_rank": 75, "skill_line": 164},
                         })
                         training["sections"]["trainer_services"]["entries"]["4"]["skill_requirement"]["required_rank"] = 80
+                        training["sections"]["trainer_services"]["entries"]["4"]["price_copper"] = 11
+                        training["sections"]["wallet"]["copper"] = 10
                         training_key = SnapshotStore(Path(folder)).ingest(training)
                         profession_filter = {"family": "forever", "profession_skill_line": 164,
                                              "profession_min_rank": 20}
@@ -965,7 +967,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                         "points_to_required_rank": 5,
                                         "required_rank_above_observed_cap": True,
                                         "captured_status": "unavailable",
-                                        "captured_skill_requirement_met": False, "price_copper": None}]),
+                                        "captured_skill_requirement_met": False, "price_copper": 11,
+                                        "price_within_captured_wallet": False, "price_shortfall_copper": 1}]),
                             (165, 79, []),
                             (164, 80, None),
                         ]:

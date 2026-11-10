@@ -1,5 +1,7 @@
 # Changelog
 
+- Check saved profession trainer quotes individually against the same captured wallet.
+
 - Show points to saved trainer thresholds and whether each exceeds the observed profession cap.
 
 - Show saved trainer lesson thresholds along a profession rank target.
