@@ -13,9 +13,12 @@ pub enum MapLevelPosition {
 }
 
 pub fn map_level_position(stats: &Value) -> Option<MapLevelPosition> {
+    map_level_position_at(stats, stats["level"].as_i64()?)
+}
+
+pub fn map_level_position_at(stats: &Value, level: i64) -> Option<MapLevelPosition> {
     let minimum = stats["map_min_level"].as_i64()?;
     let maximum = stats["map_max_level"].as_i64()?;
-    let level = stats["level"].as_i64()?;
     Some(if level < minimum {
         MapLevelPosition::Below
     } else if level > maximum {

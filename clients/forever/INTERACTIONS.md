@@ -10,6 +10,9 @@ reports whether the captured character level is below, within or above
 that range. This is map metadata, with no access or safety determination.
 Use `list_snapshots.player_map_level_position` with `below`, `within`
 or `above` to find those saved observations. Missing ranges do not match.
+Supply `player_map_target_level` from 1 to 255 with that position filter
+to evaluate an explicit planning level. Results retain the captured
+character comparison and show the target-level comparison separately.
 
 Use `lookup_forever_catalogue` with `section: "items"` and `set_name`
 to find pieces by a case-insensitive set-name substring. Combine it with

@@ -595,6 +595,8 @@ struct List {
     player_map_name: Option<String>,
     /// Match the captured character level below, within or above the map's reported range.
     player_map_level_position: Option<azeroth_operator::analysis::MapLevelPosition>,
+    /// Evaluate the map range for this explicit planning level instead of the captured character level.
+    player_map_target_level: Option<u8>,
     /// Match the recorded immediate parent of the player's map in a saved Forever capture.
     player_parent_map_id: Option<std::num::NonZeroU32>,
     /// Match an exact case-insensitive saved Forever Hearthstone bind name.
@@ -2957,6 +2959,7 @@ impl Operator {
                 player_map_id: args.player_map_id,
                 player_map_name: args.player_map_name.as_deref(),
                 player_map_level_position: args.player_map_level_position,
+                player_map_target_level: args.player_map_target_level,
                 player_parent_map_id: args.player_parent_map_id,
                 hearthstone_bind_name: args.hearthstone_bind_name.as_deref(),
                 hearthstone_max_cooldown_seconds: args.hearthstone_max_cooldown_seconds,

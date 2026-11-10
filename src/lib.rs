@@ -2024,6 +2024,7 @@ pub struct CaptureFilters<'a> {
     pub player_map_id: Option<std::num::NonZeroU32>,
     pub player_map_name: Option<&'a str>,
     pub player_map_level_position: Option<analysis::MapLevelPosition>,
+    pub player_map_target_level: Option<u8>,
     pub player_parent_map_id: Option<std::num::NonZeroU32>,
     pub hearthstone_bind_name: Option<&'a str>,
     pub hearthstone_max_cooldown_seconds: Option<u32>,
@@ -2337,6 +2338,7 @@ impl Store {
             player_map_id,
             player_map_name,
             player_map_level_position,
+            player_map_target_level,
             player_parent_map_id,
             hearthstone_bind_name,
             hearthstone_max_cooldown_seconds,
@@ -3022,6 +3024,11 @@ impl Store {
             || player_parent_map_id.is_some()
             || player_map_name.is_some()
             || player_map_level_position.is_some();
+        ensure!(
+            player_map_target_level
+                .is_none_or(|level| level > 0 && player_map_level_position.is_some()),
+            "A target map level requires a position filter and a level from 1 to 255"
+        );
         let filter_repair = repair_max_quote_copper.is_some()
             || repair_affordable_only
             || repair_min_remaining_copper.is_some();
@@ -4377,7 +4384,12 @@ impl Store {
                                     .as_str()
                                     .is_some_and(|observed| observed.to_lowercase() == *name)
                             }) && player_map_level_position.is_none_or(|expected| {
-                                analysis::map_level_position(stats) == Some(expected)
+                                player_map_target_level.map_or_else(
+                                    || analysis::map_level_position(stats),
+                                    |level| {
+                                        analysis::map_level_position_at(stats, i64::from(level))
+                                    },
+                                ) == Some(expected)
                             }) && hearthstone_bind_name.as_ref().is_none_or(|name| {
                                 stats["hearthstone_bind_name"]
                                     .as_str()
@@ -4928,6 +4940,13 @@ impl Store {
                             "map_parent_id":stats["map_parent_id"],
                             "map_level_position":analysis::map_level_position(stats),
                         });
+                        if let Some(level) = player_map_target_level {
+                            summary["player_map_match"]["target_level_comparison"] = json!({
+                                "target_level":level,
+                                "position_in_reported_range":analysis::map_level_position_at(stats, i64::from(level)),
+                                "minimum":stats["map_min_level"], "maximum":stats["map_max_level"]
+                            });
+                        }
                     }
                     if let Some(ready) = hearthstone_projected_ready_at {
                         summary["hearthstone_projected_ready_at"] = json!(ready);

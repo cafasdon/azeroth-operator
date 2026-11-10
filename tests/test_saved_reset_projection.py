@@ -84,6 +84,23 @@ class ResetProjectionTests(unittest.IsolatedAsyncioTestCase):
                         rows = json.loads(result.content[0].text)['snapshots']
                         self.assertEqual({row['snapshot_id'] for row in rows}, set(expected))
                         self.assertTrue(all(row['player_map_match']['map_level_position'] == position for row in rows))
+                    target = await session.call_tool('list_snapshots', {
+                        'family': 'forever', 'player_map_level_position': 'within', 'player_map_target_level': 1,
+                    })
+                    self.assertFalse(target.isError, target)
+                    target_rows = json.loads(target.content[0].text)['snapshots']
+                    self.assertEqual([row['snapshot_id'] for row in target_rows], [start])
+                    self.assertEqual(target_rows[0]['player_map_match']['map_level_position'], 'above')
+                    self.assertEqual(target_rows[0]['player_map_match']['target_level_comparison'], {
+                        'target_level': 1, 'position_in_reported_range': 'within', 'minimum': 1, 'maximum': 10,
+                    })
+                    for query in [
+                        {'player_map_target_level': 30},
+                        {'player_map_level_position': 'within', 'player_map_target_level': 0},
+                        {'player_map_level_position': 'within', 'player_map_target_level': 256},
+                    ]:
+                        rejected = await session.call_tool('list_snapshots', {'family': 'forever', **query})
+                        self.assertTrue(rejected.isError)
 
     async def test_real_mcp_calendar_unknowns_scopes_and_privacy(self):
         root = Path(__file__).resolve().parents[1]
