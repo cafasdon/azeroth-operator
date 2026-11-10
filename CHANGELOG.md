@@ -1,5 +1,7 @@
 # Changelog
 
+- Show hypothetical carried stack headroom for saved quest reward bag-space estimates.
+
 - Estimate saved general bag space for selected quest rewards of a target item.
 
 - Optionally count recorded carried items toward saved quest item targets.

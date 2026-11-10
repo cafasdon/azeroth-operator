@@ -7065,11 +7065,39 @@ pub fn quest_item_reward_bag_space(
     };
     let general_free =
         carried_bag_space(snapshot).and_then(|space| space["known_general_free_slots"].as_u64());
+    let headroom = limit.map(|limit| {
+        snapshot
+            .sections
+            .get("bags")
+            .and_then(Value::as_object)
+            .into_iter()
+            .flat_map(|bags| bags.values())
+            .filter_map(Value::as_object)
+            .flat_map(|slots| slots.values())
+            .filter(|item| item["item_id"].as_u64() == Some(u64::from(item_id)))
+            .filter_map(|item| item["count"].as_u64())
+            .map(|count| u64::from(limit.get()).saturating_sub(count))
+            .sum::<u64>()
+    });
+    let slots_with_merges = if quantity == 0 {
+        Some(0)
+    } else {
+        limit.zip(headroom).map(|(limit, headroom)| {
+            quantity
+                .saturating_sub(headroom)
+                .div_ceil(u64::from(limit.get()))
+        })
+    };
     Some(
         json!({"scope":"selected_target_item_rewards_only","recorded_reward_quantity":quantity,
         "reported_carried_stack_limit":limit,"estimated_new_stack_slots":slots,
         "recorded_general_free_slots":general_free,
         "fits_recorded_general_slots":slots.zip(general_free).map(|(needed, free)| needed <= free),
+        "hypothetical_carried_stack_headroom":headroom,
+        "estimated_new_stack_slots_if_same_item_stacks_merge":slots_with_merges,
+        "fits_recorded_general_slots_if_same_item_stacks_merge":slots_with_merges.zip(general_free)
+            .map(|(needed, free)| needed <= free),
+        "same_item_stack_merge_verified":false,
         "placement_verified":false,"live":false}),
     )
 }

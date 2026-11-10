@@ -876,7 +876,7 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                         '1':{'total_slots':8,'free_slots':8,'family_mask':32},
                         **{str(bag):{'total_slots':0,'free_slots':0} for bag in range(2,5)}}
                     for stack in space_fixture['sections']['bags']['0'].values():
-                        stack.update(link='item:118:0',reported_stack_limit=4)
+                        stack.update(link='item:118:0',reported_stack_limit=5)
                     async def reward_space(capture,quantity,**options):
                         snapshot_id=store.ingest(capture)
                         original[snapshot_id+'.json']=(Path(folder)/(snapshot_id+'.json')).read_bytes()
@@ -889,15 +889,22 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     space=await reward_space(space_fixture,7)
                     self.assertEqual(space,{
                         'scope':'selected_target_item_rewards_only','recorded_reward_quantity':8,
-                        'reported_carried_stack_limit':4,'estimated_new_stack_slots':2,
+                        'reported_carried_stack_limit':5,'estimated_new_stack_slots':2,
                         'recorded_general_free_slots':1,'fits_recorded_general_slots':False,
+                        'hypothetical_carried_stack_headroom':5,
+                        'estimated_new_stack_slots_if_same_item_stacks_merge':1,
+                        'fits_recorded_general_slots_if_same_item_stacks_merge':True,
+                        'same_item_stack_merge_verified':False,
                         'placement_verified':False,'live':False})
                     already=await reward_space(space_fixture,4,count_carried=True)
                     self.assertEqual(already['estimated_new_stack_slots'],0)
+                    self.assertEqual(already['estimated_new_stack_slots_if_same_item_stacks_merge'],0)
                     self.assertTrue(already['fits_recorded_general_slots'])
-                    space_fixture['sections']['bags']['0']['2']['reported_stack_limit']=5
+                    space_fixture['sections']['bags']['0']['2']['reported_stack_limit']=6
                     conflicting=await reward_space(space_fixture,7)
                     self.assertIsNone(conflicting['estimated_new_stack_slots'])
                     self.assertIsNone(conflicting['fits_recorded_general_slots'])
+                    self.assertIsNone(conflicting['hypothetical_carried_stack_headroom'])
+                    self.assertIsNone(conflicting['estimated_new_stack_slots_if_same_item_stacks_merge'])
                     self.assertIsNone(await reward_space(space_fixture,100))
             self.assertEqual(original, {p.name: p.read_bytes() for p in Path(folder).glob('*.json')})
