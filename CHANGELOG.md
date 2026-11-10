@@ -1,5 +1,7 @@
 # Changelog
 
+- List saved bank retrievals for ranked Forever loadouts.
+
 - Show saved shortcut keys alongside carried stock targets.
 
 - Report captured carried-stock shortfalls across saved item shortcuts.

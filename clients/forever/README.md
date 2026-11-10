@@ -303,6 +303,8 @@ Each `ranked_gear_sets` entry includes `saved_loadout` with its exact 17-slot
 simulator spec, source selections (`target_slot`, saved storage/slot and expected
 item ID), cleared slots and source snapshot/report hash. This applies to saved
 journal rankings and the unified evaluator, including checkpoint-only results.
+The `bank_retrievals` list isolates selections from either bank and orders them
+by saved storage, container and slot for manual retrieval.
 The join checks the referenced saved row and winning gear hash. These are
 historical locations; `current_locations_verified` and
 `native_equip_eligibility_verified` remain false. No equip action is generated.

@@ -111,8 +111,10 @@ class SavedJournalTests(unittest.TestCase):
             value['sections']['stats'] = {'level':60,'class':'HUNTER','race':'Orc','client_version':'x'}
             value['sections']['bag_capacity']={str(i):{'total_slots':16 if i==0 else 8 if i==1 else 0,'free_slots':0} for i in range(5)}
             value['sections']['bag_capacity']['1']['equipped_item']={'item_id':8217,'inventory_slot':20}
-            value['sections']['bags'] = {'0': {str(i): {'item_id':item,'count':1,
-                'link':f'item:{item}:0:0:0:0:0:0'} for i,item in enumerate([4549,4550],1)}}
+            value['sections']['bags'] = {'0': {'1': {
+                'item_id':4549,'count':1,'link':'item:4549:0:0:0:0:0:0'}}}
+            value['sections']['character_bank'] = {'6': {'1': {
+                'item_id':4550,'count':1,'link':'item:4550:0:0:0:0:0:0'}}}
             key = SnapshotStore(base).ingest(value)
             env = {**os.environ,'AZEROTH_DATA_DIR':folder,'AZEROTH_FOREVER_CATALOGUE':str(catalogue.resolve())}
             journal = base / 'PRIVATE_gears.sqlite'
@@ -232,6 +234,10 @@ class SavedJournalTests(unittest.TestCase):
                 self.assertEqual(saved['basis'],'validated_saved_plan')
                 self.assertEqual(saved['selections'],[{'target_slot':11,
                     'source':{'kind':'bag','bag':0,'slot':1},'expected_item_id':4549}])
+                self.assertEqual(saved['bank_retrievals'], [])
+                self.assertEqual(result['ranked_gear_sets'][2]['saved_loadout']['bank_retrievals'], [
+                    {'target_slot':11,'source':{'kind':'character_bank','container':6,'slot':1},
+                     'expected_item_id':4550}])
                 self.assertEqual(saved['simulator_equipment_spec']['items'][10]['id'],4549)
                 self.assertEqual(saved['cleared_equipment_slots'],[])
                 self.assertEqual(hashlib.sha256(journal_tools.encoded(saved['simulator_equipment_spec'])).hexdigest(),

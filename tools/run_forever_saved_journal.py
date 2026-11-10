@@ -70,9 +70,17 @@ def attach_saved_loadouts(path, leaders, source, deadline):
             require(spec is not None)
             selections = selections_for_review(draft['selections'])
             cleared = cleared_for_review(draft)
+            bank_retrievals = [
+                selection for selection in selections
+                if selection['source']['kind'] in ('character_bank', 'account_bank')
+            ]
+            bank_retrievals.sort(key=lambda selection: (
+                selection['source']['kind'], selection['source']['container'],
+                selection['source']['slot'], selection['target_slot']))
             leader['saved_loadout'] = {'basis':'validated_saved_plan',
                 'snapshot_id':summary['snapshot_id'],'source_report_sha256':row[3],
                 'simulator_equipment_spec':spec,'selections':selections,
+                'bank_retrievals':bank_retrievals,
                 'cleared_equipment_slots':cleared,
                 'current_locations_verified':False,'native_equip_eligibility_verified':False,
                 'game_execution':False}
