@@ -1553,6 +1553,26 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(json.loads(compared_log.content[0].text)[
                                 "quest_readiness_changes"], expected)
                         trainer_changes = progress_data["trainer_service_changes"]
+                        async def compare_lesson(name, end=progress_key):
+                            reply = await session.call_tool("compare_snapshots", {
+                                "before_id":after_key,"after_id":end,"trainer_lesson_name":name})
+                            self.assertFalse(reply.isError,reply)
+                            return json.loads(reply.content[0].text)["trainer_lesson_comparison"]
+                        lesson = await compare_lesson("  fIXTURE pOTION ")
+                        self.assertEqual(lesson["lessons"], [{
+                            "rank_label":None,
+                            "before":{"status":"observed","lesson_status":"available","price":10,"price_unit":"copper"},
+                            "after":{"status":"observed","lesson_status":"available","price":0,"price_unit":"copper"},
+                            "price_delta":-10,
+                        }])
+                        self.assertEqual((await compare_lesson("Fixture"))["matched_rank_count"],0)
+                        self.assertIsNone((await compare_lesson("Expensive Lesson"))["lessons"][0]["price_delta"])
+                        self.assertEqual((await compare_lesson("Other Lesson"))["lessons"][0]["after"],
+                            {"status":"not_observed"})
+                        for invalid in (" ", "é"*129, True):
+                            rejected = await session.call_tool("compare_snapshots", {
+                                "before_id":after_key,"after_id":progress_key,"trainer_lesson_name":invalid})
+                            self.assertTrue(rejected.isError)
                         self.assertEqual(trainer_changes["price_unit"], "copper")
                         self.assertEqual(trainer_changes["status_changes"], [])
                         self.assertEqual(trainer_changes["lessons_observed_only_before"], [

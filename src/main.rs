@@ -682,6 +682,8 @@ struct Compare {
     merchant_offer_item_id: Option<std::num::NonZeroU32>,
     /// Compare recorded merchant bundle prices for this exact currency ID.
     merchant_offer_currency_id: Option<std::num::NonZeroU32>,
+    /// Compare saved trainer prices and statuses for this exact lesson name.
+    trainer_lesson_name: Option<String>,
     /// Compare saved Forever repair quotes and captured affordability.
     #[serde(default)]
     repair_quote_changes: bool,
@@ -2109,6 +2111,7 @@ impl Operator {
                     merchant_buyback_changes: args.merchant_buyback_changes,
                     merchant_offer_item_id: args.merchant_offer_item_id,
                     merchant_offer_currency_id: args.merchant_offer_currency_id,
+                    trainer_lesson_name: args.trainer_lesson_name.as_deref(),
                     repair_quote_changes: args.repair_quote_changes,
                     equipment_durability_max_percent: args.equipment_durability_max_percent,
                     player_aura_spell_id: args.player_aura_spell_id,

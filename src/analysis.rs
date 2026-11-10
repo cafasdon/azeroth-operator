@@ -3097,7 +3097,7 @@ pub fn compare_with_item(
 }
 
 #[derive(Default)]
-pub struct ComparisonSelectors {
+pub struct ComparisonSelectors<'a> {
     pub item_container_changes: bool,
     pub profession_spell_changes: bool,
     pub player_resource_changes: bool,
@@ -3108,6 +3108,7 @@ pub struct ComparisonSelectors {
     pub merchant_buyback_changes: bool,
     pub merchant_offer_item_id: Option<std::num::NonZeroU32>,
     pub merchant_offer_currency_id: Option<std::num::NonZeroU32>,
+    pub trainer_lesson_name: Option<&'a str>,
     pub repair_quote_changes: bool,
     pub equipment_durability_max_percent: Option<u8>,
     pub player_aura_spell_id: Option<std::num::NonZeroU32>,
@@ -3240,7 +3241,7 @@ pub(crate) fn player_pvp_progression_observation(section: &Value) -> Value {
 pub fn compare_observations(
     before: &Snapshot,
     after: &Snapshot,
-    selectors: ComparisonSelectors,
+    selectors: ComparisonSelectors<'_>,
 ) -> Result<Value> {
     ensure_comparable(before, after)?;
     ensure!(
@@ -3753,6 +3754,14 @@ pub fn compare_observations(
     }
     let trainer_before = before.sections.get("trainer_services");
     let trainer_after = after.sections.get("trainer_services");
+    if let Some(name) = selectors.trainer_lesson_name.map(str::trim) {
+        ensure!(
+            before.client.family == crate::Family::Forever && !name.is_empty() && name.len() <= 256,
+            "Trainer lesson comparison requires Forever and a valid name"
+        );
+        comparison["trainer_lesson_comparison"] =
+            compare_named_trainer_lesson(trainer_before, trainer_after, &name.to_lowercase());
+    }
     if trainer_before.is_some() || trainer_after.is_some() {
         comparison["trainer_service_changes"] = trainer_before
             .zip(trainer_after)
@@ -6217,6 +6226,77 @@ fn compare_merchant_offers(before: &Value, after: &Value) -> Option<(Value, Valu
         })
     }).collect();
     Some((json!(changes), coverage))
+}
+
+fn compare_named_trainer_lesson(
+    before: Option<&Value>,
+    after: Option<&Value>,
+    name: &str,
+) -> Value {
+    fn by_rank<'a>(panel: &'a Value, name: &str) -> BTreeMap<Option<&'a str>, Option<&'a Value>> {
+        let mut lessons = BTreeMap::new();
+        for row in panel["entries"]
+            .as_object()
+            .into_iter()
+            .flat_map(|rows| rows.values())
+        {
+            if row["name"]
+                .as_str()
+                .is_some_and(|label| label.trim().to_lowercase() == name)
+            {
+                lessons
+                    .entry(row["rank_label"].as_str())
+                    .and_modify(|row| *row = None)
+                    .or_insert(Some(row));
+            }
+        }
+        lessons
+    }
+    let previous = before.map(|panel| by_rank(panel, name));
+    let current = after.map(|panel| by_rank(panel, name));
+    let ranks: BTreeSet<_> = previous
+        .iter()
+        .chain(&current)
+        .flat_map(|rows| rows.keys().copied())
+        .collect();
+    let observation = |rows: Option<&BTreeMap<Option<&str>, Option<&Value>>>,
+                       rank,
+                       panel: Option<&Value>| {
+        match rows.map(|rows| rows.get(&rank)) {
+            None => json!({"status":"not_captured"}),
+            Some(None) => json!({"status":"not_observed"}),
+            Some(Some(None)) => json!({"status":"ambiguous"}),
+            Some(Some(Some(row))) => {
+                let pet = panel.is_some_and(|panel| panel["kind"] == "pet");
+                let (field, unit) = if pet {
+                    ("price_training_points", "training_points")
+                } else {
+                    ("price_copper", "copper")
+                };
+                json!({"status":"observed","lesson_status":row["status"],"price":row[field],"price_unit":unit})
+            }
+        }
+    };
+    let before_kind = before.and_then(|panel| panel["kind"].as_str());
+    let after_kind = after.and_then(|panel| panel["kind"].as_str());
+    let same_kind = before_kind.zip(after_kind).map(|(a, b)| a == b);
+    let lessons: Vec<_> = ranks
+        .iter()
+        .take(20)
+        .map(|&rank| {
+            let a = observation(previous.as_ref(), rank, before);
+            let b = observation(current.as_ref(), rank, after);
+            let delta = a["price"]
+                .as_i64()
+                .zip(b["price"].as_i64())
+                .filter(|_| same_kind == Some(true))
+                .map(|(a, b)| b - a);
+            json!({"rank_label":rank,"before":a,"after":b,"price_delta":delta})
+        })
+        .collect();
+    json!({"before_kind":before_kind,"after_kind":after_kind,"same_kind":same_kind,
+        "matched_rank_count":ranks.len(),"truncated":ranks.len()>lessons.len(),"lessons":lessons,
+        "trainer_identity_verified":false,"current_price_verified":false})
 }
 
 fn compare_trainer_services(before: &Value, after: &Value) -> Option<Value> {

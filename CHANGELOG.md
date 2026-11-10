@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever trainer prices and availability for an exact lesson name.
+
 - Compare recorded item and currency costs in saved merchant bundles.
 
 - Compare saved Forever merchant bundle prices for a specific currency.

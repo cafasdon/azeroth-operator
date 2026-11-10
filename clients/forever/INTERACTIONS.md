@@ -3257,6 +3257,13 @@ copper-only offer has an empty component list. Missing, ambiguous or
 unreadable components remain unknown. Component ordering does not count
 as a change.
 
+`compare_snapshots.trainer_lesson_name` compares one saved lesson name
+across two Forever trainer panels, ignoring case and surrounding spaces.
+It shows observed status and price by rank, including unchanged rows.
+Duplicate ranks are ambiguous. A price delta needs unique rows with
+recorded prices from the same trainer kind. Copper and training points
+are reported separately. Current price and trainer identity remain unknown.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack
