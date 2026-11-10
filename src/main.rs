@@ -331,6 +331,9 @@ struct Inspect {
     /// Show the shortest saved quest timers after applying all quest filters.
     #[serde(default)]
     quest_list_timed_checklist: bool,
+    /// List unfinished captured objectives by quest, after applying quest filters.
+    #[serde(default)]
+    quest_list_objective_checklist: bool,
     /// Filter saved Forever quests by their next waypoint map. Requires section "quests".
     quest_waypoint_map_id: Option<std::num::NonZeroU32>,
     /// Filter quest waypoints to the player map recorded in the same Forever snapshot.
@@ -3519,6 +3522,7 @@ impl Operator {
                 || args.quest_ready_renown_target.is_some()
                 || args.quest_list_item_rewards
                 || args.quest_list_timed_checklist
+                || args.quest_list_objective_checklist
                 || args.quest_within_captured_wallet
                 || filter_rewards
                 || args.currency_id.is_some()
@@ -3583,6 +3587,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Timed quest checklist requires the quests section without a quest ID",
+            )]);
+        }
+        if args.quest_list_objective_checklist
+            && (args.section.as_deref() != Some("quests") || args.quest_id.is_some())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Objective quest checklist requires the quests section without a quest ID",
             )]);
         }
         if (args.quest_max_required_copper.is_some() || args.quest_within_captured_wallet)
@@ -5215,6 +5226,7 @@ impl Operator {
                     || args.quest_ready_renown_target.is_some()
                     || args.quest_list_item_rewards
                     || args.quest_list_timed_checklist
+                    || args.quest_list_objective_checklist
                     || args.quest_within_captured_wallet
                     || filter_rewards
                 {
@@ -5655,6 +5667,12 @@ impl Operator {
                                         captured_at,
                                     )
                                 })
+                        );
+                    }
+                    if args.quest_list_objective_checklist {
+                        value["quest_objective_checklist"] = serde_json::json!(
+                            data.as_object()
+                                .map(azeroth_operator::analysis::quest_objective_checklist)
                         );
                     }
                     value["data"] = data;

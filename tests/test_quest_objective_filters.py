@@ -345,6 +345,18 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIsNone((await query(snapshot_id=missing,
                         quest_list_timed_checklist=True))['timed_quest_checklist'])
                     self.assertNotIn('timed_quest_checklist',default)
+                    work = (await query(quest_list_objective_checklist=True))['quest_objective_checklist']
+                    self.assertEqual(work['quest_ids_without_objective_observations'], [1])
+                    self.assertNotIn('2', work['quests'])
+                    self.assertNotIn('4', work['quests'])
+                    self.assertEqual(work['quests']['3'], {
+                        'readiness':'ready','unfinished_objectives':{'1':{'kind':'monster','remaining_count':1}},
+                    })
+                    self.assertIsNone(work['quests']['5']['unfinished_objectives']['1']['remaining_count'])
+                    filtered = await query(quest_list_objective_checklist=True,quest_reward_item_id=118)
+                    self.assertEqual(filtered['quest_objective_checklist']['quests'], {'3':work['quests']['3']})
+                    self.assertIsNone((await query(snapshot_id=missing,
+                        quest_list_objective_checklist=True))['quest_objective_checklist'])
                     exact = await query(quest_id=3)
                     requirements={'storage':'bags','items':[{'item_id':118,'quantity':5},
                                                              {'item_id':858,'quantity':1}]}
@@ -607,6 +619,8 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await query(quest_id=2))['objective_quantities_by_kind'],{})
                     self.assertIsNone((await query(quest_id=1))['objective_quantities_by_kind'])
                     await query(error=True,quest_list_timed_checklist=True,quest_id=3)
+                    await query(error=True,quest_list_objective_checklist=True,quest_id=3)
+                    await query(error=True,quest_list_objective_checklist=True,snapshot_id=retail)
                     await query(error=True,quest_list_timed_checklist=True,snapshot_id=retail)
                     deadline=await query(quest_projected_expiry_by='2025-01-01T00:01:00Z')
                     self.assertEqual(set(deadline['data']),{'3'})

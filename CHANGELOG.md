@@ -1,5 +1,7 @@
 # Changelog
 
+- List unfinished objectives and missing observations across filtered saved quests.
+
 - Show combined saved wallet and bag capacity for reputation turn-ins.
 
 - Budget assumed reputation turn-in copper costs against the saved wallet and reserve.

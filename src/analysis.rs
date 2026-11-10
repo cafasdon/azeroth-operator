@@ -10326,6 +10326,31 @@ pub fn unfinished_quest_objectives(quest: Option<&Value>) -> Value {
     )
 }
 
+pub fn quest_objective_checklist(quests: &serde_json::Map<String, Value>) -> Value {
+    let mut missing = Vec::new();
+    let mut entries = BTreeMap::new();
+    for (key, quest) in quests {
+        let Ok(id) = key.parse::<u32>() else { continue };
+        let readiness = quest_readiness(quest);
+        if readiness == QuestReadiness::Failed {
+            continue;
+        }
+        let unfinished = unfinished_quest_objectives(Some(quest));
+        match unfinished.as_object() {
+            None => missing.push(id),
+            Some(rows) if !rows.is_empty() => {
+                entries.insert(
+                    id,
+                    json!({"readiness":readiness,"unfinished_objectives":unfinished}),
+                );
+            }
+            _ => {}
+        }
+    }
+    missing.sort_unstable();
+    json!({"quests":entries,"quest_ids_without_objective_observations":missing})
+}
+
 #[derive(
     Clone, Copy, PartialEq, Eq, serde::Deserialize, serde::Serialize, schemars::JsonSchema,
 )]

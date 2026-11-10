@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Set `quest_list_objective_checklist` in saved quest-list inspection to
+see explicitly unfinished objectives and remaining counts for matching
+quests. It skips failed quests, preserves the captured readiness flag,
+and lists quests whose objective section was absent separately. Unknown
+remaining counts stay unknown.
+
 In `inspect_snapshot`, select a Forever `faction_id` in the reputation
 section and pass `reputation_points_per_turn_in` to estimate repetitions
 to its observed next standard rank. The estimate uses a constant
