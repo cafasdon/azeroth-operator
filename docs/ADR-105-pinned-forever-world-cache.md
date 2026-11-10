@@ -104,3 +104,7 @@ item as their container. The same offset also pages forward acquisition sources.
 Quest links also resolve `breadcrumbs`, `nextQuestInChain`, `parentQuest`,
 `breadcrumbForQuestId`, `availableUntilCompleted`, `availableStartingWith`
 and `disabledByQuest`. Scalar references appear at position `1`.
+
+`quest_objective_targets` also exposes named groups for `sourceItemId` and
+`requiredSourceItems`. These retain the distinction between the item supplied
+by the quest starter and additional items required by the quest.

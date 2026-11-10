@@ -238,13 +238,19 @@ class World:
     def quest_objective_targets(self, fields):
         objectives = fields.get('objectives', {})
         targets = {}
-        for position, kind in (('1', 'npc'), ('2', 'object'), ('3', 'item')):
-            group = objectives.get(position)
+        groups = [(position, kind, objectives.get(position), True)
+                  for position, kind in (('1', 'npc'), ('2', 'object'), ('3', 'item'))]
+        if 'sourceItemId' in fields:
+            groups.append(('sourceItemId', 'item', {'1': fields['sourceItemId']}, False))
+        groups.append(('requiredSourceItems', 'item', fields.get('requiredSourceItems'), False))
+        for position, kind, group, tuple_entries in groups:
             if not isinstance(group, dict):
                 continue
             references = {}
             for slot, objective in group.items():
-                identity = objective.get('1') if isinstance(objective, dict) else None
+                identity = objective
+                if tuple_entries:
+                    identity = objective.get('1') if isinstance(objective, dict) else None
                 if type(identity) is not int or not 1 <= identity <= 2**32-1:
                     references[slot] = {'status': 'unsupported_reference'}
                     continue

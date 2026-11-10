@@ -1,5 +1,7 @@
 # Changelog
 
+- Resolve cached quest starter supplies and required source items.
+
 - Resolve cached quest chain, parent, breadcrumb and availability references.
 
 - List cached container contents alongside item acquisition sources.

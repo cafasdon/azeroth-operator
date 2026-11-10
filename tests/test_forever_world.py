@@ -97,6 +97,13 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(end['item_sources']['npcDrops']['references'],{})
                     await call(get,error=True,kind='item',entity_id=1931,item_source_offset=1)
                     linked = await call(get,kind='quest',entity_id=2,include_quest_links=True)
+                    supplied = linked['quest_objective_targets']['sourceItemId']['references']['1']
+                    self.assertEqual(supplied['entity_id'],linked['record']['fields']['sourceItemId'])
+                    self.assertEqual(supplied['record']['kind'],'item')
+                    supplies = await call(get,kind='quest',entity_id=28,include_quest_links=True)
+                    required = supplies['quest_objective_targets']['requiredSourceItems']['references']
+                    self.assertEqual({key: val['entity_id'] for key, val in required.items()},
+                                     supplies['record']['fields']['requiredSourceItems'])
                     prerequisite = linked['quest_links']['preQuestSingle']['1']
                     exact = await call(get,kind='quest',entity_id=6383)
                     self.assertEqual(prerequisite['quest_id'],6383)
