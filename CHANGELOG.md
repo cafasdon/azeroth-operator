@@ -1,5 +1,7 @@
 # Changelog
 
+- Audit saved Forever gear resolution directly through the local MCP without a simulation setup.
+
 - Optionally shortlist unresolved owned-gear locations before planning.
 
 - Break down owned-gear simulator resolution counts by observed storage.

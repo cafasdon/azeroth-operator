@@ -338,10 +338,7 @@ async def execute(args):
     return report
 
 
-def parser():
-    cli = argparse.ArgumentParser(description=__doc__)
-    for name in ['mcp', 'template', 'journal', 'engine', 'simulation-journal']:
-        cli.add_argument('--' + name, type=Path, required=True)
+def add_snapshot_selector(cli):
     selector = cli.add_mutually_exclusive_group(required=True)
     selector.add_argument('--snapshot-id')
     selector.add_argument('--character-name')
@@ -356,6 +353,13 @@ def parser():
                      help='Require this section on the newest capture with --character-name; repeat for multiple sections')
     cli.add_argument('--require-all-storage-sections', action='store_true',
                      help='Require equipment, bags, character bank and account bank in the selected capture')
+
+
+def parser():
+    cli = argparse.ArgumentParser(description=__doc__)
+    for name in ['mcp', 'template', 'journal', 'engine', 'simulation-journal']:
+        cli.add_argument('--' + name, type=Path, required=True)
+    add_snapshot_selector(cli)
     cli.add_argument('--require-catalogue-coverage', action='store_true',
                      help='Check observed item catalogue coverage before collecting plans and require saved coverage evidence before simulation')
     cli.add_argument('--include-item-resolution-counts', action='store_true',

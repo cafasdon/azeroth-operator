@@ -501,6 +501,10 @@ Use `--unresolved-item-limit` with a value from 1 to 50 to include those
 counts plus the first unresolved locations returned by the MCP. The shortlist
 includes item IDs, numeric locations and resolution statuses, with a flag
 when more rows are available.
+For diagnostics alone, run `python -m tools.audit_forever_owned_gear`
+with `--mcp` and the same saved snapshot or character selector. The audit
+reports the resolution counts and accepts `--unresolved-item-limit`.
+It runs without an engine, encounter, template or plan journal.
 Use `review_forever_owned_gear` with `catalogue_matched: false` to page
 through unmatched observed locations. It can be combined with a storage
 filter, and the inventory evidence still describes all observed storage.

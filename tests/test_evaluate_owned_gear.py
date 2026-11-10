@@ -188,6 +188,7 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 mean=100 if 4549 not in ids else (110 if request['encounter']['duration']==45 else 130)
                 Path(command[command.index('--outfile')+1]).write_text(json.dumps({
                     'iterationsDone':3,'raidMetrics':{'dps':{'avg':mean,'stdev':1}}}))
+            run_process = subprocess.run
             with patch('tools.run_forever_sim.subprocess.run',side_effect=engine_stub) as runs, \
                     patch.object(workflow.collection,'collect_windows',side_effect=collecting), \
                     patch.object(workflow.simulation,'execute',side_effect=simulating):
@@ -271,6 +272,24 @@ class OwnedGearEvaluationTests(unittest.TestCase):
                 self.assertFalse(complete_shortlist['has_more'])
                 self.assertEqual(complete_shortlist['locations'][1], {
                     'storage':'bags','container':0,'slot':3,'item_id':4549,'resolution':'item_link_unresolved'})
+                existing_files = set(base.iterdir())
+                for selector, selection in [
+                    (['--snapshot-id',gap_key], 'explicit_saved_snapshot'),
+                    (['--character-name','CatalogueGap','--character-realm','Test'], 'explicit_saved_character'),
+                ]:
+                    audited = run_process([sys.executable,'-m','tools.audit_forever_owned_gear',
+                        '--mcp',str(binary),'--unresolved-item-limit','50',*selector],
+                        cwd=root,env=env,capture_output=True,text=True,timeout=30)
+                    self.assertEqual(audited.returncode,0,audited.stderr)
+                    self.assertNotIn('PRIVATE',audited.stdout)
+                    audit = json.loads(audited.stdout)
+                    self.assertEqual(audit['selection'],selection)
+                    self.assertEqual(audit['snapshot_id'],gap_key)
+                    self.assertEqual(audit['preflight_unresolved_item_locations'],complete_shortlist)
+                    self.assertEqual(audit['preflight_simulator_item_resolution_counts_by_storage'],by_storage)
+                    self.assertFalse(audit['simulation_performed'])
+                    self.assertFalse(audit['active_character_verified'])
+                self.assertEqual(set(base.iterdir()),existing_files)
                 del captured[stage_count:]
                 self.assertEqual(runs.call_count,calls)
                 all_storage = '--require-all-storage-sections'
