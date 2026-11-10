@@ -872,10 +872,11 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         training = json.loads(json.dumps(forever))
                         training["sections"]["professions"].update({
-                            "2": {"name": "Fixture capped", "rank": 75, "max_rank": 75, "skill_line": 165},
+                            "2": {"name": "Alchemy", "rank": 75, "max_rank": 75, "skill_line": 165},
                             "3": {"name": "Fixture unknown cap", "rank": 0, "max_rank": 0, "skill_line": 166},
                             "4": {"name": "Fixture inconsistent", "rank": 76, "max_rank": 75, "skill_line": 164},
                         })
+                        training["sections"]["trainer_services"]["entries"]["4"]["skill_requirement"]["required_rank"] = 80
                         training_key = SnapshotStore(Path(folder)).ingest(training)
                         profession_filter = {"family": "forever", "profession_skill_line": 164,
                                              "profession_min_rank": 20}
@@ -952,11 +953,28 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                              "profession_target_rank": 0},
                             {"section": "stats", "profession_skill_line": 165,
                              "profession_target_rank": 80},
+                            {"section": "professions", "profession_skill_line": 165,
+                             "profession_target_trainer_lessons": True},
                         ]:
                             result = await session.call_tool("inspect_snapshot", {
                                 "snapshot_id": training_key, **options,
                             })
                             self.assertTrue(result.isError, result)
+                        for skill, target, expected in [
+                            (165, 80, [{"slot": 4, "name": "Blocked Lesson", "required_rank": 80,
+                                        "captured_status": "unavailable",
+                                        "captured_skill_requirement_met": False, "price_copper": None}]),
+                            (165, 79, []),
+                            (164, 80, None),
+                        ]:
+                            response = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": training_key, "section": "professions",
+                                "profession_skill_line": skill, "profession_target_rank": target,
+                                "profession_target_trainer_lessons": True,
+                            })
+                            self.assertFalse(response.isError, response)
+                            self.assertEqual(json.loads(response.content[0].text)
+                                             ["profession_target_trainer_lessons"], expected)
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         achievement_data = json.loads(achievement.content[0].text)
                         self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)

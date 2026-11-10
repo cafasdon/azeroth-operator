@@ -5,6 +5,11 @@ and `profession_skill_line`, then set `profession_target_rank` to check points
 remaining and whether the target exceeds the captured cap. A zero or
 inconsistent cap leaves cap comparisons unknown. Ambiguous or unavailable
 observations leave progress unknown. This does not verify training eligibility.
+Set `profession_target_trainer_lessons` to list lessons in the same saved
+non-pet trainer panel whose exact skill requirement name matches the
+unique profession name and whose rank threshold falls above the captured
+rank and at or below the target. The list reflects observed rows and
+recorded status and price. Missing or ambiguous context returns null.
 For cross-character discovery, use `list_snapshots` with the same skill
 line and optional target. Inclusive `profession_min_rank` and
 `profession_max_rank` filter the observed rank. Results require a unique

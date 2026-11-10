@@ -407,6 +407,9 @@ struct Inspect {
     profession_skill_line: Option<std::num::NonZeroU32>,
     /// Check this target rank against the selected saved profession's rank and cap.
     profession_target_rank: Option<std::num::NonZeroU32>,
+    /// Include same-capture trainer thresholds between the saved profession rank and target.
+    #[serde(default)]
+    profession_target_trainer_lessons: bool,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Find this base or reported spell ID in the saved Forever spellbook section.
@@ -3418,6 +3421,11 @@ impl Operator {
                 "Profession rank targets require a profession skill line",
             )]);
         }
+        if args.profession_target_trainer_lessons && args.profession_target_rank.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Profession trainer lesson review requires a profession rank target",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -6146,6 +6154,21 @@ impl Operator {
                                     row,
                                     target.get(),
                                 );
+                            if args.profession_target_trainer_lessons {
+                                let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
+                                    return CallToolResult::error(vec![ContentBlock::text(
+                                        "Could not read the captured profession trainer context",
+                                    )]);
+                                };
+                                value["profession_target_trainer_lessons"] = serde_json::json!(
+                                    azeroth_operator::analysis::profession_target_trainer_lessons(
+                                        &section,
+                                        row,
+                                        target.get(),
+                                        snapshot.sections.get("trainer_services")
+                                    )
+                                );
+                            }
                         }
                     } else {
                         value["profession_training_progress"] =

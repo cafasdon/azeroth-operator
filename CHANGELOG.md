@@ -1,5 +1,7 @@
 # Changelog
 
+- Show saved trainer lesson thresholds along a profession rank target.
+
 - Compare saved profession progress and target crossings between captures.
 
 - Find saved Forever professions within an observed rank range and report progress toward a target.

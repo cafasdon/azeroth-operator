@@ -9956,6 +9956,40 @@ pub fn profession_target_progress(profession: Option<&Value>, target: u32) -> Va
     })
 }
 
+pub fn profession_target_trainer_lessons(
+    professions: &Value,
+    profession: Option<&Value>,
+    target: u32,
+    trainer: Option<&Value>,
+) -> Option<Vec<Value>> {
+    let profession = profession?;
+    let name = profession["name"]
+        .as_str()
+        .filter(|name| !name.trim().is_empty())?;
+    let rank = profession["rank"].as_u64()?;
+    if professions
+        .as_object()?
+        .values()
+        .filter(|row| row["name"].as_str() == Some(name))
+        .count()
+        != 1
+    {
+        return None;
+    }
+    let trainer = trainer.filter(|row| row["kind"] != "pet")?;
+    let mut lessons: Vec<_> = trainer["entries"].as_object()?.iter().filter_map(|(slot, lesson)| {
+        let skill = &lesson["skill_requirement"];
+        let required = skill["required_rank"].as_u64()?;
+        let slot = slot.parse::<u32>().ok()?;
+        (skill["name"].as_str() == Some(name) && rank < required && required <= u64::from(target))
+            .then(|| (required, slot, json!({"slot":slot,"name":lesson["name"],
+                "required_rank":required,"captured_status":lesson["status"],
+                "captured_skill_requirement_met":skill["met"],"price_copper":lesson["price_copper"]})))
+    }).collect();
+    lessons.sort_unstable_by_key(|(required, slot, _)| (*required, *slot));
+    Some(lessons.into_iter().map(|(_, _, lesson)| lesson).collect())
+}
+
 fn tracked_achievement_workload(section: &Value) -> Option<Value> {
     let entries = section["entries"].as_object()?;
     let mut unfinished = Vec::new();
