@@ -305,6 +305,13 @@ item ID), cleared slots and source snapshot/report hash. This applies to saved
 journal rankings and the unified evaluator, including checkpoint-only results.
 The `bank_retrievals` list isolates selections from either bank and orders them
 by saved storage, container and slot for manual retrieval.
+To check those locations again, pass the loadout's original `snapshot_id` and
+`selections` to `review_equipment_selection` with
+`compare_source_locations_snapshot_id` set to a strictly newer capture of
+the same Forever character and exact client build. The primary draft reports
+which exact locations show the same item ID and link, a changed or unknown
+link, a different ID, or no observation. It leaves item continuity and
+current locations unverified.
 The join checks the referenced saved row and winning gear hash. These are
 historical locations; `current_locations_verified` and
 `native_equip_eligibility_verified` remain false. No equip action is generated.

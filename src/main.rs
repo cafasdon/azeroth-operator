@@ -1192,6 +1192,8 @@ struct EquipmentReview {
     clear_equipment_slots: Vec<u32>,
     /// Review up to seven more Forever drafts against this same snapshot.
     additional_drafts: Option<Vec<EquipmentDraft>>,
+    /// Compare the primary draft's exact source locations with a newer capture of the same Forever character and build.
+    compare_source_locations_snapshot_id: Option<String>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2192,6 +2194,21 @@ impl Operator {
                 &args.clear_equipment_slots,
                 catalogue.as_ref(),
             )?;
+            if let Some(id) = args.compare_source_locations_snapshot_id {
+                let newer = self.store.read(&id)?;
+                azeroth_operator::analysis::ensure_same_character_and_client(&snapshot, &newer)?;
+                anyhow::ensure!(
+                    snapshot.client.family == Family::Forever
+                        && newer.captured_at > snapshot.captured_at,
+                    "Source location comparison requires a newer Forever capture"
+                );
+                review["source_location_comparison"] = serde_json::json!({
+                    "snapshot_id": id, "captured_at": newer.captured_at,
+                    "current_locations_verified": false,
+                    "selections": azeroth_operator::planning::compare_equipment_sources(
+                        &snapshot, &newer, &args.selections)
+                });
+            }
             if !additional.is_empty() {
                 let extra = additional
                     .into_iter()

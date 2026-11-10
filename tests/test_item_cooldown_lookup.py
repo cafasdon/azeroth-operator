@@ -31,7 +31,8 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                     '3':{'button':'ActionButton3','slot':3}}}
             value['sections']['bags']={'0':{str(slot):{'item_id':100,'count':slot} for slot in [1,2,3]},
                 '1':{'1':{'item_id':101,'count':99}}, '2':{}}
-            value['sections']['character_bank']={'6':{'1':{'item_id':100,'count':20}}}
+            value['sections']['character_bank']={'6':{'1':{
+                'item_id':100,'count':20,'link':'item:100:0:0:0:0:0:0'}}}
             value['sections']['bag_item_cooldowns']={'coverage':'captured_carried_items_only','captured_item_locations':4,
                 'entries':{'0':{
                     '1':{'item_id':100,'status':'reported','enabled':True,'remaining_seconds':0},
@@ -62,11 +63,42 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
             no_bags=deepcopy(legacy);del no_bags['sections']['bags']
             del no_bags['sections']['action_bar_observation']['button_hotkeys']
             no_bags_key=store.ingest(no_bags)
+            location_captures = []
+            for item, status in [
+                ({'item_id':100,'count':1,'link':'item:100:0:0:0:0:0:0'}, 'same_item_id_and_link'),
+                ({'item_id':100,'count':1,'link':'item:100:1:0:0:0:0:0'}, 'same_item_id_different_link'),
+                ({'item_id':100,'count':1}, 'same_item_id_link_unknown'),
+                ({'item_id':100,'count':1,'link':''}, 'same_item_id_link_unknown'),
+                ({'item_id':101,'count':1}, 'different_item_id'),
+                (None, 'not_observed'),
+            ]:
+                later = deepcopy(value)
+                later['captured_at'] = '2025-01-03T00:00:00Z'
+                later['sections']['character_bank']['6'] = {'1':item} if item else {}
+                location_captures.append((store.ingest(later), status, item))
             protected={p:p.read_bytes() for p in base.glob('*.json')}
             env={**os.environ,'AZEROTH_DATA_DIR':folder}
             async with stdio_client(StdioServerParameters(command=str(binary),env=env)) as (read,write):
                 async with ClientSession(read,write) as session:
                     await session.initialize()
+                    equipment_request = {'snapshot_id':key, 'selections':[{
+                        'target_slot':11, 'expected_item_id':100,
+                        'source':{'kind':'character_bank','container':6,'slot':1}}]}
+                    for later_key, status, item in location_captures:
+                        reply = await session.call_tool('review_equipment_selection', {
+                            **equipment_request, 'compare_source_locations_snapshot_id':later_key})
+                        self.assertFalse(reply.isError, reply)
+                        comparison = json.loads(reply.content[0].text)['source_location_comparison']
+                        self.assertEqual(comparison['snapshot_id'], later_key)
+                        self.assertFalse(comparison['current_locations_verified'])
+                        self.assertEqual(comparison['selections'], [{
+                            **equipment_request['selections'][0], 'status':status,
+                            'observed_item_id':item['item_id'] if item else None}])
+                    for invalid_key in [key, alt_key, retail_key]:
+                        reply = await session.call_tool('review_equipment_selection', {
+                            **equipment_request, 'compare_source_locations_snapshot_id':invalid_key})
+                        self.assertTrue(reply.isError, reply)
+
                     audit_request = {
                         'section': 'action_bar_observation',
                         'action_bar_item_stock_audit': True,

@@ -81,6 +81,37 @@ pub struct EquipmentSelection {
     pub expected_item_id: u32,
 }
 
+pub fn compare_equipment_sources(
+    original: &Snapshot,
+    newer: &Snapshot,
+    selections: &[EquipmentSelection],
+) -> Vec<Value> {
+    selections
+        .iter()
+        .map(|selection| {
+            let before = selection.source.observed_in(original);
+            let after = selection.source.observed_in(newer);
+            let observed_id = after.and_then(|row| row["item_id"].as_u64());
+            let status = match observed_id {
+                None => "not_observed",
+                Some(id) if id != u64::from(selection.expected_item_id) => "different_item_id",
+                Some(_) => match before
+                    .and_then(|row| row["link"].as_str())
+                    .zip(after.and_then(|row| row["link"].as_str()))
+                    .filter(|(old, new)| !old.trim().is_empty() && !new.trim().is_empty())
+                {
+                    Some((old, new)) if old == new => "same_item_id_and_link",
+                    Some(_) => "same_item_id_different_link",
+                    None => "same_item_id_link_unknown",
+                },
+            };
+            json!({"target_slot":selection.target_slot,"source":selection.source,
+            "expected_item_id":selection.expected_item_id,"observed_item_id":observed_id,
+            "status":status})
+        })
+        .collect()
+}
+
 pub fn equipment_review(snapshot: &Snapshot, selections: &[EquipmentSelection]) -> Result<Value> {
     snapshot.validate()?;
     ensure!(

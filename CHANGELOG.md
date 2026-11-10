@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved Forever equipment selections with a newer capture's exact source locations.
+
 - List saved bank retrievals for ranked Forever loadouts.
 
 - Show saved shortcut keys alongside carried stock targets.
