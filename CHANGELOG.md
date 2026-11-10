@@ -1,5 +1,7 @@
 # Changelog
 
+- Report a combined saved profession trainer quote budget, including missing prices and any wallet reserve.
+
 - Check saved profession trainer lesson prices against wallet copper after a reserve.
 
 - Find saved professions within a rank-point budget or their recorded cap.

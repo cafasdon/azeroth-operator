@@ -1023,6 +1023,37 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertTrue((await session.call_tool("inspect_snapshot", {
                                 **reserved_lesson, "profession_target_trainer_reserve_copper": 0, **invalid,
                             })).isError)
+                        for extra_price, wallet, known_shortfall, affordable in [
+                            (11, 22, 1, False), (11, 23, 0, True),
+                            (None, 11, 1, False), (None, 12, 0, None),
+                        ]:
+                            group = json.loads(json.dumps(training))
+                            entries = group["sections"]["trainer_services"]["entries"]
+                            extra = dict(entries["4"], name="Second quote")
+                            if extra_price is None:
+                                extra.pop("price_copper")
+                            else:
+                                extra["price_copper"] = extra_price
+                            entries[str(len(entries) + 1)] = extra
+                            group["sections"]["wallet"]["copper"] = wallet
+                            group_key = SnapshotStore(Path(folder)).ingest(group)
+                            result = await session.call_tool("inspect_snapshot", {
+                                **reserved_lesson, "snapshot_id": group_key,
+                                "profession_target_trainer_reserve_copper": 1,
+                            })
+                            self.assertFalse(result.isError, result)
+                            budget = json.loads(result.content[0].text)["profession_target_trainer_quote_budget"]
+                            self.assertEqual(budget, {
+                                "scope":"projected_trainer_rows", "lesson_count":2,
+                                "unknown_price_count":int(extra_price is None),
+                                "known_quote_subtotal_copper":11 + (extra_price or 0),
+                                "reserve_copper":1,"reserve_covered":True,
+                                "known_quotes_and_reserve_shortfall_copper":known_shortfall,
+                                "all_quotes_and_reserve_shortfall_copper":known_shortfall if extra_price is not None else None,
+                                "all_quotes_fit_wallet_with_reserve":affordable,
+                                "training_eligibility_verified":False,
+                            })
+                            (Path(folder) / f"{group_key}.json").unlink()
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         achievement_data = json.loads(achievement.content[0].text)
                         self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)

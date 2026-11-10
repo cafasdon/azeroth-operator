@@ -6547,19 +6547,30 @@ impl Operator {
                                         "Could not read the captured profession trainer context",
                                     )]);
                                 };
-                                value["profession_target_trainer_lessons"] = serde_json::json!(
+                                let wallet = snapshot
+                                    .sections
+                                    .get("wallet")
+                                    .and_then(|wallet| wallet["copper"].as_u64());
+                                let lessons =
                                     azeroth_operator::analysis::profession_target_trainer_lessons(
                                         &section,
                                         row,
                                         target.get(),
                                         snapshot.sections.get("trainer_services"),
-                                        snapshot
-                                            .sections
-                                            .get("wallet")
-                                            .and_then(|wallet| wallet["copper"].as_u64()),
-                                        args.profession_target_trainer_reserve_copper
-                                    )
-                                );
+                                        wallet,
+                                        args.profession_target_trainer_reserve_copper,
+                                    );
+                                value["profession_target_trainer_quote_budget"] =
+                                    serde_json::json!(lessons.as_deref().map(|lessons| {
+                                        azeroth_operator::analysis::profession_trainer_quote_budget(
+                                            lessons,
+                                            wallet,
+                                            args.profession_target_trainer_reserve_copper
+                                                .unwrap_or_default(),
+                                        )
+                                    }));
+                                value["profession_target_trainer_lessons"] =
+                                    serde_json::json!(lessons);
                             }
                         }
                     } else {

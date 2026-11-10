@@ -5,6 +5,10 @@ set `profession_target_trainer_reserve_copper` to check each projected
 lesson's saved quote against the saved wallet while preserving a reserve.
 Each quote is evaluated separately. Missing prices or wallet observations
 leave the combined shortfall unknown.
+The accompanying `profession_target_trainer_quote_budget` totals the
+projected rows and applies the reserve once. A known subtotal can show
+a budget shortfall even if other quotes are missing. Affordability refers
+to saved prices and does not establish training eligibility.
 
 Use `profession_target_max_remaining` on `list_snapshots` with a
 `profession_skill_line` and `profession_target_rank` to find saved

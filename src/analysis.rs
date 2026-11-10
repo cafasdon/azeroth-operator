@@ -10521,6 +10521,43 @@ pub fn profession_target_trainer_lessons(
     Some(lessons.into_iter().map(|(_, _, lesson)| lesson).collect())
 }
 
+pub fn profession_trainer_quote_budget(
+    lessons: &[Value],
+    wallet: Option<u64>,
+    reserve: u64,
+) -> Value {
+    let prices = lessons
+        .iter()
+        .filter_map(|lesson| lesson["price_copper"].as_u64());
+    let (known_count, subtotal) = prices.fold((0, 0u64), |(count, subtotal), price| {
+        (count + 1, subtotal + price)
+    });
+    let unknown_count = lessons.len() - known_count;
+    let known_shortfall =
+        wallet.and_then(|wallet| reserved_balance_shortfall(subtotal, wallet, reserve));
+    let affordable = known_shortfall.and_then(|shortfall| {
+        if shortfall > 0 {
+            Some(false)
+        } else if unknown_count == 0 {
+            Some(true)
+        } else {
+            None
+        }
+    });
+    json!({
+        "scope":"projected_trainer_rows",
+        "lesson_count":lessons.len(),
+        "unknown_price_count":unknown_count,
+        "known_quote_subtotal_copper":subtotal,
+        "reserve_copper":reserve,
+        "reserve_covered":wallet.map(|wallet| wallet >= reserve),
+        "known_quotes_and_reserve_shortfall_copper":known_shortfall,
+        "all_quotes_and_reserve_shortfall_copper":(unknown_count == 0).then_some(known_shortfall).flatten(),
+        "all_quotes_fit_wallet_with_reserve":affordable,
+        "training_eligibility_verified":false
+    })
+}
+
 fn tracked_achievement_workload(section: &Value) -> Option<Value> {
     let entries = section["entries"].as_object()?;
     let mut unfinished = Vec::new();
