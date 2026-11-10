@@ -1,5 +1,7 @@
 # Changelog
 
+- Return optional exact public source records alongside hybrid search candidates.
+
 - Extend public hybrid search to enchants, suffixes, spell effects and encounter presets.
 
 - Register the public knowledge companion locally on ICARUS and verify its saved stdio configuration.

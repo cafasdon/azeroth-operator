@@ -26,6 +26,7 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
             self.skipTest('Optional pinned local model, environment and built index required')
         original = hashlib.sha256(index.read_bytes()).hexdigest()
         expected = {row[0]: row for row in knowledge.documents(catalogue)}
+        raw_catalogue = json.loads(catalogue.read_text())
         # Allow the event loop's loopback socket pair, reject external connections.
         script = (
             "import socket,runpy,sys;"
@@ -63,6 +64,7 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(result['catalogue_sha256'], knowledge.PIN['sha256'])
                         self.assertEqual(len(result['results']), min(5, sum(row[1] == section for row in expected.values())))
                         for row in result['results']:
+                            self.assertNotIn('catalogue_record', row)
                             source = expected[row['record_key']]
                             self.assertEqual(row['section'], section)
                             self.assertEqual(row['name'], source[3])
@@ -75,8 +77,26 @@ class KnowledgeTests(unittest.IsolatedAsyncioTestCase):
                             self.assertEqual(len({row['record_key'] for row in variants}), 2)
                         if section == 'encounters':
                             self.assertEqual(result['results'][0]['record_id'], 'Default/Movement')
+                    for section, query in {
+                        'items':'Thunderfury','consumables':'Healing Potion','npcs':'Ragnaros',
+                        'zones':'Molten Core','factions':'Argent Dawn','enchants':'Inferior Stamina',
+                        'random_suffixes':'of the Eagle','spell_effects':'437','encounters':'Movement',
+                    }.items():
+                        reply = await session.call_tool('search_forever_knowledge', {
+                            'query':query,'section':section,'limit':2,'include_records':True,
+                        })
+                        self.assertFalse(reply.isError, reply)
+                        result = json.loads(reply.content[0].text)
+                        source_section = {'random_suffixes':'randomSuffixes','spell_effects':'spellEffects'}.get(section, section)
+                        for row in result['results']:
+                            record = row['catalogue_record']
+                            self.assertIn(record, raw_catalogue[source_section])
+                            canonical = json.dumps(record,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+                            self.assertEqual(row['catalogue_record_sha256'], hashlib.sha256(canonical).hexdigest())
+                            if section == 'enchants':
+                                self.assertTrue(row['record_key'].endswith(row['catalogue_record_sha256']))
                     for args in [{'query':''}, {'query':'x'*513}, {'query':'x','limit':21},
-                                 {'query':'x','section':'snapshots'}]:
+                                 {'query':'x','section':'snapshots'}, {'query':'x','limit':6,'include_records':True}]:
                         rejected = await session.call_tool('search_forever_knowledge', args)
                         self.assertTrue(rejected.isError)
         self.assertEqual(hashlib.sha256(index.read_bytes()).hexdigest(), original)

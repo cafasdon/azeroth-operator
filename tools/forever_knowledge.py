@@ -49,11 +49,22 @@ def file_digest(path):
     return result.hexdigest()
 
 
-def documents(catalogue):
+def read_catalogue(catalogue):
     with ordinary(catalogue.absolute()).open('rb') as handle:
         data = handle.read(MAX_BYTES + 1)
     verify(data)
-    source = json.loads(data)
+    return json.loads(data)
+
+
+def record_key(section, record, identity_field):
+    key = f"{section}:{record[identity_field]}"
+    if section == 'enchants':
+        key += ':' + digest(encoded(record).encode())
+    return key
+
+
+def documents(catalogue):
+    source = read_catalogue(catalogue)
     references = {
         kind: {row['id']: row['name'] for row in source[kind]}
         for kind in ('npcs', 'zones', 'factions')
@@ -81,9 +92,7 @@ def documents(catalogue):
                             if value.get(field) in references[kind]:
                                 text.append(references[kind][value[field]])
             body = ' '.join(text)
-            key = f"{section}:{identity}"
-            if section == 'enchants':
-                key += ':' + digest(encoded(record).encode())
+            key = record_key(section, record, identity_field)
             rows.append((key, section, identity, name, body, digest(body.encode())))
     if len(rows) != len({row[0] for row in rows}):
         raise ValueError('Ambiguous catalogue identity')
@@ -218,14 +227,21 @@ def build(catalogue, index, model_path):
 class Knowledge:
     def __init__(self, catalogue, index, model_path):
         self.rows = documents(catalogue)
+        source = read_catalogue(catalogue)
+        self.source_records = {
+            record_key(section, record, field): record
+            for section, (source_section, field) in SOURCES.items()
+            for record in source[source_section]
+        }
         self.index = index
         self.model = load_model(model_path)
 
-    def search(self, query, section=None, limit=10):
+    def search(self, query, section=None, limit=10, include_records=False):
         import numpy as np
         if (not isinstance(query, str) or not query.strip() or len(query.encode()) > 512
                 or section is not None and section not in SECTIONS
-                or type(limit) is not int or not 1 <= limit <= 20):
+                or type(limit) is not int or not 1 <= limit <= 20
+                or type(include_records) is not bool or include_records and limit > 5):
             raise ValueError('Invalid public knowledge query')
         query = query.strip()
         with closing(connect(self.index)) as database:
@@ -252,12 +268,20 @@ class Knowledge:
             ranks[key] = ranks.get(key, 0) + 1 / (60 + rank)
         by_key = {row[0]: row for row in selected}
         winners = sorted(ranks, key=lambda key: (-ranks[key], key))[:limit]
-        return {**metadata(), 'model_revision': MODEL_LOCK['revision'], 'source_revision': PIN['revision'],
+        result = {**metadata(), 'model_revision': MODEL_LOCK['revision'], 'source_revision': PIN['revision'],
                 'retrieval_only': True, 'live': False, 'results': [
                     {'section': by_key[key][1], 'record_id': by_key[key][2], 'record_key':key,
                      'name': by_key[key][3],
                      'document_sha256': by_key[key][5], 'retrieval_score': ranks[key]}
                     for key in winners]}
+        if include_records:
+            for row in result['results']:
+                source = encoded(self.source_records[row['record_key']])
+                row['catalogue_record'] = json.loads(source)
+                row['catalogue_record_sha256'] = digest(source.encode())
+            if len(encoded(result).encode()) > 256 * 1024:
+                raise ValueError('Source record response exceeds byte limit')
+        return result
 
 
 def main():
@@ -269,23 +293,25 @@ def main():
     cli.add_argument('--query')
     cli.add_argument('--section', choices=SECTIONS)
     cli.add_argument('--limit', type=int, default=10)
+    cli.add_argument('--include-records', action='store_true')
     args = cli.parse_args()
     if args.action == 'build':
         print(encoded(build(args.catalogue, args.index, args.model)))
         return
     knowledge = Knowledge(args.catalogue, args.index, args.model)
     if args.action == 'search':
-        print(encoded(knowledge.search(args.query, args.section, args.limit)))
+        print(encoded(knowledge.search(args.query, args.section, args.limit, args.include_records)))
         return
     from mcp.server.fastmcp import FastMCP
     from mcp.types import ToolAnnotations
     server = FastMCP('Azeroth Public Knowledge')
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False))
-    def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10) -> dict:
-        """Search local pinned public reference records. Returns candidate IDs for exact catalogue lookup."""
+    def search_forever_knowledge(query: str, section: str | None = None, limit: int = 10,
+                                 include_records: bool = False) -> dict:
+        """Search pinned public references. Limit 1–20, or 1–5 with include_records to attach exact source rows and hashes. Source-bearing replies are capped at 256 KiB."""
         try:
-            return knowledge.search(query, section, limit)
+            return knowledge.search(query, section, limit, include_records)
         except (OSError, ValueError, sqlite3.Error, KeyError, TypeError):
             raise ValueError('Public knowledge index or query unavailable or invalid') from None
 

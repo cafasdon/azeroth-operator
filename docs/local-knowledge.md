@@ -35,6 +35,10 @@ Encounter identities are paths. Enchant IDs are effect IDs and can match
 multiple source variants; their distinct record keys include a hash of
 the complete source row. Spell effects without names use a generated
 numeric label. No descriptions are inferred.
+Set `include_records: true` with a limit of 1–5 to include the exact
+pinned catalogue row and its canonical SHA-256 with each candidate.
+The combined response is bounded to 256 KiB. The CLI equivalent is
+`--include-records --limit 5`.
 
 The index contains public reference records. Its builder accepts the pinned
 catalogue and verifies its checksum. Search makes no source refresh or game

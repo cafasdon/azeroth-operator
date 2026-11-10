@@ -78,3 +78,18 @@ using Jev 1.14.0, request
 Usage was 546 input and 45 output tokens in 0.295 seconds.
 The author accepted the scoped identity and retrieval integration based
 on the exact corpus comparison and independent real-caller evidence.
+
+Optional source-record responses passed two scoped tests in 25.178 seconds.
+Independent failure review verified all 7,749 source joins across nine
+categories, default compatibility, duplicate enchant variants, return
+mutation isolation, bad arguments, the 256 KiB bound and the actual CLI.
+Independent data review verified exact rows/hashes across every category,
+unpinned input rejection, private sentinel mutation isolation, oversized
+response rejection and zero attempted network connections. Index bytes
+were unchanged. No concrete review findings remained.
+
+The advisory shipping judgement selected supported with confidence 0.60
+using Jev 1.14.0, request
+`f3b2d08d9ce23c9eb5a6933111ae0a96d59c8ea1f515cf8217f9aae208cec9c2`.
+Usage was 570 input and 45 output tokens in 0.293 seconds.
+The author accepted the scoped feature after both independent reviews.
