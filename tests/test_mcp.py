@@ -1023,9 +1023,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             self.assertTrue((await session.call_tool("inspect_snapshot", {
                                 **reserved_lesson, "profession_target_trainer_reserve_copper": 0, **invalid,
                             })).isError)
-                        for extra_price, wallet, known_shortfall, affordable in [
-                            (11, 22, 1, False), (11, 23, 0, True),
-                            (None, 11, 1, False), (None, 12, 0, None),
+                        for extra_price, wallet, known_shortfall, affordable, picked, picked_cost in [
+                            (11, 22, 1, False, ["first"], 11), (11, 23, 0, True, ["first", "second"], 22),
+                            (None, 11, 1, False, [], 0), (None, 12, 0, None, ["first"], 11),
+                            (4, 11, 5, False, ["second"], 4),
                         ]:
                             group = json.loads(json.dumps(training))
                             entries = group["sections"]["trainer_services"]["entries"]
@@ -1034,7 +1035,8 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 extra.pop("price_copper")
                             else:
                                 extra["price_copper"] = extra_price
-                            entries[str(len(entries) + 1)] = extra
+                            second_slot = len(entries) + 1
+                            entries[str(second_slot)] = extra
                             group["sections"]["wallet"]["copper"] = wallet
                             group_key = SnapshotStore(Path(folder)).ingest(group)
                             result = await session.call_tool("inspect_snapshot", {
@@ -1051,6 +1053,10 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                                 "known_quotes_and_reserve_shortfall_copper":known_shortfall,
                                 "all_quotes_and_reserve_shortfall_copper":known_shortfall if extra_price is not None else None,
                                 "all_quotes_fit_wallet_with_reserve":affordable,
+                                "cheapest_affordable_known_quotes": {
+                                    "lesson_slots":[4 if name == "first" else second_slot for name in picked],
+                                    "lesson_count":len(picked), "quote_subtotal_copper":picked_cost,
+                                },
                                 "training_eligibility_verified":False,
                             })
                             (Path(folder) / f"{group_key}.json").unlink()

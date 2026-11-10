@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the cheapest subset of projected profession trainer quotes within the saved wallet budget.
+
 - Report a combined saved profession trainer quote budget, including missing prices and any wallet reserve.
 
 - Check saved profession trainer lesson prices against wallet copper after a reserve.

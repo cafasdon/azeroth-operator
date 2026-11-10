@@ -9242,12 +9242,17 @@ pub fn trainer_cheapest_affordable(
     balance: Option<u64>,
 ) -> Option<Value> {
     let balance = balance?;
-    let mut priced: Vec<_> = trainer["entries"]
+    let priced: Vec<_> = trainer["entries"]
         .as_object()?
         .iter()
         .filter(|(_, lesson)| lesson["status"] == "available")
         .filter_map(|(slot, lesson)| Some((lesson[price_field].as_u64()?, slot)))
         .collect();
+    let (slots, subtotal) = cheapest_affordable_rows(priced, balance);
+    Some(json!({"lesson_slots":slots,"lesson_count":slots.len(),"total_price":subtotal}))
+}
+
+fn cheapest_affordable_rows<T: Ord>(mut priced: Vec<(u64, T)>, balance: u64) -> (Vec<T>, u64) {
     priced.sort_unstable();
     let mut subtotal = 0;
     let mut slots = Vec::new();
@@ -9258,7 +9263,7 @@ pub fn trainer_cheapest_affordable(
         subtotal += price;
         slots.push(slot);
     }
-    Some(json!({"lesson_slots":slots,"lesson_count":slots.len(),"total_price":subtotal}))
+    (slots, subtotal)
 }
 
 pub fn trainer_order_budget(
@@ -10526,13 +10531,18 @@ pub fn profession_trainer_quote_budget(
     wallet: Option<u64>,
     reserve: u64,
 ) -> Value {
-    let prices = lessons
+    let priced: Vec<_> = lessons
         .iter()
-        .filter_map(|lesson| lesson["price_copper"].as_u64());
-    let (known_count, subtotal) = prices.fold((0, 0u64), |(count, subtotal), price| {
-        (count + 1, subtotal + price)
-    });
-    let unknown_count = lessons.len() - known_count;
+        .filter_map(|lesson| Some((lesson["price_copper"].as_u64()?, lesson["slot"].as_u64()?)))
+        .collect();
+    let subtotal = priced.iter().map(|(price, _)| price).sum();
+    let unknown_count = lessons.len() - priced.len();
+    let cheapest = wallet
+        .and_then(|wallet| wallet.checked_sub(reserve))
+        .map(|spendable| {
+            let (slots, cost) = cheapest_affordable_rows(priced, spendable);
+            json!({"lesson_slots":slots,"lesson_count":slots.len(),"quote_subtotal_copper":cost})
+        });
     let known_shortfall =
         wallet.and_then(|wallet| reserved_balance_shortfall(subtotal, wallet, reserve));
     let affordable = known_shortfall.and_then(|shortfall| {
@@ -10554,6 +10564,7 @@ pub fn profession_trainer_quote_budget(
         "known_quotes_and_reserve_shortfall_copper":known_shortfall,
         "all_quotes_and_reserve_shortfall_copper":(unknown_count == 0).then_some(known_shortfall).flatten(),
         "all_quotes_fit_wallet_with_reserve":affordable,
+        "cheapest_affordable_known_quotes":cheapest,
         "training_eligibility_verified":false
     })
 }

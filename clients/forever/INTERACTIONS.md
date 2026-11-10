@@ -9,6 +9,9 @@ The accompanying `profession_target_trainer_quote_budget` totals the
 projected rows and applies the reserve once. A known subtotal can show
 a budget shortfall even if other quotes are missing. Affordability refers
 to saved prices and does not establish training eligibility.
+The budget also shows the largest count of individually quoted rows that
+fits after the reserve, taking the cheapest prices first and breaking ties
+by saved slot number. Missing prices are excluded from this shortlist.
 
 Use `profession_target_max_remaining` on `list_snapshots` with a
 `profession_skill_line` and `profession_target_rank` to find saved
