@@ -36,6 +36,9 @@ the inventory capture's wallet. A quote identifies the merchant capture.
 Use `set_merchant_snapshot_ids` to compare up to four distinct visits in
 the supplied order. Each visit is quoted independently against the same
 inventory and wallet. The plural selector replaces the single-visit quote.
+It also returns a combined plan when the visits together quote every
+unobserved piece. The plan minimises recorded copper purchase cost,
+then visit count, with travel cost assumed zero.
 Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
 shows the shortfall for priced pieces and reports complete affordability
 only when every requested piece has a supported copper quote and a wallet was captured.

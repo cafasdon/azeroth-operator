@@ -1774,6 +1774,28 @@ impl Operator {
                 let demands: Vec<_> = acquisition["records"].as_array().unwrap().iter()
                     .map(|item| serde_json::json!({"item_id":item["item_id"],"shortfall_vs_observed":1}))
                     .collect();
+                let wallet = snapshot
+                    .sections
+                    .get("wallet")
+                    .and_then(|row| row["copper"].as_u64());
+                let reserved_budget = |total: Option<u64>, subtotal: Option<u64>, reserve: u64| {
+                    let shortfall = |cost: Option<u64>| {
+                        cost.zip(wallet).and_then(|(cost, balance)| {
+                            azeroth_operator::analysis::reserved_balance_shortfall(
+                                cost, balance, reserve,
+                            )
+                        })
+                    };
+                    serde_json::json!({
+                        "wallet_reserve_copper":reserve,
+                        "spendable_copper":wallet.map(|balance| balance.saturating_sub(reserve)),
+                        "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
+                        "quoted_subtotal_shortfall_copper":shortfall(subtotal),
+                        "complete_quote_shortfall_copper":shortfall(total),
+                        "complete_quote_affordable":total.zip(wallet).map(|(cost, balance)|
+                            balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
+                    })
+                };
                 let make_quote = |id: &str, merchant: &azeroth_operator::Snapshot| {
                     let mut quote = if demands.is_empty() {
                         serde_json::Value::Null
@@ -1793,28 +1815,9 @@ impl Operator {
                     quote["current_offers_verified"] = serde_json::json!(false);
                     quote["merchant_snapshot_id"] = serde_json::json!(id);
                     if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
-                        let wallet = snapshot
-                            .sections
-                            .get("wallet")
-                            .and_then(|row| row["copper"].as_u64());
                         let total = quote["copper_only_bundle_mix_total"].as_u64();
                         let subtotal = quote["copper_only_bundle_mix_quoted_subtotal"].as_u64();
-                        let shortfall = |cost: Option<u64>| {
-                            cost.zip(wallet).and_then(|(cost, balance)| {
-                                azeroth_operator::analysis::reserved_balance_shortfall(
-                                    cost, balance, reserve,
-                                )
-                            })
-                        };
-                        quote["after_wallet_reserve"] = serde_json::json!({
-                            "wallet_reserve_copper":reserve,
-                            "spendable_copper":wallet.map(|balance| balance.saturating_sub(reserve)),
-                            "reserve_shortfall_copper":wallet.map(|balance| reserve.saturating_sub(balance)),
-                            "quoted_subtotal_shortfall_copper":shortfall(subtotal),
-                            "complete_quote_shortfall_copper":shortfall(total),
-                            "complete_quote_affordable":total.zip(wallet).map(|(cost, balance)|
-                                balance.checked_sub(reserve).is_some_and(|spendable| cost <= spendable))
-                        });
+                        quote["after_wallet_reserve"] = reserved_budget(total, subtotal, reserve);
                     }
                     quote
                 };
@@ -1829,6 +1832,41 @@ impl Operator {
                     let quotes = ids.iter().map(|id| {
                         Ok(serde_json::json!({"merchant_snapshot_id":id,"quote":quote_for_id(id)?}))
                     }).collect::<anyhow::Result<Vec<_>>>()?;
+                    let mut combined = None;
+                    if !demands.is_empty() && acquisition["truncated"] == false {
+                        let offers: Vec<_> = quotes
+                            .iter()
+                            .map(|visit| {
+                                visit["quote"]["items"]
+                                    .as_array()
+                                    .into_iter()
+                                    .flatten()
+                                    .filter_map(|row| {
+                                        let plan = &row["lowest_cost_copper_only_bundle_mix"];
+                                        Some((
+                                            row["item_id"].as_u64()?,
+                                            (plan["required_copper"].as_u64()?, plan.clone()),
+                                        ))
+                                    })
+                                    .collect()
+                            })
+                            .collect();
+                        combined = azeroth_operator::analysis::restock_travel_adjusted_plan(
+                            &demands,
+                            ids,
+                            &offers,
+                            &[0; 4][..ids.len()],
+                            4,
+                            wallet,
+                        );
+                        if let (Some(plan), Some(reserve)) =
+                            (&mut combined, args.set_merchant_wallet_reserve_copper)
+                        {
+                            let total = plan["complete_quote_copper"].as_u64();
+                            plan["after_wallet_reserve"] = reserved_budget(total, total, reserve);
+                        }
+                    }
+                    acquisition["captured_merchant_combined_plan"] = serde_json::json!(combined);
                     acquisition["captured_merchant_quotes"] = serde_json::json!(quotes);
                 } else {
                     acquisition["captured_merchant_quote"] =

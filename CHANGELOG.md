@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan a complete set-piece purchase across multiple saved merchant visits.
+
 - Compare saved quotes for unobserved Forever set pieces across up to four merchant visits.
 
 - Account for a wallet reserve in saved Forever set-piece merchant quotes.

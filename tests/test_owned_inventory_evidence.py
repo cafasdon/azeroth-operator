@@ -75,6 +75,9 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 'available': -1, 'extended_cost': False,
             }}
             merchant_capture_id = store.ingest(merchant_capture)
+            second_visit = deepcopy(merchant_capture)
+            second_visit['sections']['merchant_stock']['1'].update(item_id=7953, price_copper=3)
+            second_visit_id = store.ingest(second_visit)
             separate_wallet = deepcopy(base)
             separate_wallet['sections']['wallet'] = {'copper': 9}
             separate_wallet_id = store.ingest(separate_wallet)
@@ -132,6 +135,16 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         {'merchant_snapshot_id': partial, 'quote': None},
                         {'merchant_snapshot_id': merchant_capture_id, 'quote': separate_quote},
                     ])
+                    self.assertIsNone(visit_acquisition['captured_merchant_combined_plan'])
+                    split = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
+                        set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id],
+                        set_merchant_wallet_reserve_copper=1)
+                    plan = split['set_observation']['unobserved_piece_acquisition']['captured_merchant_combined_plan']
+                    self.assertEqual(plan['complete_quote_copper'], 10)
+                    self.assertEqual(plan['visit_count'], 2)
+                    self.assertEqual(plan['after_wallet_reserve']['complete_quote_shortfall_copper'], 2)
+                    self.assertEqual([(row['item_id'], row['merchant_snapshot_id']) for row in plan['items']],
+                                     [(7950, merchant_capture_id), (7953, second_visit_id)])
                     reserved = await review(separate_wallet_id, set_id=221,
                         include_unobserved_set_sources=True, set_merchant_snapshot_id=merchant_capture_id,
                         set_merchant_wallet_reserve_copper=4)
