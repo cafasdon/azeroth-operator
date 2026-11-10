@@ -386,6 +386,8 @@ struct Inspect {
     reputation_turn_in_item_cost: Option<ItemCost>,
     /// Distinct assumed item costs per turn-in. Supply 1 to 20, without the singular cost.
     reputation_turn_in_item_costs: Option<Vec<ItemCost>>,
+    /// Include saved bank withdrawal suggestions, starting at this location offset.
+    reputation_turn_in_bank_withdrawal_offset: Option<usize>,
     /// Filter visible Forever reputation rows; rank predicates require an explicit rank kind.
     reputation_filter: Option<azeroth_operator::analysis::ReputationFilter>,
     /// Select one saved Forever tracked achievement by ID. Requires section "tracked_achievements".
@@ -3444,6 +3446,13 @@ impl Operator {
             .reputation_turn_in_item_costs
             .as_deref()
             .unwrap_or_else(|| args.reputation_turn_in_item_cost.as_slice());
+        if args.reputation_turn_in_bank_withdrawal_offset.is_some()
+            && reputation_item_costs.is_empty()
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Reputation bank withdrawal review requires item costs",
+            )]);
+        }
         if (args.reputation_turn_in_item_cost.is_some()
             || args.reputation_turn_in_item_costs.is_some())
             && (args.reputation_points_per_turn_in.is_none()
@@ -6133,6 +6142,29 @@ impl Operator {
                                     "shortfall_quantity":required.zip(carried).map(|(required, carried)| required.saturating_sub(carried))
                                     })
                                 }).collect();
+                                if let Some(offset) = args.reputation_turn_in_bank_withdrawal_offset
+                                {
+                                    let totals: Option<Vec<_>> = reputation_item_costs
+                                        .iter()
+                                        .map(|cost| {
+                                            turn_ins?
+                                                .checked_mul(cost.quantity.get())
+                                                .map(|quantity| (cost.item_id, quantity))
+                                        })
+                                        .collect();
+                                    value["reputation_turn_in_bank_withdrawals"] = serde_json::json!(totals.map(|totals| {
+                                        let requirements = azeroth_operator::InventoryRequirementsFilter {
+                                            storage: azeroth_operator::InventoryStorage::Bags,
+                                            container_id: None,
+                                            items: totals.into_iter().filter_map(|(item_id, quantity)| {
+                                                Some(azeroth_operator::InventoryRequirement {
+                                                    item_id, quantity: std::num::NonZeroU64::new(quantity)?,
+                                                })
+                                            }).collect(),
+                                        };
+                                        requirements.review_observed_stock(&snapshot, Some(offset))["bank_withdrawal_plan"].clone()
+                                    }));
+                                }
                                 if args.reputation_turn_in_item_cost.is_some() {
                                     value["reputation_turn_in_item_plan"] =
                                         serde_json::json!(plans.into_iter().next());

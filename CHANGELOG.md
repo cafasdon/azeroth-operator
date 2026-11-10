@@ -1,5 +1,7 @@
 # Changelog
 
+- Suggest saved bank locations for reputation turn-in material shortfalls.
+
 - Show how many complete reputation turn-ins the saved bags support and which items limit them.
 
 - Plan up to twenty distinct item costs for a saved reputation turn-in.

@@ -15,6 +15,11 @@ each shortfall separately in request order. Use one cost form per request.
 The plural plan also reports complete turn-ins supported by the saved
 bags, all limiting item IDs and the remaining turn-ins needed for the
 next rank. Missing bag observations leave capacity unknown.
+With either item cost form, set `reputation_turn_in_bank_withdrawal_offset`
+to zero for the first page of saved withdrawal locations. The plan uses
+the same capture's bags and banks and leaves withdrawal eligibility
+unverified. Missing bags or an unknown or overflowing required total
+leave the plan unknown.
 
 In a saved flight map, `flight_wallet_projection` shows the wallet balance
 after each recorded fare and the spendable balance after also setting aside

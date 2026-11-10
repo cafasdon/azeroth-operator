@@ -1100,6 +1100,17 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                             "turn_ins_shortfall_to_next_rank":3,
                         })
                         result = await session.call_tool("inspect_snapshot", {
+                            **request,"reputation_turn_in_item_costs":costs,
+                            "reputation_turn_in_bank_withdrawal_offset":0,
+                        })
+                        self.assertFalse(result.isError,result)
+                        withdrawals = json.loads(result.content[0].text)["reputation_turn_in_bank_withdrawals"]
+                        self.assertEqual([row["remaining_after_observed_withdrawals"]
+                                          for row in withdrawals["rows"]], [1, 3])
+                        self.assertEqual([row["storage"] for row in
+                                          withdrawals["suggested_locations"]["locations"]], ["character_bank"])
+                        self.assertFalse(withdrawals["withdrawal_eligibility_verified"])
+                        result = await session.call_tool("inspect_snapshot", {
                             **request,"reputation_turn_in_item_costs":[{"item_id":744,"quantity":2}],
                         })
                         self.assertFalse(result.isError,result)
@@ -1109,6 +1120,7 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         })
                         for options in [
                             {"reputation_turn_in_item_costs":[]},
+                            {"reputation_turn_in_bank_withdrawal_offset":0},
                             {"reputation_turn_in_item_costs":[costs[0],costs[0]]},
                             {"reputation_turn_in_item_costs":costs,"reputation_turn_in_item_cost":costs[0]},
                         ]:
