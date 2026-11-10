@@ -1831,6 +1831,12 @@ impl Operator {
                     quote["basis"] = serde_json::json!("one_unit_per_unobserved_catalogue_piece");
                     quote["current_offers_verified"] = serde_json::json!(false);
                     quote["merchant_snapshot_id"] = serde_json::json!(id);
+                    quote["captured_player_map_id"] = serde_json::json!(
+                        merchant
+                            .sections
+                            .get("stats")
+                            .and_then(|stats| stats["map_id"].as_u64())
+                    );
                     if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
                         let total = quote["copper_only_bundle_mix_total"].as_u64();
                         let subtotal = quote["copper_only_bundle_mix_quoted_subtotal"].as_u64();
@@ -1918,11 +1924,25 @@ impl Operator {
                                 "unrepresentable_total"
                             }
                         };
-                        if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
-                            for plan in combined.iter_mut().chain(partial.iter_mut()) {
+                        for plan in combined.iter_mut().chain(partial.iter_mut()) {
+                            if let Some(reserve) = args.set_merchant_wallet_reserve_copper {
                                 let total = plan["complete_quote_copper"].as_u64();
                                 plan["after_wallet_reserve"] =
                                     reserved_budget(total, total, reserve);
+                            }
+                            if let Some(stops) = plan["merchant_visit_checklist"].as_array_mut() {
+                                for stop in stops {
+                                    if let Some(visit) = quotes.iter().find(|visit| {
+                                        visit["merchant_snapshot_id"]
+                                            == stop["merchant_snapshot_id"]
+                                    }) {
+                                        let quote = &visit["quote"];
+                                        stop["captured_player_map_id"] =
+                                            quote["captured_player_map_id"].clone();
+                                        stop["merchant_captured_at"] =
+                                            quote["merchant_captured_at"].clone();
+                                    }
+                                }
                             }
                         }
                     }

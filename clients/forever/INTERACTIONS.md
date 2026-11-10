@@ -48,6 +48,9 @@ and a truncated or empty list. Missing quotes list the affected item IDs.
 When at least one piece lacks a supported quote, the separate
 `captured_merchant_partial_plan` can cover all quoted pieces within the
 visit limit. Its costs and affordability apply only to the included pieces.
+Each planned stop shows the merchant capture time and, when recorded,
+the player map ID from that capture. The map describes the saved player
+location and does not establish a merchant identity or current location.
 Set `set_merchant_wallet_reserve_copper` to keep copper aside. The quote
 shows the shortfall for priced pieces and reports complete affordability
 only when every requested piece has a supported copper quote and a wallet was captured.

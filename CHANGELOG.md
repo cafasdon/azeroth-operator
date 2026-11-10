@@ -1,5 +1,7 @@
 # Changelog
 
+- Show the saved capture time and player map for set-shopping stops.
+
 - Return a partial set shopping plan when saved visits can quote only some pieces.
 
 - Explain why saved set-piece merchant visits cannot produce a complete quote.

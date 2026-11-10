@@ -70,12 +70,17 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
             missing_equipment_id = store.ingest(missing_equipment)
             merchant_capture = deepcopy(base)
             merchant_capture['sections']['wallet'] = {'copper': 5}
+            merchant_capture['sections']['stats'] = {
+                'level': 60, 'class': 'HUNTER', 'race': 'Orc', 'client_version': 'fixture', 'map_id': 1411,
+            }
             merchant_capture['sections']['merchant_stock'] = {'1': {
                 'item_id': 7950, 'bundle_size': 1, 'price_copper': 7,
                 'available': -1, 'extended_cost': False,
             }}
             merchant_capture_id = store.ingest(merchant_capture)
             second_visit = deepcopy(merchant_capture)
+            second_visit['captured_at'] = '2025-01-02T00:00:00Z'
+            del second_visit['sections']['stats']['map_id']
             second_visit['sections']['merchant_stock']['1'].update(item_id=7953, price_copper=3)
             second_visit_id = store.ingest(second_visit)
             full_visit = deepcopy(merchant_capture)
@@ -157,6 +162,10 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(plan['after_wallet_reserve']['complete_quote_shortfall_copper'], 2)
                     self.assertEqual([(row['item_id'], row['merchant_snapshot_id']) for row in plan['items']],
                                      [(7950, merchant_capture_id), (7953, second_visit_id)])
+                    self.assertEqual([(stop['captured_player_map_id'], stop['merchant_captured_at'])
+                                      for stop in plan['merchant_visit_checklist']],
+                                     [(1411, merchant_capture['captured_at']), (None, second_visit['captured_at'])])
+                    self.assertEqual(partial_plan['plan']['merchant_visit_checklist'][0]['captured_player_map_id'], 1411)
                     travel = await review(separate_wallet_id, set_id=221, include_unobserved_set_sources=True,
                         set_merchant_snapshot_ids=[merchant_capture_id, second_visit_id, full_visit_id],
                         set_merchant_visit_costs_copper=[3, 3, 1])
