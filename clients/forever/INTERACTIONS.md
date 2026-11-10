@@ -1,5 +1,9 @@
 # Forever interaction map
 
+Travel comparisons report `hearthstone_active_ready_at_delta_milliseconds`
+when both captures show a positive cooldown for the same Hearthstone item.
+Zero, missing and different-item cooldowns leave the delta unknown.
+
 Use `lookup_forever_catalogue` with `section: "items"` and `set_name`
 to find pieces by a case-insensitive set-name substring. Combine it with
 `set_id` or other item filters to narrow the same catalogue records.

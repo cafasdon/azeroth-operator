@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare projected Hearthstone ready times across saved active cooldowns.
+
 - Find the highest-coverage partial set shopping plan within the saved visit limit.
 
 - Show remaining spendable copper after each saved set-shopping stop.

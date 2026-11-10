@@ -7249,6 +7249,16 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
                 - before["hearthstone_cooldown_seconds"].as_i64()?,
         )
     });
+    let active_ready_at = |stats: &Value, captured_at| {
+        let seconds = stats["hearthstone_cooldown_seconds"].as_i64()?;
+        (seconds > 0).then_some(())?;
+        crate::saved_resets::projected_reset_at(seconds, captured_at)
+    };
+    let active_ready_delta = items.filter(|(old, new)| old == new).and_then(|_| {
+        let before = active_ready_at(before, old.captured_at)?;
+        let after = active_ready_at(after, new.captured_at)?;
+        Some((after - before).num_milliseconds())
+    });
     let observed = |stats: &Value, captured_at| {
         let projected_ready = stats["hearthstone_cooldown_seconds"]
             .as_i64()
@@ -7267,6 +7277,7 @@ fn compare_travel_context(old: &Snapshot, new: &Snapshot) -> Option<Value> {
         "hearthstone_bind_name_changed":bind_names.0.zip(bind_names.1).map(|(old,new)| old != new),
         "hearthstone_item_changed":items.map(|(old,new)| old != new),
         "hearthstone_cooldown_seconds_delta":cooldown_delta,
+        "hearthstone_active_ready_at_delta_milliseconds":active_ready_delta,
     }))
 }
 
