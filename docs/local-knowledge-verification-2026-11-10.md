@@ -348,3 +348,39 @@ Jev 1.14.0 advisory shipping judgement selected ready, confidence 0.94, request
 589 input and 44 output tokens, 0.326 seconds. Author accepted this bounded
 retrieval feature on direct offline and independent evidence. Native testing,
 installation and deployment remain deferred.
+
+## Complete reverse consumable effect lookup
+
+Main MCP `lookup_forever_catalogue.consumable_effect_id` finds consumables by
+explicit `effectIds` membership. Positive uint32 effect record IDs are separate
+from spell IDs; only consumables without restock targets accept this filter.
+Normal key/item-ID/group/saved-presence intersections and 20-record offset
+paging remain in place. Response evidence withholds equivalent performance and
+current usability. This completes a local workflow: retrieve a consumable's
+exact effect reference, then query other consumables listing that same effect.
+It does not infer native compatibility or replace simulation.
+
+Author `cargo build --offline` passed. Actual stdio MCP test
+`$env:PYTHONPATH='.;tests'; python -m unittest test_catalogue_ownership_evidence`
+passed, latest 5.085 seconds. The test compares all distinct pinned consumable
+effect queries with independently projected source rows, rejects spell ID 439
+as an implicit match, checks unknown maximum uint32 returns empty, exact
+metadata, paging and key/item-ID/group/owned intersections, wrong section,
+zero/boolean IDs and restock conflict refusal. Existing private-link exclusion
+and unchanged synthetic snapshot bytes remain checked. The optional catalogue
+skips when unavailable. `rustfmt --check --edition 2024 src/forever_catalogue.rs`
+and `git diff --check` passed. No live game or deployed installation was used.
+
+One independent round, two lenses (failure and callers/security-data), requested
+gpt-6-astra high; resolved model/usage not exposed. Failure review independently
+passed the real MCP test in 5.512 seconds and 28 additional offset/intersection/
+invalid/restock/section probes. Callers review passed 219 pinned catalogue,
+paging and evidence comparisons, eight invalid types/ranges, four forbidden
+sections, four intersections and empty/populated restock refusals. Schema
+confirmed positive uint32 namespace; snapshot-free calls had no inventory
+output. Both reported no actionable findings. Reviewers performed no builds,
+source writes, network or game operations. Jev 1.14.0 advisory selected ready,
+confidence 0.94, request
+`e4d3a5e866b41ae113ea2025fe716cce7c734ad101fe99283417296add46c0aa`,
+582 input and 44 output tokens, 0.274 seconds. Author accepted bounded offline
+completion; live game testing and installation remain deferred.

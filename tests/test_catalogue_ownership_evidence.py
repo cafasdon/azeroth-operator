@@ -18,7 +18,9 @@ class CatalogueOwnershipEvidenceTests(unittest.IsolatedAsyncioTestCase):
         binary = Path(os.environ.get('AZEROTH_TEST_BINARY') or root/'target/debug'/
                       ('azeroth-operator.exe' if os.name == 'nt' else 'azeroth-operator')).resolve(strict=True)
         cache = Path(os.environ.get('AZEROTH_FOREVER_CATALOGUE') or
-                     root/'local-data/forever/catalogue.json').resolve(strict=True)
+                     root/'local-data/forever/catalogue.json').resolve()
+        if not cache.is_file():
+            self.skipTest('Optional pinned catalogue required')
         public = json.loads(cache.read_bytes())
         item = next(row for row in public['items'] if row['id'] == 14270)
         suffix = item['randomSuffixOptions'][0]
@@ -70,5 +72,38 @@ class CatalogueOwnershipEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     refused = await session.call_tool('lookup_forever_catalogue', {
                         'section': 'items', 'key': '14270', 'observed_ownership': 'owned'})
                     self.assertTrue(refused.isError)
+                    effect_ids = {v for row in public['consumables'] for v in row.get('effectIds', [])}
+                    for effect_id in sorted(effect_ids | {439, 4294967295}):
+                        args = {'section': 'consumables', 'consumable_effect_id': effect_id}
+                        reply = await session.call_tool('lookup_forever_catalogue', args)
+                        self.assertFalse(reply.isError, reply)
+                        result = json.loads(reply.content[0].text)
+                        expected = [row for row in public['consumables'] if effect_id in row.get('effectIds', [])]
+                        self.assertEqual(result['records'], expected[:20])
+                        self.assertEqual(result['has_more'], len(expected) > 20)
+                        self.assertEqual(result['consumable_effect_filter_evidence'], {
+                            'effect_record_id': effect_id, 'scope': 'explicit_catalogue_effect_ids',
+                            'current_usability_verified': False, 'equivalent_performance_verified': False})
+                    for extra in ({'offset': 1}, {'key': '118'}, {'key': '858'},
+                            {'item_ids': [118]}, {'consumable_group_key': 'NO_SUCH_GROUP'},
+                            {'acquisition_snapshot_id': owned, 'observed_ownership': 'owned'}):
+                        reply = await session.call_tool('lookup_forever_catalogue', {
+                            'section': 'consumables', 'consumable_effect_id': 679187, **extra})
+                        self.assertFalse(reply.isError, reply)
+                        result = json.loads(reply.content[0].text)
+                        expected = [row for row in public['consumables'] if 679187 in row.get('effectIds', [])]
+                        if 'offset' in extra: expected = expected[1:]
+                        elif 'key' in extra: expected = [row for row in expected if str(row['id']) == extra['key']]
+                        elif 'item_ids' in extra: expected = [row for row in expected if row['id'] in extra['item_ids']]
+                        else: expected = []
+                        self.assertEqual(result['records'], expected)
+                    for bad in ({'section': 'items', 'consumable_effect_id': 679187},
+                            {'section': 'consumables', 'consumable_effect_id': 0},
+                            {'section': 'consumables', 'consumable_effect_id': True},
+                            {'section': 'consumables', 'consumable_effect_id': 679187,
+                             'consumable_targets': [{'item_id': 118, 'quantity': 1}],
+                             'acquisition_snapshot_id': owned}):
+                        reply = await session.call_tool('lookup_forever_catalogue', bad)
+                        self.assertTrue(reply.isError, reply)
             self.assertEqual(before, {p.name: p.read_bytes()
                 for p in (Path(folder)/'captures').glob('*.json')})

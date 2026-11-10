@@ -179,6 +179,8 @@ pub struct Query {
     pub restock_merchant_snapshot_id: Option<String>,
     /// Match the exact groupKey recorded by the pinned simulator for consumable buffs.
     pub consumable_group_key: Option<String>,
+    /// Restrict consumables to an explicit effectIds entry (effect record ID, not spell ID).
+    pub consumable_effect_id: Option<std::num::NonZeroU32>,
     /// Restrict items or enchants to a crafted source with this recipe spell ID.
     pub recipe_spell_id: Option<u32>,
     /// Restrict items or enchants to a crafted source with this pinned simulator Profession enum ID.
@@ -729,6 +731,12 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     }
     let set_name = normalize_set_name(query.set_name.as_deref())?;
     let consumable_group = query.consumable_group_key.as_deref().map(str::trim);
+    ensure!(
+        query.consumable_effect_id.is_none()
+            || (matches!(query.section, Section::Consumables)
+                && query.consumable_targets.is_none()),
+        "Consumable effect filtering requires consumables and no restock targets"
+    );
     if let Some(group) = consumable_group {
         ensure!(
             matches!(query.section, Section::Consumables)
@@ -954,7 +962,8 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
         || crafted_filter
         || item_filter
         || inventory_filter
-        || consumable_group.is_some();
+        || consumable_group.is_some()
+        || query.consumable_effect_id.is_some();
     ensure!(
         !query.include_source_references || (matches!(query.section, Section::Items) && filtered),
         "Source references require a filtered item lookup"
@@ -1156,6 +1165,13 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
                 })
             });
             if matches
+                && query.consumable_effect_id.is_none_or(|id| {
+                    row["effectIds"].as_array().is_some_and(|effects| {
+                        effects
+                            .iter()
+                            .any(|effect| effect.as_u64() == Some(u64::from(id.get())))
+                    })
+                })
                 && suffix_target.is_none_or(|item| {
                     row["id"]
                         .as_i64()
@@ -1227,6 +1243,14 @@ pub fn lookup(path: &Path, query: &Query, snapshot: Option<&Snapshot>) -> Result
     let mut result = json!({"family":"forever","source":provenance,"section":section,
         "section_count":rows.len(),"records":records,"has_more":has_more,
         "acquisition_verified":false});
+    if let Some(id) = query.consumable_effect_id {
+        result["consumable_effect_filter_evidence"] = json!({
+            "effect_record_id":id,
+            "scope":"explicit_catalogue_effect_ids",
+            "current_usability_verified":false,
+            "equivalent_performance_verified":false
+        });
+    }
     if let Some((wanted, _, complete)) = &ownership {
         result["ownership_filter_evidence"] = json!({
             "scope":"saved_base_item_id_presence",

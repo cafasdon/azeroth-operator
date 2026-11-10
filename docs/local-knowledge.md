@@ -102,3 +102,12 @@ of spellId. These expose exact pinned simulator effects for consumables, includi
 healing and resource effects where provided. Missing records stay unresolved;
 an effect reference does not establish native behaviour, current usability or
 a simulation result. The existing index needs no rebuild for these joins.
+
+To find alternatives with the same explicit model effect, use the main MCP's
+`lookup_forever_catalogue` with `section: "consumables"` and
+`consumable_effect_id` set to the effect record ID. For example, `679187`
+returns the consumables listing Minor Healing Potion's effect; spell ID `439`
+is a different namespace. The filter composes with item IDs, key, group and
+saved base-item presence, with normal 20-record pagination. It cannot be used
+with restock targets or other sections. Its evidence does not establish equal
+performance, native behaviour or current usability.

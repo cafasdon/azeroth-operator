@@ -1,5 +1,7 @@
 # Changelog
 
+- Find consumable alternatives by exact shared catalogue effect record ID, with normal filters and paging.
+
 - Attach exact local spell-effect records to explicit consumable effect references in hybrid search.
 
 - Make saved base-item presence and catalogue suffix-option evidence explicit in catalogue lookup responses.
