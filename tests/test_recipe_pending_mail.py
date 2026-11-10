@@ -50,6 +50,11 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                 '1':{'1':{'kind':'item','item_id':10,'count':2},'2':{'kind':'currency','currency_id':720,'count':999},'16':{'kind':'unknown'}},
                 '2':{'1':{'kind':'item','item_id':10,'count':5},'2':{'kind':'item','item_id':2,'count':9},
                      '3':{'kind':'item','item_id':999,'count':666}}},6)
+            observed['sections']['currency_balances']={'coverage':'visible_currency_ids_only','entries':{
+                str(item):{'name':'Fixture currency','quantity':quantity,'max_quantity':cap,
+                    'account_wide':wide,'inactive':False,'max_weekly_quantity':0,
+                    'earned_this_week':0,'total_earned':0,'cap_uses_total_earned':False}
+                for item,quantity,cap,wide in [(720,8,10,True),(10,1,5,False)]}}
             with_mail=store.ingest(observed)
             empty=deepcopy(observed);empty['sections']['mail_attachments']=mail({});empty_id=store.ingest(empty)
             unsupported=deepcopy(observed);unsupported['sections']['selected_recipe'].update(requirements='unsupported_required_slots',reagents={})
@@ -86,6 +91,28 @@ class RecipePendingMailTests(unittest.IsolatedAsyncioTestCase):
                         await mail_space(with_mail,invalid,error=True)
                     await mail_space(with_mail,[10],section='bags',error=True)
                     await mail_space(retail_id,[10],error=True)
+                    async def mail_headroom(key, ids, section='mail_attachments', error=False):
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':key,'section':section,'mail_attachment_headroom_currency_ids':ids})
+                        self.assertEqual(bool(reply.isError),error,reply)
+                        if not error:
+                            return json.loads(reply.content[0].text)['mail_attachment_currency_headroom']
+                    headroom=await mail_headroom(with_mail,[720,10,999])
+                    self.assertEqual((headroom['unloaded_messages'],headroom['unknown_attachment_slots']),(4,1))
+                    self.assertFalse(headroom['mail_cap_application_verified'])
+                    currencies=headroom['currencies']
+                    self.assertEqual([row['currency_id'] for row in currencies],[720,10,999])
+                    self.assertEqual([row['known_pending_quantity'] for row in currencies],[999,None,None])
+                    self.assertEqual(currencies[0]['hypothetical_cap_projection'],{
+                        'proposed_quantity':999,'quantity_within_recorded_headroom':2,
+                        'quantity_above_recorded_headroom':997})
+                    self.assertIsNone(currencies[1]['hypothetical_cap_projection'])
+                    self.assertIsNone(currencies[2]['captured_balance'])
+                    self.assertIsNone(await mail_headroom(no_mail,[720]))
+                    for invalid in [[],[720,720],[0],list(range(1,66))]:
+                        await mail_headroom(with_mail,invalid,error=True)
+                    await mail_headroom(with_mail,[720],section='bags',error=True)
+                    await mail_headroom(retail_id,[720],error=True)
                     async def review(key,**arguments):
                         response=await session.call_tool('review_forever_recipe',{'snapshot_id':key,'crafts':2,**arguments})
                         self.assertFalse(response.isError)

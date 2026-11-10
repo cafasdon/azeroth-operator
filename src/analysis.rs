@@ -6411,6 +6411,40 @@ pub fn mail_attachment_bag_space(
     Some(report)
 }
 
+pub fn mail_attachment_currency_headroom(
+    snapshot: &Snapshot,
+    ids: &[std::num::NonZeroU32],
+) -> Option<Value> {
+    let mail = snapshot.sections.get("mail_attachments")?;
+    let (totals, unknown_slots) = mail_attachment_totals(mail);
+    let balances = snapshot.sections.get("currency_balances");
+    let currencies: Vec<_> = ids
+        .iter()
+        .map(|id| {
+            let pending = totals.get(&("currency", u64::from(id.get())));
+            let balance = balances.and_then(|rows| rows["entries"].get(id.to_string()));
+            let caps = balance.and_then(currency_entry_cap_headroom);
+            let projection =
+                pending
+                    .zip(balance)
+                    .zip(caps.as_ref())
+                    .map(|(((quantity, _), balance), caps)| {
+                        currency_reward_projection(*quantity, balance, caps)
+                    });
+            json!({"currency_id":id,"known_pending_quantity":pending.map(|(quantity,_)| quantity),
+            "known_attachment_slots":pending.map(|(_,slots)| slots),
+            "captured_balance":balance.and_then(|row| row["quantity"].as_u64()),
+            "account_wide":balance.and_then(|row| row["account_wide"].as_bool()),
+            "recorded_headroom":caps,"hypothetical_cap_projection":projection})
+        })
+        .collect();
+    Some(
+        json!({"currencies":currencies,"unloaded_messages":unloaded_mail_messages(mail),
+        "unknown_attachment_slots":unknown_slots,"mail_cap_application_verified":false,
+        "retrieval_eligibility_verified":false,"live":false}),
+    )
+}
+
 fn mail_attachment_totals(mail: &Value) -> (KnownMailTotals, u32) {
     let mut totals = KnownMailTotals::new();
     let mut unknown = 0u32;

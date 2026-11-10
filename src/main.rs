@@ -146,6 +146,8 @@ struct Inspect {
     loot_estimate_bag_space: bool,
     /// Estimate bag space for all observed loaded mail attachments matching these distinct item IDs.
     mail_attachment_bag_space_item_ids: Option<Vec<std::num::NonZeroU32>>,
+    /// Compare known loaded mail quantities for these distinct currency IDs with recorded cap headroom.
+    mail_attachment_headroom_currency_ids: Option<Vec<std::num::NonZeroU32>>,
     /// Compare the expected outgoing item quantities with a saved Forever trade offer.
     trade_offer_requirements: Option<Vec<azeroth_operator::analysis::LootRequirement>>,
     /// Compare the expected outgoing items with carried stock from the same saved capture.
@@ -2895,17 +2897,19 @@ impl Operator {
                 "Skill-line inspection requires skill_lines, a nonempty ordered filter and limit from 1 to 50",
             )]);
         }
-        if args
-            .mail_attachment_bag_space_item_ids
-            .as_ref()
-            .is_some_and(|ids| {
-                args.section.as_deref() != Some("mail_attachments")
-                    || !(1..=64).contains(&ids.len())
-                    || ids.iter().collect::<std::collections::BTreeSet<_>>().len() != ids.len()
-            })
-        {
+        if [
+            args.mail_attachment_bag_space_item_ids.as_ref(),
+            args.mail_attachment_headroom_currency_ids.as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|ids| {
+            args.section.as_deref() != Some("mail_attachments")
+                || !(1..=64).contains(&ids.len())
+                || ids.iter().collect::<std::collections::BTreeSet<_>>().len() != ids.len()
+        }) {
             return CallToolResult::error(vec![ContentBlock::text(
-                "Mail bag space requires mail_attachments and one to 64 distinct positive item IDs",
+                "Mail projections require mail_attachments and one to 64 distinct positive IDs per list",
             )]);
         }
         if args.weapon_enchant_reference_at.is_some()
@@ -4593,7 +4597,9 @@ impl Operator {
                             rank
                         ));
                 }
-                if let Some(ids) = &args.mail_attachment_bag_space_item_ids {
+                if args.mail_attachment_bag_space_item_ids.is_some()
+                    || args.mail_attachment_headroom_currency_ids.is_some()
+                {
                     let Ok(snapshot) = self.store.read(&args.snapshot_id) else {
                         return CallToolResult::error(vec![ContentBlock::text(
                             "Could not read the saved inbox capture",
@@ -4601,12 +4607,21 @@ impl Operator {
                     };
                     if snapshot.client.family != azeroth_operator::Family::Forever {
                         return CallToolResult::error(vec![ContentBlock::text(
-                            "Mail bag space requires a saved Forever snapshot",
+                            "Mail projections require a saved Forever snapshot",
                         )]);
                     }
-                    value["mail_attachment_bag_space_projection"] = serde_json::json!(
-                        azeroth_operator::analysis::mail_attachment_bag_space(&snapshot, ids)
-                    );
+                    if let Some(ids) = &args.mail_attachment_bag_space_item_ids {
+                        value["mail_attachment_bag_space_projection"] = serde_json::json!(
+                            azeroth_operator::analysis::mail_attachment_bag_space(&snapshot, ids)
+                        );
+                    }
+                    if let Some(ids) = &args.mail_attachment_headroom_currency_ids {
+                        value["mail_attachment_currency_headroom"] = serde_json::json!(
+                            azeroth_operator::analysis::mail_attachment_currency_headroom(
+                                &snapshot, ids
+                            )
+                        );
+                    }
                 }
                 if let Some(requirements) = args.loot_requirements.as_ref() {
                     let reviewed = self.store.read(&args.snapshot_id).and_then(|snapshot| {

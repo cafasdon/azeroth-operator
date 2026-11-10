@@ -1,5 +1,11 @@
 # Forever interaction map
 
+Use `mail_attachment_headroom_currency_ids` when inspecting a saved
+`mail_attachments` section to compare loaded pending quantities with
+the same capture's currency caps. Missing attachment or cap observations
+stay unknown. The comparison is hypothetical and does not establish
+whether mailbox retrieval applies the recorded caps.
+
 Set `quest_list_ready_waypoint_groups` when inspecting the saved quest
 list to group quests marked ready by their next waypoint map. Ready
 quests without a recorded map are listed separately. Use
