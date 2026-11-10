@@ -405,6 +405,8 @@ struct Inspect {
     toy_name: Option<String>,
     /// Select one saved profession by skill line. Requires section "professions".
     profession_skill_line: Option<std::num::NonZeroU32>,
+    /// Check this target rank against the selected saved profession's rank and cap.
+    profession_target_rank: Option<std::num::NonZeroU32>,
     /// Select one saved Forever recipe ID in the tracked_recipes section.
     tracked_recipe_id: Option<std::num::NonZeroU32>,
     /// Find this base or reported spell ID in the saved Forever spellbook section.
@@ -3402,6 +3404,11 @@ impl Operator {
                 "Bank stack limits require reported stack limit estimates",
             )]);
         }
+        if args.profession_target_rank.is_some() && args.profession_skill_line.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Profession rank targets require a profession skill line",
+            )]);
+        }
         if let Some(budget) = args.spending_budget {
             if args.coverage_sections.is_some() {
                 return CallToolResult::error(vec![ContentBlock::text(
@@ -6124,6 +6131,13 @@ impl Operator {
                         value["profession_training_progress"] = row
                             .map(azeroth_operator::analysis::profession_rank_progress)
                             .unwrap_or_default();
+                        if let Some(target) = args.profession_target_rank {
+                            value["profession_target_progress"] =
+                                azeroth_operator::analysis::profession_target_progress(
+                                    row,
+                                    target.get(),
+                                );
+                        }
                     } else {
                         value["profession_training_progress"] =
                             azeroth_operator::analysis::profession_training_progress(

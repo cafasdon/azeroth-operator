@@ -1,5 +1,11 @@
 # Forever interaction map
 
+In `inspect_snapshot`, select a saved profession with `section: "professions"`
+and `profession_skill_line`, then set `profession_target_rank` to check points
+remaining and whether the target exceeds the captured cap. A zero or
+inconsistent cap leaves cap comparisons unknown. Ambiguous or unavailable
+observations leave progress unknown. This does not verify training eligibility.
+
 Use `list_snapshots.pet_action_command` with an exact `command_token` such as
 `PET_ACTION_ATTACK` to locate saved command slots. Optional `is_active` matches
 only explicit captured flags. Results are historical readings in slot order.

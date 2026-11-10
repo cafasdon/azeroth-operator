@@ -9924,6 +9924,21 @@ pub fn profession_rank_progress(profession: &Value) -> Value {
     json!({"skill_line":profession["skill_line"],"remaining_to_observed_cap":remaining})
 }
 
+pub fn profession_target_progress(profession: Option<&Value>, target: u32) -> Value {
+    let target = u64::from(target);
+    let rank = profession.and_then(|row| row["rank"].as_u64());
+    let cap = profession
+        .and_then(|row| row["max_rank"].as_u64())
+        .filter(|cap| *cap > 0 && rank.is_none_or(|rank| rank <= *cap));
+    json!({
+        "target_rank": target,
+        "points_to_target": rank.map(|rank| target.saturating_sub(rank)),
+        "target_reached_at_capture": rank.map(|rank| rank >= target),
+        "target_above_observed_cap": cap.map(|cap| target > cap),
+        "points_above_observed_cap": cap.map(|cap| target.saturating_sub(cap))
+    })
+}
+
 fn tracked_achievement_workload(section: &Value) -> Option<Value> {
     let entries = section["entries"].as_object()?;
     let mut unfinished = Vec::new();

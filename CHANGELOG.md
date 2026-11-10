@@ -1,5 +1,7 @@
 # Changelog
 
+- Check a saved profession's progress toward a target rank and flag targets above its observed cap.
+
 - Count exact saved gear link matches before truncating candidate lists.
 
 - Prioritise exact saved item links before limiting Forever gear replacement candidates.

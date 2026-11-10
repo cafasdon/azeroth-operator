@@ -907,6 +907,35 @@ class MCPTests(unittest.IsolatedAsyncioTestCase):
                         missing_professions = await session.call_tool("inspect_snapshot", {
                             "snapshot_id": key, "section": "professions"})
                         self.assertIsNone(json.loads(missing_professions.content[0].text)["profession_training_progress"])
+                        for skill, target, expected in [
+                            (165, 80, (5, False, True, 5)),
+                            (165, 75, (0, True, False, 0)),
+                            (166, 1, (1, False, None, None)),
+                            (164, 80, (None, None, None, None)),
+                            (999, 80, (None, None, None, None)),
+                        ]:
+                            result = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": training_key, "section": "professions",
+                                "profession_skill_line": skill, "profession_target_rank": target,
+                            })
+                            self.assertFalse(result.isError, result)
+                            progress = json.loads(result.content[0].text)["profession_target_progress"]
+                            self.assertEqual(progress, dict(zip((
+                                "target_rank", "points_to_target", "target_reached_at_capture",
+                                "target_above_observed_cap", "points_above_observed_cap",
+                            ), (target, *expected), strict=True)))
+                        for options in [
+                            {"section": "professions", "profession_target_rank": 80},
+                            {"spending_budget": {"wallet_copper": 1}, "profession_target_rank": 80},
+                            {"section": "professions", "profession_skill_line": 165,
+                             "profession_target_rank": 0},
+                            {"section": "stats", "profession_skill_line": 165,
+                             "profession_target_rank": 80},
+                        ]:
+                            result = await session.call_tool("inspect_snapshot", {
+                                "snapshot_id": training_key, **options,
+                            })
+                            self.assertTrue(result.isError, result)
                         achievement = await session.call_tool("inspect_snapshot", {"snapshot_id":forever_key,"section":"tracked_achievements"})
                         achievement_data = json.loads(achievement.content[0].text)
                         self.assertEqual(achievement_data["data"]["entries"]["101"]["criteria"]["1"]["quantity"], 1)
