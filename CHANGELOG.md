@@ -1,5 +1,7 @@
 # Changelog
 
+- Optionally count recorded carried items toward saved quest item targets.
+
 - Plan saved ready quest turn-ins for item targets, with optional recorded reward choices.
 
 - Optionally plan one recorded currency reward choice per saved ready quest.

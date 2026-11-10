@@ -830,6 +830,27 @@ class QuestObjectiveFilterTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertEqual(plan['recorded_total_quantity'],8)
                         else:
                             self.assertIsNone(plan)
+                    unknown_bags=deepcopy(funded)
+                    del unknown_bags['sections']['bags']
+                    unknown_bags_id=store.ingest(unknown_bags)
+                    original[unknown_bags_id+'.json']=(Path(folder)/(unknown_bags_id+'.json')).read_bytes()
+                    for capture,quantity,carried,remaining,covered,ids in [
+                            (currency_target_id,8,5,3,True,[10]),
+                            (currency_target_id,4,5,0,True,[]),
+                            (currency_target_id,11,5,6,False,None),
+                            (unknown_bags_id,4,None,None,True,[10,3]),
+                            (unknown_bags_id,11,None,None,None,None)]:
+                        reply=await session.call_tool('inspect_snapshot',{
+                            'snapshot_id':capture,'section':'quests',
+                            'quest_ready_item_target':{'item_id':118,'quantity':quantity,'count_carried':True}})
+                        self.assertFalse(reply.isError,reply)
+                        result=json.loads(reply.content[0].text)['quest_ready_item_projection']
+                        self.assertEqual(result['target_quantity'],quantity)
+                        self.assertEqual(result['observed_carried_quantity'],carried)
+                        self.assertEqual(result['remaining_reward_quantity'],remaining)
+                        self.assertIs(result['covers_target'],covered)
+                        plan=result['ready_turn_in_plan']
+                        self.assertEqual(plan['quest_ids'] if plan else None,ids)
                     for quantity,covered in [(100,True),(109,None)]:
                         reply=await session.call_tool('inspect_snapshot',{
                             'snapshot_id':currency_target_id,'section':'quests',

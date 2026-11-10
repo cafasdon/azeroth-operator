@@ -3385,6 +3385,12 @@ per quest when `include_choices` is true. The plan describes potential
 reward quantities. Current eligibility, inventory space and acquisition
 remain unverified.
 
+Set `count_carried: true` in a quest item target to count copies in the same
+capture's carried bags. The target then describes the desired total after
+rewards. If the bags already cover it, the plan is empty. If bags were not
+captured, the reward plan uses the full target and an otherwise unmet target
+has unknown coverage.
+
 With `find_snapshot_item.bag_stack_groups` enabled, set
 `stack_group_container_id` to review stack consolidation in one recorded
 container. `stack_group_storage` selects bags or a bank. Only the stack

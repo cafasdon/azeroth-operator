@@ -79,6 +79,9 @@ struct QuestItemTarget {
     /// Consider one recorded optional reward for this item per quest.
     #[serde(default)]
     include_choices: bool,
+    /// Count copies in the same capture's carried bags toward the requested total.
+    #[serde(default)]
+    count_carried: bool,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -4701,6 +4704,10 @@ impl Operator {
                         || args.quest_list_wallet_projection
                         || args.quest_list_currency_projection
                         || args.quest_ready_currency_target.is_some()
+                        || args
+                            .quest_ready_item_target
+                            .as_ref()
+                            .is_some_and(|target| target.count_carried)
                         || args.quest_list_renown_projection
                     {
                         let snapshot = match self.store.read(&args.snapshot_id) {
@@ -5008,14 +5015,44 @@ impl Operator {
                     if let Some(target) = &args.quest_ready_item_target {
                         value["quest_ready_item_projection"] =
                             data.as_object().map_or(serde_json::Value::Null, |quests| {
-                                azeroth_operator::analysis::quest_ready_reward_projection(
-                                    quests,
-                                    azeroth_operator::analysis::QuestRewardTarget::Item(
-                                        target.item_id.get(),
-                                    ),
-                                    target.quantity.get(),
-                                    target.include_choices,
-                                )
+                                let item_id = target.item_id.get();
+                                let quantity = target.quantity.get();
+                                let carried = context
+                                    .as_ref()
+                                    .filter(|_| target.count_carried)
+                                    .and_then(|snapshot| {
+                                        azeroth_operator::analysis::find_item(
+                                            snapshot, item_id, 0, 1,
+                                        )
+                                        .ok()
+                                    })
+                                    .and_then(|found| {
+                                        found["quantity_by_storage"]["bags"].as_u64()
+                                    });
+                                let remaining = carried.map(|count| quantity.saturating_sub(count));
+                                let reward_goal = remaining.unwrap_or(quantity);
+                                let mut projection =
+                                    azeroth_operator::analysis::quest_ready_reward_projection(
+                                        quests,
+                                        azeroth_operator::analysis::QuestRewardTarget::Item(
+                                            item_id,
+                                        ),
+                                        reward_goal,
+                                        target.include_choices,
+                                    );
+                                if target.count_carried {
+                                    projection["target_quantity"] = serde_json::json!(quantity);
+                                    projection["observed_carried_quantity"] =
+                                        serde_json::json!(carried);
+                                    projection["remaining_reward_quantity"] =
+                                        serde_json::json!(remaining);
+                                    projection["reward_quantity_used_for_plan"] =
+                                        serde_json::json!(reward_goal);
+                                    if carried.is_none() && projection["covers_target"] == false {
+                                        projection["covers_target"] = serde_json::Value::Null;
+                                    }
+                                }
+                                projection
                             });
                     }
                     if args.quest_list_renown_projection {

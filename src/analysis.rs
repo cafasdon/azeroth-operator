@@ -7010,15 +7010,15 @@ pub fn quest_ready_reward_projection(
         let mut selected_fixed = 0;
         let mut choices = Vec::new();
         for (quantity, id, fixed, choice) in rewards {
+            if selected_quantity >= target {
+                break;
+            }
             selected_quantity += quantity.0;
             selected_fixed += fixed;
             if ids.len() < 20 && let Some((quantity, position)) = choice {
                 choices.push(json!({"quest_id":id,"position":position,"quantity":quantity}));
             }
             ids.push(id);
-            if selected_quantity >= target {
-                break;
-            }
         }
         let mut plan = json!({"quest_count":ids.len(),"quest_ids":ids.iter().take(20).collect::<Vec<_>>(),
             "truncated":ids.len()>20,"recorded_fixed_quantity":selected_fixed});
