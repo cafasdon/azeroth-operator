@@ -35,6 +35,11 @@ Results leave ownership and current buyback eligibility unverified.
 Set `minimum_remaining_wallet_copper` to require that an individual quote
 fits the wallet captured in the same save and leaves that much copper.
 Zero still requires a known wallet and price. Entries are checked separately.
+In `inspect_snapshot`, use `buyback_slots` and `buyback_estimate_bag_space`
+to check the carried space for the whole selected entries alongside their
+saved quotes. Quantities for the same item share stack headroom. Missing
+entries leave whole-selection fit unknown, while a missing price leaves
+the space estimate independent of affordability.
 Use `compare_snapshots.merchant_buyback_changes` to compare saved lists
 by item ID, quantity and whole-entry price, ignoring slot order and
 retaining duplicate entries. Missing lists remain unknown and observed

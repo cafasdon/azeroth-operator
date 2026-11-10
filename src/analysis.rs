@@ -9023,7 +9023,12 @@ fn merchant_reagent_budget(
         "copper_only_bundle_mix_shortfall":mix_budget.map(|(cost, balance)| cost.saturating_sub(balance))})
 }
 
-pub fn buyback_cost_review(snapshot: &Snapshot, slots: &[u32], reserve: u64) -> Result<Value> {
+pub fn buyback_cost_review(
+    snapshot: &Snapshot,
+    slots: &[u32],
+    reserve: u64,
+    estimate_bag_space: bool,
+) -> Result<Value> {
     ensure!(
         snapshot.client.family == crate::Family::Forever
             && (1..=12).contains(&slots.len())
@@ -9073,14 +9078,36 @@ pub fn buyback_cost_review(snapshot: &Snapshot, slots: &[u32], reserve: u64) -> 
     } else {
         total.zip(spendable).map(|(cost, balance)| cost <= balance)
     };
-    Ok(
-        json!({"lines":lines,"missing_captured_slots":missing,"slots_with_unknown_price":unknown_prices,
+    let mut report = json!({"lines":lines,"missing_captured_slots":missing,"slots_with_unknown_price":unknown_prices,
         "known_price_subtotal_copper":subtotal,"total_selected_quote_copper":total,
         "captured_wallet_copper":wallet,"wallet_reserve_copper":reserve,"spendable_after_reserve_copper":spendable,
         "reserve_shortfall_copper":reserve_shortfall,"known_shortfall_vs_spendable_copper":known_shortfall,
         "total_shortfall_vs_spendable_copper":total.zip(spendable).map(|(cost,balance)|cost.saturating_sub(balance)),
-        "affordable_from_captured_wallet":affordable,"buyback_eligibility_verified":false,"game_action_performed":false}),
-    )
+        "affordable_from_captured_wallet":affordable,"buyback_eligibility_verified":false,"game_action_performed":false});
+    if estimate_bag_space {
+        let mut quantities = BTreeMap::<u32, u64>::new();
+        for row in slots
+            .iter()
+            .filter_map(|slot| entries.get(&slot.to_string()))
+        {
+            let id = u32::try_from(row["item_id"].as_u64().unwrap())?;
+            // Validated captures contain at most 12 entries with u32 quantities.
+            *quantities.entry(id).or_default() += row["count"].as_u64().unwrap();
+        }
+        let mut space = incoming_items_bag_space(
+            snapshot,
+            quantities.into_iter(),
+            "observed_selected_buyback_items_only",
+            "selected_quantity",
+        );
+        space["all_selected_slots_observed"] = json!(missing.is_empty());
+        if !missing.is_empty() {
+            space["fits_recorded_general_slots"] = Value::Null;
+            space["fits_recorded_general_slots_if_same_item_stacks_merge"] = Value::Null;
+        }
+        report["bag_space_projection"] = space;
+    }
+    Ok(report)
 }
 
 pub fn merchant_budget(snapshot: &Snapshot, offer: &Value, bundles: u32) -> Result<Value> {

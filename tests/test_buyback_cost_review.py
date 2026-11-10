@@ -37,6 +37,14 @@ class BuybackCostReviewTests(unittest.IsolatedAsyncioTestCase):
             empty = deepcopy(base)
             empty['sections']['merchant_buyback']['entries'] = {}
             empty_id = store.ingest(empty)
+            space_capture = deepcopy(base)
+            space_capture['sections']['merchant_buyback']['entries']['3']['item_id'] = 4549
+            space_capture['sections']['bags'] = {'0': {'1': {
+                'item_id': 4549, 'count': 2, 'link': 'item:4549:0', 'reported_stack_limit': 5}}}
+            space_capture['sections']['bag_capacity'] = {
+                '0': {'total_slots': 16, 'free_slots': 1, 'family_mask': 0},
+                **{str(bag): {'total_slots': 0, 'free_slots': 0} for bag in range(1, 5)}}
+            space_id = store.ingest(space_capture)
             maximum = deepcopy(base)
             maximum['sections']['wallet'] = {'copper': 9999999999999}
             maximum['sections']['merchant_buyback']['entries'] = {str(i): {'item_id': 1, 'count': 4294967295,
@@ -49,9 +57,10 @@ class BuybackCostReviewTests(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
-                    async def review(balance, slots, reserve=0, snapshot=None):
+                    async def review(balance, slots, reserve=0, snapshot=None, **options):
                         response = await session.call_tool('inspect_snapshot', {'snapshot_id': snapshot or keys[balance],
-                            'section': 'merchant_buyback', 'buyback_slots': slots, 'buyback_wallet_reserve_copper': reserve})
+                            'section': 'merchant_buyback', 'buyback_slots': slots, 'buyback_wallet_reserve_copper': reserve,
+                            **options})
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)['buyback_cost_review']
                     full = await review(30, [1, 2])
@@ -59,6 +68,15 @@ class BuybackCostReviewTests(unittest.IsolatedAsyncioTestCase):
                     self.assertTrue(full['affordable_from_captured_wallet'])
                     self.assertFalse(full['buyback_eligibility_verified'])
                     self.assertFalse(full['game_action_performed'])
+                    self.assertNotIn('bag_space_projection', full)
+                    for slots, fits in [([1, 3], True), ([1, 3, 5], None), ([1, 2, 3], None)]:
+                        result = await review(None, slots, snapshot=space_id, buyback_estimate_bag_space=True)
+                        space = result['bag_space_projection']
+                        item = next(row for row in space['items'] if row['item_id'] == 4549)
+                        self.assertEqual(item['selected_quantity'], 8)
+                        self.assertEqual(item['estimated_new_stack_slots'], 2)
+                        self.assertIs(space['fits_recorded_general_slots_if_same_item_stacks_merge'], fits)
+                        self.assertIsNone(result['total_selected_quote_copper'])
                     self.assertEqual((await review(10, [1]))['total_selected_quote_copper'], 10)
                     self.assertTrue((await review(35, [1, 2], 5))['affordable_from_captured_wallet'])
                     self.assertFalse((await review(35, [1, 2], 6))['affordable_from_captured_wallet'])
@@ -83,7 +101,7 @@ class BuybackCostReviewTests(unittest.IsolatedAsyncioTestCase):
                     ordinary = await session.call_tool('inspect_snapshot', {'snapshot_id': keys[35], 'section': 'merchant_buyback'})
                     self.assertFalse(ordinary.isError)
                     self.assertNotIn('buyback_cost_review', json.loads(ordinary.content[0].text))
-                    invalid = [ {'buyback_slots': []}, {'buyback_slots': [1, 1]}, {'buyback_slots': [0]},
+                    invalid = [ {'buyback_estimate_bag_space': True}, {'buyback_slots': []}, {'buyback_slots': [1, 1]}, {'buyback_slots': [0]},
                                 {'buyback_slots': [13]}, {'buyback_slots': [True]},
                                 {'buyback_slots': [1], 'buyback_wallet_reserve_copper': 10000000000000},
                                 {'buyback_wallet_reserve_copper': 1}, {'buyback_slots': [1], 'section': 'merchant_stock'},

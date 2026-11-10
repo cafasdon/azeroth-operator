@@ -198,6 +198,9 @@ struct Inspect {
     merchant_stock_state: Option<azeroth_operator::MerchantStockState>,
     /// Review whole-entry buyback quotes for 1 to 12 distinct captured slots; requires merchant_buyback.
     buyback_slots: Option<Vec<std::num::NonZeroU32>>,
+    /// Estimate carried bag space for the whole selected buyback entries.
+    #[serde(default)]
+    buyback_estimate_bag_space: bool,
     /// Reserve this much of the same captured wallet before reviewing buyback quotes.
     buyback_wallet_reserve_copper: Option<u64>,
     /// Find saved merchant offers that sell this exact item ID.
@@ -2680,6 +2683,11 @@ impl Operator {
                 "Profession spell lookup requires the profession_spells section",
             )]);
         }
+        if args.buyback_estimate_bag_space && args.buyback_slots.is_none() {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Buyback bag space requires selected slots",
+            )]);
+        }
         if args.buyback_wallet_reserve_copper.is_some() && args.buyback_slots.is_none() {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Buyback reserve requires selected buyback slots",
@@ -4375,6 +4383,7 @@ impl Operator {
                             &snapshot,
                             &slots.iter().map(|slot| slot.get()).collect::<Vec<_>>(),
                             args.buyback_wallet_reserve_copper.unwrap_or_default(),
+                            args.buyback_estimate_bag_space,
                         )
                     });
                     let Ok(review) = result else {
