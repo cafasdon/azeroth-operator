@@ -1,5 +1,7 @@
 # Changelog
 
+- Plan a carried cooldown quantity target from an exact saved action-bar item shortcut.
+
 - Show projected carried cooldown quantities for exact saved action-bar item shortcuts.
 
 - Show captured hotkeys for matching mount and toy action-bar slots.

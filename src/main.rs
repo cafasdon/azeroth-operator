@@ -150,6 +150,8 @@ struct Inspect {
     bag_cooldown_filter: Option<azeroth_operator::analysis::BagCooldownFilter>,
     /// Project saved carried cooldowns at this timestamp for a cooldown filter or exact action-bar item stock lookup.
     bag_cooldown_reference_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Plan this carried quantity for exact action-bar item stock. Requires a cooldown reference time.
+    bag_cooldown_target_quantity: Option<std::num::NonZeroU64>,
     /// Filter recorded base skill ranks/caps using {filter: {...}, offset: 0, limit: 20}; skill_lines only.
     #[serde(default, deserialize_with = "skill_line_argument")]
     skill_line_filter: Option<azeroth_operator::skill_line_filter::SkillLinePage>,
@@ -2711,6 +2713,13 @@ impl Operator {
         {
             return CallToolResult::error(vec![ContentBlock::text(
                 "Reset projection requires a saved reset section",
+            )]);
+        }
+        if args.bag_cooldown_target_quantity.is_some()
+            && (!args.action_bar_item_stock || args.bag_cooldown_reference_at.is_none())
+        {
+            return CallToolResult::error(vec![ContentBlock::text(
+                "Cooldown quantity targets require exact action-bar item stock and a reference time",
             )]);
         }
         if args.bag_cooldown_reference_at.is_some()
@@ -5775,7 +5784,7 @@ impl Operator {
                                 1,
                                 false,
                                 args.bag_cooldown_reference_at,
-                                None,
+                                args.bag_cooldown_target_quantity,
                             )
                         });
                         let Ok(found) = result else {
@@ -5790,6 +5799,10 @@ impl Operator {
                             stock["bag_cooldown_reference_at"] = serde_json::json!(reference);
                             stock["bag_cooldown_quantity_projection"] =
                                 found["bag_cooldown_quantity_projection"].clone();
+                        }
+                        if args.bag_cooldown_target_quantity.is_some() {
+                            stock["bag_cooldown_target_projection"] =
+                                found["bag_cooldown_target_projection"].clone();
                         }
                     }
                     value["action_bar_item_stock"] = stock;

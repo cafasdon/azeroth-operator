@@ -164,6 +164,17 @@ class ItemCooldownLookupTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(target['projected_end_by_reference_covers_target'],covered)
                         self.assertEqual(target['shortfall_at_reference_from_known_timers'],shortfall)
                         self.assertEqual(target['earliest_known_projected_end_covering_target'],earliest)
+                        reply=await session.call_tool('inspect_snapshot',{'snapshot_id':snapshot,
+                            'section':'action_bar_observation','action_bar_item_id':100,'action_bar_item_stock':True,
+                            'bag_cooldown_reference_at':reference,'bag_cooldown_target_quantity':quantity})
+                        self.assertFalse(reply.isError,reply)
+                        stock=json.loads(reply.content[0].text)['action_bar_item_stock']
+                        self.assertEqual(stock['bag_cooldown_target_projection'],target)
+                    for options in [{'action_bar_item_stock':True},{'bag_cooldown_reference_at':reference},
+                                    {'action_bar_item_stock':True,'bag_cooldown_reference_at':reference,'bag_cooldown_target_quantity':0}]:
+                        reply=await session.call_tool('inspect_snapshot',{'snapshot_id':key,
+                            'section':'action_bar_observation','action_bar_item_id':100,'bag_cooldown_target_quantity':1,**options})
+                        self.assertTrue(reply.isError,reply)
                     for options in [{'bag_cooldown_target_quantity':1},
                                     {'bag_cooldown_target_quantity':0,'bag_cooldown_reference_at':reference}]:
                         reply=await session.call_tool('find_snapshot_item',{'snapshot_id':key,'item_id':100,**options})
