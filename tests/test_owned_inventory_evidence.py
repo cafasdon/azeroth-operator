@@ -90,6 +90,19 @@ class OwnedInventoryEvidenceTests(unittest.IsolatedAsyncioTestCase):
                         self.assertFalse(response.isError, response)
                         return json.loads(response.content[0].text)
                     result = await review(partial)
+                    sourced = await review(partial, set_id=162, include_unobserved_set_sources=True, offset=99)
+                    acquisition = sourced['set_observation']['unobserved_piece_acquisition']
+                    self.assertEqual([row['item_id'] for row in acquisition['records']],
+                                     sourced['set_observation']['unobserved_catalogue_item_ids'])
+                    self.assertTrue(any(row['item_id'] == 6473 for row in acquisition['source_references']))
+                    self.assertFalse(acquisition['truncated'])
+                    complete_set = await review(set_capture_id, set_name='thero-shan',
+                                                include_unobserved_set_sources=True)
+                    self.assertEqual(complete_set['set_observation']['unobserved_piece_acquisition']['records'], [])
+                    ambiguous_sources = await session.call_tool('review_forever_owned_gear', {
+                        'snapshot_id': partial, 'set_name': 'of', 'include_unobserved_set_sources': True,
+                    })
+                    self.assertTrue(ambiguous_sources.isError)
                     set_review = await review(set_capture_id, set_id=221, storage='account_bank', offset=99)
                     self.assertEqual(set_review['items'], [])
                     named_owned = await review(set_capture_id, set_name='  THERO-shan ', storage='bags', limit=1)

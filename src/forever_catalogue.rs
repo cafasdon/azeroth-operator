@@ -3458,6 +3458,7 @@ pub fn review_owned(
     item_type: Option<GearType>,
     set_id: Option<std::num::NonZeroU32>,
     set_name: Option<&str>,
+    include_unobserved_set_sources: bool,
     observed_item_ids: &[std::num::NonZeroU32],
     simulator_slot: Option<SimulatorSlot>,
     required_levels: (Option<u32>, Option<u32>),
@@ -3526,6 +3527,10 @@ pub fn review_owned(
         let matches = matching_sets.as_ref()?;
         (matches.len() == 1).then(|| *matches.first_key_value().unwrap().0)
     });
+    ensure!(
+        !include_unobserved_set_sources || summary_set_id.is_some(),
+        "Set sources require an explicit set ID or unique set name"
+    );
     let mut entries = Vec::new();
     let mut coverage = serde_json::Map::new();
     let mut total = 0usize;
@@ -3835,6 +3840,26 @@ pub fn review_owned(
             "observed_distinct_pieces_by_storage":distinct_pieces_by_storage,
             "observed_stored_not_equipped_item_ids":observed_stored_not_equipped_item_ids,
             "unobserved_catalogue_item_ids":unobserved_catalogue_item_ids});
+        if include_unobserved_set_sources {
+            let candidates: Vec<_> = catalogue
+                .iter()
+                .filter(|(id, item)| {
+                    recorded_set_id(item) == Some(set_id) && !set_locations.contains_key(id)
+                })
+                .map(|(_, item)| *item)
+                .take(50)
+                .collect();
+            let records: Vec<_> = candidates
+                .iter()
+                .map(|item| json!({"item_id":item["id"],"sources":item["sources"]}))
+                .collect();
+            result["set_observation"]["unobserved_piece_acquisition"] = json!({
+                "records":records,
+                "source_references":source_references(&db, &candidates),
+                "acquisition_progress":acquisition_progress(snapshot, &json!(candidates))?,
+                "truncated":unobserved_catalogue_item_ids.len() > candidates.len()
+            });
+        }
     }
     Ok(result)
 }

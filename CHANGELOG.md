@@ -1,5 +1,7 @@
 # Changelog
 
+- Review local acquisition sources for unobserved Forever set pieces.
+
 - Show total and unobserved catalogue pieces for each matching Forever set.
 
 - Show observed owned and equipped piece counts alongside matching set names.

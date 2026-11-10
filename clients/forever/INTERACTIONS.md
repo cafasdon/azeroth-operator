@@ -23,6 +23,9 @@ Unavailable storage is null and observed storage with no matches is zero.
 The set review lists `observed_stored_not_equipped_item_ids` when equipment
 was captured. It also lists `unobserved_catalogue_item_ids` for catalogue
 pieces absent from the capture. Unobserved pieces may be in unavailable storage.
+Set `include_unobserved_set_sources: true` with an explicit set ID or unique
+set name to see local catalogue sources and saved acquisition observations
+for up to 50 unobserved pieces in item-ID order.
 
 With the local catalogue, `review_equipment_selection` reports
 `checks.catalogue_projected_set_changes` for sets whose distinct equipped

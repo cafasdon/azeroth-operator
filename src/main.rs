@@ -1130,6 +1130,9 @@ struct OwnedGearReview {
     set_id: Option<std::num::NonZeroU32>,
     /// Filter by a case-insensitive substring of the recorded set name before paging.
     set_name: Option<String>,
+    /// Include local acquisition records for up to 50 unobserved pieces of a resolved set.
+    #[serde(default)]
+    include_unobserved_set_sources: bool,
     /// Find every observed copy of this base item ID, including items absent from the catalogue.
     item_id: Option<std::num::NonZeroU32>,
     /// Find observed copies of up to sixteen distinct base item IDs. Exclusive with item_id.
@@ -1729,6 +1732,7 @@ impl Operator {
                 args.item_type,
                 args.set_id,
                 args.set_name.as_deref(),
+                args.include_unobserved_set_sources,
                 item_ids,
                 args.simulator_slot,
                 (args.minimum_required_level, args.maximum_required_level),
@@ -1748,7 +1752,7 @@ impl Operator {
         match result {
             Ok(review) => CallToolResult::success(vec![ContentBlock::text(review.to_string())]),
             Err(_) => CallToolResult::error(vec![ContentBlock::text(
-                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds. A container ID must be from 0 to 64 and cannot be used with equipment storage.",
+                "Owned gear review requires a valid Forever snapshot, a verified local catalogue, a limit from 1 to 50 and ordered level bounds. Container IDs must be from 0 to 64 and cannot be used with equipment storage. Set sources require an explicit set ID or unique set name.",
             )]),
         }
     }
