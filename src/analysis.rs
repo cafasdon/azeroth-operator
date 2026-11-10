@@ -3694,19 +3694,43 @@ pub fn compare_observations(
             .map(|(before, after)| before == after);
         let old = previous.and_then(|row| pvp_rank_target_projection(row, target));
         let new = current.and_then(|row| pvp_rank_target_projection(row, target));
-        let reached = old
+        let matching = old
             .as_ref()
             .zip(new.as_ref())
-            .filter(|_| season == Some(true))
-            .and_then(|(old, new)| {
-                old["captured_rank_at_or_above_target"]
-                    .as_bool()
-                    .zip(new["captured_rank_at_or_above_target"].as_bool())
-            });
+            .filter(|_| season == Some(true));
+        let reached = matching.and_then(|(old, new)| {
+            old["captured_rank_at_or_above_target"]
+                .as_bool()
+                .zip(new["captured_rank_at_or_above_target"].as_bool())
+        });
+        let delta = |field: &str| {
+            let (old, new) = matching?;
+            Some(i128::from(new[field].as_u64()?) - i128::from(old[field].as_u64()?))
+        };
+        let total_delta = previous.zip(current).and_then(|(old, new)| {
+            let same_total_threshold = |rank: u64| {
+                let key = rank.to_string();
+                old["total_points_by_rank"][&key]
+                    .as_u64()
+                    .zip(new["total_points_by_rank"][&key].as_u64())
+                    .is_some_and(|(old, new)| old == new)
+            };
+            (same_total_threshold(u64::from(target))
+                && same_total_threshold(old["rank"].as_u64()?)
+                && same_total_threshold(new["rank"].as_u64()?))
+            .then_some(())?;
+            delta("remaining_points_using_total_threshold")
+        });
+        let next_delta = previous.zip(current).and_then(|(old, new)| {
+            (old["next_rank_threshold"] == new["next_rank_threshold"]).then_some(())?;
+            delta("remaining_points_using_next_rank_threshold")
+        });
         comparison["pvp_rank_target_comparison"] = json!({
             "target_rank":target,"before":old,"after":new,"reported_season_ids_match":season,
             "crossed_up":reached.map(|(before, after)| !before && after),
             "crossed_down":reached.map(|(before, after)| before && !after),
+            "remaining_points_delta_using_total_threshold":total_delta,
+            "remaining_points_delta_using_next_rank_threshold":next_delta,
             "same_season_verified":false,"live":false
         });
     }

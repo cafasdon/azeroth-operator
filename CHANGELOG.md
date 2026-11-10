@@ -1,5 +1,7 @@
 # Changelog
 
+- Compare saved PvP points remaining to an exact rank when reported thresholds agree.
+
 - Compare a saved PvP rank target across captures and report observed target crossings.
 
 - Compare carried quantities alongside an exact saved outgoing trade item.

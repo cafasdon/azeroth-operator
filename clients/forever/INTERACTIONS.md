@@ -4,6 +4,10 @@ Set `pvp_target_rank` on `compare_snapshots` for the same rank target
 in both saved PvP captures. Each side retains its own threshold and cap
 observations. Crossings use captured ranks and require matching reported
 season IDs. Season continuity and eligibility remain unverified.
+Points-remaining deltas also require matching reported season IDs.
+The total-points delta requires the same target threshold and current-rank
+thresholds in both captures. The next-rank delta requires the same
+reported next-rank threshold and a usable estimate on each side.
 
 Set `player_trade_offer_item_id` on `compare_snapshots` to limit saved
 outgoing trade comparisons to one base item, even if the general trade

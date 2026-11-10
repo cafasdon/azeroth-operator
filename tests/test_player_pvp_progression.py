@@ -192,6 +192,15 @@ class PlayerPvpProgressionTests(unittest.IsolatedAsyncioTestCase):
                         self.assertIs(target['crossed_down'],down)
                         self.assertFalse(target['same_season_verified'])
                         self.assertEqual(target['after']['target_rank'],4)
+                    for a,b,total_delta,next_delta in [
+                        (11,12,-90,None),(11,11,0,0),(15,11,None,None),
+                        (11,13,None,None),(11,14,None,None),
+                    ]:
+                        result = await call('compare_snapshots',before_id=valid[a][0],
+                            after_id=valid[b][0],pvp_target_rank=4)
+                        target = result['pvp_rank_target_comparison']
+                        self.assertEqual(target['remaining_points_delta_using_total_threshold'],total_delta)
+                        self.assertEqual(target['remaining_points_delta_using_next_rank_threshold'],next_delta)
                     for first, second in [(old,new), (valid[0][0],new), (old,valid[0][0])]:
                         compared = (await call('compare_snapshots',before_id=first,after_id=second,**{selector:True}))[selector]
                         self.assertEqual(compared['before'], summaries[first])
