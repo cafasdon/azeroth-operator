@@ -28,5 +28,6 @@ gear quality or establish any missing game facts.
 The current corpus has names and catalogue source references. Rich quest
 text, guides, additional world records and user-specific text require
 separate source/licence, version and owner-scope ingestion decisions.
-The companion is an optional process and has not been added to installed
-client configuration or deployed to the hosted gateway.
+The companion is an optional process. It is registered locally on ICARUS
+as `azeroth-knowledge`, with one enabled search tool, a 60-second startup
+allowance and a 30-second tool timeout. Hosted deployment remains deferred.

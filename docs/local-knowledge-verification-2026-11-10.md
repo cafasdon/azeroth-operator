@@ -23,8 +23,8 @@ progress deadline. No reviewer modified the source or live index.
 
 The security seal detects derived-file corruption. Exact public source
 records remain checked independently against the pinned catalogue.
-The companion has not been registered in existing client configuration or
-deployed to the hosted gateway. Native game testing remains deferred.
+At initial verification the companion had not been registered in client
+configuration or deployed to the hosted gateway. Native game testing remains deferred.
 Retrieval quality across general gameplay questions remains unbenchmarked.
 
 Advisory judgements used Jev 1.14.0.
@@ -40,3 +40,25 @@ Advisory judgements used Jev 1.14.0.
   Usage was 671 input and 45 output tokens in 0.302 seconds.
 
 The author accepted the scoped offline result after the independent reviews.
+
+Local registration on ICARUS subsequently added `azeroth-knowledge` through
+`codex mcp add`. A targeted edit set startup to 60 seconds, tools to
+30 seconds, and the allowlist to the single search tool. Launching the
+exact saved command, arguments and environment returned one advertised
+tool and catalogue IDs 7950 and 7953 in 10.669 seconds.
+
+The unrelated-config hash after excluding the new entry changed across
+the CLI add. The earlier full configuration was not retained, so the cause
+and full-file preservation were not established. The later targeted edit
+verified that parsed configuration outside the new entry was identical.
+The current chat's tool catalogue had not exposed the new server at the
+time of this check. Hosted deployment and game testing remain deferred.
+
+An independent registration review launched the saved entry from C:/Temp,
+listed the one search tool and retrieved item 19019 for Thunderfury.
+Invalid limit, section and empty-query probes returned sanitised errors.
+The advisory scoped-registration judgement selected supported_scoped using
+Jev 1.14.0, request
+`a506eb32d9429f5b6bf45ba503628df43ae9ef0ae2c55a5ba1ef47c00addaf91`.
+Usage was 570 input and 50 output tokens in 0.322 seconds.
+This judgement does not resolve the unrelated-config hash discrepancy.

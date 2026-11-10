@@ -17,7 +17,14 @@ Model sync is explicit. Build, search and MCP serving use local data.
 ./.venv/Scripts/python.exe -m tools.forever_knowledge serve --catalogue local-data/forever/catalogue.json --index local-data/knowledge/index.sqlite --model local-data/knowledge-model
 ```
 
-For an MCP client, launch the second command from this repository's root,
+The local ICARUS registration is named `azeroth-knowledge`. It allows
+only `search_forever_knowledge`, sets a 60-second startup allowance and
+a 30-second tool timeout, and supplies offline model/telemetry flags.
+The saved entry was launched independently through stdio and returned the
+expected catalogue IDs. A client must refresh its MCP connections to
+discover a newly registered server.
+
+For another MCP client, launch the second command from this repository's root,
 using absolute paths for the interpreter and all three configured inputs.
 Its tool is `search_forever_knowledge`. Allowed section filters are
 `items`, `npcs`, `zones`, `factions` and `consumables`. Limit is 1–20.

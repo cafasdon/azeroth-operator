@@ -1,5 +1,7 @@
 # Changelog
 
+- Register the public knowledge companion locally on ICARUS and verify its saved stdio configuration.
+
 - Add a local keyword/vector index and optional read-only MCP companion for pinned public Forever reference records.
 
 - Find saved captures satisfying several exact section statuses together.
