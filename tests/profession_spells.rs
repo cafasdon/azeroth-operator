@@ -31,6 +31,7 @@ fn profession_spells_require_stable_public_local_context() -> Result<(), Box<dyn
             end,
             GetProfessionSpells=function(profession)
                 assert(profession==164);reads=reads+1
+                if mode:sub(1,8)=='fallback' then return {} end
                 if mode=='empty' then return {} end
                 if mode=='error' or (mode=='second_error' and reads>1) then error('PRIVATE') end
                 if mode=='secret_table' then return 'PRIVATE' end
@@ -44,6 +45,23 @@ fn profession_spells_require_stable_public_local_context() -> Result<(), Box<dyn
                 if mode=='changed' and reads>1 then return {2675,3511} end
                 if mode=='reordered' and reads>1 then return {3508,2675} end
                 return {2675,3508}
+            end,
+            GetAllRecipeIDs=function()
+                if mode=='empty' then return {} end
+                if mode=='fallback_secret_list' then return 'PRIVATE' end
+                if mode=='fallback_duplicate' then return {2675,2675} end
+                if mode=='fallback_sparse' then return {[1]=2675,[3]=3508} end
+                if mode=='fallback_oversize' then local t={};for i=1,4097 do t[i]=i end;return t end
+                return {2675,3508,3511,3512}
+            end,
+            GetRecipeInfo=function(id)
+                if mode=='fallback_secret_info' then return 'PRIVATE' end
+                if mode=='fallback_wrong_id' then return {recipeID=1,learned=true} end
+                if mode=='fallback_secret_learning' then return {recipeID=id,learned='PRIVATE'} end
+                if mode=='fallback_bad_learning' then return {recipeID=id,learned=1} end
+                if id==3512 then return nil end
+                if id==3508 then return {recipeID=id} end
+                return {recipeID=id,learned=id==2675 and not (mode=='fallback_changed' and reads>1)}
             end,
             CraftRecipe=function() error('no crafting') end,
             SetShowLearned=function() error('no filters') end,
@@ -76,6 +94,8 @@ fn profession_spells_require_stable_public_local_context() -> Result<(), Box<dyn
         azeroth_operator::analysis::summary(&capture("empty")?)["profession_spell_observations"]["reported_spell_count"],
         0
     );
+    assert_eq!(capture("fallback")?.sections["profession_spells"]["entries"],
+        serde_json::json!({"2675":{}}));
     for mode in [
         "hidden",
         "remote",
@@ -99,6 +119,15 @@ fn profession_spells_require_stable_public_local_context() -> Result<(), Box<dyn
         "large_id",
         "oversize",
         "changed",
+        "fallback_secret_list",
+        "fallback_duplicate",
+        "fallback_sparse",
+        "fallback_oversize",
+        "fallback_secret_info",
+        "fallback_wrong_id",
+        "fallback_secret_learning",
+        "fallback_bad_learning",
+        "fallback_changed",
     ] {
         let value = capture(mode)?;
         assert!(!value.sections.contains_key("profession_spells"), "{mode}");

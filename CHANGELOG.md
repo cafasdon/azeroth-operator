@@ -1,5 +1,8 @@
 # Changelog
 
+- Recover known Forever recipes from the guarded native unfiltered list when
+  the profession-spell API returns an empty result.
+
 - Record real-character private pilot calls for all twelve hosted tools,
   selected-recipe material checks, safe rejection checks and remaining gaps.
 

@@ -10,9 +10,25 @@ The public [Forever TradeSkillUI documentation](https://raw.githubusercontent.co
 defines `GetProfessionSpells(professionID, skillLineID?)` returning `knownSpells`.
 The collector passes the native ID observed through `Professions.GetProfessionInfo`,
 omitting the optional skill-line restriction. It does not equate that ID with
-the simulator Profession enum. `GetAllRecipeIDs` was not established from that
-documentation and is not used. The report is not labelled an unfiltered or
-complete recipe index.
+the simulator Profession enum. The report is not labelled a complete recipe index.
+
+## Native fallback correction — 14 November 2026
+
+Build 70938 returned zero profession spells for the open local Leatherworking
+page, while the filtered recipe list held 20 rows. A guarded native probe found
+`GetAllRecipeIDs` available with 592 IDs; `GetRecipeInfo` explicitly marked 20
+as learned. This is runtime evidence beyond the older generated documentation.
+If the profession-spell result is empty and the unfiltered list API exists,
+the collector now reads that list and retains only exact, public recipe IDs
+with `learned == true`. Missing recipe information or learning flags cannot
+establish learning. Two known sets and the local context must still agree.
+No filters, recipe selections or crafting calls are changed.
+
+Direct profession-spell, bulk-material and cooldown capture tests passed.
+The profession-spell regression includes secret/malformed/duplicate/sparse/
+oversized fallback data and changing learned state. One independent review
+found no confirmed medium or high issue. Installed capture evidence follows
+in the dated pilot repair report; source tests alone do not prove that result.
 
 Capture requires the existing local crafting page to be visible, local mode,
 no external list, no inspection, no NPC crafting and a stable data source.

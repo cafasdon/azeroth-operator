@@ -2354,14 +2354,34 @@ AO.collectors.profession_spells = function()
     end
     local function read(profession)
         local values=public(api.GetProfessionSpells(profession))
+        -- Some Forever builds report no profession spells while their native
+        -- recipe list is populated. Use only explicit learned flags from the
+        -- unfiltered local list; missing recipe info never establishes learning.
+        local recipeList=false
+        if type(values)=="table" and next(values)==nil and type(api.GetAllRecipeIDs)=="function" then
+            assert(type(api.GetRecipeInfo)=="function", "Recipe learning observation unavailable")
+            values=public(api.GetAllRecipeIDs())
+            recipeList=true
+        end
         assert(type(values)=="table" and #values<=4096, "Profession spell list unavailable")
-        local result,count={},0
+        local result,seen,count={},{},0
         for index,value in pairs(values) do
             index=public(index)
             assert(type(index)=="number" and index%1==0 and index>=1 and index<=#values, "Sparse profession spell list")
             local key=tostring(id(value))
-            assert(not result[key], "Duplicate profession spell ID")
-            result[key]={};count=count+1
+            assert(not seen[key], "Duplicate profession spell ID")
+            seen[key]=true;count=count+1
+            if recipeList then
+                local info=public(api.GetRecipeInfo(value))
+                if info~=nil then
+                    assert(type(info)=="table" and id(info.recipeID)==value, "Recipe identity mismatch")
+                    local learned=public(info.learned)
+                    assert(learned==nil or type(learned)=="boolean", "Invalid recipe learning flag")
+                    if learned==true then result[key]={} end
+                end
+            else
+                result[key]={}
+            end
         end
         assert(count==#values, "Incomplete profession spell list")
         return result
