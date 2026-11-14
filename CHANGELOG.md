@@ -1,5 +1,9 @@
 # Changelog
 
+- Activate and test the Forever capture addon, current Windows uploader,
+  twelve-tool hosted reader and two local reference companions against a real
+  saved character export. Record deployment evidence and coverage limits.
+
 - Complete numeric item class and subclass filters in the offline world MCP and CLI.
 
 - Filter cached items by their recorded item level.

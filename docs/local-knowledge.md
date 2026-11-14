@@ -136,5 +136,7 @@ sync or model download is required. Service startup still loads its local model.
 
 For example, follow the resulting `spell_effects:679187` reference with another
 exact lookup. Use the source revision and record hashes to retain provenance
-across steps. Connection refresh and enabling the additional tool in an
-installed client's allowlist remain separate from source/offline verification.
+across steps. On 14 November 2026, the installed Codex allowlist enabled both
+knowledge tools. Independent MCP SDK calls tested search and exact lookup from
+the saved configuration. Existing connections can still need a refresh. See
+[installed acceptance evidence](live-acceptance-2026-11-14.md).

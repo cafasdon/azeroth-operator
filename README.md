@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+The installed Forever capture-to-upload-to-MCP path passed a real character
+test on 14 November 2026. The hosted reader exposes 12 tools; the local world
+and knowledge companions expose two each. See the
+[acceptance evidence and limits](docs/live-acceptance-2026-11-14.md).
+
 An optional local knowledge MCP now searches the pinned public Forever
 catalogue with keyword and vector retrieval. It returns source identities
 for exact catalogue lookup. Setup and offline verification are described in
