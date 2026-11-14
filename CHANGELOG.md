@@ -1,5 +1,8 @@
 # Changelog
 
+- Add file-incremental public source caching, fixed disk budgets, atomic
+  promotion, crash-safe locks and removal of superseded objects.
+
 - Add a bounded, private owner-capture reference database and two offline MCP
   tools, with recipe edges, separate observed item variants and atomic rebuilds.
 - Record the Windows configuration write fault and native-parser reproduction.
