@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+The [owner-derived local reference](docs/local-first-reference.md) adds exact
+offline item, recipe, spell and skill lookup with recipe relationships.
+External references remain available for gaps under the
+[data acquisition boundaries](docs/data-acquisition.md).
+
 The installed Forever capture-to-upload-to-MCP path passed a real character
 test on 14 November 2026. The hosted reader exposes 12 tools; the local world
 and knowledge companions expose two each. See the

@@ -1,5 +1,9 @@
 # Changelog
 
+- Add a bounded, private owner-capture reference database and two offline MCP
+  tools, with recipe edges, separate observed item variants and atomic rebuilds.
+- Record the Windows configuration write fault and native-parser reproduction.
+
 - Omit optional selected-recipe profession metadata when its native ID differs
   from the local page. Preserve material conflict guards; test all 20 real
   captured recipes and the talent/session changes through the hosted MCP.
