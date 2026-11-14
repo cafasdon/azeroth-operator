@@ -12,6 +12,40 @@ pub fn captured_loadout(snapshot: &Snapshot) -> Result<Value> {
         "captured_at":snapshot.captured_at,"source":snapshot.source,"live":false,"game_execution":false,
         "status":"unavailable","requires_player_review":true,
         "compatibility":"not_live_verified","optimisation":"not_assessed"});
+    if snapshot.client.family == crate::Family::Forever {
+        let Some(talents) = snapshot.sections.get("talents") else {
+            review["reason"] = json!("not_captured");
+            return Ok(review);
+        };
+        let mut allocation = json!({"format":"forever_traits","config_id":talents["config_id"],
+            "nodes":talents["nodes"]});
+        for field in [
+            "name",
+            "observed_tree_ids",
+            "observed_node_count",
+            "staged_changes_observed",
+            "definition_allocation",
+            "has_unspent",
+            "unspent_class",
+            "unspent_spec",
+        ] {
+            if let Some(value) = talents.get(field) {
+                allocation[field] = value.clone();
+            }
+        }
+        review["status"] = json!("captured_allocation_for_review");
+        review["loadout"] = allocation;
+        review["native_import_available"] = json!(false);
+        review["native_tree_coverage_verified"] = json!(false);
+        review["simulation_model_verified"] = json!(false);
+        review["build_legality_verified"] = json!(false);
+        review["limitations"] = json!([
+            "Captured Forever trait allocation only; no native import string or simulator projection",
+            "Captured tree and definition coverage does not prove complete native talent coverage",
+            "Confirm current character, game build and staged changes in the game before any talent change"
+        ]);
+        return Ok(review);
+    }
     if snapshot.client.family != crate::Family::Retail {
         review["reason"] = json!("client_not_supported");
         return Ok(review);
@@ -377,6 +411,69 @@ mod tests {
             captured_loadout(&snapshot).unwrap()["reason"],
             "client_not_supported"
         );
+    }
+    #[test]
+    fn forever_captured_loadout_exposes_allocation_without_import_or_projection() {
+        let mut snapshot = fixture();
+        snapshot.client.family = crate::Family::Forever;
+        assert_eq!(
+            captured_loadout(&snapshot).unwrap()["reason"],
+            "not_captured"
+        );
+        let talents = json!({"config_id":7,"nodes":{"10":{"entry_id":20,"rank":2,"tree_id":30,
+            "definition_id":40,"purchased_rank":2,"max_rank":5}},
+            "observed_tree_ids":{"30":true},"observed_node_count":1,"staged_changes_observed":false,
+            "definition_allocation":{"coverage":"queried_config_tree_entries","queried_node_count":1,
+                "queried_entry_count":1,"definitions":{"40":{"node_id":10,"entry_id":20,"tree_id":30,
+                    "purchased_rank":2,"max_rank":5}}},
+            "loadout_export":{"status":"unavailable","reason":"client_not_supported"}});
+        snapshot.sections.insert("talents".into(), talents.clone());
+        let review = captured_loadout(&snapshot).unwrap();
+        assert_eq!(review["status"], "captured_allocation_for_review");
+        assert!(review.get("reason").is_none());
+        assert_eq!(review["loadout"]["format"], "forever_traits");
+        assert_eq!(review["loadout"]["nodes"], talents["nodes"]);
+        assert_eq!(
+            review["loadout"]["definition_allocation"],
+            talents["definition_allocation"]
+        );
+        assert_eq!(review["loadout"]["staged_changes_observed"], false);
+        for field in [
+            "native_import_available",
+            "native_tree_coverage_verified",
+            "simulation_model_verified",
+            "build_legality_verified",
+            "game_execution",
+            "live",
+        ] {
+            assert_eq!(review[field], false, "{field}");
+        }
+        assert!(review["loadout"].get("import_string").is_none());
+        assert!(review.get("simulator_talent_string").is_none());
+
+        snapshot.sections.get_mut("talents").unwrap()["staged_changes_observed"] = json!(true);
+        assert_eq!(
+            captured_loadout(&snapshot).unwrap()["loadout"]["staged_changes_observed"],
+            true
+        );
+        snapshot.sections.get_mut("talents").unwrap()["definition_allocation"]["definitions"]["40"]
+            ["purchased_rank"] = json!(6);
+        assert!(captured_loadout(&snapshot).is_err());
+    }
+
+    #[test]
+    fn forever_legacy_capture_preserves_unknown_coverage_and_staged_state() {
+        let mut snapshot = fixture();
+        snapshot.client.family = crate::Family::Forever;
+        snapshot
+            .sections
+            .insert("talents".into(), json!({"config_id":7,"nodes":{}}));
+        let review = captured_loadout(&snapshot).unwrap();
+        assert_eq!(review["status"], "captured_allocation_for_review");
+        assert_eq!(review["loadout"]["nodes"], json!({}));
+        assert!(review["loadout"].get("staged_changes_observed").is_none());
+        assert!(review["loadout"].get("definition_allocation").is_none());
+        assert_eq!(review["native_tree_coverage_verified"], false);
     }
     fn bag(target: u32, slot: u32) -> EquipmentSelection {
         EquipmentSelection {

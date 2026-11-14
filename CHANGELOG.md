@@ -1,5 +1,8 @@
 # Changelog
 
+- Return captured Forever talent allocations for player review without
+  generating a native import string or claiming simulator compatibility.
+
 - Recover known Forever recipes from the guarded native unfiltered list when
   the profession-spell API returns an empty result.
 

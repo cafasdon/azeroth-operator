@@ -103,7 +103,9 @@ class AllocationMcpTests(unittest.IsolatedAsyncioTestCase):
                         for flag in ['allocation_match_verified','native_tree_coverage_verified','simulation_model_verified',
                                      'build_legality_verified','native_import_generated','game_execution','live']:
                             self.assertFalse(prepared[flag])
-                        self.assertEqual(data['status'],'unavailable');self.assertEqual(data['reason'],'client_not_supported')
+                        self.assertEqual(data['status'],'captured_allocation_for_review')
+                        self.assertFalse(data['native_import_available'])
+                        self.assertEqual(data['loadout']['nodes'],value['sections']['talents']['nodes'])
                         compared=await call(value,simulator_talent_string=expected)
                         self.assertEqual(compared['simulator_talent_observation']['status'],'observed_ranks_match')
                         old=await call(value)

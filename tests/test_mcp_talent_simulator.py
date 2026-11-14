@@ -40,8 +40,13 @@ class McpTalentSimulatorTests(unittest.IsolatedAsyncioTestCase):
                         data=json.loads(reply.content[0].text)
                         expected=check_talent_identity({'talentsString':text},observed,name,require_match=False)
                         self.assertEqual(data['simulator_talent_observation'],expected,(name,text))
-                        self.assertEqual(data['status'],'unavailable')
-                        self.assertEqual(data['reason'],'client_not_supported')
+                        self.assertEqual(data['status'], 'unavailable' if observed is None else 'captured_allocation_for_review')
+                        if observed is None:
+                            self.assertEqual(data['reason'],'not_captured')
+                        else:
+                            self.assertEqual(data['loadout']['nodes'],observed['nodes'])
+                            self.assertFalse(data['native_import_available'])
+                            self.assertFalse(data['simulation_model_verified'])
                         self.assertFalse(data['game_execution']);self.assertFalse(data['live'])
                         self.assertNotIn('import_string',data)
                         self.assertEqual((Path(folder)/f'{key}.json').read_bytes(),before)
