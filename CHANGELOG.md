@@ -1,5 +1,8 @@
 # Changelog
 
+- Add expiring exact current-session snapshot references to character
+  resolution, with explicit-character precedence and no automatic live claim.
+
 - Return captured Forever talent allocations for player review without
   generating a native import string or claiming simulator compatibility.
 

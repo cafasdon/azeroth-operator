@@ -37,15 +37,17 @@ struct Operator {
 #[serde(deny_unknown_fields)]
 struct ResolveCharacter {
     family: Family,
-    /// Explicit saved character; no target leaves active identity unknown.
+    /// Explicit saved character; overrides current_snapshot_id.
     character: Option<azeroth_operator::Character>,
-    /// Inclusive earliest capture timestamp for the explicit character.
+    /// Caller-supplied current-session export reference, less than 15 minutes old. Not live identity detection.
+    current_snapshot_id: Option<String>,
+    /// Inclusive earliest timestamp for the selected capture.
     captured_from: Option<String>,
-    /// Inclusive latest capture timestamp for the explicit character.
+    /// Inclusive latest timestamp for the selected capture.
     captured_through: Option<String>,
-    /// Require this exact client family, variant, build and interface for the explicit character.
+    /// Require this exact client family, variant, build and interface for the selected capture.
     exact_client: Option<azeroth_operator::ClientIdentity>,
-    /// Require every named section in the same saved capture of the explicit character.
+    /// Require every named section in the selected saved capture.
     required_sections: Option<Vec<String>>,
     /// Return ambiguity if multiple matching captures share the latest timestamp.
     #[serde(default)]
@@ -53,6 +55,120 @@ struct ResolveCharacter {
     /// Require the selected newest capture itself to contain all required sections.
     #[serde(default)]
     require_latest_coverage: bool,
+}
+
+fn resolve_session_reference(
+    store: &Store,
+    args: &ResolveCharacter,
+    id: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> anyhow::Result<serde_json::Value> {
+    anyhow::ensure!(
+        !args.require_unique_latest && !args.require_latest_coverage,
+        "Latest-capture options cannot be used with an exact current-session reference"
+    );
+    if let Some(sections) = &args.required_sections {
+        azeroth_operator::validate_section_names(sections)?;
+    }
+    if let Some(client) = &args.exact_client {
+        anyhow::ensure!(
+            client.family == args.family
+                && client.interface > 0
+                && [&client.variant, &client.build]
+                    .iter()
+                    .all(|text| !text.trim().is_empty() && text.len() <= 128),
+            "Invalid exact client identity"
+        );
+    }
+    let parse_bound = |value: &str| -> anyhow::Result<chrono::DateTime<chrono::Utc>> {
+        anyhow::ensure!(value.len() <= 64, "Capture timestamp is too long");
+        Ok(chrono::DateTime::parse_from_rfc3339(value)?.with_timezone(&chrono::Utc))
+    };
+    let from = args.captured_from.as_deref().map(parse_bound).transpose()?;
+    let through = args.captured_through.as_deref().map(parse_bound).transpose()?;
+    anyhow::ensure!(
+        from.zip(through).is_none_or(|(a, b)| a <= b),
+        "Capture time bounds are reversed"
+    );
+    let snapshot = store.read(id)?;
+    let age = now - snapshot.captured_at;
+    anyhow::ensure!(
+        age >= chrono::Duration::zero() && age < chrono::Duration::minutes(15),
+        "Current-session reference must be less than 15 minutes old and not in the future"
+    );
+    anyhow::ensure!(
+        snapshot.client.family == args.family
+            && args
+                .exact_client
+                .as_ref()
+                .is_none_or(|client| *client == snapshot.client)
+            && from.is_none_or(|bound| snapshot.captured_at >= bound)
+            && through.is_none_or(|bound| snapshot.captured_at <= bound)
+            && args.required_sections.as_ref().is_none_or(|sections| {
+                sections
+                    .iter()
+                    .all(|name| snapshot.sections.contains_key(name))
+            }),
+        "Current-session reference does not match the requested capture filters"
+    );
+    let selection = store.inspect(id, None)?;
+    Ok(serde_json::json!({
+        "status":"current_session_snapshot_reference", "selection":selection,
+        "selection_basis":"caller_current_session_snapshot_reference",
+        "expires_at":snapshot.captured_at + chrono::Duration::minutes(15),
+        "age_seconds":age.num_seconds(), "live":false, "active_character_verified":false
+    }))
+}
+
+#[cfg(test)]
+mod session_reference_tests {
+    use super::*;
+
+    #[test]
+    fn freshness_expires_at_exactly_fifteen_minutes_without_renewal() {
+        let directory = tempfile::tempdir().unwrap();
+        let store = Store {
+            root: directory.path().to_path_buf(),
+        };
+        let snapshot: azeroth_operator::Snapshot = serde_json::from_value(serde_json::json!({
+            "schema_version":1,"source":"fixture","captured_at":"2000-01-01T00:00:00Z",
+            "client":{"family":"retail","variant":"live","build":"123","interface":1},
+            "character":{"name":"Example","realm":"Test"},"sections":{"equipment":{}}
+        }))
+        .unwrap();
+        let id = store.ingest(&snapshot).unwrap();
+        let args: ResolveCharacter = serde_json::from_value(serde_json::json!({
+            "family":"retail","current_snapshot_id":id
+        }))
+        .unwrap();
+        let expiry = snapshot.captured_at + chrono::Duration::minutes(15);
+        let before = resolve_session_reference(
+            &store,
+            &args,
+            &id,
+            expiry - chrono::Duration::nanoseconds(1),
+        )
+        .unwrap();
+        let repeated = resolve_session_reference(
+            &store,
+            &args,
+            &id,
+            expiry - chrono::Duration::nanoseconds(1),
+        )
+        .unwrap();
+        assert_eq!(before["expires_at"], serde_json::json!(expiry));
+        assert_eq!(before["expires_at"], repeated["expires_at"]);
+        assert!(resolve_session_reference(&store, &args, &id, expiry).is_err());
+        assert!(
+            resolve_session_reference(
+                &store,
+                &args,
+                &id,
+                snapshot.captured_at - chrono::Duration::nanoseconds(1),
+            )
+            .is_err()
+        );
+    }
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -2780,7 +2896,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Return the captured Retail talent import string if available. Forever simulator_talent_string compares purchased ranks; prepare_simulator_talents prepares simulator digits only from an exact captured definition set with no staged changes. These modes are exclusive. Native import availability stays separate. Does not simulate, apply talents, optimise or verify build legality, native completeness or game acceptance.",
+        description = "Return the captured Retail talent import string if available, or the default Forever captured trait allocation for review. Forever simulator_talent_string compares purchased ranks; prepare_simulator_talents prepares simulator digits only from an exact captured definition set with no staged changes. These modes are exclusive. Native import availability stays separate. Does not simulate, apply talents, optimise or verify build legality, native completeness or game acceptance.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -3072,7 +3188,7 @@ impl Operator {
         }
     }
     #[tool(
-        description = "Resolve an explicitly requested saved character in the owner's store. Without an explicit character, return unknown: active-character detection is not yet available. Never infer current play from the newest saved snapshot. Selection is historical and does not authorise game actions.",
+        description = "Resolve an explicit saved character, which overrides current_snapshot_id. Otherwise current_snapshot_id selects exactly one owner-local caller-supplied current-session export less than 15 minutes old. Capture time, exact client and section filters apply to that reference; latest-capture options are incompatible. Expired, future, missing or mismatched references fail without fallback. This is a caller assertion, not active-character detection. Without either input, return unknown. Never infer current play from newest saved data. No game actions.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -3081,6 +3197,14 @@ impl Operator {
     )]
     fn resolve_character(&self, Parameters(args): Parameters<ResolveCharacter>) -> CallToolResult {
         let Some(character) = args.character else {
+            if let Some(id) = args.current_snapshot_id.as_deref() {
+                return match resolve_session_reference(&self.store, &args, id, chrono::Utc::now()) {
+                    Ok(value) => CallToolResult::success(vec![ContentBlock::text(value.to_string())]),
+                    Err(_) => CallToolResult::error(vec![ContentBlock::text(
+                        "Current-session reference unavailable, expired or invalid; exact references require matching filters and exclude latest-capture options",
+                    )]),
+                };
+            }
             if args.captured_from.is_some()
                 || args.captured_through.is_some()
                 || args.exact_client.is_some()

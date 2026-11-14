@@ -665,10 +665,13 @@ All report modes keep `best_in_slot_verified: false`.
 [Ranker evidence](docs/rank-inventory-evidence-verification-2026-11-08.md).
 
 `resolve_character` resolves an explicitly named saved character within the
-configured owner's store and client family. Without an explicit character it
-returns `active_identity_unavailable`, with no selection. Saved recency never
-establishes current play; automatic active-character detection remains pending.
+configured owner's store and client family. An optional `current_snapshot_id`
+pins an exact caller-identified session export less than 15 minutes old.
+An explicit character takes precedence. Without either input it returns
+`active_identity_unavailable`, with no selection. A session reference is a
+caller assertion, not automatic live detection; both live identity flags stay false.
 [Selection evidence](docs/character-resolution-verification-2026-11-08.md).
+[Session reference contract](docs/session-reference-2026-11-14.md).
 
 Forever exports can include `pet_action_bar`: partial native command/spell
 slots with reported active, autocast and range flags. Inspect the section or

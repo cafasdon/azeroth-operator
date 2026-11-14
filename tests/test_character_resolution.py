@@ -1,5 +1,7 @@
 """Character selection never substitutes newest saved data for live identity."""
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,6 +15,87 @@ from test_snapshots import fixture
 
 
 class CharacterResolutionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_exact_fresh_session_reference_never_falls_back(self):
+        root = Path(__file__).resolve().parents[1]
+        binary = Path(os.environ.get('AZEROTH_TEST_BINARY') or root / 'target/debug' /
+                      ('azeroth-operator.exe' if os.name == 'nt' else 'azeroth-operator')).resolve(strict=True)
+        with tempfile.TemporaryDirectory() as folder, tempfile.TemporaryDirectory() as other:
+            store = SnapshotStore(Path(folder))
+            now = datetime.now(timezone.utc).replace(microsecond=0)
+            base = fixture()
+            base['client'] = {'family':'forever','variant':'live','build':'70862','interface':16001}
+            base['captured_at'] = (now - timedelta(minutes=2)).isoformat()
+            reference = store.ingest(base)
+            newer = deepcopy(base)
+            newer['captured_at'] = (now - timedelta(minutes=1)).isoformat()
+            newer['character']['name'] = 'Another'
+            newest = store.ingest(newer)
+            stale = deepcopy(base)
+            stale['captured_at'] = (now - timedelta(minutes=16)).isoformat()
+            stale_id = store.ingest(stale)
+            foreign = deepcopy(base)
+            foreign['character']['name'] = 'PrivateOtherOwner'
+            foreign_id = SnapshotStore(Path(other)).ingest(foreign)
+            # Bypass the producer validator to check the Rust consumer against future data.
+            future = deepcopy(base)
+            future['captured_at'] = (now + timedelta(minutes=2)).isoformat()
+            raw = json.dumps(future).encode()
+            future_id = hashlib.sha256(raw).hexdigest()
+            (Path(folder) / f'{future_id}.json').write_bytes(raw)
+            corrupt_id = 'b' * 64
+            (Path(folder) / f'{corrupt_id}.json').write_text('{}')
+            env = {**os.environ, 'AZEROTH_DATA_DIR':folder}
+            env.pop('AZEROTH_FOREVER_CATALOGUE', None)
+            async with stdio_client(StdioServerParameters(command=str(binary), env=env)) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    args = {'family':'forever','current_snapshot_id':reference}
+                    async def resolve(arguments):
+                        reply = await session.call_tool('resolve_character', arguments)
+                        self.assertFalse(reply.isError, reply)
+                        return json.loads(reply.content[0].text)
+                    result = await resolve(args)
+                    self.assertEqual(result['status'],'current_session_snapshot_reference')
+                    self.assertEqual(result['selection_basis'],'caller_current_session_snapshot_reference')
+                    self.assertEqual(result['selection']['snapshot_id'],reference)
+                    self.assertFalse(result['live'])
+                    self.assertFalse(result['active_character_verified'])
+                    expiry = datetime.fromisoformat(result['expires_at'].replace('Z','+00:00'))
+                    self.assertEqual(expiry, datetime.fromisoformat(base['captured_at']) + timedelta(minutes=15))
+                    self.assertEqual((await resolve(args))['expires_at'],result['expires_at'])
+                    covered = await resolve({**args,'required_sections':['equipment'],
+                                             'exact_client':base['client'],
+                                             'captured_from':base['captured_at'],
+                                             'captured_through':base['captured_at']})
+                    self.assertEqual(covered['selection']['snapshot_id'],reference)
+                    override = await resolve({**args,'current_snapshot_id':stale_id,
+                                              'character':newer['character']})
+                    self.assertEqual(override['status'],'explicit_saved_character')
+                    self.assertEqual(override['selection']['snapshot_id'],newest)
+                    for invalid in [
+                        {**args,'current_snapshot_id':value}
+                        for value in [stale_id, future_id, foreign_id, corrupt_id, 'a' * 64, '../escape', '']
+                    ] + [
+                        {**args,'family':'retail'},
+                        {**args,'exact_client':{**base['client'],'build':'different'}},
+                        {**args,'exact_client':{**base['client'],'interface':0}},
+                        {**args,'exact_client':{**base['client'],'family':'retail'}},
+                        {**args,'required_sections':['bags']},
+                        {**args,'required_sections':['invalid']},
+                        {**args,'required_sections':[]},
+                        {**args,'captured_from':newer['captured_at']},
+                        {**args,'captured_through':stale['captured_at']},
+                        {**args,'captured_from':'bad'},
+                        {**args,'captured_from':newer['captured_at'],'captured_through':stale['captured_at']},
+                        {**args,'require_unique_latest':True},
+                        {**args,'require_latest_coverage':True,'required_sections':['equipment']},
+                    ]:
+                        reply = await session.call_tool('resolve_character',invalid)
+                        self.assertTrue(reply.isError, (invalid, reply))
+                        self.assertNotIn('PrivateOtherOwner', str(reply))
+                    self.assertEqual((await resolve({'family':'forever'}))['status'],
+                                     'active_identity_unavailable')
+
     async def test_explicit_selection_unknown_default_and_owner_boundary(self):
         root = Path(__file__).resolve().parents[1]
         binary = Path(os.environ.get('AZEROTH_TEST_BINARY') or root / 'target/debug' /
