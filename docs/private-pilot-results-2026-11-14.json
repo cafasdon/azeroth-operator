@@ -1,0 +1,26 @@
+{
+  "hosted_tools_called": 12,
+  "calls": 14,
+  "assertions": "passed",
+  "observed_sections": 40,
+  "new_sections": [
+    "profession_recipe_materials",
+    "profession_recipe_view",
+    "profession_spells",
+    "selected_recipe",
+    "wallet"
+  ],
+  "native_reference": "level22 Shaman; four profession ranks; Camp Tent requires five Light Leather, zero carried",
+  "negative_checks": [
+    "wrong item selection rejected",
+    "no implicit active character selected",
+    "missing banks remain unknown"
+  ],
+  "gaps": [
+    "active character identity unavailable",
+    "Forever talent export unsupported",
+    "bulk profession spells empty despite populated filtered recipe view"
+  ],
+  "gear_test": "same equipped item review only; no optimality claim",
+  "character_mutations": false
+}

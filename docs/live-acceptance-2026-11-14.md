@@ -58,3 +58,7 @@ trades, purchases, social messages and inventory mutations were not tested.
 
 The installed local companions are configured for future Codex connections.
 An existing connection can need a reconnect before its tool allowlist refreshes.
+
+A later [private pilot pass](private-pilot-2026-11-14.md) called all 12 hosted
+tools and captured an open profession panel. It records five additional
+sections and the remaining recipe, active-identity and talent support gaps.

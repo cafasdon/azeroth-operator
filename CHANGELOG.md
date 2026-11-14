@@ -1,5 +1,8 @@
 # Changelog
 
+- Record real-character private pilot calls for all twelve hosted tools,
+  selected-recipe material checks, safe rejection checks and remaining gaps.
+
 - Activate and test the Forever capture addon, current Windows uploader,
   twelve-tool hosted reader and two local reference companions against a real
   saved character export. Record deployment evidence and coverage limits.
