@@ -1,5 +1,7 @@
 # Changelog
 
+- Complete numeric item class and subclass filters in the offline world MCP and CLI.
+
 - Filter cached items by their recorded item level.
 
 - Filter cached quests by their recorded minimum player level.

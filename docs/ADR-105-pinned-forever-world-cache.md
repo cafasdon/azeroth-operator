@@ -127,3 +127,7 @@ Combine with a name or quest category as needed. The CLI flag is
 
 Search accepts min_item_level (1–65535) for items at or above the recorded
 item level. Missing levels are excluded. The CLI flag is --min-item-level.
+
+Search also accepts item_class and item_subclass (0–255). A subclass needs a
+class. These exact numeric filters compose with names and minimum item level.
+The CLI equivalents are --item-class and --item-subclass.

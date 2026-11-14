@@ -75,6 +75,16 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(bool(reply.isError),error,reply)
                         return None if error else json.loads(reply.content[0].text)
                     get, search = 'get_forever_world_record', 'search_forever_world_records'
+                    category = await call(search,item_class=2,item_subclass=0,min_item_level=60,limit=2)
+                    self.assertGreater(category['match_count'],2)
+                    self.assertEqual(category['item_subclass'],0)
+                    for hit in category['results']:
+                        fields = (await call(get,kind='item',entity_id=hit['id']))['record']['fields']
+                        self.assertEqual((fields['class'],fields['subClass']),(2,0))
+                        self.assertGreaterEqual(fields['itemLevel'],60)
+                    for args in [{'item_subclass':0},{'item_class':True},{'item_class':256},
+                                 {'item_class':2,'kind':'quest'}]:
+                        await call(search,error=True,**args)
                     high = await call(search,min_item_level=60,limit=1)
                     self.assertGreater(high['match_count'],1)
                     self.assertTrue(high['has_more'])
