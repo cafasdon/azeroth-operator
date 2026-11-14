@@ -463,7 +463,8 @@ pub fn verify_forever_capture_fixture(
         ItemLocation={CreateFromBagAndSlot=function(_,bag,slot) return {bag=bag,slot=slot} end}
         GetTime=function() return 20 end
         C_Item={GetItemGUID=function() return 'Item-Bank-Instance' end}
-        Professions={InLocalCraftingMode=function() return localCrafting end}
+        Professions={InLocalCraftingMode=function() return localCrafting end,
+            GetProfessionInfo=function() return {professionID=164} end}
         C_TradeSkillUI={IsNPCCrafting=function() return npcCrafting end,
             GetRecipesTracked=function(recraft)
                 if malformedTrackedRecipes then return {[2]=100} end

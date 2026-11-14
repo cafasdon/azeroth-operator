@@ -2725,8 +2725,15 @@ AO.collectors.selected_recipe = function()
     local professionOk,profession=pcall(C_TradeSkillUI.GetProfessionInfoByRecipeID,info.recipeID)
     if professionOk and accessible(profession) and type(profession)=="table" then
         local id,name,rank,cap=profession.professionID,profession.professionName,profession.skillLevel,profession.maxSkillLevel
+        -- Recipe metadata can report a child skill line while the local page
+        -- reports its base profession. Do not combine these ID namespaces or
+        -- attach that optional metadata without an exact local-context match.
+        local contextOk,context=pcall(Professions.GetProfessionInfo)
+        local contextMatches=contextOk and accessible(context) and type(context)=="table"
+            and accessible(context.professionID) and accessible(id) and context.professionID==id
         if accessible(id) and positive(id) and accessible(name) and type(name)=="string" and #name>0 and #name<=256
-            and accessible(rank) and (rank==0 or positive(rank)) and accessible(cap) and (cap==0 or positive(cap)) then
+            and accessible(rank) and (rank==0 or positive(rank)) and accessible(cap) and (cap==0 or positive(cap))
+            and contextMatches then
             result.profession={profession_id=id,name=name,rank=rank,max_rank=cap}
         end
     end

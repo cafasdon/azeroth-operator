@@ -1,5 +1,9 @@
 # Private pilot — 14 November 2026
 
+Later [installed repairs and checks](pilot-repairs-2026-11-14.md) correct the
+recipe and talent gaps below and add bounded session-reference selection.
+This document retains the earlier pilot observations as dated evidence.
+
 ## Scope and evidence
 
 The owner authorised native testing on the logged-in Forever character. This

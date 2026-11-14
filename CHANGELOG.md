@@ -1,5 +1,9 @@
 # Changelog
 
+- Omit optional selected-recipe profession metadata when its native ID differs
+  from the local page. Preserve material conflict guards; test all 20 real
+  captured recipes and the talent/session changes through the hosted MCP.
+
 - Add expiring exact current-session snapshot references to character
   resolution, with explicit-character precedence and no automatic live claim.
 
