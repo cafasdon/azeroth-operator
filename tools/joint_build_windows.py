@@ -211,7 +211,8 @@ def serve(manifest,engine,cache):
             completed.exception()
     @server.list_tools()
     async def list_tools():
-        return [Tool(name=name,inputSchema=schema,description='Fixed search_id: '+prepared['search_id']+'. Offline fixed-manifest windows. Supplied receipts prove no execution, native legality, ownership or global optimum.',
+        label = prepared['case']['client']['variant']+', '+prepared['case']['specialization']+', level '+str(prepared['case']['character_level'])
+        return [Tool(name=name,inputSchema=schema,description='Configured model case: '+label+'. Current character is unbound. Fixed search_id: '+prepared['search_id']+'. Offline fixed-manifest windows. Supplied receipts prove no execution, native legality, ownership or global optimum.',
                      annotations=ToolAnnotations(readOnlyHint=True,destructiveHint=False,openWorldHint=False)) for name,schema in schemas().items()]
     @server.call_tool(validate_input=False)
     async def call_tool(name,arguments):

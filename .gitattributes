@@ -7,3 +7,4 @@ tests/fixtures/forever-hunter-*.json text eol=lf
 tests/fixtures/forever-broken-talents.ts text eol=lf
 clients/forever/talent-rules.json text eol=lf
 clients/forever/gear-rules.json text eol=lf
+clients/forever/fixtures/public-hunter-256.json text eol=lf

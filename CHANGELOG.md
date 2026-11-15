@@ -1,5 +1,12 @@
 # Changelog
 
+- Add an additive Windows installer and sanitised MCP example for six offline
+  talent, gear and joint-window tools. Use pinned durable native files and an
+  explicitly public 256-build hunter fixture, unbound to the current character.
+  Preserve unrelated settings, private backups and exclusive-handle updates.
+  Installed SDK calls and fresh native discovery passed. Existing chats need
+  an MCP client refresh or restart; no hot reload is claimed.
+
 - Scale native joint experiments beyond 64 combinations through bounded windows
   with global identities, incremental top-K results and compact reported coverage.
   Preserve the original whole-case cap, execution budgets and private-cache

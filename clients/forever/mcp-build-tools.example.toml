@@ -1,0 +1,29 @@
+[mcp_servers."azeroth-talents"]
+"command" = "T:\\Projects\\Azeroth Operator\\.venv\\Scripts\\python.exe"
+"args" = ["-B", "-m", "tools.talent_builds", "serve"]
+"cwd" = "T:\\Projects\\Azeroth Operator"
+"env" = {"PYTHONPATH" = "T:\\Projects\\Azeroth Operator", "GOMAXPROCS" = "2"}
+"enabled" = true
+"enabled_tools" = ["validate_talent_build", "generate_talent_builds"]
+"startup_timeout_sec" = 30
+"tool_timeout_sec" = 30
+
+[mcp_servers."azeroth-gear"]
+"command" = "T:\\Projects\\Azeroth Operator\\.venv\\Scripts\\python.exe"
+"args" = ["-B", "-m", "tools.gear_builds", "serve", "--catalogue", "T:\\Projects\\Azeroth Operator\\local-data\\forever\\catalogue.json", "--probe", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983\\equipment-probe.exe"]
+"cwd" = "T:\\Projects\\Azeroth Operator"
+"env" = {"PYTHONPATH" = "T:\\Projects\\Azeroth Operator", "GOMAXPROCS" = "2"}
+"enabled" = true
+"enabled_tools" = ["validate_gear_build", "generate_gear_builds"]
+"startup_timeout_sec" = 30
+"tool_timeout_sec" = 60
+
+[mcp_servers."azeroth-joint-public256"]
+"command" = "T:\\Projects\\Azeroth Operator\\.venv\\Scripts\\python.exe"
+"args" = ["-B", "-m", "tools.joint_build_windows", "serve", "--input", "T:\\Projects\\Azeroth Operator\\clients\\forever\\fixtures\\public-hunter-256.json", "--engine", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983\\wowsimcli-positional.exe", "--cache-root", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\numeric-cache"]
+"cwd" = "T:\\Projects\\Azeroth Operator"
+"env" = {"PYTHONPATH" = "T:\\Projects\\Azeroth Operator", "GOMAXPROCS" = "2"}
+"enabled" = true
+"enabled_tools" = ["evaluate_joint_build_window", "merge_joint_build_windows"]
+"startup_timeout_sec" = 30
+"tool_timeout_sec" = 150

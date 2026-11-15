@@ -1,0 +1,228 @@
+{
+  "date": "2026-11-15",
+  "scope": "Offline installed build MCP activation; no game or private character execution",
+  "configuration": {
+    "added_names": [
+      "azeroth-talents",
+      "azeroth-gear",
+      "azeroth-joint-public256"
+    ],
+    "preserved_existing_servers": 18,
+    "all_previous_bytes_preserved": true,
+    "unrelated_values_preserved": true,
+    "native_parser_passed": true,
+    "private_backup": true,
+    "config_acl_changed": false,
+    "lf_only": true,
+    "idempotent_plan": true,
+    "before_sha256": "16a13669deeeafcee351f8f971a43a6530c9d888f96b2acb9ba91fb076c26245",
+    "after_sha256": "268e53098b90ae788e6d1cf704da1dacadcc5505fa069384979ca4829d07c913",
+    "live_game_tested": false
+  },
+  "installed_sdk": {
+    "servers": [
+      {
+        "server": "azeroth-talents",
+        "tools": [
+          "generate_talent_builds",
+          "validate_talent_build"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true
+      },
+      {
+        "server": "azeroth-gear",
+        "tools": [
+          "generate_gear_builds",
+          "validate_gear_build"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true
+      },
+      {
+        "server": "azeroth-joint-public256",
+        "tools": [
+          "evaluate_joint_build_window",
+          "merge_joint_build_windows"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true
+      }
+    ],
+    "public_case_sha256": "99a6f97159121160cea7a1a119c34336432f11aea540cef736790bc6b24552d4",
+    "public_search_id": "ff803d9ab2aaea3b6486cbc459f4ce1bda69b077506160a5109aec38868efa53",
+    "config_sha256": "268e53098b90ae788e6d1cf704da1dacadcc5505fa069384979ca4829d07c913",
+    "current_character_bound": false,
+    "game_execution": false
+  },
+  "installed_cold_native_and_warm_cache": {
+    "servers": [
+      {
+        "server": "azeroth-talents",
+        "tools": [
+          "generate_talent_builds",
+          "validate_talent_build"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true
+      },
+      {
+        "server": "azeroth-gear",
+        "tools": [
+          "generate_gear_builds",
+          "validate_gear_build"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true
+      },
+      {
+        "server": "azeroth-joint-public256",
+        "tools": [
+          "evaluate_joint_build_window",
+          "merge_joint_build_windows"
+        ],
+        "all_routes_passed": true,
+        "override_rejected": true,
+        "offset": "127",
+        "first_cache_statuses": [
+          "miss",
+          "miss"
+        ],
+        "repeat_cache_statuses": [
+          "hit",
+          "hit"
+        ]
+      }
+    ],
+    "public_case_sha256": "99a6f97159121160cea7a1a119c34336432f11aea540cef736790bc6b24552d4",
+    "public_search_id": "ff803d9ab2aaea3b6486cbc459f4ce1bda69b077506160a5109aec38868efa53",
+    "config_sha256": "268e53098b90ae788e6d1cf704da1dacadcc5505fa069384979ca4829d07c913",
+    "current_character_bound": false,
+    "game_execution": false
+  },
+  "fresh_native_client": {
+    "servers": [
+      {
+        "server": "azeroth-talents",
+        "tools": [
+          "generate_talent_builds",
+          "validate_talent_build"
+        ],
+        "discovered": true
+      },
+      {
+        "server": "azeroth-gear",
+        "tools": [
+          "generate_gear_builds",
+          "validate_gear_build"
+        ],
+        "discovered": true
+      },
+      {
+        "server": "azeroth-joint-public256",
+        "tools": [
+          "evaluate_joint_build_window",
+          "merge_joint_build_windows"
+        ],
+        "discovered": true
+      }
+    ],
+    "strict_config_accepted": true,
+    "model_request_sent": false,
+    "game_execution": false
+  },
+  "test_runs": [
+    {
+      "module": "tests.test_install_build_mcp",
+      "tests": 22,
+      "passed": true,
+      "seconds": 3.004
+    },
+    {
+      "module": "tests.test_configured_build_mcp",
+      "tests": 1,
+      "passed": true,
+      "seconds": 4.244,
+      "case": "actual saved configuration, offsets 63-64"
+    },
+    {
+      "module": "tests.test_native_build_config",
+      "tests": 1,
+      "passed": true,
+      "seconds": 3.535,
+      "case": "native strict parser and tool discovery; isolated private home"
+    },
+    {
+      "module": "tests.test_configured_build_mcp",
+      "tests": 1,
+      "passed": true,
+      "seconds": 4.36,
+      "case": "actual saved configuration, cold offsets 127-128 and warm repeat"
+    }
+  ],
+  "reviews": {
+    "requested_models": [
+      "gpt-6.1-sol/high",
+      "gpt-6.1-sol/high"
+    ],
+    "resolved_models_exposed": false,
+    "agent_usage_exposed": false,
+    "rounds": 2,
+    "initial_medium_findings": 1,
+    "confirmed_medium_high_remaining": 0,
+    "fixed": "Concurrent config edits could be lost between a read and replacement. Windows exclusive same-handle compare/write and guarded rollback replace that route.",
+    "lenses": [
+      "callers and failure",
+      "security and data"
+    ],
+    "severity_reason": "Medium: a normal concurrent edit could be silently overwritten. The exclusive-handle replacement closes the fault before any shared config mutation.",
+    "excluded_lens": "No separate infrastructure drift lens; actual config readback, native parser and configured callers cover this local-only change."
+  },
+  "judgements": [
+    {
+      "stage": "activation plan",
+      "resolved_model": "jev-1.14.0",
+      "request_sha256": "3a94a7410a4fe5ba52bddbdf886a63be5443ca4c868b72bc560912f56d04ad0f",
+      "input_tokens": 832,
+      "output_tokens": 47,
+      "elapsed_seconds": 0.331,
+      "disposition": "proceed"
+    },
+    {
+      "stage": "race finding triage",
+      "resolved_model": "jev-1.14.0",
+      "request_sha256": "73d25756db21abef0b455bf7ccd7bc97b50b3780f689aea48d3c9673a46a819c",
+      "input_tokens": 787,
+      "output_tokens": 59,
+      "elapsed_seconds": 0.289,
+      "disposition": "fix_medium"
+    },
+    {
+      "stage": "installed mutation readiness",
+      "resolved_model": "jev-1.14.0",
+      "request_sha256": "1d3fbfffbc6ee4efd9884a96888d26896cef6d61a949dd5fea3ba69f6d0e450d",
+      "input_tokens": 673,
+      "output_tokens": 48,
+      "elapsed_seconds": 0.315,
+      "disposition": "proceed"
+    },
+    {
+      "stage": "release claim and evidence checkpoint",
+      "resolved_model": "jev-1.14.0",
+      "request_sha256": "a884d2f36bfb9d94982f2b400fc0ae48046428261312db9eebd5508f85c7695a",
+      "input_tokens": 743,
+      "output_tokens": 45,
+      "elapsed_seconds": 0.286,
+      "disposition": "ship"
+    }
+  ],
+  "limitations": [
+    "The joint case is an explicit public level-60 hunter fixture, with the current character unbound.",
+    "Native eligibility, ownership, model accuracy and global optimum remain unverified.",
+    "The Windows in-place update is not crash atomic; the private original backup supports recovery.",
+    "The existing shared config DACL was preserved. Only staging and backups were checked as owner-private.",
+    "Fresh native discovery used the exact three saved entries in an isolated home. No account credentials or model request.",
+    "The active desktop chat has not exposed the new namespaces. No hot reload or app restart was claimed.",
+    "No live game tests were performed."
+  ]
+}

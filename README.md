@@ -30,6 +30,13 @@ A bounded incremental summary retains the top builds, covered intervals and
 next missing coordinate. Supplied receipts remain reported evidence, not
 authenticated execution or a global-optimum certificate.
 
+The [offline build MCP setup](docs/mcp-build-activation-2026-11-15.md) adds three
+local servers with six tools for talent, gear and joint-window experiments.
+The joint server uses a public 256-build hunter case; the current character
+remains unbound. Existing MCP settings stay unchanged. Installed SDK calls and
+fresh native discovery passed. This open chat still needs an MCP client refresh
+or restart before the new tools appear.
+
 [TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
 and manual paste text. They preserve plan order without claiming arrow control.
 

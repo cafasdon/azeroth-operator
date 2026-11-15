@@ -1,0 +1,8236 @@
+{
+  "case": {
+    "client": {
+      "family": "forever",
+      "variant": "public-model-fixture",
+      "build": "9dc32ac",
+      "interface": 16001
+    },
+    "character_level": 60,
+    "class_id": 3,
+    "specialization": "hunter",
+    "objective": "dps",
+    "snapshot_id": "ce2f17d2740933ea35c2e551dced5b8c45a8146609064af0231a93ac9808b326",
+    "constraints_sha256": "c11a7dd500f9cd5704afa00ce84a6d6aa8d3386e0b79df4cd566db683e43d804",
+    "engine_sha256": "833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983",
+    "data_manifest_sha256": "2383a1aebf9745a88fb257dad343d323e9c9a16c91ab808dd3817c2b1a254300",
+    "encounter_sha256": "5a4403100a5024dc924737e99867f5c83807e56547afb5d34caa096389b1deb5"
+  },
+  "axes": [
+    {
+      "name": "gear",
+      "category": "gear",
+      "candidates": [
+        "a3cf435e452ad76ab635fa3985c2ada93651f7c8f40793d97f6b48c15cb3c554",
+        "d6f3c0e49cf7f47a7b816ab2539a906c5e5635bb11c4d0cb0bd449b411bd5b9e",
+        "f67c3122dcd557ca401b7d31d7023fc421545d7301e9fe53abdd241e024ca48a",
+        "5dad504e63c6813b094cb25a5df7024c7bd29f0be626cde55b3ee561ab04f7f5",
+        "8715470dbbf89003bbb31ad05d9da28d5226a40edc43ec8b3c281d50a97aaa2e",
+        "da487da281713777d45612c511150d95e53645c5ffe9f18ac56d462742f7aa43",
+        "4ca3fc7f96c670ed050e2e30599a15c2c55a4450419df72d6ef6fad9e440231a",
+        "9ccfe0cb2624d0bb36091a0898f7f15bfe070761fd96fb2bbe2662adc1522e50",
+        "0af04150ff991185b7f45ba740e05d10093a21e481d6f5a07065f65ea0cdba85",
+        "6a145401fdc362467b0976af6533593fc5860c772f0fb66b148cc56fa4a39ff4",
+        "e20b390e33e97127f11b1a65cf232ac7380028e37fabad59896f5f43352de54b",
+        "dbefcf10a9e8ab9a2e3f7877084463aa42f894c7272f6d340b938e0447f67960",
+        "5b7654ee67a81a7c4ea841587d7f4b92ea93b41732c57d4e54c6271bef9a0890",
+        "5c17af9314fa403a61624c55b3ebb4356c52d1c70c74c3fb434e9f093935c02a",
+        "8c70f8efb45fb6fd4309556c78e965925fc317bbaf9fbafee3836906359b510b",
+        "92f00ac8e2787f47e915f29859f525f400ddcec4a24888c6c3976caddb6cb011",
+        "5ec08db4a81e07bc270083012b8d6fceee9e36d7a9edb4caee83076b1a12accb",
+        "078192ab9c7af676e39bfa7b430b2064c9fd5d5789661ece27b35e9ba40dbd6d",
+        "065d48be3d409674dfde7d7a0c8efddd45b25c47effe1b9213f06880f1d3e1b5",
+        "046ac3c99d9dce359703dd441cee453b38fe2d407845434455eb7b65f77c40cc",
+        "ac3452f08c36a93f9bf1a27b5176cfd5e565507d2e9314e2783b1e33574b0dc4",
+        "a57249bc307642dd316e69e5d945aa489b04b3efa9ac6f1d09de7e22a692c802",
+        "ecf563fc72cd1824f1903b7b025d112e937261428fd0d213de8140ef6c48586e",
+        "cb965d4896f08e878624bed73b8784637d301678b2ac78499db0a6c9f4584239",
+        "029d860d9a6ad7f2454c96ee826d5a66df1a6fb3acd274176576b5631d789972",
+        "5b0b4d5f0e75c6be9c989786b36bd9bf39582b8a93f94fee2ce1d0aa3b4c1753",
+        "01e18f37fd3d9a9540fd33f8d0dc4102f9929462e78680062df87c6433605ab4",
+        "ebcf8211f0a59e28d9dbc56a1fce4077f663b488f00248c25c572515be923195",
+        "0394b38b1fc06fb0cd76b6692f73941968452a8470bbc7221cbe34d4bac6937f",
+        "e537a131d36d30d103f87f0ef59853554c66931605b1f20f54e2b4971b9014f3",
+        "8fd75a8478ffc703909dea14a13ff0aa13ceaf63fc0a003f311a04af5350d360",
+        "ff4fa086aa41b5b55a60dcb7d1e96d5baa2337183750b496a028d86d8781e45c",
+        "86fe8c999af6c13a1aab6e004ca7e1885e085dec27e20f59a6a5531ce8914c19",
+        "f0c2f829c29ff609e6283309d97f232e0d83180d00318ad9763ca9aa1a49760c",
+        "022f23cf524ef8bf8bc4b321f895942c616ad9fd638506b6d30cf4bc607f8c74",
+        "55ec08c73c472be1334cc8967b67aee3f4584956fc3db88b8e6a1b4f8f79b7e7",
+        "5bd8255a1087b1f924175d2f459f8be8d57e316e4db5f54c4b02806bbfb5e278",
+        "edf321ac8087e5aa1f1f3bc568fe269942b40977b96e5bc99371339c74fa970a",
+        "7c34d93170c7968f1695d8a1f5b4abcdbdb205f977b8368cd6f9ea1510bd3b85",
+        "7846e126737497c990478b2584a521a76e786191215025ce4aa88bf2b76191d7",
+        "87f670674b8db99cd34c7631c8a3bbe021843c9a614dfa42a772f1f258201532",
+        "cc0ec88da6ec35da240ef4195f3eb04a49b89ca4d5a631edea2eabf40c0da900",
+        "6bc3fe99274eafa0ffd1240232da50587f1f789de322a688e1b5ec3abe7a1c91",
+        "87f26d50e71232d3c3f0ef78365d706cafdff7c46a6d4e67627abb8f4a12c4f0",
+        "9c15741ef4539733e8cf5ebd7f33cc28f9248dd7544bd7116977316d2143b87b",
+        "c29c803aecefbe44964bb9ee36b7013523449fe7b1edc72da02695be902fc51d",
+        "f91946cc6703355905c46f8bc74636025db5432085e78a911139bcca72a16437",
+        "d6f7889eacaad0f12d4437353b81109ff899a51016305cb88d7e6c1d7b5146aa",
+        "8da8649ef9b333489752f5542f71840d141c246faed0a64ec859b531b0c1ffa9",
+        "b3280f731f3ea5d421d18fb17988e5a80996101dd83af1cdd0beb284968a1e25",
+        "99aa2dab1cb8f0758a34ed020e8433ec1a2b55cfab24241bce9dc77afa41f031",
+        "3713362ab9ed3dae402b2efc3b3d92da70acfabb6a5db7dbd6059b59de140d05",
+        "f6022d88897af318ff048522f3722f0a4d786338e6c93d18f671e86fbbb91911",
+        "5097916ee211c0ffd2eb83cd2722ae4a866530e412659efce0d328d27072ca04",
+        "bd82afcbf68f66144503320345afa6e68b76b1523ceac106887372f04f632309",
+        "ea36d9d7b068aa55ee80d81d6d0738cbd4c9cc89df7346152e85df5cb00832f2",
+        "68e3954b13e1a107d36fb37789e10008f3cb3e519102f25686f0f242328eb3b7",
+        "4bbab40acdf4c05d65d2129512d019f9a7a655d9898c2565cf4413f97a9081cc",
+        "91138a0912e471d5562068c45bc3970d1b6cb0036bc6b998ccc2788368312af6",
+        "5a48f667ff20e818edfa942ecd09dc8fb843d65b84d45cebe641b8068a41ccca",
+        "8907004e968535e49a8cd927cd0c6320c80ae67be2d93682ac89778f4d3d62aa",
+        "27886ae2e343a14c25df17eacc46b12972a5d36ef3e2c56e9ff4aff3d15b12d0",
+        "da9f964ddf194328f90f6747adb1fcee5a1a9349ba2ca9fefeaa9568720a01c6",
+        "ed9afa30a7c14e4c69fcdea8f449694e0ec35f49b272499c987db17a5867c2f5",
+        "c40c98a9b56ba0f42ce69449630e6a2d4c1e2c7729b79e223920b3ae8935aed6",
+        "672e46c35c001b6bc0580418801130ef68b61e631fa59de501e6c6701c227155",
+        "85513d67cac827b30514dd16c6d93fc38351d14bca70e1497473a1ab70afb463",
+        "f623b3e78362f77686efb3bc95fc16add0630b1bfb623c2b645c802fd64e5607",
+        "6aac2a59011eb9f3a2f1b58186ae23cd0402e3eec1286a06b022235cc24603d6",
+        "0dfe7979bbe93f22509d660ce8bc65ad3c3a7323bf904aa99e33a25b886fb12b",
+        "1dd58e4b99b50846983f9beaf95d7bf5f4f8c873a4d68fd92cae5ae216811ef1",
+        "d4341f335ba59d4cea32cee96464e886d7d08cdeb63bb3ca06b7ee8817f8b7e8",
+        "603ba25ce6e134da2650e4cb25e01d26090c149548466a6b0d52200062f6103a",
+        "ffeb02d30ee0ba4e75755f5db195db28f7a938691529c17bc5f9d5d7e8d23f62",
+        "a83158de56997282e4e17ef0d9044ca8e6dd175383698ca8be6baec141f49be5",
+        "49ad817c7c34408cef01fb39e646b25d4bd175e0a1b98af6f9997d887cae4e87",
+        "f78caafa3bb19b9fa46805496ce860712472f1a4cddf203cfcd17d5bff96efae",
+        "7de7d1fbe67d5e97f9d21e90ec77c0ff7d58633edeb5a10c3331107e47747b14",
+        "3efa74dce0bd0971d5157ddfd1f3c1c9bd0bff322db120efb785704a980105b6",
+        "24ae9e20afb375482dcc7e0f30618886ca65bcc4537b17dcd6436cb86255b47e",
+        "5215f1466c3d0c89c063fc6e7821e22f790ec2461c6b3d077fd06f2fcb4b50cf",
+        "23f385c1ad4984cc546cef4fadc462412accf80277de851a86c810e43ba4c24a",
+        "591928c7f86213520628cea912ac29d68454b41584217315e739ae5903613a45",
+        "e5cced1265974e766ada51b3406dd662368c3957bbd5d63a298cfa9072c2f383",
+        "928cbd29076e7bf818ebb09dad75bb060fea12ddeeee5726c29e824150af42dc",
+        "dc7a46a79206876ea93ad704fed4e4065b78465c12e8f182dbf57647362c4756",
+        "16fa3d4cd457f6de0c3ef5a25be0c15fbcd5045683e4d24fe942cd6271c38c6b",
+        "891db39479a6fad61421b17a90937253b236e0ec0e6d3e39145833f71a9b722a",
+        "5e8fcf1fff5d25a5a6138468216b68890d64167cca6a658f0faec7c51b20fa48",
+        "47ea34609e73bed36897b420ed9a31ab48bcbb3be54b999a16aa0dbc0e383b6a",
+        "fd941d69be564ee828dc012e68eaae3ff74bdb539dd4445e1c9ec9f56aaf7c75",
+        "0f1b81a984406616d773da330a40a2e1fc9dc97bd365a7c1ec2b897cae667701",
+        "1b5a278dcc7c605c0690435fc83400b5b449b3334ca63ba0d91327866741bf4a",
+        "07bd7ea34e9772fdbc285bbe2cf8975a80d18832057b4fca9d1cc2e4d4e97a4a",
+        "1652fc285b567f476460b7acd8abfe760f40757df7a270c2e87b427b2a9aa507",
+        "3c16189c6d73f3603e60b6f53b89d7ce4b3f301de4da2007f5080d184188a089",
+        "8073f420d1567ef764e0504340ef467cbb2ba26028b41a220a618b20163f4ef2",
+        "016dcfae044f5bdc12d33d5e65713322573c3d8133e982dfb498054b837fd2da",
+        "a8f1747f97fa54ef78411c04e87200ffc7fa1c41bbefc2d1e7fc9e2c73fb9ec3",
+        "2cf864ffb3fd5e433d4b4f74a102f54e22563eb97895beeeae2569b2360379de",
+        "c7e614e248164448e036ed5aba298cb7968c1d552dfc580255d15814c66ad3b7",
+        "d3513b2f1b60fe1a41998fa21d977f0da8ae9357c1ff44c535b183a1c21dc5a6",
+        "019ca335631a15a69533ddb87f5612b11d19586a41c7c86f7ae280837e033756",
+        "61d21af76f77f3593e7a686bce997f0c7e360f795542e977a15233ceacfb9934",
+        "611d31d1d05739af4fae7a27a39e231abd376a29391464ffc0a1a558044d93ae",
+        "0ad4f2892d34c8c4b691292f185ed5df0cfdb52986f005467d372413060fd4df",
+        "d915d13196e94b4b28a872a110da0ea73abef30ebc0fd43ab99c411f46325750",
+        "1db5df4573934967271e508183d753d407a7b7e889ae59ccce94aeb6f7abd503",
+        "21445c8b8e56a34a11e42504681f3d9e85f0a1d9fe3f06ec26b3c54a45a7d420",
+        "94d53d7d65a135b1ecd36173f99316d3d011e3b3c73e12c496b5789359ed98f6",
+        "39eb9e30ef6b76a9369b5212109a6a2ec0590a56de6345a98714f9729eafde0c",
+        "1835db564c57c025d69c78bd8d0577198d8d7a3dd9dcdabe67ff98b79258223b",
+        "dfb1a66f131d28b5fb19ae24d355038bea5a91654285cfc58cdffa654f2e1dc2",
+        "cf9dfa838e61037731295ca13de14882d3355a556e9b9e9fa25a029a67e1a7cd",
+        "4df60e21e3ba3f1f8bc05f160270853c51e087a86777cd6db8535d4d8afbcbc0",
+        "dc5514b8d64fe9705d2e45b784633c13eae48302eca11bb9becab96069e44972",
+        "85f83d1f74f6230fe2cfd2976e6ab6205441a3c4edb34891fab1edec96c00442",
+        "e4b8448cb9d61a6fa12bd7eb801799432abfef576b28a68363805758f180aa93",
+        "6d17a432ad5775982f0f68a9507d924cd616e27377f2877eab9a1d66f62ac4c5",
+        "ecfa1e2230380291fe3d2fc30e4f00b81c9fc437c7b3cd5703e91181666d06ed",
+        "7eec11e36545e47383dc4473b4cae9e2a0ae17f2dd7cecdc7a209ac909f825f4",
+        "328911dcc935b1d077b9bf4f52f39040943e12e7adc176950af675e4ea196412",
+        "f6c18192da85099e2b9d35fc94e3f47d6cd028a6c425d2836ea002ccb5ddde5a",
+        "0dc1a164449674ed3b76058ba5089fa603386317828c9281cefc03fbb85e7344",
+        "5f91656e2a5e5baf976a726dc857df30883d66f14e9d7125f5e6b769d3a2b704",
+        "793c3a867e94681d524a3a7ffa0962c6c9f1ce0f5a6397403a70751b8bc2da75",
+        "5c18b92c16397ed64a95ec8ab295e584f4c8cf7ebc81ab443b757d30b02c0162",
+        "4f3d4f8d15b6e9b30c4d0b7512e6ab12474d87a6340ddc85e86360762f02b305"
+      ]
+    },
+    {
+      "name": "talents",
+      "category": "talents",
+      "candidates": [
+        "6e4368038787817a79e71643bdb6f279a390d4b4133de1dc2b5fc9bff1f01a55",
+        "d84943bc9899efd6d3b1a3f97b090ece307fd4ca913456cfde64ca042d7bc2af"
+      ]
+    }
+  ],
+  "base_request": {
+    "raid": {
+      "parties": [
+        {
+          "players": [
+            {
+              "race": "RaceOrc",
+              "class": "ClassHunter",
+              "equipment": {
+                "items": [
+                  {
+                    "id": 16677
+                  },
+                  {
+                    "id": 19620,
+                    "enchant": 904
+                  },
+                  {
+                    "id": 16679
+                  },
+                  {
+                    "id": 18511,
+                    "enchant": 849
+                  },
+                  {
+                    "id": 16674,
+                    "enchant": 1891
+                  },
+                  {
+                    "id": 16681,
+                    "enchant": 7656
+                  },
+                  {
+                    "id": 16676,
+                    "enchant": 2564
+                  },
+                  {
+                    "id": 16680
+                  },
+                  {
+                    "id": 16678,
+                    "enchant": 8491
+                  },
+                  {
+                    "id": 16675,
+                    "enchant": 1887
+                  },
+                  {
+                    "id": 272408
+                  },
+                  {
+                    "id": 11990,
+                    "randomSuffix": 12728
+                  },
+                  {
+                    "id": 272437
+                  },
+                  {
+                    "id": 19120
+                  },
+                  {
+                    "id": 250619,
+                    "enchant": 2646
+                  },
+                  {},
+                  {
+                    "id": 22347,
+                    "enchant": 2523
+                  }
+                ],
+                "preserveSlots": true
+              },
+              "consumables": {
+                "flaskId": 274274,
+                "foodId": 250072,
+                "conjuredId": 12662,
+                "explosiveId": 18588,
+                "mhImbueId": 18262,
+                "extraIds": [
+                  10646,
+                  10310,
+                  12460,
+                  12217,
+                  8412
+                ],
+                "elixirIds": [
+                  13452,
+                  250341
+                ],
+                "resourcePotId": 13444,
+                "offensivePotId": 250943
+              },
+              "buffs": {
+                "greaterBlessingOfKings": true,
+                "greaterBlessingOfMight": 1,
+                "greaterBlessingOfWisdom": 1
+              },
+              "hunter": {
+                "options": {
+                  "classOptions": {
+                    "quiverBonus": "AncientSinewWrappedLamina",
+                    "ammo": "ThoriumHeadedArrow",
+                    "petType": "Raptor",
+                    "petUptime": 1,
+                    "petAttackSpeed": "FasterAttackII"
+                  }
+                }
+              },
+              "talentsString": "5320001505101251-0052050301-4",
+              "profession1": "Engineering",
+              "profession2": "Blacksmithing",
+              "rotation": {
+                "type": "TypeAPL",
+                "prepullActions": [
+                  {
+                    "action": {
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 14325,
+                          "rank": 4
+                        }
+                      }
+                    },
+                    "doAtValue": {
+                      "const": {
+                        "val": "-22s"
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 14322,
+                          "rank": 6
+                        }
+                      }
+                    },
+                    "doAtValue": {
+                      "const": {
+                        "val": "-20s"
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "move": {
+                        "rangeFromTarget": {
+                          "variableRef": {
+                            "name": "Pull range"
+                          }
+                        }
+                      }
+                    },
+                    "doAtValue": {
+                      "const": {
+                        "val": "-19s"
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "variableRef": {
+                          "name": "Use Sniper Shot"
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 1310786,
+                          "rank": 3
+                        }
+                      }
+                    },
+                    "doAtValue": {
+                      "math": {
+                        "op": "OpMul",
+                        "lhs": {
+                          "spellCastTime": {
+                            "spellId": {
+                              "spellId": 1310786,
+                              "rank": 3
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "const": {
+                            "val": "-1"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                "priorityList": [
+                  {
+                    "action": {
+                      "condition": {
+                        "cmp": {
+                          "op": "OpGe",
+                          "lhs": {
+                            "currentTime": {}
+                          },
+                          "rhs": {
+                            "const": {
+                              "val": "5s"
+                            }
+                          }
+                        }
+                      },
+                      "autocastOtherCooldowns": {}
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "not": {
+                          "val": {
+                            "auraIsActive": {
+                              "sourceUnit": {
+                                "type": "CurrentTarget"
+                              },
+                              "auraId": {
+                                "spellId": 14325
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 14325,
+                          "rank": 4
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "not": {
+                          "val": {
+                            "dotIsActive": {
+                              "spellId": {
+                                "spellId": 13555,
+                                "rank": 8
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 13555,
+                          "rank": 8
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "and": {
+                          "vals": [
+                            {
+                              "and": {
+                                "vals": [
+                                  {
+                                    "variableRef": {
+                                      "name": "Use Summon Hawk"
+                                    }
+                                  },
+                                  {
+                                    "variableRef": {
+                                      "name": "Use Arcane Shot"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "sequenceIsComplete": {
+                                "sequenceName": "HHA"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "resetSequence": {
+                        "sequenceName": "HHA"
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "and": {
+                          "vals": [
+                            {
+                              "variableRef": {
+                                "name": "Use Summon Hawk"
+                              }
+                            },
+                            {
+                              "variableRef": {
+                                "name": "Use Arcane Shot"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "sequence": {
+                        "name": "HHA",
+                        "actions": [
+                          {
+                            "castSpell": {
+                              "spellId": {
+                                "spellId": 1293527,
+                                "rank": 4
+                              }
+                            }
+                          },
+                          {
+                            "castSpell": {
+                              "spellId": {
+                                "spellId": 1293527,
+                                "rank": 4
+                              }
+                            }
+                          },
+                          {
+                            "castSpell": {
+                              "spellId": {
+                                "spellId": 14287,
+                                "rank": 8
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "and": {
+                          "vals": [
+                            {
+                              "variableRef": {
+                                "name": "Use Summon Hawk"
+                              }
+                            },
+                            {
+                              "not": {
+                                "val": {
+                                  "variableRef": {
+                                    "name": "Use Arcane Shot"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 1293527,
+                          "rank": 4
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "and": {
+                          "vals": [
+                            {
+                              "variableRef": {
+                                "name": "Use Arcane Shot"
+                              }
+                            },
+                            {
+                              "not": {
+                                "val": {
+                                  "variableRef": {
+                                    "name": "Use Summon Hawk"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 14287,
+                          "rank": 8
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "variableRef": {
+                          "name": "Use Aimed Shot"
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 20904,
+                          "rank": 6
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "action": {
+                      "condition": {
+                        "variableRef": {
+                          "name": "Use Multi-Shot"
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 2643
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "notes": "The least damage per second of casting, so it waits until none of the shots above is ready.",
+                    "action": {
+                      "condition": {
+                        "variableRef": {
+                          "name": "Use Sniper Shot"
+                        }
+                      },
+                      "castSpell": {
+                        "spellId": {
+                          "spellId": 1310786,
+                          "rank": 3
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "notes": "Start of the fight: get to my spot without losing an Auto Shot.",
+                    "action": {
+                      "condition": {
+                        "cmp": {
+                          "op": "OpNe",
+                          "lhs": {
+                            "unitDistance": {
+                              "sourceUnit": {
+                                "type": "Self"
+                              }
+                            }
+                          },
+                          "rhs": {
+                            "variableRef": {
+                              "name": "Shoot spot"
+                            }
+                          }
+                        }
+                      },
+                      "groupReference": {
+                        "groupName": "Walk in"
+                      }
+                    }
+                  }
+                ],
+                "groups": [
+                  {
+                    "name": "Walk in",
+                    "actions": [
+                      {
+                        "notes": "Walk to my spot, looking again every reaction time. Stop while my Auto Shot's windup is close or running, and react to each shot before walking on.",
+                        "action": {
+                          "condition": {
+                            "not": {
+                              "val": {
+                                "and": {
+                                  "vals": [
+                                    {
+                                      "spellInRange": {
+                                        "spellId": {
+                                          "spellId": 14287,
+                                          "rank": 8
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "or": {
+                                        "vals": [
+                                          {
+                                            "variableRef": {
+                                              "name": "Windup close"
+                                            }
+                                          },
+                                          {
+                                            "variableRef": {
+                                              "name": "Just shot"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          },
+                          "move": {
+                            "rangeFromTarget": {
+                              "variableRef": {
+                                "name": "Shoot spot"
+                              }
+                            },
+                            "recheckWhileMoving": true
+                          }
+                        }
+                      },
+                      {
+                        "notes": "Standing for my Auto Shot.",
+                        "action": {
+                          "wait": {
+                            "duration": {
+                              "inputDelay": {}
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "valueVariables": [
+                  {
+                    "name": "Use Aimed Shot",
+                    "value": {
+                      "const": {
+                        "val": "true"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Use Multi-Shot",
+                    "value": {
+                      "const": {
+                        "val": "false"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Use Arcane Shot",
+                    "value": {
+                      "const": {
+                        "val": "true"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Use Sniper Shot",
+                    "value": {
+                      "const": {
+                        "val": "true"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Use Summon Hawk",
+                    "value": {
+                      "const": {
+                        "val": "false"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Shoot spot",
+                    "value": {
+                      "const": {
+                        "val": "12"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Pull range",
+                    "value": {
+                      "const": {
+                        "val": "25"
+                      }
+                    }
+                  },
+                  {
+                    "name": "Windup close",
+                    "value": {
+                      "or": {
+                        "vals": [
+                          {
+                            "cmp": {
+                              "op": "OpLe",
+                              "lhs": {
+                                "autoTimeToNext": {
+                                  "autoType": "RangedAuto"
+                                }
+                              },
+                              "rhs": {
+                                "inputDelay": {}
+                              }
+                            }
+                          },
+                          {
+                            "cmp": {
+                              "op": "OpGe",
+                              "lhs": {
+                                "autoTimeToNext": {
+                                  "autoType": "RangedAuto"
+                                }
+                              },
+                              "rhs": {
+                                "math": {
+                                  "op": "OpSub",
+                                  "lhs": {
+                                    "autoSwingTime": {
+                                      "autoType": "Ranged"
+                                    }
+                                  },
+                                  "rhs": {
+                                    "autoTimeSinceLast": {
+                                      "autoType": "RangedAuto"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "name": "Just shot",
+                    "value": {
+                      "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                          "autoTimeSinceLast": {
+                            "autoType": "RangedAuto"
+                          }
+                        },
+                        "rhs": {
+                          "inputDelay": {}
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              "reactionTimeMs": 150,
+              "reactionTimeMaxMs": 350,
+              "distanceFromTarget": 12
+            }
+          ]
+        }
+      ],
+      "buffs": {
+        "arcaneIntellect": true,
+        "prayerOfSpirit": true,
+        "markOfTheWild": true,
+        "strengthOfEarthTotem": 1,
+        "graceOfAirTotem": 1,
+        "windfuryTotem": true,
+        "battleShout": 1,
+        "leaderOfThePack": true
+      },
+      "debuffs": {
+        "judgementOfLight": true,
+        "judgementOfWisdom": true,
+        "curseOfElements": true,
+        "curseOfRecklessness": true,
+        "faerieFire": true,
+        "exposeArmor": true,
+        "sunderArmor": true,
+        "giftOfArthas": true,
+        "insectSwarm": true
+      }
+    },
+    "encounter": {
+      "duration": 45,
+      "durationVariation": 0,
+      "executeProportion20": 0,
+      "executeProportion35": 0,
+      "targets": [
+        {}
+      ]
+    },
+    "simOptions": {
+      "iterations": 2,
+      "randomSeed": "20261115"
+    },
+    "type": "SimTypeIndividual"
+  },
+  "references": {
+    "a3cf435e452ad76ab635fa3985c2ada93651f7c8f40793d97f6b48c15cb3c554": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "d6f3c0e49cf7f47a7b816ab2539a906c5e5635bb11c4d0cb0bd449b411bd5b9e": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f67c3122dcd557ca401b7d31d7023fc421545d7301e9fe53abdd241e024ca48a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5dad504e63c6813b094cb25a5df7024c7bd29f0be626cde55b3ee561ab04f7f5": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8715470dbbf89003bbb31ad05d9da28d5226a40edc43ec8b3c281d50a97aaa2e": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "da487da281713777d45612c511150d95e53645c5ffe9f18ac56d462742f7aa43": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "4ca3fc7f96c670ed050e2e30599a15c2c55a4450419df72d6ef6fad9e440231a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "9ccfe0cb2624d0bb36091a0898f7f15bfe070761fd96fb2bbe2662adc1522e50": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0af04150ff991185b7f45ba740e05d10093a21e481d6f5a07065f65ea0cdba85": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "6a145401fdc362467b0976af6533593fc5860c772f0fb66b148cc56fa4a39ff4": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "e20b390e33e97127f11b1a65cf232ac7380028e37fabad59896f5f43352de54b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "dbefcf10a9e8ab9a2e3f7877084463aa42f894c7272f6d340b938e0447f67960": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5b7654ee67a81a7c4ea841587d7f4b92ea93b41732c57d4e54c6271bef9a0890": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5c17af9314fa403a61624c55b3ebb4356c52d1c70c74c3fb434e9f093935c02a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8c70f8efb45fb6fd4309556c78e965925fc317bbaf9fbafee3836906359b510b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "92f00ac8e2787f47e915f29859f525f400ddcec4a24888c6c3976caddb6cb011": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5ec08db4a81e07bc270083012b8d6fceee9e36d7a9edb4caee83076b1a12accb": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "078192ab9c7af676e39bfa7b430b2064c9fd5d5789661ece27b35e9ba40dbd6d": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "065d48be3d409674dfde7d7a0c8efddd45b25c47effe1b9213f06880f1d3e1b5": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "046ac3c99d9dce359703dd441cee453b38fe2d407845434455eb7b65f77c40cc": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ac3452f08c36a93f9bf1a27b5176cfd5e565507d2e9314e2783b1e33574b0dc4": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "a57249bc307642dd316e69e5d945aa489b04b3efa9ac6f1d09de7e22a692c802": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ecf563fc72cd1824f1903b7b025d112e937261428fd0d213de8140ef6c48586e": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "cb965d4896f08e878624bed73b8784637d301678b2ac78499db0a6c9f4584239": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "029d860d9a6ad7f2454c96ee826d5a66df1a6fb3acd274176576b5631d789972": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5b0b4d5f0e75c6be9c989786b36bd9bf39582b8a93f94fee2ce1d0aa3b4c1753": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "01e18f37fd3d9a9540fd33f8d0dc4102f9929462e78680062df87c6433605ab4": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ebcf8211f0a59e28d9dbc56a1fce4077f663b488f00248c25c572515be923195": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0394b38b1fc06fb0cd76b6692f73941968452a8470bbc7221cbe34d4bac6937f": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "e537a131d36d30d103f87f0ef59853554c66931605b1f20f54e2b4971b9014f3": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8fd75a8478ffc703909dea14a13ff0aa13ceaf63fc0a003f311a04af5350d360": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ff4fa086aa41b5b55a60dcb7d1e96d5baa2337183750b496a028d86d8781e45c": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "86fe8c999af6c13a1aab6e004ca7e1885e085dec27e20f59a6a5531ce8914c19": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f0c2f829c29ff609e6283309d97f232e0d83180d00318ad9763ca9aa1a49760c": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "022f23cf524ef8bf8bc4b321f895942c616ad9fd638506b6d30cf4bc607f8c74": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "55ec08c73c472be1334cc8967b67aee3f4584956fc3db88b8e6a1b4f8f79b7e7": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5bd8255a1087b1f924175d2f459f8be8d57e316e4db5f54c4b02806bbfb5e278": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "edf321ac8087e5aa1f1f3bc568fe269942b40977b96e5bc99371339c74fa970a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "7c34d93170c7968f1695d8a1f5b4abcdbdb205f977b8368cd6f9ea1510bd3b85": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "7846e126737497c990478b2584a521a76e786191215025ce4aa88bf2b76191d7": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "87f670674b8db99cd34c7631c8a3bbe021843c9a614dfa42a772f1f258201532": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "cc0ec88da6ec35da240ef4195f3eb04a49b89ca4d5a631edea2eabf40c0da900": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "6bc3fe99274eafa0ffd1240232da50587f1f789de322a688e1b5ec3abe7a1c91": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "87f26d50e71232d3c3f0ef78365d706cafdff7c46a6d4e67627abb8f4a12c4f0": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "9c15741ef4539733e8cf5ebd7f33cc28f9248dd7544bd7116977316d2143b87b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "c29c803aecefbe44964bb9ee36b7013523449fe7b1edc72da02695be902fc51d": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f91946cc6703355905c46f8bc74636025db5432085e78a911139bcca72a16437": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "d6f7889eacaad0f12d4437353b81109ff899a51016305cb88d7e6c1d7b5146aa": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8da8649ef9b333489752f5542f71840d141c246faed0a64ec859b531b0c1ffa9": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "b3280f731f3ea5d421d18fb17988e5a80996101dd83af1cdd0beb284968a1e25": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "99aa2dab1cb8f0758a34ed020e8433ec1a2b55cfab24241bce9dc77afa41f031": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "3713362ab9ed3dae402b2efc3b3d92da70acfabb6a5db7dbd6059b59de140d05": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f6022d88897af318ff048522f3722f0a4d786338e6c93d18f671e86fbbb91911": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5097916ee211c0ffd2eb83cd2722ae4a866530e412659efce0d328d27072ca04": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "bd82afcbf68f66144503320345afa6e68b76b1523ceac106887372f04f632309": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ea36d9d7b068aa55ee80d81d6d0738cbd4c9cc89df7346152e85df5cb00832f2": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "68e3954b13e1a107d36fb37789e10008f3cb3e519102f25686f0f242328eb3b7": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "4bbab40acdf4c05d65d2129512d019f9a7a655d9898c2565cf4413f97a9081cc": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "91138a0912e471d5562068c45bc3970d1b6cb0036bc6b998ccc2788368312af6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5a48f667ff20e818edfa942ecd09dc8fb843d65b84d45cebe641b8068a41ccca": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8907004e968535e49a8cd927cd0c6320c80ae67be2d93682ac89778f4d3d62aa": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "27886ae2e343a14c25df17eacc46b12972a5d36ef3e2c56e9ff4aff3d15b12d0": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "da9f964ddf194328f90f6747adb1fcee5a1a9349ba2ca9fefeaa9568720a01c6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ed9afa30a7c14e4c69fcdea8f449694e0ec35f49b272499c987db17a5867c2f5": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {
+            "id": 16677
+          },
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "c40c98a9b56ba0f42ce69449630e6a2d4c1e2c7729b79e223920b3ae8935aed6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "672e46c35c001b6bc0580418801130ef68b61e631fa59de501e6c6701c227155": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "85513d67cac827b30514dd16c6d93fc38351d14bca70e1497473a1ab70afb463": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f623b3e78362f77686efb3bc95fc16add0630b1bfb623c2b645c802fd64e5607": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "6aac2a59011eb9f3a2f1b58186ae23cd0402e3eec1286a06b022235cc24603d6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0dfe7979bbe93f22509d660ce8bc65ad3c3a7323bf904aa99e33a25b886fb12b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "1dd58e4b99b50846983f9beaf95d7bf5f4f8c873a4d68fd92cae5ae216811ef1": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "d4341f335ba59d4cea32cee96464e886d7d08cdeb63bb3ca06b7ee8817f8b7e8": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "603ba25ce6e134da2650e4cb25e01d26090c149548466a6b0d52200062f6103a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ffeb02d30ee0ba4e75755f5db195db28f7a938691529c17bc5f9d5d7e8d23f62": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "a83158de56997282e4e17ef0d9044ca8e6dd175383698ca8be6baec141f49be5": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "49ad817c7c34408cef01fb39e646b25d4bd175e0a1b98af6f9997d887cae4e87": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f78caafa3bb19b9fa46805496ce860712472f1a4cddf203cfcd17d5bff96efae": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "7de7d1fbe67d5e97f9d21e90ec77c0ff7d58633edeb5a10c3331107e47747b14": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "3efa74dce0bd0971d5157ddfd1f3c1c9bd0bff322db120efb785704a980105b6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "24ae9e20afb375482dcc7e0f30618886ca65bcc4537b17dcd6436cb86255b47e": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5215f1466c3d0c89c063fc6e7821e22f790ec2461c6b3d077fd06f2fcb4b50cf": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "23f385c1ad4984cc546cef4fadc462412accf80277de851a86c810e43ba4c24a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "591928c7f86213520628cea912ac29d68454b41584217315e739ae5903613a45": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "e5cced1265974e766ada51b3406dd662368c3957bbd5d63a298cfa9072c2f383": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "928cbd29076e7bf818ebb09dad75bb060fea12ddeeee5726c29e824150af42dc": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "dc7a46a79206876ea93ad704fed4e4065b78465c12e8f182dbf57647362c4756": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "16fa3d4cd457f6de0c3ef5a25be0c15fbcd5045683e4d24fe942cd6271c38c6b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "891db39479a6fad61421b17a90937253b236e0ec0e6d3e39145833f71a9b722a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5e8fcf1fff5d25a5a6138468216b68890d64167cca6a658f0faec7c51b20fa48": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "47ea34609e73bed36897b420ed9a31ab48bcbb3be54b999a16aa0dbc0e383b6a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "fd941d69be564ee828dc012e68eaae3ff74bdb539dd4445e1c9ec9f56aaf7c75": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0f1b81a984406616d773da330a40a2e1fc9dc97bd365a7c1ec2b897cae667701": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "1b5a278dcc7c605c0690435fc83400b5b449b3334ca63ba0d91327866741bf4a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "07bd7ea34e9772fdbc285bbe2cf8975a80d18832057b4fca9d1cc2e4d4e97a4a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "1652fc285b567f476460b7acd8abfe760f40757df7a270c2e87b427b2a9aa507": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "3c16189c6d73f3603e60b6f53b89d7ce4b3f301de4da2007f5080d184188a089": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {
+            "id": 19620,
+            "enchant": 904
+          },
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "8073f420d1567ef764e0504340ef467cbb2ba26028b41a220a618b20163f4ef2": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "016dcfae044f5bdc12d33d5e65713322573c3d8133e982dfb498054b837fd2da": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "a8f1747f97fa54ef78411c04e87200ffc7fa1c41bbefc2d1e7fc9e2c73fb9ec3": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "2cf864ffb3fd5e433d4b4f74a102f54e22563eb97895beeeae2569b2360379de": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "c7e614e248164448e036ed5aba298cb7968c1d552dfc580255d15814c66ad3b7": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "d3513b2f1b60fe1a41998fa21d977f0da8ae9357c1ff44c535b183a1c21dc5a6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "019ca335631a15a69533ddb87f5612b11d19586a41c7c86f7ae280837e033756": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "61d21af76f77f3593e7a686bce997f0c7e360f795542e977a15233ceacfb9934": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "611d31d1d05739af4fae7a27a39e231abd376a29391464ffc0a1a558044d93ae": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0ad4f2892d34c8c4b691292f185ed5df0cfdb52986f005467d372413060fd4df": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "d915d13196e94b4b28a872a110da0ea73abef30ebc0fd43ab99c411f46325750": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "1db5df4573934967271e508183d753d407a7b7e889ae59ccce94aeb6f7abd503": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "21445c8b8e56a34a11e42504681f3d9e85f0a1d9fe3f06ec26b3c54a45a7d420": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "94d53d7d65a135b1ecd36173f99316d3d011e3b3c73e12c496b5789359ed98f6": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "39eb9e30ef6b76a9369b5212109a6a2ec0590a56de6345a98714f9729eafde0c": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "1835db564c57c025d69c78bd8d0577198d8d7a3dd9dcdabe67ff98b79258223b": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {
+            "id": 16679
+          },
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "dfb1a66f131d28b5fb19ae24d355038bea5a91654285cfc58cdffa654f2e1dc2": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "cf9dfa838e61037731295ca13de14882d3355a556e9b9e9fa25a029a67e1a7cd": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "4df60e21e3ba3f1f8bc05f160270853c51e087a86777cd6db8535d4d8afbcbc0": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "dc5514b8d64fe9705d2e45b784633c13eae48302eca11bb9becab96069e44972": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "85f83d1f74f6230fe2cfd2976e6ab6205441a3c4edb34891fab1edec96c00442": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "e4b8448cb9d61a6fa12bd7eb801799432abfef576b28a68363805758f180aa93": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "6d17a432ad5775982f0f68a9507d924cd616e27377f2877eab9a1d66f62ac4c5": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "ecfa1e2230380291fe3d2fc30e4f00b81c9fc437c7b3cd5703e91181666d06ed": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {
+            "id": 18511,
+            "enchant": 849
+          },
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "7eec11e36545e47383dc4473b4cae9e2a0ae17f2dd7cecdc7a209ac909f825f4": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "328911dcc935b1d077b9bf4f52f39040943e12e7adc176950af675e4ea196412": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "f6c18192da85099e2b9d35fc94e3f47d6cd028a6c425d2836ea002ccb5ddde5a": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "0dc1a164449674ed3b76058ba5089fa603386317828c9281cefc03fbb85e7344": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16674,
+            "enchant": 1891
+          },
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5f91656e2a5e5baf976a726dc857df30883d66f14e9d7125f5e6b769d3a2b704": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "793c3a867e94681d524a3a7ffa0962c6c9f1ce0f5a6397403a70751b8bc2da75": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16681,
+            "enchant": 7656
+          },
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "5c18b92c16397ed64a95ec8ab295e584f4c8cf7ebc81ab443b757d30b02c0162": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16676,
+            "enchant": 2564
+          },
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "4f3d4f8d15b6e9b30c4d0b7512e6ab12474d87a6340ddc85e86360762f02b305": {
+      "category": "gear",
+      "value": {
+        "items": [
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {},
+          {
+            "id": 16680
+          },
+          {
+            "id": 16678,
+            "enchant": 8491
+          },
+          {
+            "id": 16675,
+            "enchant": 1887
+          },
+          {
+            "id": 272408
+          },
+          {
+            "id": 11990,
+            "randomSuffix": 12728
+          },
+          {
+            "id": 272437
+          },
+          {
+            "id": 19120
+          },
+          {
+            "id": 250619,
+            "enchant": 2646
+          },
+          {},
+          {
+            "id": 22347,
+            "enchant": 2523
+          }
+        ],
+        "preserveSlots": true
+      }
+    },
+    "6e4368038787817a79e71643bdb6f279a390d4b4133de1dc2b5fc9bff1f01a55": {
+      "category": "talents",
+      "value": "4420001505101251-0052050301-4"
+    },
+    "d84943bc9899efd6d3b1a3f97b090ece307fd4ca913456cfde64ca042d7bc2af": {
+      "category": "talents",
+      "value": "5320001505101251-0052050301-4"
+    }
+  }
+}
