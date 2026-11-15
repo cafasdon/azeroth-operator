@@ -1,5 +1,11 @@
 # Azeroth Operator
 
+The [joint build experiment planner](docs/joint-build-search.md) binds a case
+and iterates gear, talent, rotation, timing and consumable candidate references.
+It does not yet resolve or score them. The
+[recommendation-method review](docs/recommendation-methods-2026-11-15.md) separates
+current public approaches and the remaining optimiser work.
+
 [TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
 and manual paste text. They preserve plan order without claiming arrow control.
 

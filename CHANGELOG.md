@@ -1,5 +1,9 @@
 # Changelog
 
+- Add case-bound offline joint-build experiment windows with exact resume
+  identities and bounded enumeration across gear, talents, rotation and timing.
+- Record current Forever/retail recommendation methods and model-proof limits.
+
 - Add offline TomTom route drafts with numbered step selection, explicit native
   map coordinates, manual paste text and isolated installed-parser acceptance.
 

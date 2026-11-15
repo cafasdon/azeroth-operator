@@ -14,6 +14,16 @@ external inference, gameplay and document writes have no routes.
 
 Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; macro creation is live-qualified; other player-applied mutations have separate qualification gaps. ADR006 supersedes the original blanket read-only implementation target.
 
+## Offline joint build experiments, 15 November 2026
+
+The separate `prepare_build_search_window` companion plans combinations of
+caller-supplied candidate references for an explicit case. It does not resolve
+snapshots, inspect inventory, execute an engine, score candidates or certify
+legality, model coverage or optimality. MCP arguments accept no paths, commands,
+SQL or callbacks. A planned window or terminal coordinate is not completed
+evaluation. The existing game-action exclusions remain unchanged. See
+[ADR-107](ADR-107-joint-build-experiment-cases.md).
+
 ## Offline TomTom route drafts, 15 November 2026
 
 The separate `prepare_tomtom_route` companion returns only a numbered manifest
