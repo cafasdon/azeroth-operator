@@ -6,3 +6,4 @@ tools/forever_positional_engine/export_descriptor.go.txt text eol=lf
 tests/fixtures/forever-hunter-*.json text eol=lf
 tests/fixtures/forever-broken-talents.ts text eol=lf
 clients/forever/talent-rules.json text eol=lf
+clients/forever/gear-rules.json text eol=lf

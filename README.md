@@ -19,6 +19,11 @@ from explicit rank domains under the pinned reference rules. It supplies hashed
 talent references for the native evaluator. Reference validity remains separate
 from native eligibility, complete talent search and observed character identity.
 
+The [gear build generator](docs/gear-builds.md) creates constrained equipment
+combinations from declared physical variants and slot domains. Generated gear
+and talent references can now run together through the native joint evaluator.
+Unknown ownership, native training and model accuracy remain explicit.
+
 [TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
 and manual paste text. They preserve plan order without claiming arrow control.
 

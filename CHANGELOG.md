@@ -1,5 +1,10 @@
 # Changelog
 
+- Generate bounded gear combinations with pinned class/race/slot requirements,
+  physical variant copy counts, unique/category restrictions and exact native
+  modifier preservation. Export joint-search references and keep unresolved
+  conversion separate from invalid gear and native eligibility.
+
 - Generate bounded talent combinations under authenticated Forever reference
   rules for ranks, point budgets, row gates and prerequisites. Export hashed
   joint-search references with stable paging, CLI/MCP callers and direct
