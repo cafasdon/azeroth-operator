@@ -1,5 +1,9 @@
 # Changelog
 
+- Retain one separately dated character-bank observation across omitted-bank
+  captures, with unknown current counts, explicit historical-only matches and
+  independent backfill ordering under the existing transaction and disk limits.
+
 - Read the managed incremental catalogue directly from the knowledge MCP,
   preserving standalone JSON inputs, exact pin checks and offline model reuse.
 

@@ -38,6 +38,21 @@ unknown, not empty. A later character capture replaces that character's stored
 view, including storage that is now unknown. It does not preserve an older bank
 view as current inventory.
 
+`last_observed_character_bank` keeps one separate latest bank observation per
+character, even after a later capture omits the bank. Its own snapshot ID,
+capture time, age and client/build metadata stay attached. The output uses
+`observed_quantity` and, for item queries, `observed_matches`; it never adds these
+to the latest capture's counts. Both `current` and `available_stock` are false.
+`observed_in_latest_capture` identifies the same saved capture only, never live
+freshness. `matches_latest_client_metadata` reports exact metadata equality and
+does not establish that old data remains correct after a patch.
+
+Never-observed banks return null. An observed empty bank replaces older contents
+with zero. Older imports can backfill a bank without replacing a newer character
+capture. Equal observation timestamps with different snapshot IDs reject the
+whole transaction. Account, variant, realm and character keys remain separate.
+Mail and the shared account bank keep their existing contracts.
+
 The latest observed account bank has separate provenance and appears once per
 account, family and variant. Character pages repeat this shared context: callers
 must not add it across pages. Captures at different times can describe the same
@@ -56,6 +71,12 @@ on other platforms. Existing databases use ordinary SQLite DELETE journals.
 Never delete a journal manually. A hot journal needs a normal write import for
 SQLite recovery; a cold journal does not prevent a read.
 
+The retained bank is one object within the existing character row, not a list
+of versions or a new table. A newer bank observation replaces it. Legacy rows
+derive an observation from their captured bank during a read, without a schema
+migration or a read-side write. Existing byte and response limits still apply;
+an oversized detail response fails instead of silently truncating item matches.
+
 ## Acceptance, 15 November 2026
 
 The focused suite contains 24 tests. Three bounded review rounds covered callers,
@@ -71,3 +92,7 @@ the unobserved character bank remained unknown. Mail remained unavailable stock.
 Multiple accounts, factions and shared-bank deduplication have synthetic test
 coverage; native alternate-character captures remain untested. No game action
 or external data download was necessary.
+
+The later retained-bank extension used synthetic captures and offline local MCP
+subprocesses only. See [retained bank acceptance](retained-bank-2026-11-15.md).
+No new game or live-service acceptance claim follows from those tests.

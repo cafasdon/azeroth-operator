@@ -80,6 +80,15 @@ def _identity(value):
         value['character'][key].casefold() for key in ('realm', 'name'))
 
 
+def bank_observation(value):
+    """Return an independent bank projection, including legacy current rows."""
+    if 'character_bank' not in value['storage']:
+        return None
+    return {**{key: value[key] for key in
+        ('client', 'character', 'snapshot_id', 'captured_at', 'source')},
+        'storage': {'character_bank': value['storage']['character_bank']}}
+
+
 class AccountInventory:
     """One owner-private database, explicit accounts; no shared service authority."""
     def __init__(self, database, max_bytes=MAX_BYTES):
@@ -184,13 +193,26 @@ class AccountInventory:
             conn.execute('PRAGMA max_page_count=' + str(pages))
             with conn:
                 conn.execute('BEGIN IMMEDIATE')
-                old = conn.execute('SELECT stamp,snapshot FROM characters WHERE account=? AND family=? AND variant=? AND realm=? AND name=?', identity).fetchone()
-                character_status = self._order(old, value)
-                if character_status == 'updated':
+                old = conn.execute('SELECT stamp,snapshot,data FROM characters WHERE account=? AND family=? AND variant=? AND realm=? AND name=?', identity).fetchone()
+                character_status = self._order(old[:2] if old else None, value)
+                previous = json.loads(old[2]) if old else None
+                retained = (previous.get('last_observed_character_bank') or bank_observation(previous)) if previous else None
+                observed = bank_observation(value)
+                character_bank_status = 'unobserved'
+                if observed is not None:
+                    prior = (retained['captured_at'], retained['snapshot_id']) if retained else None
+                    character_bank_status = self._order(prior, observed)
+                    if character_bank_status == 'updated':
+                        retained = observed
+                if 'updated' in (character_status, character_bank_status):
                     if old is None and conn.execute('SELECT count(*) FROM characters').fetchone()[0] >= 1024:
                         raise ValueError('Character capacity reached')
+                    # Keep retained provenance out of the incoming shared-bank projection.
+                    saved = dict(value if character_status == 'updated' else previous)
+                    if retained is not None:
+                        saved['last_observed_character_bank'] = retained
                     conn.execute('INSERT OR REPLACE INTO characters VALUES(?,?,?,?,?,?,?,?)',
-                                 (*identity, value['captured_at'], snapshot_id, encoded(value)))
+                                 (*identity, saved['captured_at'], saved['snapshot_id'], encoded(saved)))
                 bank_status = 'unobserved'
                 if shared is not None:
                     bank = dict(value, storage={'account_bank': shared})
@@ -199,8 +221,9 @@ class AccountInventory:
                     if bank_status == 'updated':
                         conn.execute('INSERT OR REPLACE INTO shared_banks VALUES(?,?,?,?,?,?)',
                                      (*identity[:3], value['captured_at'], snapshot_id, encoded(bank)))
-            return {'status': 'updated' if 'updated' in (character_status, bank_status) else character_status,
-                    'character_status': character_status, 'account_bank_status': bank_status, 'snapshot_id': snapshot_id}
+            return {'status': 'updated' if 'updated' in (character_status, character_bank_status, bank_status) else character_status,
+                    'character_status': character_status, 'character_bank_status': character_bank_status,
+                    'account_bank_status': bank_status, 'snapshot_id': snapshot_id}
 
     @staticmethod
     def _order(old, value):
@@ -241,6 +264,21 @@ class AccountInventory:
         if 'stats' in value:
             result['stats'] = value['stats']
         result['age_seconds'] = max(0, round((datetime.now(timezone.utc) - datetime.fromisoformat(value['captured_at'])).total_seconds()))
+        if 'character_bank' in scopes:
+            bank = value.get('last_observed_character_bank') or bank_observation(value)
+            result['last_observed_character_bank'] = None
+            if bank is not None:
+                items = [item for item in bank['storage']['character_bank']['items']
+                         if item_id is None or item.get('item_id') == item_id]
+                result['last_observed_character_bank'] = {
+                    **{key: bank[key] for key in ('client', 'character', 'snapshot_id', 'captured_at', 'source')},
+                    'age_seconds': max(0, round((datetime.now(timezone.utc) - datetime.fromisoformat(bank['captured_at'])).total_seconds())),
+                    'current': False, 'available_stock': False,
+                    'observed_in_latest_capture': bank['snapshot_id'] == value['snapshot_id'],
+                    'matches_latest_client_metadata': bank['client'] == value['client'],
+                    'observed_quantity': sum(item['count'] for item in items),
+                    'observed_item_locations': len(items),
+                    **({'observed_matches': items} if item_id is not None else {})}
         result['storage'] = {}
         for scope in scopes:
             saved = value['storage'].get(scope)
@@ -271,8 +309,8 @@ def serve(inventory):
                   'offset': {'type': 'integer', 'minimum': 0, 'maximum': 1024, 'default': 0},
                   'limit': {'type': 'integer', 'minimum': 1, 'maximum': 100, 'default': 50}}
     descriptions = {
-        'get_private_account_inventory': 'List latest character capture/storage counts and latest observed shared-bank provenance. Missing storage is unknown. Local account labels are not verified account identity. Pages contain characters; shared banks repeat as context and must never be added across pages. No live, transfer or delivery claim.',
-        'find_private_account_item': 'Find a base item ID on each character page and account bank with locations and exact observed numeric item strings. Keep owners and mail separate; variants are not equivalent. Shared banks repeat across pages; never sum them. Mail counts are observed inbox items, not available stock or proof of delivery. No full gear/BiS claim.'}
+        'get_private_account_inventory': 'List latest character capture/storage counts and latest observed shared-bank provenance. Missing current storage is unknown. last_observed_character_bank is separate historical evidence, never current or available stock; never add it to current storage. Local account labels are not verified identity. Pages contain characters; shared banks repeat as context and must never be added across pages. No live, transfer or delivery claim.',
+        'find_private_account_item': 'Find a base item ID on each character page and account bank with locations and exact observed numeric item strings. last_observed_character_bank has separate observed counts and provenance, never current or available stock; never add it to current storage. Keep owners and mail separate; variants are not equivalent. Shared banks repeat across pages; never sum them. Mail is not available stock or proof of delivery. No full gear/BiS claim.'}
 
     @server.list_tools()
     async def list_tools():
