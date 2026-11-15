@@ -1,6 +1,7 @@
 """Sync pinned public QuestieDB sources, build an offline cache and serve exact Forever world records."""
 import argparse
 from collections import Counter
+from contextlib import contextmanager
 from copy import deepcopy
 import hashlib
 import json
@@ -11,6 +12,7 @@ import tempfile
 from typing import Annotated, Literal
 
 from tools.sync_exports import ordinary
+from tools.reference_sync import MARKER, ReferenceCache
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = json.loads((ROOT/'clients/forever/world.lock.json').read_text())
@@ -37,21 +39,33 @@ def bounded_read(path, limit):
     return data
 
 
+@contextmanager
+def source_paths(source):
+    """Keep a managed cache locked until all pinned source files are staged."""
+    source = Path(source)
+    if (source / MARKER).exists():
+        with ReferenceCache(source.absolute()).snapshot(PIN) as paths:
+            yield paths
+    else:
+        yield {name: source.joinpath(*name.split('/')) for name in PIN['source_files']}
+
+
 def verify_source(source, destination=None):
     total = 0
-    for name, expected in PIN['source_files'].items():
-        # These are trusted repository lock entries, never caller-supplied paths.
-        parts = name.split('/')
-        if any(part in ('', '.', '..') or ':' in part or '\\' in part for part in parts):
-            raise ValueError('Invalid world source pin')
-        data = bounded_read(source.joinpath(*parts), MAX_BYTES - total)
-        total += len(data)
-        if digest(data) != expected:
-            raise ValueError('World source checksum mismatch')
-        if destination is not None:
-            staged = destination.joinpath(*parts)
-            staged.parent.mkdir(parents=True, exist_ok=True)
-            staged.write_bytes(data)
+    with source_paths(source) as paths:
+        for name, expected in PIN['source_files'].items():
+            # These are trusted repository lock entries, never caller-supplied paths.
+            parts = name.split('/')
+            if any(part in ('', '.', '..') or ':' in part or '\\' in part for part in parts):
+                raise ValueError('Invalid world source pin')
+            data = bounded_read(paths[name], MAX_BYTES - total)
+            total += len(data)
+            if digest(data) != expected:
+                raise ValueError('World source checksum mismatch')
+            if destination is not None:
+                staged = destination.joinpath(*parts)
+                staged.parent.mkdir(parents=True, exist_ok=True)
+                staged.write_bytes(data)
     return total
 
 

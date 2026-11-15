@@ -57,6 +57,28 @@ Existing MCP readers continue to use their validated compiled caches. A source
 sync does not automatically promote a new build or overwrite an unknown file.
 Generation and reader promotion remain explicit, checksum-checked operations.
 
+The world builder also accepts the managed world cache as its source. This
+connects file-incremental sync to offline world generation without a persistent
+second source tree:
+
+```powershell
+./.venv/Scripts/python.exe -B -m tools.forever_world build --source "ABSOLUTE_MANAGED_WORLD_CACHE" --cache "ABSOLUTE_NEW_WORLD_JSONL"
+```
+
+The active provider, revision and complete source hash map must match the
+repository's world lock. One cache lock protects the source copy against a
+concurrent sync. Generation uses temporary, checksum-checked files and the
+existing restricted Lua exporter. The output must match the pinned compiled
+hash before publication. A wrong revision, damaged object or busy cache stops
+the build. The original source-directory interface remains supported.
+
+The source cache budget does not cover the temporary build directory or the
+compiled output. Source staging has the builder's 64 MiB aggregate input limit;
+the builder removes its temporary directory after success or failure. Queries
+never invoke generation or a download. A new upstream lock still needs explicit
+review and an expected generated output hash; this is not automatic patch
+selection or a full in-game data coverage claim.
+
 ## Evidence
 
 Both real caches were seeded from local data with a downloader that raised

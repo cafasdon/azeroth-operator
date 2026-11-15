@@ -315,6 +315,20 @@ class ReferenceCache:
                 raise ValueError("Unknown source file")
             return (self.root / "objects" / current["files"][name]).read_bytes()
 
+    @contextmanager
+    def snapshot(self, lock):
+        """Yield verified object paths for an exact pin, under one cache lock.
+
+        Read the paths only inside this context. Do not modify the objects.
+        """
+        expected = load_lock(lock) if isinstance(lock, (str, Path)) else spec(lock)
+        with self._guard():
+            current, _, _ = self._inspect()
+            if current != expected:
+                raise ValueError("Reference cache does not match source pin")
+            yield {name: self.root / "objects" / digest
+                   for name, digest in current["files"].items()}
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)

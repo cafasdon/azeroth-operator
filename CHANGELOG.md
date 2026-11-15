@@ -1,5 +1,8 @@
 # Changelog
 
+- Connect the managed incremental world source cache to offline world generation,
+  with exact pin checks and one source lock across staging.
+
 - Add a bounded private account inventory with explicit account labels, separate
   character and shared-bank ownership, unknown storage and two read-only MCP
   tools. Test real pilot reads and synthetic account, faction and crash cases.
