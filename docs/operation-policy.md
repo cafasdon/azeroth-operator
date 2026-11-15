@@ -130,6 +130,18 @@ Record the exact operation, client family/variant/build/interface, official poli
 
 No game action is newly enabled by this record. Live qualification, operation-specific policy evidence and feature implementation remain outstanding in ROADMAP.md.
 
+## Offline joint native experiments (2026-11-15)
+
+The joint evaluator runs only the explicitly selected, hash-pinned local
+positional simulator. It accepts a bounded hypothetical model manifest, not a
+game command. Its MCP startup fixes the manifest and executable; tool arguments
+cannot substitute either. It contacts no game client, addon, source website or
+remote optimiser. Optional storage uses the existing bounded owner-private
+numeric cache. Strict protobuf acceptance does not establish native eligibility
+or complete effect modelling. Current-character and captured-talent checks in
+the personal recommendation path remain separate and unchanged. No live test
+or additional game operation is enabled. See ADR 108.
+
 ## Visible dialogue observation (2026-11-09)
 
 Source-only Forever gossip_options capture reads an already visible ordinary

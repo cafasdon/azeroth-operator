@@ -1,0 +1,22 @@
+package main
+import (
+ "os"
+ p "github.com/wowsims/forever/sim/core/proto"
+ "google.golang.org/protobuf/proto"
+ "google.golang.org/protobuf/reflect/protodesc"
+ "google.golang.org/protobuf/reflect/protoreflect"
+ "google.golang.org/protobuf/types/descriptorpb"
+)
+func main() {
+ set:=&descriptorpb.FileDescriptorSet{}
+ seen:=map[string]bool{}
+ var visit func(protoreflect.FileDescriptor)
+ visit=func(f protoreflect.FileDescriptor){
+  if seen[f.Path()] { return }; seen[f.Path()]=true
+  imports:=f.Imports(); for i:=0;i<imports.Len();i++ { visit(imports.Get(i).FileDescriptor) }
+  set.File=append(set.File,protodesc.ToFileDescriptorProto(f))
+ }
+ visit(p.File_api_proto)
+ data,err:=proto.MarshalOptions{Deterministic:true}.Marshal(set); if err!=nil {panic(err)}
+ if err=os.WriteFile(os.Args[1],data,0644);err!=nil {panic(err)}
+}

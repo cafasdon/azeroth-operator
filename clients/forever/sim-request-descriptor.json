@@ -1,0 +1,202 @@
+{
+  "descriptor_bytes": 115868,
+  "descriptor_files": [
+    {
+      "dependencies": [],
+      "name": "google/protobuf/descriptor.proto"
+    },
+    {
+      "dependencies": [
+        "google/protobuf/descriptor.proto"
+      ],
+      "name": "common.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "buffs.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "shaman.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "warlock.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto",
+        "shaman.proto",
+        "warlock.proto"
+      ],
+      "name": "apl.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "spell.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto",
+        "spell.proto"
+      ],
+      "name": "db.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "druid.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "hunter.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "mage.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "paladin.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "priest.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "rogue.proto"
+    },
+    {
+      "dependencies": [
+        "common.proto"
+      ],
+      "name": "warrior.proto"
+    },
+    {
+      "dependencies": [
+        "buffs.proto",
+        "common.proto",
+        "apl.proto",
+        "db.proto",
+        "spell.proto",
+        "druid.proto",
+        "hunter.proto",
+        "mage.proto",
+        "paladin.proto",
+        "priest.proto",
+        "rogue.proto",
+        "shaman.proto",
+        "warlock.proto",
+        "warrior.proto"
+      ],
+      "name": "api.proto"
+    }
+  ],
+  "descriptor_sha256": "3d06a6abeec9567db5c891b4f39c7d5827ec68503e9a1df95f329c3128600225",
+  "engine_sha256": "833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983",
+  "export_command": "go run -mod=mod ./export.go OUTPUT_DESCRIPTOR",
+  "exporter_module": "module azeroth-schema-export\n\ngo 1.27\n\nrequire (\n github.com/wowsims/forever v0.0.0\n google.golang.org/protobuf v1.36.10\n)\nreplace github.com/wowsims/forever => C:/Temp/codex/forever-positional-v4/forever-9dc32ac8ca0d8d1b76337861d38b93c0f884af11\nreplace google.golang.org/protobuf => C:/Temp/codex/forever-sim-9dc32ac/gopath/pkg/mod/google.golang.org/protobuf@v1.36.10\n",
+  "exporter_source": "tools/forever_positional_engine/export_descriptor.go.txt",
+  "exporter_source_sha256": "097de270873d61ce4809f169072327f32b753058655b1152636985256be523c4",
+  "extraction": "Dependency-first recursive protodesc.ToFileDescriptorProto from generated File_api_proto; deterministic proto.Marshal of FileDescriptorSet. No protoc invocation or network.",
+  "format_version": 1,
+  "generated_go_files": {
+    "sim/core/proto/api.pb.go": "21f4e9ecc60e554903a2db3b2e42a2d91a2872646db7189bbb449b1c95eede2b",
+    "sim/core/proto/apl.pb.go": "3f5aeaef2614ac8d66832e9629b7cfbac3b521e42bbbeed3678cff3b7130a5bd",
+    "sim/core/proto/buffs.pb.go": "a19aa5cb161138e11f608b0b34dfd9ee095953d838337eb761b8a5ca5052e215",
+    "sim/core/proto/common.pb.go": "3c4d80db355e10928299ad46baea4e4f4e3addac454d2a2d281f9304f2fbad32",
+    "sim/core/proto/db.pb.go": "5d0777c24c282a91bcd28c9ee5bbf4aa96bed7a0315ed322b172dcba6249f3f3",
+    "sim/core/proto/druid.pb.go": "dcefa24032bfd479dc0f92fc2f00f52d87a7073bb192bb49c5d89de016c94a70",
+    "sim/core/proto/hunter.pb.go": "199a0ef504a523b0e354fd15d88a4c3d558aeb2c8002ef5dea556e5926dfbfae",
+    "sim/core/proto/mage.pb.go": "5c21e80f0618dce84384d5c5501f84ccf8425b74f1e10c6ef189bafeee3ce119",
+    "sim/core/proto/paladin.pb.go": "c091eafaab22f06992aa7bc455d39902674c0af150ecb4dc8f3de576be9f8f31",
+    "sim/core/proto/priest.pb.go": "88bf7e469091ee008ee1ef69dffd3a86a2cdd69d579713db4bab3de47af11bc6",
+    "sim/core/proto/rogue.pb.go": "37c8112ff9ac3eba603fd06431663884907a8771b3276af6d3931096a89101a5",
+    "sim/core/proto/shaman.pb.go": "88404786a27fe5b5d0b95540d7d2e15b011b0db3269eed1c16dcf94c947a2bb3",
+    "sim/core/proto/spell.pb.go": "3aab6d243b314b4d59e6394fef7f6218f3d5b767109f74816c32c9a7ad8f6e68",
+    "sim/core/proto/test.pb.go": "7ffb1a08eaecde06a83f4f747d7e25ad3df37d35a1ea8948ab273ffd9318126f",
+    "sim/core/proto/ui.pb.go": "3cf3737eb6271f9c02a290d7490b701c15dc3f1e60d9ed048c6edf993c637eab",
+    "sim/core/proto/warlock.pb.go": "9b6a5d9e6e01a372754234ad3c92655dd0bd82ac1cca7935328f11ee86563e47",
+    "sim/core/proto/warrior.pb.go": "e02cb60b54c5aa39f89c20d6278b1625256df4b5d65668287df925b2191c4cec"
+  },
+  "generated_go_tree_sha256": "572c8b0ce0cd491816a076541e12f3bf201442bbfb853b91739271cf39f7940f",
+  "generated_with": {
+    "protoc": "v7.36.2",
+    "protoc_gen_go": "v1.36.10"
+  },
+  "go_executable_sha256": "83b7ba66215e696414fa49462d0db2da4f4cf15c7bebd42f0b189fa04866999d",
+  "local_patch_contract": "azeroth_equipment_preserve_slots_v1",
+  "message_full_name": "proto.RaidSimRequest",
+  "offline_environment": {
+    "GOENV": "off",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOWORK": "off"
+  },
+  "proto_files": {
+    "proto/api.proto": "d6c537ede0f8d4f3545cdb1fb95fb1c0dc2ce2f81fb8df50009603740466f13a",
+    "proto/apl.proto": "65032b577d7b7973459f65a6aec308fa4e579577d9f9ccf24799eecb0d55f32b",
+    "proto/buffs.proto": "aa459e99aa92dec8b36e88c86a3315f1ffb0a5ee614cb31e139a1b2abb3a5412",
+    "proto/common.proto": "9ee06a4a12ebd69c1bbbf38a0db622d07d9d425eb2720e24948750d671fded8e",
+    "proto/db.proto": "a1c8b9299a40ccd876c26d04e1360f16192597a3b58c166b308d90cbb2348739",
+    "proto/druid.proto": "9b403a95622600e170091b3035d1a72b4adad58ac4396016becc83df9d8ec7aa",
+    "proto/hunter.proto": "45981e7023a4a1b8208bec45cce8d8d80b97ca97354688551fbdd2c3e0fa0d61",
+    "proto/mage.proto": "bcbe3a7307127b0c13dc0105dfa1d28572667fc5fd4a590122a98840c107f20c",
+    "proto/paladin.proto": "82ccbfb6d1dca6b3a66855a088bc05eab96f842830d4a6b3920d9be0b3d6eaed",
+    "proto/priest.proto": "69fb106cd6ba27cb066612bdc54be40e93b575e43248ee093f80b01e36f9108a",
+    "proto/rogue.proto": "c35da88b1bd58af4b7094b1e4df858cafa061b8aac67a50656ffa2b94903fb9b",
+    "proto/shaman.proto": "1f60a7cc3944050556702da35b45c113817e968d3decd72ed490a66aeee396b2",
+    "proto/spell.proto": "4329578f5da59ab59ce0e963ac2f8d10aed1814531b8b805b79ccdde685d7ef8",
+    "proto/test.proto": "9c2ebd33db66a0e46afa139e5147f427b6dc95535fc0d4fca8c797b4bd011909",
+    "proto/ui.proto": "b52ba31341223d6245f60b5b88df96facd08b1add8cfc4422aea39a9acf71caf",
+    "proto/warlock.proto": "5dfd2bf7bfd7f93d0290be35264e5cd88a4ae8bb6453f13b589464cac38a37ab",
+    "proto/warrior.proto": "8015a18ec0824d31203f714389a0b35b804bd73e891f3c8d4e93d66ec597ea83"
+  },
+  "proto_tree_sha256": "6fae0f3fd3442bf09fe14fb8e0dd26500a20ceffb82081955df421ef6c0369b8",
+  "qualification": {
+    "game_execution": false,
+    "invalid_integer_rejected": true,
+    "native_qualification_performed": false,
+    "preserve_slots_field_passed": true,
+    "public_hunter_fixture_sha256": "c41bee7c14c22b206b780dc2f360df04f7c1ae89f2d2f210d61c919edaf86874",
+    "strict_parse_passed": true,
+    "unknown_nested_field_rejected": true
+  },
+  "regeneration_powershell": [
+    "$taskDir='C:/Temp/codex/azeroth-schema-export'",
+    "New-Item -ItemType Directory -Force -Path $taskDir | Out-Null",
+    "Copy-Item -LiteralPath 'T:/Projects/Azeroth Operator/tools/forever_positional_engine/export_descriptor.go.txt' -Destination ($taskDir+'/export.go')",
+    "$manifest=Get-Content -Raw -LiteralPath 'T:/Projects/Azeroth Operator/clients/forever/sim-request-descriptor.json' | ConvertFrom-Json; [IO.File]::WriteAllText(($taskDir+'/go.mod'),$manifest.exporter_module,[Text.Encoding]::ASCII)",
+    "$env:GOENV='off'; $env:GOWORK='off'; $env:GOPROXY='off'; $env:GOSUMDB='off'; $env:GOTELEMETRY='off'; $env:GOTOOLCHAIN='local'",
+    "$env:GOPATH='C:/Temp/codex/forever-sim-9dc32ac/gopath'; $env:GOCACHE=$taskDir+'/cache'",
+    "Push-Location -LiteralPath $taskDir",
+    "try { & 'C:/Temp/codex/forever-positional-v4/go/bin/go.exe' run -mod=mod ./export.go 'T:/Projects/Azeroth Operator/clients/forever/sim-request-descriptor.pb'; if ($LASTEXITCODE -ne 0) { throw 'Descriptor export failed' } } finally { Pop-Location }",
+    "Get-FileHash -LiteralPath 'T:/Projects/Azeroth Operator/clients/forever/sim-request-descriptor.pb' -Algorithm SHA256"
+  ],
+  "root_file": "api.proto",
+  "source_archive_sha256": "e1309ddd725a89996a8806aac3aa3af7bfae7486feef972077639230e2ff2712",
+  "tree_hash_algorithm": "SHA-256 of ASCII JSON mapping relative slash path to file SHA-256, sorted keys, separators comma and colon",
+  "upstream_repository": "https://github.com/wowsims/forever",
+  "upstream_revision": "9dc32ac8ca0d8d1b76337861d38b93c0f884af11"
+}

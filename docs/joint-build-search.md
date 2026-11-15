@@ -55,6 +55,11 @@ supported axis definitions. No partial/truncated candidate list is returned.
 
 ## Boundaries
 
+The separate [native joint evaluator](joint-build-optimizer.md) now resolves and
+scores complete small matrices. This planner remains pure and does not execute
+an engine. Native experiments have their own identity that also binds the
+canonical base request, and their own stricter supported-case limits.
+
 `plan_only` is true. Verification flags are false for simulation, objective
 evaluation, constraints, legality, source/model compatibility, snapshot/current
 identity, complete inventory and global optimality. These are references and

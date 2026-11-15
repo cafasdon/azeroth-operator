@@ -1,2 +1,6 @@
-# This public data file is verified byte-for-byte by the offline simulator.
+# These public data files are verified byte-for-byte by the offline simulator.
 clients/forever/talent-map.json text eol=lf
+clients/forever/catalogue.lock.json text eol=lf
+clients/forever/sim-request-descriptor.pb binary
+tools/forever_positional_engine/export_descriptor.go.txt text eol=lf
+tests/fixtures/forever-hunter-*.json text eol=lf

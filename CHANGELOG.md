@@ -1,5 +1,10 @@
 # Changelog
 
+- Connect joint gear/talent/rotation/timing/consumable matrices to the pinned
+  native simulator, with strict protobuf input checks, complete bounded
+  accounting, full-request cache reuse and CLI/MCP callers. Record the research,
+  competitive acceptance criteria and offline benchmark limits.
+
 - Add case-bound offline joint-build experiment windows with exact resume
   identities and bounded enumeration across gear, talents, rotation and timing.
 - Record current Forever/retail recommendation methods and model-proof limits.

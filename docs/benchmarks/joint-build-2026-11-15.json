@@ -1,0 +1,78 @@
+{
+  "engine_sha256": "833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983",
+  "seeds": [
+    {
+      "seed": 20261115,
+      "search_id": "e1744eebb01547e0fa8f9c4de9a75b7742452d939586f9fc454c20a500cd6455",
+      "coordinates": 32,
+      "unique_requests": 32,
+      "unique_native_iterations": 6400,
+      "cold_cache_misses": 32,
+      "warm_cache_hits": 32,
+      "cold_seconds": 23.98864210001193,
+      "warm_python_peak_traced_bytes": 3652795,
+      "oracle_match": true,
+      "observed_leader_ordinals": [
+        "8"
+      ],
+      "observed_leader_mean_dps": 1062.002400308179,
+      "warm_seconds_with_tracemalloc": 14.959102800115943,
+      "untraced_warm_seconds": 11.592339499853551,
+      "cache_hits": 32
+    },
+    {
+      "seed": 20271115,
+      "search_id": "536e37173dc87c12939011f6eebaa1bc95cad413c49cedffb583403bd849a814",
+      "coordinates": 32,
+      "unique_requests": 32,
+      "unique_native_iterations": 6400,
+      "cold_cache_misses": 32,
+      "warm_cache_hits": 32,
+      "cold_seconds": 26.730329500045627,
+      "warm_python_peak_traced_bytes": 3576456,
+      "oracle_match": true,
+      "observed_leader_ordinals": [
+        "8"
+      ],
+      "observed_leader_mean_dps": 1060.6933833220044,
+      "warm_seconds_with_tracemalloc": 13.567591200117022,
+      "untraced_warm_seconds": 10.198773300042376,
+      "cache_hits": 32
+    },
+    {
+      "seed": 20281115,
+      "search_id": "6abf06517c3f4e0b058db87925378d315b9cfb12611bac74a30e0fb5a0694e93",
+      "coordinates": 32,
+      "unique_requests": 32,
+      "unique_native_iterations": 6400,
+      "cold_cache_misses": 32,
+      "warm_cache_hits": 32,
+      "cold_seconds": 22.967572699999437,
+      "warm_python_peak_traced_bytes": 3599852,
+      "oracle_match": true,
+      "observed_leader_ordinals": [
+        "8"
+      ],
+      "observed_leader_mean_dps": 1052.4843019646316,
+      "warm_seconds_with_tracemalloc": 20.422777900006622,
+      "untraced_warm_seconds": 10.460951800225303,
+      "cache_hits": 32
+    }
+  ],
+  "game_execution": false,
+  "native_legality_verified": false,
+  "notes": "Original cold wall times shared the host with focused tests/review. Warm timings were repeated without tracemalloc. This is execution evidence, not an isolated comparative performance or game-accuracy benchmark. Traced memory excludes native process. The benchmark driver now measures memory in a separate replay.",
+  "environment": {
+    "cpu": "Intel Core i9-12900HK",
+    "physical_cores": 14,
+    "logical_processors": 20,
+    "GOMAXPROCS": "2",
+    "python": "3.14",
+    "engine_sha256": "833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983"
+  },
+  "inputs": {
+    "forever-hunter-bm.json": "c41bee7c14c22b206b780dc2f360df04f7c1ae89f2d2f210d61c919edaf86874",
+    "forever-hunter-mm.json": "b0cf67f159ee458221cb5fa2209833e8879724205f93805373c492c0fa10c458",
+    "sim-request-descriptor.pb": "3d06a6abeec9567db5c891b4f39c7d5827ec68503e9a1df95f329c3128600225"
+  }
+}

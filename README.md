@@ -1,5 +1,13 @@
 # Azeroth Operator
 
+The [local optimisation machine](docs/optimisation-machine.md) defines the joint
+character optimiser, research basis and measurable acceptance gates. The first
+[native joint evaluator](docs/joint-build-optimizer.md) scores complete small
+matrices of explicit gear, talent, rotation, timing and consumable fragments
+offline. It supports level-60 DPS model experiments and reports numerical
+estimates with explicit legality, ownership and global-optimum limits. It does
+not act in the game or replace captured-character identity checks.
+
 The [joint build experiment planner](docs/joint-build-search.md) binds a case
 and iterates gear, talent, rotation, timing and consumable candidate references.
 It does not yet resolve or score them. The
