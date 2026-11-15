@@ -1,5 +1,10 @@
 # Changelog
 
+- Generate bounded talent combinations under authenticated Forever reference
+  rules for ranks, point budgets, row gates and prerequisites. Export hashed
+  joint-search references with stable paging, CLI/MCP callers and direct
+  agreement tests against the pinned upstream checker for all nine classes.
+
 - Reuse the fixed positional capability probe within each comparison, preserving
   full engine hash/deadline checks before every cache read and native request.
   Measure identical cached joint results with less adapter overhead. Correct a

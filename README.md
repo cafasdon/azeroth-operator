@@ -14,6 +14,11 @@ It does not yet resolve or score them. The
 [recommendation-method review](docs/recommendation-methods-2026-11-15.md) separates
 current public approaches and the remaining optimiser work.
 
+The [talent build generator](docs/talent-builds.md) now creates valid combinations
+from explicit rank domains under the pinned reference rules. It supplies hashed
+talent references for the native evaluator. Reference validity remains separate
+from native eligibility, complete talent search and observed character identity.
+
 [TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
 and manual paste text. They preserve plan order without claiming arrow control.
 

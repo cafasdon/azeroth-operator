@@ -4,3 +4,5 @@ clients/forever/catalogue.lock.json text eol=lf
 clients/forever/sim-request-descriptor.pb binary
 tools/forever_positional_engine/export_descriptor.go.txt text eol=lf
 tests/fixtures/forever-hunter-*.json text eol=lf
+tests/fixtures/forever-broken-talents.ts text eol=lf
+clients/forever/talent-rules.json text eol=lf
