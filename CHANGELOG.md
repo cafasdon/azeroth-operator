@@ -1,5 +1,9 @@
 # Changelog
 
+- Add a bounded private account inventory with explicit account labels, separate
+  character and shared-bank ownership, unknown storage and two read-only MCP
+  tools. Test real pilot reads and synthetic account, faction and crash cases.
+
 - Add file-incremental public source caching, fixed disk budgets, atomic
   promotion, crash-safe locks and removal of superseded objects.
 

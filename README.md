@@ -1,5 +1,8 @@
 # Azeroth Operator
 
+The [private account inventory](docs/private-account-inventory.md) separates
+characters, recipient mail and shared banks through two offline read-only tools.
+
 The [owner-derived local reference](docs/local-first-reference.md) adds exact
 offline item, recipe, spell and skill lookup with recipe relationships.
 External references remain available for gaps under the
