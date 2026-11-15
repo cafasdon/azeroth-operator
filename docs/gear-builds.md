@@ -126,5 +126,5 @@ Jev's release advisory resolved to `jev-1.14.0`, request
 The advisory is not proof. No unresolved review finding needs a follow-up ticket.
 
 The existing account inventory, captured-character guards and game code did not
-change. The joint evaluator's 64-coordinate limit still applies until the next
-separately reviewed feature.
+change. The whole-case evaluator keeps its 64-coordinate limit. The separate
+[native window API](joint-build-windows.md) now covers larger declared matrices.

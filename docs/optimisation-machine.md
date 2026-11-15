@@ -158,14 +158,15 @@ claim. Public profiles test execution, not the private pilot's character.
 
 ## Current scope and next executable work
 
-The first native slice connects the previously pure reference planner to a
-complete small matrix. It deliberately supports level 60, DPS, one fixed
-encounter and at most 64 combinations. It does not generate a full legal talent
-tree, claim complete owned inventory, select the active character, or qualify
-every item and action effect. See the dated verification record for actual
-results rather than treating this specification as shipped functionality.
+The original native slice supports a complete matrix of at most 64 combinations.
+Separate [talent](talent-builds.md) and [gear](gear-builds.md) generators now enforce
+the represented pinned constraints and export joint references. The
+[window evaluator](joint-build-windows.md) covers larger declared matrices, with
+bounded incremental reported coverage and top-K results. Its 256-build native
+benchmark matches an independent exhaustive traversal. None of these results
+establishes complete owned inventory, native legality or every item/action effect.
 
-The next dependency is the legality-aware candidate generator and a larger
-bounded/resumable joint result ledger. Then add statistically justified racing
-and benchmark the proposer. Native model qualification and personal character
-recommendations follow their own evidence gates. Live game tests stay deferred.
+The native evaluator still supports level 60, DPS and one fixed encounter.
+Statistically justified racing and a measured proposer remain next dependencies.
+Native model qualification and personal character recommendations follow their
+own evidence gates. Live game tests stay deferred.

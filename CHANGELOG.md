@@ -1,5 +1,10 @@
 # Changelog
 
+- Scale native joint experiments beyond 64 combinations through bounded windows
+  with global identities, incremental top-K results and compact reported coverage.
+  Preserve the original whole-case cap, execution budgets and private-cache
+  retention. Compare 256 generated builds with an independent native traversal.
+
 - Generate bounded gear combinations with pinned class/race/slot requirements,
   physical variant copy counts, unique/category restrictions and exact native
   modifier preservation. Export joint-search references and keep unresolved

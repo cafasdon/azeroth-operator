@@ -24,6 +24,12 @@ combinations from declared physical variants and slot domains. Generated gear
 and talent references can now run together through the native joint evaluator.
 Unknown ownership, native training and model accuracy remain explicit.
 
+[Native joint windows](docs/joint-build-windows.md) now evaluate larger matrices
+without a full-matrix allocation. Each call evaluates at most 64 coordinates.
+A bounded incremental summary retains the top builds, covered intervals and
+next missing coordinate. Supplied receipts remain reported evidence, not
+authenticated execution or a global-optimum certificate.
+
 [TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
 and manual paste text. They preserve plan order without claiming arrow control.
 

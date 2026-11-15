@@ -112,6 +112,6 @@ The release advisory resolved to the same model, request
 These are advisory decisions, not proof. Final author execution passed all
 seven tests in 2.750 seconds with the native and source-oracle options enabled.
 
-This feature does not yet validate gear or increase the joint evaluator's
-64-coordinate limit. Those are the next separately tested features. No game
-test or MCP client configuration change occurred in this slice.
+This module validates talents. [Gear generation](gear-builds.md) and
+[larger native windows](joint-build-windows.md) are separate tested features.
+No game test or MCP client configuration change occurred in this slice.

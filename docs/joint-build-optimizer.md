@@ -4,6 +4,10 @@ The evaluator connects ADR 107's finite reference matrix to the existing local
 simulator. It is a real simulation feature for an explicitly supplied model
 case. It is not yet a full legal-build generator or a personal BiS service.
 
+The separate [talent](talent-builds.md) and [gear](gear-builds.md) generators now
+supply reference-valid pools. [Native windows](joint-build-windows.md) cover
+larger matrices while preserving this whole-case API's 64-coordinate cap.
+
 ## Supported input
 
 `tools.joint_build_optimizer` reads one ordinary, single-link, absolute JSON

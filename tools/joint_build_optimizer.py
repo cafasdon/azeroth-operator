@@ -126,11 +126,13 @@ def canonical_request(value, case, message_type):
     return result
 
 
-def preflight(manifest, expected_search_id=None):
+def preflight(manifest, expected_search_id=None, *, window_mode=False, offset='0', limit=64):
     planner.exact(manifest, ('case', 'axes', 'base_request', 'references'))
     case, axes, references = manifest['case'], manifest['axes'], manifest['references']
-    plan = planner.prepare_build_search_window(case, axes, limit=64)
-    if int(plan['total_decimal']) > 64 or len({a['category'] for a in axes}) != len(axes):
+    if type(window_mode) is not bool or not window_mode and (offset!='0' or limit!=64):
+        raise ValueError('Full matrix mode cannot select a partial range')
+    plan = planner.prepare_build_search_window(case, axes, offset=offset, limit=limit)
+    if (not window_mode and int(plan['total_decimal']) > 64) or len({a['category'] for a in axes}) != len(axes):
         raise ValueError('Expected a complete matrix of at most 64 coordinates and distinct categories')
     if case['character_level'] != 60 or case['objective'] != 'dps' or case['engine_sha256'] != layout.ENGINE_SHA256:
         raise ValueError('Unsupported native experiment case')
@@ -174,10 +176,18 @@ def preflight(manifest, expected_search_id=None):
 
 
 def evaluate_joint_build_case(manifest, engine, expected_search_id=None, cache=None):
-    plan, requests, coordinates, iterations = preflight(manifest, expected_search_id)
+    return _evaluate_prepared(preflight(manifest, expected_search_id), engine, cache)
+
+
+def evaluate_joint_build_window(manifest, engine, offset='0', limit=64, expected_search_id=None, cache=None):
+    return _evaluate_prepared(preflight(manifest,expected_search_id,window_mode=True,offset=offset,limit=limit),engine,cache,True)
+
+
+def _evaluate_prepared(prepared, engine, cache, window=False):
+    plan, requests, coordinates, iterations = prepared
     engine = ordinary(absolute(engine))
     adapter.verify_engine(engine, layout.ENGINE_SHA256)
-    comparison = adapter.compare(engine, layout.ENGINE_SHA256, list(requests.values()), cache=cache)
+    comparison = adapter.compare(engine, layout.ENGINE_SHA256, list(requests.values()), cache=cache) if requests else dict(results=[])
     rows = comparison['results']
     if len(rows) != len(requests):
         raise ValueError('Incomplete simulation results')
@@ -209,6 +219,12 @@ def evaluate_joint_build_case(manifest, engine, expected_search_id=None, cache=N
                   coverage='Only the complete declared matrix was evaluated. Hypothetical model experiments only. '
                   'Snapshot and constraints are prospective references. Observed means do not certify statistical superiority, '
                   'native legality, ownership, the active character or a global optimum.')
+    if window:
+        result.update(kind='joint_build_window_v1',total_decimal=plan['total_decimal'],start_decimal=plan['start_decimal'],
+                      end_decimal=plan['end_decimal'],next_offset=plan['next_offset'],window_complete=True,
+                      declared_matrix_complete=plan['start_decimal']=='0' and plan['end_decimal']==plan['total_decimal'],
+                      simulation_performed=bool(requests),objective_evaluated=bool(requests),
+                      coverage='Only this explicit window was evaluated. No earlier coordinate coverage, native legality, ownership or global optimum is proved.')
     envelope = dict(content=[dict(type='text', text=planner.encoded(result))], isError=False)
     if len(planner.encoded(envelope).encode('ascii')) > planner.MAX_BYTES:
         raise ValueError('Result exceeds transport budget')
