@@ -21,13 +21,15 @@ Use an existing owner snapshot hash, not a path supplied through an MCP tool.
 ./.venv/Scripts/python.exe -B -m tools.forever_local get --database "ABSOLUTE_DATABASE_PATH" --kind recipe --entity-id 1229432
 ./.venv/Scripts/python.exe -B -m tools.forever_local search --database "ABSOLUTE_DATABASE_PATH" --kind item --query "Leather"
 ./.venv/Scripts/python.exe -B -m tools.forever_local recipe-dependencies --database "ABSOLUTE_DATABASE_PATH" --entity-id 1229432 --depth 4 --node-budget 64 --edge-budget 128
+./.venv/Scripts/python.exe -B -m tools.forever_local recipe-material-plan --database "ABSOLUTE_DATABASE_PATH" --entity-id 1229432 --crafts 3
 ./.venv/Scripts/python.exe -B -m tools.forever_local serve --database "ABSOLUTE_DATABASE_PATH"
 ```
 
 The local Codex entry `azeroth-local` launches the last route with absolute
 interpreter/database paths and an explicit project import path. It enables
 `search_local_forever_records`, `get_local_forever_record` and
-`get_local_forever_recipe_dependencies`. All three are read-only and declare no
+`get_local_forever_recipe_dependencies`, plus
+`plan_local_forever_recipe_materials`. All four are read-only and declare no
 filesystem path or SQL argument. Existing app connections
 can need a reconnect to discover these tools.
 
@@ -53,6 +55,33 @@ Its source/build and capture provenance are the same as the exact record tools.
 Item-ID joins do not establish interchangeable variants or qualities.
 The 64 KiB response limit still applies. See
 [offline recipe dependency acceptance](recipe-dependencies-2026-11-15.md).
+
+## Explicit material arithmetic
+
+`plan_local_forever_recipe_materials(recipe_id, crafts, producer_choices)`
+calculates a conditional material plan. Without producer choices it multiplies
+the root recipe's recorded reagents by the requested craft count. It does not
+choose a producer automatically, even if only one producer is recorded.
+
+Choices map canonical item-ID strings to recipe-ID integers. A selected producer
+must have exactly one matching output with an observed positive fixed yield.
+Unknown or variable selected yields, cycles, unused choices and arithmetic
+overflow reject the entire plan. Root output yield is unnecessary because the
+request specifies crafts rather than a guaranteed output count.
+
+The planner combines all consumers' demand before it rounds a shared producer's
+craft count. Steps appear in producer-before-consumer order and report output
+excess. `unexpanded_item_requirements` are quantities left after the chosen
+expansions, not base materials, shortages or unowned items. Inventory is never
+subtracted. The source remains one incomplete capture; this does not establish
+craftability, usable variants, unlocks or current availability.
+
+The CLI accepts explicit choices through `--producer-choices-json`, a JSON
+object such as `'{"20":200}'` for synthetic IDs. Duplicate JSON keys fail.
+Crafts are 1–100,000, at most 32 producer choices are accepted, selected depth
+is at most eight links and at most 256 reagent edges are expanded. Every
+calculated quantity is at most 2^53−1. The 64 KiB response limit still applies.
+See [offline material-plan acceptance](recipe-material-plan-2026-11-15.md).
 
 ## Boundaries and retention
 

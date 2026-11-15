@@ -1,5 +1,8 @@
 # Changelog
 
+- Add explicit offline recipe material plans with aggregate shared demand,
+  fixed-yield producer choices, surplus quantities and bounded exact arithmetic.
+
 - Add bounded offline recipe dependency graphs through the local reference CLI
   and MCP, with exact producer alternatives, cycle-safe traversal and explicit
   depth/node/edge limits rather than inferred crafting or unlock plans.

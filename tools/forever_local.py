@@ -289,6 +289,98 @@ class LocalForever:
             all_recipes_covered=False, craftability_verified=False, unlock_prerequisites_verified=False,
             ownership_checked=False, item_variant_equivalence_verified=False, plan_generated=False)
 
+    def recipe_material_plan(self, recipe_id, crafts=1, producer_choices=None):
+        """Exact offline arithmetic using only explicit fixed-yield producers.
+
+        Root depth is zero; at most eight selected-producer links are allowed.
+        Unexpanded items are requirements, not base materials or inventory shortages.
+        """
+        uint(recipe_id); uint(crafts, 100000)
+        choices = {} if producer_choices is None else producer_choices
+        if type(choices) is not dict or len(choices) > 32:
+            raise ValueError('Invalid producer choices')
+        for item, producer in choices.items():
+            if type(item) is not str or not re.fullmatch('[1-9][0-9]{0,9}', item):
+                raise ValueError('Invalid producer item id')
+            uint(int(item)); uint(producer)
+        if len(set(choices.values())) != len(choices):
+            raise ValueError('One producer cannot supply multiple chosen items')
+        choices = {int(item): producer for item, producer in choices.items()}
+        nodes, active, order, selected, used = {}, set(), [], {}, set()
+        edge_count = 0
+
+        def discover(identity):
+            nonlocal edge_count
+            if identity in active: raise ValueError('Selected producer cycle')
+            if identity in nodes: return
+            if len(nodes) >= 64: raise ValueError('Recipe budget exceeded')
+            rows = self.query("SELECT value FROM records WHERE kind='recipe' AND id=?", (identity,))
+            if not rows: raise ValueError('Recipe not recorded')
+            links = self.query("SELECT target,value FROM edges WHERE recipe=? AND relation='reagent' ORDER BY target LIMIT 257", (identity,))
+            edge_count += len(links)
+            if edge_count > 256: raise ValueError('Reagent edge budget exceeded')
+            nodes[identity] = {'fields': json.loads(rows[0][0]),
+                               'reagents': [(item, json.loads(value)['quantity']) for item, value in links]}
+            active.add(identity)
+            for item, _ in nodes[identity]['reagents']:
+                if item not in choices: continue
+                producer = choices[item]
+                used.add(item)
+                if producer not in selected:
+                    outputs = self.query("SELECT target,value FROM edges WHERE recipe=? AND relation='output' ORDER BY target LIMIT 2", (producer,))
+                    if len(outputs) != 1 or outputs[0][0] != item:
+                        raise ValueError('Chosen producer must have exactly one matching output')
+                    quantity = json.loads(outputs[0][1])
+                    if not quantity or quantity['minimum'] != quantity['maximum']:
+                        raise ValueError('Chosen producer needs a fixed observed output yield')
+                    selected[producer] = (item, quantity['minimum'])
+                discover(producer)
+            active.remove(identity)
+            order.append(identity)
+
+        discover(recipe_id)
+        if used != set(choices): raise ValueError('Unused producer choices')
+        demand, steps, depths = {}, {}, {recipe_id: 0}
+        safe = lambda number: uint(number, 9007199254740991, 0)
+        # Consumers precede every producer, including shared nodes at unequal depths.
+        for identity in reversed(order):
+            depth = depths[identity]
+            if depth > 8: raise ValueError('Selected producer depth exceeded')
+            step = {'recipe_id': identity, 'record_key': f'local:recipe:{identity}',
+                    'fields': nodes[identity]['fields'], 'depth': depth}
+            count = crafts
+            if identity in selected:
+                item, output_yield = selected[identity]
+                required = demand[item]
+                count = safe(required // output_yield + bool(required % output_yield))
+                output = safe(count * output_yield)
+                step.update(output_item_id=item, fixed_output_yield=output_yield,
+                            required_output_quantity=required, output_quantity=output,
+                            excess_output_quantity=output - required)
+            step.update(crafts=count, reagents=[])
+            for item, quantity in nodes[identity]['reagents']:
+                total = safe(count * quantity)
+                demand[item] = safe(demand.get(item, 0) + total)
+                step['reagents'].append({'item_id': item, 'recorded_quantity_per_craft': quantity,
+                                         'required_quantity': total})
+                if item in choices:
+                    producer = choices[item]
+                    depths[producer] = max(depths.get(producer, 0), depth + 1)
+            steps[identity] = step
+        requirements = []
+        for item in sorted(set(demand) - set(choices)):
+            fields = self.query("SELECT value FROM records WHERE kind='item' AND id=?", (item,))[0][0]
+            requirements.append({'item_id': item, 'record_key': f'local:item:{item}',
+                                 'quantity': demand[item], 'fields': json.loads(fields)})
+        return self.response(root_recipe_id=recipe_id, requested_crafts=crafts,
+            producer_choices={str(item): choices[item] for item in sorted(choices)},
+            crafting_steps=[steps[identity] for identity in order],
+            unexpanded_item_requirements=requirements,
+            plan_scope='recorded_reagents_and_explicit_fixed_yield_producers', plan_generated=True,
+            ownership_checked=False, inventory_subtracted=False, craftability_verified=False,
+            unlock_prerequisites_verified=False, item_variant_equivalence_verified=False,
+            all_recipes_covered=False)
+
 
 def build(store, snapshot_id, database):
     store, database = ordinary(absolute(store)), ordinary(absolute(database))
@@ -361,12 +453,32 @@ def serve(knowledge):
         """Walk offline observed ingredients and alternative producers. Depth counts recipe/item edge hops; budget stops expose frontier reasons. No observed producer does not prove a base material. Completeness covers only stored edges. No unlock, ownership, variant equivalence or craftability claims; no plan or game action."""
         return knowledge.recipe_dependencies(recipe_id, depth, node_budget, edge_budget)
 
+    @server.tool(annotations=annotations)
+    def plan_local_forever_recipe_materials(recipe_id: Annotated[StrictInt, Field(ge=1, le=4294967295)], crafts: Annotated[StrictInt, Field(ge=1, le=100000)] = 1, producer_choices: Annotated[dict[str, StrictInt], Field(max_length=32)] | None = None) -> dict:
+        """Calculate offline materials for a craft count, using only explicit item-id to recipe-id choices with fixed observed yields. Unexpanded items are not base materials or shortages. No inventory subtraction, unlock, availability or craftability claim; no game action."""
+        return knowledge.recipe_material_plan(recipe_id, crafts, producer_choices)
+
     server.run(transport='stdio')
+
+
+def producer_choices_json(value):
+    def pairs(entries):
+        result = {}
+        for key, choice in entries:
+            if key in result: raise ValueError('Duplicate producer item id')
+            result[key] = choice
+        return result
+    try:
+        result = json.loads(value, object_pairs_hook=pairs)
+        if type(result) is not dict: raise ValueError('Producer choices must be an object')
+        return result
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from None
 
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument('action', choices=('build', 'get', 'search', 'recipe-dependencies', 'serve'))
+    cli.add_argument('action', choices=('build', 'get', 'search', 'recipe-dependencies', 'recipe-material-plan', 'serve'))
     cli.add_argument('--database', type=Path, required=True)
     cli.add_argument('--store', type=Path)
     cli.add_argument('--snapshot-id')
@@ -380,6 +492,8 @@ def main():
     cli.add_argument('--depth', type=int, default=4)
     cli.add_argument('--node-budget', type=int, default=64)
     cli.add_argument('--edge-budget', type=int, default=128)
+    cli.add_argument('--crafts', type=int, default=1)
+    cli.add_argument('--producer-choices-json', type=producer_choices_json)
     args = cli.parse_args()
     if args.action == 'build':
         if args.store is None or args.snapshot_id is None: cli.error('build needs --store and --snapshot-id')
@@ -390,6 +504,8 @@ def main():
             if args.action == 'serve': return serve(knowledge)
             if args.action == 'recipe-dependencies':
                 result = knowledge.recipe_dependencies(args.entity_id, args.depth, args.node_budget, args.edge_budget)
+            elif args.action == 'recipe-material-plan':
+                result = knowledge.recipe_material_plan(args.entity_id, args.crafts, args.producer_choices_json)
             else:
                 result = knowledge.get(args.kind, args.entity_id, args.edge_limit, args.edge_offset) if args.action == 'get' else knowledge.search(args.kind, args.query, args.limit, args.offset)
         finally:

@@ -7,6 +7,8 @@ The [owner-derived local reference](docs/local-first-reference.md) adds exact
 offline item, recipe, spell and skill lookup with recipe relationships.
 Its bounded recipe dependency graph follows observed ingredients and producer
 recipes, with explicit unknowns and no inferred crafting or unlock plan.
+The explicit material planner calculates craft quantities and shared ingredient
+demand using recorded fixed yields, without subtracting inventory.
 External references remain available for gaps under the
 [data acquisition boundaries](docs/data-acquisition.md).
 The [incremental source cache](docs/incremental-reference-cache.md) reuses
