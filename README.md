@@ -1,5 +1,8 @@
 # Azeroth Operator
 
+[TomTom route drafts](docs/tomtom-route-drafts.md) add numbered waypoint manifests
+and manual paste text. They preserve plan order without claiming arrow control.
+
 The [private account inventory](docs/private-account-inventory.md) separates
 characters, recipient mail and shared banks through two offline read-only tools.
 

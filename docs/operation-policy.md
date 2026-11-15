@@ -14,6 +14,17 @@ external inference, gameplay and document writes have no routes.
 
 Reviewed 2026-11-03. This records project decisions and evidence limits, not Blizzard approval. Technical API availability alone does not establish permission. Retail export/readback is partially live-qualified; macro creation is live-qualified; other player-applied mutations have separate qualification gaps. ADR006 supersedes the original blanket read-only implementation target.
 
+## Offline TomTom route drafts, 15 November 2026
+
+The separate `prepare_tomtom_route` companion returns only a numbered manifest
+and validated manual `/tway #UIMapID` paste text. It has no game connection,
+input driver, addon callback, SavedVariables writer, sharing action or Lua
+payload. The user reviews and pastes text manually. It never marks arrival or
+quest completion and never claims enforced arrow order or verified coordinates.
+The seven blocked legacy Apply routes remain blocked. This admission covers
+offline preparation only; native waypoint creation and an ordered controller
+remain unqualified. See [ADR-106](ADR-106-offline-tomtom-route-drafts.md).
+
 ## First-party source preference, 14 November 2026
 
 Use exact owner addon observations before external reference data. Local

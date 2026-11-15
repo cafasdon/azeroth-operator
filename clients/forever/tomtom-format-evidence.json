@@ -1,0 +1,19 @@
+{
+  "format": "tomtom-manual-draft-evidence-v1",
+  "reviewed_on": "2026-11-15",
+  "addon": "TomTom",
+  "installed_version": "v4.4.1-release",
+  "declared_forever_interface": 16001,
+  "project_url": "https://www.curseforge.com/wow/addons/tomtom",
+  "source_url": "https://repos.curseforge.com/wow/tomtom",
+  "source_files": {
+    "TomTom.toc": "ee9119147b63fb9cc5fcc48e0e3c8a4db24df0ebee927ccb8287f15cea60bdbb",
+    "README.md": "0192fb5d4145c8dedfcb3d7449a45c5deb05a39549e805003f561f56985d2627",
+    "modules/slash.lua": "a2f75a32d521a9b653bfafdc36085232c2fe342bc8cb2a29d15ba938f06f6d72",
+    "modules/paste.lua": "53e6cc812a892f0fb755bfe1802b94b05cedc25ec191afe16a32d64a81d839d1",
+    "modules/crazy_arrow/crazy_arrow.lua": "235c6c32aab6ffc109cfca44104eb52f19c9a467d6c28706638ad03f07d5828c"
+  },
+  "addon_source_bundled": false,
+  "native_game_acceptance_verified": false,
+  "ordered_arrow_controller_enabled": false
+}
