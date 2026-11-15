@@ -334,6 +334,81 @@ class World:
                 contacts[field][position] = {'kind': kind, 'references': references}
         return contacts
 
+    def walk_quest_links(self, quest_id, depth=3, node_budget=64, edge_budget=128):
+        """Traverse recorded outgoing relationships with no prerequisite evaluation or quest route."""
+        for value, maximum in ((quest_id, 2**32-1), (depth, 8),
+                               (node_budget, 128), (edge_budget, 256)):
+            if type(value) is not int or not 1 <= value <= maximum:
+                raise ValueError('Invalid quest link walk bound or quest ID')
+        nodes, edges, frontier = {}, [], []
+
+        def add_node(identity, hops):
+            key = ('quest', identity)
+            found = key in self.records
+            node = {**(self.summary(key) if found else {
+                'kind': 'quest', 'id': identity, 'record_key': f'questiedb:quest:{identity}',
+                'name': None, 'record_sha256': None}), 'depth': hops, 'found': found,
+                'status': 'pending' if found else 'missing', 'recorded_link_count': 0,
+                'expanded_link_count': 0, 'omitted_link_count': 0}
+            nodes[identity] = node
+            return node
+
+        add_node(quest_id, 0)
+        queue = [quest_id]
+        unsupported = 0
+        for identity in queue:
+            node = nodes[identity]
+            if not node['found']:
+                continue
+            fields = self.records[('quest', identity)][0]['fields']
+            links = self.quest_links(fields)
+            # A malformed relationship group is a data gap, not an empty group.
+            for field in ('preQuestGroup', 'preQuestSingle', 'childQuests',
+                          'inGroupWith', 'exclusiveTo', 'breadcrumbs'):
+                if field in fields and not isinstance(fields[field], dict):
+                    links[field] = {None: {'status': 'unsupported_reference'}}
+            omitted = Counter()
+            for field in sorted(links):
+                for position in sorted(links[field], key=lambda value: '' if value is None else value):
+                    reference = links[field][position]
+                    target = reference.get('quest_id')
+                    node['recorded_link_count'] += 1
+                    reason = ('depth_limit' if node['depth'] == depth else
+                              'edge_budget' if len(edges) == edge_budget else
+                              'node_budget' if target is not None and target not in nodes
+                              and len(nodes) == node_budget else None)
+                    if reason:
+                        omitted[reason] += 1
+                        continue
+                    if target is not None and target not in nodes:
+                        add_node(target, node['depth'] + 1)
+                        queue.append(target)
+                    status = ('unsupported' if target is None else
+                              'found' if nodes[target]['found'] else 'missing')
+                    unsupported += status == 'unsupported'
+                    edges.append({'source_quest_id': identity, 'target_quest_id': target,
+                                  'field': field, 'position': position, 'status': status})
+                    node['expanded_link_count'] += 1
+            node['omitted_link_count'] = sum(omitted.values())
+            node['status'] = ('stopped' if omitted else 'expanded' if node['recorded_link_count']
+                              else 'no_recorded_links')
+            frontier.extend({'quest_id': identity, 'depth': node['depth'], 'reason': reason,
+                             'omitted_link_count': count} for reason, count in sorted(omitted.items()))
+        missing = sum(not node['found'] for node in nodes.values())
+        result = {**self.metadata(), 'quest_id': quest_id, 'found': nodes[quest_id]['found'],
+                  'status': 'walked' if nodes[quest_id]['found'] else 'root_not_found',
+                  'depth': depth, 'node_budget': node_budget, 'edge_budget': edge_budget,
+                  'nodes': list(nodes.values()), 'edges': edges, 'frontier': frontier,
+                  'node_count': len(nodes), 'edge_count': len(edges),
+                  'missing_node_count': missing, 'unsupported_reference_count': unsupported,
+                  'omitted_link_count': sum(node['omitted_link_count'] for node in nodes.values()),
+                  'stored_graph_complete': not (missing or unsupported or frontier),
+                  'graph_coverage_scope': 'reachable_recorded_outgoing_quest_links',
+                  'character_state_checked': False, 'quest_eligibility_verified': False,
+                  'route_generated': False}
+        encoded(result)
+        return result
+
     def search(self, query, kind=None, limit=10, offset=0, *, spawn_area_id=None,
                quest_zone_or_sort=None, max_required_level=None, min_item_level=None,
                item_class=None, item_subclass=None):
@@ -423,6 +498,20 @@ def serve(world):
     readonly = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
     @server.tool(annotations=readonly)
+    def walk_forever_quest_links(quest_id: Annotated[StrictInt, Field(ge=1, le=4294967295)],
+            depth: Annotated[StrictInt, Field(ge=1, le=8)] = 3,
+            node_budget: Annotated[StrictInt, Field(ge=1, le=128)] = 64,
+            edge_budget: Annotated[StrictInt, Field(ge=1, le=256)] = 128) -> dict:
+        """Walk bounded outgoing quest relationships in the pinned offline records.
+
+        Fields and positions retain their source meaning, not universal prerequisites.
+        Root depth is zero. Frontier counts name limits that omit recorded links.
+        Completeness covers this stored reachable graph only, never the whole world.
+        This does not check character eligibility, native availability or generate a route.
+        """
+        return world.walk_quest_links(quest_id, depth, node_budget, edge_budget)
+
+    @server.tool(annotations=readonly)
     def get_forever_world_record(kind: Kind, entity_id: Annotated[StrictInt, Field(ge=1, le=4294967295)],
                                  include_quest_links: StrictBool = False,
                                  include_item_sources: StrictBool = False,
@@ -467,11 +556,14 @@ def serve(world):
 
 def main(argv=None):
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument('action', choices=('sync-source','build','get','search','serve'))
+    cli.add_argument('action', choices=('sync-source','build','get','search','quest-links','serve'))
     cli.add_argument('--source', type=Path)
     cli.add_argument('--cache', type=Path)
     cli.add_argument('--kind', choices=KINDS)
     cli.add_argument('--entity-id', type=int)
+    cli.add_argument('--depth', type=int, help='Quest link hops, from 1 to 8; root depth is zero')
+    cli.add_argument('--node-budget', type=int, help='Quest link node limit, from 1 to 128')
+    cli.add_argument('--edge-budget', type=int, help='Quest link edge limit, from 1 to 256')
     cli.add_argument('--query')
     cli.add_argument('--spawn-area-id', type=int, help='Filter search by a cached NPC or object spawn area ID')
     cli.add_argument('--quest-zone-or-sort', type=int, help='Filter quests by area ID or negative category ID')
@@ -486,6 +578,9 @@ def main(argv=None):
     cli.add_argument('--item-source-offset', type=int, default=0, help='Offset for each item source group in get')
     args = cli.parse_args(argv)
     try:
+        if args.action != 'quest-links' and any(value is not None for value in
+                (args.depth, args.node_budget, args.edge_budget)):
+            raise ValueError('Quest walk bounds require quest-links')
         if args.action != 'search' and any(value is not None for value in
                 (args.spawn_area_id, args.quest_zone_or_sort, args.max_required_level,
                  args.min_item_level, args.item_class, args.item_subclass)):
@@ -496,12 +591,17 @@ def main(argv=None):
             result = sync_source(args.source)
         elif args.action == 'build' and args.source is not None and args.cache is not None:
             result = build(args.source, args.cache)
-        elif args.action in ('get','search','serve') and args.cache is not None:
+        elif args.action in ('get','search','quest-links','serve') and args.cache is not None:
             world = World(args.cache)
             if args.action == 'serve':
                 serve(world)
                 return
-            if args.action == 'get':
+            if args.action == 'quest-links':
+                result = world.walk_quest_links(args.entity_id,
+                    3 if args.depth is None else args.depth,
+                    64 if args.node_budget is None else args.node_budget,
+                    128 if args.edge_budget is None else args.edge_budget)
+            elif args.action == 'get':
                 result = world.get(args.kind, args.entity_id, include_quest_links=args.include_quest_links,
                                    include_item_sources=args.include_item_sources,
                                    item_source_offset=args.item_source_offset)

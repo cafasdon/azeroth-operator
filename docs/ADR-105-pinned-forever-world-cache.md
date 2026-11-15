@@ -48,9 +48,10 @@ generated JSON lines and verifies the complete cache digest before publication.
 Publication does not overwrite existing content. A matching existing cache is a
 no-op. Cache verification is mandatory before serving.
 
-`serve --cache <file>` starts a separate local stdio companion with two read-only
-tools: `get_forever_world_record` and `search_forever_world_records`. Existing
-server tool counts and installed profiles do not change. Exact lookup accepts a
+`serve --cache <file>` starts a separate local stdio companion with three read-only
+tools: `get_forever_world_record`, `search_forever_world_records` and
+`walk_forever_quest_links`. This does not alter the hosted reader. Installed
+allowlists are recorded in the dated acceptance evidence. Exact lookup accepts a
 kind and a positive uint32 ID. Search uses literal case-insensitive name terms,
 optional kind, limit 1–20, offset uint32, and up to 128 UTF-8 bytes. Exact name
 matches precede phrase prefixes, then other matches; ties use folded name and
@@ -70,6 +71,11 @@ The exact MCP lookup accepts `include_quest_links=true` for quests. It
 preserves source positions for grouped and alternative prerequisites, child
 quests, group peers and exclusive quests. An unresolved ID retains a null
 record. The view covers direct links and leaves quest eligibility unevaluated.
+The later bounded `walk_forever_quest_links` tool traverses these recorded
+outgoing relationships with cycle protection, exact field/position labels,
+missing/unsupported references and depth/node/edge frontier evidence. It does
+not treat exclusion or alternative links as a uniform prerequisite chain.
+See [offline quest-link acceptance](quest-link-walk-2026-11-15.md).
 The same option adds `quest_contacts` for starters and finishers. It preserves
 the publisher's tuple positions and resolves IDs in their NPC, object or item
 namespace. Unresolved IDs retain a null record.

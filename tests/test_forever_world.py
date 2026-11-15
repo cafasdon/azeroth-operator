@@ -68,7 +68,7 @@ class WorldMcpTests(unittest.IsolatedAsyncioTestCase):
                         errors.seek(0)
                         raise AssertionError(errors.read(4096)) from error
                     tools = (await session.list_tools()).tools
-                    self.assertEqual({tool.name for tool in tools},{'get_forever_world_record','search_forever_world_records'})
+                    self.assertEqual({tool.name for tool in tools},{'get_forever_world_record','search_forever_world_records','walk_forever_quest_links'})
                     self.assertTrue(all(tool.annotations.readOnlyHint and not tool.annotations.openWorldHint for tool in tools))
                     async def call(tool, error=False, **args):
                         reply = await asyncio.wait_for(session.call_tool(tool,args),10)

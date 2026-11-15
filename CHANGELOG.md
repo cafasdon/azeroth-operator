@@ -1,5 +1,8 @@
 # Changelog
 
+- Add bounded offline quest-link traversal with exact provider relationship
+  labels, cycle protection, source hashes and explicit data gaps/frontiers.
+
 - Add explicit offline recipe material plans with aggregate shared demand,
   fixed-yield producer choices, surplus quantities and bounded exact arithmetic.
 

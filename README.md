@@ -15,10 +15,12 @@ The [incremental source cache](docs/incremental-reference-cache.md) reuses
 unchanged files and removes superseded versions within fixed storage limits.
 The world builder can generate its validated database directly from this cache,
 with no website call or second persistent source tree.
+The [quest-link walk](docs/quest-link-walk-2026-11-15.md) follows cached chains
+with exact relationship labels, missing-reference evidence and bounded results.
 
 The installed Forever capture-to-upload-to-MCP path passed a real character
-test on 14 November 2026. The hosted reader exposes 12 tools; the local world
-and knowledge companions expose two each. See the
+test on 14 November 2026. That check covered 12 hosted tools and two tools
+in each local world/knowledge companion. See the
 [acceptance evidence and limits](docs/live-acceptance-2026-11-14.md).
 The later [pilot repairs](docs/pilot-repairs-2026-11-14.md) passed native recipe,
 talent-review and fresh session-reference tests through the hosted MCP.
