@@ -12,19 +12,28 @@ python -m venv --system-site-packages .venv
 The existing catalogue sync command supplies the pinned catalogue.
 Model sync is explicit. Build, search and MCP serving use local data.
 
+The `--catalogue` argument also accepts a managed catalogue cache root from
+`tools.reference_sync`. The reader checks the exact provider, revision and file
+hash under the cache lock before it reads the JSON. Existing standalone JSON
+inputs still work. The installed public index and embedding model remain
+separate inputs; this option does not rebuild or download either one.
+
 ```powershell
 ./.venv/Scripts/python.exe -m tools.forever_knowledge search --catalogue local-data/forever/catalogue.json --index local-data/knowledge/index.sqlite --model local-data/knowledge-model --query "Garb of Thero-shan" --section items --limit 5
 ./.venv/Scripts/python.exe -m tools.forever_knowledge serve --catalogue local-data/forever/catalogue.json --index local-data/knowledge/index.sqlite --model local-data/knowledge-model
 ```
 
-The local ICARUS registration is named `azeroth-knowledge`. It allows
-only `search_forever_knowledge`, sets a 60-second startup allowance and
-a 30-second tool timeout, and supplies offline model/telemetry flags.
-That saved registration predates exact lookup and does not yet enable
-`get_forever_knowledge_record`; enabling it in the installed client remains
-deferred with deployment. The saved entry was launched independently through stdio and returned the
+The local ICARUS registration is named `azeroth-knowledge`. It enables
+`search_forever_knowledge` and `get_forever_knowledge_record`, with a 60-second
+startup allowance, a 30-second tool timeout and offline model/telemetry flags.
+Its catalogue path points to `local-data/reference-cache/catalogue`; the
+standalone catalogue remains available for existing simulator callers.
+The saved entry was launched independently through stdio and returned the
 expected catalogue IDs. A client must refresh its MCP connections to
 discover a newly registered server.
+
+The managed-source acceptance and its limits are recorded in
+[the dated verification record](managed-catalogue-2026-11-15.md).
 
 For another MCP client, launch the second command from this repository's root,
 using absolute paths for the interpreter and all three configured inputs.

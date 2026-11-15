@@ -1,7 +1,7 @@
 """Local public-catalogue keyword and vector retrieval with exact source identities."""
 import argparse
 from collections import deque
-from contextlib import closing
+from contextlib import closing, nullcontext
 import hashlib
 import json
 import os
@@ -12,6 +12,7 @@ import tempfile
 from time import monotonic
 
 from tools.sync_exports import ordinary
+from tools.reference_sync import MARKER, ReferenceCache
 from tools.sync_forever_catalogue import PIN, MAX_BYTES, verify
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,8 +65,17 @@ def file_digest(path):
 
 
 def read_catalogue(catalogue):
-    with ordinary(catalogue.absolute()).open('rb') as handle:
-        data = handle.read(MAX_BYTES + 1)
+    catalogue = ordinary(catalogue.absolute())
+    name = 'assets/database/db.json'
+    if catalogue.is_dir():
+        if not ordinary(catalogue / MARKER).is_file():
+            raise ValueError('Missing or invalid ownership marker')
+        source = ReferenceCache(catalogue).snapshot(PIN)
+    else:
+        source = nullcontext({name: catalogue})
+    with source as paths:
+        with ordinary(paths[name]).open('rb') as handle:
+            data = handle.read(MAX_BYTES + 1)
     verify(data)
     return json.loads(data)
 

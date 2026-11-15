@@ -57,6 +57,10 @@ Existing MCP readers continue to use their validated compiled caches. A source
 sync does not automatically promote a new build or overwrite an unknown file.
 Generation and reader promotion remain explicit, checksum-checked operations.
 
+The knowledge reader accepts the managed catalogue cache root as its
+`--catalogue` input. The installed registration uses this path with its existing
+index and model. See [managed catalogue acceptance](managed-catalogue-2026-11-15.md).
+
 The world builder also accepts the managed world cache as its source. This
 connects file-incremental sync to offline world generation without a persistent
 second source tree:

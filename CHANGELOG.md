@@ -1,5 +1,8 @@
 # Changelog
 
+- Read the managed incremental catalogue directly from the knowledge MCP,
+  preserving standalone JSON inputs, exact pin checks and offline model reuse.
+
 - Connect the managed incremental world source cache to offline world generation,
   with exact pin checks and one source lock across staging.
 
