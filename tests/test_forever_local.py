@@ -292,7 +292,7 @@ class LocalReferenceTests(unittest.TestCase):
                     initial = await session.initialize()
                     self.assertIn('first-party saved observations', initial.instructions)
                     tools = (await session.list_tools()).tools
-                    self.assertEqual({tool.name for tool in tools}, {'search_local_forever_records', 'get_local_forever_record'})
+                    self.assertEqual({tool.name for tool in tools}, {'search_local_forever_records', 'get_local_forever_record', 'get_local_forever_recipe_dependencies'})
                     for tool in tools:
                         self.assertTrue(tool.annotations.readOnlyHint)
                         self.assertFalse(tool.annotations.openWorldHint)

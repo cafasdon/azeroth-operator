@@ -20,14 +20,39 @@ Use an existing owner snapshot hash, not a path supplied through an MCP tool.
 ./.venv/Scripts/python.exe -B -m tools.forever_local build --store "ABSOLUTE_OWNER_SNAPSHOT_STORE" --snapshot-id SNAPSHOT_SHA256 --database "ABSOLUTE_DATABASE_PATH"
 ./.venv/Scripts/python.exe -B -m tools.forever_local get --database "ABSOLUTE_DATABASE_PATH" --kind recipe --entity-id 1229432
 ./.venv/Scripts/python.exe -B -m tools.forever_local search --database "ABSOLUTE_DATABASE_PATH" --kind item --query "Leather"
+./.venv/Scripts/python.exe -B -m tools.forever_local recipe-dependencies --database "ABSOLUTE_DATABASE_PATH" --entity-id 1229432 --depth 4 --node-budget 64 --edge-budget 128
 ./.venv/Scripts/python.exe -B -m tools.forever_local serve --database "ABSOLUTE_DATABASE_PATH"
 ```
 
 The local Codex entry `azeroth-local` launches the last route with absolute
 interpreter/database paths and an explicit project import path. It enables
-only `search_local_forever_records` and `get_local_forever_record`. Both are
-read-only; neither accepts a filesystem path or SQL. Existing app connections
+`search_local_forever_records`, `get_local_forever_record` and
+`get_local_forever_recipe_dependencies`. All three are read-only and declare no
+filesystem path or SQL argument. Existing app connections
 can need a reconnect to discover these tools.
+
+## Recipe dependencies
+
+`get_local_forever_recipe_dependencies` follows exact recorded reagent edges
+from a recipe to ingredient items, then recorded output edges backwards to
+observed producer recipes. It returns all represented alternatives within its
+budgets rather than choose a producer or multiply a crafting plan. Output yield
+ranges remain the recorded ranges, not a promised quantity.
+
+Depth counts graph edges from the root: one hop reaches ingredients, two reach
+their producer recipes, and three reach those recipes' ingredients. Node and
+edge budgets bound the result. Cycles and shared dependencies do not cause
+repeated expansion. A budget or depth stop is distinct from an item with no
+observed producer. Neither case proves that the item cannot be crafted or found
+elsewhere. A complete walk refers only to this incomplete single-capture graph.
+
+This graph does not infer recipe-learning or skill unlock requirements. It does
+not check ownership, current stock, crafting legality or full recipe coverage.
+It generates no game action, crafting plan or automatic producer selection.
+Its source/build and capture provenance are the same as the exact record tools.
+Item-ID joins do not establish interchangeable variants or qualities.
+The 64 KiB response limit still applies. See
+[offline recipe dependency acceptance](recipe-dependencies-2026-11-15.md).
 
 ## Boundaries and retention
 

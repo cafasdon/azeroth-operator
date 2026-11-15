@@ -231,6 +231,64 @@ class LocalForever:
         rows = self.query('SELECT id,value FROM records WHERE kind=? AND local_contains(value,?) ORDER BY id LIMIT ? OFFSET ?', (kind, query, limit + 1, offset))
         return self.response(results=[{'kind': kind, 'id': identity, 'record_key': f'local:{kind}:{identity}', 'fields': json.loads(value)} for identity, value in rows[:limit]], offset=offset, has_more=len(rows) > limit)
 
+    def recipe_dependencies(self, recipe_id, depth=4, node_budget=64, edge_budget=128):
+        """Walk observed ingredients and reverse outputs; depth counts edges from the root.
+
+        Producers are alternatives, never choices or unlock prerequisites. Completeness
+        describes only the reachable stored graph, never all recipes or base materials.
+        """
+        uint(recipe_id); uint(depth, 8); uint(node_budget, 128); uint(edge_budget, 256)
+        nodes, edges, frontier = [], [], []
+        visited = set()
+
+        def add_node(kind, identity, distance):
+            rows = self.query('SELECT value FROM records WHERE kind=? AND id=?', (kind, identity))
+            if not rows: return False
+            visited.add((kind, identity))
+            nodes.append({'kind': kind, 'id': identity, 'record_key': f'local:{kind}:{identity}',
+                          'fields': json.loads(rows[0][0]), 'depth': distance})
+            return True
+
+        found = add_node('recipe', recipe_id, 0)
+        # Appending to this list gives breadth-first order; each node expands once.
+        for node in nodes:
+            kind, identity = node['kind'], node['id']
+            clause = "recipe=? AND relation='reagent'" if kind == 'recipe' else "target=? AND relation='output'"
+            target_kind, target_column = ('item', 'target') if kind == 'recipe' else ('recipe', 'recipe')
+            total = self.query(f'SELECT COUNT(*) FROM edges WHERE {clause}', (identity,))[0][0]
+            reasons, included = [], 0
+            if total and node['depth'] >= depth:
+                reasons.append('depth_limit')
+            elif total:
+                remaining = edge_budget - len(edges)
+                links = self.query(f'SELECT {target_column},value FROM edges WHERE {clause} ORDER BY {target_column} LIMIT ?', (identity, remaining + 1))
+                for target, value in links:
+                    if len(edges) >= edge_budget:
+                        reasons.append('edge_budget')
+                        break
+                    if (target_kind, target) not in visited:
+                        if len(nodes) >= node_budget:
+                            reasons.append('node_budget')
+                            break
+                        add_node(target_kind, target, node['depth'] + 1)
+                    edges.append({'source_key': node['record_key'], 'target_key': f'local:{target_kind}:{target}',
+                                  'source_kind': kind, 'source_id': identity, 'target_kind': target_kind,
+                                  'target_id': target, 'relation': 'reagent' if kind == 'recipe' else 'observed_producer',
+                                  **json.loads(value)})
+                    included += 1
+            node['omitted_edges'] = total - included
+            node['expansion'] = ('partial' if reasons else 'expanded') if total else (
+                'no_observed_producer' if kind == 'item' else 'no_observed_reagents')
+            if reasons:
+                frontier.append({'record_key': node['record_key'], 'depth': node['depth'],
+                                 'omitted_edges': total - included, 'reasons': reasons})
+        return self.response(found=found, root_key=f'local:recipe:{recipe_id}', nodes=nodes, edges=edges,
+            frontier=frontier, depth=depth, node_budget=node_budget, edge_budget=edge_budget,
+            partial=bool(frontier), stored_graph_complete=found and not frontier,
+            graph_coverage_scope='reachable_stored_recipe_ingredients_and_observed_producers',
+            all_recipes_covered=False, craftability_verified=False, unlock_prerequisites_verified=False,
+            ownership_checked=False, item_variant_equivalence_verified=False, plan_generated=False)
+
 
 def build(store, snapshot_id, database):
     store, database = ordinary(absolute(store)), ordinary(absolute(database))
@@ -298,12 +356,17 @@ def serve(knowledge):
         """Get one exact public record and bounded direct recipe edges from the configured offline database."""
         return knowledge.get(kind, entity_id, edge_limit, edge_offset)
 
+    @server.tool(annotations=annotations)
+    def get_local_forever_recipe_dependencies(recipe_id: Annotated[StrictInt, Field(ge=1, le=4294967295)], depth: Annotated[StrictInt, Field(ge=1, le=8)] = 4, node_budget: Annotated[StrictInt, Field(ge=1, le=128)] = 64, edge_budget: Annotated[StrictInt, Field(ge=1, le=256)] = 128) -> dict:
+        """Walk offline observed ingredients and alternative producers. Depth counts recipe/item edge hops; budget stops expose frontier reasons. No observed producer does not prove a base material. Completeness covers only stored edges. No unlock, ownership, variant equivalence or craftability claims; no plan or game action."""
+        return knowledge.recipe_dependencies(recipe_id, depth, node_budget, edge_budget)
+
     server.run(transport='stdio')
 
 
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument('action', choices=('build', 'get', 'search', 'serve'))
+    cli.add_argument('action', choices=('build', 'get', 'search', 'recipe-dependencies', 'serve'))
     cli.add_argument('--database', type=Path, required=True)
     cli.add_argument('--store', type=Path)
     cli.add_argument('--snapshot-id')
@@ -314,6 +377,9 @@ def main():
     cli.add_argument('--edge-limit', type=int, default=32)
     cli.add_argument('--offset', type=int, default=0)
     cli.add_argument('--edge-offset', type=int, default=0)
+    cli.add_argument('--depth', type=int, default=4)
+    cli.add_argument('--node-budget', type=int, default=64)
+    cli.add_argument('--edge-budget', type=int, default=128)
     args = cli.parse_args()
     if args.action == 'build':
         if args.store is None or args.snapshot_id is None: cli.error('build needs --store and --snapshot-id')
@@ -322,7 +388,10 @@ def main():
         knowledge = LocalForever(args.database)
         try:
             if args.action == 'serve': return serve(knowledge)
-            result = knowledge.get(args.kind, args.entity_id, args.edge_limit, args.edge_offset) if args.action == 'get' else knowledge.search(args.kind, args.query, args.limit, args.offset)
+            if args.action == 'recipe-dependencies':
+                result = knowledge.recipe_dependencies(args.entity_id, args.depth, args.node_budget, args.edge_budget)
+            else:
+                result = knowledge.get(args.kind, args.entity_id, args.edge_limit, args.edge_offset) if args.action == 'get' else knowledge.search(args.kind, args.query, args.limit, args.offset)
         finally:
             knowledge.close()
     print(encoded(result))

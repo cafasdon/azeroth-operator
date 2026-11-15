@@ -1,5 +1,9 @@
 # Changelog
 
+- Add bounded offline recipe dependency graphs through the local reference CLI
+  and MCP, with exact producer alternatives, cycle-safe traversal and explicit
+  depth/node/edge limits rather than inferred crafting or unlock plans.
+
 - Retain one separately dated character-bank observation across omitted-bank
   captures, with unknown current counts, explicit historical-only matches and
   independent backfill ordering under the existing transaction and disk limits.
