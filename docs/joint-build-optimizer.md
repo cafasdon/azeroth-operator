@@ -75,6 +75,11 @@ bounded owner-private numeric cache. The full canonical request and engine hash
 form the key. Cache entries contain no raw manifest or profile. The path must
 meet the existing ownership/ACL rules. No new unbounded result store exists.
 
+Within each comparison, the adapter reuses one successful static positional
+capability probe. It still verifies the actual engine hash and deadline before
+every request/cache read. Reuse ends with that comparison. See the
+[offline performance record](positional-probe-reuse-verification-2026-11-15.md).
+
 ## Results and limits
 
 The result includes declared/resolved/evaluated counts, equivalent coordinate

@@ -1,0 +1,67 @@
+{
+  "baseline_commit": "8174d3eb343a7adb4b821139acd49a58b00e145c",
+  "baseline_source_sha256": "720d6fc65ff690353e06c1cd17c67c27f9109d967582483e33cf3237bb843b80",
+  "candidate_source_sha256": "a4b8c3b965a6b90e0ba47e383447c763b848709e1bccb72c72213875e81d88ab",
+  "engine_sha256": "833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983",
+  "GOMAXPROCS": "2",
+  "runs": [
+    {
+      "seed": 20261115,
+      "adapter": "baseline",
+      "wall_seconds": 14.831618699943647,
+      "search_id": "e1744eebb01547e0fa8f9c4de9a75b7742452d939586f9fc454c20a500cd6455",
+      "cache_hits": 32,
+      "engine_hash_checks": 97,
+      "capability_processes": 32
+    },
+    {
+      "seed": 20261115,
+      "adapter": "candidate",
+      "wall_seconds": 3.493670899886638,
+      "search_id": "e1744eebb01547e0fa8f9c4de9a75b7742452d939586f9fc454c20a500cd6455",
+      "cache_hits": 32,
+      "engine_hash_checks": 66,
+      "capability_processes": 1
+    },
+    {
+      "seed": 20271115,
+      "adapter": "baseline",
+      "wall_seconds": 12.835217899875715,
+      "search_id": "536e37173dc87c12939011f6eebaa1bc95cad413c49cedffb583403bd849a814",
+      "cache_hits": 32,
+      "engine_hash_checks": 97,
+      "capability_processes": 32
+    },
+    {
+      "seed": 20271115,
+      "adapter": "candidate",
+      "wall_seconds": 3.77959270006977,
+      "search_id": "536e37173dc87c12939011f6eebaa1bc95cad413c49cedffb583403bd849a814",
+      "cache_hits": 32,
+      "engine_hash_checks": 66,
+      "capability_processes": 1
+    },
+    {
+      "seed": 20281115,
+      "adapter": "baseline",
+      "wall_seconds": 12.526512800017372,
+      "search_id": "6abf06517c3f4e0b058db87925378d315b9cfb12611bac74a30e0fb5a0694e93",
+      "cache_hits": 32,
+      "engine_hash_checks": 97,
+      "capability_processes": 32
+    },
+    {
+      "seed": 20281115,
+      "adapter": "candidate",
+      "wall_seconds": 3.566694000037387,
+      "search_id": "6abf06517c3f4e0b058db87925378d315b9cfb12611bac74a30e0fb5a0694e93",
+      "cache_hits": 32,
+      "engine_hash_checks": 66,
+      "capability_processes": 1
+    }
+  ],
+  "identical_results": true,
+  "game_execution": false,
+  "notes": "Alternating baseline then candidate on the same host and complete cached public case. No tracemalloc. Counters wrap real calls. This measures adapter overhead, not simulator accuracy or competitors. Candidate raw source used CRLF; the LF content hash identifies the same checked-in source independently of checkout line endings.",
+  "candidate_source_lf_sha256": "21be0404dba5c402b3bfb8b06bb77e0d225e99e52ee0375f58f5a73634dfb1a0"
+}

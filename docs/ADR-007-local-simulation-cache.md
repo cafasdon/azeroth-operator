@@ -18,6 +18,16 @@ engine response. Hash the full canonical request, engine SHA-256, metric modes
 and cache version into the key. Verify the engine on every request, including
 hits. Keep paired samples in the cache unchanged; each read gets a fresh object.
 
+As of 15 November 2026, each fixed `compare()` batch can reuse the positional
+capability probe for the sole qualified executable SHA. That command emits a
+fixed literal contract in the pinned source. The first probe checks its full
+shape and verifies engine bytes before and after execution. Every subsequent
+request still checks the qualified pin, actual engine SHA and deadline before
+reuse or cache access. The reuse set exists only inside that comparison. It
+does not persist or cross comparisons, and failed probes never enter it.
+Standalone/default runs and bulk behaviour remain unchanged. See the
+[measured change](positional-probe-reuse-verification-2026-11-15.md).
+
 Store entries in the OS user's local application-data directory. Windows uses
 current-user DPAPI with the request key as additional entropy; it never selects
 machine-wide protection. Native owner and DACL checks reject roots, existing

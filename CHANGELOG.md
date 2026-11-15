@@ -1,5 +1,10 @@
 # Changelog
 
+- Reuse the fixed positional capability probe within each comparison, preserving
+  full engine hash/deadline checks before every cache read and native request.
+  Measure identical cached joint results with less adapter overhead. Correct a
+  stale saved-window deadline fixture to match the real prepared-work contract.
+
 - Connect joint gear/talent/rotation/timing/consumable matrices to the pinned
   native simulator, with strict protobuf input checks, complete bounded
   accounting, full-request cache reuse and CLI/MCP callers. Record the research,

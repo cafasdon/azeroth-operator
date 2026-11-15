@@ -547,12 +547,16 @@ def verify_engine(engine, expected_hash):
             raise ValueError("Engine SHA-256 mismatch")
 
 
-def verify_positional_engine(engine, expected_hash, deadline=None):
+def verify_positional_engine(engine, expected_hash, deadline=None, _verified_positional=None):
     if expected_hash.lower() != layout.ENGINE_SHA256:
         raise ValueError('Positional equipment requires the qualified engine hash')
     verify_engine(engine, expected_hash)
     remaining = 10 if deadline is None else min(10, deadline-time.monotonic())
     if remaining <= 0: raise ValueError('Comparison deadline exceeded')
+    # Only the static capability probe is reusable inside one comparison. The
+    # qualified hash and actual engine bytes above are checked on every request.
+    if _verified_positional is not None and expected_hash.lower() in _verified_positional:
+        return
     with tempfile.TemporaryFile() as output:
         subprocess.run([str(engine),'azeroth-equipment-contract'],stdin=subprocess.DEVNULL,
             stdout=output,stderr=subprocess.DEVNULL,check=True,timeout=remaining)
@@ -569,11 +573,13 @@ def verify_positional_engine(engine, expected_hash, deadline=None):
     verify_engine(engine, expected_hash)
     if deadline is not None and time.monotonic() >= deadline:
         raise ValueError('Comparison deadline exceeded')
+    if _verified_positional is not None:
+        _verified_positional.add(expected_hash.lower())
 
 
-def verify_request_engine(engine, expected_hash, request, deadline=None):
+def verify_request_engine(engine, expected_hash, request, deadline=None, _verified_positional=None):
     if layout.request_requires_positional(request):
-        verify_positional_engine(engine, expected_hash, deadline)
+        verify_positional_engine(engine, expected_hash, deadline, _verified_positional)
 
 
 def wilson_interval_95(count, iterations):
@@ -590,7 +596,7 @@ def wilson_interval_95(count, iterations):
 
 
 def run(engine, expected_hash, request, deadline=None, paired=False, tank_metrics=False, healing_metrics=False,
-        cache=None):
+        cache=None, _verified_positional=None):
     if tank_metrics:
         raid = request["raid"]
         first_party = raid["parties"][0].get("players", [])
@@ -603,7 +609,7 @@ def run(engine, expected_hash, request, deadline=None, paired=False, tank_metric
     verify_engine(engine, expected_hash)
     if deadline is not None and time.monotonic() >= deadline:
         raise ValueError("Comparison deadline exceeded")
-    verify_request_engine(engine, expected_hash, request, deadline)
+    verify_request_engine(engine, expected_hash, request, deadline, _verified_positional)
     cache_key = cache.key(expected_hash, request, paired, tank_metrics, healing_metrics) if cache else None
     if cache:
         cached = cache.get(cache_key)
@@ -699,12 +705,13 @@ def compare(engine, expected_hash, requests, paired=False, tank_metrics=False, h
     )):
         raise ValueError("Paired comparisons require one encounter, one seed and 2 to 5000 matching iterations")
     deadline = time.monotonic() + 120
+    verified_positional = set()
     results = {}
     for key, request in unique.items():
         results[key] = run(
             engine, expected_hash, request, deadline=deadline, paired=paired,
             tank_metrics=tank_metrics, healing_metrics=healing_metrics,
-            cache=cache,
+            cache=cache, _verified_positional=verified_positional,
         )
         if time.monotonic() >= deadline:
             raise ValueError("Comparison deadline exceeded")
