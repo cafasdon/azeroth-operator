@@ -1,5 +1,10 @@
 # Changelog
 
+- Bind offline optimiser sources to one configured owner account and exact
+  saved client. Use the saved addon export character by default; an explicit
+  name and realm override it. Add a read-only native export decoder, preserve
+  capture age and reject mismatches without another-character fallback.
+
 - Add an additive Windows installer and sanitised MCP example for six offline
   talent, gear and joint-window tools. Use pinned durable native files and an
   explicitly public 256-build hunter fixture, unbound to the current character.

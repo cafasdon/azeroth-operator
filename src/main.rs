@@ -7883,6 +7883,11 @@ async fn main() -> anyhow::Result<()> {
     let root = std::env::var_os("AZEROTH_DATA_DIR").map(std::path::PathBuf::from);
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if !args.is_empty() {
+        if args.len() == 2 && args[0] == "decode-export" {
+            let snapshot = azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?;
+            println!("{}", serde_json::to_string(&snapshot)?);
+            return Ok(());
+        }
         if args.len() == 4 && args[0] == "sync" {
             let family = match args[1].to_str() {
                 Some("retail") => Family::Retail,
@@ -7912,7 +7917,7 @@ async fn main() -> anyhow::Result<()> {
             azeroth_operator::import::import_file(std::path::Path::new(&args[1]))?
         } else {
             anyhow::bail!(
-                "Usage: azeroth-operator [import <file> | import-stdin | upload <file> | sync <family> <file> <receipt-dir>]"
+                "Usage: azeroth-operator [decode-export <file> | import <file> | import-stdin | upload <file> | sync <family> <file> <receipt-dir>]"
             );
         };
         let root = root.ok_or_else(|| {

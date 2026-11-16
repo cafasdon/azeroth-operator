@@ -1,5 +1,10 @@
 # Azeroth Operator
 
+The [owned character source](docs/ADR-112-owned-build-source.md) binds saved
+optimiser input to one account, exact client and hash-checked capture. The saved
+addon export supplies the default character; an explicit name and realm override
+it. Saved identity and inventory remain distinct from current live state.
+
 The [local optimisation machine](docs/optimisation-machine.md) defines the joint
 character optimiser, research basis and measurable acceptance gates. The first
 [native joint evaluator](docs/joint-build-optimizer.md) scores complete small
